@@ -7,7 +7,7 @@ import * as styles from "./item.css"
 import type { ItemMediaVariants, ItemVariants } from "./item.css"
 
 function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return <div role="list" data-slot="item-group" className={cn(styles.group, className)} {...props} />
+  return <div data-slot="item-group" className={cn(styles.group, className)} {...props} />
 }
 
 function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Separator>) {

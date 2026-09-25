@@ -35,16 +35,7 @@ function BreadcrumbLink({ className, render, ...props }: useRender.ComponentProp
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
-      aria-current="page"
-      className={cn(styles.page, className)}
-      {...props}
-    />
-  )
+  return <span data-slot="breadcrumb-page" aria-current="page" className={cn(styles.page, className)} {...props} />
 }
 
 function BreadcrumbSeparator({ children, className, ...props }: React.ComponentProps<"li">) {

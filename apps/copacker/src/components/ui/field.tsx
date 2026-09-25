@@ -25,7 +25,6 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
 function Field({ className, orientation = "vertical", ...props }: React.ComponentProps<"div"> & styles.FieldVariants) {
   return (
     <div
-      role="group"
       data-slot="field"
       data-orientation={orientation}
       className={cn(styles.field({ orientation }), className)}

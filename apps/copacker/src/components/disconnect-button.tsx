@@ -65,7 +65,7 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
         <FormError message={error} />
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending} onClick={disconnect}>
+          <AlertDialogAction variant="destructive" disabled={pending} aria-busy={pending} onClick={disconnect}>
             {pending && <Spinner data-icon="inline-start" />}
             Disconnect
           </AlertDialogAction>

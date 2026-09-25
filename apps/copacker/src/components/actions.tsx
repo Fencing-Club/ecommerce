@@ -29,7 +29,7 @@ export function SubmitButton({
   ...props
 }: React.ComponentProps<typeof Button> & { pending: boolean }) {
   return (
-    <Button {...props} disabled={pending || props.disabled}>
+    <Button {...props} disabled={pending || props.disabled} aria-busy={pending}>
       {pending && <Spinner data-icon="inline-start" />}
       {children}
     </Button>

@@ -149,6 +149,7 @@ function SavedAddress({ contact }: { contact: Contact }) {
             variant="ghost"
             aria-label={`Remove ${contact.name}`}
             disabled={pending}
+            aria-busy={pending}
             onClick={remove}
           >
             {pending ? <Spinner /> : <Trash2 />}
