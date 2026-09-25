@@ -52,8 +52,9 @@ export function FormNumber({
   description,
   className,
   scale = 1,
+  onValueChange,
   ...props
-}: Common & { scale?: number } & Omit<
+}: Common & { scale?: number; onValueChange?: (value: number | undefined) => void } & Omit<
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange" | "type"
   >) {
@@ -74,9 +75,12 @@ export function FormNumber({
         name={fieldName}
         ref={ref}
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * scale * 1000) / 1000)
-        }
+        onChange={(event) => {
+          const next =
+            event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * scale * 1000) / 1000
+          onChange(next)
+          onValueChange?.(next)
+        }}
         onBlur={onBlur}
         aria-invalid={fieldState.invalid}
       />

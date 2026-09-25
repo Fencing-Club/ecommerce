@@ -32,9 +32,9 @@ export async function validatePdf(bytes: Uint8Array) {
     }
   }
 }
-export async function putFile(key: string, bytes: Uint8Array) {
+export async function putFile(key: string, bytes: Uint8Array, contentType = "application/pdf") {
   const { client, bucket } = storage()
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: "application/pdf" }))
+  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: contentType }))
 }
 export async function getFile(key: string) {
   const { client, bucket } = storage()

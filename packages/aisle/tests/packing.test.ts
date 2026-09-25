@@ -105,4 +105,33 @@ describe("Supplier piece and carton contract", () => {
     expect(approved.items[0]?.buyerSku).toBe("foil-2")
     expect(order.items[0]?.unitPrice).toBe(210)
   })
+  it("clears a catalog quote when the supplier changes its SKU", () => {
+    const quoted = orderInputSchema.parse({
+      ...order,
+      items: [
+        {
+          ...order.items[0],
+          supplierCatalogStatus: "matched",
+          supplierCatalog: {
+            productId: randomUUID(),
+            revision: 3,
+            supplierSku: "B02",
+            title: "Body cord",
+            currency: "USD",
+            priceMinor: 210,
+            priceBasis: "piece",
+            piecesPerSellablePack: 1,
+            sellablePacksPerCase: null
+          }
+        }
+      ]
+    })
+    const changed = approveChanges(quoted, {
+      ...packing,
+      changes: [{ itemId, supplierSku: "B02-new", unitPrice: 230 }]
+    })
+    expect(changed.items[0]?.supplierCatalog).toBeUndefined()
+    expect(changed.items[0]?.supplierCatalogStatus).toBeUndefined()
+    expect(quoted.items[0]?.supplierCatalog?.supplierSku).toBe("B02")
+  })
 })

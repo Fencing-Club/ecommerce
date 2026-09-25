@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { ImportReview } from "@/components/import-review"
@@ -31,7 +31,7 @@ export default async function ReviewImport({ params }: { params: Promise<{ id: s
   const rows = await db()
     .select({ id: suppliers.id, name: suppliers.name })
     .from(suppliers)
-    .where(eq(suppliers.buyerOrgId, s.org.id))
+    .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
   const proposal = importProposalSchema.parse(record.proposal)
   const selectedIds = [
     ...new Set(proposal.items.flatMap((item) => (item.selectedVariantId ? [item.selectedVariantId] : [])))

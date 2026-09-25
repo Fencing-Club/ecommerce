@@ -15,13 +15,16 @@ export function normalizeShopDomain(input: string) {
 }
 const field = z.object({ value: z.string() }).nullable()
 const stockPageInfo = z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() })
-// Shopify Collective's fulfillment service. Collective locations mirror a partner's stock through this service, so
-// they are recognised by the service Shopify calls, never by the location's display name (which can be renamed or
-// localized).
-const shopifyCollectiveHost = "curator-merchant-to-merchant.sfe.shopifyinternal.com"
-export type ShopifyLocationKind = "merchant" | "shopify_collective" | "fulfillment_service"
+// Apps that manage a location register a fulfillment service, and Shopify calls that service's callback. Known apps
+// are recognised by the callback's host, never by the location's display name (which can be renamed or localized).
+// Collective locations mirror a partner's stock; Amazon's location mirrors the seller's FBA stock.
+export type ShopifyLocationKind = "merchant" | "shopify_collective" | "amazon_fulfillment" | "fulfillment_service"
 // Merchant locations hold the store's own stock. Locations with a fulfillment service are created and managed by an
 // app (Shopify Collective, Amazon, 3PLs), and their quantities are reported by that app.
+const serviceHosts = new Map<string, ShopifyLocationKind>([
+  ["curator-merchant-to-merchant.sfe.shopifyinternal.com", "shopify_collective"],
+  ["api.maple.prod.scoville.dubai.aws.dev", "amazon_fulfillment"]
+])
 export function shopifyLocationKind(location: {
   isFulfillmentService: boolean
   fulfillmentService: { callbackUrl: string | null } | null
@@ -30,9 +33,22 @@ export function shopifyLocationKind(location: {
     return "merchant"
   }
   const callback = location.fulfillmentService?.callbackUrl
-  return callback && URL.canParse(callback) && new URL(callback).hostname === shopifyCollectiveHost
-    ? "shopify_collective"
-    : "fulfillment_service"
+  const host = callback && URL.canParse(callback) ? new URL(callback).hostname : ""
+  return serviceHosts.get(host) ?? "fulfillment_service"
+}
+// The variants a bundle is made of and how many of each one bundle contains.
+export type BundleComponent = { variantId: string; quantity: number }
+const bundleComponents = z.object({
+  nodes: z
+    .array(z.object({ quantity: z.number().int().positive().safe(), productVariant: z.object({ id: z.string() }) }))
+    .max(25),
+  pageInfo: z.object({ hasNextPage: z.boolean() })
+})
+const bundleComponentFields = "nodes{quantity productVariant{id}} pageInfo{hasNextPage}"
+function bundleComponentList(components: z.infer<typeof bundleComponents>): BundleComponent[] | null {
+  return components.pageInfo.hasNextPage
+    ? null
+    : components.nodes.map((node) => ({ variantId: node.productVariant.id, quantity: node.quantity }))
 }
 const stockLevel = z.object({
   id: z.string().min(1),
@@ -61,15 +77,28 @@ const variant = z.object({
   id: z.string(),
   title: z.string(),
   sku: z.string().nullable(),
-  product: z.object({ title: z.string() }),
+  product: z.object({ id: z.string(), title: z.string() }),
   inventoryItem: z.object({
     id: z.string(),
     unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable()
   }),
   supplierSku: field,
-  asin: field
+  asin: field,
+  requiresComponents: z.boolean(),
+  productVariantComponents: bundleComponents
 })
 export type CatalogVariant = z.infer<typeof variant>
+// Pieces in one sellable unit: a bundle's component quantities added up (a 3-pack of one item is 3), otherwise 1.
+export function piecesPerUnit(catalog: Pick<CatalogVariant, "requiresComponents" | "productVariantComponents">) {
+  if (!catalog.requiresComponents) {
+    return 1
+  }
+  const components = bundleComponentList(catalog.productVariantComponents)
+  if (!components?.length) {
+    throw new Error("Shopify didn't return this bundle's components; check the bundle in Shopify")
+  }
+  return components.reduce((sum, component) => sum + component.quantity, 0)
+}
 export class ShopifyPermissionError extends Error {}
 // Shopify answered with an HTTP error; the status says whether reconnecting (401, 403) or waiting (429, 5xx) helps.
 export class ShopifyRequestError extends Error {
@@ -153,6 +182,7 @@ export class Shopify {
                 media: z.object({ nodes: z.array(stockMedia).max(1) }),
                 requiresComponents: z.boolean(),
                 inventoryQuantity: z.number().int().safe().nullable(),
+                productVariantComponents: bundleComponents,
                 inventoryItem: z.object({
                   id: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
                   tracked: z.boolean(),
@@ -166,7 +196,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title product{id title featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity inventoryItem{id tracked inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title product{id title featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -211,7 +241,8 @@ export class Shopify {
       variantTitle?: string
       imageUrl?: string | null
       // A bundle holds no stock of its own; Shopify reports how many can be sold from its components' stock instead.
-      bundle?: { available: number | null }
+      // Components are null when Shopify lists more than it returned in one page.
+      bundle?: { available: number | null; components?: BundleComponent[] | null }
       tracked: boolean
       unit: "shopify_inventory_unit"
       levels: {
@@ -273,7 +304,12 @@ export class Shopify {
           // Prefer the variant's own photo, then the product's.
           imageUrl:
             variant.media.nodes[0]?.preview?.image?.url ?? variant.product.featuredMedia?.preview?.image?.url ?? null,
-          ...(variant.requiresComponents && { bundle: { available: variant.inventoryQuantity } }),
+          ...(variant.requiresComponents && {
+            bundle: {
+              available: variant.inventoryQuantity,
+              components: bundleComponentList(variant.productVariantComponents)
+            }
+          }),
           tracked: item.tracked,
           unit: "shopify_inventory_unit",
           levels: []
@@ -388,4 +424,4 @@ export class Shopify {
     }
   }
 }
-const fields = `id title sku product{title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value}`
+const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${bundleComponentFields}}`

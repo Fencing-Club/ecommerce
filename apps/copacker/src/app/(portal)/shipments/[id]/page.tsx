@@ -32,7 +32,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   if (!shipment) {
     notFound()
   }
-  const { order } = await accessibleOrder(s, shipment.orderId)
+  const { order, supplier } = await accessibleOrder(s, shipment.orderId)
   const workflow = await orderWorkflow(s, order.id)
   const step = workflow.shipments.find((row) => row.id === id)!
   const reserved = reservedPieces(await db().select().from(shipments).where(eq(shipments.orderId, order.id)), id)
@@ -42,7 +42,14 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       .select()
       .from(documents)
       .where(and(eq(documents.shipmentId, id), eq(documents.outdated, 0))),
-    db().select().from(contacts).where(eq(contacts.orgId, s.org.id))
+    // Cartons leave from the supplier's pickup addresses, which the supplier keeps in its own workspace. A supplier
+    // that hasn't joined Copacker yet has none, so the address is typed in.
+    supplier.supplierOrgId
+      ? db()
+          .select()
+          .from(contacts)
+          .where(and(eq(contacts.orgId, supplier.supplierOrgId), eq(contacts.kind, "pickup")))
+      : []
   ])
   const editable =
     ["packing", "correction"].includes(shipment.status) && !shipment.amazonOrderId && shipment.operation === "none"

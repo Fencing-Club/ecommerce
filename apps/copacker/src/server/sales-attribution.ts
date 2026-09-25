@@ -5,9 +5,14 @@ export type DemandRow = {
   buyerSku: string | null
   locationId: string | null
   pool: "shopify" | "fba" | "fbm_unassigned"
+  // The bundle variant these units were sold in, when the customer bought a bundle rather than the item itself.
+  // Amazon reports the listing sold, so its bundle sales appear under the bundle's own SKU instead.
+  bundleVariantId: string | null
   fulfilledUnits: number
 }
 export type DemandGap = {
+  sourceName: string | null
+  locationId: string | null
   orderId: string
   variantId: string | null
   buyerSku: string | null
@@ -22,7 +27,7 @@ export type DemandGap = {
 }
 export type LocationClass = "merchant" | "amazon_mirror" | "excluded" | "unresolved"
 function add(rows: Map<string, DemandRow>, row: DemandRow) {
-  const key = JSON.stringify([row.pool, row.locationId, row.variantId, row.buyerSku])
+  const key = JSON.stringify([row.pool, row.locationId, row.variantId, row.buyerSku, row.bundleVariantId])
   const prior = rows.get(key)
   const fulfilledUnits = (prior?.fulfilledUnits ?? 0) + row.fulfilledUnits
   if (!Number.isSafeInteger(fulfilledUnits)) {
@@ -43,7 +48,13 @@ export function attributeShopifySales(orders: ShopifySale[], locations: Readonly
       continue
     }
     for (const line of order.lines) {
-      const identity = { orderId: order.id, variantId: line.variant?.id ?? null, buyerSku: line.sku }
+      const identity = {
+        orderId: order.id,
+        variantId: line.variant?.id ?? null,
+        buyerSku: line.sku,
+        sourceName: order.sourceName,
+        locationId: null
+      }
       if (!nativeShopifySources.has(order.sourceName ?? "")) {
         gaps.push({ ...identity, reason: "channel_unmapped", units: line.currentQuantity })
         continue
@@ -59,7 +70,12 @@ export function attributeShopifySales(orders: ShopifySale[], locations: Readonly
         }
         for (const item of fulfillment.lines.filter((item) => item.lineItem.id === line.id)) {
           if (item.quantity === null) {
-            gaps.push({ ...identity, reason: "quantity_unknown", units: null })
+            gaps.push({
+              ...identity,
+              locationId: fulfillment.location?.id ?? null,
+              reason: "quantity_unknown",
+              units: null
+            })
             continue
           }
           fulfilled += item.quantity
@@ -70,13 +86,19 @@ export function attributeShopifySales(orders: ShopifySale[], locations: Readonly
           if (classification === "amazon_mirror" || classification === "excluded") {
             excludedFulfilledUnits += item.quantity
           } else if (classification !== "merchant" || !fulfillment.location) {
-            gaps.push({ ...identity, reason: "location_unmapped", units: item.quantity })
+            gaps.push({
+              ...identity,
+              locationId: fulfillment.location?.id ?? null,
+              reason: "location_unmapped",
+              units: item.quantity
+            })
           } else {
             add(rows, {
               variantId: line.variant.id,
               buyerSku: line.sku,
               locationId: fulfillment.location.id,
               pool: "shopify",
+              bundleVariantId: line.lineItemGroup?.variantId ?? null,
               fulfilledUnits: item.quantity
             })
           }
@@ -104,13 +126,20 @@ export function attributeShopifySales(orders: ShopifySale[], locations: Readonly
 export function attributeAmazonSales(orders: AmazonSale[]) {
   const rows = new Map<string, DemandRow>(),
     gaps: DemandGap[] = []
+  const confirmed = new Map<string, { buyerSku: string; pool: "fba" | "fbm_unassigned"; units: number }>()
   for (const order of orders) {
     const status = order.fulfillment?.fulfillmentStatus
     if (status === "CANCELLED" || status === "UNFULFILLABLE") {
       continue
     }
     for (const item of order.orderItems) {
-      const identity = { orderId: order.orderId, variantId: null, buyerSku: item.product.sellerSku ?? null }
+      const identity = {
+        orderId: order.orderId,
+        variantId: null,
+        buyerSku: item.product.sellerSku ?? null,
+        sourceName: order.salesChannel.channelName,
+        locationId: null
+      }
       if (order.salesChannel.channelName !== "AMAZON") {
         gaps.push({ ...identity, reason: "channel_unmapped", units: item.quantityOrdered })
         continue
@@ -136,15 +165,32 @@ export function attributeAmazonSales(orders: AmazonSale[]) {
         buyerSku: identity.buyerSku,
         locationId: null,
         pool: order.fulfillment.fulfilledBy === "AMAZON" ? "fba" : "fbm_unassigned",
+        bundleVariantId: null,
         fulfilledUnits: fulfilled
       })
       const unfulfilled = item.fulfillment?.quantityUnfulfilled
+      if (unfulfilled !== undefined && unfulfilled > item.quantityOrdered - fulfilled) {
+        throw new Error("Amazon fulfillment quantities exceed ordered units")
+      }
       if (unfulfilled === undefined && status !== "SHIPPED") {
         gaps.push({ ...identity, reason: "quantity_unknown", units: null })
+      } else if (unfulfilled && (status === "UNSHIPPED" || status === "PARTIALLY_SHIPPED")) {
+        const pool = order.fulfillment.fulfilledBy === "AMAZON" ? "fba" : "fbm_unassigned"
+        const key = JSON.stringify([pool, identity.buyerSku])
+        const units = (confirmed.get(key)?.units ?? 0) + unfulfilled
+        if (!Number.isSafeInteger(units)) {
+          throw new Error("Unfulfilled demand exceeds the supported range")
+        }
+        confirmed.set(key, { buyerSku: identity.buyerSku, pool, units })
       } else if (unfulfilled && status !== "PENDING" && status !== "PENDING_AVAILABILITY") {
-        gaps.push({ ...identity, reason: "unfulfilled", units: unfulfilled })
+        gaps.push({ ...identity, reason: "fulfillment_unmapped", units: unfulfilled })
       }
     }
   }
-  return { rows: [...rows.values()], gaps, attributionComplete: gaps.length === 0 }
+  return {
+    rows: [...rows.values()],
+    confirmedUnfulfilled: [...confirmed.values()],
+    gaps,
+    attributionComplete: gaps.length === 0
+  }
 }

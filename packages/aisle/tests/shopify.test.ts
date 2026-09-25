@@ -4,6 +4,7 @@ import {
   shopDomainSchema,
   Shopify,
   ShopifyPermissionError,
+  piecesPerUnit,
   shopifyLocationKind
 } from "../src/shopify"
 
@@ -28,7 +29,8 @@ const productDetails = {
   product: { id: "gid://shopify/Product/1", title: "Foil body cord", featuredMedia: null },
   media: { nodes: [] },
   requiresComponents: false,
-  inventoryQuantity: -2
+  inventoryQuantity: -2,
+  productVariantComponents: { nodes: [], pageInfo: { hasNextPage: false } }
 }
 function stockClient(data: unknown) {
   const transport = vi.fn<typeof fetch>(async () => Response.json({ data }))
@@ -195,8 +197,21 @@ describe("Shopify complete stock collection", () => {
       {
         productVariants: {
           nodes: [
-            { ...node(1), requiresComponents: true, inventoryQuantity: 9 },
-            { ...node(2), requiresComponents: true, inventoryQuantity: null },
+            {
+              ...node(1),
+              requiresComponents: true,
+              inventoryQuantity: 9,
+              productVariantComponents: {
+                nodes: [{ quantity: 3, productVariant: { id: "gid://shopify/ProductVariant/7" } }],
+                pageInfo: { hasNextPage: false }
+              }
+            },
+            {
+              ...node(2),
+              requiresComponents: true,
+              inventoryQuantity: null,
+              productVariantComponents: { nodes: [], pageInfo: { hasNextPage: true } }
+            },
             node(3)
           ],
           pageInfo
@@ -204,7 +219,12 @@ describe("Shopify complete stock collection", () => {
       }
     ])
     const { rows } = await api.stock()
-    expect(rows.map((row) => row.bundle)).toEqual([{ available: 9 }, { available: null }, undefined])
+    expect(rows.map((row) => row.bundle)).toEqual([
+      { available: 9, components: [{ variantId: "gid://shopify/ProductVariant/7", quantity: 3 }] },
+      // More components than one page returned: the recipe is unknown rather than partial.
+      { available: null, components: null },
+      undefined
+    ])
   })
 
   it("withholds partial results on transport failure or lost job ownership", async () => {
@@ -349,18 +369,46 @@ describe("shopifyLocationKind", () => {
     )
   })
 
-  it("marks other app-managed locations as fulfillment services", () => {
+  it("recognises Amazon's fulfillment location by its fulfillment service", () => {
     expect(
       shopifyLocationKind({
         isFulfillmentService: true,
         fulfillmentService: { callbackUrl: "https://api.maple.prod.scoville.dubai.aws.dev/" }
       })
+    ).toBe("amazon_fulfillment")
+  })
+
+  it("marks other app-managed locations as fulfillment services", () => {
+    expect(
+      shopifyLocationKind({ isFulfillmentService: true, fulfillmentService: { callbackUrl: "https://3pl.example/" } })
     ).toBe("fulfillment_service")
     expect(shopifyLocationKind({ isFulfillmentService: true, fulfillmentService: { callbackUrl: null } })).toBe(
       "fulfillment_service"
     )
     expect(shopifyLocationKind({ isFulfillmentService: true, fulfillmentService: { callbackUrl: "not a url" } })).toBe(
       "fulfillment_service"
+    )
+  })
+})
+
+describe("piecesPerUnit", () => {
+  const components = (quantities: number[], hasNextPage = false) => ({
+    nodes: quantities.map((quantity, index) => ({
+      quantity,
+      productVariant: { id: `gid://shopify/ProductVariant/${index}` }
+    })),
+    pageInfo: { hasNextPage }
+  })
+
+  it("is 1 for an item and the component total for a bundle", () => {
+    expect(piecesPerUnit({ requiresComponents: false, productVariantComponents: components([]) })).toBe(1)
+    expect(piecesPerUnit({ requiresComponents: true, productVariantComponents: components([3]) })).toBe(3)
+    expect(piecesPerUnit({ requiresComponents: true, productVariantComponents: components([1, 1]) })).toBe(2)
+  })
+
+  it("refuses to guess when Shopify didn't return the whole bundle", () => {
+    expect(() => piecesPerUnit({ requiresComponents: true, productVariantComponents: components([2], true) })).toThrow(
+      "components"
     )
   })
 })

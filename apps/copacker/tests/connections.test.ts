@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { readFile } from "node:fs/promises"
 import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
@@ -10,6 +9,7 @@ const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
 import { connection, shopifyFor, amazonFor } from "../src/server/connections"
 import { encrypt, decrypt } from "../src/server/security"
+import { applyMigrations } from "./migrations"
 
 const pg = new PGlite()
 const database = drizzle(pg, { schema: tables })
@@ -18,7 +18,7 @@ const fetchMock = vi.fn<typeof fetch>()
 
 beforeAll(async () => {
   context.database = database
-  await pg.exec(await readFile(new URL("../drizzle/0000_copacker.sql", import.meta.url), "utf8"))
+  await applyMigrations(pg)
 })
 afterAll(async () => {
   await pg.close()

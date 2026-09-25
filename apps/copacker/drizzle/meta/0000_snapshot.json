@@ -691,7 +691,7 @@
           "name": "amazonSellerId",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",

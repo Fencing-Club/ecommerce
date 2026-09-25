@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm"
+import { and, eq, isNull, ne } from "drizzle-orm"
 import { notFound } from "next/navigation"
 import { db, type Transaction } from "@/db"
 import { orders, suppliers } from "@/db/schema"
@@ -19,7 +19,7 @@ export async function accessibleOrder(
         eq(orders.id, id),
         s.org.kind === "buyer"
           ? eq(orders.buyerOrgId, s.org.id)
-          : and(eq(suppliers.supplierOrgId, s.org.id), ne(orders.status, "draft"))
+          : and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), ne(orders.status, "draft"))
       )
     )
   const [row] = lock ? await query.for("update", { of: orders }) : await query
@@ -36,7 +36,7 @@ export async function visibleOrders(s: Session) {
     .where(
       s.org.kind === "buyer"
         ? eq(orders.buyerOrgId, s.org.id)
-        : and(eq(suppliers.supplierOrgId, s.org.id), ne(orders.status, "draft"))
+        : and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), ne(orders.status, "draft"))
     )
     .orderBy(orders.createdAt)
 }

@@ -1,9 +1,10 @@
+import type { ShopifyLocationKind } from "@repo/aisle/shopify"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, inventoryLocationMappings, stockSnapshots } from "@/db/schema"
 import type { Session } from "./auth"
-import { locationMappingSchema } from "./inventory-locations"
+import { automaticClassification, locationClassifications, locationMappingSchema } from "./inventory-locations"
 
 export class LocationSettingsError extends Error {
   constructor(
@@ -47,11 +48,13 @@ export async function readLocationMappings(s: Session) {
             eq(inventoryLocationMappings.shopifyDomain, account.domain)
           )
         )
-      const names = new Map<string, string>()
+      const names = new Map<string, string>(),
+        kinds = new Map<string, ShopifyLocationKind | undefined>()
       if (stock?.data?.source === "shopify") {
         for (const row of stock.data.rows) {
           for (const level of row.levels) {
             names.set(level.locationId, level.locationName)
+            kinds.set(level.locationId, level.locationKind)
           }
         }
       }
@@ -61,12 +64,19 @@ export async function readLocationMappings(s: Session) {
         snapshotId: stock?.snapshotId ?? null,
         observedAt: stock?.data?.observedAt ?? null,
         locations: [...names]
-          .map(([locationId, name]) => ({
-            locationId,
-            name,
-            classification: saved.get(locationId)?.classification ?? "unresolved",
-            revision: saved.get(locationId)?.revision ?? 0
-          }))
+          .map(([locationId, name]) => {
+            const automatic = automaticClassification(kinds.get(locationId))
+            return {
+              locationId,
+              name,
+              kind: kinds.get(locationId) ?? null,
+              // The saved choice when there is one; automatic says what applies without it.
+              classification: saved.get(locationId)?.classification ?? automatic,
+              automatic,
+              saved: saved.has(locationId),
+              revision: saved.get(locationId)?.revision ?? 0
+            }
+          })
           .sort((a, b) => a.locationId.localeCompare(b.locationId)),
         unobservedLocationIds: settings
           .filter((setting) => !names.has(setting.locationId))
@@ -148,4 +158,24 @@ export async function saveLocationMapping(s: Session, input: unknown) {
       })
     return value
   })
+}
+
+// The classification of every location in the store's latest stock snapshot, for inventory and sales.
+export async function effectiveLocationClassifications(orgId: string, shopifyDomain: string) {
+  const [stock] = await db()
+    .select({ data: stockSnapshots.data })
+    .from(stockSnapshots)
+    .where(
+      and(
+        eq(stockSnapshots.orgId, orgId),
+        eq(stockSnapshots.source, "shopify"),
+        eq(stockSnapshots.externalAccountId, shopifyDomain),
+        eq(stockSnapshots.scopeKey, "store")
+      )
+    )
+  const saved = await db()
+    .select()
+    .from(inventoryLocationMappings)
+    .where(and(eq(inventoryLocationMappings.orgId, orgId), eq(inventoryLocationMappings.shopifyDomain, shopifyDomain)))
+  return locationClassifications(stock?.data?.source === "shopify" ? stock.data : null, saved)
 }

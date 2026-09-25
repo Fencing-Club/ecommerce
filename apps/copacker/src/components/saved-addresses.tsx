@@ -1,7 +1,7 @@
 "use client"
 
 import type { Address } from "@repo/aisle"
-import { MapPin, Pencil, Plus, Trash2, Truck } from "lucide-react"
+import { MapPin, Pencil, Plus, Trash2, Truck, Warehouse } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,7 @@ import {
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
+import { type ContactKind, contactKindLabels } from "@/lib/contacts"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { FormError } from "./actions"
 import { EmptyState } from "./common"
@@ -25,21 +26,22 @@ import { ContactForm } from "./settings-forms"
 import * as styles from "./saved-addresses.css"
 import { sx } from "@/styles/sprinkles.css"
 
-type Contact = { id: string; name: string; kind: "pickup" | "forwarder"; address: Address }
+type Contact = { id: string; name: string; kind: ContactKind; address: Address }
 
-const kinds = {
-  pickup: { label: "Pickup address", icon: MapPin },
-  forwarder: { label: "Freight forwarder", icon: Truck }
-}
+const icons = { delivery: Warehouse, pickup: MapPin, forwarder: Truck }
 
-export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
+export function SavedAddresses({ contacts, supplier = false }: { contacts: Contact[]; supplier?: boolean }) {
   const [open, setOpen] = useState(false)
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Saved addresses</CardTitle>
-        <CardDescription>Pickup locations and freight forwarders you can reuse on shipments.</CardDescription>
+        <CardTitle>{supplier ? "Pickup addresses" : "Saved addresses"}</CardTitle>
+        <CardDescription>
+          {supplier
+            ? "Locations where Amazon or a carrier can collect your cartons."
+            : "Your delivery addresses and freight forwarders. Suppliers add their pickup addresses in their own workspace."}
+        </CardDescription>
         <CardAction>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger render={<Button variant="outline" />}>
@@ -50,10 +52,12 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
               <DialogHeader>
                 <DialogTitle>Add address</DialogTitle>
                 <DialogDescription>
-                  Save a pickup location or a freight forwarder to reuse on shipments.
+                  {supplier
+                    ? "Save a pickup location to reuse on shipments."
+                    : "Save a delivery address or a freight forwarder."}
                 </DialogDescription>
               </DialogHeader>
-              <ContactForm onSuccess={() => setOpen(false)} />
+              <ContactForm supplier={supplier} onSuccess={() => setOpen(false)} />
             </DialogContent>
           </Dialog>
         </CardAction>
@@ -62,13 +66,17 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
         {contacts.length ? (
           <ItemGroup className={styles.list}>
             {contacts.map((contact) => (
-              <SavedAddress key={contact.id} contact={contact} />
+              <SavedAddress key={contact.id} contact={contact} supplier={supplier} />
             ))}
           </ItemGroup>
         ) : (
           <EmptyState
             title="No saved addresses yet"
-            description="Add your pickup locations and freight forwarders so they're ready when you prepare a shipment."
+            description={
+              supplier
+                ? "Add your pickup locations so they're ready when you prepare a shipment."
+                : "Add your delivery addresses and freight forwarders so they're ready for your POs."
+            }
           />
         )}
       </CardContent>
@@ -76,13 +84,14 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
   )
 }
 
-function SavedAddress({ contact }: { contact: Contact }) {
+function SavedAddress({ contact, supplier }: { contact: Contact; supplier: boolean }) {
   const router = useRouter()
   const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  const { label, icon: Icon } = kinds[contact.kind]
+  const label = contactKindLabels[contact.kind]
+  const Icon = icons[contact.kind]
   const { address } = contact
 
   async function remove() {
@@ -123,9 +132,14 @@ function SavedAddress({ contact }: { contact: Contact }) {
               {address.email && <a href={`mailto:${address.email}`}>{address.email}</a>}
             </ItemDescription>
           )}
-          {contact.kind === "pickup" && !address.phoneNumber && (
+          {supplier && contact.kind === "pickup" && !address.phoneNumber && (
             <ItemDescription className={styles.warning}>
               Add a phone number to use this address on shipments.
+            </ItemDescription>
+          )}
+          {!supplier && contact.kind === "pickup" && (
+            <ItemDescription className={styles.warning}>
+              Pickup addresses now come from your supplier&apos;s workspace. Remove this once they&apos;ve added it.
             </ItemDescription>
           )}
         </ItemContent>
@@ -141,7 +155,7 @@ function SavedAddress({ contact }: { contact: Contact }) {
                   Changes apply to future shipments. Shipments already submitted keep their pickup details.
                 </DialogDescription>
               </DialogHeader>
-              <ContactForm contact={contact} onSuccess={() => setEditing(false)} />
+              <ContactForm contact={contact} supplier={supplier} onSuccess={() => setEditing(false)} />
             </DialogContent>
           </Dialog>
           <Button

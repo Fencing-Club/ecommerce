@@ -4,12 +4,13 @@ import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { TextField } from "@/components/form-fields"
 import { SavedAddresses } from "@/components/saved-addresses"
+import { SupplierProfileForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup } from "@/components/ui/field"
 import { db } from "@/db"
-import { connections, contacts } from "@/db/schema"
+import { connections, contacts, supplierProfiles } from "@/db/schema"
 import { session } from "@/server/auth"
 import { pushToBottom } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -31,12 +32,13 @@ const providers = [
 
 export default async function Settings() {
   const s = await session()
-  const [linked, saved] = await Promise.all([
+  const [linked, saved, [profile]] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
       .from(connections)
       .where(eq(connections.orgId, s.org.id)),
-    db().select().from(contacts).where(eq(contacts.orgId, s.org.id))
+    db().select().from(contacts).where(eq(contacts.orgId, s.org.id)),
+    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id))
   ])
 
   return (
@@ -94,7 +96,23 @@ export default async function Settings() {
         </div>
       )}
 
-      <SavedAddresses contacts={saved} />
+      {s.org.kind === "supplier" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Supplier profile</CardTitle>
+            <CardDescription>Your website and contact phone for buyers working with you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {s.role === "owner" ? (
+              <SupplierProfileForm website={profile?.website ?? ""} phoneNumber={profile?.phoneNumber ?? ""} />
+            ) : (
+              <p>{profile?.website ?? "No website saved"}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <SavedAddresses contacts={saved} supplier={s.org.kind === "supplier"} />
     </>
   )
 }

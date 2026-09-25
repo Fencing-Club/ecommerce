@@ -13,6 +13,11 @@
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
+    "predeploy": "pnpm db:migrate",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
+    "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts"
   },
   "dependencies": {

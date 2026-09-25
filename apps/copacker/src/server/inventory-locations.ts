@@ -1,4 +1,4 @@
-import type { Shopify } from "@repo/aisle/shopify"
+import type { Shopify, ShopifyLocationKind } from "@repo/aisle/shopify"
 import { z } from "zod"
 
 export const locationMappingSchema = z.strictObject({
@@ -8,7 +8,37 @@ export const locationMappingSchema = z.strictObject({
   classification: z.enum(["merchant", "amazon_mirror", "excluded", "unresolved"])
 })
 type Mapping = z.infer<typeof locationMappingSchema>
+export type LocationClassification = Mapping["classification"]
 type Stock = Awaited<ReturnType<Shopify["stock"]>>
+
+// How a location is treated until the buyer saves a choice: the store's own locations hold its stock, Shopify
+// Collective holds a partner's, and Amazon's location mirrors FBA. Other apps' locations need a decision. The kind comes
+// from the location's fulfillment service (see shopifyLocationKind), never its name; it is missing from snapshots saved
+// before kinds were collected.
+const automatic: Record<ShopifyLocationKind, LocationClassification> = {
+  merchant: "merchant",
+  shopify_collective: "excluded",
+  amazon_fulfillment: "amazon_mirror",
+  fulfillment_service: "unresolved"
+}
+export function automaticClassification(kind: ShopifyLocationKind | null | undefined): LocationClassification {
+  return kind ? automatic[kind] : "unresolved"
+}
+
+// Each observed location's classification: the buyer's saved choice, otherwise the automatic one.
+export function locationClassifications(
+  stock: { rows: { levels: { locationId: string; locationKind?: ShopifyLocationKind }[] }[] } | null,
+  saved: Pick<Mapping, "locationId" | "classification">[]
+) {
+  const choices = new Map(saved.map((mapping) => [mapping.locationId, mapping.classification]))
+  const result = new Map<string, LocationClassification>(choices)
+  for (const row of stock?.rows ?? []) {
+    for (const level of row.levels) {
+      result.set(level.locationId, choices.get(level.locationId) ?? automaticClassification(level.locationKind))
+    }
+  }
+  return result
+}
 
 // Shopify mirrors are observations, never authoritative Amazon inventory.
 // This function makes no FBA/AWD association based on a location's display name.
@@ -28,7 +58,10 @@ export function classifyShopifyStock(orgId: string, stock: Stock, mappings: Mapp
   const rows = stock.rows.map((row) => {
     const levels = row.levels.map((level) => {
       observed.add(level.locationId)
-      return { ...level, classification: selected.get(level.locationId) ?? "unresolved" }
+      return {
+        ...level,
+        classification: selected.get(level.locationId) ?? automaticClassification(level.locationKind)
+      }
     })
     const merchant = levels.filter((level) => level.classification === "merchant")
     const hasUnresolvedLocations = levels.some((level) => level.classification === "unresolved")

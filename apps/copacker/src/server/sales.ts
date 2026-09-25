@@ -2,9 +2,10 @@ import { collectAmazonSales, collectShopifySales, salesWindowSchema } from "@rep
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, inventoryLocationMappings } from "@/db/schema"
+import { connections } from "@/db/schema"
 import { requireBuyer, type Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
+import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
@@ -15,6 +16,9 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
   const now = Date.now()
   if (Date.parse(window.to) > now - 120000) {
     throw new DemandAccessError("End the sales window at least two minutes before now")
+  }
+  if (source === "amazon" && Date.parse(window.from) < now - 730 * 86400000) {
+    throw new DemandAccessError("Amazon US sales history supports the last two years")
   }
   const account = await connection(s.org.id, source)
   if (source === "shopify") {
@@ -45,19 +49,7 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
       window,
       check
     )
-    const mappings = await db()
-      .select()
-      .from(inventoryLocationMappings)
-      .where(
-        and(
-          eq(inventoryLocationMappings.orgId, s.org.id),
-          eq(inventoryLocationMappings.shopifyDomain, account.externalId)
-        )
-      )
-    result = attributeShopifySales(
-      orders,
-      new Map(mappings.map((mapping) => [mapping.locationId, mapping.classification]))
-    )
+    result = attributeShopifySales(orders, await effectiveLocationClassifications(s.org.id, account.externalId))
   } else {
     result = attributeAmazonSales(
       await collectAmazonSales(await amazonFor(s.org.id, account.externalId), window, check)

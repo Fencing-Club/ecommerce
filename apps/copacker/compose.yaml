@@ -1,0 +1,19 @@
+# Local development database. Production runs Postgres 18 on Railway; keep the major version in step.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: copacker
+      POSTGRES_PASSWORD: copacker
+      POSTGRES_DB: copacker
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - copacker-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U copacker -d copacker"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  copacker-postgres:

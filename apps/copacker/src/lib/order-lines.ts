@@ -1,12 +1,24 @@
-import type { OrderInput } from "@repo/aisle"
+import type { OrderInput, PrepCategory } from "@repo/aisle"
 import type { CatalogVariant } from "@repo/aisle/shopify"
 
-// A new PO line for a Shopify variant. Amazon identifiers are looked up on the server when the PO is saved or sent.
+export type LineDefaults = {
+  // Looked up on the server when the PO is saved or sent, so often empty here.
+  asin?: string
+  fnsku?: string
+  // From the Shopify bundle (see piecesPerUnit); the server sets it again when the PO is saved.
+  piecesPerSet?: number
+  // The product's saved defaults from Inventory.
+  description?: string
+  prepCategory?: PrepCategory | null
+}
+
+// A new PO line for a Shopify variant.
 export function orderLine(
   variant: CatalogVariant,
   id: string,
-  amazon: { asin: string; fnsku: string } = { asin: "", fnsku: "" }
+  defaults: LineDefaults = {}
 ): OrderInput["items"][number] {
+  const piecesPerSet = defaults.piecesPerSet ?? 1
   return {
     id,
     variantId: variant.id,
@@ -15,12 +27,12 @@ export function orderLine(
     variant: variant.title,
     buyerSku: variant.sku ?? "",
     supplierSku: variant.supplierSku?.value ?? "",
-    asin: amazon.asin || variant.asin?.value || "",
-    fnsku: amazon.fnsku,
-    pieces: 1,
-    piecesPerSet: 1,
+    asin: defaults.asin || variant.asin?.value || "",
+    fnsku: defaults.fnsku ?? "",
+    pieces: piecesPerSet,
+    piecesPerSet,
     unitPrice: 0,
-    instructions: "",
-    prepCategory: "POLYBAGGING"
+    instructions: defaults.description ?? "",
+    prepCategory: defaults.prepCategory ?? "POLYBAGGING"
   }
 }

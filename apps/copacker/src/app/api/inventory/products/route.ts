@@ -1,9 +1,11 @@
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, orders, stockSnapshots } from "@/db/schema"
+import { connections, inventoryLocationMappings, orders, stockSnapshots } from "@/db/schema"
 import { session } from "@/server/auth"
+import { locationClassifications } from "@/server/inventory-locations"
 import { groupInventory, inventoryLocations, onOrderByVariant, pageSizes } from "@/server/inventory-products"
+import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 import { stockScopes } from "@/server/stock"
 
 const querySchema = z.strictObject({
@@ -12,7 +14,7 @@ const querySchema = z.strictObject({
     .regex(/^gid:\/\/shopify\/Location\/\d+$/)
     .optional(),
   q: z.string().trim().max(100).optional(),
-  includeCollective: z.enum(["true", "false"]).default("false"),
+  includeExcluded: z.enum(["true", "false"]).default("false"),
   page: z
     .string()
     .regex(/^[1-9]\d{0,4}$/)
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
   }
   const { scopeKey, provider } = stockScopes.shopify
   const [current] = await db()
-    .select({ stock: stockSnapshots })
+    .select({ domain: connections.externalId, stock: stockSnapshots })
     .from(connections)
     .leftJoin(
       stockSnapshots,
@@ -49,6 +51,18 @@ export async function GET(request: Request) {
   const data = current?.stock?.data?.source === "shopify" ? current.stock.data : null
   const rows = data?.rows ?? []
   const { page, pageSize, locationId, q } = query.data
+  const saved = current
+    ? await db()
+        .select()
+        .from(inventoryLocationMappings)
+        .where(
+          and(
+            eq(inventoryLocationMappings.orgId, s.org.id),
+            eq(inventoryLocationMappings.shopifyDomain, current.domain)
+          )
+        )
+    : []
+  const classifications = locationClassifications(data, saved)
   // Sent POs only: drafts haven't been ordered, and closed POs have arrived or been cancelled.
   const sent = await db()
     .select({ id: orders.id, data: orders.data })
@@ -57,9 +71,11 @@ export async function GET(request: Request) {
   const products = groupInventory(rows, {
     locationId,
     query: q,
-    includeCollective: query.data.includeCollective === "true",
-    onOrder: onOrderByVariant(sent)
+    classifications,
+    includeExcluded: query.data.includeExcluded === "true",
+    onOrder: onOrderByVariant(sent, classifications)
   })
+  const defaults = current ? await readProductDefaults(s.org.id, current.domain) : new Map()
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
   const levels = rows.flatMap((row) => row.levels)
@@ -68,13 +84,15 @@ export async function GET(request: Request) {
       observedAt: data?.observedAt ?? null,
       // Snapshots saved before product details and location kinds were collected need one more sync.
       needsResync: rows.some((row) => row.productId === undefined) || levels.some((level) => !level.locationKind),
-      locations: inventoryLocations(rows),
+      locations: inventoryLocations(rows, classifications),
       page: pageNumber,
       pageSize,
       totalPages,
       totalProducts: products.length,
       totalVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
-      products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+      products: products
+        .slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+        .map((product) => ({ ...product, defaults: defaults.get(product.productId) ?? noDefaults }))
     },
     { headers }
   )

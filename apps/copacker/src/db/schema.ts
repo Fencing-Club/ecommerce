@@ -1,8 +1,9 @@
-import type { Address, OrderInput, Packing, PackingDraft } from "@repo/aisle"
+import { type Address, type OrderInput, type Packing, type PackingDraft, prepCategories } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { Shopify } from "@repo/aisle/shopify"
 import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core"
+import { contactKinds } from "../lib/contacts"
 import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
@@ -39,17 +40,61 @@ export const suppliers = pgTable(
     email: text().notNull(),
     invitationHash: text().unique(),
     expiresAt: timestamp({ withTimezone: true }),
+    // Set when the buyer removes the supplier. The row stays so earlier POs keep their supplier.
+    removedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt()
   },
-  (t) => [uniqueIndex("supplier_buyer_email").on(t.buyerOrgId, t.email)]
+  // One buyer may work with several supplier workspaces owned by the same email.
+  (t) => [uniqueIndex("supplier_buyer_name").on(t.buyerOrgId, t.name)]
 )
+export const supplierProfiles = pgTable("supplier_profiles", {
+  orgId: uuid()
+    .primaryKey()
+    .references(() => organizations.id),
+  website: text(),
+  phoneNumber: text(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+})
+export const supplierProducts = pgTable(
+  "supplier_products",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    supplierOrgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    supplierSku: text().notNull(),
+    title: text().notNull(),
+    active: integer().notNull().default(1),
+    revision: integer().notNull().default(1),
+    currency: text().notNull(),
+    priceMinor: integer(),
+    priceBasis: text().notNull().default("piece"),
+    piecesPerSellablePack: integer().notNull().default(1),
+    sellablePacksPerCase: integer(),
+    notes: text(),
+    createdAt: createdAt(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [uniqueIndex("supplier_product_sku").on(t.supplierOrgId, t.supplierSku)]
+)
+export const supplierCatalogImports = pgTable("supplier_catalog_imports", {
+  id: uuid().defaultRandom().primaryKey(),
+  supplierOrgId: uuid()
+    .notNull()
+    .references(() => organizations.id),
+  objectKey: text().notNull().unique(),
+  filename: text().notNull(),
+  createdBy: text().notNull(),
+  rowCount: integer().notNull(),
+  createdAt: createdAt()
+})
 export const contacts = pgTable("contacts", {
   id: uuid().defaultRandom().primaryKey(),
   orgId: uuid()
     .notNull()
     .references(() => organizations.id),
   name: text().notNull(),
-  kind: text({ enum: ["forwarder", "pickup"] }).notNull(),
+  kind: text({ enum: contactKinds }).notNull(),
   address: jsonb().$type<Address>().notNull(),
   createdAt: createdAt()
 })
@@ -279,4 +324,20 @@ export const inventoryLocationMappings = pgTable(
     revision: integer().notNull().default(1)
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.locationId] })]
+)
+// Buyer-owned product details that neither Shopify nor Amazon stores, used as defaults on new PO lines.
+export const productDefaults = pgTable(
+  "product_defaults",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    shopifyDomain: text().notNull(),
+    productId: text().notNull(),
+    description: text().notNull().default(""),
+    prepCategory: text({ enum: prepCategories }),
+    revision: integer().notNull().default(1),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.productId] })]
 )

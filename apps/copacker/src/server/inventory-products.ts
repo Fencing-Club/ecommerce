@@ -1,5 +1,6 @@
 import type { OrderInput } from "@repo/aisle"
-import type { Shopify, ShopifyLocationKind } from "@repo/aisle/shopify"
+import type { Shopify } from "@repo/aisle/shopify"
+import type { LocationClassification } from "./inventory-locations"
 
 type OrderItem = OrderInput["items"][number]
 type StockRow = Awaited<ReturnType<Shopify["stock"]>>["rows"][number]
@@ -10,7 +11,10 @@ export type StockKind = "tracked" | "bundle" | "untracked"
 
 export type PurchaseOrderLink = { id: string; reference: string }
 
-// Sellable units on POs already sent to suppliers, per Shopify variant.
+// One variant's sellable units on one sent PO, and the Shopify locations that PO will stock.
+export type PendingOrder = PurchaseOrderLink & { units: number; locationIds: string[] }
+
+// Sellable units on POs already sent to suppliers.
 export type OnOrder = { units: number; orders: PurchaseOrderLink[] }
 
 export type InventoryVariant = Quantities & {
@@ -21,10 +25,10 @@ export type InventoryVariant = Quantities & {
   imageUrl: string | null
   stock: StockKind
   onOrder: OnOrder
-  levels: (Quantities & { locationId: string; locationName: string; locationKind: ShopifyLocationKind | null })[]
+  levels: (Quantities & { locationId: string; locationName: string; classification: LocationClassification })[]
 }
 
-export type InventoryLocation = { id: string; name: string; kind: ShopifyLocationKind | null }
+export type InventoryLocation = { id: string; name: string; classification: LocationClassification }
 
 export type InventoryProduct = Quantities & {
   productId: string
@@ -61,25 +65,55 @@ function totals(items: Quantities[]): Quantities {
 
 const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 
+// AWD USA replenishes US FBA, which Shopify's Amazon location mirrors. AWD China stock is not in that mirror.
+const amazonDestinations = new Set<OrderInput["destination"]>(["awd_us", "fba"])
+
+// The Shopify locations a PO's stock will appear at. Amazon-bound stock shows at the locations mirroring Amazon.
+// Other destinations aren't linked to a Shopify location yet, so their units count only toward "All locations".
+export function receivingLocations(
+  destination: OrderInput["destination"],
+  classifications: ReadonlyMap<string, LocationClassification>
+) {
+  return amazonDestinations.has(destination)
+    ? [...classifications].flatMap(([id, classification]) => (classification === "amazon_mirror" ? [id] : []))
+    : []
+}
+
 // PO quantities are pieces; Shopify counts sellable units, which are sets of piecesPerSet pieces.
 export function onOrderByVariant(
   orders: {
     id: string
-    data: Pick<OrderInput, "reference"> & { items: Pick<OrderItem, "variantId" | "pieces" | "piecesPerSet">[] }
-  }[]
+    data: Pick<OrderInput, "reference" | "destination"> & {
+      items: Pick<OrderItem, "variantId" | "pieces" | "piecesPerSet">[]
+    }
+  }[],
+  classifications: ReadonlyMap<string, LocationClassification> = new Map()
 ) {
-  const byVariant = new Map<string, OnOrder>()
+  const byVariant = new Map<string, PendingOrder[]>()
   for (const order of orders) {
+    const locationIds = receivingLocations(order.data.destination, classifications)
     for (const item of order.data.items) {
-      const current = byVariant.get(item.variantId) ?? { units: 0, orders: [] }
-      current.units += Math.floor(item.pieces / item.piecesPerSet)
-      if (!current.orders.some((link) => link.id === order.id)) {
-        current.orders.push({ id: order.id, reference: order.data.reference })
+      const pending = byVariant.get(item.variantId) ?? []
+      const units = Math.floor(item.pieces / item.piecesPerSet)
+      const existing = pending.find((entry) => entry.id === order.id)
+      if (existing) {
+        existing.units += units
+      } else {
+        pending.push({ id: order.id, reference: order.data.reference, units, locationIds })
       }
-      byVariant.set(item.variantId, current)
+      byVariant.set(item.variantId, pending)
     }
   }
   return byVariant
+}
+
+// Units on order for all locations, or only POs stocking the selected one.
+function onOrderAt(pending: PendingOrder[], locationId: string | null | undefined): OnOrder {
+  const orders = locationId ? pending.filter((entry) => entry.locationIds.includes(locationId)) : pending
+  return {
+    units: orders.reduce((sum, entry) => sum + entry.units, 0),
+    orders: orders.map(({ id, reference }) => ({ id, reference }))
+  }
 }
 
 function combineOnOrder(items: OnOrder[]): OnOrder {
@@ -92,21 +126,27 @@ export const pageSizes = [10, 25, 50, 100] as const
 
 const byName = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
 
-// Every location in the snapshot with its kind; the store's own locations first. Kind is null for snapshots saved
-// before location kinds were collected.
-export function inventoryLocations(rows: StockRow[]): InventoryLocation[] {
+const rank: Record<LocationClassification, number> = { merchant: 0, amazon_mirror: 1, unresolved: 2, excluded: 3 }
+
+const classificationOf = (classifications: ReadonlyMap<string, LocationClassification>, locationId: string) =>
+  classifications.get(locationId) ?? "unresolved"
+
+// Every location in the snapshot with its classification; the store's own locations first.
+export function inventoryLocations(
+  rows: StockRow[],
+  classifications: ReadonlyMap<string, LocationClassification>
+): InventoryLocation[] {
   const locations = new Map<string, InventoryLocation>()
   for (const row of rows) {
     for (const level of row.levels) {
       locations.set(level.locationId, {
         id: level.locationId,
         name: level.locationName,
-        kind: level.locationKind ?? null
+        classification: classificationOf(classifications, level.locationId)
       })
     }
   }
-  const rank = { merchant: 0, fulfillment_service: 1, shopify_collective: 2 }
-  const order = (location: InventoryLocation) => rank[location.kind ?? "merchant"]
+  const order = (location: InventoryLocation) => rank[location.classification]
   return [...locations.values()].toSorted((a, b) => order(a) - order(b) || byName(a.name, b.name))
 }
 
@@ -115,23 +155,25 @@ export function groupInventory(
   {
     locationId,
     query,
-    includeCollective = false,
+    classifications = new Map(),
+    includeExcluded = false,
     onOrder = new Map()
   }: {
     locationId?: string | null
     query?: string | null
-    includeCollective?: boolean
-    onOrder?: Map<string, OnOrder>
+    classifications?: ReadonlyMap<string, LocationClassification>
+    includeExcluded?: boolean
+    onOrder?: ReadonlyMap<string, PendingOrder[]>
   } = {}
 ): InventoryProduct[] {
   const search = query?.trim().toLocaleLowerCase() ?? ""
   const products = new Map<string, InventoryProduct>()
   for (const row of rows) {
-    // Shopify Collective quantities belong to partner stores, so they are left out unless asked for. A variant stocked
-    // only through Collective is a partner's product and is hidden with them.
-    const counted = includeCollective
+    // Excluded locations, such as Shopify Collective partners' stock, are left out unless asked for. A variant stocked
+    // only at excluded locations is hidden with them.
+    const counted = includeExcluded
       ? row.levels
-      : row.levels.filter((level) => level.locationKind !== "shopify_collective")
+      : row.levels.filter((level) => classificationOf(classifications, level.locationId) !== "excluded")
     const levels = locationId ? counted.filter((level) => level.locationId === locationId) : counted
     if ((locationId || row.levels.length > 0) && levels.length === 0) {
       continue
@@ -167,11 +209,11 @@ export function groupInventory(
       sku: row.buyerSku,
       imageUrl: row.imageUrl ?? null,
       stock,
-      onOrder: onOrder.get(row.variantId) ?? nothingOnOrder,
-      levels: levels.map(({ locationId: id, locationName, locationKind, available, onHand, incoming }) => ({
+      onOrder: onOrderAt(onOrder.get(row.variantId) ?? [], locationId),
+      levels: levels.map(({ locationId: id, locationName, available, onHand, incoming }) => ({
         locationId: id,
         locationName,
-        locationKind: locationKind ?? null,
+        classification: classificationOf(classifications, id),
         available,
         onHand,
         incoming

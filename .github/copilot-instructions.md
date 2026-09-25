@@ -85,12 +85,16 @@ needs a human discussion**, not a silent add.
 - Do not preserve backward compatibility. Replace obsolete contracts and implementations directly.
 - Do not create version-suffixed files, symbols, schemas, routes, or APIs such as `V2`, `Phase2`, `legacy`, or
   compatibility aliases. Keep one canonical implementation.
-- Fix forward. Update the current implementation and its original migration baseline instead of adding compatibility
-  migrations, data rewrites, shims, fallbacks, or dual paths for unreleased behavior.
+- Fix forward. Update the current implementation instead of adding shims, fallbacks, or dual paths for unreleased
+  behavior.
+- Copacker's database holds production data. Change its schema only through a new migration: edit
+  `apps/copacker/src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and add the new file's hash to
+  `apps/copacker/tests/migrations.test.ts` once it has been deployed. Never edit an existing migration or apply SQL by
+  hand. Deploys run pending migrations (the web service's `predeploy` script) before the web service starts.
+- Develop against the local Docker database (`pnpm --filter copacker db:up`), never the production database.
 - Prioritize correctness over expediency. Fix root causes and maintain coherent contracts even when resetting prototype
   state is faster than preserving it.
-- Treat prototype data as disposable. Do not preserve, migrate, or repair stale workflow or execution data unless the
-  user explicitly requests it. Prefer a clean database reset or targeted deletion of stale prototype records.
+- Treat local prototype data as disposable. Never reset or delete production data unless the user explicitly asks.
 - Preserve integration credentials and unrelated external configuration when resetting application data unless the user
   explicitly requests a full reset.
 - Complete the entire coherent deliverable before running tests, type-checks, lint, formatting checks, browser

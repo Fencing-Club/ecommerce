@@ -89,7 +89,7 @@ CREATE TABLE "orders" (
 	"buyerOrgId" uuid NOT NULL,
 	"supplierId" uuid NOT NULL,
 	"shopifyDomain" text NOT NULL,
-	"amazonSellerId" text,
+	"amazonSellerId" text NOT NULL,
 	"status" text DEFAULT 'draft' NOT NULL,
 	"revision" integer DEFAULT 1 NOT NULL,
 	"data" jsonb NOT NULL,

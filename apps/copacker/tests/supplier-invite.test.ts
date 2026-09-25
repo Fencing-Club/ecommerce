@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { readFile } from "node:fs/promises"
 import { PGlite } from "@electric-sql/pglite"
 import { eq, like } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
@@ -29,6 +28,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 import { POST as action } from "../src/app/api/action/route"
 import { appUrl, hash } from "../src/server/security"
+import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -58,7 +58,7 @@ const resend = async (id: string) =>
 
 beforeAll(async () => {
   context.current = database
-  await pg.exec(await readFile(new URL("../drizzle/0000_copacker.sql", import.meta.url), "utf8"))
+  await applyMigrations(pg)
 })
 afterAll(async () => {
   await pg.close()

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { PageBreadcrumb, PageHeader } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
@@ -8,6 +8,7 @@ import { suppliers } from "@/db/schema"
 import { orderLine } from "@/lib/order-lines"
 import { requireBuyer, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
+import { lineDefaultsFor } from "@/server/product-defaults"
 
 const variantIds = z
   .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/))
@@ -20,14 +21,17 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
   if (!ids.length) {
     return []
   }
-  const variants = await (await shopifyFor(orgId)).variants(ids)
-  return variants.flatMap((variant) => (variant ? [orderLine(variant, randomUUID())] : []))
+  const [variants, defaultsFor] = await Promise.all([(await shopifyFor(orgId)).variants(ids), lineDefaultsFor(orgId)])
+  return variants.flatMap((variant) => (variant ? [orderLine(variant, randomUUID(), defaultsFor(variant))] : []))
 }
 
 export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
   const s = await session()
   requireBuyer(s)
-  const rows = await db().select().from(suppliers).where(eq(suppliers.buyerOrgId, s.org.id))
+  const rows = await db()
+    .select()
+    .from(suppliers)
+    .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
   const initialItems = await reorderLines(s.org.id, (await searchParams).variant)
 
   return (

@@ -3,11 +3,16 @@ import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { session, requireBuyer } from "@/server/auth"
 import { shopifyFor, amazonFor, connection } from "@/server/connections"
+import { lineDefaultsFor } from "@/server/product-defaults"
 export async function GET(request: Request) {
   const s = await session()
   requireBuyer(s)
   const query = new URL(request.url).searchParams.get("q")?.slice(0, 200) ?? ""
-  const variants = await (await shopifyFor(s.org.id)).search(query)
+  const defaultsFor = await lineDefaultsFor(s.org.id)
+  const variants = (await (await shopifyFor(s.org.id)).search(query)).map((item) => ({
+    ...item,
+    lineDefaults: defaultsFor(item)
+  }))
   const [amazon] = await db()
     .select({ id: connections.id })
     .from(connections)

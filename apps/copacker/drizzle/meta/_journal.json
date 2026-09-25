@@ -8,6 +8,41 @@
       "when": 1790315299337,
       "tag": "0000_copacker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790365434271,
+      "tag": "0001_optional_amazon_seller",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790366510223,
+      "tag": "0002_loving_starfox",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790366826680,
+      "tag": "0003_tired_shape",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790369475519,
+      "tag": "0004_product_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790370447427,
+      "tag": "0005_remove_suppliers",
+      "breakpoints": true
     }
   ]
 }

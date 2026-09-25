@@ -1,6 +1,6 @@
 "use client"
 
-import { Box, Check, ChevronsUpDown, ClipboardList, LogOut, Settings, Truck, Users } from "lucide-react"
+import { Box, Check, ChevronsUpDown, ClipboardList, LogOut, Settings, Truck, Users, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -47,11 +47,14 @@ const navigation = [
   { view: "inventory", label: "Inventory", icon: Box, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },
   { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
+  { view: "catalog", label: "Catalog", icon: BookOpen, supplierOnly: true },
   { view: "settings", label: "Settings", icon: Settings }
 ]
 
 function navigationFor(kind: string) {
-  return navigation.filter((item) => !item.buyerOnly || kind === "buyer")
+  return navigation.filter(
+    (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
+  )
 }
 
 function hrefFor(view: string, preview: boolean) {

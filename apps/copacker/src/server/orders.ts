@@ -1,5 +1,6 @@
 import { approveChanges, commercialChanges, orderInputSchema, packingDraftSchema } from "@repo/aisle"
-import { and, eq, inArray } from "drizzle-orm"
+import { piecesPerUnit } from "@repo/aisle/shopify"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import {
@@ -11,12 +12,14 @@ import {
   events,
   jobs,
   connections,
-  contacts
+  contacts,
+  supplierProducts
 } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { reservedPieces, packingReadiness } from "./readiness"
+import { matchSupplierCatalog } from "./supplier-catalog-match"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
 async function amazonAccount(orgId: string) {
@@ -35,7 +38,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
   const [supplier] = await db()
     .select()
     .from(suppliers)
-    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id)))
+    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
   if (!supplier) {
     throw new Error("Select a supplier in this workspace")
   }
@@ -49,6 +52,21 @@ export async function prepareOrder(s: Session, raw: unknown) {
         catalog.flatMap((item) => (item?.sku ? [item.sku] : []))
       )
     : null
+  const supplierSkus = catalog.flatMap((source) =>
+    source?.supplierSku?.value ? [source.supplierSku.value.trim()] : []
+  )
+  const supplierCatalog =
+    supplier.supplierOrgId && supplierSkus.length
+      ? await db()
+          .select()
+          .from(supplierProducts)
+          .where(
+            and(
+              eq(supplierProducts.supplierOrgId, supplier.supplierOrgId),
+              inArray(supplierProducts.supplierSku, supplierSkus)
+            )
+          )
+      : []
   input.items = input.items.map((item) => {
     const source = catalog.find((v) => v?.id === item.variantId)
     if (!source?.sku) {
@@ -58,15 +76,41 @@ export async function prepareOrder(s: Session, raw: unknown) {
     if (source.asin?.value && identity?.asin && source.asin.value !== identity.asin) {
       throw new Error(`Shopify and Amazon ASINs disagree for SKU ${source.sku}`)
     }
+    // A multipack is a Shopify bundle, so its pieces per unit come from the bundle, not from the PO.
+    const piecesPerSet = piecesPerUnit(source)
+    const supplierSku = source.supplierSku?.value ?? ""
+    const matched = matchSupplierCatalog(
+      { supplierOrgId: supplier.supplierOrgId, supplierSku, currency: input.currency },
+      supplierCatalog.map((product) => ({ ...product, active: product.active === 1 }))
+    )
+    if (item.pieces % piecesPerSet !== 0) {
+      throw new Error(`${source.sku} is a bundle of ${piecesPerSet}. Order a multiple of ${piecesPerSet} pieces`)
+    }
     return {
       ...item,
       name: source.product.title,
       variant: source.title,
       buyerSku: source.sku,
       inventoryItemId: source.inventoryItem.id,
-      supplierSku: source.supplierSku?.value ?? "",
+      supplierSku,
+      supplierCatalogStatus: matched.status,
+      supplierCatalog: matched.product?.active
+        ? {
+            productId: matched.product.id,
+            revision: matched.product.revision,
+            supplierSku: matched.product.supplierSku,
+            title: matched.product.title,
+            notes: matched.product.notes,
+            currency: matched.product.currency,
+            priceMinor: matched.product.priceMinor,
+            priceBasis: matched.product.priceBasis,
+            piecesPerSellablePack: matched.product.piecesPerSellablePack,
+            sellablePacksPerCase: matched.product.sellablePacksPerCase
+          }
+        : undefined,
       asin: identity?.asin ?? source.asin?.value ?? "",
-      fnsku: identity?.fnsku ?? ""
+      fnsku: identity?.fnsku ?? "",
+      piecesPerSet
     }
   })
   orderInputSchema.parse(input)
@@ -92,7 +136,7 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
   const [supplier] = await tx
     .select({ id: suppliers.id })
     .from(suppliers)
-    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id)))
+    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     .for("share")
   if (!supplier) {
     throw new Error("Select a supplier in this workspace")
@@ -168,6 +212,9 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     }
     if (order.data.destination !== "awd_us") {
       throw new Error("The first release supports AWD USA. Save other destinations as drafts")
+    }
+    if (supplier.removedAt) {
+      throw new Error("This supplier was removed. Choose another supplier or add them again")
     }
     if (completed) {
       if (order.amazonSellerId && order.amazonSellerId !== completed.sellerId) {

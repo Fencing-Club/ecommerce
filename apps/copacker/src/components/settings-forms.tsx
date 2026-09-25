@@ -3,6 +3,7 @@
 import { type Address, addressSchema } from "@repo/aisle"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
+import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { ActionForm } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput, FormSelect } from "./form-controls"
@@ -10,11 +11,12 @@ import { sx } from "@/styles/sprinkles.css"
 
 const supplierSchema = z.object({ name: z.string().trim().min(2).max(120), email: z.email().max(254) })
 
-export function SupplierForm() {
+export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
   const { form, submit } = useActionForm({
     schema: supplierSchema,
     action: "supplier.create",
-    defaultValues: { name: "", email: "" }
+    defaultValues: { name: "", email: "" },
+    onSuccess
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Invite supplier">
@@ -27,6 +29,25 @@ export function SupplierForm() {
         autoComplete="email"
         description="The supplier gets an invitation to their own workspace. They see only the orders you share with them."
       />
+    </ActionForm>
+  )
+}
+
+const supplierProfileSchema = z.object({
+  website: z.union([z.url({ protocol: /^https?$/ }), z.literal("")]),
+  phoneNumber: z.string().max(50)
+})
+
+export function SupplierProfileForm({ website, phoneNumber }: { website: string; phoneNumber: string }) {
+  const { form, submit } = useActionForm({
+    schema: supplierProfileSchema,
+    action: "supplier.profile",
+    defaultValues: { website, phoneNumber }
+  })
+  return (
+    <ActionForm form={form} onSubmit={submit} label="Save profile">
+      <FormInput name="website" label="Website" type="url" placeholder="https://supplier.example" />
+      <FormInput name="phoneNumber" label="Phone number (optional)" type="tel" autoComplete="tel" />
     </ActionForm>
   )
 }
@@ -57,19 +78,27 @@ export function WorkspaceForm({ next }: { next?: string } = {}) {
 
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  kind: z.enum(["pickup", "forwarder"]),
+  kind: z.enum(contactKinds),
   address: addressSchema
 })
 
-type SavedContact = { id: string; name: string; kind: "pickup" | "forwarder"; address: Address }
+type SavedContact = { id: string; name: string; kind: ContactKind; address: Address }
 
-export function ContactForm({ contact, onSuccess }: { contact?: SavedContact; onSuccess?: () => void }) {
+export function ContactForm({
+  contact,
+  onSuccess,
+  supplier = false
+}: {
+  contact?: SavedContact
+  onSuccess?: () => void
+  supplier?: boolean
+}) {
   const { form, submit } = useActionForm({
     schema: contactSchema,
     action: contact ? "contact.update" : "contact.create",
     defaultValues: contact
       ? { name: contact.name, kind: contact.kind, address: { ...emptyAddress, ...contact.address } }
-      : { name: "", kind: "pickup", address: emptyAddress },
+      : { name: "", kind: supplier ? "pickup" : "delivery", address: emptyAddress },
     toPayload: (values) => ({ ...(contact && { id: contact.id }), ...values }),
     onSuccess
   })
@@ -77,14 +106,13 @@ export function ContactForm({ contact, onSuccess }: { contact?: SavedContact; on
     <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"}>
       <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
         <FormInput name="name" label="Address name" placeholder="Shenzhen warehouse" />
-        <FormSelect
-          name="kind"
-          label="Address type"
-          options={[
-            { value: "pickup", label: "Pickup address" },
-            { value: "forwarder", label: "Freight forwarder" }
-          ]}
-        />
+        {!supplier && (
+          <FormSelect
+            name="kind"
+            label="Address type"
+            options={contactKindsFor("buyer").map((kind) => ({ value: kind, label: contactKindLabels[kind] }))}
+          />
+        )}
       </div>
       <AddressFields path="address" />
     </ActionForm>

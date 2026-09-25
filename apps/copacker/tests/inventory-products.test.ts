@@ -74,21 +74,29 @@ describe("groupInventory", () => {
     expect(groupInventory(legacy)).toMatchObject([{ productId: "gid://shopify/ProductVariant/4", title: "sku-4" }])
   })
 
-  it("leaves Shopify Collective stock out unless asked for", () => {
-    const collective = { ...level("3", "Partner via Collective", 50), locationKind: "shopify_collective" as const }
-    const own = { ...level("1", "Fencing Club", 2), locationKind: "merchant" as const }
+  it("leaves excluded locations out unless asked for", () => {
+    const collective = level("3", "Partner via Collective", 50)
+    const own = level("1", "Fencing Club", 2)
     const stock = [
       row(5, 30, { productTitle: "Mixed", levels: [own, collective] }),
       row(6, 40, { productTitle: "Partner shoe", levels: [collective] })
     ]
-    expect(groupInventory(stock).map((p) => [p.title, p.available])).toEqual([["Mixed", 2]])
-    expect(groupInventory(stock, { includeCollective: true }).map((p) => [p.title, p.available])).toEqual([
+    const classifications = new Map([
+      ["gid://shopify/Location/1", "merchant" as const],
+      ["gid://shopify/Location/3", "excluded" as const]
+    ])
+    expect(groupInventory(stock, { classifications }).map((p) => [p.title, p.available])).toEqual([["Mixed", 2]])
+    expect(
+      groupInventory(stock, { classifications, includeExcluded: true }).map((p) => [p.title, p.available])
+    ).toEqual([
       ["Mixed", 52],
       ["Partner shoe", 50]
     ])
-    expect(inventoryLocations(stock).map((location) => [location.name, location.kind])).toEqual([
+    expect(
+      inventoryLocations(stock, classifications).map((location) => [location.name, location.classification])
+    ).toEqual([
       ["Fencing Club", "merchant"],
-      ["Partner via Collective", "shopify_collective"]
+      ["Partner via Collective", "excluded"]
     ])
   })
 })
@@ -136,23 +144,26 @@ describe("on order", () => {
     pieces,
     piecesPerSet
   })
-  const order = (id: string, reference: string, items: ReturnType<typeof item>[]) => ({
-    id,
-    data: { reference, items }
-  })
+  const order = (
+    id: string,
+    reference: string,
+    items: ReturnType<typeof item>[],
+    destination: "awd_us" | "forwarder" = "awd_us"
+  ) => ({ id, data: { reference, destination, items } })
+  const classifications = new Map([
+    ["gid://shopify/Location/1", "merchant" as const],
+    ["gid://shopify/Location/2", "amazon_mirror" as const]
+  ])
 
   it("counts sellable units per variant and totals them per product with each PO once", () => {
-    const onOrder = onOrderByVariant([
-      order("a", "PO-1", [item(1, 24, 2), item(2, 5)]),
-      order("b", "PO-2", [item(1, 7, 2)])
+    const onOrder = onOrderByVariant(
+      [order("a", "PO-1", [item(1, 24, 2), item(2, 5)]), order("b", "PO-2", [item(1, 7, 2)])],
+      classifications
+    )
+    expect(onOrder.get("gid://shopify/ProductVariant/1")).toEqual([
+      { id: "a", reference: "PO-1", units: 12, locationIds: ["gid://shopify/Location/2"] },
+      { id: "b", reference: "PO-2", units: 3, locationIds: ["gid://shopify/Location/2"] }
     ])
-    expect(onOrder.get("gid://shopify/ProductVariant/1")).toEqual({
-      units: 15,
-      orders: [
-        { id: "a", reference: "PO-1" },
-        { id: "b", reference: "PO-2" }
-      ]
-    })
     const glove = groupInventory(rows, { onOrder }).find((product) => product.title === "Pro-grip glove")
     expect(glove?.onOrder).toEqual({
       units: 20,
@@ -163,5 +174,20 @@ describe("on order", () => {
     })
     const cord = groupInventory(rows, { onOrder }).find((product) => product.title === "Body cord")
     expect(cord?.onOrder).toEqual({ units: 0, orders: [] })
+  })
+
+  it("shows units only at the location the PO will stock", () => {
+    const onOrder = onOrderByVariant(
+      [order("a", "PO-1", [item(1, 10)]), order("b", "PO-2", [item(1, 4)], "forwarder")],
+      classifications
+    )
+    const units = (locationId?: string) =>
+      groupInventory(rows, { onOrder, classifications, locationId }).find(
+        (product) => product.title === "Pro-grip glove"
+      )?.onOrder.units
+    // Amazon-bound stock appears at the Amazon mirror; forwarder stock has no Shopify location yet.
+    expect(units()).toBe(14)
+    expect(units("gid://shopify/Location/2")).toBe(10)
+    expect(units("gid://shopify/Location/1")).toBe(0)
   })
 })

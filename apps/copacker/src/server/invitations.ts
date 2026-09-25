@@ -25,7 +25,12 @@ export async function acceptSupplierInvitation(
       .from(suppliers)
       .where(eq(suppliers.invitationHash, hash(invitation)))
       .for("update")
-    if (!supplier?.expiresAt || supplier.expiresAt < new Date() || supplier.email !== user.email.toLowerCase()) {
+    if (
+      !supplier?.expiresAt ||
+      supplier.removedAt ||
+      supplier.expiresAt < new Date() ||
+      supplier.email !== user.email.toLowerCase()
+    ) {
       throw new Error("Invitation expired or belongs to a different email address")
     }
     await tx

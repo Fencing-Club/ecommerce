@@ -15,8 +15,10 @@ import {
   shipments,
   documents,
   events,
-  teamInvitations
+  teamInvitations,
+  supplierProfiles
 } from "@/db/schema"
+import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { accessibleOrder } from "@/server/access"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
 import { amazonFor, disconnect } from "@/server/connections"
@@ -33,6 +35,7 @@ import {
 } from "@/server/orders"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
+import { removeSupplier } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 export async function POST(request: Request) {
@@ -123,19 +126,29 @@ export async function POST(request: Request) {
           .object({ name: z.string().trim().min(2).max(120), email: z.email().transform((v) => v.toLowerCase()) })
           .parse(data),
         invitation = token()
-      const [supplier] = await db()
-        .insert(suppliers)
-        .values({
-          buyerOrgId: s.org.id,
-          ...input,
-          invitationHash: hash(invitation),
-          expiresAt: new Date(Date.now() + 7 * 86400000)
-        })
-        .returning()
+      const invite = { invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) }
+      const [existing] = await db()
+        .select()
+        .from(suppliers)
+        .where(and(eq(suppliers.buyerOrgId, s.org.id), eq(suppliers.name, input.name)))
+      if (existing && !existing.removedAt) {
+        throw new Error(`${input.name} is already one of your suppliers`)
+      }
+      // Adding a removed supplier again restores it, so its earlier POs stay together. It joins again by invitation.
+      const [supplier] = existing
+        ? await db()
+            .update(suppliers)
+            .set({ email: input.email, ...invite, supplierOrgId: null, removedAt: null })
+            .where(eq(suppliers.id, existing.id))
+            .returning()
+        : await db()
+            .insert(suppliers)
+            .values({ buyerOrgId: s.org.id, ...input, ...invite })
+            .returning()
       await db()
         .insert(jobs)
         .values({
-          key: `invite:${supplier!.id}`,
+          key: `invite:${supplier!.id}:${randomUUID()}`,
           kind: "email",
           payload: { type: "invite", to: input.email, name: s.org.name, invitation }
         })
@@ -150,7 +163,14 @@ export async function POST(request: Request) {
         const [supplier] = await tx
           .update(suppliers)
           .set({ invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) })
-          .where(and(eq(suppliers.id, id()), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.supplierOrgId)))
+          .where(
+            and(
+              eq(suppliers.id, id()),
+              eq(suppliers.buyerOrgId, s.org.id),
+              isNull(suppliers.supplierOrgId),
+              isNull(suppliers.removedAt)
+            )
+          )
           .returning()
         if (!supplier) {
           throw new Error("This supplier has already joined or was removed")
@@ -165,6 +185,12 @@ export async function POST(request: Request) {
       })
       return Response.json({ ok: true })
     }
+    if (action === "supplier.remove") {
+      requireBuyer(s)
+      requireOwner(s)
+      await removeSupplier(s.org.id, id())
+      return Response.json({ ok: true })
+    }
     if (action === "supplier.accept") {
       const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
       await acceptSupplierInvitation(s.user, input.orgId, input.token)
@@ -173,17 +199,59 @@ export async function POST(request: Request) {
     }
     if (action === "contact.create") {
       const input = z
-        .object({ name: z.string().min(1).max(100), kind: z.enum(["forwarder", "pickup"]), address: addressSchema })
+        .object({ name: z.string().min(1).max(100), kind: z.enum(contactKinds), address: addressSchema })
         .parse(data)
+      if (!contactKindsFor(s.org.kind).includes(input.kind)) {
+        throw new Error(
+          s.org.kind === "supplier"
+            ? "Supplier workspaces can save pickup addresses only"
+            : "Pickup addresses come from your suppliers' workspaces. Save delivery and freight forwarder addresses here"
+        )
+      }
       await db()
         .insert(contacts)
         .values({ orgId: s.org.id, ...input })
       return Response.json({ ok: true })
     }
+    if (action === "supplier.profile") {
+      if (s.org.kind !== "supplier") {
+        throw new Error("A supplier workspace is required")
+      }
+      requireOwner(s)
+      const input = z
+        .object({
+          website: z.union([z.url({ protocol: /^https?$/ }).max(500), z.literal("")]),
+          phoneNumber: z.string().trim().max(50)
+        })
+        .parse(data)
+      await db()
+        .insert(supplierProfiles)
+        .values({
+          orgId: s.org.id,
+          website: input.website || null,
+          phoneNumber: input.phoneNumber || null
+        })
+        .onConflictDoUpdate({
+          target: supplierProfiles.orgId,
+          set: {
+            website: input.website || null,
+            phoneNumber: input.phoneNumber || null,
+            updatedAt: new Date()
+          }
+        })
+      return Response.json({ ok: true })
+    }
     if (action === "contact.update") {
       const input = z
-        .object({ name: z.string().min(1).max(100), kind: z.enum(["forwarder", "pickup"]), address: addressSchema })
+        .object({ name: z.string().min(1).max(100), kind: z.enum(contactKinds), address: addressSchema })
         .parse(data)
+      if (!contactKindsFor(s.org.kind).includes(input.kind)) {
+        throw new Error(
+          s.org.kind === "supplier"
+            ? "Supplier workspaces can save pickup addresses only"
+            : "Pickup addresses come from your suppliers' workspaces. Save delivery and freight forwarder addresses here"
+        )
+      }
       const updated = await db()
         .update(contacts)
         .set(input)

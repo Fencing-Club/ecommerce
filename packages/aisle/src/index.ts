@@ -1,5 +1,16 @@
 import { z } from "zod"
 
+// Amazon inbound preparation categories.
+export const prepCategories = [
+  "POLYBAGGING",
+  "NO_PREP",
+  "BUBBLEWRAPPING",
+  "TAPING",
+  "LABELING",
+  "BLACK_SHRINKWRAPPING",
+  "HANG_GARMENT"
+] as const
+export type PrepCategory = (typeof prepCategories)[number]
 export const destinationSchema = z.enum(["awd_us", "awd_china", "fba", "forwarder"])
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
@@ -38,6 +49,33 @@ export const itemSchema = z
     variant: z.string().max(240),
     buyerSku: z.string().trim().min(1).max(255),
     supplierSku: z.string().trim().max(255).default(""),
+    supplierCatalogStatus: z
+      .enum([
+        "supplier_catalog_unavailable",
+        "supplier_sku_missing",
+        "not_in_supplier_catalog",
+        "ambiguous_supplier_sku",
+        "archived_supplier_product",
+        "currency_review",
+        "price_missing",
+        "price_conversion_review",
+        "matched"
+      ])
+      .optional(),
+    supplierCatalog: z
+      .object({
+        productId: z.uuid(),
+        revision: z.number().int().positive(),
+        supplierSku: z.string().min(1),
+        title: z.string().optional(),
+        notes: z.string().nullable().optional(),
+        currency: z.string(),
+        priceMinor: z.number().int().nonnegative().nullable(),
+        priceBasis: z.enum(["piece", "sellable_pack", "case"]),
+        piecesPerSellablePack: z.number().int().positive(),
+        sellablePacksPerCase: z.number().int().positive().nullable()
+      })
+      .optional(),
     asin: z
       .string()
       .regex(/^[A-Z0-9]{10}$/)
@@ -50,9 +88,7 @@ export const itemSchema = z
     piecesPerSet: z.number().int().min(1).max(1000),
     unitPrice: z.number().int().min(0).max(100000000),
     instructions: z.string().max(4000).default(""),
-    prepCategory: z
-      .enum(["POLYBAGGING", "NO_PREP", "BUBBLEWRAPPING", "TAPING", "LABELING", "BLACK_SHRINKWRAPPING", "HANG_GARMENT"])
-      .default("POLYBAGGING")
+    prepCategory: z.enum(prepCategories).default("POLYBAGGING")
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Pieces must be divisible by pieces per set")
 export type OrderItem = z.infer<typeof itemSchema>
@@ -261,7 +297,14 @@ export function approveChanges(order: OrderInput, packing: Packing) {
     ...order,
     items: order.items.map((item) => {
       const change = packing.changes.find((c) => c.itemId === item.id)
-      return change ? { ...item, supplierSku: change.supplierSku, unitPrice: change.unitPrice } : item
+      if (!change) {
+        return item
+      }
+      if (change.supplierSku !== item.supplierSku) {
+        const { supplierCatalog: _catalog, supplierCatalogStatus: _status, ...rest } = item
+        return { ...rest, supplierSku: change.supplierSku, unitPrice: change.unitPrice }
+      }
+      return { ...item, supplierSku: change.supplierSku, unitPrice: change.unitPrice }
     })
   })
 }

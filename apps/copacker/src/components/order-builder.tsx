@@ -2,7 +2,7 @@
 
 import { money, orderInputSchema } from "@repo/aisle"
 import { Plus, Search, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FormProvider, useFieldArray, useWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle }
 import { useActionForm } from "@/hooks/useActionForm"
 import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/api"
 import { orderLine } from "@/lib/order-lines"
+import { prepOptions } from "@/lib/prep"
 import { FormError, SubmitButton } from "./actions"
 import { EmptyState } from "./common"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
@@ -24,13 +25,27 @@ const destinations = [
   { value: "fba", label: "Amazon FBA (planned)", disabled: true },
   { value: "forwarder", label: "Freight forwarder (planned)", disabled: true }
 ]
-const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"].map((value) => ({ value, label: value }))
-const prepCategories = [
-  { value: "POLYBAGGING", label: "Sealed polybag (default)" },
-  { value: "NO_PREP", label: "No preparation (exception)" },
-  { value: "BUBBLEWRAPPING", label: "Bubble wrapping" },
-  { value: "TAPING", label: "Taping" }
-]
+const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"].map((value) => ({
+  value,
+  label: value
+}))
+
+function supplierMatchMessage(status: string) {
+  switch (status) {
+    case "not_in_supplier_catalog":
+      return "Not in this supplier’s catalog. You can still order it; confirm the price and SKU."
+    case "supplier_sku_missing":
+      return "No supplier SKU. You can still order it; confirm the supplier’s code."
+    case "currency_review":
+      return "Supplier quote uses a different currency. Enter the agreed price."
+    case "price_missing":
+      return "Supplier price is unknown. Enter the agreed price."
+    case "price_conversion_review":
+      return "Supplier pack price cannot be converted exactly per piece. Enter the agreed price."
+    default:
+      return "Supplier catalog needs review. Confirm the SKU and price."
+  }
+}
 
 export function OrderBuilder({
   suppliers,
@@ -58,12 +73,81 @@ export function OrderBuilder({
     }
   })
   // Line items carry their own `id`, so the field array keys rows separately.
-  const lineItems = useFieldArray({ control: form.control, name: "items", keyName: "key" })
+  const lineItems = useFieldArray({
+    control: form.control,
+    name: "items",
+    keyName: "key"
+  })
   const charges = useFieldArray({ control: form.control, name: "adjustments" })
   const adjustments = useWatch({ control: form.control, name: "adjustments" }) ?? []
   const items = useWatch({ control: form.control, name: "items" }) ?? []
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
+  const supplierId = useWatch({ control: form.control, name: "supplierId" }) ?? ""
   const itemsError = form.formState.errors.items
+  const supplierSkus = items.map((item) => item?.supplierSku?.trim() ?? "")
+  const skuKey = items.map((item, index) => `${item?.id ?? ""}\0${supplierSkus[index]}`).join("\n")
+  const [matches, setMatches] = useState<
+    Array<{
+      sku: string
+      status: string
+      unitPriceMinor: number | null
+      product: { title?: string } | null
+    }>
+  >([])
+  const [matchError, setMatchError] = useState("")
+  const lastDefaultedPrice = useRef<Record<string, number>>({})
+  const buyerEditedPrices = useRef(new Set<string>())
+
+  useEffect(() => {
+    if (!supplierId || !supplierSkus.length) {
+      setMatches([])
+      setMatchError("")
+      return
+    }
+    const controller = new AbortController()
+    setMatches([])
+    setMatchError("")
+    void fetch("/api/supplier-catalog/match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ supplierId, currency, supplierSkus }),
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Supplier catalog lookup failed")
+        }
+        return response.json() as Promise<typeof matches>
+      })
+      .then((results) => {
+        if (controller.signal.aborted) {
+          return
+        }
+        setMatches(results)
+        results.forEach((result, index) => {
+          const line = form.getValues(`items.${index}`)
+          if (!line || result.status !== "matched" || result.unitPriceMinor === null) {
+            return
+          }
+          const prior = lastDefaultedPrice.current[line.id]
+          if (buyerEditedPrices.current.has(line.id) || (line.unitPrice !== 0 && line.unitPrice !== prior)) {
+            return
+          }
+          form.setValue(`items.${index}.unitPrice`, result.unitPriceMinor, {
+            shouldValidate: true
+          })
+          lastDefaultedPrice.current[line.id] = result.unitPriceMinor
+        })
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setMatchError(error instanceof Error ? error.message : "Supplier catalog lookup failed")
+        }
+      })
+    return () => controller.abort()
+    // skuKey contains only the fields relevant to catalog matching; price edits must not refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplierId, currency, skuKey, form])
 
   function search() {
     setShowResults(true)
@@ -71,7 +155,13 @@ export function OrderBuilder({
   }
 
   function add(product: CatalogProduct) {
-    lineItems.append(orderLine(product, crypto.randomUUID(), { asin: product.amazonAsin, fnsku: product.fnsku }))
+    lineItems.append(
+      orderLine(product, crypto.randomUUID(), {
+        asin: product.amazonAsin,
+        fnsku: product.fnsku,
+        ...product.lineDefaults
+      })
+    )
     setShowResults(false)
   }
 
@@ -183,6 +273,7 @@ export function OrderBuilder({
               lineItems.fields.map((line, index) => {
                 const item = items[index]
                 const lineError = form.formState.errors.items?.[index]
+                const match = matches[index]
                 return (
                   <Card key={line.key} size="sm" className={styles.lineCard}>
                     <CardHeader>
@@ -204,21 +295,36 @@ export function OrderBuilder({
                     </CardHeader>
                     <CardContent>
                       <FieldGroup className={styles.lineGrid}>
-                        <FormNumber name={`items.${index}.pieces`} label="Quantity (pieces)" min={1} step={1} />
                         <FormNumber
-                          name={`items.${index}.piecesPerSet`}
-                          label="Pieces per sellable unit"
-                          min={1}
-                          step={1}
+                          name={`items.${index}.pieces`}
+                          label="Quantity (pieces)"
+                          min={line.piecesPerSet}
+                          step={line.piecesPerSet}
                         />
+                        <dl className={styles.identifiers}>
+                          <dt className={sx({ fontWeight: "medium" })}>Sellable unit</dt>
+                          <dd className={sx({ color: "muted" })}>
+                            {line.piecesPerSet > 1 ? `Bundle of ${line.piecesPerSet} pieces in Shopify` : "1 piece"}
+                          </dd>
+                        </dl>
                         <FormNumber
                           name={`items.${index}.unitPrice`}
                           label={`Unit price per piece (${currency})`}
                           min={0}
                           step={0.01}
                           scale={100}
+                          onValueChange={() => buyerEditedPrices.current.add(line.id)}
                         />
-                        <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepCategories} />
+                        {match?.status === "matched" && match.unitPriceMinor !== null && (
+                          <p className={sx({ text: "sm", color: "muted" })}>
+                            Supplier quote: {money(match.unitPriceMinor, currency)} per piece
+                            {match.product?.title ? ` for ${match.product.title}` : ""}. Your PO price is editable.
+                          </p>
+                        )}
+                        {match && match.status !== "matched" && (
+                          <p className={sx({ text: "sm", color: "muted" })}>{supplierMatchMessage(match.status)}</p>
+                        )}
+                        <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepOptions} />
                         <dl className={styles.identifiers}>
                           <dt className={sx({ fontWeight: "medium" })}>Amazon identifiers</dt>
                           <dd className={sx({ color: "muted" })}>
@@ -235,7 +341,13 @@ export function OrderBuilder({
                       </FieldGroup>
                       <FormError message={lineError?.message ?? lineError?.root?.message} />
                     </CardContent>
-                    <CardFooter className={sx({ justifyContent: "flex-end", text: "sm", color: "muted" })}>
+                    <CardFooter
+                      className={sx({
+                        justifyContent: "flex-end",
+                        text: "sm",
+                        color: "muted"
+                      })}
+                    >
                       {item?.pieces && item?.piecesPerSet ? item.pieces / item.piecesPerSet : 0} sellable units
                     </CardFooter>
                   </Card>
@@ -243,6 +355,7 @@ export function OrderBuilder({
               })
             )}
             <FormError message={itemsError?.message ?? itemsError?.root?.message} />
+            {matchError && <FormError message={matchError} />}
           </CardContent>
         </Card>
 

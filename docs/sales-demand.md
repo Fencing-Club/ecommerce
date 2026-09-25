@@ -34,7 +34,17 @@ The basis is gross_fulfilled_units_for_orders_created_in_window. This is an orde
 - Amazon uses Orders API 2026-01-01 with FULFILLMENT data only, without buyer or recipient requests. Cancelled/unfulfillable orders are excluded. FBA and unassigned FBM remain separate. Missing quantities and unfulfilled demand remain explicit; non-Amazon channel orders are gaps.
 - AWD is a replenishment pool, not a sales channel. AWD planning can use FBA demand but must never add it a second time. Stock pools stay separate.
 
-Gaps contain orderId, nullable variantId/buyerSku, reason and nullable units. Reasons identify unknown channel/location/product/quantity/fulfillment or unfulfilled demand. A missing row is not verified zero when a matching gap exists. A gap without usable product identity can affect the entire source. Display known rows as observed fulfilled demand with coverage warnings; do not silently discard gaps when generating recommendations. Explicit order/product reconciliation is required before assigning FBM or adding imported Amazon orders to local demand.
+Gaps contain orderId, nullable variantId/buyerSku, sourceName, nullable locationId, reason and nullable units. Unmapped locations retain the actual source location ID, and unmapped channels retain the exact source name so the buyer can configure the missing mapping without guessing. A null location means the source did not prove an allocation, not the default warehouse. Reasons identify unknown channel/location/product/quantity/fulfillment or unfulfilled demand. A missing row is not verified zero when a matching gap exists. A gap without usable product identity can affect the entire source. Display known rows as observed fulfilled demand with coverage warnings; do not silently discard gaps when generating recommendations. Explicit order/product reconciliation is required before assigning FBM or adding imported Amazon orders to local demand.
+
+## Bundles and multipacks
+
+A multipack is a Shopify bundle (a variant that requires components), not a separate stocked SKU. The stock sync records each bundle's components and quantities. Pieces per sellable unit on a PO line come from those quantities (`piecesPerUnit`); the PO builder no longer asks for them, and a bundle line must be a whole number of bundles.
+
+Shopify orders expand a bundle into component lines, each with `lineItemGroup` naming the bundle variant bought; demand rows carry it as `bundleVariantId`. Amazon sells the multipack under the bundle variant's own SKU, so an Amazon row whose SKU matches exactly one Shopify bundle variant is a bundle sale. `bundleSales` combines both into, per variant, units sold alone, units sold inside bundles, and bundles sold. `POST /api/inventory/sales` with `{ "days": 28 | 56 }` reads every connected source and returns that summary; the Inventory page shows it under each product and variation. A 28-day Shopify read of about 360 orders took about two minutes on 2026-09-25.
+
+Shopify's order search needs quoted timestamps (`created_at:>='…'`); unquoted, the colons cut the value short and Shopify returned orders outside the window.
+
+Location classifications are the buyer's saved choice, otherwise automatic from the location's fulfillment service: the store's own locations are merchant, Shopify Collective is excluded, Amazon's fulfillment location is amazon_mirror, and other apps' locations are unresolved.
 
 ## Evidence and remaining acceptance
 
@@ -49,3 +59,17 @@ Remaining coverage: explicit configuration for additional sales apps, Shopify fu
 - [Shopify order history](https://shopify.dev/docs/api/admin-graphql/latest/queries/orders)
 - [Shopify fulfillment location and lines](https://shopify.dev/docs/api/admin-graphql/2026-07/queries/fulfillment)
 - [Amazon Orders model](https://github.com/amzn/selling-partner-api-models/blob/main/models/orders-api-model/orders_2026-01-01.json)
+
+## Confirmed Amazon orders awaiting shipment
+
+Amazon responses additionally include confirmedUnfulfilled rows with buyerSku, pool (fba or fbm_unassigned) and units. Only UNSHIPPED and PARTIALLY_SHIPPED orders with explicit quantityUnfulfilled are included. Pending-payment, pending-availability and cancelled orders do not become confirmed demand. Missing quantities remain gaps; overlapping fulfilled plus unfulfilled quantities above the ordered amount are rejected.
+
+These rows are separate from fulfilledUnits and its gross-fulfilled measurement basis. Consumers can show confirmed open demand without silently changing the sales-velocity definition. Do not add these units again as a stock deduction if the inventory source already reserves them. FBM is still not assigned to a Shopify warehouse. This extension does not resolve Shopify unfulfilled warehouse allocation.
+
+## Availability and committed orders
+
+Confirmed against Shopify inventory-state documentation and Amazon FBA inventory documentation: Shopify available already excludes committed inventory; FBA fulfillableQuantity is separate from reserved customer orders and other reserved states. Never subtract unfulfilled orders again from these values. Do not substitute physical on-hand or FBA totalQuantity for sellable availability. AWD uses availableDistributable, retaining reservedDistributable separately.
+
+The deterministic server helper restockAvailability in restock-availability.ts selects these source values without another allocation deduction. It preserves null availability and negative Shopify availability. Six regression cases verify this alongside the restock formula: 100 physical units, 20 committed and 80 available against lead-time demand of 112 means a purchase of 32, not 52. The other agent's report should call this adapter when composing source data; this helper does not itself wire the unfinished restock page.
+
+Unfulfilled orders are therefore already accounted for in available stock. Including confirmed open orders in the historical demand series is a separate forecasting choice; do not confuse it with an extra stock deduction. Supplier PO incoming quantities are a third, separate state and must be reconciled once.

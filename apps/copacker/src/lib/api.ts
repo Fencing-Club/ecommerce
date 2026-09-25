@@ -1,8 +1,15 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { LineDefaults } from "./order-lines"
 
 export type ActionResult = { ok?: boolean; error?: string; redirect?: string; id?: string } & Record<string, unknown>
-export type CatalogProduct = CatalogVariant & { amazonAsin: string; fnsku: string; amazonError: string | null }
+export type CatalogProduct = CatalogVariant & {
+  amazonAsin: string
+  fnsku: string
+  amazonError: string | null
+  // Pieces per unit from Shopify, and the product's saved description and preparation.
+  lineDefaults: Pick<LineDefaults, "piecesPerSet" | "description" | "prepCategory">
+}
 
 // Server state lives on the server and pages refresh with router.refresh(), so RTK Query is used only for requests.
 export const api = createApi({

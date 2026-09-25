@@ -17,7 +17,9 @@ const line = z.object({
   quantity,
   currentQuantity: quantity,
   sku: z.string().nullable(),
-  variant: z.object({ id }).nullable()
+  variant: z.object({ id }).nullable(),
+  // Set on each component line when the customer bought a bundle; variantId is the bundle's variant.
+  lineItemGroup: z.object({ id, quantity, variantId: z.string().nullable() }).nullable().optional()
 })
 const lines = z.object({ nodes: z.array(line).max(250), pageInfo })
 const fulfillmentLine = z.object({ id, quantity: quantity.nullable(), lineItem: z.object({ id }) })
@@ -31,7 +33,7 @@ const header = z.object({
   sourceName: z.string().nullable()
 })
 const headers = "id createdAt cancelledAt test sourceName"
-const lineFields = "id quantity currentQuantity sku variant{id}"
+const lineFields = "id quantity currentQuantity sku variant{id} lineItemGroup{id quantity variantId}"
 const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
 const fulfillmentPage = "nodes{id quantity lineItem{id}} pageInfo{hasNextPage endCursor}"
 export const shopifySalesQueries = {
@@ -103,7 +105,8 @@ export async function collectShopifySales(
       .parse(
         await read(() =>
           client.graphql(shopifySalesQueries.orders, {
-            query: `created_at:>=${window.from} created_at:<${window.to}`,
+            // Shopify's search syntax needs the timestamps quoted; unquoted, the colons end the value early.
+            query: `created_at:>='${window.from}' created_at:<'${window.to}'`,
             after
           })
         )

@@ -4,7 +4,7 @@ Node 24+ and pnpm 11 are required. Install at the root with `pnpm install`, then
 
 Copy `apps/copacker/.env.example` to `apps/copacker/.env`, then configure WorkOS, Railway Postgres, and the private Railway bucket. `TOKEN_ENCRYPTION_KEY` is 32 random bytes encoded as base64. WorkOS cookie password is at least 32 random characters. Do not commit environment files.
 
-Run `pnpm --filter copacker db:migrate` before starting the web app and `pnpm --filter copacker worker` in a second process. The worker consumes durable jobs from Postgres; it does not schedule catalog or inventory syncing. Production uses a second Railway service from the same image with the worker start command. Only the web service uses the HTTP healthcheck.
+Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and `pnpm --filter copacker worker` in a second process. The worker consumes durable jobs from Postgres; it does not schedule catalog or inventory syncing. Production uses a second Railway service from the same image with the worker start command. Only the web service uses the HTTP healthcheck.
 
 ## External setup
 
@@ -38,9 +38,21 @@ The Fencing Club packages were copied from the current Agency working tree, excl
 
 `packages/aisle` is the reusable Node-compatible commerce library extracted/adapted from the existing CLI's boundaries. It does not relocate the entire Bun CLI, local SQLite databases, or account credentials.
 
-## Local database TLS
+## Saved addresses and product details
 
-The local `.env` uses Railway's public TCP proxy. Its `DATABASE_URL` uses `sslmode=verify-ca`, `uselibpqcompat=true`, and `sslrootcert` pointing at the ignored `.database-ca.local.crt`. The CA was retrieved from the actual service through authenticated Railway access; it is specific to this database. This validates the certificate chain while allowing the public proxy hostname to differ from the certificate's internal hostname. Never use a CA fetched from an unauthenticated connection or disable certificate verification. Retrieve a fresh CA through Railway if the service certificate is rotated or the database replaced. Production should use the private service URL and deployed TLS configuration, not a Windows certificate path.
+Buyers save delivery addresses (their own locations) and freight forwarders. Suppliers save pickup addresses in their own workspace, and packing offers the supplier's pickup addresses; a supplier without a workspace types the address in.
+
+Product details Copacker keeps itself (a default description and preparation per Shopify product) are edited from Inventory and prefill new PO lines. Everything else about a product comes from Shopify or Amazon.
+
+## Databases and migrations
+
+Local development uses its own Postgres 18 in Docker, matching production's major version. Run `pnpm --filter copacker db:up` (then `db:migrate`) and point `DATABASE_URL` at `postgres://copacker:copacker@127.0.0.1:54329/copacker`. Run the worker locally too; jobs queued locally are never processed by the production worker. Local data starts empty: sign in, create a workspace, and connect accounts locally, or run `pnpm --filter copacker db:seed` for a demo store with bundles, a Collective location, an Amazon location and a sent PO (it skips workspaces already connected to a real store). Never point local development at the production database, and never copy production connection tokens locally: Shopify rotates refresh tokens, so a local refresh would disconnect production.
+
+Schema changes are migrations. Edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration or when an applied migration is edited; record each migration's hash there once it is deployed. The Railway web service's pre-deploy command is `pnpm --filter copacker predeploy`; the `predeploy` script in `apps/copacker/package.json` owns what runs before a release (today, `db:migrate`), so changes to it ship with the code. Only the web service runs it, so migrations never run twice at once. Verify migration logs and the live table/column before treating a schema-dependent deployment as complete. `railway run` from a local computer uses the service's private `postgres.railway.internal` hostname and cannot reach it. Do not assume the local `.env` points to production. Deploy the web service before the worker so the worker never runs against an older schema.
+
+`pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it) against a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local Docker database after `db:migrate`), read-only on both. On 2026-09-25 production matched `0000_copacker` exactly before `0001_optional_amazon_seller` was added.
+
+To reach the production database for a one-off read, use the Railway CLI rather than storing its URL locally. Railway's public TCP proxy needs `sslmode=verify-ca` with the CA retrieved through authenticated Railway access; never disable certificate verification.
 
 Local `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`; register that exact callback in WorkOS. Keep it aligned with `APP_URL` when changing the local port or deployment URL.
 

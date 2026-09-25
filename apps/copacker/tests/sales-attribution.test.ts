@@ -59,6 +59,10 @@ describe("sales demand attribution", () => {
     const result = attributeShopifySales([order], new Map())
     expect(result.rows).toHaveLength(0)
     expect(result.gaps.map((gap) => gap.reason)).toEqual(["location_unmapped", "location_unmapped"])
+    expect(result.gaps.map((gap) => gap.locationId)).toEqual(["local", "amazon"])
+    expect(result.gaps.every((gap) => gap.sourceName === "web")).toBe(true)
+    const imported = attributeShopifySales([{ ...order, sourceName: "123456-app" }], new Map())
+    expect(imported.gaps[0]).toMatchObject({ sourceName: "123456-app", locationId: null, reason: "channel_unmapped" })
   })
   it("keeps unfulfilled demand and unknown quantities explicit", () => {
     expect(
@@ -118,6 +122,55 @@ describe("sales demand attribution", () => {
     expect(attributeAmazonSales([{ ...amazon, salesChannel: { channelName: "NON_AMAZON" } }]).gaps[0]?.reason).toBe(
       "channel_unmapped"
     )
+  })
+  it("separates confirmed unfulfilled demand by pool without increasing fulfilled sales", () => {
+    const partial = {
+      ...amazon,
+      fulfillment: { fulfillmentStatus: "PARTIALLY_SHIPPED", fulfilledBy: "AMAZON" },
+      orderItems: [
+        { ...amazon.orderItems[0]!, quantityOrdered: 5, fulfillment: { quantityFulfilled: 2, quantityUnfulfilled: 3 } }
+      ]
+    }
+    const result = attributeAmazonSales([
+      partial,
+      { ...partial, orderId: "second" },
+      {
+        ...partial,
+        orderId: "merchant",
+        fulfillment: { fulfillmentStatus: "UNSHIPPED", fulfilledBy: "MERCHANT" },
+        orderItems: [
+          {
+            ...amazon.orderItems[0]!,
+            quantityOrdered: 5,
+            fulfillment: { quantityFulfilled: 0, quantityUnfulfilled: 5 }
+          }
+        ]
+      }
+    ])
+    expect(result.confirmedUnfulfilled).toEqual([
+      { buyerSku: "SKU", pool: "fba", units: 6 },
+      { buyerSku: "SKU", pool: "fbm_unassigned", units: 5 }
+    ])
+    expect(result.rows.find((row) => row.pool === "fba")?.fulfilledUnits).toBe(4)
+    expect(result.attributionComplete).toBe(true)
+  })
+  it("does not count pending payment or cancelled orders as confirmed demand", () => {
+    const orders = ["PENDING", "PENDING_AVAILABILITY", "CANCELLED", "UNFULFILLABLE"].map((fulfillmentStatus) => ({
+      ...amazon,
+      fulfillment: { fulfillmentStatus, fulfilledBy: "AMAZON" },
+      orderItems: [{ ...amazon.orderItems[0]!, fulfillment: { quantityFulfilled: 0, quantityUnfulfilled: 2 } }]
+    }))
+    expect(attributeAmazonSales(orders).confirmedUnfulfilled).toEqual([])
+  })
+  it("rejects overlapping fulfilled and unfulfilled quantities", () => {
+    expect(() =>
+      attributeAmazonSales([
+        {
+          ...amazon,
+          orderItems: [{ ...amazon.orderItems[0]!, fulfillment: { quantityFulfilled: 2, quantityUnfulfilled: 1 } }]
+        }
+      ])
+    ).toThrow("quantities exceed")
   })
   it("rejects inconsistent quantities rather than multiplying demand", () => {
     expect(() =>

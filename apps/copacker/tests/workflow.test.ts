@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { readFile } from "node:fs/promises"
 import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
@@ -96,10 +95,12 @@ import {
   savePacking,
   checkPacking
 } from "../src/server/orders"
+import { lineDefaultsFor, saveProductDefaults } from "../src/server/product-defaults"
 import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
 import { hash } from "../src/server/security"
 import { orderWorkflow } from "../src/server/workflow"
+import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
@@ -144,7 +145,7 @@ const buyer = actor("buyer", buyerId),
   supplier = actor("supplier", supplierId)
 beforeAll(async () => {
   context.current = database
-  await pg.exec(await readFile(new URL("../drizzle/0000_copacker.sql", import.meta.url), "utf8"))
+  await applyMigrations(pg)
 })
 afterAll(async () => {
   await pg.close()
@@ -266,7 +267,13 @@ async function reviewedImport() {
         product: { title: "Verified foil cord" },
         inventoryItem: { id: orderData.items[0]!.inventoryItemId },
         supplierSku: { value: "B-2" },
-        asin: { value: "B000000001" }
+        asin: { value: "B000000001" },
+        // A two-pack is a Shopify bundle of two cords.
+        requiresComponents: true,
+        productVariantComponents: {
+          nodes: [{ quantity: 2, productVariant: { id: "gid://shopify/ProductVariant/99" } }],
+          pageInfo: { hasNextPage: false }
+        }
       }
     ]
   })
@@ -290,6 +297,51 @@ async function orderConnections() {
     { orgId: buyerId, provider: "amazon", externalId: "A123456789", encryptedToken: "test-only" }
   ])
 }
+describe("supplier catalog snapshots", () => {
+  beforeEach(orderConnections)
+  it("uses only the selected supplier catalog and snapshots the quote without replacing the buyer price", async () => {
+    await reviewedImport()
+    const [product] = await database
+      .insert(tables.supplierProducts)
+      .values({
+        supplierOrgId: supplierId,
+        supplierSku: "B-2",
+        title: "Foil body cord",
+        currency: "USD",
+        priceMinor: 420,
+        priceBasis: "sellable_pack",
+        piecesPerSellablePack: 2,
+        sellablePacksPerCase: 80,
+        notes: "Verify current quote"
+      })
+      .returning()
+    await database.insert(tables.supplierProducts).values({
+      supplierOrgId: otherId,
+      supplierSku: "B-2",
+      title: "Wrong supplier",
+      currency: "USD",
+      priceMinor: 999,
+      priceBasis: "piece",
+      piecesPerSellablePack: 1
+    })
+    const saved = await createOrder(buyer, orderData)
+    const [record] = await database.select().from(tables.orders).where(eq(tables.orders.id, saved.id))
+    expect(record?.data.items[0]).toMatchObject({
+      supplierCatalogStatus: "matched",
+      unitPrice: 210,
+      supplierCatalog: {
+        productId: product!.id,
+        revision: 1,
+        priceMinor: 420,
+        priceBasis: "sellable_pack",
+        piecesPerSellablePack: 2,
+        sellablePacksPerCase: 80,
+        notes: "Verify current quote"
+      }
+    })
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
+  })
+})
 describe("reviewed import save", () => {
   beforeEach(orderConnections)
   it.each(["missing", "other_workspace", "pickup"] as const)(
@@ -669,7 +721,17 @@ describe("Postgres workflow and authorization", () => {
     const response = await readLocations()
     expect(response.headers.get("cache-control")).toBe("private, no-store")
     const current = await response.json()
-    expect(current.locations).toEqual([{ locationId, name: "Warehouse", classification: "unresolved", revision: 0 }])
+    expect(current.locations).toEqual([
+      {
+        locationId,
+        name: "Warehouse",
+        kind: null,
+        classification: "unresolved",
+        automatic: "unresolved",
+        saved: false,
+        revision: 0
+      }
+    ])
     const body = { locationId, classification: "merchant", expectedRevision: 0, snapshotId: current.snapshotId }
     const patch = (input: unknown) =>
       patchLocation(
@@ -730,6 +792,73 @@ describe("Postgres workflow and authorization", () => {
       .where(eq(tables.connections.orgId, buyerId))
     await expect(saveLocationMapping(buyer, { ...input, expectedRevision: 2 })).rejects.toThrow("Inventory changed")
     expect(await database.select().from(tables.inventoryLocationMappings)).toHaveLength(1)
+  })
+
+  it("keeps delivery and forwarder addresses for buyers and pickup addresses for suppliers", async () => {
+    const { packing } = await preparation()
+    const save = (kind: string) =>
+      action(
+        new Request("http://localhost:3000/api/action", {
+          method: "POST",
+          headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+          body: JSON.stringify({ action: "contact.create", data: { name: kind, kind, address: packing.origin } })
+        })
+      )
+    expect((await save("delivery")).status).toBe(200)
+    expect((await save("forwarder")).status).toBe(200)
+    expect(await (await save("pickup")).json()).toMatchObject({
+      error: expect.stringContaining("suppliers' workspaces")
+    })
+    context.actor = supplier
+    expect((await save("pickup")).status).toBe(200)
+    expect(await (await save("delivery")).json()).toMatchObject({
+      error: expect.stringContaining("pickup addresses only")
+    })
+    const saved = await database.select({ kind: tables.contacts.kind }).from(tables.contacts)
+    expect(saved.map((contact) => contact.kind).toSorted()).toEqual(["delivery", "forwarder", "pickup"])
+  })
+
+  it("saves product defaults for synced products with revision checks", async () => {
+    await shopifyStockAccount()
+    const productId = "gid://shopify/Product/10"
+    provider.api.stock.mockResolvedValue({ ...shopifyStock, rows: [{ ...shopifyStock.rows[0], productId }] })
+    await refreshShopify()
+    await runNextJob()
+    const input = {
+      productId,
+      description: "  Cotton, size label inside  ",
+      prepCategory: "TAPING",
+      expectedRevision: 0
+    }
+    expect(await saveProductDefaults(buyer, input)).toEqual({
+      description: "Cotton, size label inside",
+      prepCategory: "TAPING",
+      revision: 1
+    })
+    await expect(saveProductDefaults(buyer, input)).rejects.toThrow("Someone else changed")
+    expect(await saveProductDefaults(buyer, { ...input, prepCategory: null, expectedRevision: 1 })).toMatchObject({
+      prepCategory: null,
+      revision: 2
+    })
+    await expect(saveProductDefaults(buyer, { ...input, productId: "gid://shopify/Product/99" })).rejects.toThrow(
+      "isn't in your synced"
+    )
+    await expect(saveProductDefaults(supplier, input)).rejects.toThrow("buyer workspace")
+    await expect(saveProductDefaults(actor("buyer", otherId), input)).rejects.toThrow("Connect Shopify")
+    const defaultsFor = await lineDefaultsFor(buyerId)
+    expect(
+      defaultsFor({
+        id: "gid://shopify/ProductVariant/1",
+        title: "M",
+        sku: "cord",
+        product: { id: productId, title: "Cord" },
+        inventoryItem: { id: "gid://shopify/InventoryItem/1", unitCost: null },
+        supplierSku: null,
+        asin: null,
+        requiresComponents: false,
+        productVariantComponents: { nodes: [], pageInfo: { hasNextPage: false } }
+      })
+    ).toEqual({ piecesPerSet: 1, description: "Cotton, size label inside", prepCategory: null })
   })
 
   it("filters all Shopify location rows before pagination and binds cursors to that filter", async () => {
@@ -1503,6 +1632,53 @@ describe("durable shipment worker recovery", () => {
   })
 })
 
+describe("removing suppliers", () => {
+  const supplierAction = (name: string, data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: name, data })
+      })
+    )
+
+  it("keeps a supplier working on a sent PO, then removes it and revokes its access", async () => {
+    expect(await (await supplierAction("supplier.remove", { id: supplierLinkId })).json()).toMatchObject({
+      error: expect.stringContaining("can't be removed while they're working on")
+    })
+    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    expect((await supplierAction("supplier.remove", { id: supplierLinkId })).status).toBe(200)
+    const [removed] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
+    expect(removed?.removedAt).toBeInstanceOf(Date)
+    // The buyer still sees its PO; the removed supplier no longer does.
+    expect((await accessibleOrder(buyer, orderId)).supplier.name).toBe("Supplier")
+    await expect(accessibleOrder(supplier, orderId)).rejects.toThrow("not found")
+    expect(await (await supplierAction("supplier.remove", { id: supplierLinkId })).json()).toMatchObject({
+      error: expect.stringContaining("already removed")
+    })
+  })
+
+  it("restores a removed supplier with a fresh invitation when it is added again", async () => {
+    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    await supplierAction("supplier.remove", { id: supplierLinkId })
+    expect((await supplierAction("supplier.create", { name: "Supplier", email: "new@example.com" })).status).toBe(200)
+    const rows = await database.select().from(tables.suppliers).where(eq(tables.suppliers.buyerOrgId, buyerId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      id: supplierLinkId,
+      email: "new@example.com",
+      removedAt: null,
+      supplierOrgId: null
+    })
+    expect(rows[0]?.invitationHash).toBeTruthy()
+    expect(
+      await (await supplierAction("supplier.create", { name: "Supplier", email: "x@example.com" })).json()
+    ).toMatchObject({
+      error: expect.stringContaining("already one of your suppliers")
+    })
+  })
+})
+
 describe("PO product identity", () => {
   beforeEach(orderConnections)
   it("uses Shopify identity and server-fetched Amazon FNSKU instead of browser values", async () => {
@@ -1536,6 +1712,37 @@ describe("PO product identity", () => {
     expect(provider.api.listings).toHaveBeenCalledWith("A123456789", ["foil-2"])
     provider.api.listings.mockResolvedValue(new Map([["foil-2", { asin: "B999999999", fnsku: "X000000002" }]]))
     await expect(createOrder(buyer, orderData)).rejects.toThrow("ASINs disagree")
+  })
+
+  it("takes pieces per unit from the Shopify bundle instead of the browser", async () => {
+    provider.connection.mockImplementation(async (_orgId: string, kind: string) => ({
+      externalId: kind === "shopify" ? "test.myshopify.com" : "A123456789"
+    }))
+    provider.shopifyFor.mockResolvedValue({
+      variants: async () => [
+        {
+          id: orderData.items[0]!.variantId,
+          sku: "foil-3pk",
+          title: "Three-pack",
+          product: { title: "Foil cord" },
+          inventoryItem: { id: orderData.items[0]!.inventoryItemId },
+          supplierSku: null,
+          asin: null,
+          requiresComponents: true,
+          productVariantComponents: {
+            nodes: [{ quantity: 3, productVariant: { id: "gid://shopify/ProductVariant/77" } }],
+            pageInfo: { hasNextPage: false }
+          }
+        }
+      ]
+    })
+    provider.api.listings.mockResolvedValue(new Map())
+    const line = orderData.items[0]!
+    await expect(
+      createOrder(buyer, { ...orderData, items: [{ ...line, pieces: 10, piecesPerSet: 1 }] })
+    ).rejects.toThrow("bundle of 3")
+    const created = await createOrder(buyer, { ...orderData, items: [{ ...line, pieces: 12, piecesPerSet: 1 }] })
+    expect(created.data.items[0]).toMatchObject({ pieces: 12, piecesPerSet: 3 })
   })
 
   it("creates a draft without Amazon and looks up identifiers when it is sent", async () => {
@@ -2321,6 +2528,12 @@ describe("tenant sales demand reads", () => {
     await database.update(tables.connections).set({ scopes: "read_inventory" })
     await expect(readSalesDemand(buyer, { source: "shopify", window: window() })).rejects.toThrow("order history")
     expect(provider.api.graphql).not.toHaveBeenCalled()
+  })
+  it("rejects Amazon history outside retention instead of reporting zero sales", async () => {
+    await expect(
+      readSalesDemand(buyer, { source: "amazon", window: { from: "2020-01-01T00:00:00Z", to: "2020-01-02T00:00:00Z" } })
+    ).rejects.toThrow("last two years")
+    expect(provider.api.request).not.toHaveBeenCalled()
   })
   it("does not publish results if the seller changes during the provider read", async () => {
     provider.api.request.mockImplementationOnce(async () => {

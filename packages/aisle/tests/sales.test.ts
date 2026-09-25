@@ -45,7 +45,7 @@ describe("complete sales readers", () => {
     const result = await collectShopifySales(api, "test.myshopify.com", window, active)
     expect(result[0]?.fulfillments[0]?.lines[0]?.quantity).toBe(2)
     expect(api.graphql).toHaveBeenCalledWith(shopifySalesQueries.orders, {
-      query: `created_at:>=${window.from} created_at:<${window.to}`,
+      query: `created_at:>='${window.from}' created_at:<'${window.to}'`,
       after: null
     })
     expect(active).toHaveBeenCalledTimes(6)
