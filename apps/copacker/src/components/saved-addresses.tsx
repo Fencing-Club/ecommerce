@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/dialog"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
+import { errorMessage, useActionMutation } from "@/lib/api"
 import { formatPhone, phoneHref } from "@/lib/phone"
-import { FormError, perform } from "./actions"
+import { FormError } from "./actions"
 import { EmptyState } from "./common"
 import { ContactForm } from "./settings-forms"
 
@@ -75,6 +76,7 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
 
 function SavedAddress({ contact }: { contact: Contact }) {
   const router = useRouter()
+  const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -85,10 +87,10 @@ function SavedAddress({ contact }: { contact: Contact }) {
     setPending(true)
     setError("")
     try {
-      await perform("contact.delete", { id: contact.id })
+      await run({ action: "contact.delete", data: { id: contact.id } }).unwrap()
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't remove this address")
+      setError(errorMessage(e, "Couldn't remove this address"))
       setPending(false)
     }
   }

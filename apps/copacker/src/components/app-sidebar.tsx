@@ -2,7 +2,7 @@
 
 import { Box, Check, ChevronsUpDown, ClipboardList, LogOut, Settings, Truck, Users } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ import {
   SidebarRail,
   useSidebar
 } from "@/components/ui/sidebar"
-import { perform } from "./actions"
+import { useActionMutation } from "@/lib/api"
 
 type Workspace = { id: string; name: string }
 
@@ -132,7 +132,7 @@ function WorkspaceSwitcher({
   fallbackName: string
   preview: boolean
 }) {
-  const router = useRouter()
+  const [run] = useActionMutation()
   const { isMobile } = useSidebar()
   const current = workspaces.find((workspace) => workspace.id === active)?.name ?? fallbackName
   let subtitle = kind === "supplier" ? "Supplier workspace" : "Buyer workspace"
@@ -141,9 +141,9 @@ function WorkspaceSwitcher({
   }
 
   async function switchTo(id: string) {
-    await perform("workspace.switch", { id })
-    router.push("/orders")
-    router.refresh()
+    await run({ action: "workspace.switch", data: { id } }).unwrap()
+    // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
+    window.location.assign("/orders")
   }
 
   const logo = (

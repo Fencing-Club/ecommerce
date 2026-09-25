@@ -1,9 +1,8 @@
 import { and, eq } from "drizzle-orm"
 import { Box } from "lucide-react"
 import { z } from "zod"
-import { ActionButton, ActionForm } from "@/components/actions"
-import { SelectField } from "@/components/form-fields"
-import { WorkspaceForm } from "@/components/settings-forms"
+import { ActionButton } from "@/components/actions"
+import { AcceptSupplierInvitation, WorkspaceForm } from "@/components/settings-forms"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
@@ -48,16 +47,10 @@ export default async function Invitation({
             </ActionButton>
           )}
           {!isTeam && supplierMembership.length > 0 && (
-            <ActionForm action="supplier.accept" label="Accept invitation">
-              <input type="hidden" name="token" value={token} />
-              <SelectField
-                label="Supplier workspace"
-                id="orgId"
-                name="orgId"
-                required
-                options={supplierMembership.map(({ organizations: org }) => ({ value: org.id, label: org.name }))}
-              />
-            </ActionForm>
+            <AcceptSupplierInvitation
+              token={token}
+              workspaces={supplierMembership.map(({ organizations: org }) => ({ id: org.id, name: org.name }))}
+            />
           )}
         </CardContent>
       </Card>

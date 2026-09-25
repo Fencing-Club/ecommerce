@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { errorMessage, useUploadDocumentMutation } from "@/lib/api"
 import { FormError, SubmitButton } from "./actions"
 import { SelectField } from "./form-fields"
 
@@ -30,13 +31,12 @@ export function Upload({
   cartons?: Array<{ cartonId: string }>
 }) {
   const router = useRouter()
+  const [upload, { isLoading: pending }] = useUploadDocumentMutation()
   const [error, setError] = useState("")
-  const [pending, setPending] = useState(false)
   const [success, setSuccess] = useState(false)
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setPending(true)
     setError("")
     setSuccess(false)
     const form = event.currentTarget
@@ -54,18 +54,12 @@ export function Upload({
       data.set("assignments", JSON.stringify(assignments))
     }
     try {
-      const response = await fetch("/api/documents", { method: "POST", body: data })
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(result.error ?? "Upload failed")
-      }
+      await upload(data).unwrap()
       form.reset()
       setSuccess(true)
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed")
-    } finally {
-      setPending(false)
+      setError(errorMessage(e, "Upload failed. Try again."))
     }
   }
 

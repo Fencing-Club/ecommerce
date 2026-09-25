@@ -1,21 +1,19 @@
 "use client"
 
-import { money, type OrderItem } from "@repo/aisle"
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import { money, orderInputSchema } from "@repo/aisle"
 import { Plus, Search, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { FormProvider, useFieldArray, useWatch } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
-import { Textarea } from "@/components/ui/textarea"
-import { FormError, SubmitButton, perform } from "./actions"
+import { useActionForm } from "@/hooks/useActionForm"
+import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/api"
+import { FormError, SubmitButton } from "./actions"
 import { EmptyState } from "./common"
-import { SelectField, TextField } from "./form-fields"
-
-type Product = CatalogVariant & { amazonAsin: string; fnsku: string }
+import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 
 const destinations = [
   { value: "awd_us", label: "Amazon AWD USA" },
@@ -32,286 +30,242 @@ const prepCategories = [
 ]
 
 export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; name: string }> }) {
-  const router = useRouter()
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState<Product[]>([])
-  const [items, setItems] = useState<OrderItem[]>([])
-  const [error, setError] = useState("")
-  const [pending, setPending] = useState(false)
-
-  async function search() {
-    setPending(true)
-    setError("")
-    try {
-      const response = await fetch(`/api/catalog?q=${encodeURIComponent(query)}`)
-      if (!response.ok) {
-        throw new Error("Connect Shopify in Settings before searching your catalog")
-      }
-      setResults(await response.json())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Search failed")
-    } finally {
-      setPending(false)
+  const [showResults, setShowResults] = useState(false)
+  const [searchCatalog, catalog] = useLazyCatalogQuery()
+  const { form, submit } = useActionForm({
+    schema: orderInputSchema,
+    action: "order.create",
+    defaultValues: {
+      reference: "",
+      supplierId: "",
+      destination: "awd_us",
+      dueDate: "",
+      currency: "USD",
+      notes: "",
+      items: []
     }
+  })
+  // Line items carry their own `id`, so the field array keys rows separately.
+  const lineItems = useFieldArray({ control: form.control, name: "items", keyName: "key" })
+  const items = useWatch({ control: form.control, name: "items" }) ?? []
+  const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
+  const itemsError = form.formState.errors.items
+
+  function search() {
+    setShowResults(true)
+    void searchCatalog(query)
   }
 
-  function add(product: Product) {
-    setItems([
-      ...items,
-      {
-        id: crypto.randomUUID(),
-        variantId: product.id,
-        inventoryItemId: product.inventoryItem.id,
-        name: product.product.title,
-        variant: product.title,
-        buyerSku: product.sku ?? "",
-        supplierSku: product.supplierSku?.value ?? "",
-        asin: product.amazonAsin || product.asin?.value || "",
-        fnsku: product.fnsku,
-        pieces: 1,
-        piecesPerSet: 1,
-        unitPrice: 0,
-        instructions: "",
-        prepCategory: "POLYBAGGING"
-      }
-    ])
-    setResults([])
+  function add(product: CatalogProduct) {
+    lineItems.append({
+      id: crypto.randomUUID(),
+      variantId: product.id,
+      inventoryItemId: product.inventoryItem.id,
+      name: product.product.title,
+      variant: product.title,
+      buyerSku: product.sku ?? "",
+      supplierSku: product.supplierSku?.value ?? "",
+      asin: product.amazonAsin || product.asin?.value || "",
+      fnsku: product.fnsku,
+      pieces: 1,
+      piecesPerSet: 1,
+      unitPrice: 0,
+      instructions: "",
+      prepCategory: "POLYBAGGING"
+    })
+    setShowResults(false)
   }
 
-  function update(id: string, field: string, value: string) {
-    setItems(
-      items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              [field]: ["pieces", "piecesPerSet", "unitPrice"].includes(field)
-                ? Math.round(Number(value) * (field === "unitPrice" ? 100 : 1))
-                : value
-            }
-          : item
-      )
-    )
-  }
-
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    setError("")
-    try {
-      const data = new FormData(event.currentTarget)
-      const result = await perform("order.create", { ...Object.fromEntries(data), items })
-      if (result.redirect) {
-        router.push(result.redirect)
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create order")
-    } finally {
-      setPending(false)
-    }
-  }
-
-  const pieces = items.reduce((n, i) => n + i.pieces, 0)
-  const amount = items.reduce((n, i) => n + i.unitPrice * i.pieces, 0)
+  const pieces = items.reduce((n, i) => n + (i?.pieces || 0), 0)
+  const amount = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
+  const results = showResults ? (catalog.data ?? []) : []
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={submit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Order details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <TextField label="PO reference" name="reference" placeholder="PO-037" required />
-            <SelectField
-              label="Supplier"
-              id="supplierId"
-              name="supplierId"
-              required
-              placeholder="Select supplier"
-              options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
-            />
-            <SelectField label="Destination" id="destination" name="destination" options={destinations} />
-            <TextField label="Required date" name="dueDate" type="date" required />
-            <SelectField label="Currency" id="currency" name="currency" options={currencies} />
-          </FieldGroup>
-        </CardContent>
-      </Card>
+    <FormProvider {...form}>
+      <form className="flex flex-col gap-6" onSubmit={submit} noValidate>
+        <Card>
+          <CardHeader>
+            <CardTitle>Order details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <FormInput name="reference" label="PO reference" placeholder="PO-037" />
+              <FormSelect
+                name="supplierId"
+                label="Supplier"
+                placeholder="Select supplier"
+                options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+              />
+              <FormSelect name="destination" label="Destination" options={destinations} />
+              <FormInput name="dueDate" label="Required date" type="date" />
+              <FormSelect name="currency" label="Currency" options={currencies} />
+            </FieldGroup>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Products</CardTitle>
-          <CardDescription>Search Shopify. Enter quantities and prices per individual piece.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <Input
-              aria-label="Search Shopify catalog"
-              placeholder="Search by product name or SKU"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  void search()
-                }
-              }}
-            />
-            <Button type="button" variant="outline" disabled={pending} onClick={search}>
-              <Search data-icon="inline-start" />
-              Search
-            </Button>
-          </div>
-
-          {results.length > 0 && (
-            <ItemGroup className="max-h-72 overflow-auto rounded-lg border p-1">
-              {results.map((product) => (
-                <Item
-                  key={product.id}
-                  size="sm"
-                  render={
-                    <button
-                      type="button"
-                      aria-label={`Add ${product.product.title} / ${product.title}`}
-                      disabled={items.some((i) => i.variantId === product.id)}
-                      onClick={() => add(product)}
-                    />
+        <Card>
+          <CardHeader>
+            <CardTitle>Products</CardTitle>
+            <CardDescription>
+              Search Shopify. Enter quantities and prices per individual piece. Amazon ASINs and FNSKUs are looked up
+              from each product’s SKU when you save.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex gap-2">
+              <Input
+                aria-label="Search Shopify catalog"
+                placeholder="Search by product name or SKU"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    search()
                   }
-                  className="w-full text-left hover:bg-muted disabled:opacity-50"
-                >
-                  <ItemContent>
-                    <ItemTitle>
-                      {product.product.title} / {product.title}
-                    </ItemTitle>
-                    <ItemDescription>{product.sku}</ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <Plus className="size-4" />
-                  </ItemActions>
-                </Item>
-              ))}
-            </ItemGroup>
-          )}
+                }}
+              />
+              <SubmitButton type="button" variant="outline" pending={catalog.isFetching} onClick={search}>
+                {!catalog.isFetching && <Search data-icon="inline-start" />}
+                Search
+              </SubmitButton>
+            </div>
 
-          {items.length === 0 ? (
-            <EmptyState
-              title="No products yet"
-              description="Search your Shopify catalog above to add products to this purchase order."
-            />
-          ) : (
-            items.map((item) => (
-              <Card key={item.id} size="sm" className="bg-muted/30">
-                <CardHeader>
-                  <CardTitle>{item.name}</CardTitle>
-                  <CardDescription>
-                    {item.variant} / {item.buyerSku}
-                  </CardDescription>
-                  <CardAction>
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={`Remove ${item.name}`}
-                      onClick={() => setItems(items.filter((i) => i.id !== item.id))}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent>
-                  <FieldGroup className="grid gap-4 sm:grid-cols-3">
-                    <TextField
-                      label="Quantity (pieces)"
-                      id={`${item.id}-pieces`}
-                      type="number"
-                      min={1}
-                      step="1"
-                      required
-                      value={item.pieces}
-                      onChange={(e) => update(item.id, "pieces", e.target.value)}
-                    />
-                    <TextField
-                      label="Pieces per sellable unit"
-                      id={`${item.id}-piecesPerSet`}
-                      type="number"
-                      min={1}
-                      step="1"
-                      required
-                      value={item.piecesPerSet}
-                      onChange={(e) => update(item.id, "piecesPerSet", e.target.value)}
-                    />
-                    <TextField
-                      label="Unit price (per piece)"
-                      id={`${item.id}-unitPrice`}
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      required
-                      value={item.unitPrice / 100}
-                      onChange={(e) => update(item.id, "unitPrice", e.target.value)}
-                    />
-                    <TextField
-                      label="Amazon ASIN"
-                      id={`${item.id}-asin`}
-                      required
-                      value={item.asin}
-                      onChange={(e) => update(item.id, "asin", e.target.value)}
-                    />
-                    <TextField
-                      label="Amazon FNSKU"
-                      id={`${item.id}-fnsku`}
-                      required
-                      value={item.fnsku}
-                      onChange={(e) => update(item.id, "fnsku", e.target.value)}
-                    />
-                    <SelectField
-                      label="Preparation"
-                      id={`${item.id}-prep`}
-                      value={item.prepCategory}
-                      onChange={(e) => update(item.id, "prepCategory", e.target.value)}
-                      options={prepCategories}
-                    />
-                    <Field className="sm:col-span-3">
-                      <FieldLabel htmlFor={`${item.id}-instructions`}>Product instructions</FieldLabel>
-                      <Textarea
-                        id={`${item.id}-instructions`}
-                        placeholder="Add handling, labeling, or preparation exceptions"
-                        value={item.instructions}
-                        onChange={(e) => update(item.id, "instructions", e.target.value)}
+            {showResults && catalog.isError && (
+              <FormError
+                message={errorMessage(
+                  catalog.error,
+                  "Couldn't search your Shopify catalog. Check the Shopify connection in Settings and try again."
+                )}
+              />
+            )}
+            {showResults && catalog.isSuccess && !catalog.isFetching && results.length === 0 && (
+              <p className="text-sm text-muted-foreground">No products match “{query}”.</p>
+            )}
+
+            {results.length > 0 && !catalog.isFetching && (
+              <ItemGroup className="max-h-72 overflow-auto rounded-lg border p-1">
+                {results.map((product) => (
+                  <Item
+                    key={product.id}
+                    size="sm"
+                    render={
+                      <button
+                        type="button"
+                        aria-label={`Add ${product.product.title} / ${product.title}`}
+                        disabled={items.some((i) => i?.variantId === product.id)}
+                        onClick={() => add(product)}
                       />
-                    </Field>
-                  </FieldGroup>
-                </CardContent>
-                <CardFooter className="justify-end text-sm text-muted-foreground">
-                  {item.pieces / item.piecesPerSet} sellable units
-                </CardFooter>
-              </Card>
-            ))
-          )}
-        </CardContent>
-      </Card>
+                    }
+                    className="w-full text-left hover:bg-muted disabled:opacity-50"
+                  >
+                    <ItemContent>
+                      <ItemTitle>
+                        {product.product.title} / {product.title}
+                      </ItemTitle>
+                      <ItemDescription>{product.sku}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Plus className="size-4" />
+                    </ItemActions>
+                  </Item>
+                ))}
+              </ItemGroup>
+            )}
 
-      <Card>
-        <CardContent>
-          <Field>
-            <FieldLabel htmlFor="notes">Notes to supplier</FieldLabel>
-            <Textarea
-              id="notes"
+            {lineItems.fields.length === 0 ? (
+              <EmptyState
+                title="No products yet"
+                description="Search your Shopify catalog above to add products to this purchase order."
+              />
+            ) : (
+              lineItems.fields.map((line, index) => {
+                const item = items[index]
+                const lineError = form.formState.errors.items?.[index]
+                return (
+                  <Card key={line.key} size="sm" className="bg-muted/30">
+                    <CardHeader>
+                      <CardTitle>{line.name}</CardTitle>
+                      <CardDescription>
+                        {line.variant} / {line.buyerSku}
+                      </CardDescription>
+                      <CardAction>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Remove ${line.name}`}
+                          onClick={() => lineItems.remove(index)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </CardAction>
+                    </CardHeader>
+                    <CardContent>
+                      <FieldGroup className="grid gap-4 sm:grid-cols-3">
+                        <FormNumber name={`items.${index}.pieces`} label="Quantity (pieces)" min={1} step={1} />
+                        <FormNumber
+                          name={`items.${index}.piecesPerSet`}
+                          label="Pieces per sellable unit"
+                          min={1}
+                          step={1}
+                        />
+                        <FormNumber
+                          name={`items.${index}.unitPrice`}
+                          label={`Unit price per piece (${currency})`}
+                          min={0}
+                          step={0.01}
+                          scale={100}
+                        />
+                        <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepCategories} />
+                        <dl className="grid content-start gap-1 text-sm sm:col-span-2">
+                          <dt className="font-medium">Amazon identifiers</dt>
+                          <dd className="text-muted-foreground">
+                            {line.asin ? `ASIN ${line.asin}` : "ASIN looked up on save"}
+                            {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up on save"}
+                          </dd>
+                        </dl>
+                        <FormTextarea
+                          name={`items.${index}.instructions`}
+                          label="Product instructions"
+                          placeholder="Add handling, labeling, or preparation exceptions"
+                          className="sm:col-span-3"
+                        />
+                      </FieldGroup>
+                      <FormError message={lineError?.message ?? lineError?.root?.message} />
+                    </CardContent>
+                    <CardFooter className="justify-end text-sm text-muted-foreground">
+                      {item?.pieces && item?.piecesPerSet ? item.pieces / item.piecesPerSet : 0} sellable units
+                    </CardFooter>
+                  </Card>
+                )
+              })
+            )}
+            <FormError message={itemsError?.message ?? itemsError?.root?.message} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <FormTextarea
               name="notes"
+              label="Notes to supplier"
               placeholder="Payment terms, delivery requirements, or additional instructions"
             />
-          </Field>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <FormError message={error} />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          {items.length} products, {pieces} pieces, {money(amount)} before currency selection
-        </p>
-        <SubmitButton type="submit" pending={pending} disabled={!items.length}>
-          Save purchase order
-        </SubmitButton>
-      </div>
-    </form>
+        <FormError message={form.formState.errors.root?.server?.message} />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            {lineItems.fields.length} products, {pieces} pieces, {money(amount, currency)}
+          </p>
+          <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>
+            Save purchase order
+          </SubmitButton>
+        </div>
+      </form>
+    </FormProvider>
   )
 }

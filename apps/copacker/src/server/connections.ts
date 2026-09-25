@@ -45,12 +45,13 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
       }
       const response = await fetch(`https://${row.externalId}/admin/oauth/access_token`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+        // Shopify only accepts the refresh grant form-encoded; a JSON body is rejected as invalid_request.
+        headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+        body: new URLSearchParams({
           grant_type: "refresh_token",
           refresh_token: stored.refreshToken,
-          client_id: process.env.SHOPIFY_CLIENT_ID,
-          client_secret: process.env.SHOPIFY_CLIENT_SECRET
+          client_id: process.env.SHOPIFY_CLIENT_ID ?? "",
+          client_secret: process.env.SHOPIFY_CLIENT_SECRET ?? ""
         }),
         signal: AbortSignal.timeout(30000)
       })

@@ -3,25 +3,14 @@
 import { AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { type FieldValues, FormProvider, type UseFormReturn } from "react-hook-form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
+import { errorMessage, useActionMutation } from "@/lib/api"
 
-export async function perform(action: string, data: Record<string, unknown>) {
-  const response = await fetch("/api/action", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ action, data })
-  })
-  const result: { error?: string; redirect?: string; id?: string } = await response.json()
-  if (!response.ok) {
-    throw new Error(result.error ?? "Could not save. Please try again")
-  }
-  return result
-}
-
-export function FormError({ message }: { message: string }) {
+export function FormError({ message }: { message?: string }) {
   if (!message) {
     return null
   }
@@ -58,28 +47,25 @@ export function ActionButton({
   variant?: "default" | "outline" | "destructive"
 }) {
   const router = useRouter()
-  const [pending, setPending] = useState(false)
+  const [run, { isLoading }] = useActionMutation()
   const [error, setError] = useState("")
 
-  async function run() {
-    setPending(true)
+  async function click() {
     setError("")
     try {
-      const result = await perform(action, data)
+      const result = await run({ action, data }).unwrap()
       if (result.redirect) {
         router.push(result.redirect)
       }
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Request failed")
-    } finally {
-      setPending(false)
+      setError(errorMessage(e))
     }
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <SubmitButton variant={variant} pending={pending} onClick={run}>
+      <SubmitButton variant={variant} pending={isLoading} onClick={click}>
         {children}
       </SubmitButton>
       <FormError message={error} />
@@ -87,56 +73,31 @@ export function ActionButton({
   )
 }
 
-export function ActionForm({
-  action,
-  children,
+// Lays out a form built with useActionForm: its fields, the server error, and the submit button.
+export function ActionForm<Values extends FieldValues>({
+  form,
+  onSubmit,
   label,
-  transform,
-  onSuccess
+  children
 }: {
-  action: string
-  children: React.ReactNode
+  form: UseFormReturn<Values, unknown, FieldValues>
+  onSubmit: (event?: React.BaseSyntheticEvent) => Promise<void>
   label: string
-  transform?: (data: FormData) => Record<string, unknown>
-  onSuccess?: () => void
+  children: React.ReactNode
 }) {
-  const router = useRouter()
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = event.currentTarget
-    setPending(true)
-    setError("")
-    try {
-      const data = new FormData(form)
-      const result = await perform(action, transform ? transform(data) : Object.fromEntries(data))
-      if (result.redirect) {
-        router.push(result.redirect)
-      } else {
-        form.reset()
-      }
-      onSuccess?.()
-      router.refresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Request failed")
-    } finally {
-      setPending(false)
-    }
-  }
-
   return (
-    <form onSubmit={submit}>
-      <FieldGroup>
-        {children}
-        <FormError message={error} />
-        <div>
-          <SubmitButton type="submit" pending={pending}>
-            {label}
-          </SubmitButton>
-        </div>
-      </FieldGroup>
-    </form>
+    <FormProvider {...form}>
+      <form onSubmit={onSubmit} noValidate>
+        <FieldGroup>
+          {children}
+          <FormError message={form.formState.errors.root?.server?.message} />
+          <div>
+            <SubmitButton type="submit" pending={form.formState.isSubmitting}>
+              {label}
+            </SubmitButton>
+          </div>
+        </FieldGroup>
+      </form>
+    </FormProvider>
   )
 }

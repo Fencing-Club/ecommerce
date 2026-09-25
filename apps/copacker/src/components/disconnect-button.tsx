@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { FormError, perform } from "./actions"
+import { errorMessage, useActionMutation } from "@/lib/api"
+import { FormError } from "./actions"
 
 const providers = {
   shopify: {
@@ -31,6 +32,7 @@ const providers = {
 
 export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon"; account: string }) {
   const router = useRouter()
+  const [run] = useActionMutation()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -40,11 +42,11 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
     setPending(true)
     setError("")
     try {
-      await perform("connection.delete", { provider })
+      await run({ action: "connection.delete", data: { provider } }).unwrap()
       setOpen(false)
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : `Couldn’t disconnect ${name}`)
+      setError(errorMessage(e, `Couldn’t disconnect ${name}`))
     } finally {
       setPending(false)
     }

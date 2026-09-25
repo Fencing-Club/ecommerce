@@ -71,7 +71,9 @@ describe("merchant credential renewal and isolation", () => {
     const results = await Promise.all([connection(orgId, "shopify"), connection(orgId, "shopify")])
     expect(results.map((r) => r.token)).toEqual(["renewed", "renewed"])
     expect(fetchMock).toHaveBeenCalledOnce()
-    const request = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(new Headers(init?.headers).get("content-type")).toBe("application/x-www-form-urlencoded")
+    const request = Object.fromEntries(new URLSearchParams(String(init?.body)))
     expect(request).toMatchObject({ grant_type: "refresh_token", refresh_token: "refresh" })
     const [row] = await database.select().from(tables.connections)
     expect(JSON.parse(decrypt(row!.encryptedToken, `${orgId}:shopify`))).toMatchObject({

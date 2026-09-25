@@ -8,7 +8,11 @@ export const addressSchema = z.object({
   city: z.string().trim().min(1).max(50),
   stateOrRegion: z.string().trim().min(1).max(50),
   postalCode: z.string().trim().min(1).max(20),
-  countryCode: z.string().regex(/^[A-Z]{2}$/),
+  countryCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/, "Enter a two-letter country code, such as CN"),
   phoneNumber: z
     .string()
     .trim()

@@ -93,8 +93,9 @@ Built on the **unified** (remark + rehype) ecosystem — the standard for parsin
 ## State management
 
 - ◻️ **zustand** — lightweight client state (default for local/global UI state).
-- ◻️ **@reduxjs/toolkit** — formal store for larger apps; includes **RTK Query**, our **preferred data-fetching /
-  server-cache** layer.
+- ✅ **@reduxjs/toolkit** — formal store for larger apps; includes **RTK Query**, our **preferred data-fetching /
+  server-cache** layer. Copacker uses RTK Query through `ApiProvider` only (no app store) for `/api` requests, and
+  its forms submit through `useActionForm` (React Hook Form + Zod).
 
 ## Database & data layer
 
