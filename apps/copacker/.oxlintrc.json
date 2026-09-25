@@ -1,0 +1,4 @@
+{
+  "extends": ["../../packages/oxlint-config/base.json"],
+  "ignorePatterns": [".next/**", "next-env.d.ts", "drizzle/meta/**", "src/components/ui/**"]
+}

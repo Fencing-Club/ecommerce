@@ -1,0 +1,17 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+nodeLinker: hoisted
+verifyDepsBeforeRun: error
+catalog:
+  "@types/node": 24.13.2
+  typescript: 7.0.1-rc
+overrides:
+  react: 19.2.7
+  react-dom: 19.2.7
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  sharp: true
+  unrs-resolver: true
+  "@swc/core": true

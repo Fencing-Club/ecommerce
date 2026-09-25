@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "copacker-test",
+      "problemMatcher": [],
+      "type": "shell",
+      "args": ["--filter", "copacker", "test"],
+      "command": "pnpm"
+    },
+    {
+      "label": "copacker-check-types",
+      "problemMatcher": ["$tsc"],
+      "type": "shell",
+      "args": ["--filter", "copacker", "check:types"],
+      "command": "pnpm"
+    },
+    {
+      "label": "copacker-lint",
+      "problemMatcher": [],
+      "type": "shell",
+      "args": ["--filter", "copacker", "lint"],
+      "command": "pnpm"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+**/node_modules/
+**/.env
+**/.env.*
+**/.next/
+**/.turbo/
+**/dist/
+**/coverage/
+**/tmp/
+**/artifacts/
+**/.shopify/
+**/*.local.*
+**/*.local
+.git/
+
+# Private order data used for local email previews.
+**/.fixtures/
+packages/fc-theme/
+packages/fc-theme-base/
+packages/fc-templates/
+packages/shopify-content/
+packages/shopify-emails/
+**/.cache/
+**/*.log

@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "semi": false,
+  "trailingComma": "none",
+  "proseWrap": "always",
+  "sortImports": {
+    "enabled": true,
+    "newlinesBetween": false,
+    "sortSpecifiers": true
+  },
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/storybook-static/**",
+    "**/coverage/**",
+    "**/docs/**",
+    "**/drizzle/migrations/meta/**",
+    "**/.trigger/**",
+    "**/.data/**",
+    "**/.fixtures/**",
+    "**/next-env.d.ts",
+    "**/*.shopify*.html",
+    ".vscode/mcp.json",
+    "pnpm-lock.yaml",
+    "packages/fc-theme/**",
+    "packages/fc-theme-base/**",
+    "**/.next/**"
+  ]
+}
