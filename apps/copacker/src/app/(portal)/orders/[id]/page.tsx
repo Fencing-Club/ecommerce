@@ -5,6 +5,7 @@ import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, EmptyState, PageBreadcrumb, PageHeader, Status, formatDestination } from "@/components/common"
+import { ClosePurchaseOrder } from "@/components/order-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
@@ -56,6 +57,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <ActionButton action="shipment.create" data={{ id }}>
             {editable ? "Continue packing" : "Prepare next shipment"}
           </ActionButton>
+        )}
+        {order.status === "submitted" && s.org.kind === "buyer" && (
+          <ClosePurchaseOrder id={id} reference={order.data.reference} />
         )}
       </PageHeader>
 

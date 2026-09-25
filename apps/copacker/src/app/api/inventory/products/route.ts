@@ -1,12 +1,8 @@
-import { and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
-import { connections, inventoryLocationMappings, orders, stockSnapshots } from "@/db/schema"
 import { session } from "@/server/auth"
-import { locationClassifications } from "@/server/inventory-locations"
-import { groupInventory, inventoryLocations, onOrderByVariant, pageSizes } from "@/server/inventory-products"
+import { inventoryContext } from "@/server/inventory-context"
+import { groupInventory, inventoryLocations, pageSizes } from "@/server/inventory-products"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
-import { stockScopes } from "@/server/stock"
 
 const querySchema = z.strictObject({
   locationId: z
@@ -34,48 +30,16 @@ export async function GET(request: Request) {
   if (!query.success) {
     return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
   }
-  const { scopeKey, provider } = stockScopes.shopify
-  const [current] = await db()
-    .select({ domain: connections.externalId, stock: stockSnapshots })
-    .from(connections)
-    .leftJoin(
-      stockSnapshots,
-      and(
-        eq(stockSnapshots.orgId, connections.orgId),
-        eq(stockSnapshots.externalAccountId, connections.externalId),
-        eq(stockSnapshots.source, "shopify"),
-        eq(stockSnapshots.scopeKey, scopeKey)
-      )
-    )
-    .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, provider)))
-  const data = current?.stock?.data?.source === "shopify" ? current.stock.data : null
-  const rows = data?.rows ?? []
   const { page, pageSize, locationId, q } = query.data
-  const saved = current
-    ? await db()
-        .select()
-        .from(inventoryLocationMappings)
-        .where(
-          and(
-            eq(inventoryLocationMappings.orgId, s.org.id),
-            eq(inventoryLocationMappings.shopifyDomain, current.domain)
-          )
-        )
-    : []
-  const classifications = locationClassifications(data, saved)
-  // Sent POs only: drafts haven't been ordered, and closed POs have arrived or been cancelled.
-  const sent = await db()
-    .select({ id: orders.id, data: orders.data })
-    .from(orders)
-    .where(and(eq(orders.buyerOrgId, s.org.id), eq(orders.status, "submitted")))
+  const { domain, data, rows, classifications, onOrder } = await inventoryContext(s.org.id)
   const products = groupInventory(rows, {
     locationId,
     query: q,
     classifications,
     includeExcluded: query.data.includeExcluded === "true",
-    onOrder: onOrderByVariant(sent, classifications)
+    onOrder
   })
-  const defaults = current ? await readProductDefaults(s.org.id, current.domain) : new Map()
+  const defaults = domain ? await readProductDefaults(s.org.id, domain) : new Map()
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
   const levels = rows.flatMap((row) => row.levels)

@@ -43,6 +43,13 @@
       "when": 1790370447427,
       "tag": "0005_remove_suppliers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790373020512,
+      "tag": "0006_delivery_locations",
+      "breakpoints": true
     }
   ]
 }

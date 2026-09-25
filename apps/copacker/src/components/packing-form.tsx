@@ -202,7 +202,19 @@ export function PackingForm({
                             {availablePieces[item.id] ?? 0} pieces available on this PO
                           </p>
                         </div>
-                        <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" />
+                        {item.components?.length ? (
+                          <div className={sx({ text: "sm" })}>
+                            <p className={sx({ fontWeight: "medium" })}>Supplier components per sellable unit</p>
+                            {item.components.map((component) => (
+                              <p key={component.variantId} className={sx({ color: "muted" })}>
+                                {component.quantity} × {component.buyerSku || "Shopify component"} · Supplier SKU{" "}
+                                {component.supplierSku || "missing"}
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" />
+                        )}
                         <FormNumber
                           name={`changes.${index}.unitPrice`}
                           label={`Price per piece (${order.currency})`}

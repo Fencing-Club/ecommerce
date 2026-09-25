@@ -3,6 +3,21 @@ import type { documents, shipments, ShipmentState } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
+// The supplier packet is released from "ready" on; "received" means the goods arrived where the PO sent them.
+export const releasedStates: readonly ShipmentState[] = ["ready", "collected", "received"]
+export const finishedStates: readonly ShipmentState[] = ["collected", "received", "cancelled"]
+
+// Pieces per PO item in shipments that arrived.
+export function receivedPieces(rows: Shipment[]) {
+  const result: Record<string, number> = {}
+  for (const item of reservations(rows)) {
+    if (item.status === "received") {
+      result[item.itemId] = (result[item.itemId] ?? 0) + item.pieces
+    }
+  }
+  return result
+}
+
 export type ReadinessIssue = { code: string; message: string; field?: string; cartonId?: string; itemId?: string }
 
 function* reservations(rows: Shipment[], excludeId?: string) {

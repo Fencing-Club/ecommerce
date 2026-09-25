@@ -11,7 +11,10 @@ export const prepCategories = [
   "HANG_GARMENT"
 ] as const
 export type PrepCategory = (typeof prepCategories)[number]
-export const destinationSchema = z.enum(["awd_us", "awd_china", "fba", "forwarder"])
+// "warehouse" is one of the buyer's own locations (a saved delivery address); the others ship toward Amazon.
+export const destinationSchema = z.enum(["awd_us", "awd_china", "fba", "forwarder", "warehouse"])
+// Destinations that create an Amazon shipment and follow Amazon's carton and labeling rules.
+export const amazonDestinations: readonly z.infer<typeof destinationSchema>[] = ["awd_us"]
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),
@@ -40,6 +43,18 @@ export type Address = z.infer<typeof addressSchema>
 export const originSchema = addressSchema.extend({
   phoneNumber: z.string().trim().min(6, "Add a pickup phone number. Amazon needs it to schedule pickup").max(30)
 })
+const supplierCatalogSnapshot = z.object({
+  productId: z.uuid(),
+  revision: z.number().int().positive(),
+  supplierSku: z.string().min(1),
+  title: z.string().optional(),
+  notes: z.string().nullable().optional(),
+  currency: z.string(),
+  priceMinor: z.number().int().nonnegative().nullable(),
+  priceBasis: z.enum(["piece", "sellable_pack", "case"]),
+  piecesPerSellablePack: z.number().int().positive(),
+  sellablePacksPerCase: z.number().int().positive().nullable()
+})
 export const itemSchema = z
   .object({
     id: z.uuid(),
@@ -49,6 +64,19 @@ export const itemSchema = z
     variant: z.string().max(240),
     buyerSku: z.string().trim().min(1).max(255),
     supplierSku: z.string().trim().max(255).default(""),
+    // Shopify bundle components are physical supplier items; the sellable bundle retains its own buyer SKU.
+    components: z
+      .array(
+        z.object({
+          variantId: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+          buyerSku: z.string().trim().max(255).nullable(),
+          supplierSku: z.string().trim().max(255).nullable(),
+          quantity: z.number().int().positive().safe(),
+          supplierCatalog: supplierCatalogSnapshot.optional()
+        })
+      )
+      .max(25)
+      .optional(),
     supplierCatalogStatus: z
       .enum([
         "supplier_catalog_unavailable",
@@ -62,20 +90,7 @@ export const itemSchema = z
         "matched"
       ])
       .optional(),
-    supplierCatalog: z
-      .object({
-        productId: z.uuid(),
-        revision: z.number().int().positive(),
-        supplierSku: z.string().min(1),
-        title: z.string().optional(),
-        notes: z.string().nullable().optional(),
-        currency: z.string(),
-        priceMinor: z.number().int().nonnegative().nullable(),
-        priceBasis: z.enum(["piece", "sellable_pack", "case"]),
-        piecesPerSellablePack: z.number().int().positive(),
-        sellablePacksPerCase: z.number().int().positive().nullable()
-      })
-      .optional(),
+    supplierCatalog: supplierCatalogSnapshot.optional(),
     asin: z
       .string()
       .regex(/^[A-Z0-9]{10}$/)
@@ -98,6 +113,7 @@ export const orderInputSchema = z
     reference: z.string().trim().min(1).max(80),
     destination: destinationSchema,
     forwarderId: z.uuid().optional(),
+    deliveryId: z.uuid().optional(),
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
     dueDate: z.iso.date(),
     notes: z.string().max(8000).default(""),
@@ -121,6 +137,9 @@ export const orderInputSchema = z
     }
     if (order.destination === "forwarder" && !order.forwarderId) {
       ctx.addIssue({ code: "custom", message: "Choose a freight forwarder", path: ["forwarderId"] })
+    }
+    if (order.destination === "warehouse" && !order.deliveryId) {
+      ctx.addIssue({ code: "custom", message: "Choose a delivery address", path: ["deliveryId"] })
     }
     if (
       new Set(order.items.map((i) => i.buyerSku)).size !== order.items.length ||
@@ -226,8 +245,10 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   const totals: Record<string, number> = {}
   const configurations = new Map<string, string>()
   const cartonIds = new Set<string>()
-  if (order.destination !== "awd_us") {
-    issues.push({ message: "Shipment creation currently supports AWD USA only" })
+  // Amazon's carton and labeling rules apply only to Amazon shipments; the buyer's own locations accept any cartons.
+  const amazon = amazonDestinations.includes(order.destination)
+  if (!amazon && order.destination !== "warehouse") {
+    issues.push({ message: "Shipments currently go to AWD USA or your own locations" })
   }
   for (const carton of packing.cartons) {
     const add = (message: string) => issues.push({ cartonId: carton.cartonId, message })
@@ -235,13 +256,13 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       add("Carton numbers must be unique")
     }
     cartonIds.add(carton.cartonId.toLowerCase())
-    if (Math.max(carton.length, carton.width, carton.height) > 63.5) {
+    if (amazon && Math.max(carton.length, carton.width, carton.height) > 63.5) {
       add("AWD cartons must not exceed 63.5 cm on any side")
     }
-    if (carton.weight > 22.6796185) {
+    if (amazon && carton.weight > 22.6796185) {
       add("AWD carton weight must not exceed 50 lb (22.68 kg)")
     }
-    if (carton.items.length !== 1) {
+    if (amazon && carton.items.length !== 1) {
       add("AWD requires one SKU per carton")
     }
     for (const content of carton.items) {
@@ -255,14 +276,14 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       if (!Number.isInteger(units)) {
         add(`${item.buyerSku}: pieces must form complete sets of ${item.piecesPerSet}`)
       }
-      if (units > 150) {
+      if (amazon && units > 150) {
         add(`${item.buyerSku}: maximum 150 sellable units per AWD carton`)
       }
-      if (!item.fnsku || !item.asin) {
+      if (amazon && (!item.fnsku || !item.asin)) {
         add(`${item.buyerSku}: Amazon ASIN and FNSKU are required`)
       }
       const config = JSON.stringify([content.pieces, carton.length, carton.width, carton.height, carton.weight])
-      if (configurations.has(item.id) && configurations.get(item.id) !== config) {
+      if (amazon && configurations.has(item.id) && configurations.get(item.id) !== config) {
         add(
           `${item.buyerSku}: all cartons for this SKU must have the same contents, dimensions, and weight; split into separate shipments if needed`
         )

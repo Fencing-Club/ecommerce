@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
-import { money, orderTotal, type OrderInput, type Packing } from "./index"
+import { amazonDestinations, money, orderTotal, type OrderInput, type Packing } from "./index"
 import type { CartonLabel } from "./labels"
 
 async function writer(title: string, reference: string) {
@@ -50,15 +50,33 @@ async function writer(title: string, reference: string) {
   line(reference, 11)
   return { line, section, check, save: () => pdf.save() }
 }
-export async function purchaseOrderPdf(order: OrderInput, buyer: string, supplier: string, revision: number) {
+// Where a PO ships: Amazon AWD, or the buyer's own delivery address as one line.
+function destinationLine(order: OrderInput, deliveryAddress?: string) {
+  if (order.destination === "warehouse") {
+    return deliveryAddress ? `Ship to: ${deliveryAddress}` : "Ship to: the buyer's location"
+  }
+  return `Destination: ${order.destination.replaceAll("_", " ").toUpperCase()}`
+}
+export async function purchaseOrderPdf(
+  order: OrderInput,
+  buyer: string,
+  supplier: string,
+  revision: number,
+  deliveryAddress?: string
+) {
   const w = await writer("Purchase order", `${order.reference} / Revision ${revision}`)
   w.section(`${buyer} to ${supplier}`)
-  w.line(
-    `Destination: ${order.destination.replaceAll("_", " ").toUpperCase()} | Required: ${order.dueDate} | Currency: ${order.currency}`
-  )
+  w.line(`${destinationLine(order, deliveryAddress)} | Required: ${order.dueDate} | Currency: ${order.currency}`)
   for (const item of order.items) {
     w.section(`${item.name} / ${item.variant}`)
-    w.line(`Buyer SKU: ${item.buyerSku} | Supplier SKU: ${item.supplierSku || "Not provided"}`)
+    w.line(
+      `Buyer SKU: ${item.buyerSku} | Supplier SKU: ${item.components?.length ? "See components" : item.supplierSku || "Not provided"}`
+    )
+    for (const component of item.components ?? []) {
+      w.line(
+        `  Per sellable unit: ${component.buyerSku || component.variantId} x${component.quantity} | Supplier SKU: ${component.supplierSku || "Not provided"}`
+      )
+    }
     w.line(
       `${item.pieces} pieces at ${money(item.unitPrice, order.currency)} per piece = ${money(item.pieces * item.unitPrice, order.currency)}`
     )
@@ -91,7 +109,12 @@ export async function packingListPdf(order: OrderInput, packing: Packing, labels
       const item = order.items.find((i) => i.id === contents.itemId)!
       w.line(`${item.name} / ${item.variant}`, 11, true)
       w.line(`Buyer SKU: ${item.buyerSku}`)
-      w.line(`Supplier SKU: ${item.supplierSku || "Not provided"}`)
+      w.line(`Supplier SKU: ${item.components?.length ? "See components" : item.supplierSku || "Not provided"}`)
+      for (const component of item.components ?? []) {
+        w.line(
+          `  Per sellable unit: ${component.buyerSku || component.variantId} x${component.quantity} | Supplier SKU: ${component.supplierSku || "Not provided"}`
+        )
+      }
       w.line(
         `${contents.pieces} pieces / ${contents.pieces / item.piecesPerSet} sellable units / ${item.piecesPerSet} piece(s) per unit`
       )
@@ -100,15 +123,16 @@ export async function packingListPdf(order: OrderInput, packing: Packing, labels
   return w.save()
 }
 export async function checklistPdf(order: OrderInput, packing: Packing) {
-  const w = await writer("Packing Checklist", `${order.reference} / AWD USA`)
+  const amazon = amazonDestinations.includes(order.destination)
+  const w = await writer("Packing Checklist", `${order.reference} / ${amazon ? "AWD USA" : "Your buyer's location"}`)
   w.section("Cartons")
-  for (const text of [
+  const amazonRules = [
     "Maximum carton dimensions: 63.5 cm on each side.",
     "Maximum gross weight: 50 lb (22.68 kg).",
     "Pack one SKU and no more than 150 sellable units per carton.",
-    "Use the same carton configuration for each SKU.",
-    "Match carton contents and quantities to the packing list."
-  ]) {
+    "Use the same carton configuration for each SKU."
+  ]
+  for (const text of [...(amazon ? amazonRules : []), "Match carton contents and quantities to the packing list."]) {
     w.check(text)
   }
   w.section("Unit preparation")
@@ -120,7 +144,9 @@ export async function checklistPdf(order: OrderInput, packing: Packing) {
   const included = new Set(packing.cartons.flatMap((c) => c.items.map((i) => i.itemId)))
   for (const item of order.items.filter((i) => included.has(i.id))) {
     w.section(`${item.name} / ${item.variant}`)
-    w.check(`Apply FNSKU ${item.fnsku} to the outside of each sellable unit. Cover conflicting product barcodes.`)
+    if (amazon) {
+      w.check(`Apply FNSKU ${item.fnsku} to the outside of each sellable unit. Cover conflicting product barcodes.`)
+    }
     if (item.instructions) {
       for (const instruction of item.instructions.split("\n").filter(Boolean)) {
         w.check(instruction)

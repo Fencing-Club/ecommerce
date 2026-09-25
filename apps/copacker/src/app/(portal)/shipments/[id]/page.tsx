@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, Download, ExternalLink, Loader2, PackageChec
 import { notFound } from "next/navigation"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import { DocumentList, PageBreadcrumb, PageHeader, Status } from "@/components/common"
+import { DocumentList, PageBreadcrumb, PageHeader, Status, formatDestination } from "@/components/common"
 import { PackingForm } from "@/components/packing-form"
 import { ApproveInvoice, CorrectionForm, ReleaseLabels, ReconcileShipment } from "@/components/shipment-actions"
 import { ShipmentProgress } from "@/components/shipment-progress"
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { session } from "@/server/auth"
 import { reservedPieces } from "@/server/readiness"
+import { finishedStates, releasedStates } from "@/server/readiness"
 import { orderWorkflow } from "@/server/workflow"
 import { issueList, packetAction, readyAlert, spinning } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -55,10 +56,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     ["packing", "correction"].includes(shipment.status) && !shipment.amazonOrderId && shipment.operation === "none"
   const isBuyer = s.org.kind === "buyer"
   const visibleDocs = docs.filter(
-    (d) =>
-      isBuyer ||
-      ["ready", "collected"].includes(shipment.status) ||
-      !["shipping_label", "carton_label"].includes(d.kind)
+    (d) => isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)
   )
   const changes = (shipment.packing?.changes ?? []).flatMap((change) => {
     const item = snapshot.items.find((i) => i.id === change.itemId)!
@@ -77,7 +75,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       />
       <PageHeader
         title={shipment.amazonShipmentId ?? "Prepare your shipment"}
-        description={`${order.data.reference} to AWD USA, ${shipment.packing?.cartons.length ?? 0} cartons`}
+        description={`${order.data.reference} to ${formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
       >
         <Status status={shipment.status} />
       </PageHeader>
@@ -208,7 +206,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </Alert>
           )}
 
-          {["ready", "collected"].includes(shipment.status) && (
+          {releasedStates.includes(shipment.status) && (
             <Alert role="note" className={readyAlert}>
               <PackageCheck className={sx({ color: "primary" })} />
               <AlertTitle>Your supplier packet is ready</AlertTitle>
@@ -322,6 +320,11 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
               Mark collected
             </ActionButton>
           )}
+          {isBuyer && ["ready", "collected"].includes(shipment.status) && (
+            <ActionButton action="shipment.received" data={{ id }} variant="outline">
+              Mark received
+            </ActionButton>
+          )}
           {isBuyer && step.next.step === "reconcile" && <ReconcileShipment id={id} />}
           {isBuyer && step.next.step === "retry" && (
             <ActionButton action="shipment.retry" data={{ id, revision: shipment.revision }}>
@@ -333,9 +336,9 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
               Verify Amazon cancellation
             </ActionButton>
           )}
-          {!["collected", "cancelled", "creating"].includes(shipment.status) && step.next.step !== "reconcile" && (
-            <CorrectionForm id={id} />
-          )}
+          {!finishedStates.includes(shipment.status) &&
+            shipment.status !== "creating" &&
+            step.next.step !== "reconcile" && <CorrectionForm id={id} />}
         </div>
       )}
     </>

@@ -1,6 +1,43 @@
 import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
 import { describe, expect, it } from "vitest"
-import { attributeAmazonSales, attributeShopifySales } from "../src/server/sales-attribution"
+import { attributeAmazonSales, attributeShopifySales, summarizeDemandGaps } from "../src/server/sales-attribution"
+it("separates unfulfilled units from mapping failures and unknown quantities", () => {
+  expect(
+    summarizeDemandGaps([
+      {
+        sourceName: "web",
+        locationId: null,
+        orderId: "1",
+        variantId: "v",
+        buyerSku: "A",
+        reason: "unfulfilled",
+        units: 5
+      },
+      {
+        sourceName: "app",
+        locationId: null,
+        orderId: "2",
+        variantId: "v",
+        buyerSku: "A",
+        reason: "channel_unmapped",
+        units: 3
+      },
+      {
+        sourceName: "web",
+        locationId: null,
+        orderId: "3",
+        variantId: "v",
+        buyerSku: "A",
+        reason: "quantity_unknown",
+        units: null
+      }
+    ])
+  ).toEqual({
+    unfulfilled: { units: 5, unknownCount: 0 },
+    channel_unmapped: { units: 3, unknownCount: 0 },
+    quantity_unknown: { units: 0, unknownCount: 1 }
+  })
+})
 const order: ShopifySale = {
   id: "order1",
   createdAt: "2026-08-20T00:00:00Z",

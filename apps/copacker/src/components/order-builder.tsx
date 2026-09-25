@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { useActionForm } from "@/hooks/useActionForm"
 import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/api"
+import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
 import { orderLine } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { FormError, SubmitButton } from "./actions"
@@ -21,7 +22,8 @@ import { sx } from "@/styles/sprinkles.css"
 
 const destinations = [
   { value: "awd_us", label: "Amazon AWD USA" },
-  { value: "awd_cn", label: "Amazon AWD China (planned)", disabled: true },
+  { value: "warehouse", label: "Your location" },
+  { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
   { value: "fba", label: "Amazon FBA (planned)", disabled: true },
   { value: "forwarder", label: "Freight forwarder (planned)", disabled: true }
 ]
@@ -49,9 +51,12 @@ function supplierMatchMessage(status: string) {
 
 export function OrderBuilder({
   suppliers,
+  deliveries = [],
   initialItems = []
 }: {
   suppliers: Array<{ id: string; name: string }>
+  // The buyer's delivery addresses, for POs sent to its own locations.
+  deliveries?: Array<{ id: string; name: string }>
   // Lines added before the builder opens, such as a reorder from Inventory.
   initialItems?: ReturnType<typeof orderLine>[]
 }) {
@@ -82,14 +87,20 @@ export function OrderBuilder({
   const adjustments = useWatch({ control: form.control, name: "adjustments" }) ?? []
   const items = useWatch({ control: form.control, name: "items" }) ?? []
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
+  const destination = useWatch({ control: form.control, name: "destination" })
   const supplierId = useWatch({ control: form.control, name: "supplierId" }) ?? ""
   const itemsError = form.formState.errors.items
-  const supplierSkus = items.map((item) => item?.supplierSku?.trim() ?? "")
-  const skuKey = items.map((item, index) => `${item?.id ?? ""}\0${supplierSkus[index]}`).join("\n")
+  const lookupGroups = items.map((item) =>
+    item?.components?.length
+      ? item.components.map((component) => component.supplierSku?.trim() ?? "")
+      : [item?.supplierSku?.trim() ?? ""]
+  )
+  const supplierSkus = lookupGroups.flat()
+  const skuKey = items.map((item, index) => `${item?.id ?? ""}\0${lookupGroups[index]?.join(",") ?? ""}`).join("\n")
   const [matches, setMatches] = useState<
     Array<{
       sku: string
-      status: string
+      status: BundleQuoteStatus
       unitPriceMinor: number | null
       product: { title?: string } | null
     }>
@@ -123,8 +134,19 @@ export function OrderBuilder({
         if (controller.signal.aborted) {
           return
         }
-        setMatches(results)
-        results.forEach((result, index) => {
+        let offset = 0
+        const perLine = lookupGroups.map((group, index) => {
+          const componentMatches = results.slice(offset, offset + group.length)
+          offset += group.length
+          const components = items[index]?.components
+          if (!components?.length) {
+            return componentMatches[0]!
+          }
+          const quote = bundleQuote(components, componentMatches)
+          return { sku: "", ...quote, product: null }
+        })
+        setMatches(perLine)
+        perLine.forEach((result, index) => {
           const line = form.getValues(`items.${index}`)
           if (!line || result.status !== "matched" || result.unitPriceMinor === null) {
             return
@@ -188,6 +210,14 @@ export function OrderBuilder({
                 options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
               />
               <FormSelect name="destination" label="Destination" options={destinations} />
+              {destination === "warehouse" && (
+                <FormSelect
+                  name="deliveryId"
+                  label="Delivery address"
+                  placeholder={deliveries.length ? "Select delivery address" : "Add a delivery address in Settings"}
+                  options={deliveries.map((delivery) => ({ value: delivery.id, label: delivery.name }))}
+                />
+              )}
               <FormInput name="dueDate" label="Required date" type="date" />
               <FormSelect name="currency" label="Currency" options={currencies} />
             </FieldGroup>
@@ -307,6 +337,17 @@ export function OrderBuilder({
                             {line.piecesPerSet > 1 ? `Bundle of ${line.piecesPerSet} pieces in Shopify` : "1 piece"}
                           </dd>
                         </dl>
+                        {!!item?.components?.length && (
+                          <dl className={styles.identifiers}>
+                            <dt className={sx({ fontWeight: "medium" })}>Supplier components</dt>
+                            {item.components.map((component) => (
+                              <dd key={component.variantId} className={sx({ color: "muted" })}>
+                                {component.quantity} × {component.buyerSku || "Shopify component"} · Supplier SKU{" "}
+                                {component.supplierSku || "missing"}
+                              </dd>
+                            ))}
+                          </dl>
+                        )}
                         <FormNumber
                           name={`items.${index}.unitPrice`}
                           label={`Unit price per piece (${currency})`}
@@ -322,7 +363,11 @@ export function OrderBuilder({
                           </p>
                         )}
                         {match && match.status !== "matched" && (
-                          <p className={sx({ text: "sm", color: "muted" })}>{supplierMatchMessage(match.status)}</p>
+                          <p className={sx({ text: "sm", color: "muted" })}>
+                            {item?.components?.length
+                              ? `Check the component SKUs and enter the agreed price per piece. ${supplierMatchMessage(match.status)}`
+                              : supplierMatchMessage(match.status)}
+                          </p>
                         )}
                         <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepOptions} />
                         <dl className={styles.identifiers}>

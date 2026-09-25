@@ -50,7 +50,7 @@ Location classifications are the buyer's saved choice, otherwise automatic from 
 
 2026-09-25: Shopify queries validate against the current Admin schema, artifact copacker-sales-attribution revision 2. A live rolling 56-day Amazon read returned 574 orders, 92 SKU rows and 649 FBA fulfilled units with no attribution gaps. It used the original buyer workspace's seller connection, not the separate Gmail buyer workspace. No provider writes, shipment creation or supplier contact occurred.
 
-Both Shopify connections lack order-read scope. Live Shopify verification requires reconnection after deployment and merchant/mirror location classifications. Another agent owns the restock UI, settings and draft batches.
+The original Fencing Club buyer connection now has order-read access. A live 56-day read displayed variant sales and 913 uncounted units; these include unfulfilled orders, but the causes have not yet been reconciled. The sales response now separates gap units by reason so the next live read can distinguish unfulfilled demand from unmapped channels, locations or products. Another agent owns the restock UI, settings and draft batches.
 
 Remaining coverage: explicit configuration for additional sales apps, Shopify fulfillment-order allocation for pending units, FBM warehouse reconciliation, non-Amazon MCF demand and durable collection above current request budgets. These are gaps, not zero demand.
 

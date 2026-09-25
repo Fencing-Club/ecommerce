@@ -17,7 +17,6 @@ import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/compon
 import { api, errorMessage } from "@/lib/api"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
-import { salesPeriods, type VariantSales } from "@/server/bundle-sales"
 import {
   type InventoryLocation,
   type InventoryProduct,
@@ -72,115 +71,8 @@ const productsApi = api.injectEndpoints({
   })
 })
 
-type SalesResult = {
-  days: number
-  unmatchedUnits: number
-  sources: { source: "shopify" | "amazon"; error: string | null; gapUnits: number }[]
-  variants: Record<string, VariantSales>
-}
-
-const salesApi = api.injectEndpoints({
-  overrideExisting: true,
-  endpoints: (build) => ({
-    inventorySales: build.mutation<SalesResult, { days: number }>({
-      query: (body) => ({ url: "inventory/sales", method: "POST", body })
-    })
-  })
-})
-
 // Reloads the page of products after a row changes something.
 const RefreshContext = createContext<() => void>(() => undefined)
-
-// Sales loaded for the page, read by each row.
-const SalesContext = createContext<SalesResult | null>(null)
-
-const sourceNames = { shopify: "Shopify", amazon: "Amazon" } as const
-
-// How these variants sold in the loaded period: alone, inside bundles, and (for bundles) how many bundles.
-function SalesLine({ variantIds }: { variantIds: string[] }) {
-  const sales = use(SalesContext)
-  // With no source read, nothing is known; "no sales" would be wrong.
-  if (!sales?.sources.some((source) => source.error === null)) {
-    return null
-  }
-  const totals = variantIds.reduce(
-    (sum, id) => {
-      const variant = sales.variants[id]
-      return {
-        soldAlone: sum.soldAlone + (variant?.soldAlone ?? 0),
-        soldInBundles: sum.soldInBundles + (variant?.soldInBundles ?? 0),
-        bundlesSold: sum.bundlesSold + (variant?.bundlesSold ?? 0)
-      }
-    },
-    { soldAlone: 0, soldInBundles: 0, bundlesSold: 0 }
-  )
-  const parts = [
-    totals.bundlesSold > 0 && `${totals.bundlesSold} bundles sold`,
-    totals.soldAlone > 0 && `${totals.soldAlone} sold alone`,
-    totals.soldInBundles > 0 && `${totals.soldInBundles} sold in bundles`
-  ].filter(Boolean)
-  return (
-    <span className={styles.detail}>
-      Last {sales.days} days: {parts.length ? parts.join(", ") : "no sales"}
-    </span>
-  )
-}
-
-function SalesControls() {
-  const [days, setDays] = useState<number>(salesPeriods.at(-1) ?? 56)
-  const [load, result] = salesApi.useInventorySalesMutation({ fixedCacheKey: "inventory-sales" })
-  return (
-    <div className={styles.listActions}>
-      <Field orientation="horizontal" className={styles.pageSize}>
-        <FieldLabel htmlFor="inventory-sales-days">Sales period</FieldLabel>
-        <NativeSelect
-          id="inventory-sales-days"
-          size="sm"
-          value={String(days)}
-          onChange={(event) => setDays(Number(event.target.value))}
-        >
-          {salesPeriods.map((period) => (
-            <NativeSelectOption key={period} value={String(period)}>
-              {period} days
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </Field>
-      <Button variant="outline" size="sm" disabled={result.isLoading} onClick={() => void load({ days })}>
-        {result.isLoading ? "Loading sales…" : "Show sales"}
-      </Button>
-      {result.isLoading && (
-        <span className={styles.summary} aria-live="polite">
-          Reading every order in the period. This can take a few minutes.
-        </span>
-      )}
-    </div>
-  )
-}
-
-// Explains sources that couldn't be read and sales that couldn't be matched to a product.
-function SalesNotes({ sales, error }: { sales: SalesResult | undefined; error: unknown }) {
-  if (error) {
-    return <p role="alert">{errorMessage(error, "Sales couldn't be loaded. Try again.")}</p>
-  }
-  if (!sales) {
-    return null
-  }
-  const notes = [
-    ...sales.sources.flatMap(({ source, error: message, gapUnits }) => [
-      message && `${sourceNames[source]}: ${message}`,
-      gapUnits > 0 && `${sourceNames[source]}: ${gapUnits} units weren't counted, such as unshipped orders.`
-    ]),
-    sales.unmatchedUnits > 0 && `${sales.unmatchedUnits} units sold under SKUs that don't match one Shopify product.`
-  ].filter((note) => typeof note === "string")
-  return notes.length ? (
-    <ul className={styles.salesNotes} aria-live="polite">
-      {notes.map((note) => (
-        <li key={note}>{note}</li>
-      ))}
-    </ul>
-  ) : null
-}
 
 const locationGroups = [
   { classification: "merchant", label: "Your stock" },
@@ -333,7 +225,6 @@ function ProductRow({ product }: { product: ListedProduct }) {
               {only.sku ?? "No SKU"}
               {stockNotes[only.stock]}
             </span>
-            <SalesLine variantIds={[only.variantId]} />
             <Locations variant={only} />
             <Actions product={product} className={styles.actions} />
           </span>
@@ -354,7 +245,6 @@ function ProductRow({ product }: { product: ListedProduct }) {
             {count === 1 ? "1 variation" : `${count} variations`}
             {stockNotes[product.stock]}
           </span>
-          <SalesLine variantIds={product.variants.map((variant) => variant.variantId)} />
         </span>
         <Quantities item={product} />
       </CollapsibleTrigger>
@@ -371,7 +261,6 @@ function ProductRow({ product }: { product: ListedProduct }) {
                   {variant.sku ?? "No SKU"}
                   {product.stock === variant.stock ? null : stockNotes[variant.stock]}
                 </span>
-                <SalesLine variantIds={[variant.variantId]} />
                 <Locations variant={variant} />
               </span>
               <Quantities item={variant} />
@@ -431,8 +320,6 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
   } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, includeExcluded, observedAt })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
-  // Shares the result SalesControls loads.
-  const [, sales] = salesApi.useInventorySalesMutation({ fixedCacheKey: "inventory-sales" })
 
   if (isLoading && !data) {
     return <p className={styles.summary}>Loading products…</p>
@@ -455,120 +342,112 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
 
   return (
     <RefreshContext value={() => void refetch()}>
-      <SalesContext value={sales.data ?? null}>
-        <div className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-          {data.needsResync && <p className={styles.summary}>Sync again to load product photos and location types.</p>}
-          <div className={styles.toolbar}>
-            <Field>
-              <FieldLabel htmlFor="inventory-search">Search products</FieldLabel>
-              <div className={sx({ display: "flex", alignItems: "center", gap: 2 })}>
-                <Search className={sx({ size: 4, color: "muted" })} aria-hidden="true" />
-                <Input
-                  id="inventory-search"
-                  type="search"
-                  placeholder="Product, variation, or SKU"
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value)
-                    setPage(1)
-                  }}
-                />
-              </div>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="inventory-location">Location</FieldLabel>
-              <NativeSelect
-                id="inventory-location"
-                className={styles.fullWidth}
-                value={locationId}
+      <div className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+        {data.needsResync && <p className={styles.summary}>Sync again to load product photos and location types.</p>}
+        <div className={styles.toolbar}>
+          <Field>
+            <FieldLabel htmlFor="inventory-search">Search products</FieldLabel>
+            <div className={sx({ display: "flex", alignItems: "center", gap: 2 })}>
+              <Search className={sx({ size: 4, color: "muted" })} aria-hidden="true" />
+              <Input
+                id="inventory-search"
+                type="search"
+                placeholder="Product, variation, or SKU"
+                value={search}
                 onChange={(event) => {
-                  setLocationId(event.target.value)
+                  setSearch(event.target.value)
+                  setPage(1)
+                }}
+              />
+            </div>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="inventory-location">Location</FieldLabel>
+            <NativeSelect
+              id="inventory-location"
+              className={styles.fullWidth}
+              value={locationId}
+              onChange={(event) => {
+                setLocationId(event.target.value)
+                setPage(1)
+              }}
+            >
+              <NativeSelectOption value="">All locations</NativeSelectOption>
+              {locationGroups.map((group) => {
+                const options = visibleLocations.filter((location) => location.classification === group.classification)
+                return options.length ? (
+                  <NativeSelectOptGroup key={group.classification} label={group.label}>
+                    {options.map((location) => (
+                      <NativeSelectOption key={location.id} value={location.id}>
+                        {location.name}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelectOptGroup>
+                ) : null
+              })}
+            </NativeSelect>
+          </Field>
+          {hasExcluded && (
+            <Field orientation="horizontal" className={styles.collective}>
+              <Checkbox
+                id="inventory-excluded"
+                checked={includeExcluded}
+                onCheckedChange={(checked) => {
+                  setIncludeExcluded(checked)
+                  setLocationId("")
+                  setPage(1)
+                }}
+              />
+              <FieldContent>
+                <FieldLabel htmlFor="inventory-excluded">Include excluded locations</FieldLabel>
+                <FieldDescription>
+                  Stock that isn’t yours, such as partners’ stock shared through Shopify Collective.
+                </FieldDescription>
+              </FieldContent>
+            </Field>
+          )}
+        </div>
+        <div className={styles.listHeader}>
+          <p className={styles.summary} aria-live="polite">
+            {q
+              ? `${data.totalProducts} products match`
+              : `${data.totalProducts} products, ${data.totalVariants} variations`}
+          </p>
+          <div className={styles.listActions}>
+            <InventoryLocations onChange={() => void refetch()} />
+            <Field orientation="horizontal" className={styles.pageSize}>
+              <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
+              <NativeSelect
+                id="inventory-page-size"
+                size="sm"
+                value={String(pageSize)}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value))
                   setPage(1)
                 }}
               >
-                <NativeSelectOption value="">All locations</NativeSelectOption>
-                {locationGroups.map((group) => {
-                  const options = visibleLocations.filter(
-                    (location) => location.classification === group.classification
-                  )
-                  return options.length ? (
-                    <NativeSelectOptGroup key={group.classification} label={group.label}>
-                      {options.map((location) => (
-                        <NativeSelectOption key={location.id} value={location.id}>
-                          {location.name}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelectOptGroup>
-                  ) : null
-                })}
+                {pageSizes.map((size) => (
+                  <NativeSelectOption key={size} value={String(size)}>
+                    {size}
+                  </NativeSelectOption>
+                ))}
               </NativeSelect>
             </Field>
-            {hasExcluded && (
-              <Field orientation="horizontal" className={styles.collective}>
-                <Checkbox
-                  id="inventory-excluded"
-                  checked={includeExcluded}
-                  onCheckedChange={(checked) => {
-                    setIncludeExcluded(checked)
-                    setLocationId("")
-                    setPage(1)
-                  }}
-                />
-                <FieldContent>
-                  <FieldLabel htmlFor="inventory-excluded">Include excluded locations</FieldLabel>
-                  <FieldDescription>
-                    Stock that isn’t yours, such as partners’ stock shared through Shopify Collective.
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            )}
           </div>
-          <div className={styles.listHeader}>
-            <SalesControls />
-          </div>
-          <SalesNotes sales={sales.data} error={sales.error} />
-          <div className={styles.listHeader}>
-            <p className={styles.summary} aria-live="polite">
-              {q
-                ? `${data.totalProducts} products match`
-                : `${data.totalProducts} products, ${data.totalVariants} variations`}
-            </p>
-            <div className={styles.listActions}>
-              <InventoryLocations onChange={() => void refetch()} />
-              <Field orientation="horizontal" className={styles.pageSize}>
-                <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
-                <NativeSelect
-                  id="inventory-page-size"
-                  size="sm"
-                  value={String(pageSize)}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value))
-                    setPage(1)
-                  }}
-                >
-                  {pageSizes.map((size) => (
-                    <NativeSelectOption key={size} value={String(size)}>
-                      {size}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </Field>
-            </div>
-          </div>
-          {data.products.length === 0 ? (
-            <p className={styles.summary}>
-              {q ? "No products match your search." : "No inventory was reported for this selection."}
-            </p>
-          ) : (
-            <ul className={styles.list} aria-busy={isFetching}>
-              {data.products.map((product) => (
-                <ProductRow key={product.productId} product={product} />
-              ))}
-            </ul>
-          )}
-          {data.totalPages > 1 && <Pager data={data} onPage={setPage} />}
         </div>
-      </SalesContext>
+        {data.products.length === 0 ? (
+          <p className={styles.summary}>
+            {q ? "No products match your search." : "No inventory was reported for this selection."}
+          </p>
+        ) : (
+          <ul className={styles.list} aria-busy={isFetching}>
+            {data.products.map((product) => (
+              <ProductRow key={product.productId} product={product} />
+            ))}
+          </ul>
+        )}
+        {data.totalPages > 1 && <Pager data={data} onPage={setPage} />}
+      </div>
     </RefreshContext>
   )
 }

@@ -68,33 +68,40 @@ const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 // AWD USA replenishes US FBA, which Shopify's Amazon location mirrors. AWD China stock is not in that mirror.
 const amazonDestinations = new Set<OrderInput["destination"]>(["awd_us", "fba"])
 
-// The Shopify locations a PO's stock will appear at. Amazon-bound stock shows at the locations mirroring Amazon.
-// Other destinations aren't linked to a Shopify location yet, so their units count only toward "All locations".
+// The Shopify locations a PO's stock will appear at. Amazon-bound stock shows at the locations mirroring Amazon, and
+// stock sent to one of the buyer's delivery addresses at the Shopify location that address is linked to. Other
+// destinations aren't linked to a Shopify location, so their units count only toward "All locations".
 export function receivingLocations(
-  destination: OrderInput["destination"],
-  classifications: ReadonlyMap<string, LocationClassification>
+  order: Pick<OrderInput, "destination" | "deliveryId">,
+  classifications: ReadonlyMap<string, LocationClassification>,
+  deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
-  return amazonDestinations.has(destination)
-    ? [...classifications].flatMap(([id, classification]) => (classification === "amazon_mirror" ? [id] : []))
-    : []
+  if (amazonDestinations.has(order.destination)) {
+    return [...classifications].flatMap(([id, classification]) => (classification === "amazon_mirror" ? [id] : []))
+  }
+  const linked = order.destination === "warehouse" && order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
+  return linked ? [linked] : []
 }
 
-// PO quantities are pieces; Shopify counts sellable units, which are sets of piecesPerSet pieces.
+// PO quantities are pieces; Shopify counts sellable units, which are sets of piecesPerSet pieces. Pieces already
+// received (by PO item) are no longer on order.
 export function onOrderByVariant(
   orders: {
     id: string
-    data: Pick<OrderInput, "reference" | "destination"> & {
-      items: Pick<OrderItem, "variantId" | "pieces" | "piecesPerSet">[]
+    data: Pick<OrderInput, "reference" | "destination" | "deliveryId"> & {
+      items: Pick<OrderItem, "id" | "variantId" | "pieces" | "piecesPerSet">[]
     }
+    received?: Record<string, number>
   }[],
-  classifications: ReadonlyMap<string, LocationClassification> = new Map()
+  classifications: ReadonlyMap<string, LocationClassification> = new Map(),
+  deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
   const byVariant = new Map<string, PendingOrder[]>()
   for (const order of orders) {
-    const locationIds = receivingLocations(order.data.destination, classifications)
+    const locationIds = receivingLocations(order.data, classifications, deliveryLocations)
     for (const item of order.data.items) {
       const pending = byVariant.get(item.variantId) ?? []
-      const units = Math.floor(item.pieces / item.piecesPerSet)
+      const units = Math.floor(Math.max(0, item.pieces - (order.received?.[item.id] ?? 0)) / item.piecesPerSet)
       const existing = pending.find((entry) => entry.id === order.id)
       if (existing) {
         existing.units += units

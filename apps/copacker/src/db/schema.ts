@@ -96,6 +96,8 @@ export const contacts = pgTable("contacts", {
   name: text().notNull(),
   kind: text({ enum: contactKinds }).notNull(),
   address: jsonb().$type<Address>().notNull(),
+  // For a delivery address, the Shopify location its stock appears at, so POs sent there show as on order there.
+  shopifyLocationId: text(),
   createdAt: createdAt()
 })
 export const connections = pgTable(
@@ -179,6 +181,7 @@ export type ShipmentState =
   | "waiting_labels"
   | "ready"
   | "collected"
+  | "received"
   | "correction"
   | "needs_attention"
   | "cancelled"

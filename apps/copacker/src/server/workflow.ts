@@ -1,9 +1,23 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
-import { documents, shipments } from "@/db/schema"
+import { documents, shipments, type ShipmentState } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
-import { orderCoverage, packingReadiness, releaseIssues, reservedPieces, type ReadinessIssue } from "./readiness"
+import {
+  finishedStates,
+  orderCoverage,
+  packingReadiness,
+  releasedStates,
+  releaseIssues,
+  reservedPieces,
+  type ReadinessIssue
+} from "./readiness"
+
+const finishedMessages: Partial<Record<ShipmentState, string>> = {
+  collected: "Collection has been reported",
+  received: "The goods have arrived",
+  cancelled: "Shipment cancellation has been verified"
+}
 
 export async function orderWorkflow(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
@@ -66,14 +80,11 @@ export async function orderWorkflow(s: Session, orderId: string) {
               }
         } else if (shipment.status === "ready") {
           next = { owner: "supplier", step: "print", message: "Print the packet and prepare the cartons for pickup" }
-        } else if (["collected", "cancelled"].includes(shipment.status)) {
+        } else if (finishedStates.includes(shipment.status)) {
           next = {
             owner: null,
             step: "complete",
-            message:
-              shipment.status === "collected"
-                ? "Collection has been reported"
-                : "Shipment cancellation has been verified"
+            message: finishedMessages[shipment.status] ?? "Shipment complete"
           }
         } else if (shipment.status === "correction") {
           next = {
@@ -121,7 +132,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           canSubmit: editable && !packing.issues.length,
           canRelease: s.org.kind === "buyer" && shipment.status === "waiting_labels" && !release.length,
           issues,
-          packetUrl: ["ready", "collected"].includes(shipment.status) ? `/api/shipments/${shipment.id}/packet` : null
+          packetUrl: releasedStates.includes(shipment.status) ? `/api/shipments/${shipment.id}/packet` : null
         }
       }),
       documents: docs
@@ -131,7 +142,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           const downloadable =
             s.org.kind === "buyer" ||
             !["carton_label", "shipping_label"].includes(doc.kind) ||
-            (!!shipment && ["ready", "collected"].includes(shipment.status))
+            (!!shipment && releasedStates.includes(shipment.status))
           return {
             id: doc.id,
             name: doc.name,

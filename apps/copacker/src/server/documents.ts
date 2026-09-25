@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { purchaseOrderPdf, packingListPdf, checklistPdf } from "@repo/aisle/documents"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
-import { documents, orders, shipments, organizations, suppliers, orderRevisions } from "@/db/schema"
+import { contacts, documents, orders, shipments, organizations, suppliers, orderRevisions } from "@/db/schema"
 import { putFile } from "./storage"
 
 type DocumentInput = Omit<typeof documents.$inferInsert, "id" | "objectKey" | "bytes">
@@ -68,7 +68,33 @@ export async function generatePo(orderId: string, revision?: number) {
   if (!historical) {
     throw new Error("PO revision is unavailable")
   }
-  const bytes = await purchaseOrderPdf(historical.data, row.buyer.name, row.supplier.name, targetRevision)
+  const deliveryId = historical.data.destination === "warehouse" ? historical.data.deliveryId : undefined
+  const [delivery] = deliveryId
+    ? await db()
+        .select({ name: contacts.name, address: contacts.address })
+        .from(contacts)
+        .where(and(eq(contacts.id, deliveryId), eq(contacts.orgId, row.order.buyerOrgId)))
+    : []
+  const deliveryAddress = delivery
+    ? [
+        delivery.address.name,
+        delivery.address.addressLine1,
+        delivery.address.addressLine2,
+        delivery.address.city,
+        delivery.address.stateOrRegion,
+        delivery.address.postalCode,
+        delivery.address.countryCode
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : undefined
+  const bytes = await purchaseOrderPdf(
+    historical.data,
+    row.buyer.name,
+    row.supplier.name,
+    targetRevision,
+    deliveryAddress
+  )
   const doc = await storeDocument(
     {
       orderId,

@@ -26,11 +26,20 @@ import { ContactForm } from "./settings-forms"
 import * as styles from "./saved-addresses.css"
 import { sx } from "@/styles/sprinkles.css"
 
-type Contact = { id: string; name: string; kind: ContactKind; address: Address }
+type Contact = { id: string; name: string; kind: ContactKind; address: Address; shopifyLocationId: string | null }
+type ShopifyLocation = { id: string; name: string }
 
 const icons = { delivery: Warehouse, pickup: MapPin, forwarder: Truck }
 
-export function SavedAddresses({ contacts, supplier = false }: { contacts: Contact[]; supplier?: boolean }) {
+export function SavedAddresses({
+  contacts,
+  supplier = false,
+  locations = []
+}: {
+  contacts: Contact[]
+  supplier?: boolean
+  locations?: ShopifyLocation[]
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -57,7 +66,7 @@ export function SavedAddresses({ contacts, supplier = false }: { contacts: Conta
                     : "Save a delivery address or a freight forwarder."}
                 </DialogDescription>
               </DialogHeader>
-              <ContactForm supplier={supplier} onSuccess={() => setOpen(false)} />
+              <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
             </DialogContent>
           </Dialog>
         </CardAction>
@@ -66,7 +75,7 @@ export function SavedAddresses({ contacts, supplier = false }: { contacts: Conta
         {contacts.length ? (
           <ItemGroup className={styles.list}>
             {contacts.map((contact) => (
-              <SavedAddress key={contact.id} contact={contact} supplier={supplier} />
+              <SavedAddress key={contact.id} contact={contact} supplier={supplier} locations={locations} />
             ))}
           </ItemGroup>
         ) : (
@@ -84,7 +93,15 @@ export function SavedAddresses({ contacts, supplier = false }: { contacts: Conta
   )
 }
 
-function SavedAddress({ contact, supplier }: { contact: Contact; supplier: boolean }) {
+function SavedAddress({
+  contact,
+  supplier,
+  locations
+}: {
+  contact: Contact
+  supplier: boolean
+  locations: ShopifyLocation[]
+}) {
   const router = useRouter()
   const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
@@ -132,6 +149,12 @@ function SavedAddress({ contact, supplier }: { contact: Contact; supplier: boole
               {address.email && <a href={`mailto:${address.email}`}>{address.email}</a>}
             </ItemDescription>
           )}
+          {contact.kind === "delivery" && contact.shopifyLocationId && (
+            <ItemDescription>
+              Stock arrives at{" "}
+              {locations.find((location) => location.id === contact.shopifyLocationId)?.name ?? "a Shopify location"}
+            </ItemDescription>
+          )}
           {supplier && contact.kind === "pickup" && !address.phoneNumber && (
             <ItemDescription className={styles.warning}>
               Add a phone number to use this address on shipments.
@@ -155,7 +178,12 @@ function SavedAddress({ contact, supplier }: { contact: Contact; supplier: boole
                   Changes apply to future shipments. Shipments already submitted keep their pickup details.
                 </DialogDescription>
               </DialogHeader>
-              <ContactForm contact={contact} supplier={supplier} onSuccess={() => setEditing(false)} />
+              <ContactForm
+                contact={contact}
+                supplier={supplier}
+                locations={locations}
+                onSuccess={() => setEditing(false)}
+              />
             </DialogContent>
           </Dialog>
           <Button

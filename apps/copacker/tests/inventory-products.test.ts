@@ -140,6 +140,7 @@ describe("stock kinds", () => {
 
 describe("on order", () => {
   const item = (variant: number, pieces: number, piecesPerSet = 1) => ({
+    id: `item-${variant}-${pieces}`,
     variantId: `gid://shopify/ProductVariant/${variant}`,
     pieces,
     piecesPerSet
@@ -174,6 +175,26 @@ describe("on order", () => {
     })
     const cord = groupInventory(rows, { onOrder }).find((product) => product.title === "Body cord")
     expect(cord?.onOrder).toEqual({ units: 0, orders: [] })
+  })
+
+  it("shows POs to a delivery address at its linked Shopify location", () => {
+    const toWarehouse = {
+      id: "w",
+      data: { reference: "PO-W", destination: "warehouse" as const, deliveryId: "delivery-1", items: [item(1, 6)] }
+    }
+    const onOrder = onOrderByVariant(
+      [toWarehouse],
+      classifications,
+      new Map([["delivery-1", "gid://shopify/Location/1"]])
+    )
+    expect(onOrder.get("gid://shopify/ProductVariant/1")?.[0]?.locationIds).toEqual(["gid://shopify/Location/1"])
+    const unlinked = onOrderByVariant([toWarehouse], classifications, new Map([["delivery-1", null]]))
+    expect(unlinked.get("gid://shopify/ProductVariant/1")?.[0]?.locationIds).toEqual([])
+  })
+
+  it("leaves received pieces off order", () => {
+    const onOrder = onOrderByVariant([{ ...order("a", "PO-1", [item(1, 24, 2)]), received: { "item-1-24": 10 } }])
+    expect(onOrder.get("gid://shopify/ProductVariant/1")?.[0]?.units).toBe(7)
   })
 
   it("shows units only at the location the PO will stock", () => {

@@ -12,6 +12,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { db } from "@/db"
 import { connections, contacts, supplierProfiles } from "@/db/schema"
 import { session } from "@/server/auth"
+import { readLocationMappings } from "@/server/inventory-location-settings"
 import { pushToBottom } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
 
@@ -40,6 +41,14 @@ export default async function Settings() {
     db().select().from(contacts).where(eq(contacts.orgId, s.org.id)),
     db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id))
   ])
+
+  // Delivery addresses can be linked to one of the store's own Shopify locations.
+  const ownLocations =
+    s.org.kind === "buyer"
+      ? (await readLocationMappings(s)).locations
+          .filter((location) => location.classification === "merchant")
+          .map((location) => ({ id: location.locationId, name: location.name }))
+      : []
 
   return (
     <>
@@ -112,7 +121,7 @@ export default async function Settings() {
         </Card>
       )}
 
-      <SavedAddresses contacts={saved} supplier={s.org.kind === "supplier"} />
+      <SavedAddresses contacts={saved} supplier={s.org.kind === "supplier"} locations={ownLocations} />
     </>
   )
 }

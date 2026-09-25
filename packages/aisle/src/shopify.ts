@@ -37,18 +37,58 @@ export function shopifyLocationKind(location: {
   return serviceHosts.get(host) ?? "fulfillment_service"
 }
 // The variants a bundle is made of and how many of each one bundle contains.
-export type BundleComponent = { variantId: string; quantity: number }
+export type BundleComponent = {
+  variantId: string
+  quantity: number
+  buyerSku?: string | null
+  supplierSku?: string | null
+}
 const bundleComponents = z.object({
   nodes: z
-    .array(z.object({ quantity: z.number().int().positive().safe(), productVariant: z.object({ id: z.string() }) }))
+    .array(
+      z.object({
+        quantity: z.number().int().positive().safe(),
+        productVariant: z.object({
+          id: z.string(),
+          sku: z.string().nullable().optional(),
+          supplierSku: field.optional()
+        })
+      })
+    )
     .max(25),
   pageInfo: z.object({ hasNextPage: z.boolean() })
 })
 const bundleComponentFields = "nodes{quantity productVariant{id}} pageInfo{hasNextPage}"
+const catalogBundleComponentFields = `nodes{quantity productVariant{id sku supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value}}} pageInfo{hasNextPage}`
 function bundleComponentList(components: z.infer<typeof bundleComponents>): BundleComponent[] | null {
   return components.pageInfo.hasNextPage
     ? null
-    : components.nodes.map((node) => ({ variantId: node.productVariant.id, quantity: node.quantity }))
+    : components.nodes.map((node) => ({
+        variantId: node.productVariant.id,
+        quantity: node.quantity,
+        ...(node.productVariant.sku !== undefined && { buyerSku: node.productVariant.sku }),
+        ...(node.productVariant.supplierSku !== undefined && {
+          supplierSku: node.productVariant.supplierSku?.value ?? null
+        })
+      }))
+}
+// The bundle listing itself need not have a supplier SKU. Its physical components do.
+export function bundleSupplierComponents(
+  catalog: Pick<CatalogVariant, "requiresComponents" | "productVariantComponents">
+) {
+  if (!catalog.requiresComponents) {
+    return []
+  }
+  const components = bundleComponentList(catalog.productVariantComponents)
+  if (!components?.length) {
+    throw new Error("Shopify didn't return this bundle's components; check the bundle in Shopify")
+  }
+  return components.map((component) => {
+    if (component.supplierSku === undefined) {
+      throw new Error("Shopify didn't return supplier SKUs for this bundle's components")
+    }
+    return { ...component, buyerSku: component.buyerSku ?? null, supplierSku: component.supplierSku }
+  })
 }
 const stockLevel = z.object({
   id: z.string().min(1),
@@ -424,4 +464,4 @@ export class Shopify {
     }
   }
 }
-const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${bundleComponentFields}}`
+const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`

@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireMembership } from "@/server/auth"
+import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 async function labelsReleased(doc: typeof documents.$inferSelect) {
   if (!["shipping_label", "carton_label"].includes(doc.kind)) {
@@ -13,7 +14,7 @@ async function labelsReleased(doc: typeof documents.$inferSelect) {
     return false
   }
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, doc.shipmentId))
-  return !!shipment && ["ready", "collected"].includes(shipment.status) && shipment.revision === doc.shipmentRevision
+  return !!shipment && releasedStates.includes(shipment.status) && shipment.revision === doc.shipmentRevision
 }
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),

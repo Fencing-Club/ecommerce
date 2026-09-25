@@ -31,7 +31,9 @@ import {
   approveInvoice,
   correctShipment,
   savePacking,
-  checkPacking
+  checkPacking,
+  closeOrder,
+  receiveShipment
 } from "@/server/orders"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
@@ -199,7 +201,20 @@ export async function POST(request: Request) {
     }
     if (action === "contact.create") {
       const input = z
-        .object({ name: z.string().min(1).max(100), kind: z.enum(contactKinds), address: addressSchema })
+        .object({
+          name: z.string().min(1).max(100),
+          kind: z.enum(contactKinds),
+          address: addressSchema,
+          shopifyLocationId: z
+            .string()
+            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
+            .nullable()
+            .default(null)
+        })
+        .transform((contact) => ({
+          ...contact,
+          shopifyLocationId: contact.kind === "delivery" ? contact.shopifyLocationId : null
+        }))
         .parse(data)
       if (!contactKindsFor(s.org.kind).includes(input.kind)) {
         throw new Error(
@@ -243,7 +258,20 @@ export async function POST(request: Request) {
     }
     if (action === "contact.update") {
       const input = z
-        .object({ name: z.string().min(1).max(100), kind: z.enum(contactKinds), address: addressSchema })
+        .object({
+          name: z.string().min(1).max(100),
+          kind: z.enum(contactKinds),
+          address: addressSchema,
+          shopifyLocationId: z
+            .string()
+            .regex(/^gid:\/\/shopify\/Location\/\d+$/)
+            .nullable()
+            .default(null)
+        })
+        .transform((contact) => ({
+          ...contact,
+          shopifyLocationId: contact.kind === "delivery" ? contact.shopifyLocationId : null
+        }))
         .parse(data)
       if (!contactKindsFor(s.org.kind).includes(input.kind)) {
         throw new Error(
@@ -412,6 +440,14 @@ export async function POST(request: Request) {
             eq(shipments.status, "correction")
           )
         )
+      return Response.json({ ok: true })
+    }
+    if (action === "shipment.received") {
+      await receiveShipment(s, id())
+      return Response.json({ ok: true })
+    }
+    if (action === "order.close") {
+      await closeOrder(s, id())
       return Response.json({ ok: true })
     }
     if (action === "shipment.collected") {

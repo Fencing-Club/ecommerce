@@ -1,5 +1,11 @@
-import { approveChanges, commercialChanges, orderInputSchema, packingDraftSchema } from "@repo/aisle"
-import { piecesPerUnit } from "@repo/aisle/shopify"
+import {
+  amazonDestinations,
+  approveChanges,
+  commercialChanges,
+  orderInputSchema,
+  packingDraftSchema
+} from "@repo/aisle"
+import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -13,12 +19,14 @@ import {
   jobs,
   connections,
   contacts,
-  supplierProducts
+  supplierProducts,
+  type ShipmentState
 } from "@/db/schema"
+import { bundleQuote } from "@/lib/bundle-quote"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
-import { reservedPieces, packingReadiness } from "./readiness"
+import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
@@ -52,9 +60,14 @@ export async function prepareOrder(s: Session, raw: unknown) {
         catalog.flatMap((item) => (item?.sku ? [item.sku] : []))
       )
     : null
-  const supplierSkus = catalog.flatMap((source) =>
-    source?.supplierSku?.value ? [source.supplierSku.value.trim()] : []
-  )
+  const supplierSkus = catalog.flatMap((source) => {
+    if (source?.requiresComponents) {
+      return bundleSupplierComponents(source).flatMap((component) =>
+        component.supplierSku ? [component.supplierSku.trim()] : []
+      )
+    }
+    return source?.supplierSku?.value ? [source.supplierSku.value.trim()] : []
+  })
   const supplierCatalog =
     supplier.supplierOrgId && supplierSkus.length
       ? await db()
@@ -78,11 +91,40 @@ export async function prepareOrder(s: Session, raw: unknown) {
     }
     // A multipack is a Shopify bundle, so its pieces per unit come from the bundle, not from the PO.
     const piecesPerSet = piecesPerUnit(source)
-    const supplierSku = source.supplierSku?.value ?? ""
+    const components = source.requiresComponents ? bundleSupplierComponents(source) : undefined
+    const supplierSku = source.requiresComponents ? "" : (source.supplierSku?.value ?? "")
+    const products = supplierCatalog.map((product) => ({ ...product, active: product.active === 1 }))
     const matched = matchSupplierCatalog(
       { supplierOrgId: supplier.supplierOrgId, supplierSku, currency: input.currency },
-      supplierCatalog.map((product) => ({ ...product, active: product.active === 1 }))
+      products
     )
+    const componentMatches = components?.map((component) =>
+      matchSupplierCatalog(
+        { supplierOrgId: supplier.supplierOrgId, supplierSku: component.supplierSku, currency: input.currency },
+        products
+      )
+    )
+    const componentQuote = components?.length && componentMatches ? bundleQuote(components, componentMatches) : null
+    const componentsWithCatalog = components?.map((component, index) => {
+      const product = componentMatches?.[index]?.product
+      return {
+        ...component,
+        supplierCatalog: product?.active
+          ? {
+              productId: product.id,
+              revision: product.revision,
+              supplierSku: product.supplierSku,
+              title: product.title,
+              notes: product.notes,
+              currency: product.currency,
+              priceMinor: product.priceMinor,
+              priceBasis: product.priceBasis,
+              piecesPerSellablePack: product.piecesPerSellablePack,
+              sellablePacksPerCase: product.sellablePacksPerCase
+            }
+          : undefined
+      }
+    })
     if (item.pieces % piecesPerSet !== 0) {
       throw new Error(`${source.sku} is a bundle of ${piecesPerSet}. Order a multiple of ${piecesPerSet} pieces`)
     }
@@ -93,7 +135,8 @@ export async function prepareOrder(s: Session, raw: unknown) {
       buyerSku: source.sku,
       inventoryItemId: source.inventoryItem.id,
       supplierSku,
-      supplierCatalogStatus: matched.status,
+      components: componentsWithCatalog,
+      supplierCatalogStatus: componentQuote?.status ?? matched.status,
       supplierCatalog: matched.product?.active
         ? {
             productId: matched.product.id,
@@ -140,6 +183,16 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
     .for("share")
   if (!supplier) {
     throw new Error("Select a supplier in this workspace")
+  }
+  if (input.destination === "warehouse") {
+    const [delivery] = await tx
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.id, input.deliveryId!), eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
+      .for("share")
+    if (!delivery) {
+      throw new Error("Choose one of your delivery addresses")
+    }
   }
   if (input.destination === "forwarder") {
     const [forwarder] = await tx
@@ -210,8 +263,8 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     ) {
       throw new Error("This PO has changed. Refresh before submitting")
     }
-    if (order.data.destination !== "awd_us") {
-      throw new Error("The first release supports AWD USA. Save other destinations as drafts")
+    if (order.data.destination !== "awd_us" && order.data.destination !== "warehouse") {
+      throw new Error("POs can go to AWD USA or your own locations for now. Save other destinations as drafts")
     }
     if (supplier.removedAt) {
       throw new Error("This supplier was removed. Choose another supplier or add them again")
@@ -312,6 +365,16 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     }
     const packing = assessed.packing
     const approval = commercialChanges(order.data, packing).length > 0
+    const amazon = amazonDestinations.includes(order.data.destination)
+    let status: ShipmentState = "ready"
+    let message = "Packing submitted; ready to ship"
+    if (approval) {
+      status = "approval"
+      message = "Supplier submitted invoice changes for approval"
+    } else if (amazon) {
+      status = "queued"
+      message = "Packing submitted; Amazon creation queued"
+    }
     await tx
       .update(shipments)
       .set({
@@ -319,18 +382,12 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         packingDraft: null,
         snapshot: order.data,
         orderRevision: order.revision,
-        status: approval ? "approval" : "queued",
+        status,
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId))
-    await tx.insert(events).values({
-      orderId: order.id,
-      actor: s.user.id,
-      message: approval
-        ? "Supplier submitted invoice changes for approval"
-        : "Packing submitted; Amazon creation queued"
-    })
-    if (!approval) {
+    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, message })
+    if (!approval && amazon) {
       await tx
         .insert(jobs)
         .values({
@@ -366,9 +423,19 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       .insert(orderRevisions)
       .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "Approved supplier commercial changes" })
     await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, order.id))
+    const amazon = amazonDestinations.includes(order.data.destination)
+    const amazonJobs: (typeof jobs.$inferInsert)[] = amazon
+      ? [
+          {
+            key: `amazon:${shipmentId}:${shipment.revision}`,
+            kind: "amazon",
+            payload: { shipmentId, revision: shipment.revision }
+          }
+        ]
+      : []
     await tx
       .update(shipments)
-      .set({ snapshot: data, orderRevision: revision, status: "queued", updatedAt: new Date() })
+      .set({ snapshot: data, orderRevision: revision, status: amazon ? "queued" : "ready", updatedAt: new Date() })
       .where(eq(shipments.id, shipmentId))
     await tx
       .update(documents)
@@ -388,11 +455,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
             updateCost
           }
         },
-        {
-          key: `amazon:${shipmentId}:${shipment.revision}`,
-          kind: "amazon",
-          payload: { shipmentId, revision: shipment.revision }
-        },
+        ...amazonJobs,
         {
           key: `po:${order.id}:${revision}`,
           kind: "email",
@@ -416,7 +479,7 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
     }
     await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
-    if (!shipment || ["creating", "collected", "cancelled"].includes(shipment.status)) {
+    if (!shipment || shipment.status === "creating" || finishedStates.includes(shipment.status)) {
       throw new Error("Shipment cannot be edited in its current state")
     }
     if (shipment.operation === "sending" && !shipment.amazonOrderId) {
@@ -517,5 +580,58 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
         availablePieces: Math.max(0, item.pieces - (reserved[item.id] ?? 0))
       }))
     }
+  })
+}
+
+// A shipment in any of these states is still being prepared, created or collected, so its PO stays open.
+const inProgress = new Set<ShipmentState>([
+  "approval",
+  "queued",
+  "creating",
+  "waiting_labels",
+  "ready",
+  "correction",
+  "needs_attention"
+])
+
+// Closes a sent PO: nothing more will ship, so it drops out of On order. Shipments the supplier hasn't packed are
+// cancelled; shipments still being created or collected keep the PO open.
+export async function closeOrder(s: Session, id: string) {
+  requireBuyer(s)
+  return db().transaction(async (tx) => {
+    const { order } = await accessibleOrder(s, id, tx, true)
+    if (order.status !== "submitted") {
+      throw new Error(order.status === "closed" ? "This PO is already closed" : "Send the PO before closing it")
+    }
+    const rows = await tx.select().from(shipments).where(eq(shipments.orderId, id)).for("update")
+    const busy = rows.filter(
+      (row) => inProgress.has(row.status) || (row.status === "packing" && row.operation !== "none")
+    )
+    if (busy.length) {
+      throw new Error("A shipment for this PO is still in progress. Finish or cancel it before closing the PO")
+    }
+    await tx
+      .update(shipments)
+      .set({ status: "cancelled", packingDraft: null, updatedAt: new Date() })
+      .where(and(eq(shipments.orderId, id), eq(shipments.status, "packing")))
+    await tx.update(orders).set({ status: "closed", updatedAt: new Date() }).where(eq(orders.id, id))
+    await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "PO closed" })
+  })
+}
+
+// Records that a shipment's goods arrived where the PO sent them, so they leave On order.
+export async function receiveShipment(s: Session, shipmentId: string) {
+  requireBuyer(s)
+  await db().transaction(async (tx) => {
+    const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
+    if (!shipment) {
+      throw new Error("Shipment not found")
+    }
+    await accessibleOrder(s, shipment.orderId, tx, true)
+    if (!["ready", "collected"].includes(shipment.status)) {
+      throw new Error("Only released or collected shipments can be marked received")
+    }
+    await tx.update(shipments).set({ status: "received", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
+    await tx.insert(events).values({ orderId: shipment.orderId, actor: s.user.id, message: "Shipment received" })
   })
 }

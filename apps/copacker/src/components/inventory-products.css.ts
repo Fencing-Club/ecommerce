@@ -144,11 +144,4 @@ export const panelActions = style([actions, { padding: `${space(2)} ${space(3)}`
 
 export const locationSettings = style({ display: "flex", flexDirection: "column", gap: space(5), padding: space(4) })
 export const listActions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space(3) })
-export const salesNotes = style({
-  display: "flex",
-  flexDirection: "column",
-  gap: space(1),
-  ...fontSize.sm,
-  color: vars.color.mutedForeground
-})
 export const detailsForm = style({ display: "flex", flexDirection: "column", height: "100%" })

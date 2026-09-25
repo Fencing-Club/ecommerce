@@ -1,6 +1,7 @@
 "use client"
 
 import { type Address, addressSchema } from "@repo/aisle"
+import { useWatch } from "react-hook-form"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
 import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
@@ -79,29 +80,49 @@ export function WorkspaceForm({ next }: { next?: string } = {}) {
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(100),
   kind: z.enum(contactKinds),
-  address: addressSchema
+  address: addressSchema,
+  // Empty when a delivery address isn't linked to a Shopify location.
+  shopifyLocationId: z.string()
 })
 
-type SavedContact = { id: string; name: string; kind: ContactKind; address: Address }
+type SavedContact = {
+  id: string
+  name: string
+  kind: ContactKind
+  address: Address
+  shopifyLocationId: string | null
+}
 
 export function ContactForm({
   contact,
   onSuccess,
-  supplier = false
+  supplier = false,
+  locations = []
 }: {
   contact?: SavedContact
   onSuccess?: () => void
   supplier?: boolean
+  locations?: { id: string; name: string }[]
 }) {
   const { form, submit } = useActionForm({
     schema: contactSchema,
     action: contact ? "contact.update" : "contact.create",
     defaultValues: contact
-      ? { name: contact.name, kind: contact.kind, address: { ...emptyAddress, ...contact.address } }
-      : { name: "", kind: supplier ? "pickup" : "delivery", address: emptyAddress },
-    toPayload: (values) => ({ ...(contact && { id: contact.id }), ...values }),
+      ? {
+          name: contact.name,
+          kind: contact.kind,
+          address: { ...emptyAddress, ...contact.address },
+          shopifyLocationId: contact.shopifyLocationId ?? ""
+        }
+      : { name: "", kind: supplier ? "pickup" : "delivery", address: emptyAddress, shopifyLocationId: "" },
+    toPayload: (values) => ({
+      ...(contact && { id: contact.id }),
+      ...values,
+      shopifyLocationId: values.shopifyLocationId || null
+    }),
     onSuccess
   })
+  const kind = useWatch({ control: form.control, name: "kind" })
   return (
     <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"}>
       <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
@@ -114,6 +135,15 @@ export function ContactForm({
           />
         )}
       </div>
+      {!supplier && kind === "delivery" && locations.length > 0 && (
+        <FormSelect
+          name="shopifyLocationId"
+          label="Shopify location"
+          description="POs sent here show as on order at this location."
+          placeholder="Not linked"
+          options={locations.map((location) => ({ value: location.id, label: location.name }))}
+        />
+      )}
       <AddressFields path="address" />
     </ActionForm>
   )

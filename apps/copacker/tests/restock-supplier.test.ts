@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { describe, expect, it } from "vitest"
-import { resolveRestockSupplier } from "../src/server/restock-supplier"
+import { resolveRestockBundleSupplier, resolveRestockSupplier } from "../src/server/restock-supplier"
 
 const orgA = randomUUID(),
   orgB = randomUUID(),
@@ -64,5 +64,34 @@ describe("restock supplier identity", () => {
     expect(resolveRestockSupplier({ ...lookup, supplierSku: "same" }, links, [product]).status).toBe(
       "supplier_not_resolved"
     )
+  })
+})
+
+describe("bundle supplier identity", () => {
+  const bundle = { componentSupplierSkus: ["SAME", "MASK"], currency: "USD" }
+  const mask = { ...product, id: randomUUID(), supplierSku: "MASK" }
+  it("resolves a supplier only when all component SKUs belong to it", () => {
+    expect(resolveRestockBundleSupplier(bundle, links, [product, mask])).toMatchObject({
+      status: "supplier_resolved",
+      supplierId: linkA,
+      matches: [{ status: "matched" }, { status: "matched" }]
+    })
+    expect(resolveRestockBundleSupplier(bundle, links, [product, { ...mask, supplierOrgId: orgB }])).toMatchObject({
+      status: "supplier_not_resolved",
+      supplierId: null
+    })
+  })
+  it("requires review for missing or ambiguous component suppliers", () => {
+    expect(
+      resolveRestockBundleSupplier({ ...bundle, componentSupplierSkus: ["SAME", ""] }, links, [product, mask]).status
+    ).toBe("supplier_sku_missing")
+    expect(
+      resolveRestockBundleSupplier(bundle, links, [
+        product,
+        mask,
+        { ...product, id: randomUUID(), supplierOrgId: orgB },
+        { ...mask, id: randomUUID(), supplierOrgId: orgB }
+      ]).status
+    ).toBe("supplier_ambiguous")
   })
 })

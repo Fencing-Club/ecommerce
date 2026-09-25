@@ -1,5 +1,5 @@
 import type { OrderInput, PrepCategory } from "@repo/aisle"
-import type { CatalogVariant } from "@repo/aisle/shopify"
+import { bundleSupplierComponents, type CatalogVariant } from "@repo/aisle/shopify"
 
 export type LineDefaults = {
   // Looked up on the server when the PO is saved or sent, so often empty here.
@@ -26,7 +26,8 @@ export function orderLine(
     name: variant.product.title,
     variant: variant.title,
     buyerSku: variant.sku ?? "",
-    supplierSku: variant.supplierSku?.value ?? "",
+    supplierSku: variant.requiresComponents ? "" : (variant.supplierSku?.value ?? ""),
+    components: variant.requiresComponents ? bundleSupplierComponents(variant) : undefined,
     asin: defaults.asin || variant.asin?.value || "",
     fnsku: defaults.fnsku ?? "",
     pieces: piecesPerSet,

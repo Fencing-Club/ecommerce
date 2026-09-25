@@ -3,7 +3,7 @@ import { db } from "@/db"
 import { orders, suppliers } from "@/db/schema"
 
 // Removes a supplier from a buyer's workspace. Its invitation stops working and its workspace loses access to the
-// buyer's POs. A supplier working on a sent PO can't be removed, so no shipment is left without its packer.
+// buyer's POs. A supplier working on a sent PO stays until that PO is closed, so no shipment is left without its packer.
 export async function removeSupplier(buyerOrgId: string, supplierId: string) {
   await db().transaction(async (tx) => {
     const [supplier] = await tx
@@ -20,7 +20,7 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
       .where(and(eq(orders.supplierId, supplierId), eq(orders.status, "submitted")))
     if (open.length) {
       const references = open.map((order) => order.data.reference).join(", ")
-      throw new Error(`${supplier.name} can't be removed while they're working on ${references}`)
+      throw new Error(`${supplier.name} is working on ${references}. Close ${open.length === 1 ? "it" : "them"} first`)
     }
     await tx
       .update(suppliers)

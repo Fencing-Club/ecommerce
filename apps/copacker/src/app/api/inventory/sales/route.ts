@@ -1,15 +1,22 @@
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, stockSnapshots } from "@/db/schema"
+import { connections } from "@/db/schema"
 import { session } from "@/server/auth"
 import { bundleSales, salesPeriods } from "@/server/bundle-sales"
+import { ReconnectRequiredError } from "@/server/errors"
+import { inventoryContext } from "@/server/inventory-context"
+import { groupInventory } from "@/server/inventory-products"
+import { leadTimes, multipackSales, reorderList, restockReport } from "@/server/restock-report"
 import { DemandAccessError, readSalesDemand } from "@/server/sales"
-import type { DemandRow } from "@/server/sales-attribution"
+import { summarizeDemandGaps, type DemandRow } from "@/server/sales-attribution"
 import { appUrl } from "@/server/security"
 import { describeError } from "@/server/stock"
 
-const inputSchema = z.strictObject({ days: z.literal([...salesPeriods]) })
+const inputSchema = z.strictObject({
+  days: z.literal([...salesPeriods]),
+  leadTimeDays: z.literal([...leadTimes]).default(56)
+})
 
 export const maxDuration = 300
 
@@ -47,7 +54,8 @@ export async function POST(request: Request) {
         source,
         error: null,
         // Units the source reported but couldn't place, such as unfulfilled orders or unmapped sales channels.
-        gapUnits: result.gaps.reduce((sum, gap) => sum + (gap.units ?? 0), 0)
+        gapUnits: result.gaps.reduce((sum, gap) => sum + (gap.units ?? 0), 0),
+        gapReasons: summarizeDemandGaps(result.gaps)
       })
     } catch (error) {
       console.error(
@@ -55,32 +63,37 @@ export async function POST(request: Request) {
       )
       sources.push({
         source,
+        // Access problems say what to do; anything else is logged and summarized.
         error:
-          error instanceof DemandAccessError
+          error instanceof DemandAccessError || error instanceof ReconnectRequiredError
             ? error.message
             : "Sales couldn't be read. Check the connection and try again.",
-        gapUnits: 0
+        gapUnits: 0,
+        gapReasons: {}
       })
     }
   }
-  const shop = connected.find((account) => account.provider === "shopify")
-  const [stock] = shop
-    ? await db()
-        .select({ data: stockSnapshots.data })
-        .from(stockSnapshots)
-        .where(
-          and(
-            eq(stockSnapshots.orgId, s.org.id),
-            eq(stockSnapshots.source, "shopify"),
-            eq(stockSnapshots.externalAccountId, shop.externalId),
-            eq(stockSnapshots.scopeKey, "store")
-          )
-        )
-    : []
-  const catalog = stock?.data?.source === "shopify" ? stock.data.rows : []
+  const { rows: catalog, classifications, onOrder } = await inventoryContext(s.org.id)
   const { variants, unmatchedUnits } = bundleSales(catalog, rows)
+  // Restock needs every source's sales; with one missing, demand is unknown rather than low.
+  const complete = sources.length > 0 && sources.every((source) => source.error === null)
+  const products = groupInventory(catalog, { classifications, onOrder })
+  const restock = restockReport(products, complete ? variants : null, {
+    salesDays: input.data.days,
+    leadTimeDays: input.data.leadTimeDays
+  })
   return Response.json(
-    { window, days: input.data.days, sources, unmatchedUnits, variants: Object.fromEntries(variants) },
+    {
+      window,
+      days: input.data.days,
+      leadTimeDays: input.data.leadTimeDays,
+      sources,
+      unmatchedUnits,
+      variants: Object.fromEntries(variants),
+      restock: Object.fromEntries(restock),
+      reorder: reorderList(products, restock, variants),
+      multipacks: multipackSales(products, variants)
+    },
     { headers }
   )
 }

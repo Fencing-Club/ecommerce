@@ -93,7 +93,9 @@ import {
   submitOrder,
   newShipment,
   savePacking,
-  checkPacking
+  checkPacking,
+  closeOrder,
+  receiveShipment
 } from "../src/server/orders"
 import { lineDefaultsFor, saveProductDefaults } from "../src/server/product-defaults"
 import { runNextJob } from "../src/server/queue"
@@ -271,7 +273,12 @@ async function reviewedImport() {
         // A two-pack is a Shopify bundle of two cords.
         requiresComponents: true,
         productVariantComponents: {
-          nodes: [{ quantity: 2, productVariant: { id: "gid://shopify/ProductVariant/99" } }],
+          nodes: [
+            {
+              quantity: 2,
+              productVariant: { id: "gid://shopify/ProductVariant/99", sku: "foil", supplierSku: { value: "B-2" } }
+            }
+          ],
           pageInfo: { hasNextPage: false }
         }
       }
@@ -329,15 +336,23 @@ describe("supplier catalog snapshots", () => {
     expect(record?.data.items[0]).toMatchObject({
       supplierCatalogStatus: "matched",
       unitPrice: 210,
-      supplierCatalog: {
-        productId: product!.id,
-        revision: 1,
-        priceMinor: 420,
-        priceBasis: "sellable_pack",
-        piecesPerSellablePack: 2,
-        sellablePacksPerCase: 80,
-        notes: "Verify current quote"
-      }
+      supplierSku: "",
+      components: [
+        {
+          buyerSku: "foil",
+          supplierSku: "B-2",
+          quantity: 2,
+          supplierCatalog: {
+            productId: product!.id,
+            revision: 1,
+            priceMinor: 420,
+            priceBasis: "sellable_pack",
+            piecesPerSellablePack: 2,
+            sellablePacksPerCase: 80,
+            notes: "Verify current quote"
+          }
+        }
+      ]
     })
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
   })
@@ -1440,6 +1455,32 @@ describe("Postgres workflow and authorization", () => {
     await expect(submitPacking(supplier, second.id, second.packing, 1)).rejects.toThrow("remaining")
     expect(await database.select().from(tables.jobs)).toHaveLength(1)
   })
+  it("ships POs to the buyer's own location without Amazon", async () => {
+    const deliveryId = randomUUID()
+    const { packing } = await preparation()
+    await database.insert(tables.contacts).values({
+      id: deliveryId,
+      orgId: buyerId,
+      name: "Warehouse",
+      kind: "delivery",
+      address: packing.origin
+    })
+    // Two SKUs in one oversized carton and no FNSKU: fine for the buyer's own location, not for AWD.
+    const toWarehouse = {
+      ...orderData,
+      destination: "warehouse" as const,
+      deliveryId,
+      items: orderData.items.map((item) => ({ ...item, fnsku: "", asin: "" }))
+    }
+    await database.update(tables.orders).set({ data: toWarehouse }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.shipments).set({ snapshot: toWarehouse }).where(eq(tables.shipments.orderId, orderId))
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
+    const oversized = { ...packing, cartons: [{ ...packing.cartons[0]!, length: 90, weight: 30 }] }
+    await submitPacking(supplier, shipment!.id, oversized, 1)
+    const [ready] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment!.id))
+    expect(ready?.status).toBe("ready")
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
+  })
   it("does not enqueue duplicate Amazon creation after repeat submit", async () => {
     const shipment = await preparation()
     await submitPacking(supplier, shipment.id, shipment.packing, 1)
@@ -1632,6 +1673,35 @@ describe("durable shipment worker recovery", () => {
   })
 })
 
+describe("receiving and closing POs", () => {
+  const shipment = async (status: string) => {
+    const id = randomUUID()
+    await database
+      .insert(tables.shipments)
+      .values({ id, orderId, orderRevision: 1, snapshot: orderData, status: status as "packing" })
+    return id
+  }
+
+  it("keeps a PO open while a shipment is in progress and closes it once the goods arrive", async () => {
+    const ready = await shipment("ready")
+    const unpacked = await shipment("packing")
+    await expect(closeOrder(buyer, orderId)).rejects.toThrow("still in progress")
+    await expect(receiveShipment(supplier, ready)).rejects.toThrow("buyer workspace")
+    await receiveShipment(buyer, ready)
+    await expect(receiveShipment(buyer, ready)).rejects.toThrow("released or collected")
+    await closeOrder(buyer, orderId)
+    const rows = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
+    expect(Object.fromEntries(rows.map((row) => [row.id, row.status]))).toMatchObject({
+      [ready]: "received",
+      [unpacked]: "cancelled"
+    })
+    const [closed] = await database.select().from(tables.orders).where(eq(tables.orders.id, orderId))
+    expect(closed?.status).toBe("closed")
+    await expect(closeOrder(buyer, orderId)).rejects.toThrow("already closed")
+    await expect(closeOrder(supplier, orderId)).rejects.toThrow("buyer workspace")
+  })
+})
+
 describe("removing suppliers", () => {
   const supplierAction = (name: string, data: Record<string, unknown>) =>
     action(
@@ -1644,9 +1714,9 @@ describe("removing suppliers", () => {
 
   it("keeps a supplier working on a sent PO, then removes it and revokes its access", async () => {
     expect(await (await supplierAction("supplier.remove", { id: supplierLinkId })).json()).toMatchObject({
-      error: expect.stringContaining("can't be removed while they're working on")
+      error: expect.stringContaining("Close it first")
     })
-    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    await closeOrder(buyer, orderId)
     expect((await supplierAction("supplier.remove", { id: supplierLinkId })).status).toBe(200)
     const [removed] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
     expect(removed?.removedAt).toBeInstanceOf(Date)
@@ -1659,7 +1729,7 @@ describe("removing suppliers", () => {
   })
 
   it("restores a removed supplier with a fresh invitation when it is added again", async () => {
-    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, orderId))
+    await closeOrder(buyer, orderId)
     await supplierAction("supplier.remove", { id: supplierLinkId })
     expect((await supplierAction("supplier.create", { name: "Supplier", email: "new@example.com" })).status).toBe(200)
     const rows = await database.select().from(tables.suppliers).where(eq(tables.suppliers.buyerOrgId, buyerId))
@@ -1730,7 +1800,9 @@ describe("PO product identity", () => {
           asin: null,
           requiresComponents: true,
           productVariantComponents: {
-            nodes: [{ quantity: 3, productVariant: { id: "gid://shopify/ProductVariant/77" } }],
+            nodes: [
+              { quantity: 3, productVariant: { id: "gid://shopify/ProductVariant/77", sku: "foil", supplierSku: null } }
+            ],
             pageInfo: { hasNextPage: false }
           }
         }

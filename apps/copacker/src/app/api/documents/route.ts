@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireBuyer } from "@/server/auth"
+import { releasedStates } from "@/server/readiness"
 import { appUrl } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
         if (
           existing.some(
             (row) =>
-              ["ready", "collected"].includes(row.status) &&
+              releasedStates.includes(row.status) &&
               row.packing?.cartons.some((c) => c.items.some((i) => i.itemId === itemId))
           )
         ) {

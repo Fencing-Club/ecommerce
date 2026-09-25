@@ -5,6 +5,7 @@ import {
   Shopify,
   ShopifyPermissionError,
   piecesPerUnit,
+  bundleSupplierComponents,
   shopifyLocationKind
 } from "../src/shopify"
 
@@ -410,5 +411,78 @@ describe("piecesPerUnit", () => {
     expect(() => piecesPerUnit({ requiresComponents: true, productVariantComponents: components([2], true) })).toThrow(
       "components"
     )
+  })
+})
+
+describe("bundle supplier components", () => {
+  it("requests and parses component supplier SKUs when searching the catalog", async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        data: {
+          productVariants: {
+            nodes: [
+              {
+                id: "gid://shopify/ProductVariant/10",
+                title: "Two pack",
+                sku: "BUNDLE",
+                product: { id: "gid://shopify/Product/10", title: "Cord bundle" },
+                inventoryItem: { id: "gid://shopify/InventoryItem/10", unitCost: null },
+                supplierSku: null,
+                asin: null,
+                requiresComponents: true,
+                productVariantComponents: {
+                  nodes: [
+                    {
+                      quantity: 2,
+                      productVariant: {
+                        id: "gid://shopify/ProductVariant/1",
+                        sku: "CORD",
+                        supplierSku: { value: "SUP-CORD" }
+                      }
+                    }
+                  ],
+                  pageInfo: { hasNextPage: false }
+                }
+              }
+            ]
+          }
+        }
+      })
+    )
+    const [bundle] = await new Shopify(domain, "test", transport).search("BUNDLE")
+    expect(bundleSupplierComponents(bundle!)).toEqual([
+      { variantId: "gid://shopify/ProductVariant/1", quantity: 2, buyerSku: "CORD", supplierSku: "SUP-CORD" }
+    ])
+    const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
+    expect(request.query).toContain('supplierSku:metafield(namespace:"custom",key:"supplier_sku")')
+  })
+
+  it("keeps each physical component's buyer and supplier SKU", () => {
+    const productVariantComponents = {
+      nodes: [
+        {
+          quantity: 2,
+          productVariant: { id: "gid://shopify/ProductVariant/1", sku: "CORD", supplierSku: { value: "OC-1" } }
+        },
+        { quantity: 1, productVariant: { id: "gid://shopify/ProductVariant/2", sku: "MASK", supplierSku: null } }
+      ],
+      pageInfo: { hasNextPage: false }
+    }
+    expect(bundleSupplierComponents({ requiresComponents: true, productVariantComponents })).toEqual([
+      { variantId: "gid://shopify/ProductVariant/1", quantity: 2, buyerSku: "CORD", supplierSku: "OC-1" },
+      { variantId: "gid://shopify/ProductVariant/2", quantity: 1, buyerSku: "MASK", supplierSku: null }
+    ])
+  })
+
+  it("rejects a bundle query that omitted supplier SKU data", () => {
+    expect(() =>
+      bundleSupplierComponents({
+        requiresComponents: true,
+        productVariantComponents: {
+          nodes: [{ quantity: 1, productVariant: { id: "gid://shopify/ProductVariant/1" } }],
+          pageInfo: { hasNextPage: false }
+        }
+      })
+    ).toThrow("supplier SKUs")
   })
 })

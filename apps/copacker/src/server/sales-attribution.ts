@@ -26,6 +26,20 @@ export type DemandGap = {
   units: number | null
 }
 export type LocationClass = "merchant" | "amazon_mirror" | "excluded" | "unresolved"
+// A count by cause makes a coverage gap actionable; a null unit remains unknown, never zero.
+export function summarizeDemandGaps(gaps: DemandGap[]) {
+  const summary: Partial<Record<DemandGap["reason"], { units: number; unknownCount: number }>> = {}
+  for (const gap of gaps) {
+    const current = summary[gap.reason] ?? { units: 0, unknownCount: 0 }
+    if (gap.units === null) {
+      current.unknownCount++
+    } else {
+      current.units += gap.units
+    }
+    summary[gap.reason] = current
+  }
+  return summary
+}
 function add(rows: Map<string, DemandRow>, row: DemandRow) {
   const key = JSON.stringify([row.pool, row.locationId, row.variantId, row.buyerSku, row.bundleVariantId])
   const prior = rows.get(key)

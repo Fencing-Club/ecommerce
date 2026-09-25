@@ -6,6 +6,7 @@ import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireMembership } from "@/server/auth"
 import { releaseIssues } from "@/server/readiness"
+import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
@@ -15,7 +16,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return new Response("Shipment not found", { status: 404 })
   }
   await accessibleOrder(s, shipment.orderId)
-  if (!["ready", "collected"].includes(shipment.status)) {
+  if (!releasedStates.includes(shipment.status)) {
     return new Response("Shipment packet has not been released", { status: 409 })
   }
   const docs = await db()
@@ -42,7 +43,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const result = await combinePdfs(await Promise.all(selected.map((d) => getFile(d.objectKey))))
   await accessibleOrder(s, shipment.orderId)
   const [current] = await db().select().from(shipments).where(eq(shipments.id, id))
-  if (!current || !["ready", "collected"].includes(current.status) || current.revision !== shipment.revision) {
+  if (!current || !releasedStates.includes(current.status) || current.revision !== shipment.revision) {
     return new Response("Shipment packet changed. Refresh before downloading", { status: 409 })
   }
   const currentDocs = await db()

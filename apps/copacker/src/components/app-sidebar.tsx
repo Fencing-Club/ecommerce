@@ -1,6 +1,17 @@
 "use client"
 
-import { Box, Check, ChevronsUpDown, ClipboardList, LogOut, Settings, Truck, Users, BookOpen } from "lucide-react"
+import {
+  Box,
+  Check,
+  ChevronsUpDown,
+  ClipboardList,
+  LogOut,
+  PackagePlus,
+  Settings,
+  Truck,
+  Users,
+  BookOpen
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -45,6 +56,7 @@ export type AppSidebarProps = {
 const navigation = [
   { view: "orders", label: "Purchase orders", icon: ClipboardList },
   { view: "inventory", label: "Inventory", icon: Box, buyerOnly: true },
+  { view: "restock", label: "Restock", icon: PackagePlus, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },
   { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
   { view: "catalog", label: "Catalog", icon: BookOpen, supplierOnly: true },

@@ -69,6 +69,25 @@ describe("Supplier piece and carton contract", () => {
     p.cartons[0]!.length = length
     expect(validatePacking(order, p).valid).toBe(false)
   })
+  it("applies Amazon's carton rules only to Amazon shipments", () => {
+    const p = structuredClone(packing)
+    p.cartons[0]!.length = 90
+    p.cartons[0]!.weight = 30
+    const toWarehouse = { ...order, destination: "warehouse" as const, deliveryId: crypto.randomUUID() }
+    toWarehouse.items = toWarehouse.items.map((item) => ({ ...item, fnsku: "" }))
+    expect(validatePacking(toWarehouse, p).valid).toBe(true)
+    expect(validatePacking(order, p).valid).toBe(false)
+    // Complete sets still apply everywhere.
+    p.cartons[0]!.items[0]!.pieces = 3
+    expect(
+      validatePacking(toWarehouse, p)
+        .issues.map((issue) => issue.message)
+        .join()
+    ).toContain("complete sets")
+  })
+  it("requires a delivery address for the buyer's own location", () => {
+    expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)
+  })
   it("uses the exact 50-pound boundary", () => {
     const p = structuredClone(packing)
     p.cartons.forEach((c) => {

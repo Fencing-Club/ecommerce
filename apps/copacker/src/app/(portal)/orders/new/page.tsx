@@ -4,25 +4,40 @@ import { z } from "zod"
 import { PageBreadcrumb, PageHeader } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
-import { suppliers } from "@/db/schema"
+import { contacts, suppliers } from "@/db/schema"
 import { orderLine } from "@/lib/order-lines"
 import { requireBuyer, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { lineDefaultsFor } from "@/server/product-defaults"
 
 const variantIds = z
-  .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/))
+  .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+(@[1-9]\d{0,5})?$/))
   .max(100)
   .catch([])
 
-// Variants passed as ?variant=… (Reorder on Inventory) start as lines on the new PO.
+// Variants passed as ?variant=… (Reorder and restock on Inventory) start as lines on the new PO. "<id>@<units>" also
+// sets the quantity in sellable units.
 async function reorderLines(orgId: string, raw: string | string[] | undefined) {
-  const ids = [...new Set(variantIds.parse(typeof raw === "string" ? [raw] : (raw ?? [])))]
-  if (!ids.length) {
+  const units = new Map(
+    variantIds.parse(typeof raw === "string" ? [raw] : (raw ?? [])).map((entry) => {
+      const [id = "", count] = entry.split("@")
+      return [id, count ? Number(count) : 1]
+    })
+  )
+  if (!units.size) {
     return []
   }
-  const [variants, defaultsFor] = await Promise.all([(await shopifyFor(orgId)).variants(ids), lineDefaultsFor(orgId)])
-  return variants.flatMap((variant) => (variant ? [orderLine(variant, randomUUID(), defaultsFor(variant))] : []))
+  const [variants, defaultsFor] = await Promise.all([
+    (await shopifyFor(orgId)).variants([...units.keys()]),
+    lineDefaultsFor(orgId)
+  ])
+  return variants.flatMap((variant) => {
+    if (!variant) {
+      return []
+    }
+    const line = orderLine(variant, randomUUID(), defaultsFor(variant))
+    return [{ ...line, pieces: (units.get(variant.id) ?? 1) * line.piecesPerSet }]
+  })
 }
 
 export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
@@ -33,6 +48,10 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
     .from(suppliers)
     .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
   const initialItems = await reorderLines(s.org.id, (await searchParams).variant)
+  const deliveries = await db()
+    .select({ id: contacts.id, name: contacts.name })
+    .from(contacts)
+    .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
 
   return (
     <>
@@ -41,7 +60,11 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         title="Create purchase order"
         description="Choose products, set quantities, and give your supplier a clear starting point."
       />
-      <OrderBuilder suppliers={rows.map((r) => ({ id: r.id, name: r.name }))} initialItems={initialItems} />
+      <OrderBuilder
+        suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
+        deliveries={deliveries}
+        initialItems={initialItems}
+      />
     </>
   )
 }

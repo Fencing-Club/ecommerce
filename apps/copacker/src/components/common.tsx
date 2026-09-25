@@ -29,6 +29,8 @@ const statuses: Record<string, { label: string; tone: Tone }> = {
   waiting_labels: { label: "Waiting for buyer labels", tone: "action" },
   ready: { label: "Ready for pickup", tone: "done" },
   collected: { label: "Collected", tone: "done" },
+  received: { label: "Received", tone: "done" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
   needs_attention: { label: "Needs attention", tone: "problem" },
   correction: { label: "Correction requested", tone: "action" },
   closed: { label: "Closed", tone: "neutral" }
@@ -150,8 +152,16 @@ export function EmptyState({
   )
 }
 
+const destinationNames: Record<string, string> = {
+  awd_us: "AWD USA",
+  awd_china: "AWD China",
+  fba: "FBA",
+  forwarder: "your freight forwarder",
+  warehouse: "your location"
+}
+
 export function formatDestination(destination: string) {
-  return destination.replaceAll("_", " ").toUpperCase()
+  return destinationNames[destination] ?? destination
 }
 
 export function DocumentList({ documents }: { documents: Array<{ id: string; name: string }> }) {

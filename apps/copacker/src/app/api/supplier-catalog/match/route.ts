@@ -9,7 +9,8 @@ import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 const inputSchema = z.object({
   supplierId: z.uuid(),
   currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
-  supplierSkus: z.array(z.string().trim().max(255)).max(100)
+  // A PO permits 150 lines, and a Shopify bundle can contain up to 25 distinct components.
+  supplierSkus: z.array(z.string().trim().max(255)).max(3750)
 })
 
 export async function POST(request: Request) {
