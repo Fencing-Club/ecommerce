@@ -36,8 +36,8 @@ const fbaStockPage = z.object({
           // rather than rejecting the whole stock page.
           lastUpdatedTime: z
             .string()
-            .optional()
-            .transform((value) => (value && !Number.isNaN(Date.parse(value)) ? value : undefined)),
+            .transform((value) => (value && !Number.isNaN(Date.parse(value)) ? value : undefined))
+            .optional(),
           totalQuantity: optionalStockQuantity,
           inventoryDetails: z
             .object({
