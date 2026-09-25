@@ -167,36 +167,55 @@ export class Shopify {
   constructor(
     private domain: string,
     private token: string,
-    private transport: typeof fetch = fetch
+    private transport: typeof fetch = fetch,
+    private delay: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   ) {
     shopDomainSchema.parse(domain)
   }
   async graphql(query: string, variables: Record<string, unknown> = {}) {
-    const response = await this.transport(`https://${this.domain}/admin/api/2026-07/graphql.json`, {
-      method: "POST",
-      headers: { "X-Shopify-Access-Token": this.token, "content-type": "application/json" },
-      body: JSON.stringify({ query, variables }),
-      signal: AbortSignal.timeout(30000)
-    })
-    if (!response.ok) {
-      throw new ShopifyRequestError(response.status)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const response = await this.transport(`https://${this.domain}/admin/api/2026-07/graphql.json`, {
+        method: "POST",
+        headers: { "X-Shopify-Access-Token": this.token, "content-type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(30000)
+      })
+      if (response.status === 429 && attempt < 4) {
+        await this.delay(1000 * 2 ** attempt)
+        continue
+      }
+      if (!response.ok) {
+        throw new ShopifyRequestError(response.status)
+      }
+      const envelope = z
+        .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
+        .parse(await response.json())
+      if (
+        envelope.errors?.some(
+          (error) => z.object({ extensions: z.object({ code: z.literal("ACCESS_DENIED") }) }).safeParse(error).success
+        )
+      ) {
+        throw new ShopifyPermissionError("Reconnect Shopify to authorize inventory location access")
+      }
+      if (envelope.errors?.length) {
+        const throttled = envelope.errors.every(
+          (error) =>
+            z.object({ extensions: z.object({ code: z.literal("THROTTLED") }) }).safeParse(error).success ||
+            z.object({ message: z.literal("Throttled") }).safeParse(error).success
+        )
+        if (throttled && attempt < 4) {
+          await this.delay(1000 * 2 ** attempt)
+          continue
+        }
+        // GraphQL error messages describe the query, not the store's data, so they are safe to keep for diagnosis.
+        const messages = envelope.errors.map(
+          (error) => z.object({ message: z.string() }).safeParse(error).data?.message
+        )
+        throw new Error(`Shopify rejected the request: ${messages.filter(Boolean).join("; ") || "no details"}`)
+      }
+      return envelope.data
     }
-    const envelope = z
-      .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
-      .parse(await response.json())
-    if (
-      envelope.errors?.some(
-        (error) => z.object({ extensions: z.object({ code: z.literal("ACCESS_DENIED") }) }).safeParse(error).success
-      )
-    ) {
-      throw new ShopifyPermissionError("Reconnect Shopify to authorize inventory location access")
-    }
-    if (envelope.errors?.length) {
-      // GraphQL error messages describe the query, not the store's data, so they are safe to keep for diagnosis.
-      const messages = envelope.errors.map((error) => z.object({ message: z.string() }).safeParse(error).data?.message)
-      throw new Error(`Shopify rejected the request: ${messages.filter(Boolean).join("; ") || "no details"}`)
-    }
-    return envelope.data
+    throw new Error("Shopify request exhausted throttle retries")
   }
   async search(query: string) {
     return z.object({ productVariants: z.object({ nodes: z.array(variant) }) }).parse(

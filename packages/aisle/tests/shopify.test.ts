@@ -38,6 +38,39 @@ function stockClient(data: unknown) {
   return { api: new Shopify(domain, "test", transport), transport }
 }
 
+describe("Shopify throttling", () => {
+  it("retries throttled GraphQL responses and HTTP 429 with bounded backoff", async () => {
+    const responses = [
+      Response.json({ errors: [{ message: "Throttled", extensions: { code: "THROTTLED" } }] }),
+      new Response(null, { status: 429 }),
+      Response.json({ data: { shop: { myshopifyDomain: domain } } })
+    ]
+    const transport = vi.fn<typeof fetch>(async () => responses.shift() ?? Response.json({ data: {} }))
+    const waits: number[] = []
+    const delay = vi.fn<(ms: number) => Promise<void>>(async (ms) => {
+      waits.push(ms)
+    })
+    const api = new Shopify(domain, "test", transport, delay)
+    await expect(api.graphql("query Shop { shop { myshopifyDomain } }")).resolves.toEqual({
+      shop: { myshopifyDomain: domain }
+    })
+    expect(transport).toHaveBeenCalledTimes(3)
+    expect(delay.mock.calls).toEqual([[1000], [2000]])
+    expect(waits).toEqual([1000, 2000])
+  })
+
+  it("does not retry permission or other GraphQL errors", async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ errors: [{ message: "Invalid query", extensions: { code: "GRAPHQL_VALIDATION_FAILED" } }] })
+    )
+    const api = new Shopify(domain, "test", transport, async () => {
+      throw new Error("Unexpected retry")
+    })
+    await expect(api.graphql("query Invalid { missing }")).rejects.toThrow("Invalid query")
+    expect(transport).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe("Shopify complete stock collection", () => {
   afterEach(() => vi.restoreAllMocks())
   const pageInfo = { hasNextPage: false, endCursor: null }
