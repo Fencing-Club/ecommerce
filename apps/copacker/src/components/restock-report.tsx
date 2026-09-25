@@ -7,11 +7,11 @@ import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
-import { salesPeriods } from "@/server/bundle-sales"
-import { leadTimes } from "@/server/restock-report"
+import { dayRange } from "@/server/restock-report"
 import * as styles from "./restock-report.css"
 import { sx } from "@/styles/sprinkles.css"
 
@@ -262,9 +262,18 @@ function Multipacks({ report }: { report: Report }) {
   )
 }
 
+// A whole number of days within the supported range, or null.
+function wholeDays(text: string) {
+  const value = Number(text)
+  return Number.isInteger(value) && value >= dayRange.min && value <= dayRange.max ? value : null
+}
+
 export function RestockReport() {
-  const [days, setDays] = useState<number>(salesPeriods.at(-1) ?? 56)
-  const [leadTimeDays, setLeadTimeDays] = useState<number>(56)
+  // Kept as typed so the fields can be cleared while editing; validated before loading.
+  const [daysText, setDaysText] = useState("56")
+  const [leadTimeText, setLeadTimeText] = useState("56")
+  const days = wholeDays(daysText)
+  const leadTimeDays = wholeDays(leadTimeText)
   const [targetKey, setTargetKey] = useState("")
   const { data: targets = [], isLoading: targetsLoading } = restockApi.useRestockTargetsQuery()
   const target = targets.find((item) => item.key === targetKey) ?? targets[0]
@@ -282,43 +291,41 @@ export function RestockReport() {
             {!target && <NativeSelectOption value="">No connected inventory</NativeSelectOption>}
             {targets.map((item) => (
               <NativeSelectOption key={item.key} value={item.key}>
-                {item.pool === "shopify" ? `Shopify · ${item.label}` : item.label}
+                {item.pool === "shopify" ? `Shopify: ${item.label}` : item.label}
               </NativeSelectOption>
             ))}
           </NativeSelect>
         </Field>
-        <Field className={styles.control}>
-          <FieldLabel htmlFor="restock-days">Sales period</FieldLabel>
-          <NativeSelect
+        <Field className={styles.days} data-invalid={days === null}>
+          <FieldLabel htmlFor="restock-days">Sales period (days)</FieldLabel>
+          <Input
             id="restock-days"
-            value={String(days)}
-            onChange={(event) => setDays(Number(event.target.value))}
-          >
-            {salesPeriods.map((period) => (
-              <NativeSelectOption key={period} value={String(period)}>
-                Last {period} days
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+            type="number"
+            inputMode="numeric"
+            min={dayRange.min}
+            max={dayRange.max}
+            value={daysText}
+            aria-invalid={days === null}
+            onChange={(event) => setDaysText(event.target.value)}
+          />
         </Field>
-        <Field className={styles.control}>
-          <FieldLabel htmlFor="restock-lead-time">Lead time</FieldLabel>
-          <NativeSelect
+        <Field className={styles.days} data-invalid={leadTimeDays === null}>
+          <FieldLabel htmlFor="restock-lead-time">Lead time (days)</FieldLabel>
+          <Input
             id="restock-lead-time"
-            value={String(leadTimeDays)}
-            onChange={(event) => setLeadTimeDays(Number(event.target.value))}
-          >
-            {leadTimes.map((lead) => (
-              <NativeSelectOption key={lead} value={String(lead)}>
-                {lead} days
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+            type="number"
+            inputMode="numeric"
+            min={dayRange.min}
+            max={dayRange.max}
+            value={leadTimeText}
+            aria-invalid={leadTimeDays === null}
+            onChange={(event) => setLeadTimeText(event.target.value)}
+          />
         </Field>
         <Button
-          disabled={result.isLoading || targetsLoading || !target}
+          disabled={result.isLoading || targetsLoading || !target || days === null || leadTimeDays === null}
           onClick={() => {
-            if (!target) {
+            if (!target || days === null || leadTimeDays === null) {
               return
             }
             void load({

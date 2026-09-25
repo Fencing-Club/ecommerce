@@ -4,6 +4,7 @@ import { bundleSales, type VariantSales } from "./bundle-sales"
 import type { LocationClassification } from "./inventory-locations"
 import { groupInventory, type PendingOrder } from "./inventory-products"
 import { poolRestock } from "./pool-restock"
+import type { ProductDefaults } from "./product-defaults"
 import { reorderList, type RestockSuggestion } from "./restock-report"
 import type { DemandGap, DemandRow } from "./sales-attribution"
 
@@ -28,6 +29,8 @@ export function restockPoolReport(input: {
   awdStock: AwdStock | null
   salesDays: number
   leadTimeDays: number
+  // Copacker's product details: the default case pack and minimum order.
+  productDefaults?: ReadonlyMap<string, Pick<ProductDefaults, "casePacks" | "minimumOrder">>
 }) {
   const { target, catalog, classifications, onOrder } = input
   const products = groupInventory(catalog, {
@@ -85,7 +88,11 @@ export function restockPoolReport(input: {
   const unmatchedStockSkus = selectedStockSkus
     ? [...selectedStockSkus].filter(([sku, rows]) => skus.get(sku) !== 1 || rows.length !== 1).length
     : 0
+  const productOf = new Map(
+    products.flatMap((product) => product.variants.map((variant) => [variant.variantId, product.productId]))
+  )
   for (const variant of products.flatMap((product) => product.variants)) {
+    const details = input.productDefaults?.get(productOf.get(variant.variantId) ?? "")
     const pending = onOrder.get(variant.variantId) ?? []
     const targetPending = pending
       .filter((order) => {
@@ -169,9 +176,14 @@ export function restockPoolReport(input: {
           : { pool: target.pool, buyerSku: variant.sku!, skuIsUnique: true },
       availability,
       incoming,
+      // Copacker's default case pack, otherwise Shopify's product case quantity.
       caseQuantity: catalogByVariant.get(variant.variantId)?.bundle
         ? null
-        : (catalogByVariant.get(variant.variantId)?.caseQuantity ?? null),
+        : (details?.casePacks[0]?.units ?? catalogByVariant.get(variant.variantId)?.caseQuantity ?? null),
+      // Amazon locations top up to the variant's Amazon stock target, as in Aisle.
+      targetStock:
+        target.pool === "shopify" ? null : (catalogByVariant.get(variant.variantId)?.amazonStockTarget ?? null),
+      minimumOrder: details?.minimumOrder ?? null,
       unitCostMinor: catalogByVariant.get(variant.variantId)?.bundle
         ? null
         : (catalogByVariant.get(variant.variantId)?.unitCostMinor ?? null),

@@ -13,6 +13,10 @@ const inputSchema = z.strictObject({
   caseQuantity: quantity.positive().nullable(),
   unitCostMinor: quantity.nonnegative().nullable(),
   stocked: z.boolean(),
+  // Stock to keep beyond lead-time demand, such as the Amazon stock target (Aisle's "residual" basis).
+  targetStock: quantity.nonnegative().nullable().default(null),
+  // The smallest order worth placing; a need above zero is raised to it before rounding to cases, as in Aisle.
+  minimumOrder: quantity.positive().nullable().default(null),
   // Sales, stock, incoming, case size and cost must all refer to the same sellable unit.
   unitsVerified: z.boolean()
 })
@@ -55,10 +59,17 @@ export function restockRecommendation(raw: unknown, settingsInput: unknown) {
     const window = BigInt(settings.salesWindowDays)
     const incoming = settings.includeIncoming ? (input.verifiedIncoming ?? 0) : 0
     const net =
-      BigInt(input.soldUnits) * BigInt(settings.leadTimeDays) - (BigInt(input.available) + BigInt(incoming)) * window
+      BigInt(input.soldUnits) * BigInt(settings.leadTimeDays) +
+      BigInt(input.targetStock ?? 0) * window -
+      (BigInt(input.available) + BigInt(incoming)) * window
     const multiple = BigInt(input.caseQuantity ?? 1)
-    const denominator = window * multiple
-    purchaseUnits = Number(net <= 0n ? 0n : ((net + denominator - 1n) / denominator) * multiple)
+    // Units needed, rounded up; then at least the minimum order; then whole cases.
+    const needed = net <= 0n ? 0n : (net + window - 1n) / window
+    const ordered =
+      needed > 0n && input.minimumOrder !== null && needed < BigInt(input.minimumOrder)
+        ? BigInt(input.minimumOrder)
+        : needed
+    purchaseUnits = Number(((ordered + multiple - 1n) / multiple) * multiple)
     if (!Number.isSafeInteger(purchaseUnits)) {
       throw new Error("Restock quantity exceeds the supported range")
     }

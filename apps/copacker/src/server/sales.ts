@@ -27,7 +27,9 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
       throw new DemandAccessError("Reconnect Shopify to grant order history access")
     }
     if (Date.parse(window.from) < now - 60 * 86400000 && !scopes.has("read_all_orders")) {
-      throw new DemandAccessError("This Shopify connection only permits the last 60 days of orders")
+      throw new DemandAccessError(
+        "Shopify shares only the last 60 days of orders until Copacker is allowed to read all orders. Choose 60 days or fewer for now"
+      )
     }
   }
   const check = async () => {

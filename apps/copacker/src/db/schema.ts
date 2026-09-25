@@ -3,6 +3,7 @@ import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { Shopify } from "@repo/aisle/shopify"
 import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core"
+import type { CasePack } from "../lib/case-packs"
 import { contactKinds } from "../lib/contacts"
 import type { ImportProposal } from "../server/import-proposal"
 
@@ -339,6 +340,10 @@ export const productDefaults = pgTable(
     productId: text().notNull(),
     description: text().notNull().default(""),
     prepCategory: text({ enum: prepCategories }),
+    // Carton setups the supplier packs this product in; the first is the default.
+    casePacks: jsonb().$type<CasePack[]>().notNull().default([]),
+    // The smallest quantity worth ordering, in sellable units. Restock never suggests less.
+    minimumOrder: integer(),
     revision: integer().notNull().default(1),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },

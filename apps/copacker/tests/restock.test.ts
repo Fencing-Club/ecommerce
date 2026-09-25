@@ -86,3 +86,29 @@ describe("lead-time-only restock recommendations", () => {
     )
   })
 })
+
+describe("stock target and minimum order", () => {
+  const base = {
+    available: 32,
+    verifiedIncoming: 17,
+    soldUnits: 2,
+    caseQuantity: null,
+    unitCostMinor: null,
+    stocked: true,
+    unitsVerified: true
+  }
+  const settings = { leadTimeDays: 28, salesWindowDays: 28 }
+
+  it("tops up to the target plus lead-time demand, matching Aisle's anchor case", () => {
+    expect(restockRecommendation({ ...base, targetStock: 50 }, settings).purchaseUnits).toBe(3)
+  })
+
+  it("raises a need to the minimum order, then rounds to whole cases", () => {
+    expect(restockRecommendation({ ...base, targetStock: 50, minimumOrder: 10 }, settings).purchaseUnits).toBe(10)
+    expect(
+      restockRecommendation({ ...base, targetStock: 50, minimumOrder: 10, caseQuantity: 4 }, settings).purchaseUnits
+    ).toBe(12)
+    // No need means no order, whatever the minimum.
+    expect(restockRecommendation({ ...base, minimumOrder: 10 }, settings).purchaseUnits).toBe(0)
+  })
+})

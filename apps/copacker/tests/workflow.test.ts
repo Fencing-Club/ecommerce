@@ -843,11 +843,15 @@ describe("Postgres workflow and authorization", () => {
       productId,
       description: "  Cotton, size label inside  ",
       prepCategory: "TAPING",
+      casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
+      minimumOrder: 48,
       expectedRevision: 0
     }
     expect(await saveProductDefaults(buyer, input)).toEqual({
       description: "Cotton, size label inside",
       prepCategory: "TAPING",
+      casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
+      minimumOrder: 48,
       revision: 1
     })
     await expect(saveProductDefaults(buyer, input)).rejects.toThrow("Someone else changed")

@@ -3,20 +3,21 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
 import { session } from "@/server/auth"
-import { bundleSales, salesPeriods } from "@/server/bundle-sales"
+import { bundleSales } from "@/server/bundle-sales"
 import { ReconnectRequiredError } from "@/server/errors"
 import { inventoryContext } from "@/server/inventory-context"
 import { inventoryLocations } from "@/server/inventory-products"
+import { readProductDefaults } from "@/server/product-defaults"
 import { restockPoolReport, type RestockTarget } from "@/server/restock-pool-report"
-import { leadTimes } from "@/server/restock-report"
+import { dayRange } from "@/server/restock-report"
 import { DemandAccessError, readSalesDemand } from "@/server/sales"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "@/server/sales-attribution"
 import { appUrl } from "@/server/security"
 import { describeError } from "@/server/stock"
 
 const inputSchema = z.strictObject({
-  days: z.literal([...salesPeriods]),
-  leadTimeDays: z.literal([...leadTimes]).default(56),
+  days: z.number().int().min(dayRange.min).max(dayRange.max),
+  leadTimeDays: z.number().int().min(dayRange.min).max(dayRange.max).default(56),
   target: z
     .discriminatedUnion("pool", [
       z.strictObject({ pool: z.literal("shopify"), locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/) }),
@@ -40,7 +41,10 @@ export async function POST(request: Request) {
   }
   const input = inputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
-    return Response.json({ error: "Choose a sales period" }, { status: 400, headers })
+    return Response.json(
+      { error: `Enter a sales period and lead time of ${dayRange.min} to ${dayRange.max} days` },
+      { status: 400, headers }
+    )
   }
   // Orders need a couple of minutes to settle, so the window ends on a whole minute a few minutes ago.
   const to = new Date(Math.floor((Date.now() - 180000) / 60000) * 60000)
@@ -89,7 +93,7 @@ export async function POST(request: Request) {
       })
     }
   }
-  const { rows: catalog, classifications, onOrder } = await inventoryContext(s.org.id)
+  const { domain, rows: catalog, classifications, onOrder } = await inventoryContext(s.org.id)
   const { variants, unmatchedUnits } = bundleSales(catalog, rows)
   const target = input.data.target as RestockTarget | undefined
   if (
@@ -133,7 +137,8 @@ export async function POST(request: Request) {
         fbaStock: stock?.source === "fba" ? stock : null,
         awdStock: stock?.source === "awd" ? stock : null,
         salesDays: input.data.days,
-        leadTimeDays: input.data.leadTimeDays
+        leadTimeDays: input.data.leadTimeDays,
+        productDefaults: domain ? await readProductDefaults(s.org.id, domain) : new Map()
       })
     : null
   return Response.json(

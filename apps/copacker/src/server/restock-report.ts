@@ -1,8 +1,8 @@
 import type { VariantSales } from "./bundle-sales"
 import type { InventoryProduct } from "./inventory-products"
 
-// Lead times the Inventory page offers, in days.
-export const leadTimes = [28, 56, 90] as const
+// Sales periods and lead times are whole days; Amazon keeps two years of orders.
+export const dayRange = { min: 1, max: 730 } as const
 
 export type RestockSuggestion = {
   // Days until the counted stock runs out at the observed rate; null without sales.

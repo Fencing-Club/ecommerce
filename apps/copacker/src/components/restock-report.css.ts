@@ -40,3 +40,5 @@ export const placeholder = style([
 globalStyle(`${placeholder} svg`, { width: "1rem", height: "1rem" })
 // Narrow screens keep the product and the reorder quantity; the sales split scrolls with the table.
 globalStyle(`${number}`, { "@media": { [media.md]: { minWidth: "6rem" } } })
+// Day counts are short numbers.
+export const days = style({ selectors: { "&&": { width: "9rem" } } })

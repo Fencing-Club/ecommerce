@@ -28,7 +28,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       target = new URL(`https://${shop}/admin/oauth/authorize`)
       target.search = new URLSearchParams({
         client_id: process.env.SHOPIFY_CLIENT_ID,
-        scope: "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders",
+        scope: "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders",
         redirect_uri: callback,
         state
       }).toString()

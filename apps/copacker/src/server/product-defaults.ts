@@ -4,20 +4,31 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, productDefaults, stockSnapshots } from "@/db/schema"
+import { type CasePack, casePackSchema } from "@/lib/case-packs"
 import type { Session } from "./auth"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
 export type ProductDefaults = {
   description: string
   prepCategory: (typeof prepCategories)[number] | null
+  casePacks: CasePack[]
+  minimumOrder: number | null
   revision: number
 }
-export const noDefaults: ProductDefaults = { description: "", prepCategory: null, revision: 0 }
+export const noDefaults: ProductDefaults = {
+  description: "",
+  prepCategory: null,
+  casePacks: [],
+  minimumOrder: null,
+  revision: 0
+}
 
 export const productDefaultsInputSchema = z.strictObject({
   productId: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
   description: z.string().trim().max(2000),
   prepCategory: z.enum(prepCategories).nullable(),
+  casePacks: z.array(casePackSchema).max(10),
+  minimumOrder: z.number().int().min(1).max(1000000).nullable(),
   expectedRevision: z.number().int().nonnegative()
 })
 
@@ -38,7 +49,13 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
   return new Map<string, ProductDefaults>(
     rows.map((row) => [
       row.productId,
-      { description: row.description, prepCategory: row.prepCategory, revision: row.revision }
+      {
+        description: row.description,
+        prepCategory: row.prepCategory,
+        casePacks: row.casePacks,
+        minimumOrder: row.minimumOrder,
+        revision: row.revision
+      }
     ])
   )
 }
@@ -84,6 +101,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     const value = {
       description: input.description,
       prepCategory: input.prepCategory,
+      casePacks: input.casePacks,
+      minimumOrder: input.minimumOrder,
       revision: input.expectedRevision + 1,
       updatedAt: new Date()
     }
@@ -94,7 +113,13 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
         target: [productDefaults.orgId, productDefaults.shopifyDomain, productDefaults.productId],
         set: value
       })
-    return { description: value.description, prepCategory: value.prepCategory, revision: value.revision }
+    return {
+      description: value.description,
+      prepCategory: value.prepCategory,
+      casePacks: value.casePacks,
+      minimumOrder: value.minimumOrder,
+      revision: value.revision
+    }
   })
 }
 

@@ -14,7 +14,8 @@ const applied: Record<string, string> = {
   "0002_loving_starfox": "3c23e5624beddf0042d8800838757242db1d25731de0c1ec10a15b241e560d50",
   "0003_tired_shape": "5a2c4cdc920b255481c4a7cc9b2899f081e50f64939661976a21feeb5b3bfb1c",
   "0004_product_defaults": "7fc8c3b103e5225ed9fae728dc98ddcf24fc10bf6b6eb93c2cf65520a238d839",
-  "0005_remove_suppliers": "c05e78bf10ec643b4ac138629b6701186e51321627b43dab3f1cf6be71bc3f0b"
+  "0005_remove_suppliers": "c05e78bf10ec643b4ac138629b6701186e51321627b43dab3f1cf6be71bc3f0b",
+  "0006_delivery_locations": "99e951940f2e859d95c40c92d358fc772e5a1ea62e57e775ddd5c10ac48d62d4"
 }
 
 async function sha256(tag: string) {

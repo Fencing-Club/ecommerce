@@ -144,7 +144,8 @@ describe("location-specific restock report", () => {
       target: { pool: "fba" },
       fbaStock: { ...base.fbaStock, rows: [] }
     })
-    expect(absent.reorder).toMatchObject([{ sku: "SKU", purchaseUnits: 112 }])
+    // 112 units of lead-time demand plus the Amazon stock target of 1 to keep on hand, as in Aisle.
+    expect(absent.reorder).toMatchObject([{ sku: "SKU", purchaseUnits: 113 }])
     const notStocked = restockPoolReport({
       ...base,
       catalog: catalog.map((row) => ({ ...row, amazonStockTarget: 0 })),

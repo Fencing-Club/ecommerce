@@ -142,6 +142,51 @@ export const actions = style({
 })
 export const panelActions = style([actions, { padding: `${space(2)} ${space(3)}`, paddingLeft: space(10) }])
 
-export const locationSettings = style({ display: "flex", flexDirection: "column", gap: space(5), padding: space(4) })
+// A sheet's body scrolls between its fixed header and footer.
+export const locationSettings = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: space(5),
+  padding: space(4),
+  flex: 1,
+  minHeight: 0,
+  overflowY: "auto"
+})
 export const listActions = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space(3) })
-export const detailsForm = style({ display: "flex", flexDirection: "column", height: "100%" })
+export const detailsForm = style({ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 })
+
+// Product details sheet: synced Shopify values and case pack templates.
+export const fromShopify = style({ display: "flex", flexDirection: "column", gap: space(2) })
+export const facts = style({
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  gap: `${space(1)} ${space(3)}`,
+  ...fontSize.sm
+})
+globalStyle(`${facts} dt`, { color: vars.color.mutedForeground })
+globalStyle(`${facts} dd`, { textAlign: "right", fontVariantNumeric: "tabular-nums" })
+export const casePacks = style({ display: "flex", flexDirection: "column", gap: space(3) })
+export const casePacksHeading = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3)
+})
+export const casePack = style({
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: space(3),
+  padding: space(3),
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md
+})
+export const casePackName = style({ gridColumn: "1 / -1" })
+export const casePackRemove = style({ gridColumn: "1 / -1", justifySelf: "start" })
+export const srOnlyLegend = style({
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap"
+})

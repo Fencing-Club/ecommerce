@@ -168,6 +168,14 @@ const stockNotes = {
   untracked: ", inventory not tracked"
 } as const
 
+// Shopify's Amazon stock target, after the SKU: what restock keeps at Amazon.
+function amazonTargetNote(target: number | null) {
+  if (target === null) {
+    return null
+  }
+  return target === 0 ? ", not stocked at Amazon" : `, Amazon target ${target}`
+}
+
 // Opens a new PO with these variations already added.
 function reorderHref(variants: InventoryVariant[]) {
   const params = new URLSearchParams(variants.map((variant) => ["variant", variant.variantId]))
@@ -206,6 +214,11 @@ function Actions({ product, className }: { product: ListedProduct; className: st
         title={product.title}
         defaults={product.defaults}
         onSaved={refresh}
+        shopifyCaseQuantity={product.shopifyCaseQuantity}
+        variants={product.variants.map((variant) => ({
+          title: variant.title,
+          amazonStockTarget: variant.amazonStockTarget
+        }))}
       />
     </span>
   )
@@ -223,6 +236,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
             <span className={styles.title}>{product.title}</span>
             <span className={styles.detail}>
               {only.sku ?? "No SKU"}
+              {amazonTargetNote(only.amazonStockTarget)}
               {stockNotes[only.stock]}
             </span>
             <Locations variant={only} />
@@ -259,6 +273,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
                 <span className={styles.title}>{variant.title ?? product.title}</span>
                 <span className={styles.detail}>
                   {variant.sku ?? "No SKU"}
+                  {amazonTargetNote(variant.amazonStockTarget)}
                   {product.stock === variant.stock ? null : stockNotes[variant.stock]}
                 </span>
                 <Locations variant={variant} />

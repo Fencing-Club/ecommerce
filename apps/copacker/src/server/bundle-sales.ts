@@ -1,9 +1,6 @@
 import type { BundleComponent } from "@repo/aisle/shopify"
 import type { DemandRow } from "./sales-attribution"
 
-// Sales periods in days. Shopify permits 60 days of orders without read_all_orders, so the longest stays inside it.
-export const salesPeriods = [28, 56] as const
-
 type CatalogRow = {
   variantId: string
   buyerSku: string | null

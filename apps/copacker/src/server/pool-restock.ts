@@ -14,6 +14,8 @@ export function poolRestock(input: {
   availability: Availability
   incoming: number | null
   caseQuantity: number | null
+  targetStock?: number | null
+  minimumOrder?: number | null
   unitCostMinor: number | null
   stocked: boolean
   unitsVerified: boolean
@@ -33,6 +35,8 @@ export function poolRestock(input: {
       verifiedIncoming: input.incoming,
       soldUnits: demand.soldUnits,
       caseQuantity: input.caseQuantity,
+      targetStock: input.targetStock ?? null,
+      minimumOrder: input.minimumOrder ?? null,
       unitCostMinor: input.unitCostMinor,
       stocked: input.stocked,
       unitsVerified: input.unitsVerified
