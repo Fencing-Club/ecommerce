@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
-import { CheckCircle2, Clock } from "lucide-react"
+import { CheckCircle2, Clock, TimerOff } from "lucide-react"
+import { ActionButton } from "@/components/actions"
 import { EmptyState, PageHeader } from "@/components/common"
 import { SupplierForm } from "@/components/settings-forms"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -11,10 +12,16 @@ import { suppliers } from "@/db/schema"
 import { requireBuyer, session } from "@/server/auth"
 import { sx } from "@/styles/sprinkles.css"
 
+async function loadSuppliers(orgId: string) {
+  const rows = await db().select().from(suppliers).where(eq(suppliers.buyerOrgId, orgId))
+  const now = Date.now()
+  return rows.map((row) => ({ ...row, expired: row.expiresAt !== null && row.expiresAt.getTime() < now }))
+}
+
 export default async function SuppliersPage() {
   const s = await session()
   requireBuyer(s)
-  const rows = await db().select().from(suppliers).where(eq(suppliers.buyerOrgId, s.org.id))
+  const rows = await loadSuppliers(s.org.id)
 
   return (
     <>
@@ -48,10 +55,30 @@ export default async function SuppliersPage() {
                           Connected
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">
-                          <Clock data-icon="inline-start" />
-                          Invitation pending
-                        </Badge>
+                        <div className={sx({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2 })}>
+                          {row.expired ? (
+                            <Badge variant="outline">
+                              <TimerOff data-icon="inline-start" />
+                              Invitation expired
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <Clock data-icon="inline-start" />
+                              Invitation pending
+                            </Badge>
+                          )}
+                          {s.role === "owner" && (
+                            <ActionButton
+                              action="supplier.resend"
+                              data={{ id: row.id }}
+                              variant="outline"
+                              size="sm"
+                              successMessage={`Invitation sent to ${row.email}`}
+                            >
+                              Resend invitation
+                            </ActionButton>
+                          )}
+                        </div>
                       )}
                     </ItemActions>
                   </Item>

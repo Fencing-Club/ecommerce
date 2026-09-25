@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { addressSchema } from "@repo/aisle"
 import { buildAwdRequest } from "@repo/aisle"
 import { WorkOS } from "@workos-inc/node"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { cookies } from "next/headers"
 import { z } from "zod"
 import { db } from "@/db"
@@ -140,6 +140,31 @@ export async function POST(request: Request) {
           payload: { type: "invite", to: input.email, name: s.org.name, invitation }
         })
       return Response.json({ id: supplier!.id })
+    }
+    if (action === "supplier.resend") {
+      requireBuyer(s)
+      requireOwner(s)
+      // A fresh token replaces the old one, so earlier invitation links stop working.
+      const invitation = token()
+      await db().transaction(async (tx) => {
+        const [supplier] = await tx
+          .update(suppliers)
+          .set({ invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) })
+          .where(and(eq(suppliers.id, id()), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.supplierOrgId)))
+          .returning()
+        if (!supplier) {
+          throw new Error("This supplier has already joined or was removed")
+        }
+        const payload = { type: "invite", to: supplier.email, name: s.org.name, invitation }
+        await tx
+          .insert(jobs)
+          .values({ key: `invite:${supplier.id}`, kind: "email", payload })
+          .onConflictDoUpdate({
+            target: jobs.key,
+            set: { id: randomUUID(), payload, status: "pending", attempts: 0, runAt: new Date(), error: null }
+          })
+      })
+      return Response.json({ ok: true })
     }
     if (action === "supplier.accept") {
       const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
