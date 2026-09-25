@@ -244,6 +244,16 @@ describe("FBA inventory pages", () => {
   const page = (rows: unknown[], marketplaceId = "ATVPDKIKX0DER") => ({
     payload: { granularity: { granularityType: "Marketplace", granularityId: marketplaceId }, inventorySummaries: rows }
   })
+  it("treats an empty or unreadable last-updated time as absent", async () => {
+    const { api } = client([
+      page([
+        { sellerSku: "a", totalQuantity: 1, lastUpdatedTime: "" },
+        { sellerSku: "b", totalQuantity: 2, lastUpdatedTime: "2026-09-25T10:00:00Z" }
+      ])
+    ])
+    const { rows } = await api.fbaStockPage("ATVPDKIKX0DER")
+    expect(rows.map((row) => row.lastUpdatedTime)).toEqual([undefined, "2026-09-25T10:00:00Z"])
+  })
   it("requests full detailed inventory with an encoded continuation token", async () => {
     const { api, calls } = client([
       {

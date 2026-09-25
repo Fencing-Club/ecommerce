@@ -32,7 +32,12 @@ const fbaStockPage = z.object({
           asin: z.string().min(1).max(32).optional(),
           fnSku: z.string().min(1).max(128).optional(),
           condition: z.string().min(1).max(128).optional(),
-          lastUpdatedTime: z.iso.datetime({ offset: true }).optional(),
+          // Informational only. Amazon sometimes sends an empty or zone-less time; an unreadable one is treated as absent
+          // rather than rejecting the whole stock page.
+          lastUpdatedTime: z
+            .string()
+            .optional()
+            .transform((value) => (value && !Number.isNaN(Date.parse(value)) ? value : undefined)),
           totalQuantity: optionalStockQuantity,
           inventoryDetails: z
             .object({
