@@ -12,7 +12,25 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
   await putFile(objectKey, bytes)
   return db().transaction(async (tx) => {
     // Serialize replacement with user uploads and preserve previous versions as outdated.
-    await tx.select({ id: orders.id }).from(orders).where(eq(orders.id, input.orderId)).for("update")
+    const [order] = await tx.select().from(orders).where(eq(orders.id, input.orderId)).for("update")
+    if (!order) {
+      throw new Error("PO is unavailable")
+    }
+    let outdated = input.outdated ?? 0
+    if (input.shipmentId) {
+      const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, input.shipmentId)).for("update")
+      if (
+        !shipment ||
+        shipment.orderId !== input.orderId ||
+        shipment.revision !== input.shipmentRevision ||
+        shipment.orderRevision !== input.orderRevision ||
+        ["packing", "correction", "cancelled"].includes(shipment.status)
+      ) {
+        throw new Error("Shipment changed while generating documents")
+      }
+    } else if (input.orderRevision !== order.revision) {
+      outdated = 1
+    }
     await tx
       .update(documents)
       .set({ outdated: 1 })
@@ -27,7 +45,7 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
       )
     const [doc] = await tx
       .insert(documents)
-      .values({ ...input, id, objectKey, bytes: bytes.length })
+      .values({ ...input, outdated, id, objectKey, bytes: bytes.length })
       .returning()
     return doc!
   })
@@ -76,14 +94,6 @@ export async function generateShipmentDocuments(shipmentId: string) {
     shipmentRevision: shipment.revision,
     uploadedBy: "system"
   }
-  await db()
-    .update(documents)
-    .set({ outdated: 1 })
-    .where(and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "packing_list")))
-  await db()
-    .update(documents)
-    .set({ outdated: 1 })
-    .where(and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "checklist")))
   await storeDocument(
     { ...input, kind: "packing_list", name: "Packing list.pdf" },
     await packingListPdf(shipment.snapshot, shipment.packing, shipment.labels, shipment.amazonShipmentId ?? shipment.id)

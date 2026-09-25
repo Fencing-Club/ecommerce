@@ -3,14 +3,13 @@ import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
-import { packingReadiness, releaseIssues, reservedPieces, type ReadinessIssue } from "./readiness"
+import { orderCoverage, packingReadiness, releaseIssues, reservedPieces, type ReadinessIssue } from "./readiness"
 
 export async function orderWorkflow(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx)
     const rows = await tx.select().from(shipments).where(eq(shipments.orderId, orderId)).orderBy(shipments.createdAt)
     const docs = await tx.select().from(documents).where(eq(documents.orderId, orderId))
-    const reserved = reservedPieces(rows)
     return {
       order: {
         id: order.id,
@@ -20,15 +19,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
         destination: order.data.destination
       },
       supplier: { name: supplier.name },
-      items: order.data.items.map((item) => ({
-        itemId: item.id,
-        name: item.name,
-        variant: item.variant,
-        buyerSku: item.buyerSku,
-        orderedPieces: item.pieces,
-        assignedPieces: reserved[item.id] ?? 0,
-        remainingPieces: Math.max(0, item.pieces - (reserved[item.id] ?? 0))
-      })),
+      items: orderCoverage(order.data, rows),
       shipments: rows.map((shipment) => {
         const editable =
           ["packing", "correction"].includes(shipment.status) &&

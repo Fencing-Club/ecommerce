@@ -89,7 +89,7 @@ CREATE TABLE "orders" (
 	"buyerOrgId" uuid NOT NULL,
 	"supplierId" uuid NOT NULL,
 	"shopifyDomain" text NOT NULL,
-	"amazonSellerId" text NOT NULL,
+	"amazonSellerId" text,
 	"status" text DEFAULT 'draft' NOT NULL,
 	"revision" integer DEFAULT 1 NOT NULL,
 	"data" jsonb NOT NULL,
@@ -169,3 +169,58 @@ CREATE INDEX "orders_buyer" ON "orders" USING btree ("buyerOrgId");--> statement
 CREATE INDEX "orders_supplier" ON "orders" USING btree ("supplierId");--> statement-breakpoint
 CREATE INDEX "shipments_order" ON "shipments" USING btree ("orderId");--> statement-breakpoint
 CREATE UNIQUE INDEX "supplier_buyer_email" ON "suppliers" USING btree ("buyerOrgId","email");
+--> statement-breakpoint
+CREATE TABLE "po_imports" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"orgId" uuid NOT NULL,
+	"createdBy" text NOT NULL,
+	"objectKey" text NOT NULL,
+	"filename" text NOT NULL,
+	"shopifyDomain" text NOT NULL,
+	"amazonSellerId" text,
+	"status" text DEFAULT 'queued' NOT NULL,
+	"revision" integer DEFAULT 1 NOT NULL,
+	"proposal" jsonb,
+	"promptVersion" integer,
+	"model" text,
+	"tokens" integer,
+	"error" text,
+	"orderId" uuid,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "po_imports_objectKey_unique" UNIQUE("objectKey")
+);
+--> statement-breakpoint
+ALTER TABLE "po_imports" ADD CONSTRAINT "po_imports_orgId_organizations_id_fk" FOREIGN KEY ("orgId") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "po_imports" ADD CONSTRAINT "po_imports_orderId_orders_id_fk" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;
+--> statement-breakpoint
+CREATE TABLE "stock_snapshots" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"orgId" uuid NOT NULL,
+	"source" text NOT NULL,
+	"externalAccountId" text NOT NULL,
+	"scopeKey" text NOT NULL,
+	"revision" integer DEFAULT 0 NOT NULL,
+	"status" text DEFAULT 'idle' NOT NULL,
+	"requestedAt" timestamp with time zone,
+	"attemptStartedAt" timestamp with time zone,
+	"attemptFinishedAt" timestamp with time zone,
+	"workerToken" uuid,
+	"snapshotId" uuid,
+	"data" jsonb,
+	"errorCode" text
+);
+--> statement-breakpoint
+ALTER TABLE "stock_snapshots" ADD CONSTRAINT "stock_snapshots_orgId_organizations_id_fk" FOREIGN KEY ("orgId") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "stock_scope" ON "stock_snapshots" USING btree ("orgId","source","externalAccountId","scopeKey");
+--> statement-breakpoint
+CREATE TABLE "inventory_location_mappings" (
+	"orgId" uuid NOT NULL,
+	"shopifyDomain" text NOT NULL,
+	"locationId" text NOT NULL,
+	"classification" text NOT NULL,
+	"revision" integer DEFAULT 1 NOT NULL,
+	CONSTRAINT "inventory_location_mappings_orgId_shopifyDomain_locationId_pk" PRIMARY KEY("orgId","shopifyDomain","locationId")
+);
+--> statement-breakpoint
+ALTER TABLE "inventory_location_mappings" ADD CONSTRAINT "inventory_location_mappings_orgId_organizations_id_fk" FOREIGN KEY ("orgId") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;

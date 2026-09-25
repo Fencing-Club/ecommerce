@@ -4,7 +4,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
-import { session } from "@/server/auth"
+import { session, requireMembership } from "@/server/auth"
+import { releaseIssues } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
@@ -21,6 +22,9 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .select()
     .from(documents)
     .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
+  if (releaseIssues(shipment, docs).length) {
+    return new Response("Shipment packet is incomplete. Ask the buyer to review its documents", { status: 409 })
+  }
   const itemIds = new Set(shipment.packing?.cartons.flatMap((c) => c.items.map((i) => i.itemId)))
   const selected = docs.filter(
     (d) =>
@@ -36,11 +40,31 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true })
   )
   const result = await combinePdfs(await Promise.all(selected.map((d) => getFile(d.objectKey))))
+  await accessibleOrder(s, shipment.orderId)
+  const [current] = await db().select().from(shipments).where(eq(shipments.id, id))
+  if (!current || !["ready", "collected"].includes(current.status) || current.revision !== shipment.revision) {
+    return new Response("Shipment packet changed. Refresh before downloading", { status: 409 })
+  }
+  const currentDocs = await db()
+    .select()
+    .from(documents)
+    .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
+  if (
+    releaseIssues(current, currentDocs).length ||
+    selected.some(
+      (doc) => !currentDocs.some((currentDoc) => currentDoc.id === doc.id && currentDoc.objectKey === doc.objectKey)
+    )
+  ) {
+    return new Response("Shipment documents changed. Refresh before downloading", { status: 409 })
+  }
+  await requireMembership(s.user.id, s.org.id)
   return new Response(Buffer.from(result), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="Supplier packet.pdf"`,
-      "Cache-Control": "private, no-store"
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox"
     }
   })
 }

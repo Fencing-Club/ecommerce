@@ -1,7 +1,7 @@
 import { randomBytes, createHmac } from "node:crypto"
 import { PDFDocument, PDFName, PDFString } from "pdf-lib"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { encrypt, decrypt, verifyShopifyHmac } from "../src/server/security"
+import { encrypt, decrypt, returnPath, verifyShopifyHmac } from "../src/server/security"
 import { validatePdf } from "../src/server/storage"
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -36,5 +36,27 @@ describe("Connection and document boundaries", () => {
       pdf.context.obj({ S: "JavaScript", JS: PDFString.of("app.alert('bad')") })
     )
     await expect(validatePdf(await pdf.save())).rejects.toThrow("active content")
+  })
+})
+describe("Sign-in return path", () => {
+  it("keeps pages on this app, including the query", () => {
+    expect(returnPath("/inventory")).toBe("/inventory")
+    expect(returnPath("/invite?token=abc")).toBe("/invite?token=abc")
+    expect(returnPath("/orders/123?tab=lines#top")).toBe("/orders/123?tab=lines")
+  })
+  it("falls back for other origins and auth routes", () => {
+    for (const value of [
+      null,
+      "",
+      "https://evil.example/x",
+      "//evil.example",
+      "/\\evil.example",
+      "inventory",
+      "/login?next=/x",
+      "/callback",
+      "/api/inventory"
+    ]) {
+      expect(returnPath(value)).toBe("/orders")
+    }
   })
 })

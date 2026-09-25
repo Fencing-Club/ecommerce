@@ -1,0 +1,27 @@
+import { eq } from "drizzle-orm"
+import { redirect } from "next/navigation"
+import { PageHeader } from "@/components/common"
+import { InventorySync } from "@/components/inventory-sync"
+import { db } from "@/db"
+import { connections } from "@/db/schema"
+import { session } from "@/server/auth"
+
+export default async function InventoryPage() {
+  const s = await session()
+  if (s.org.kind !== "buyer") {
+    redirect("/orders")
+  }
+  const linked = await db()
+    .select({ provider: connections.provider })
+    .from(connections)
+    .where(eq(connections.orgId, s.org.id))
+  return (
+    <>
+      <PageHeader
+        title="Inventory"
+        description="Sync inventory from your connected accounts. Each source keeps its last successful result."
+      />
+      <InventorySync providers={linked.map((row) => row.provider)} />
+    </>
+  )
+}

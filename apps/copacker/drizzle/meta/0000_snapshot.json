@@ -691,7 +691,7 @@
           "name": "amazonSellerId",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -837,6 +837,151 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.po_imports": {
+      "name": "po_imports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "orgId": {
+          "name": "orgId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objectKey": {
+          "name": "objectKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shopifyDomain": {
+          "name": "shopifyDomain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amazonSellerId": {
+          "name": "amazonSellerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "proposal": {
+          "name": "proposal",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "promptVersion": {
+          "name": "promptVersion",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tokens": {
+          "name": "tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "orderId": {
+          "name": "orderId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "po_imports_orgId_organizations_id_fk": {
+          "name": "po_imports_orgId_organizations_id_fk",
+          "tableFrom": "po_imports",
+          "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "po_imports_orderId_orders_id_fk": {
+          "name": "po_imports_orderId_orders_id_fk",
+          "tableFrom": "po_imports",
+          "tableTo": "orders",
+          "columnsFrom": ["orderId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "po_imports_objectKey_unique": {
+          "name": "po_imports_objectKey_unique",
+          "nullsNotDistinct": false,
+          "columns": ["objectKey"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.shipments": {
       "name": "shipments",
       "schema": "",
@@ -876,6 +1021,12 @@
         },
         "packing": {
           "name": "packing",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "packing_draft": {
+          "name": "packing_draft",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -937,12 +1088,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "packing_draft": {
-          "name": "packing_draft",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -968,6 +1113,150 @@
           "tableFrom": "shipments",
           "tableTo": "orders",
           "columnsFrom": ["orderId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.stock_snapshots": {
+      "name": "stock_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "orgId": {
+          "name": "orgId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "externalAccountId": {
+          "name": "externalAccountId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scopeKey": {
+          "name": "scopeKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'idle'"
+        },
+        "requestedAt": {
+          "name": "requestedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attemptStartedAt": {
+          "name": "attemptStartedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attemptFinishedAt": {
+          "name": "attemptFinishedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workerToken": {
+          "name": "workerToken",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshotId": {
+          "name": "snapshotId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "errorCode": {
+          "name": "errorCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "stock_scope": {
+          "name": "stock_scope",
+          "columns": [
+            {
+              "expression": "orgId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "externalAccountId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scopeKey",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "stock_snapshots_orgId_organizations_id_fk": {
+          "name": "stock_snapshots_orgId_organizations_id_fk",
+          "tableFrom": "stock_snapshots",
+          "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -1152,6 +1441,65 @@
           "columns": ["hash"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.inventory_location_mappings": {
+      "name": "inventory_location_mappings",
+      "schema": "",
+      "columns": {
+        "orgId": {
+          "name": "orgId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shopifyDomain": {
+          "name": "shopifyDomain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locationId": {
+          "name": "locationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "classification": {
+          "name": "classification",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "inventory_location_mappings_orgId_organizations_id_fk": {
+          "name": "inventory_location_mappings_orgId_organizations_id_fk",
+          "tableFrom": "inventory_location_mappings",
+          "tableTo": "organizations",
+          "columnsFrom": ["orgId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "inventory_location_mappings_orgId_shopifyDomain_locationId_pk": {
+          "name": "inventory_location_mappings_orgId_shopifyDomain_locationId_pk",
+          "columns": ["orgId", "shopifyDomain", "locationId"]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

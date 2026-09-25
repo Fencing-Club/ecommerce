@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { useActionForm } from "@/hooks/useActionForm"
 import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/api"
+import { orderLine } from "@/lib/order-lines"
 import { FormError, SubmitButton } from "./actions"
 import { EmptyState } from "./common"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
@@ -31,7 +32,14 @@ const prepCategories = [
   { value: "TAPING", label: "Taping" }
 ]
 
-export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; name: string }> }) {
+export function OrderBuilder({
+  suppliers,
+  initialItems = []
+}: {
+  suppliers: Array<{ id: string; name: string }>
+  // Lines added before the builder opens, such as a reorder from Inventory.
+  initialItems?: ReturnType<typeof orderLine>[]
+}) {
   const [query, setQuery] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [searchCatalog, catalog] = useLazyCatalogQuery()
@@ -45,11 +53,14 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
       dueDate: "",
       currency: "USD",
       notes: "",
-      items: []
+      adjustments: [],
+      items: initialItems
     }
   })
   // Line items carry their own `id`, so the field array keys rows separately.
   const lineItems = useFieldArray({ control: form.control, name: "items", keyName: "key" })
+  const charges = useFieldArray({ control: form.control, name: "adjustments" })
+  const adjustments = useWatch({ control: form.control, name: "adjustments" }) ?? []
   const items = useWatch({ control: form.control, name: "items" }) ?? []
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
   const itemsError = form.formState.errors.items
@@ -60,27 +71,14 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
   }
 
   function add(product: CatalogProduct) {
-    lineItems.append({
-      id: crypto.randomUUID(),
-      variantId: product.id,
-      inventoryItemId: product.inventoryItem.id,
-      name: product.product.title,
-      variant: product.title,
-      buyerSku: product.sku ?? "",
-      supplierSku: product.supplierSku?.value ?? "",
-      asin: product.amazonAsin || product.asin?.value || "",
-      fnsku: product.fnsku,
-      pieces: 1,
-      piecesPerSet: 1,
-      unitPrice: 0,
-      instructions: "",
-      prepCategory: "POLYBAGGING"
-    })
+    lineItems.append(orderLine(product, crypto.randomUUID(), { asin: product.amazonAsin, fnsku: product.fnsku }))
     setShowResults(false)
   }
 
   const pieces = items.reduce((n, i) => n + (i?.pieces || 0), 0)
-  const amount = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
+  const subtotal = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
+  const adjustmentTotal = adjustments.reduce((sum, charge) => sum + (charge?.amount || 0), 0)
+  const amount = subtotal + adjustmentTotal
   const results = showResults ? (catalog.data ?? []) : []
 
   return (
@@ -111,7 +109,7 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
             <CardTitle>Products</CardTitle>
             <CardDescription>
               Search Shopify. Enter quantities and prices per individual piece. Amazon ASINs and FNSKUs are looked up
-              from each product’s SKU when you save.
+              from each product’s SKU. If Amazon isn’t connected yet, that happens when you send the PO.
             </CardDescription>
           </CardHeader>
           <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
@@ -224,8 +222,8 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                         <dl className={styles.identifiers}>
                           <dt className={sx({ fontWeight: "medium" })}>Amazon identifiers</dt>
                           <dd className={sx({ color: "muted" })}>
-                            {line.asin ? `ASIN ${line.asin}` : "ASIN looked up on save"}
-                            {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up on save"}
+                            {line.asin ? `ASIN ${line.asin}` : "ASIN looked up from Amazon"}
+                            {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up from Amazon"}
                           </dd>
                         </dl>
                         <FormTextarea
@@ -248,6 +246,49 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Charges and discounts</CardTitle>
+            <CardDescription>
+              Add packing, freight, duties or other charges. Enter discounts as negative amounts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+            {charges.fields.map((charge, index) => (
+              <FieldGroup key={charge.id} className={styles.lineGrid}>
+                <FormInput
+                  name={`adjustments.${index}.description`}
+                  label={`Charge ${index + 1} description`}
+                  placeholder="Packing"
+                />
+                <FormNumber
+                  name={`adjustments.${index}.amount`}
+                  label={`Charge ${index + 1} amount (${currency})`}
+                  scale={100}
+                  step={0.01}
+                />
+                <Button type="button" variant="outline" onClick={() => charges.remove(index)}>
+                  Remove charge {index + 1}
+                </Button>
+              </FieldGroup>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={charges.fields.length >= 50}
+              onClick={() => charges.append({ description: "", amount: 0 })}
+            >
+              Add charge or discount
+            </Button>
+            <FormError
+              message={form.formState.errors.adjustments?.message ?? form.formState.errors.adjustments?.root?.message}
+            />
+            <output>
+              Products: {money(subtotal, currency)} / Charges and discounts: {money(adjustmentTotal, currency)} / PO
+              total: {money(amount, currency)}
+            </output>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent>
             <FormTextarea

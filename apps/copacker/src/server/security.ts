@@ -41,3 +41,17 @@ export function appUrl() {
   const value = process.env.APP_URL ?? "http://localhost:3000"
   return new URL(value).origin
 }
+// Where to send someone after sign-in: a page on this app, never another origin or an auth route that would loop.
+export function returnPath(value: string | null | undefined, fallback = "/orders") {
+  // Browsers read a backslash as a slash, so "/\host" could leave the app; such paths are never ours.
+  if (!value || /[\\\p{Cc}]/u.test(value) || !URL.canParse(value, "http://app.invalid")) {
+    return fallback
+  }
+  const url = new URL(value, "http://app.invalid")
+  const local = value.startsWith("/") && !value.startsWith("//") && url.origin === "http://app.invalid"
+  const path = `${url.pathname}${url.search}`
+  if (!local || /^\/(login|logout|callback|api)(\/|$)/.test(url.pathname)) {
+    return fallback
+  }
+  return path
+}

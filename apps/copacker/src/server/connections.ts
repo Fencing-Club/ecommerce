@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
+import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
 export const shopifyTokenResponse = z.object({
@@ -41,7 +42,7 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
     let stored = savedToken.parse(JSON.parse(decrypt(row.encryptedToken, `${orgId}:${provider}`)))
     if (provider === "shopify" && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)) {
       if (!stored.refreshToken || !stored.refreshExpiresAt || stored.refreshExpiresAt < Date.now()) {
-        throw new Error("Reconnect Shopify to renew merchant authorization")
+        throw new ReconnectRequiredError("Reconnect Shopify to renew merchant authorization")
       }
       const response = await fetch(`https://${row.externalId}/admin/oauth/access_token`, {
         method: "POST",
@@ -56,7 +57,7 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
         signal: AbortSignal.timeout(30000)
       })
       if (!response.ok) {
-        throw new Error("Shopify token renewal failed. Reconnect in Settings")
+        throw new ReconnectRequiredError(`Shopify token renewal failed (${response.status}). Reconnect in Settings`)
       }
       stored = storedShopifyToken(shopifyTokenResponse.parse(await response.json()))
       await tx
@@ -74,7 +75,7 @@ export async function shopifyFor(orgId: string, expectedDomain?: string) {
   }
   return new Shopify(c.externalId, c.token)
 }
-export async function amazonFor(orgId: string, expectedSellerId?: string) {
+export async function amazonFor(orgId: string, expectedSellerId?: string | null) {
   const c = await connection(orgId, "amazon")
   if (expectedSellerId && c.externalId !== expectedSellerId) {
     throw new Error("Reconnect the Amazon account originally selected for this PO")

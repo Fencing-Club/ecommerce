@@ -1,17 +1,22 @@
 import { withAuth } from "@workos-inc/authkit-nextjs"
 import { and, eq } from "drizzle-orm"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
-export async function identity(returnTo = "/orders") {
+import { returnPath } from "@/server/security"
+// Without an explicit page, sign-in returns to the page that was requested; the auth proxy records it as x-url.
+export async function identity(returnTo?: string) {
   if (!process.env.WORKOS_CLIENT_ID) {
     redirect("/setup")
   }
   // Sign-in sets a PKCE cookie, which Server Components cannot do; the /login route handler can.
   const { user } = await withAuth()
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(returnTo)}`)
+    // x-url is the full request URL (behind Railway its host is internal), so only its path is kept.
+    const url = (await headers()).get("x-url")
+    const requested = returnTo ?? (url && URL.canParse(url) ? `${new URL(url).pathname}${new URL(url).search}` : null)
+    redirect(`/login?next=${encodeURIComponent(returnPath(requested))}`)
   }
   return user
 }

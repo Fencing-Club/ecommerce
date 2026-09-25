@@ -8,6 +8,7 @@
     "./labels": "./src/labels.ts",
     "./amazon": "./src/amazon.ts",
     "./shopify": "./src/shopify.ts",
+    "./sales": "./src/sales.ts",
     "./documents": "./src/documents.ts"
   },
   "scripts": {

@@ -1,14 +1,35 @@
 import { approveChanges, commercialChanges, orderInputSchema, packingDraftSchema } from "@repo/aisle"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
-import { orders, orderRevisions, suppliers, shipments, documents, events, jobs } from "@/db/schema"
+import { db, type Transaction } from "@/db"
+import {
+  orders,
+  orderRevisions,
+  suppliers,
+  shipments,
+  documents,
+  events,
+  jobs,
+  connections,
+  contacts
+} from "@/db/schema"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { reservedPieces, packingReadiness } from "./readiness"
 
-export async function createOrder(s: Session, raw: unknown) {
+// Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
+async function amazonAccount(orgId: string) {
+  const [row] = await db()
+    .select({ id: connections.id })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  return row ? connection(orgId, "amazon") : null
+}
+async function amazonIdentities(orgId: string, sellerId: string, skus: string[]) {
+  return (await amazonFor(orgId, sellerId)).listings(sellerId, skus)
+}
+export async function prepareOrder(s: Session, raw: unknown) {
   requireBuyer(s)
   const input = orderInputSchema.parse(raw)
   const [supplier] = await db()
@@ -19,20 +40,21 @@ export async function createOrder(s: Session, raw: unknown) {
     throw new Error("Select a supplier in this workspace")
   }
   const shop = await connection(s.org.id, "shopify"),
-    amazon = await connection(s.org.id, "amazon")
+    amazon = await amazonAccount(s.org.id)
   const catalog = await (await shopifyFor(s.org.id, shop.externalId)).variants(input.items.map((i) => i.variantId))
-  const identities = await (
-    await amazonFor(s.org.id, amazon.externalId)
-  ).listings(
-    amazon.externalId,
-    catalog.flatMap((item) => (item?.sku ? [item.sku] : []))
-  )
+  const identities = amazon
+    ? await amazonIdentities(
+        s.org.id,
+        amazon.externalId,
+        catalog.flatMap((item) => (item?.sku ? [item.sku] : []))
+      )
+    : null
   input.items = input.items.map((item) => {
     const source = catalog.find((v) => v?.id === item.variantId)
     if (!source?.sku) {
       throw new Error("Every PO item must have a Shopify SKU")
     }
-    const identity = identities.get(source.sku)
+    const identity = identities?.get(source.sku)
     if (source.asin?.value && identity?.asin && source.asin.value !== identity.asin) {
       throw new Error(`Shopify and Amazon ASINs disagree for SKU ${source.sku}`)
     }
@@ -43,39 +65,131 @@ export async function createOrder(s: Session, raw: unknown) {
       buyerSku: source.sku,
       inventoryItemId: source.inventoryItem.id,
       supplierSku: source.supplierSku?.value ?? "",
-      asin: identity?.asin ?? "",
+      asin: identity?.asin ?? source.asin?.value ?? "",
       fnsku: identity?.fnsku ?? ""
     }
   })
   orderInputSchema.parse(input)
-  return db().transaction(async (tx) => {
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        buyerOrgId: s.org.id,
-        supplierId: supplier.id,
-        shopifyDomain: shop.externalId,
-        amazonSellerId: amazon.externalId,
-        data: input
-      })
-      .returning()
-    await tx
-      .insert(orderRevisions)
-      .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "PO created" })
-    return order!
+  return { input, shopifyDomain: shop.externalId, amazonSellerId: amazon?.externalId ?? null }
+}
+export async function persistOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
+  const { input, shopifyDomain, amazonSellerId } = prepared
+  requireBuyer(s)
+  // Keep the selected accounts stable through the commit, including after slow catalog reads.
+  const accounts = await tx
+    .select({ provider: connections.provider, externalId: connections.externalId })
+    .from(connections)
+    .where(eq(connections.orgId, s.org.id))
+    .orderBy(connections.provider)
+    .for("share")
+  if (
+    !accounts.some((account) => account.provider === "shopify" && account.externalId === shopifyDomain) ||
+    (amazonSellerId !== null &&
+      !accounts.some((account) => account.provider === "amazon" && account.externalId === amazonSellerId))
+  ) {
+    throw new Error("The connected merchant account changed. Refresh before saving this PO")
+  }
+  const [supplier] = await tx
+    .select({ id: suppliers.id })
+    .from(suppliers)
+    .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id)))
+    .for("share")
+  if (!supplier) {
+    throw new Error("Select a supplier in this workspace")
+  }
+  if (input.destination === "forwarder") {
+    const [forwarder] = await tx
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.id, input.forwarderId!), eq(contacts.orgId, s.org.id), eq(contacts.kind, "forwarder")))
+      .for("share")
+    if (!forwarder) {
+      throw new Error("Choose a freight forwarder in this workspace")
+    }
+  }
+  const [order] = await tx
+    .insert(orders)
+    .values({
+      buyerOrgId: s.org.id,
+      supplierId: input.supplierId,
+      shopifyDomain,
+      amazonSellerId,
+      data: input
+    })
+    .returning()
+  await tx
+    .insert(orderRevisions)
+    .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "PO created" })
+  return order!
+}
+export async function createOrder(s: Session, raw: unknown) {
+  const prepared = await prepareOrder(s, raw)
+  return db().transaction((tx) => persistOrder(tx, s, prepared))
+}
+// Amazon shipments need every item's ASIN and FNSKU. A PO saved before Amazon was connected gets them here, before the
+// supplier packs against it.
+async function missingAmazonIdentities(s: Session, id: string) {
+  const { order } = await accessibleOrder(s, id)
+  const missing = order.data.items.filter((item) => !item.asin || !item.fnsku)
+  if (!missing.length || order.data.destination !== "awd_us") {
+    return null
+  }
+  const amazon = await amazonAccount(s.org.id)
+  if (!amazon) {
+    throw new Error("Connect Amazon in Settings before sending this PO. Amazon needs each item's ASIN and FNSKU.")
+  }
+  const identities = await amazonIdentities(
+    s.org.id,
+    amazon.externalId,
+    missing.map((item) => item.buyerSku)
+  )
+  const unlisted = missing.filter((item) => {
+    const identity = identities.get(item.buyerSku)
+    return !identity?.asin || !identity.fnsku || (item.asin && item.asin !== identity.asin)
   })
+  if (unlisted.length) {
+    throw new Error(
+      `Amazon has no matching FBA listing for ${unlisted.map((item) => item.buyerSku).join(", ")}. Check the SKUs on Amazon, then send the PO.`
+    )
+  }
+  return { sellerId: amazon.externalId, identities, revision: order.revision }
 }
 export async function submitOrder(s: Session, id: string, expectedRevision: number) {
   requireBuyer(s)
+  const completed = await missingAmazonIdentities(s, id)
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, id, tx, true)
-    if (order.status !== "draft" || order.revision !== expectedRevision) {
+    if (
+      order.status !== "draft" ||
+      order.revision !== expectedRevision ||
+      (completed && completed.revision !== order.revision)
+    ) {
       throw new Error("This PO has changed. Refresh before submitting")
     }
     if (order.data.destination !== "awd_us") {
       throw new Error("The first release supports AWD USA. Save other destinations as drafts")
     }
-    await tx.update(orders).set({ status: "submitted", updatedAt: new Date() }).where(eq(orders.id, id))
+    if (completed) {
+      if (order.amazonSellerId && order.amazonSellerId !== completed.sellerId) {
+        throw new Error("The connected Amazon account changed. Refresh before submitting")
+      }
+      order.data = orderInputSchema.parse({
+        ...order.data,
+        items: order.data.items.map((item) => {
+          const identity = completed.identities.get(item.buyerSku)
+          return item.asin && item.fnsku ? item : { ...item, asin: identity?.asin ?? "", fnsku: identity?.fnsku ?? "" }
+        })
+      })
+      order.amazonSellerId = completed.sellerId
+      await tx
+        .update(orderRevisions)
+        .set({ data: order.data })
+        .where(and(eq(orderRevisions.orderId, id), eq(orderRevisions.revision, order.revision)))
+    }
+    await tx
+      .update(orders)
+      .set({ status: "submitted", data: order.data, amazonSellerId: order.amazonSellerId, updatedAt: new Date() })
+      .where(eq(orders.id, id))
     await tx
       .insert(jobs)
       .values({

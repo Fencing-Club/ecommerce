@@ -1,7 +1,9 @@
 import { and, eq, sql, lt, lte, inArray } from "drizzle-orm"
 import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
+import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
+import { stockJob } from "./stock"
 
 export async function runNextJob() {
   const job = await db().transaction(async (tx) => {
@@ -55,7 +57,11 @@ export async function runNextJob() {
     void heartbeat()
   }, 30000)
   try {
-    if (job.kind === "amazon") {
+    if (job.kind === "stock") {
+      await stockJob(job.payload, assertOwned, job)
+    } else if (job.kind === "import") {
+      await importJob(job.payload, assertOwned)
+    } else if (job.kind === "amazon") {
       await amazonJob(job.payload, assertOwned)
     } else if (job.kind === "email") {
       await emailJob(job.payload, job.key, assertOwned)

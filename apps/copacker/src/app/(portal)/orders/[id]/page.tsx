@@ -119,6 +119,25 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   ))}
                 </TableBody>
                 <TableFooter>
+                  {!!order.data.adjustments?.length && (
+                    <TableRow>
+                      <TableCell colSpan={4}>Products subtotal</TableCell>
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {money(
+                          order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+                          currency
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {order.data.adjustments?.map((adjustment, index) => (
+                    <TableRow key={index}>
+                      <TableCell colSpan={4}>{adjustment.description}</TableCell>
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {money(adjustment.amount, currency)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                   <TableRow>
                     <TableCell colSpan={4}>PO total</TableCell>
                     <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>

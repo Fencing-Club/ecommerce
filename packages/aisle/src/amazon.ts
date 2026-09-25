@@ -1,6 +1,91 @@
 import { z } from "zod"
 
 export type AmazonCredentials = { clientId: string; clientSecret: string; refreshToken: string }
+const stockQuantity = z.number().int().nonnegative().safe()
+const awdStockPage = z.object({
+  inventory: z
+    .array(
+      z.object({
+        sku: z.string().min(1).max(512),
+        totalInboundQuantity: stockQuantity.optional(),
+        totalOnhandQuantity: stockQuantity.optional(),
+        inventoryDetails: z
+          .object({
+            availableDistributableQuantity: stockQuantity.optional(),
+            reservedDistributableQuantity: stockQuantity.optional(),
+            replenishmentQuantity: stockQuantity.optional()
+          })
+          .optional()
+      })
+    )
+    .max(200),
+  nextToken: z.string().min(1).max(16384).nullish()
+})
+const optionalStockQuantity = stockQuantity.optional().transform((value) => value ?? null)
+const fbaStockPage = z.object({
+  payload: z.object({
+    granularity: z.object({ granularityType: z.literal("Marketplace"), granularityId: z.string().min(1) }),
+    inventorySummaries: z
+      .array(
+        z.object({
+          sellerSku: z.string().min(1).max(512),
+          asin: z.string().min(1).max(32).optional(),
+          fnSku: z.string().min(1).max(128).optional(),
+          condition: z.string().min(1).max(128).optional(),
+          lastUpdatedTime: z.iso.datetime({ offset: true }).optional(),
+          totalQuantity: optionalStockQuantity,
+          inventoryDetails: z
+            .object({
+              fulfillableQuantity: optionalStockQuantity,
+              inboundWorkingQuantity: optionalStockQuantity,
+              inboundShippedQuantity: optionalStockQuantity,
+              inboundReceivingQuantity: optionalStockQuantity,
+              reservedQuantity: z
+                .object({
+                  totalReservedQuantity: optionalStockQuantity,
+                  pendingCustomerOrderQuantity: optionalStockQuantity,
+                  pendingTransshipmentQuantity: optionalStockQuantity,
+                  fcProcessingQuantity: optionalStockQuantity
+                })
+                .optional(),
+              unfulfillableQuantity: z
+                .object({
+                  totalUnfulfillableQuantity: optionalStockQuantity,
+                  customerDamagedQuantity: optionalStockQuantity,
+                  warehouseDamagedQuantity: optionalStockQuantity,
+                  distributorDamagedQuantity: optionalStockQuantity,
+                  carrierDamagedQuantity: optionalStockQuantity,
+                  defectiveQuantity: optionalStockQuantity,
+                  expiredQuantity: optionalStockQuantity
+                })
+                .optional(),
+              researchingQuantity: z
+                .object({
+                  totalResearchingQuantity: optionalStockQuantity,
+                  researchingQuantityBreakdown: z
+                    .array(
+                      z.object({
+                        name: z.enum([
+                          "researchingQuantityInShortTerm",
+                          "researchingQuantityInMidTerm",
+                          "researchingQuantityInLongTerm"
+                        ]),
+                        quantity: stockQuantity
+                      })
+                    )
+                    .max(3)
+                    .optional()
+                })
+                .optional()
+            })
+            .optional()
+        })
+      )
+      .max(1000)
+  }),
+  pagination: z.object({ nextToken: z.string().min(1).max(16384).optional() }).optional(),
+  errors: z.array(z.unknown()).max(0).optional()
+})
 const packageSchema = z.object({
   count: z.number().int().positive(),
   distributionPackage: z
@@ -36,9 +121,44 @@ export class ProviderError extends Error {
   constructor(
     public readonly status: number,
     public readonly requestId: string | null,
-    message: string
+    message: string,
+    public readonly retryAfterMs: number | null = null
   ) {
     super(message)
+  }
+}
+// Each collection owns its pacing and deadline; mutations never use these retries.
+function stockReader(deadline: number, assertActive?: () => Promise<void>) {
+  let nextRequestAt = 0
+  return async <T>(read: () => Promise<T>, pageDeadline = deadline): Promise<T> => {
+    const check = async () => {
+      await assertActive?.()
+      if (Date.now() >= Math.min(deadline, pageDeadline)) {
+        throw new Error("Stock collection timed out; restart the complete collection")
+      }
+    }
+    for (let attempt = 0; ; attempt++) {
+      await check()
+      if (nextRequestAt >= Math.min(deadline, pageDeadline)) {
+        throw new Error("Stock collection timed out; restart the complete collection")
+      }
+      const wait = nextRequestAt - Date.now()
+      if (wait > 0) {
+        await new Promise((resolve) => setTimeout(resolve, wait))
+      }
+      await check()
+      nextRequestAt = Date.now() + 500
+      try {
+        const response = await read()
+        await check()
+        return response
+      } catch (error) {
+        if (!(error instanceof ProviderError) || ![429, 500, 502, 503, 504].includes(error.status) || attempt >= 2) {
+          throw error
+        }
+        nextRequestAt = Math.max(nextRequestAt, Date.now() + (error.retryAfterMs ?? 1000 * 2 ** attempt))
+      }
+    }
   }
 }
 export class Amazon {
@@ -76,16 +196,167 @@ export class Amazon {
       signal: AbortSignal.timeout(30000)
     })
     if (!response.ok) {
+      const retryAfter = response.headers.get("retry-after")
+      const retryAfterMs = retryAfter === null ? NaN : Number(retryAfter) * 1000
+      const delay = Number.isFinite(retryAfterMs) ? retryAfterMs : Date.parse(retryAfter ?? "") - Date.now()
       throw new ProviderError(
         response.status,
         response.headers.get("x-amzn-RequestId"),
-        `Amazon request failed (${response.status})`
+        `Amazon request failed (${response.status})`,
+        Number.isFinite(delay) ? Math.max(0, delay) : null
       )
     }
     if (response.status === 204) {
       return null
     }
     return response.json() as Promise<unknown>
+  }
+  /** One complete API page, not a publishable stock snapshot. US routing only. */
+  async fbaStockPage(marketplaceId: string, nextToken?: string) {
+    z.literal("ATVPDKIKX0DER").parse(marketplaceId)
+    z.string().min(1).max(16384).optional().parse(nextToken)
+    const query = new URLSearchParams({
+      details: "true",
+      granularityType: "Marketplace",
+      granularityId: marketplaceId,
+      marketplaceIds: marketplaceId
+    })
+    if (nextToken !== undefined) {
+      query.set("nextToken", nextToken)
+    }
+    const response = fbaStockPage.parse(await this.request("GET", `/fba/inventory/v1/summaries?${query}`))
+    if (response.payload.granularity.granularityId !== marketplaceId) {
+      throw new Error("FBA inventory response belongs to a different marketplace")
+    }
+    return {
+      marketplaceId,
+      rows: response.payload.inventorySummaries,
+      nextToken: response.pagination?.nextToken ?? null
+    }
+  }
+  async fbaStock(marketplaceId: string, assertActive?: () => Promise<void>) {
+    z.literal("ATVPDKIKX0DER").parse(marketplaceId)
+    const startedAt = new Date().toISOString()
+    const deadline = Date.now() + 5 * 60 * 1000
+    const read = stockReader(deadline, assertActive)
+    const rows: (z.infer<typeof fbaStockPage>["payload"]["inventorySummaries"][number] & {
+      unit: "amazon_sellable_unit"
+    })[] = []
+    const identities = new Set<string>(),
+      tokens = new Set<string>()
+    let nextToken: string | undefined
+    let pageDeadline = deadline
+    let bytes = 0
+    for (let pageNumber = 0; pageNumber < 100; pageNumber++) {
+      const page = await read(() => this.fbaStockPage(marketplaceId, nextToken), pageDeadline)
+      bytes += Buffer.byteLength(JSON.stringify(page), "utf8")
+      if (bytes > 8 * 1024 * 1024 || rows.length + page.rows.length > 20000) {
+        throw new Error("FBA stock collection exceeds the supported size")
+      }
+      for (const item of page.rows) {
+        const identity = JSON.stringify([item.sellerSku, item.fnSku ?? null, item.condition ?? null])
+        if (identities.has(identity)) {
+          throw new Error("Amazon repeated an FBA stock identity; restart the collection")
+        }
+        identities.add(identity)
+        rows.push({ ...item, unit: "amazon_sellable_unit" })
+      }
+      if (!page.nextToken) {
+        rows.sort((a, b) => {
+          const left = JSON.stringify([a.sellerSku, a.fnSku ?? null, a.condition ?? null])
+          const right = JSON.stringify([b.sellerSku, b.fnSku ?? null, b.condition ?? null])
+          if (left === right) {
+            return 0
+          }
+          return left < right ? -1 : 1
+        })
+        return {
+          source: "fba" as const,
+          scopeKey: marketplaceId,
+          startedAt,
+          observedAt: new Date().toISOString(),
+          rows
+        }
+      }
+      if (tokens.has(page.nextToken)) {
+        throw new Error("FBA stock pagination repeated a token")
+      }
+      tokens.add(page.nextToken)
+      nextToken = page.nextToken
+      // The provider token expires after 30 seconds. Leave a margin and fail closed.
+      pageDeadline = Math.min(deadline, Date.now() + 25000)
+    }
+    throw new Error("FBA stock pagination exceeds the supported page limit")
+  }
+  /** US network stock only; creation and label methods are never called. */
+  async awdStock(assertActive?: () => Promise<void>) {
+    const startedAt = new Date().toISOString()
+    const deadline = Date.now() + 5 * 60 * 1000
+    const rows: {
+      sellerSku: string
+      unit: "amazon_sellable_unit"
+      inbound: number | null
+      onHand: number | null
+      availableDistributable: number | null
+      reservedDistributable: number | null
+      replenishment: number | null
+    }[] = []
+    const skus = new Set<string>(),
+      tokens = new Set<string>()
+    const query = new URLSearchParams({ details: "SHOW", maxResults: "200" })
+    let bytes = 0
+    const read = stockReader(deadline, assertActive)
+    const fetchPage = () => read(() => this.request("GET", `/awd/2024-05-09/inventory?${query}`))
+    for (let pageNumber = 0; pageNumber < 100; pageNumber++) {
+      const parsed = awdStockPage.safeParse(await fetchPage())
+      if (!parsed.success) {
+        throw new Error("Amazon returned an invalid AWD stock page")
+      }
+      if (Date.now() >= deadline) {
+        throw new Error("AWD stock collection timed out; no complete snapshot is available")
+      }
+      bytes += Buffer.byteLength(JSON.stringify(parsed.data), "utf8")
+      if (bytes > 8 * 1024 * 1024) {
+        throw new Error("AWD stock collection exceeds the supported size")
+      }
+      for (const item of parsed.data.inventory) {
+        if (skus.has(item.sku)) {
+          throw new Error("Amazon repeated an AWD stock SKU; restart the collection")
+        }
+        skus.add(item.sku)
+        rows.push({
+          sellerSku: item.sku,
+          unit: "amazon_sellable_unit",
+          inbound: item.totalInboundQuantity ?? null,
+          onHand: item.totalOnhandQuantity ?? null,
+          availableDistributable: item.inventoryDetails?.availableDistributableQuantity ?? null,
+          reservedDistributable: item.inventoryDetails?.reservedDistributableQuantity ?? null,
+          replenishment: item.inventoryDetails?.replenishmentQuantity ?? null
+        })
+      }
+      const next = parsed.data.nextToken
+      if (!next) {
+        rows.sort((a, b) => {
+          if (a.sellerSku === b.sellerSku) {
+            return 0
+          }
+          return a.sellerSku < b.sellerSku ? -1 : 1
+        })
+        return {
+          source: "awd" as const,
+          scopeKey: "us" as const,
+          startedAt,
+          observedAt: new Date().toISOString(),
+          rows
+        }
+      }
+      if (tokens.has(next)) {
+        throw new Error("AWD stock pagination repeated a token")
+      }
+      tokens.add(next)
+      query.set("nextToken", next)
+    }
+    throw new Error("AWD stock pagination exceeds the supported page limit")
   }
   async eligibility(packagesToInbound: unknown[]) {
     const body = z

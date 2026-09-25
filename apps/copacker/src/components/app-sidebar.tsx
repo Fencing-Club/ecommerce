@@ -44,6 +44,7 @@ export type AppSidebarProps = {
 
 const navigation = [
   { view: "orders", label: "Purchase orders", icon: ClipboardList },
+  { view: "inventory", label: "Inventory", icon: Box, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },
   { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
   { view: "settings", label: "Settings", icon: Settings }

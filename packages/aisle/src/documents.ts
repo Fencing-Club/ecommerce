@@ -67,6 +67,12 @@ export async function purchaseOrderPdf(order: OrderInput, buyer: string, supplie
       w.line(item.instructions)
     }
   }
+  if (order.adjustments?.length) {
+    w.section("Additional charges and discounts")
+    for (const adjustment of order.adjustments) {
+      w.line(`${adjustment.description}: ${money(adjustment.amount, order.currency)}`)
+    }
+  }
   w.section(`Total: ${money(orderTotal(order), order.currency)}`)
   if (order.notes) {
     w.line(order.notes)

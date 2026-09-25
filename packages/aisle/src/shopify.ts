@@ -14,6 +14,49 @@ export function normalizeShopDomain(input: string) {
   return /^[a-z0-9][a-z0-9-]*$/.test(host) ? `${host}.myshopify.com` : host
 }
 const field = z.object({ value: z.string() }).nullable()
+const stockPageInfo = z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() })
+// Shopify Collective's fulfillment service. Collective locations mirror a partner's stock through this service, so
+// they are recognised by the service Shopify calls, never by the location's display name (which can be renamed or
+// localized).
+const shopifyCollectiveHost = "curator-merchant-to-merchant.sfe.shopifyinternal.com"
+export type ShopifyLocationKind = "merchant" | "shopify_collective" | "fulfillment_service"
+// Merchant locations hold the store's own stock. Locations with a fulfillment service are created and managed by an
+// app (Shopify Collective, Amazon, 3PLs), and their quantities are reported by that app.
+export function shopifyLocationKind(location: {
+  isFulfillmentService: boolean
+  fulfillmentService: { callbackUrl: string | null } | null
+}): ShopifyLocationKind {
+  if (!location.isFulfillmentService) {
+    return "merchant"
+  }
+  const callback = location.fulfillmentService?.callbackUrl
+  return callback && URL.canParse(callback) && new URL(callback).hostname === shopifyCollectiveHost
+    ? "shopify_collective"
+    : "fulfillment_service"
+}
+const stockLevel = z.object({
+  id: z.string().min(1),
+  location: z.object({
+    id: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/),
+    name: z.string(),
+    isFulfillmentService: z.boolean(),
+    fulfillmentService: z.object({ callbackUrl: z.string().nullable() }).nullable()
+  }),
+  quantities: z
+    .array(
+      z.object({
+        name: z.enum(["available", "on_hand", "incoming", "committed"]),
+        quantity: z.number().int().safe()
+      })
+    )
+    .max(4)
+    .refine((values) => new Set(values.map((value) => value.name)).size === values.length)
+})
+const stockLevels = z.object({ nodes: z.array(stockLevel).max(250), pageInfo: stockPageInfo })
+const stockLevelFields = `id location{id name isFulfillmentService fulfillmentService{callbackUrl}} quantities(names:["available","on_hand","incoming","committed"]){name quantity}`
+// Inventory thumbnails, resized by Shopify's CDN.
+const stockMediaFields = "preview{image{url(transform:{maxWidth:160,maxHeight:160})}}"
+const stockMedia = z.object({ preview: z.object({ image: z.object({ url: z.url() }).nullable() }).nullable() })
 const variant = z.object({
   id: z.string(),
   title: z.string(),
@@ -27,6 +70,13 @@ const variant = z.object({
   asin: field
 })
 export type CatalogVariant = z.infer<typeof variant>
+export class ShopifyPermissionError extends Error {}
+// Shopify answered with an HTTP error; the status says whether reconnecting (401, 403) or waiting (429, 5xx) helps.
+export class ShopifyRequestError extends Error {
+  constructor(readonly status: number) {
+    super(`Shopify request failed (${status})`)
+  }
+}
 export class Shopify {
   constructor(
     private domain: string,
@@ -43,13 +93,22 @@ export class Shopify {
       signal: AbortSignal.timeout(30000)
     })
     if (!response.ok) {
-      throw new Error(`Shopify request failed (${response.status})`)
+      throw new ShopifyRequestError(response.status)
     }
     const envelope = z
       .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
       .parse(await response.json())
+    if (
+      envelope.errors?.some(
+        (error) => z.object({ extensions: z.object({ code: z.literal("ACCESS_DENIED") }) }).safeParse(error).success
+      )
+    ) {
+      throw new ShopifyPermissionError("Reconnect Shopify to authorize inventory location access")
+    }
     if (envelope.errors?.length) {
-      throw new Error("Shopify rejected the request; check app permissions")
+      // GraphQL error messages describe the query, not the store's data, so they are safe to keep for diagnosis.
+      const messages = envelope.errors.map((error) => z.object({ message: z.string() }).safeParse(error).data?.message)
+      throw new Error(`Shopify rejected the request: ${messages.filter(Boolean).join("; ") || "no details"}`)
     }
     return envelope.data
   }
@@ -59,6 +118,223 @@ export class Shopify {
         query
       })
     ).productVariants.nodes
+  }
+  async catalogPage(after: string | null = null) {
+    return z
+      .object({
+        productVariants: z.object({
+          nodes: z.array(variant),
+          pageInfo: z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() })
+        })
+      })
+      .parse(
+        await this.graphql(
+          `query ImportCatalog($after:String){productVariants(first:100,after:$after){nodes{${fields}} pageInfo{hasNextPage endCursor}}}`,
+          { after }
+        )
+      ).productVariants
+  }
+  async stockPage(after: string | null = null) {
+    const parsed = z
+      .object({
+        shop: z.object({ myshopifyDomain: z.literal(this.domain) }),
+        productVariants: z.object({
+          nodes: z
+            .array(
+              z.object({
+                id: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+                sku: z.string().nullable(),
+                title: z.string(),
+                product: z.object({
+                  id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+                  title: z.string(),
+                  featuredMedia: stockMedia.nullable()
+                }),
+                media: z.object({ nodes: z.array(stockMedia).max(1) }),
+                requiresComponents: z.boolean(),
+                inventoryQuantity: z.number().int().safe().nullable(),
+                inventoryItem: z.object({
+                  id: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
+                  tracked: z.boolean(),
+                  inventoryLevels: stockLevels
+                })
+              })
+            )
+            .max(50),
+          pageInfo: stockPageInfo
+        })
+      })
+      .safeParse(
+        await this.graphql(
+          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title product{id title featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity inventoryItem{id tracked inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          { after }
+        )
+      )
+    if (!parsed.success) {
+      throw new Error("Shopify stock page or store identity is invalid")
+    }
+    return parsed.data.productVariants
+  }
+  async stockLevelsPage(inventoryItemId: string, after: string | null = null) {
+    z.string()
+      .regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/)
+      .parse(inventoryItemId)
+    const parsed = z
+      .object({
+        shop: z.object({ myshopifyDomain: z.literal(this.domain) }),
+        inventoryItem: z.object({ id: z.literal(inventoryItemId), inventoryLevels: stockLevels })
+      })
+      .safeParse(
+        await this.graphql(
+          `query StockLevels($id:ID!,$after:String){shop{myshopifyDomain} inventoryItem(id:$id){id inventoryLevels(first:250,after:$after){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}}`,
+          { id: inventoryItemId, after }
+        )
+      )
+    if (!parsed.success) {
+      throw new Error("Shopify stock levels or inventory item identity is invalid")
+    }
+    return parsed.data.inventoryItem.inventoryLevels
+  }
+  async stock(assertActive?: () => Promise<void>) {
+    const startedAt = new Date().toISOString()
+    const deadline = Date.now() + 5 * 60 * 1000
+    let requests = 0,
+      bytes = 0,
+      levelCount = 0
+    const rows: {
+      variantId: string
+      inventoryItemId: string
+      buyerSku: string | null
+      // Product details for grouping and display. Optional because snapshots stored before they were collected lack them.
+      productId?: string
+      productTitle?: string
+      variantTitle?: string
+      imageUrl?: string | null
+      // A bundle holds no stock of its own; Shopify reports how many can be sold from its components' stock instead.
+      bundle?: { available: number | null }
+      tracked: boolean
+      unit: "shopify_inventory_unit"
+      levels: {
+        locationId: string
+        locationName: string
+        // Optional because snapshots stored before location kinds were collected lack it.
+        locationKind?: ShopifyLocationKind
+        available: number | null
+        onHand: number | null
+        incoming: number | null
+        committed: number | null
+      }[]
+    }[] = []
+    const variantIds = new Set<string>(),
+      inventoryIds = new Set<string>(),
+      variantCursors = new Set<string>()
+    const check = async () => {
+      await assertActive?.()
+      if (Date.now() >= deadline) {
+        throw new Error("Shopify stock collection timed out")
+      }
+    }
+    const fetchPage = async <T>(read: () => Promise<T>) => {
+      await check()
+      if (++requests > 500) {
+        throw new Error("Shopify stock collection exceeds the request limit")
+      }
+      const page = await read()
+      await check()
+      bytes += Buffer.byteLength(JSON.stringify(page), "utf8")
+      if (bytes > 8 * 1024 * 1024) {
+        throw new Error("Shopify stock collection exceeds the supported size")
+      }
+      return page
+    }
+    const compare = (a: string, b: string) => {
+      if (a === b) {
+        return 0
+      }
+      return a < b ? -1 : 1
+    }
+    let after: string | null = null
+    for (let pageNumber = 0; pageNumber < 200; pageNumber++) {
+      const page = await fetchPage(() => this.stockPage(after))
+      for (const variant of page.nodes) {
+        const item = variant.inventoryItem
+        if (variantIds.has(variant.id) || inventoryIds.has(item.id)) {
+          throw new Error("Shopify stock repeated a product identity")
+        }
+        variantIds.add(variant.id)
+        inventoryIds.add(item.id)
+        const row: (typeof rows)[number] = {
+          variantId: variant.id,
+          inventoryItemId: item.id,
+          buyerSku: variant.sku,
+          productId: variant.product.id,
+          productTitle: variant.product.title,
+          variantTitle: variant.title,
+          // Prefer the variant's own photo, then the product's.
+          imageUrl:
+            variant.media.nodes[0]?.preview?.image?.url ?? variant.product.featuredMedia?.preview?.image?.url ?? null,
+          ...(variant.requiresComponents && { bundle: { available: variant.inventoryQuantity } }),
+          tracked: item.tracked,
+          unit: "shopify_inventory_unit",
+          levels: []
+        }
+        const locations = new Set<string>(),
+          levelIds = new Set<string>(),
+          cursors = new Set<string>()
+        let levels = item.inventoryLevels
+        for (let levelPage = 0; ; levelPage++) {
+          for (const level of levels.nodes) {
+            if (locations.has(level.location.id) || levelIds.has(level.id)) {
+              throw new Error("Shopify stock repeated a location identity")
+            }
+            if (++levelCount > 20000) {
+              throw new Error("Shopify stock collection exceeds the location limit")
+            }
+            locations.add(level.location.id)
+            levelIds.add(level.id)
+            const quantity = (name: string) => level.quantities.find((value) => value.name === name)?.quantity ?? null
+            row.levels.push({
+              locationId: level.location.id,
+              locationName: level.location.name,
+              locationKind: shopifyLocationKind(level.location),
+              available: quantity("available"),
+              onHand: quantity("on_hand"),
+              incoming: quantity("incoming"),
+              committed: quantity("committed")
+            })
+          }
+          if (!levels.pageInfo.hasNextPage) {
+            break
+          }
+          const cursor = levels.pageInfo.endCursor
+          if (!cursor || cursors.has(cursor) || levelPage >= 99) {
+            throw new Error("Shopify stock location pagination did not complete")
+          }
+          cursors.add(cursor)
+          levels = await fetchPage(() => this.stockLevelsPage(item.id, cursor))
+        }
+        row.levels.sort((a, b) => compare(a.locationId, b.locationId))
+        rows.push(row)
+      }
+      if (!page.pageInfo.hasNextPage) {
+        rows.sort((a, b) => compare(a.variantId, b.variantId))
+        return {
+          source: "shopify" as const,
+          scopeKey: "store" as const,
+          shopifyDomain: this.domain,
+          startedAt,
+          observedAt: new Date().toISOString(),
+          rows
+        }
+      }
+      const cursor = page.pageInfo.endCursor
+      if (!cursor || variantCursors.has(cursor)) {
+        throw new Error("Shopify stock variant pagination did not complete")
+      }
+      variantCursors.add(cursor)
+      after = cursor
+    }
+    throw new Error("Shopify stock collection exceeds the variant page limit")
   }
   async variants(ids: string[]) {
     return z

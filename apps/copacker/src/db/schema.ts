@@ -1,6 +1,9 @@
 import type { Address, OrderInput, Packing, PackingDraft } from "@repo/aisle"
+import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
+import type { Shopify } from "@repo/aisle/shopify"
 import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core"
+import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 export const organizations = pgTable("organizations", {
@@ -96,7 +99,8 @@ export const orders = pgTable(
       .notNull()
       .references(() => suppliers.id),
     shopifyDomain: text().notNull(),
-    amazonSellerId: text().notNull(),
+    // Null until Amazon is connected; set when the PO is sent for an Amazon shipment.
+    amazonSellerId: text(),
     status: text({ enum: ["draft", "submitted", "closed"] })
       .notNull()
       .default("draft"),
@@ -203,7 +207,7 @@ export const jobs = pgTable(
   {
     id: uuid().defaultRandom().primaryKey(),
     key: text().notNull().unique(),
-    kind: text({ enum: ["amazon", "email", "shopify"] }).notNull(),
+    kind: text({ enum: ["amazon", "email", "shopify", "import", "stock"] }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),
     status: text().notNull().default("pending"),
     attempts: integer().notNull().default(0),
@@ -213,4 +217,66 @@ export const jobs = pgTable(
     createdAt: createdAt()
   },
   (t) => [index("jobs_pending").on(t.status, t.runAt)]
+)
+export const poImports = pgTable("po_imports", {
+  id: uuid().defaultRandom().primaryKey(),
+  orgId: uuid()
+    .notNull()
+    .references(() => organizations.id),
+  createdBy: text().notNull(),
+  objectKey: text().notNull().unique(),
+  filename: text().notNull(),
+  shopifyDomain: text().notNull(),
+  amazonSellerId: text(),
+  status: text({ enum: ["queued", "running", "review", "failed", "cancelled", "saved"] })
+    .notNull()
+    .default("queued"),
+  revision: integer().notNull().default(1),
+  proposal: jsonb().$type<ImportProposal>(),
+  promptVersion: integer(),
+  model: text(),
+  tokens: integer(),
+  error: text(),
+  orderId: uuid().references(() => orders.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+})
+
+export const stockSnapshots = pgTable(
+  "stock_snapshots",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    source: text({ enum: ["awd", "shopify", "fba"] }).notNull(),
+    externalAccountId: text().notNull(),
+    scopeKey: text().notNull(),
+    revision: integer().notNull().default(0),
+    status: text({ enum: ["idle", "queued", "running", "failed"] })
+      .notNull()
+      .default("idle"),
+    requestedAt: timestamp({ withTimezone: true }),
+    attemptStartedAt: timestamp({ withTimezone: true }),
+    attemptFinishedAt: timestamp({ withTimezone: true }),
+    workerToken: uuid(),
+    snapshotId: uuid(),
+    data: jsonb().$type<Awaited<ReturnType<Amazon["awdStock"] | Amazon["fbaStock"] | Shopify["stock"]>>>(),
+    errorCode: text()
+  },
+  (t) => [uniqueIndex("stock_scope").on(t.orgId, t.source, t.externalAccountId, t.scopeKey)]
+)
+
+export const inventoryLocationMappings = pgTable(
+  "inventory_location_mappings",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    shopifyDomain: text().notNull(),
+    locationId: text().notNull(),
+    classification: text({ enum: ["merchant", "amazon_mirror", "excluded", "unresolved"] }).notNull(),
+    revision: integer().notNull().default(1)
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.locationId] })]
 )

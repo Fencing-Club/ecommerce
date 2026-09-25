@@ -1,23 +1,54 @@
 import { packingSchema, validatePacking, type OrderInput } from "@repo/aisle"
-import type { documents, shipments } from "../db/schema"
+import type { documents, shipments, ShipmentState } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
 export type ReadinessIssue = { code: string; message: string; field?: string; cartonId?: string; itemId?: string }
 
-export function reservedPieces(rows: Shipment[], excludeId?: string) {
-  const result: Record<string, number> = {}
+function* reservations(rows: Shipment[], excludeId?: string) {
   for (const row of rows) {
     if (row.id === excludeId || ["packing", "cancelled"].includes(row.status) || !row.packing) {
       continue
     }
     for (const carton of row.packing.cartons) {
       for (const item of carton.items) {
-        result[item.itemId] = (result[item.itemId] ?? 0) + item.pieces
+        yield { itemId: item.itemId, pieces: item.pieces, status: row.status }
       }
     }
   }
+}
+
+export function reservedPieces(rows: Shipment[], excludeId?: string) {
+  const result: Record<string, number> = {}
+  for (const item of reservations(rows, excludeId)) {
+    result[item.itemId] = (result[item.itemId] ?? 0) + item.pieces
+  }
   return result
+}
+
+export function orderCoverage(order: OrderInput, rows: Shipment[]) {
+  const quantities = new Map<string, { total: number; byStatus: Partial<Record<ShipmentState, number>> }>()
+  for (const item of reservations(rows)) {
+    const quantity = quantities.get(item.itemId) ?? { total: 0, byStatus: {} }
+    quantity.total += item.pieces
+    quantity.byStatus[item.status] = (quantity.byStatus[item.status] ?? 0) + item.pieces
+    quantities.set(item.itemId, quantity)
+  }
+  return order.items.map((item) => {
+    const assigned = quantities.get(item.id)
+    const assignedPieces = assigned?.total ?? 0
+    return {
+      itemId: item.id,
+      name: item.name,
+      variant: item.variant,
+      buyerSku: item.buyerSku,
+      orderedPieces: item.pieces,
+      assignedPieces,
+      assignedByStatus: assigned?.byStatus ?? {},
+      remainingPieces: Math.max(0, item.pieces - assignedPieces),
+      overAssignedPieces: Math.max(0, assignedPieces - item.pieces)
+    }
+  })
 }
 
 export function packingReadiness(

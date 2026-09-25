@@ -4,8 +4,11 @@ ARG NPM_REGISTRY=https://registry.npmjs.org/
 RUN npm install -g pnpm@11.9.0 --registry=$NPM_REGISTRY
 COPY . .
 ENV LEFTHOOK=0
-RUN pnpm install --frozen-lockfile --registry=$NPM_REGISTRY
+RUN npm pkg delete scripts.prepare && pnpm install --frozen-lockfile --registry=$NPM_REGISTRY
 RUN pnpm --filter copacker build
+RUN cp -r apps/copacker/public apps/copacker/.next/standalone/apps/copacker/public && \
+    cp -r apps/copacker/.next/static apps/copacker/.next/standalone/apps/copacker/.next/static
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 EXPOSE 3000
-CMD ["pnpm", "--filter", "copacker", "start"]
+CMD ["node", "apps/copacker/.next/standalone/apps/copacker/server.js"]

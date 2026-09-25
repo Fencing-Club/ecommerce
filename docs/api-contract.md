@@ -112,7 +112,7 @@ Saving does not reserve quantities, queue a job, contact Amazon or send email. I
 
 `shipment.check` returns `{ revision, orderRevision, canSubmit, requiresApproval, issues, items }`. Each issue includes a stable code and message, plus field, cartonId or itemId where applicable. Each item reports orderedPieces, reservedPieces and availablePieces, excluding the shipment being checked. Preflight is advisory: final submission repeats the same rules under the order lock. It never creates an Amazon shipment.
 
-`GET /api/orders/:id/workflow` is an authenticated, uncached view for the order handoff. It includes PO revision/status/destination, supplier name, ordered/assigned/remaining pieces, shipments with saved drafts, and current document download links. Each shipment includes:
+`GET /api/orders/:id/workflow` is an authenticated, uncached view for the order handoff. It includes PO revision/status/destination, supplier name, ordered/assigned/remaining pieces, shipments with saved drafts, and current document download links. Each item also includes `assignedByStatus` (piece quantities by shipment status, absent statuses mean no assignment) and `overAssignedPieces` (positive discrepancy when assignments exceed ordered pieces). Remaining pieces are nonnegative; use the discrepancy rather than interpreting zero remaining as proof of a valid allocation. Packing drafts and cancelled shipments do not reserve pieces. Submitted packing in correction or needs-attention states continues to reserve quantities. Collected quantities are supplier-reported pickup, not confirmed warehouse receipts or available stock. Each shipment includes:
 
 - `next`: responsible owner (`buyer`, `supplier`, `system`, or null), step, message and applicable command.
 - `editable`, `canSubmit`, `canRelease`, structured `issues`, and the saved provider `issue` when work needs attention.
@@ -120,7 +120,61 @@ Saving does not reserve quantities, queue a job, contact Amazon or send email. I
 
 Use the server's next step and issues for progress presentation rather than duplicating shipment rules in the UI. `canRelease` means documents are complete; the buyer must still enter a booking reference. Document metadata never includes storage keys. Supplier carton/carrier download links remain unavailable until release. UI integration and browser acceptance are pending with the design workstream.
 
+## Open purchase-order coverage
+
+`GET /api/orders/summary` returns `{ orders, nextCursor }` for the active buyer workspace. It reads submitted POs only; drafts and closed POs are excluded. Supplier workspaces receive 403. Responses use `Cache-Control: private, no-store`; this endpoint never calls Shopify/Amazon or queues work.
+
+Optional query parameters:
+
+| Parameter | Meaning |
+| --- | --- |
+| `supplierId` | Exact buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
+| `destination` | `awd_us`, `awd_china`, `fba`, or `forwarder`. |
+| `limit` | Orders per page, integer 1–50, default 20. |
+| `cursor` | Last order UUID returned as `nextCursor`; omit on the first page. |
+
+Unknown parameters, duplicate parameters and invalid values return 400. Orders use immutable ID ascending order, not creation time. Keep filters unchanged between pages; restart without a cursor after changing filters. Each page reads orders and assignments in one repeatable-read transaction. Pages are not a frozen export: later submissions or closures can change subsequent results. A cursor remains usable if its order is closed or removed. `nextCursor: null` means no further matches were present when that page was read.
+
+Each order includes `id`, `reference`, `revision`, `destination`, nullable `forwarderId`, supplier `id`/`name`, pinned `shopifyDomain`/`amazonSellerId`, and `items`. Each item includes the workflow coverage fields plus `variantId`, `supplierSku`, `asin`, `fnsku`, and `piecesPerSet`. Product identity is store plus variant, never SKU alone. No cross-order totals, price conversion, warehouse availability or receipt inference is performed.
+
+For example, a 160-piece PO with 40 pieces reported collected and another 60 in an uncertain Amazon create has this quantity fragment:
+
+```json
+{
+  "orderedPieces": 160,
+  "assignedPieces": 100,
+  "assignedByStatus": { "collected": 40, "needs_attention": 60 },
+  "remainingPieces": 60,
+  "overAssignedPieces": 0,
+  "piecesPerSet": 2
+}
+```
+
+The 60 uncertain pieces remain reserved. The 40 collected pieces are not confirmed received. A saved, unsubmitted packing draft reserves nothing. If assignments total 180, report `remainingPieces: 0` and `overAssignedPieces: 20`; do not interpret the zero as a reconciled PO. UI integration and connected warehouse-stock reporting remain separate tasks.
+
 ## Catalog identity and worker recovery
+
+### Current Shopify, FBA and AWD stock
+
+- `POST /api/inventory/refresh` accepts `{ "source": "awd" }` or `{ "source": "shopify" }`, or `{ "source": "fba", "marketplaceId": "ATVPDKIKX0DER" }` in a buyer workspace. The account comes from the workspace connection for the selected provider. Returns 202 `{id, revision, status}`; repeated calls reuse an already queued/running revision. Missing connection returns 409, unsupported inputs return 400, supplier workspace returns 403. It queues a read-only US AWD, US FBA or complete Shopify store collection, never a shipment or inventory write.
+- `GET /api/inventory?source=awd&limit=100&cursor=...` (or `source=shopify`) returns source/scope/account identity, `snapshotId`, collection `startedAt`/`observedAt`, latest `refresh` state and bounded `rows` plus `nextCursor`. Limit is 1–200. Omit cursor on the first page. Unknown filters, duplicates and malformed cursors return 400. A replaced or inaccessible cursor snapshot returns 409; restart pagination. Responses are private and uncached.
+- Before the first successful collection, snapshot ID/timestamps are null and rows are empty: that is unknown stock, not a successful zero inventory result. Failed refreshes report `refresh_failed` while preserving the last complete snapshot. A disconnected account reports `not_connected`; switching accounts hides old account data.
+- Each row preserves `sellerSku`, `unit: "amazon_sellable_unit"`, nullable `inbound`, `onHand`, `availableDistributable`, `reservedDistributable`, and `replenishment`. Do not add these overlapping states or equate sellable units with individual PO pieces. There are no per-shipment receipts, Shopify mappings or calculated available-stock totals in this response.
+- Current implementation supports US AWD only. Shopify/FBA readers and refresh selection and hosted live acceptance remain tracked tasks. AWD reads are paced per collection and retry selected temporary errors at most twice within the collection deadline. No scheduled sync is enabled.
+
+### AI document imports (backend available; UI integration pending)
+
+Buyer-only endpoints bind every record and merchant lookup to the active organization:
+
+- `POST /api/imports`: multipart `file` PDF; returns `202 {id,status:"queued"}`. Limit 10 MB / 50 pages. Source is private Railway storage; processing runs in the existing worker.
+- `GET /api/imports`: latest 50 import summaries for this buyer.
+- `GET /api/imports/{id}`: status, revision, proposal, error and model/prompt metadata. No private object keys or credentials.
+- `GET /api/imports/{id}/source`: authorized inline PDF, no-store.
+- `PATCH /api/imports/{id}`: `{revision,proposal}` saves corrections only in review state, rechecks candidate IDs against the pinned Shopify store, and returns the incremented revision. Stale revisions return 409.
+- `DELETE /api/imports/{id}`: cancels processing by advancing the revision; source data is retained. Cannot cancel saved imports.
+- `POST /api/imports/{id}`: explicitly retries a failed import with a fresh revision/job. Cannot rerun active, review, cancelled or saved imports.
+
+Proposal schema: `src/server/import-proposal.ts`. It preserves source units/prices, product candidates, unresolved values and separate non-product charges. No automatic PO creation, submission or merchant writes occur. A review proposal becomes a saved draft only through the explicit save endpoint below. A production prompt label and OpenRouter configuration are required for live processing.
 
 `GET /api/catalog?q=...` retains the Shopify variant array with `amazonAsin` and `fnsku`. `amazonError` is null after a successful Amazon lookup, or an actionable message if Amazon could not be queried. An empty FNSKU after a successful query means the listing has no US FNSKU available. Surface provider errors instead of presenting them as a missing listing.
 
@@ -133,3 +187,34 @@ Workers refresh leases while active. Attempt ownership is checked before externa
 Amazon model reference: https://github.com/amzn/selling-partner-api-models/blob/main/models/listings-items-api-model/listingsItems_2021-08-01.json
 
 Release requires current packing-list/checklist PDFs, a unique SSCC and current Amazon carton PDF for every supplier carton, a current carrier page assigned to every carton, and a product label for every shipped item. It rejects stale revisions and repeated release attempts. Uploading a replacement draft invoice makes the previous invoice outdated.
+
+### Save a reviewed import
+
+`POST /api/imports/{id}/save` accepts `{revision, reviewed: true, supplierId, destination, forwarderId?, reference, dueDate, notes?}` and returns `{id, redirect: "/orders/{id}"}`. Save proposal corrections with PATCH first and use its returned revision. All rows require resolved variants, positive whole-piece quantities, valid set conversion and prices representable in minor currency units. Known line and document totals must reconcile with products and signed adjustments.
+
+The server re-fetches canonical Shopify and Amazon identities and rejects changed merchant connections. The import and newly created draft PO are linked in one transaction. Repeated saves of the same completed import return the existing PO even when providers are unavailable. Saving sends no email and creates no Amazon shipment. Source SKU remains extraction evidence; it never replaces the canonical buyer or supplier SKU.
+
+PO data may include `adjustments: [{description, amount}]`, with signed integer minor-unit amounts. These are included in totals and the generated purchase-order PDF.
+
+Import uploads return 202 only after the source PDF is stored and the import/job records commit together. An upload failure returns an error without creating a retryable import. Retry applies to failed processing of an existing stored source; upload the document again after a source-upload failure.
+
+Review PATCH returns 400 for malformed JSON or invalid fields, 409 for stale revisions, and 503 when catalog verification is unavailable. A 503 leaves the saved proposal and revision unchanged; retain local corrections and retry.
+
+Import attempts emit sanitized operational spans to Langfuse. Export failure does not fail or retry a PO import. Successful attempts include resolved prompt version, model and token/tool counts; failed attempts currently include outcome and duration but may lack partial usage. Original PDFs and catalog results remain outside trace payloads.
+
+GET /api/imports/{id}/catalog?q=...&cursor=... searches one 100-variant Shopify page for buyer SKU, supplier SKU and description. Uses the import's pinned store and authenticated tenant. Returns results, nextCursor and complete. Follow nextCursor to search remaining pages; exact SKU matches rank first within each page. No Amazon calls or writes occur.
+
+Shopify stock uses scope `store`. Each row identifies a variant and inventory item, nullable buyer SKU, tracked status, `shopify_inventory_unit`, and location levels with available/on-hand/incoming/committed quantities. Signed values remain signed and unknown quantities remain null. Variants without levels are retained with an empty levels array. These units are not automatically converted to PO pieces or combined with Amazon stock. Authorization failures preserve the previous snapshot; no OAuth permissions are automatically added. Live merchant grant and hosted acceptance remain pending.
+
+FBA reads use `GET /api/inventory?source=fba&marketplaceId=ATVPDKIKX0DER`. The marketplace is required for FBA and rejected for Shopify/AWD. Only the US marketplace is currently supported; unsupported values fail before queueing work. FBA uses the marketplace ID as its snapshot scope and retains each seller SKU/FNSKU/condition identity with its individual inventory detail fields and Amazon sellable-unit quantity basis. No FBA quantity is added to AWD or mirrored Shopify locations by these routes. Hosted deployment and live acceptance remain separate gates.
+
+Shopify inventory reads accept optional `locationId` (a Shopify Location GID). Filtering is applied to the entire tenant snapshot before row pagination, and only matching levels are returned. `locations` lists observed location IDs/names from the complete snapshot. Unknown observed locations and location filters on Amazon sources return 400. Cursors bind to both snapshot ID and selected location; reusing a cursor after changing the filter returns 409. A location filter changes the view only; it does not classify merchant stock or Amazon mirrors.
+
+
+### Inventory location settings
+
+Buyer-only `GET /api/inventory/locations` returns the connected Shopify domain, current snapshot ID/time, observed locations with classification and revision, and previously configured but unobserved location IDs. No connection/snapshot means no observed locations, not zero inventory. Names never determine classification.
+
+`PATCH /api/inventory/locations` accepts only `{ "locationId": "gid://shopify/Location/123", "classification": "merchant", "snapshotId": "<current UUID>", "expectedRevision": 0 }`. Classifications are `merchant`, `amazon_mirror`, `excluded`, `unresolved`. Revision starts at 0 for an unset location; saves return the next revision. The account/workspace come from the session. Stale revision/snapshot or missing connection returns 409; invalid input/unobserved location returns 400; supplier access returns 403. Both responses are private/no-store. Database/provider internals are not returned on unexpected failures. These settings do not write to Shopify or Amazon. Amazon mirror classification excludes duplicate stock; it does not assert a verified FBA/AWD pool association.
+
+Deployment prerequisite: apply the additive inventory_location_mappings table before enabling these endpoints or their UI on the shared database. Local database tests pass; shared database DDL and live acceptance remain pending.

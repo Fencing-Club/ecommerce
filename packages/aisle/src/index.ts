@@ -65,9 +65,24 @@ export const orderInputSchema = z
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
     dueDate: z.iso.date(),
     notes: z.string().max(8000).default(""),
+    adjustments: z
+      .array(
+        z.object({
+          description: z.string().trim().min(1).max(255),
+          amount: z.number().int().min(-100000000).max(100000000)
+        })
+      )
+      .max(50)
+      .optional(),
     items: z.array(itemSchema).min(1).max(150)
   })
   .superRefine((order, ctx) => {
+    const total =
+      order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0) +
+      (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
+    if (!Number.isSafeInteger(total) || total < 0) {
+      ctx.addIssue({ code: "custom", message: "PO total must be a nonnegative safe integer", path: ["adjustments"] })
+    }
     if (order.destination === "forwarder" && !order.forwarderId) {
       ctx.addIssue({ code: "custom", message: "Choose a freight forwarder", path: ["forwarderId"] })
     }
@@ -304,5 +319,8 @@ export function money(amount: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100)
 }
 export function orderTotal(order: OrderInput) {
-  return order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+  return (
+    order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0) +
+    (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
+  )
 }
