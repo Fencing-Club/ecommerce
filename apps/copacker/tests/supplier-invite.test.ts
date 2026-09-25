@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { PGlite } from "@electric-sql/pglite"
-import { eq } from "drizzle-orm"
+import { eq, like } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -104,7 +104,7 @@ describe("supplier.resend", () => {
     const [job] = await database
       .select()
       .from(tables.jobs)
-      .where(eq(tables.jobs.key, `invite:${pendingId}`))
+      .where(like(tables.jobs.key, `invite:${pendingId}:%`))
     const invitation = String(job?.payload.invitation)
 
     expect(job).toMatchObject({
@@ -124,7 +124,7 @@ describe("supplier.resend", () => {
       await database
         .select()
         .from(tables.jobs)
-        .where(eq(tables.jobs.key, `invite:${joinedId}`))
+        .where(like(tables.jobs.key, `invite:${joinedId}%`))
     ).toEqual([])
   })
 

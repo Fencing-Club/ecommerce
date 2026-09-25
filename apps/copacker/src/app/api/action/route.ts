@@ -155,14 +155,13 @@ export async function POST(request: Request) {
         if (!supplier) {
           throw new Error("This supplier has already joined or was removed")
         }
-        const payload = { type: "invite", to: supplier.email, name: s.org.name, invitation }
-        await tx
-          .insert(jobs)
-          .values({ key: `invite:${supplier.id}`, kind: "email", payload })
-          .onConflictDoUpdate({
-            target: jobs.key,
-            set: { id: randomUUID(), payload, status: "pending", attempts: 0, runAt: new Date(), error: null }
-          })
+        // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
+        // reused key carrying a different invitation.
+        await tx.insert(jobs).values({
+          key: `invite:${supplier.id}:${randomUUID()}`,
+          kind: "email",
+          payload: { type: "invite", to: supplier.email, name: s.org.name, invitation }
+        })
       })
       return Response.json({ ok: true })
     }
