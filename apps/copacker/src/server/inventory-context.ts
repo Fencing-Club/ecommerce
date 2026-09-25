@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { connections, contacts, inventoryLocationMappings, orders, shipments, stockSnapshots } from "@/db/schema"
 import { locationClassifications } from "./inventory-locations"
-import { onOrderByVariant } from "./inventory-products"
+import { amazonPools, onOrderByVariant, withAmazonStock } from "./inventory-products"
 import { receivedPieces } from "./readiness"
 import { stockScopes } from "./stock"
 
@@ -58,8 +58,41 @@ export async function inventoryContext(orgId: string) {
       ...order,
       received: receivedPieces(sentShipments.filter((shipment) => shipment.orderId === order.id))
     })),
-    classifications,
     new Map(deliveries.map((contact) => [contact.id, contact.locationId]))
   )
-  return { domain: current?.domain ?? null, data, rows: data?.rows ?? [], classifications, onOrder }
+  // Amazon's FBA and AWD stock, added to the Shopify variants they match by SKU.
+  const [amazon] = await db()
+    .select({ sellerId: connections.externalId })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  const amazonSnapshots = amazon
+    ? await db()
+        .select({ data: stockSnapshots.data })
+        .from(stockSnapshots)
+        .where(
+          and(
+            eq(stockSnapshots.orgId, orgId),
+            eq(stockSnapshots.externalAccountId, amazon.sellerId),
+            inArray(stockSnapshots.source, ["fba", "awd"])
+          )
+        )
+    : []
+  const fba = amazonSnapshots.flatMap((row) => (row.data?.source === "fba" ? row.data.rows : []))
+  const awd = amazonSnapshots.flatMap((row) => (row.data?.source === "awd" ? row.data.rows : []))
+  const rows = data?.rows ?? []
+  const pooled = withAmazonStock(rows, fba, awd)
+  const withPools = new Map(classifications)
+  withPools.set(amazonPools.fba.id, "merchant")
+  withPools.set(amazonPools.awd.id, "merchant")
+  return {
+    domain: current?.domain ?? null,
+    data,
+    rows,
+    classifications,
+    onOrder,
+    // Shopify rows with Amazon's pools added, counted alongside the store's own locations.
+    inventoryRows: pooled.rows,
+    inventoryClassifications: withPools,
+    amazonOnly: pooled.amazonOnly
+  }
 }

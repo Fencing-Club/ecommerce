@@ -4,6 +4,7 @@ import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { TextField } from "@/components/form-fields"
+import { InventoryLocations } from "@/components/inventory-locations"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { SupplierProfileForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
@@ -81,7 +82,12 @@ export default async function Settings() {
                 {s.role === "owner" && (
                   <CardContent className={pushToBottom}>
                     {connection ? (
-                      <DisconnectButton provider={provider.id} account={connection.externalId} />
+                      <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
+                        {provider.id === "shopify" && <InventoryLocations />}
+                        <div>
+                          <DisconnectButton provider={provider.id} account={connection.externalId} />
+                        </div>
+                      </div>
                     ) : (
                       <form action={`/api/connections/${provider.id}`}>
                         <FieldGroup>

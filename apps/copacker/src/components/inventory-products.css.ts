@@ -190,3 +190,17 @@ export const srOnlyLegend = style({
   clip: "rect(0 0 0 0)",
   whiteSpace: "nowrap"
 })
+
+// Amazon SKUs that don't match a Shopify product, below the list.
+export const amazonOnly = style({ display: "flex", flexDirection: "column", gap: space(3) })
+export const amazonOnlyTrigger = style({
+  display: "flex",
+  alignItems: "center",
+  gap: space(2),
+  ...fontSize.sm,
+  fontWeight: 500,
+  outline: "none",
+  selectors: { "&:focus-visible": focusRing }
+})
+export const numberCell = style({ textAlign: "right", fontVariantNumeric: "tabular-nums" })
+export const skuCell = style({ overflowWrap: "anywhere", whiteSpace: "normal" })

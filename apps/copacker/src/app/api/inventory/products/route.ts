@@ -7,10 +7,9 @@ import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 const querySchema = z.strictObject({
   locationId: z
     .string()
-    .regex(/^gid:\/\/shopify\/Location\/\d+$/)
+    .regex(/^(gid:\/\/shopify\/Location\/\d+|amazon:(fba|awd))$/)
     .optional(),
   q: z.string().trim().max(100).optional(),
-  includeExcluded: z.enum(["true", "false"]).default("false"),
   page: z
     .string()
     .regex(/^[1-9]\d{0,4}$/)
@@ -19,7 +18,7 @@ const querySchema = z.strictObject({
   pageSize: z.enum(pageSizes.map(String)).transform(Number).default(25)
 })
 
-// Shopify inventory grouped by product, one page at a time, for the Inventory page.
+// Inventory across Shopify's counted locations and Amazon's FBA and AWD, grouped by product, one page at a time.
 export async function GET(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
@@ -31,12 +30,13 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
   }
   const { page, pageSize, locationId, q } = query.data
-  const { domain, data, rows, classifications, onOrder } = await inventoryContext(s.org.id)
-  const products = groupInventory(rows, {
+  const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly } = await inventoryContext(
+    s.org.id
+  )
+  const products = groupInventory(inventoryRows, {
     locationId,
     query: q,
-    classifications,
-    includeExcluded: query.data.includeExcluded === "true",
+    classifications: inventoryClassifications,
     onOrder
   })
   const defaults = domain ? await readProductDefaults(s.org.id, domain) : new Map()
@@ -55,7 +55,12 @@ export async function GET(request: Request) {
             row.caseQuantity === undefined ||
             row.unitCostMinor === undefined
         ) || levels.some((level) => !level.locationKind),
-      locations: inventoryLocations(rows, classifications),
+      // Only the locations that count toward the totals; Settings chooses which Shopify locations those are.
+      locations: inventoryLocations(inventoryRows, inventoryClassifications).filter(
+        (location) => location.classification === "merchant"
+      ),
+      // Amazon SKUs that match no single Shopify variant. Resold-returns listings are left out.
+      amazonOnly: amazonOnly.filter((stock) => !stock.resold),
       page: pageNumber,
       pageSize,
       totalPages,

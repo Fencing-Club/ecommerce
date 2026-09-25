@@ -1,4 +1,5 @@
 import type { OrderInput } from "@repo/aisle"
+import type { Amazon } from "@repo/aisle/amazon"
 import type { Shopify } from "@repo/aisle/shopify"
 import type { LocationClassification } from "./inventory-locations"
 
@@ -73,19 +74,19 @@ function totals(items: Quantities[]): Quantities {
 
 const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 
-// AWD USA replenishes US FBA, which Shopify's Amazon location mirrors. AWD China stock is not in that mirror.
-const amazonDestinations = new Set<OrderInput["destination"]>(["awd_us", "fba"])
-
-// The Shopify locations a PO's stock will appear at. Amazon-bound stock shows at the locations mirroring Amazon, and
-// stock sent to one of the buyer's delivery addresses at the Shopify location that address is linked to. Other
-// destinations aren't linked to a Shopify location, so their units count only toward "All locations".
+// Where a PO's stock will appear: Amazon's AWD or FBA pool for Amazon shipments, or the Shopify location a delivery
+// address is linked to. Other destinations (AWD China, forwarders) count only toward "All locations".
+const destinationPools: Partial<Record<OrderInput["destination"], string>> = {
+  awd_us: "amazon:awd",
+  fba: "amazon:fba"
+}
 export function receivingLocations(
   order: Pick<OrderInput, "destination" | "deliveryId">,
-  classifications: ReadonlyMap<string, LocationClassification>,
   deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
-  if (amazonDestinations.has(order.destination)) {
-    return [...classifications].flatMap(([id, classification]) => (classification === "amazon_mirror" ? [id] : []))
+  const pool = destinationPools[order.destination]
+  if (pool) {
+    return [pool]
   }
   const linked = order.destination === "warehouse" && order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
   return linked ? [linked] : []
@@ -101,12 +102,11 @@ export function onOrderByVariant(
     }
     received?: Record<string, number>
   }[],
-  classifications: ReadonlyMap<string, LocationClassification> = new Map(),
   deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
   const byVariant = new Map<string, PendingOrder[]>()
   for (const order of orders) {
-    const locationIds = receivingLocations(order.data, classifications, deliveryLocations)
+    const locationIds = receivingLocations(order.data, deliveryLocations)
     for (const item of order.data.items) {
       const pending = byVariant.get(item.variantId) ?? []
       const units = Math.floor(Math.max(0, item.pieces - (order.received?.[item.id] ?? 0)) / item.piecesPerSet)
@@ -140,6 +140,96 @@ function onOrderAt(pending: PendingOrder[], locationId: string | null | undefine
 function combineOnOrder(items: OnOrder[]): OnOrder {
   const orders = new Map(items.flatMap((item) => item.orders).map((link) => [link.id, link]))
   return { units: items.reduce((sum, item) => sum + item.units, 0), orders: [...orders.values()] }
+}
+
+// Amazon's stock pools, shown alongside Shopify's locations under these ids.
+export const amazonPools = {
+  fba: { id: "amazon:fba", name: "Amazon FBA" },
+  awd: { id: "amazon:awd", name: "Amazon AWD" }
+} as const
+export function isAmazonPool(locationId: string) {
+  return locationId === amazonPools.fba.id || locationId === amazonPools.awd.id
+}
+
+type FbaRow = Awaited<ReturnType<Amazon["fbaStock"]>>["rows"][number]
+type AwdRow = Awaited<ReturnType<Amazon["awdStock"]>>["rows"][number]
+
+// An Amazon seller SKU that matches no single Shopify variant, with what Amazon holds of it.
+export type AmazonOnlyStock = { sku: string; fba: Quantities | null; awd: Quantities | null; resold: boolean }
+
+// FBA can report a SKU more than once (by condition), so its rows add up.
+function addQuantities(into: Map<string, Quantities>, sku: string, quantities: Quantities) {
+  const current = into.get(sku)
+  into.set(sku, current ? totals([current, quantities]) : quantities)
+}
+
+// Adds Amazon's FBA and AWD stock to the Shopify variants they belong to, as two more locations. Amazon's seller SKU
+// must match exactly one Shopify variant's SKU; a multipack's SKU matches its Shopify bundle. Anything else is listed
+// separately, including Amazon's resold-returns listings (seller SKUs starting "amzn.gr.").
+export function withAmazonStock(rows: StockRow[], fba: FbaRow[] | null, awd: AwdRow[] | null) {
+  const fbaBySku = new Map<string, Quantities>()
+  for (const row of fba ?? []) {
+    const details = row.inventoryDetails
+    addQuantities(fbaBySku, row.sellerSku, {
+      available: details?.fulfillableQuantity ?? null,
+      onHand: row.totalQuantity,
+      incoming: total([
+        details?.inboundWorkingQuantity ?? null,
+        details?.inboundShippedQuantity ?? null,
+        details?.inboundReceivingQuantity ?? null
+      ])
+    })
+  }
+  const awdBySku = new Map<string, Quantities>()
+  for (const row of awd ?? []) {
+    addQuantities(awdBySku, row.sellerSku, {
+      available: row.availableDistributable,
+      onHand: row.onHand,
+      incoming: row.inbound
+    })
+  }
+  const skuCounts = new Map<string, number>()
+  for (const row of rows) {
+    if (row.buyerSku) {
+      skuCounts.set(row.buyerSku, (skuCounts.get(row.buyerSku) ?? 0) + 1)
+    }
+  }
+  const level = (pool: (typeof amazonPools)[keyof typeof amazonPools], quantities: Quantities) => ({
+    locationId: pool.id,
+    locationName: pool.name,
+    available: quantities.available,
+    onHand: quantities.onHand,
+    incoming: quantities.incoming,
+    committed: null
+  })
+  const matched = new Set<string>()
+  const merged = rows.map((row) => {
+    const sku = row.buyerSku
+    if (!sku || skuCounts.get(sku) !== 1) {
+      return row
+    }
+    const fbaStock = fbaBySku.get(sku),
+      awdStock = awdBySku.get(sku)
+    const pools = [
+      ...(fbaStock ? [level(amazonPools.fba, fbaStock)] : []),
+      ...(awdStock ? [level(amazonPools.awd, awdStock)] : [])
+    ]
+    if (!pools.length) {
+      return row
+    }
+    matched.add(sku)
+    return { ...row, levels: [...row.levels, ...pools] }
+  })
+  const amazonOnly: AmazonOnlyStock[] = [...new Set([...fbaBySku.keys(), ...awdBySku.keys()])]
+    .filter((sku) => !matched.has(sku))
+    .toSorted(byName)
+    .map((sku) => ({
+      sku,
+      fba: fbaBySku.get(sku) ?? null,
+      awd: awdBySku.get(sku) ?? null,
+      resold: sku.startsWith("amzn.gr.")
+    }))
+  return { rows: merged, amazonOnly }
 }
 
 // Products per page the Inventory page offers.
@@ -190,11 +280,12 @@ export function groupInventory(
   const search = query?.trim().toLocaleLowerCase() ?? ""
   const products = new Map<string, InventoryProduct>()
   for (const row of rows) {
-    // Excluded locations, such as Shopify Collective partners' stock, are left out unless asked for. A variant stocked
-    // only at excluded locations is hidden with them.
+    // Only the locations the buyer counts as its own stock (and the Amazon pools) add up, unless asked for all.
+    // Shopify's Amazon location mirrors FBA, which comes from Amazon directly, and Collective holds partners' stock.
+    // A variant stocked only at uncounted locations is hidden with them.
     const counted = includeExcluded
       ? row.levels
-      : row.levels.filter((level) => classificationOf(classifications, level.locationId) !== "excluded")
+      : row.levels.filter((level) => (classifications.get(level.locationId) ?? "merchant") === "merchant")
     const levels = locationId ? counted.filter((level) => level.locationId === locationId) : counted
     if ((locationId || row.levels.length > 0) && levels.length === 0) {
       continue
@@ -219,11 +310,20 @@ export function groupInventory(
     }
     product.imageUrl ??= row.imageUrl ?? null
     const stock = stockKind(row)
+    const amazonLevels = levels.filter((level) => isAmazonPool(level.locationId))
     const variantTotals = {
       tracked: () => totals(levels),
-      // Shopify reports a bundle's availability for the whole store, so it is unknown at any single location.
-      bundle: () => ({ ...unknown, available: locationId ? null : (row.bundle?.available ?? null) }),
-      untracked: () => unknown
+      // Shopify reports a bundle's availability for the whole store, so it is unknown at any single Shopify location.
+      // A multipack stocked at Amazon adds its own units.
+      bundle: () => {
+        if (locationId) {
+          return isAmazonPool(locationId) ? totals(amazonLevels) : unknown
+        }
+        const pooled = totals(amazonLevels)
+        return { ...pooled, available: total([row.bundle?.available ?? null, pooled.available]) }
+      },
+      // Shopify doesn't count it, but Amazon may hold some.
+      untracked: () => (amazonLevels.length ? totals(amazonLevels) : unknown)
     }[stock]()
     product.variants.push({
       variantId: row.variantId,

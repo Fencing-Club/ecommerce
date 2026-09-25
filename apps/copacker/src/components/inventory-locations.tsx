@@ -1,21 +1,17 @@
 "use client"
 
-import { MapPin } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { api, errorMessage } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
-import * as styles from "./inventory-products.css"
+import * as styles from "./inventory-locations.css"
 
 type LocationSetting = {
   locationId: string
   name: string
+  kind: ShopifyLocationKind | null
   classification: LocationClassification
-  automatic: LocationClassification
-  saved: boolean
   revision: number
 }
 type LocationSettings = { snapshotId: string | null; locations: LocationSetting[] }
@@ -36,110 +32,60 @@ const locationsApi = api.injectEndpoints({
   })
 })
 
-export const classificationLabels: Record<LocationClassification, { label: string; description: string }> = {
-  merchant: { label: "Your stock", description: "Counts as your inventory and local sales." },
-  amazon_mirror: { label: "Amazon mirror", description: "Shows Amazon's stock. POs to Amazon arrive here." },
-  unresolved: { label: "Needs review", description: "Shown, but not counted until you choose." },
-  excluded: { label: "Excluded", description: "Hidden from inventory, such as a partner's stock." }
+// Why an app-managed location is usually left out.
+const notes: Partial<Record<ShopifyLocationKind, string>> = {
+  amazon_fulfillment: "Mirrors Amazon FBA, which Copacker reads from Amazon directly.",
+  shopify_collective: "A partner's stock shared through Shopify Collective.",
+  fulfillment_service: "Managed by an app, such as a third-party warehouse."
 }
 
-const order = Object.keys(classificationLabels)
-// The store's own locations first, then Amazon, those needing review, and excluded ones.
-const byClassification = (a: LocationSetting, b: LocationSetting) =>
-  order.indexOf(a.classification) - order.indexOf(b.classification) || a.name.localeCompare(b.name)
+// Left out, Amazon's location still marks FBA mirror stock for sales attribution; other locations are excluded.
+function leftOut(kind: ShopifyLocationKind | null): LocationClassification {
+  return kind === "amazon_fulfillment" ? "amazon_mirror" : "excluded"
+}
 
-const isClassification = (value: string): value is LocationClassification => Object.hasOwn(classificationLabels, value)
-
-function LocationRow({
-  location,
-  snapshotId,
-  onSaved
-}: {
-  location: LocationSetting
-  snapshotId: string
-  onSaved: () => void
-}) {
+function LocationRow({ location, snapshotId }: { location: LocationSetting; snapshotId: string }) {
   const [save, saving] = locationsApi.useSaveInventoryLocationMutation()
   const id = `location-${location.locationId.split("/").at(-1)}`
   return (
-    <Field>
-      <FieldLabel htmlFor={id}>{location.name}</FieldLabel>
-      <NativeSelect
+    <Field orientation="horizontal">
+      <Checkbox
         id={id}
-        className={styles.fullWidth}
-        value={location.classification}
+        checked={location.classification === "merchant"}
         disabled={saving.isLoading}
-        onChange={async (event) => {
-          const classification = event.target.value
-          if (!isClassification(classification)) {
-            return
-          }
-          try {
-            await save({
-              locationId: location.locationId,
-              classification,
-              snapshotId,
-              expectedRevision: location.revision
-            }).unwrap()
-            onSaved()
-          } catch {
-            // The mutation keeps the error for the message below.
-          }
-        }}
-      >
-        {Object.entries(classificationLabels).map(([value, { label }]) => (
-          <NativeSelectOption key={value} value={value}>
-            {value === location.automatic ? `${label} (automatic)` : label}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
-      <FieldDescription>
-        {classificationLabels[location.classification].description}
-        {location.saved && location.classification !== location.automatic && " Set by you."}
-      </FieldDescription>
-      {saving.isError && <p role="alert">{errorMessage(saving.error, "Couldn't save this location. Try again.")}</p>}
+        onCheckedChange={(checked) =>
+          void save({
+            locationId: location.locationId,
+            classification: checked ? "merchant" : leftOut(location.kind),
+            snapshotId,
+            expectedRevision: location.revision
+          })
+        }
+      />
+      <FieldContent>
+        <FieldLabel htmlFor={id}>{location.name}</FieldLabel>
+        {location.kind && notes[location.kind] && <FieldDescription>{notes[location.kind]}</FieldDescription>}
+        {saving.isError && <p role="alert">{errorMessage(saving.error, "Couldn't save this location. Try again.")}</p>}
+      </FieldContent>
     </Field>
   )
 }
 
-// Lets the buyer confirm or change how each Shopify location counts. Automatic choices come from the app that manages
-// the location, so most stores need no changes.
-export function InventoryLocations({ onChange }: { onChange: () => void }) {
-  const { data, isLoading, isError, error, refetch } = locationsApi.useInventoryLocationSettingsQuery()
+// Chooses which Shopify locations count as the buyer's stock. Locations run by apps start unticked, and Amazon's FBA
+// stock comes from Amazon directly.
+export function InventoryLocations() {
+  const { data, isLoading, isError, error } = locationsApi.useInventoryLocationSettingsQuery()
   const snapshotId = data?.snapshotId
-  const needsReview = data?.locations.filter((location) => location.classification === "unresolved").length ?? 0
   return (
-    <Sheet>
-      <SheetTrigger render={<Button variant="outline" size="sm" />}>
-        <MapPin data-icon="inline-start" />
-        Manage locations
-        {needsReview > 0 && <Badge variant="secondary">{needsReview} to review</Badge>}
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Inventory locations</SheetTitle>
-          <SheetDescription>
-            Choose how each Shopify location counts toward your inventory, sales, and POs.
-          </SheetDescription>
-        </SheetHeader>
-        <div className={styles.locationSettings}>
-          {isLoading && <p className={styles.summary}>Loading locations…</p>}
-          {isError && <p role="alert">{errorMessage(error, "Locations couldn't be loaded.")}</p>}
-          {data && !snapshotId && <p className={styles.summary}>Sync Shopify to see its locations.</p>}
-          {snapshotId &&
-            data?.locations.toSorted(byClassification).map((location) => (
-              <LocationRow
-                key={location.locationId}
-                location={location}
-                snapshotId={snapshotId}
-                onSaved={() => {
-                  void refetch()
-                  onChange()
-                }}
-              />
-            ))}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <fieldset className={styles.locations}>
+      <legend className={styles.legend}>Locations to include in inventory</legend>
+      {isLoading && <p className={styles.detail}>Loading locations…</p>}
+      {isError && <p role="alert">{errorMessage(error, "Locations couldn't be loaded.")}</p>}
+      {data && !snapshotId && <p className={styles.detail}>Sync Shopify on the Inventory page to see its locations.</p>}
+      {snapshotId &&
+        data?.locations
+          .toSorted((a, b) => Number(b.classification === "merchant") - Number(a.classification === "merchant"))
+          .map((location) => <LocationRow key={location.locationId} location={location} snapshotId={snapshotId} />)}
+    </fieldset>
   )
 }

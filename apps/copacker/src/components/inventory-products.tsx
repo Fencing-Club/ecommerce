@@ -5,19 +5,19 @@ import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { createContext, use, useState } from "react"
-import { InventoryLocations } from "@/components/inventory-locations"
 import { ProductDetails } from "@/components/product-details"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import {
+  type AmazonOnlyStock,
   type InventoryLocation,
   type InventoryProduct,
   type InventoryVariant,
@@ -38,6 +38,7 @@ type ProductsPage = {
   totalProducts: number
   totalVariants: number
   products: ListedProduct[]
+  amazonOnly: AmazonOnlyStock[]
 }
 // A product on the page with the details Copacker keeps for it.
 type ListedProduct = InventoryProduct & { defaults: ProductDefaults }
@@ -47,21 +48,19 @@ type ProductsQuery = {
   pageSize: number
   q: string
   locationId: string
-  includeExcluded: boolean
-  // Part of the cache key so a finished sync loads fresh results.
-  observedAt: string | null
+  // Part of the cache key so a finished sync of any source loads fresh results.
+  syncKey: string
 }
 
 const productsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
     inventoryProducts: build.query<ProductsPage, ProductsQuery>({
-      query: ({ page, pageSize, q, locationId, includeExcluded }) => ({
+      query: ({ page, pageSize, q, locationId }) => ({
         url: "inventory/products",
         params: {
           page,
           pageSize,
-          includeExcluded,
           ...(q && { q }),
           ...(locationId && { locationId })
         }
@@ -75,11 +74,51 @@ const productsApi = api.injectEndpoints({
 const RefreshContext = createContext<() => void>(() => undefined)
 
 const locationGroups = [
-  { classification: "merchant", label: "Your stock" },
-  { classification: "amazon_mirror", label: "Amazon" },
-  { classification: "unresolved", label: "Needs review" },
-  { classification: "excluded", label: "Excluded" }
+  { label: "Shopify", matches: (id: string) => !id.startsWith("amazon:") },
+  { label: "Amazon", matches: (id: string) => id.startsWith("amazon:") }
 ] as const
+
+// Amazon seller SKUs that don't match a single Shopify variant, such as listings with a different SKU.
+function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
+  if (!stock.length) {
+    return null
+  }
+  return (
+    <Collapsible className={styles.amazonOnly}>
+      <CollapsibleTrigger className={styles.amazonOnlyTrigger}>
+        <ChevronRight className={styles.chevron} aria-hidden="true" />
+        {stock.length} Amazon {stock.length === 1 ? "SKU doesn't" : "SKUs don't"} match a Shopify product
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <p className={styles.summary}>
+          They aren&apos;t in the totals above. Give the Shopify variant the same SKU to combine them.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Amazon SKU</TableHead>
+              <TableHead className={styles.numberCell}>FBA available</TableHead>
+              <TableHead className={styles.numberCell}>AWD available</TableHead>
+              <TableHead className={styles.numberCell}>Incoming</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stock.map((row) => (
+              <TableRow key={row.sku}>
+                <TableCell className={styles.skuCell}>{row.sku}</TableCell>
+                <TableCell className={styles.numberCell}>{row.fba?.available ?? "None"}</TableCell>
+                <TableCell className={styles.numberCell}>{row.awd?.available ?? "None"}</TableCell>
+                <TableCell className={styles.numberCell}>
+                  {(row.fba?.incoming ?? 0) + (row.awd?.incoming ?? 0)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
 
 // Why a count isn't shown: a dash on screen, the reason for screen readers.
 const notCounted = { bundle: "Not stocked separately", untracked: "Not tracked" } as const
@@ -317,13 +356,12 @@ function Pager({ data, onPage }: { data: ProductsPage; onPage: (page: number) =>
   )
 }
 
-export function InventoryProducts({ observedAt }: { observedAt: string | null }) {
+export function InventoryProducts({ syncKey }: { syncKey: string }) {
   const [search, setSearch] = useState("")
   const [q] = useDebouncedValue(search.trim(), 300)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(25)
   const [locationId, setLocationId] = useState("")
-  const [includeExcluded, setIncludeExcluded] = useState(false)
   const {
     currentData,
     data: previous,
@@ -332,7 +370,7 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
     isError,
     error,
     refetch
-  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, includeExcluded, observedAt })
+  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, syncKey })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
 
@@ -349,11 +387,6 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
       </div>
     )
   }
-
-  const hasExcluded = data.locations.some((location) => location.classification === "excluded")
-  const visibleLocations = data.locations.filter(
-    (location) => includeExcluded || location.classification !== "excluded"
-  )
 
   return (
     <RefreshContext value={() => void refetch()}>
@@ -389,9 +422,9 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
             >
               <NativeSelectOption value="">All locations</NativeSelectOption>
               {locationGroups.map((group) => {
-                const options = visibleLocations.filter((location) => location.classification === group.classification)
+                const options = data.locations.filter((location) => group.matches(location.id))
                 return options.length ? (
-                  <NativeSelectOptGroup key={group.classification} label={group.label}>
+                  <NativeSelectOptGroup key={group.label} label={group.label}>
                     {options.map((location) => (
                       <NativeSelectOption key={location.id} value={location.id}>
                         {location.name}
@@ -402,25 +435,10 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
               })}
             </NativeSelect>
           </Field>
-          {hasExcluded && (
-            <Field orientation="horizontal" className={styles.collective}>
-              <Checkbox
-                id="inventory-excluded"
-                checked={includeExcluded}
-                onCheckedChange={(checked) => {
-                  setIncludeExcluded(checked)
-                  setLocationId("")
-                  setPage(1)
-                }}
-              />
-              <FieldContent>
-                <FieldLabel htmlFor="inventory-excluded">Include excluded locations</FieldLabel>
-                <FieldDescription>
-                  Stock that isn’t yours, such as partners’ stock shared through Shopify Collective.
-                </FieldDescription>
-              </FieldContent>
-            </Field>
-          )}
+          <p className={cn(styles.summary, styles.collective)}>
+            Totals add your Shopify locations and Amazon FBA and AWD. Choose which Shopify locations count in{" "}
+            <Link href="/settings">Settings</Link>.
+          </p>
         </div>
         <div className={styles.listHeader}>
           <p className={styles.summary} aria-live="polite">
@@ -429,7 +447,6 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
               : `${data.totalProducts} products, ${data.totalVariants} variations`}
           </p>
           <div className={styles.listActions}>
-            <InventoryLocations onChange={() => void refetch()} />
             <Field orientation="horizontal" className={styles.pageSize}>
               <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
               <NativeSelect
@@ -462,6 +479,7 @@ export function InventoryProducts({ observedAt }: { observedAt: string | null })
           </ul>
         )}
         {data.totalPages > 1 && <Pager data={data} onPage={setPage} />}
+        <AmazonOnly stock={data.amazonOnly} />
       </div>
     </RefreshContext>
   )
