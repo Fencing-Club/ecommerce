@@ -7,7 +7,7 @@ import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
-import { connection, shopifyFor, amazonFor } from "../src/server/connections"
+import { connection, shopifyFor, amazonFor, connectAmazonSelfAuthorized } from "../src/server/connections"
 import { encrypt, decrypt } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -108,5 +108,47 @@ describe("merchant credential renewal and isolation", () => {
       .where(eq(tables.connections.orgId, orgId))
     await expect(connection(orgId, "shopify")).rejects.toThrow(/authenticate|Unsupported state/)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe("Amazon self-authorization", () => {
+  const token = `Atzr|${"x".repeat(40)}`
+  const participations = (marketplaceId: string) =>
+    Response.json({ payload: [{ marketplace: { id: marketplaceId }, participation: { isParticipating: true } }] })
+
+  beforeEach(() => {
+    vi.stubEnv("AMAZON_CLIENT_ID", "amazon-client")
+    vi.stubEnv("AMAZON_CLIENT_SECRET", "amazon-secret")
+  })
+
+  it("checks the token with Amazon and saves it encrypted for the workspace", async () => {
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
+      .mockResolvedValueOnce(participations("ATVPDKIKX0DER"))
+    expect(await connectAmazonSelfAuthorized(orgId, { sellerId: " a2ciyiv0e1fhu3 ", refreshToken: token })).toEqual({
+      sellerId: "A2CIYIV0E1FHU3"
+    })
+    const [saved] = await database.select().from(tables.connections)
+    expect(saved).toMatchObject({ provider: "amazon", externalId: "A2CIYIV0E1FHU3" })
+    expect(saved?.encryptedToken).not.toContain("Atzr")
+    expect(JSON.parse(decrypt(saved!.encryptedToken, `${orgId}:amazon`))).toEqual({ token })
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/sellers/v1/marketplaceParticipations")
+  })
+
+  it("saves nothing when Amazon rejects the token or the seller isn't in the US", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 400 }))
+    await expect(
+      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: token })
+    ).rejects.toThrow("didn't accept this token")
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
+      .mockResolvedValueOnce(participations("A1F83G8C2ARO7P"))
+    await expect(
+      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: token })
+    ).rejects.toThrow("US marketplace")
+    await expect(
+      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: "nope" })
+    ).rejects.toThrow("full refresh token")
+    expect(await database.select().from(tables.connections)).toHaveLength(0)
   })
 })

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
 import { CheckCircle2 } from "lucide-react"
+import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { TextField } from "@/components/form-fields"
@@ -42,6 +43,8 @@ export default async function Settings() {
     db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id))
   ])
 
+  // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
+  const amazonDraft = process.env.AMAZON_APP_DRAFT === "true"
   // Delivery addresses can be linked to one of the store's own Shopify locations.
   const ownLocations =
     s.org.kind === "buyer"
@@ -91,8 +94,12 @@ export default async function Settings() {
                               required
                             />
                           )}
-                          <div>
-                            <Button type="submit">Connect {provider.action}</Button>
+                          <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
+                            {provider.id === "amazon" && amazonDraft ? (
+                              <AmazonSelfAuthorize />
+                            ) : (
+                              <Button type="submit">Connect {provider.action}</Button>
+                            )}
                           </div>
                         </FieldGroup>
                       </form>

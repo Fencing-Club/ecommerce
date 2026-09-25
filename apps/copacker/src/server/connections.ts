@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
+import { selfAuthorizationSchema } from "@/lib/amazon"
 import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
@@ -113,4 +114,39 @@ export async function disconnect(orgId: string, provider: "amazon" | "shopify") 
     throw new Error(`${provider === "amazon" ? "Amazon" : "Shopify"} is already disconnected`)
   }
   return { revoked }
+}
+
+// Connects a seller account that authorized Copacker's Amazon app directly (self-authorization), for use while the
+// app is a draft that Amazon's consent page won't offer. The token is checked with Amazon before it is saved.
+export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
+  const input = selfAuthorizationSchema.parse(raw)
+  if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
+    throw new Error("Amazon developer credentials are not configured")
+  }
+  const amazon = new Amazon({
+    clientId: process.env.AMAZON_CLIENT_ID,
+    clientSecret: process.env.AMAZON_CLIENT_SECRET,
+    refreshToken: input.refreshToken
+  })
+  let participations: unknown
+  try {
+    participations = await amazon.request("GET", "/sellers/v1/marketplaceParticipations")
+  } catch {
+    throw new Error("Amazon didn't accept this token. Authorize the app again and paste the new refresh token")
+  }
+  const us = z
+    .object({ payload: z.array(z.object({ marketplace: z.object({ id: z.string() }) })) })
+    .safeParse(participations)
+  if (!us.success || !us.data.payload.some((entry) => entry.marketplace.id === "ATVPDKIKX0DER")) {
+    throw new Error("This Amazon account doesn't sell in the US marketplace")
+  }
+  const encryptedToken = encrypt(JSON.stringify({ token: input.refreshToken }), `${orgId}:amazon`)
+  await db()
+    .insert(connections)
+    .values({ orgId, provider: "amazon", externalId: input.sellerId, encryptedToken })
+    .onConflictDoUpdate({
+      target: [connections.orgId, connections.provider],
+      set: { externalId: input.sellerId, encryptedToken, scopes: "" }
+    })
+  return { sellerId: input.sellerId }
 }

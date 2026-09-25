@@ -21,7 +21,7 @@ import {
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { accessibleOrder } from "@/server/access"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
-import { amazonFor, disconnect } from "@/server/connections"
+import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { acceptSupplierInvitation } from "@/server/invitations"
 import {
   createOrder,
@@ -289,6 +289,11 @@ export async function POST(request: Request) {
         return Response.json({ error: "This address was removed. Refresh the page and try again" }, { status: 404 })
       }
       return Response.json({ ok: true })
+    }
+    if (action === "connection.amazonSelfAuthorized") {
+      requireOwner(s)
+      requireBuyer(s)
+      return Response.json({ ok: true, ...(await connectAmazonSelfAuthorized(s.org.id, data)) })
     }
     if (action === "connection.delete") {
       requireOwner(s)

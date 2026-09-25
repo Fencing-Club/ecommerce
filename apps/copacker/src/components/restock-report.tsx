@@ -181,8 +181,8 @@ function Reorder({ report }: { report: Report }) {
       </div>
       <p className={styles.summary}>
         Enough to cover {report.leadTimeDays} days at the last {report.days} days&apos; rate, after stock and
-        what&apos;s on order. Case counts use Shopify&apos;s product case quantity where known. Estimated cost uses
-        Shopify&apos;s unit cost and excludes freight, duties and fees.
+        what&apos;s on order. Case counts use the product&apos;s default case pack, or Shopify&apos;s case quantity.
+        Estimated cost uses Shopify&apos;s unit cost and excludes freight, duties and fees.
         {report.reorder.length > 100 && " The PO includes the 100 most urgent."}
       </p>
       <Table>
