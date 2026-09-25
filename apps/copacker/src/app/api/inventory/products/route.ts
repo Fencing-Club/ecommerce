@@ -47,7 +47,14 @@ export async function GET(request: Request) {
     {
       observedAt: data?.observedAt ?? null,
       // Snapshots saved before product details and location kinds were collected need one more sync.
-      needsResync: rows.some((row) => row.productId === undefined) || levels.some((level) => !level.locationKind),
+      needsResync:
+        rows.some(
+          (row) =>
+            row.productId === undefined ||
+            row.amazonStockTarget === undefined ||
+            row.caseQuantity === undefined ||
+            row.unitCostMinor === undefined
+        ) || levels.some((level) => !level.locationKind),
       locations: inventoryLocations(rows, classifications),
       page: pageNumber,
       pageSize,

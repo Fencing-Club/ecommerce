@@ -24,7 +24,7 @@ const destinations = [
   { value: "awd_us", label: "Amazon AWD USA" },
   { value: "warehouse", label: "Your location" },
   { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
-  { value: "fba", label: "Amazon FBA (planned)", disabled: true },
+  { value: "fba", label: "Amazon FBA (draft only)" },
   { value: "forwarder", label: "Freight forwarder (planned)", disabled: true }
 ]
 const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"].map((value) => ({
@@ -52,13 +52,17 @@ function supplierMatchMessage(status: string) {
 export function OrderBuilder({
   suppliers,
   deliveries = [],
-  initialItems = []
+  initialItems = [],
+  initialDestination = "awd_us",
+  initialDeliveryId
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
   deliveries?: Array<{ id: string; name: string }>
   // Lines added before the builder opens, such as a reorder from Inventory.
   initialItems?: ReturnType<typeof orderLine>[]
+  initialDestination?: "awd_us" | "fba" | "warehouse"
+  initialDeliveryId?: string
 }) {
   const [query, setQuery] = useState("")
   const [showResults, setShowResults] = useState(false)
@@ -69,7 +73,8 @@ export function OrderBuilder({
     defaultValues: {
       reference: "",
       supplierId: "",
-      destination: "awd_us",
+      destination: initialDestination,
+      deliveryId: initialDeliveryId,
       dueDate: "",
       currency: "USD",
       notes: "",

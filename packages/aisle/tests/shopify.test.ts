@@ -58,6 +58,38 @@ describe("Shopify complete stock collection", () => {
     return { api: new Shopify(domain, "test", transport), transport }
   }
 
+  it("records the existing Amazon stock target and rejects malformed values", async () => {
+    const { api, transport } = sequence([
+      {
+        productVariants: {
+          nodes: [
+            {
+              ...node(1),
+              amazonTarget: { value: "1" },
+              product: { ...productDetails.product, caseQuantity: { value: "160" } },
+              inventoryItem: { ...node(1).inventoryItem, unitCost: { amount: "21.43", currencyCode: "USD" } }
+            }
+          ],
+          pageInfo
+        }
+      }
+    ])
+    expect((await api.stock()).rows[0]).toMatchObject({
+      amazonStockTarget: 1,
+      caseQuantity: 160,
+      unitCostMinor: 2143,
+      costCurrency: "USD"
+    })
+    const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
+    expect(request.query).toContain('amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target")')
+    const invalid = sequence([
+      {
+        productVariants: { nodes: [{ ...node(1), amazonTarget: { value: "invalid" } }], pageInfo }
+      }
+    ])
+    await expect(invalid.api.stock()).rejects.toThrow("Amazon stock target")
+  })
+
   it("collects both connections and retains variants without inventory levels", async () => {
     const initial = node(2)
     const { api, transport } = sequence([

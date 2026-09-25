@@ -1,21 +1,29 @@
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections } from "@/db/schema"
+import { connections, stockSnapshots } from "@/db/schema"
 import { session } from "@/server/auth"
 import { bundleSales, salesPeriods } from "@/server/bundle-sales"
 import { ReconnectRequiredError } from "@/server/errors"
 import { inventoryContext } from "@/server/inventory-context"
-import { groupInventory } from "@/server/inventory-products"
-import { leadTimes, multipackSales, reorderList, restockReport } from "@/server/restock-report"
+import { inventoryLocations } from "@/server/inventory-products"
+import { restockPoolReport, type RestockTarget } from "@/server/restock-pool-report"
+import { leadTimes } from "@/server/restock-report"
 import { DemandAccessError, readSalesDemand } from "@/server/sales"
-import { summarizeDemandGaps, type DemandRow } from "@/server/sales-attribution"
+import { summarizeDemandGaps, type DemandGap, type DemandRow } from "@/server/sales-attribution"
 import { appUrl } from "@/server/security"
 import { describeError } from "@/server/stock"
 
 const inputSchema = z.strictObject({
   days: z.literal([...salesPeriods]),
-  leadTimeDays: z.literal([...leadTimes]).default(56)
+  leadTimeDays: z.literal([...leadTimes]).default(56),
+  target: z
+    .discriminatedUnion("pool", [
+      z.strictObject({ pool: z.literal("shopify"), locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/) }),
+      z.strictObject({ pool: z.literal("fba") }),
+      z.strictObject({ pool: z.literal("awd") })
+    ])
+    .optional()
 })
 
 export const maxDuration = 300
@@ -42,6 +50,9 @@ export async function POST(request: Request) {
     .from(connections)
     .where(eq(connections.orgId, s.org.id))
   const rows: DemandRow[] = []
+  type SourceSales = { rows: DemandRow[]; gaps: DemandGap[] }
+  let shopifySales: SourceSales | null = null
+  let amazonSales: SourceSales | null = null
   const sources = []
   for (const source of ["shopify", "amazon"] as const) {
     if (!connected.some((account) => account.provider === source)) {
@@ -50,6 +61,11 @@ export async function POST(request: Request) {
     try {
       const result = await readSalesDemand(s, { source, window }, async () => request.signal.throwIfAborted())
       rows.push(...result.rows)
+      if (source === "shopify") {
+        shopifySales = result
+      } else {
+        amazonSales = result
+      }
       sources.push({
         source,
         error: null,
@@ -75,24 +91,65 @@ export async function POST(request: Request) {
   }
   const { rows: catalog, classifications, onOrder } = await inventoryContext(s.org.id)
   const { variants, unmatchedUnits } = bundleSales(catalog, rows)
-  // Restock needs every source's sales; with one missing, demand is unknown rather than low.
-  const complete = sources.length > 0 && sources.every((source) => source.error === null)
-  const products = groupInventory(catalog, { classifications, onOrder })
-  const restock = restockReport(products, complete ? variants : null, {
-    salesDays: input.data.days,
-    leadTimeDays: input.data.leadTimeDays
-  })
+  const target = input.data.target as RestockTarget | undefined
+  if (
+    target?.pool === "shopify" &&
+    !inventoryLocations(catalog, classifications).some(
+      (location) => location.id === target.locationId && location.classification === "merchant"
+    )
+  ) {
+    return Response.json({ error: "Choose a connected merchant location" }, { status: 400, headers })
+  }
+  const amazonAccount = connected.find((account) => account.provider === "amazon")
+  const amazonStock =
+    target && target.pool !== "shopify" && amazonAccount
+      ? await db()
+          .select({ data: stockSnapshots.data })
+          .from(stockSnapshots)
+          .where(
+            and(
+              eq(stockSnapshots.orgId, s.org.id),
+              eq(stockSnapshots.externalAccountId, amazonAccount.externalId),
+              eq(stockSnapshots.source, target.pool),
+              eq(stockSnapshots.scopeKey, target.pool === "fba" ? "ATVPDKIKX0DER" : "us")
+            )
+          )
+      : []
+  const stock = amazonStock[0]?.data
+  if (target && target.pool !== "shopify" && stock?.source !== target.pool) {
+    return Response.json(
+      { error: "Sync this Amazon inventory pool before requesting restocks" },
+      { status: 409, headers }
+    )
+  }
+  const poolReport = target
+    ? restockPoolReport({
+        target,
+        catalog,
+        classifications,
+        onOrder,
+        shopifySales,
+        amazonSales,
+        fbaStock: stock?.source === "fba" ? stock : null,
+        awdStock: stock?.source === "awd" ? stock : null,
+        salesDays: input.data.days,
+        leadTimeDays: input.data.leadTimeDays
+      })
+    : null
   return Response.json(
     {
       window,
       days: input.data.days,
       leadTimeDays: input.data.leadTimeDays,
+      target: target ?? null,
       sources,
       unmatchedUnits,
       variants: Object.fromEntries(variants),
-      restock: Object.fromEntries(restock),
-      reorder: reorderList(products, restock, variants),
-      multipacks: multipackSales(products, variants)
+      restock: Object.fromEntries(poolReport?.suggestions ?? []),
+      blockedCount: poolReport?.blockedCount ?? 0,
+      unmatchedStockSkus: poolReport?.unmatchedStockSkus ?? 0,
+      reorder: poolReport?.reorder ?? [],
+      multipacks: []
     },
     { headers }
   )

@@ -113,6 +113,23 @@ const stockLevelFields = `id location{id name isFulfillmentService fulfillmentSe
 // Inventory thumbnails, resized by Shopify's CDN.
 const stockMediaFields = "preview{image{url(transform:{maxWidth:160,maxHeight:160})}}"
 const stockMedia = z.object({ preview: z.object({ image: z.object({ url: z.url() }).nullable() }).nullable() })
+function positiveIntegerField(value: string, name: string) {
+  if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+    throw new Error(`Shopify ${name} must be a positive integer`)
+  }
+  return Number(value)
+}
+function costMinor(amount: string) {
+  const match = amount.match(/^(\d+)(?:\.(\d{1,2}))?$/)
+  if (!match) {
+    throw new Error("Shopify unit cost must have at most two decimal places")
+  }
+  const value = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"))
+  if (!Number.isSafeInteger(value)) {
+    throw new Error("Shopify unit cost exceeds the supported range")
+  }
+  return value
+}
 const variant = z.object({
   id: z.string(),
   title: z.string(),
@@ -217,15 +234,18 @@ export class Shopify {
                 product: z.object({
                   id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
                   title: z.string(),
+                  caseQuantity: field.optional(),
                   featuredMedia: stockMedia.nullable()
                 }),
                 media: z.object({ nodes: z.array(stockMedia).max(1) }),
+                amazonTarget: field.optional(),
                 requiresComponents: z.boolean(),
                 inventoryQuantity: z.number().int().safe().nullable(),
                 productVariantComponents: bundleComponents,
                 inventoryItem: z.object({
                   id: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
                   tracked: z.boolean(),
+                  unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable().optional(),
                   inventoryLevels: stockLevels
                 })
               })
@@ -236,7 +256,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title product{id title featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -280,6 +300,11 @@ export class Shopify {
       productTitle?: string
       variantTitle?: string
       imageUrl?: string | null
+      // Existing Shopify merchant metafield: 0 means this item is intentionally not stocked at Amazon.
+      amazonStockTarget?: number | null
+      caseQuantity?: number | null
+      unitCostMinor?: number | null
+      costCurrency?: string | null
       // A bundle holds no stock of its own; Shopify reports how many can be sold from its components' stock instead.
       // Components are null when Shopify lists more than it returned in one page.
       bundle?: { available: number | null; components?: BundleComponent[] | null }
@@ -344,6 +369,22 @@ export class Shopify {
           // Prefer the variant's own photo, then the product's.
           imageUrl:
             variant.media.nodes[0]?.preview?.image?.url ?? variant.product.featuredMedia?.preview?.image?.url ?? null,
+          ...(variant.amazonTarget !== undefined && {
+            amazonStockTarget:
+              variant.amazonTarget === null || !/^\d+$/.test(variant.amazonTarget.value)
+                ? null
+                : Number(variant.amazonTarget.value)
+          }),
+          ...(variant.product.caseQuantity !== undefined && {
+            caseQuantity:
+              variant.product.caseQuantity === null
+                ? null
+                : positiveIntegerField(variant.product.caseQuantity.value, "case quantity")
+          }),
+          ...(item.unitCost !== undefined && {
+            unitCostMinor: item.unitCost === null ? null : costMinor(item.unitCost.amount),
+            costCurrency: item.unitCost?.currencyCode ?? null
+          }),
           ...(variant.requiresComponents && {
             bundle: {
               available: variant.inventoryQuantity,
@@ -353,6 +394,16 @@ export class Shopify {
           tracked: item.tracked,
           unit: "shopify_inventory_unit",
           levels: []
+        }
+        if (variant.amazonTarget?.value !== undefined && !/^\d+$/.test(variant.amazonTarget.value)) {
+          throw new Error("Shopify Amazon stock target must be a nonnegative integer")
+        }
+        if (
+          row.amazonStockTarget !== undefined &&
+          row.amazonStockTarget !== null &&
+          (!Number.isSafeInteger(row.amazonStockTarget) || row.amazonStockTarget < 0)
+        ) {
+          throw new Error("Shopify Amazon stock target must be a nonnegative integer")
         }
         const locations = new Set<string>(),
           levelIds = new Set<string>(),

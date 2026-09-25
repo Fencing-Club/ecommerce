@@ -43,15 +43,19 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
 export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
   const s = await session()
   requireBuyer(s)
+  const params = await searchParams
   const rows = await db()
     .select()
     .from(suppliers)
     .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
-  const initialItems = await reorderLines(s.org.id, (await searchParams).variant)
+  const initialItems = await reorderLines(s.org.id, params.variant)
   const deliveries = await db()
-    .select({ id: contacts.id, name: contacts.name })
+    .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
     .from(contacts)
     .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
+  const initialDestination =
+    params.destination === "warehouse" || params.destination === "fba" ? params.destination : "awd_us"
+  const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
 
   return (
     <>
@@ -64,6 +68,8 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
         deliveries={deliveries}
         initialItems={initialItems}
+        initialDestination={initialDestination}
+        initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
       />
     </>
   )

@@ -12,7 +12,11 @@ export type StockKind = "tracked" | "bundle" | "untracked"
 export type PurchaseOrderLink = { id: string; reference: string }
 
 // One variant's sellable units on one sent PO, and the Shopify locations that PO will stock.
-export type PendingOrder = PurchaseOrderLink & { units: number; locationIds: string[] }
+export type PendingOrder = PurchaseOrderLink & {
+  units: number
+  locationIds: string[]
+  destination: OrderInput["destination"]
+}
 
 // Sellable units on POs already sent to suppliers.
 export type OnOrder = { units: number; orders: PurchaseOrderLink[] }
@@ -106,7 +110,13 @@ export function onOrderByVariant(
       if (existing) {
         existing.units += units
       } else {
-        pending.push({ id: order.id, reference: order.data.reference, units, locationIds })
+        pending.push({
+          id: order.id,
+          reference: order.data.reference,
+          units,
+          locationIds,
+          destination: order.data.destination
+        })
       }
       byVariant.set(item.variantId, pending)
     }

@@ -162,8 +162,8 @@ describe("on order", () => {
       classifications
     )
     expect(onOrder.get("gid://shopify/ProductVariant/1")).toEqual([
-      { id: "a", reference: "PO-1", units: 12, locationIds: ["gid://shopify/Location/2"] },
-      { id: "b", reference: "PO-2", units: 3, locationIds: ["gid://shopify/Location/2"] }
+      { id: "a", reference: "PO-1", units: 12, locationIds: ["gid://shopify/Location/2"], destination: "awd_us" },
+      { id: "b", reference: "PO-2", units: 3, locationIds: ["gid://shopify/Location/2"], destination: "awd_us" }
     ])
     const glove = groupInventory(rows, { onOrder }).find((product) => product.title === "Pro-grip glove")
     expect(glove?.onOrder).toEqual({

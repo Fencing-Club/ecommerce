@@ -1,5 +1,6 @@
 "use client"
 
+import { money } from "@repo/aisle"
 import { ImageOff } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -26,12 +27,25 @@ type ReorderLine = Line & {
   daysRemaining: number | null
   soldAlone: number
   soldInBundles: number
+  caseCount: number | null
+  estimatedCostMinor: number | null
+  costCurrency: string | null
 }
 type MultipackLine = Line & { bundlesSold: number; available: number | null }
+type Target = {
+  key: string
+  pool: "shopify" | "fba" | "awd"
+  locationId: string
+  label: string
+  observedAt: string | null
+}
 type Report = {
+  target: { pool: "shopify"; locationId: string } | { pool: "fba" | "awd" }
   days: number
   leadTimeDays: number
   unmatchedUnits: number
+  blockedCount: number
+  unmatchedStockSkus: number
   sources: {
     source: "shopify" | "amazon"
     error: string | null
@@ -45,7 +59,13 @@ type Report = {
 const restockApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
-    restockReport: build.mutation<Report, { days: number; leadTimeDays: number }>({
+    restockTargets: build.query<Target[], void>({
+      query: () => "restock/targets"
+    }),
+    restockReport: build.mutation<
+      Report,
+      { days: number; leadTimeDays: number; target: { pool: "shopify"; locationId: string } | { pool: "fba" | "awd" } }
+    >({
       query: (body) => ({ url: "inventory/sales", method: "POST", body })
     })
   })
@@ -92,13 +112,18 @@ function Notes({ report }: { report: Report }) {
   const notes = [
     ...report.sources.flatMap(({ source, error, gapUnits, gapReasons }) => [
       error && `${sourceNames[source]}: ${error}`,
-      gapUnits > 0 &&
+      (gapUnits > 0 || Object.values(gapReasons).some((gap) => gap.unknownCount > 0)) &&
         `${sourceNames[source]}: not counted, ${Object.entries(gapReasons)
-          .filter(([, gap]) => gap.units > 0)
-          .map(([reason, gap]) => `${gap.units} units ${gapNames[reason] ?? reason.replaceAll("_", " ")}`)
+          .filter(([, gap]) => gap.units > 0 || gap.unknownCount > 0)
+          .map(
+            ([reason, gap]) =>
+              `${gap.units} units ${gapNames[reason] ?? reason.replaceAll("_", " ")}${gap.unknownCount ? ` and ${gap.unknownCount} unknown quantities` : ""}`
+          )
           .join(", ")}.`
     ]),
-    report.unmatchedUnits > 0 && `${report.unmatchedUnits} units sold under SKUs that don't match one Shopify product.`
+    report.unmatchedUnits > 0 && `${report.unmatchedUnits} units sold under SKUs that don't match one Shopify product.`,
+    report.unmatchedStockSkus > 0 &&
+      `${report.unmatchedStockSkus} Amazon inventory SKUs do not match exactly one Shopify variant and were excluded.`
   ].filter((note) => typeof note === "string")
   return notes.length ? (
     <ul className={styles.notes} aria-live="polite">
@@ -110,7 +135,11 @@ function Notes({ report }: { report: Report }) {
 }
 
 function Reorder({ report }: { report: Report }) {
-  if (report.sources.some((source) => source.error !== null)) {
+  if (
+    report.sources.some(
+      (source) => source.error !== null && source.source === (report.target.pool === "shopify" ? "shopify" : "amazon")
+    )
+  ) {
     return (
       <p className={styles.summary}>
         Restock needs sales from every connected store. Fix the issue above and try again.
@@ -120,13 +149,26 @@ function Reorder({ report }: { report: Report }) {
   if (!report.reorder.length) {
     return (
       <p className={styles.summary}>
-        Nothing needs reordering to cover the next {report.leadTimeDays} days at the last {report.days} days&apos; rate.
+        {report.blockedCount
+          ? `${report.blockedCount} variations need more complete stock or sales data before Copacker can recommend a quantity.`
+          : `Nothing needs reordering to cover the next ${report.leadTimeDays} days at the last ${report.days} days' rate.`}
       </p>
     )
   }
   // A PO holds up to 100 lines.
   const lines = report.reorder.slice(0, 100)
-  const href = `/orders/new?${new URLSearchParams(lines.map((line) => ["variant", `${line.variantId}@${line.purchaseUnits}`]))}`
+  const params = new URLSearchParams(lines.map((line) => ["variant", `${line.variantId}@${line.purchaseUnits}`]))
+  let destination = "awd_us"
+  if (report.target.pool === "shopify") {
+    destination = "warehouse"
+  } else if (report.target.pool === "fba") {
+    destination = "fba"
+  }
+  params.set("destination", destination)
+  if (report.target.pool === "shopify") {
+    params.set("locationId", report.target.locationId)
+  }
+  const href = `/orders/new?${params}`
   return (
     <section className={styles.section} aria-labelledby="reorder-heading">
       <div className={styles.heading}>
@@ -139,7 +181,8 @@ function Reorder({ report }: { report: Report }) {
       </div>
       <p className={styles.summary}>
         Enough to cover {report.leadTimeDays} days at the last {report.days} days&apos; rate, after stock and
-        what&apos;s on order. Items often sold in multipacks may be better reordered as the multipack.
+        what&apos;s on order. Case counts use Shopify&apos;s product case quantity where known. Estimated cost uses
+        Shopify&apos;s unit cost and excludes freight, duties and fees.
         {report.reorder.length > 100 && " The PO includes the 100 most urgent."}
       </p>
       <Table>
@@ -150,6 +193,8 @@ function Reorder({ report }: { report: Report }) {
             <TableHead className={styles.number}>Sold alone</TableHead>
             <TableHead className={styles.number}>In multipacks</TableHead>
             <TableHead className={styles.number}>Reorder</TableHead>
+            <TableHead className={styles.number}>Cases</TableHead>
+            <TableHead className={styles.number}>Estimated cost</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -165,6 +210,12 @@ function Reorder({ report }: { report: Report }) {
               <TableCell className={styles.number}>{line.soldInBundles}</TableCell>
               <TableCell className={styles.number}>
                 <strong>{line.purchaseUnits}</strong>
+              </TableCell>
+              <TableCell className={styles.number}>{line.caseCount ?? "—"}</TableCell>
+              <TableCell className={styles.number}>
+                {line.estimatedCostMinor !== null && line.costCurrency
+                  ? money(line.estimatedCostMinor, line.costCurrency)
+                  : "Unknown"}
               </TableCell>
             </TableRow>
           ))}
@@ -214,10 +265,28 @@ function Multipacks({ report }: { report: Report }) {
 export function RestockReport() {
   const [days, setDays] = useState<number>(salesPeriods.at(-1) ?? 56)
   const [leadTimeDays, setLeadTimeDays] = useState<number>(56)
+  const [targetKey, setTargetKey] = useState("")
+  const { data: targets = [], isLoading: targetsLoading } = restockApi.useRestockTargetsQuery()
+  const target = targets.find((item) => item.key === targetKey) ?? targets[0]
   const [load, result] = restockApi.useRestockReportMutation({ fixedCacheKey: "restock-report" })
   return (
     <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
       <div className={styles.controls}>
+        <Field className={styles.control}>
+          <FieldLabel htmlFor="restock-target">Restock location</FieldLabel>
+          <NativeSelect
+            id="restock-target"
+            value={target?.key ?? ""}
+            onChange={(event) => setTargetKey(event.target.value)}
+          >
+            {!target && <NativeSelectOption value="">No connected inventory</NativeSelectOption>}
+            {targets.map((item) => (
+              <NativeSelectOption key={item.key} value={item.key}>
+                {item.pool === "shopify" ? `Shopify · ${item.label}` : item.label}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Field>
         <Field className={styles.control}>
           <FieldLabel htmlFor="restock-days">Sales period</FieldLabel>
           <NativeSelect
@@ -246,23 +315,47 @@ export function RestockReport() {
             ))}
           </NativeSelect>
         </Field>
-        <Button disabled={result.isLoading} onClick={() => void load({ days, leadTimeDays })}>
+        <Button
+          disabled={result.isLoading || targetsLoading || !target}
+          onClick={() => {
+            if (!target) {
+              return
+            }
+            void load({
+              days,
+              leadTimeDays,
+              target:
+                target.pool === "shopify" ? { pool: "shopify", locationId: target.locationId } : { pool: target.pool }
+            })
+          }}
+        >
           {result.isLoading ? "Reading sales…" : "Suggest reorders"}
         </Button>
       </div>
+      {target && (
+        <p className={styles.summary}>
+          Inventory last synced{" "}
+          {target.observedAt ? `${target.observedAt.replace("T", " ").slice(0, 16)} UTC` : "unknown"}.{" "}
+          <Link href="/inventory">Refresh inventory</Link> before ordering if counts have changed.
+        </p>
+      )}
       {result.isLoading && (
         <p className={styles.summary} aria-live="polite">
           Reading every order in the period. This can take a few minutes.
         </p>
       )}
       {result.isError && <p role="alert">{errorMessage(result.error, "Sales couldn't be loaded. Try again.")}</p>}
-      {result.data && (
-        <>
-          <Notes report={result.data} />
-          <Reorder report={result.data} />
-          <Multipacks report={result.data} />
-        </>
-      )}
+      {result.data &&
+        target &&
+        result.data.target?.pool === target.pool &&
+        (target.pool !== "shopify" ||
+          (result.data.target.pool === "shopify" && result.data.target.locationId === target.locationId)) && (
+          <>
+            <Notes report={result.data} />
+            <Reorder report={result.data} />
+            <Multipacks report={result.data} />
+          </>
+        )}
     </div>
   )
 }
