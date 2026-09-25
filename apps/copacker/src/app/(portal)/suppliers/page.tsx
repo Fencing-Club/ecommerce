@@ -9,6 +9,7 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, 
 import { db } from "@/db"
 import { suppliers } from "@/db/schema"
 import { requireBuyer, session } from "@/server/auth"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function SuppliersPage() {
   const s = await session()
@@ -21,14 +22,14 @@ export default async function SuppliersPage() {
         title="Suppliers"
         description="Give your suppliers a shared workspace for purchase orders, cartons, and labels."
       />
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { xl: "mainAsideWide" } })}>
         <Card>
           <CardHeader>
             <CardTitle>Your suppliers</CardTitle>
           </CardHeader>
           <CardContent>
             {rows.length ? (
-              <ItemGroup className="gap-2">
+              <ItemGroup className={sx({ gap: 2 })}>
                 {rows.map((row) => (
                   <Item key={row.id} variant="outline">
                     <ItemMedia>
@@ -61,7 +62,7 @@ export default async function SuppliersPage() {
             )}
           </CardContent>
         </Card>
-        <Card className="self-start">
+        <Card className={sx({ alignSelf: "flex-start" })}>
           <CardHeader>
             <CardTitle>Invite a supplier</CardTitle>
             {s.role !== "owner" && <CardDescription>Only workspace owners can invite suppliers.</CardDescription>}

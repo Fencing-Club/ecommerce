@@ -18,6 +18,8 @@ import { EmptyState } from "./common"
 import { FormInput, FormNumber, FormSelect } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { Upload } from "./upload"
+import * as styles from "./packing-form.css"
+import { sx } from "@/styles/sprinkles.css"
 
 type Values = z.input<typeof packingSchema>
 
@@ -160,11 +162,11 @@ export function PackingForm({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
       <Upload orderId={orderId} shipmentId={shipmentId} kind="invoice" />
       <FormProvider {...form}>
         <form onSubmit={validated("submit")} noValidate>
-          <fieldset disabled={working} className="flex flex-col gap-6">
+          <fieldset disabled={working} className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
             <Card>
               <CardHeader>
                 <CardTitle>Invoice details</CardTitle>
@@ -181,15 +183,22 @@ export function PackingForm({
                     options={invoices.map((d) => ({ value: d.id, label: d.name }))}
                   />
                   {order.items.map((item, index) => (
-                    <div key={item.id} className="flex flex-col gap-4">
+                    <div key={item.id} className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
                       <FieldSeparator />
-                      <div className="grid gap-4 sm:grid-cols-[1fr_180px_160px] sm:items-start">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-sm font-medium">
+                      <div
+                        className={sx({
+                          display: "grid",
+                          gap: 4,
+                          gridTemplateColumns: { sm: "itemPriceSku" },
+                          alignItems: { sm: "flex-start" }
+                        })}
+                      >
+                        <div className={sx({ display: "flex", flexDirection: "column", gap: 1 })}>
+                          <p className={sx({ text: "sm", fontWeight: "medium" })}>
                             {item.name} / {item.variant}
                           </p>
-                          <p className="text-xs text-muted-foreground">Buyer SKU: {item.buyerSku}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className={sx({ text: "xs", color: "muted" })}>Buyer SKU: {item.buyerSku}</p>
+                          <p className={sx({ text: "xs", color: "muted" })}>
                             {availablePieces[item.id] ?? 0} pieces available on this PO
                           </p>
                         </div>
@@ -218,7 +227,7 @@ export function PackingForm({
               </CardHeader>
               <CardContent>
                 <FieldGroup>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
                     <FormInput name="readyDate" label="Ready for pickup" type="date" />
                     {addresses.length > 0 && (
                       <SelectField
@@ -262,7 +271,7 @@ export function PackingForm({
                   </Button>
                 </CardAction>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
                 {cartons.fields.length === 0 && (
                   <EmptyState
                     title="No cartons yet"
@@ -270,10 +279,10 @@ export function PackingForm({
                   />
                 )}
                 {cartons.fields.map((carton, index) => (
-                  <Card key={carton.id} size="sm" className="bg-muted/30">
+                  <Card key={carton.id} size="sm" className={styles.cartonCard}>
                     <CardHeader>
                       <CardTitle>Carton {cartonValues[index]?.cartonId || index + 1}</CardTitle>
-                      <CardAction className="flex gap-1">
+                      <CardAction className={sx({ display: "flex", gap: 1 })}>
                         <Button
                           type="button"
                           size="icon-sm"
@@ -298,7 +307,7 @@ export function PackingForm({
                     </CardHeader>
                     <CardContent>
                       <FieldGroup>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                        <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2", lg: "5" } })}>
                           <FormInput name={`cartons.${index}.cartonId`} label="Supplier carton number" />
                           {cartonDimensions.map((field) => (
                             <FormNumber
@@ -310,7 +319,9 @@ export function PackingForm({
                             />
                           ))}
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+                        <div
+                          className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "fieldWithPieces" } })}
+                        >
                           <FormSelect
                             name={`cartons.${index}.items.0.itemId`}
                             label="Product (one SKU per AWD carton)"
@@ -337,11 +348,19 @@ export function PackingForm({
             </Card>
 
             <FormError message={serverError} />
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
+            <div
+              className={sx({
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 4
+              })}
+            >
+              <p className={sx({ text: "sm", color: "muted" })}>
                 {cartons.fields.length} cartons, {pieces} pieces
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
                 <Button type="button" variant="outline" onClick={() => void perform("save", form.getValues())}>
                   Save draft
                 </Button>
@@ -353,7 +372,7 @@ export function PackingForm({
                 </SubmitButton>
               </div>
             </div>
-            {notice && <output className="text-sm text-muted-foreground">{notice}</output>}
+            {notice && <output className={sx({ text: "sm", color: "muted" })}>{notice}</output>}
           </fieldset>
         </form>
       </FormProvider>

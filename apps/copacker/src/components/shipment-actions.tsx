@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./actions"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
+import * as styles from "./shipment-actions.css"
 
 const approveSchema = z.object({ updateCost: z.boolean() })
 
@@ -61,12 +62,9 @@ export function CorrectionForm({ id }: { id: string }) {
   return (
     <Collapsible render={<Card />}>
       <CardHeader>
-        <CollapsibleTrigger render={<Button variant="ghost" className="group/trigger -mx-2.5 w-fit" />}>
+        <CollapsibleTrigger render={<Button variant="ghost" className={styles.trigger} />}>
           Request a correction
-          <ChevronDown
-            data-icon="inline-end"
-            className="transition-transform group-data-panel-open/trigger:rotate-180"
-          />
+          <ChevronDown data-icon="inline-end" className={styles.chevron} />
         </CollapsibleTrigger>
       </CardHeader>
       <CollapsibleContent>

@@ -5,7 +5,10 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 import { AppSidebar, type AppSidebarProps, CurrentSection } from "./app-sidebar"
+import * as styles from "./shell.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export async function Shell({
   children,
@@ -18,12 +21,26 @@ export async function Shell({
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar {...sidebar} view={view} />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-auto" />
+        <header className={styles.header}>
+          <SidebarTrigger className={styles.trigger} />
+          <Separator orientation="vertical" className={styles.separator} />
           <CurrentSection preview={sidebar.preview} view={view} />
         </header>
-        <div id="main-content" className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
+        <div
+          id="main-content"
+          className={cn(
+            styles.main,
+            sx({
+              display: "flex",
+              width: "full",
+              maxWidth: "7xl",
+              flex: 1,
+              flexDirection: "column",
+              gap: 6,
+              padding: { base: 4, md: 6, lg: 8 }
+            })
+          )}
+        >
           {sidebar.preview && (
             <Alert role="note">
               <FlaskConical />

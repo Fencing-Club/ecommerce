@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { errorMessage, useUploadDocumentMutation } from "@/lib/api"
 import { FormError, SubmitButton } from "./actions"
 import { SelectField } from "./form-fields"
+import * as styles from "./upload.css"
+import { sx } from "@/styles/sprinkles.css"
 
 const titles = {
   invoice: "Official commercial invoice",
@@ -66,10 +68,10 @@ export function Upload({
   const fileId = `file-${kind}`
 
   return (
-    <Card size="sm" className="border border-dashed bg-muted/30 ring-0">
+    <Card size="sm" className={styles.card}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UploadCloud className="size-4 text-muted-foreground" />
+        <CardTitle className={sx({ display: "flex", alignItems: "center", gap: 2 })}>
+          <UploadCloud className={sx({ size: 4, color: "muted" })} />
           {titles[kind]}
         </CardTitle>
         <CardDescription>
@@ -101,7 +103,7 @@ export function Upload({
                 <FieldDescription>
                   Enter the PDF page number for each carton. Leave a carton blank if its label is in a different file.
                 </FieldDescription>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className={sx({ display: "grid", gap: 3, gridTemplateColumns: { sm: "3" } })}>
                   {cartons.map((c) => (
                     <Field key={c.cartonId}>
                       <FieldLabel htmlFor={`page:${c.cartonId}`}>Carton {c.cartonId}</FieldLabel>

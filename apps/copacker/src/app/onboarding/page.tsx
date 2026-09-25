@@ -1,18 +1,21 @@
 import { Box } from "lucide-react"
 import { WorkspaceForm } from "@/components/settings-forms"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { identity } from "@/server/auth"
+import { brandTile, centeredPage, mutedBackground } from "../shell.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function Onboarding() {
   await identity()
   return (
-    <main id="main-content" className="flex min-h-svh items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-md">
+    <main id="main-content" className={cn(centeredPage, mutedBackground)}>
+      <Card className={sx({ width: "full", maxWidth: "md" })}>
         <CardHeader>
-          <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Box className="size-5" />
+          <div className={brandTile}>
+            <Box className={sx({ size: 5 })} />
           </div>
-          <CardTitle className="text-xl">Welcome to Copacker</CardTitle>
+          <CardTitle className={sx({ text: "xl" })}>Welcome to Copacker</CardTitle>
           <CardDescription>
             Create your company workspace. Suppliers can manage purchase orders from multiple buyers in one place.
           </CardDescription>

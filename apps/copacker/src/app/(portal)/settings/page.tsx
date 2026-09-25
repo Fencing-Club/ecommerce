@@ -11,6 +11,8 @@ import { FieldGroup } from "@/components/ui/field"
 import { db } from "@/db"
 import { connections, contacts } from "@/db/schema"
 import { session } from "@/server/auth"
+import { pushToBottom } from "./page.css"
+import { sx } from "@/styles/sprinkles.css"
 
 const providers = [
   {
@@ -45,7 +47,7 @@ export default async function Settings() {
       />
 
       {s.org.kind === "buyer" && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { md: "2" } })}>
           {providers.map((provider) => {
             const connection = linked.find((c) => c.provider === provider.id)
             return (
@@ -63,7 +65,7 @@ export default async function Settings() {
                   )}
                 </CardHeader>
                 {s.role === "owner" && (
-                  <CardContent className="mt-auto">
+                  <CardContent className={pushToBottom}>
                     {connection ? (
                       <DisconnectButton provider={provider.id} account={connection.externalId} />
                     ) : (

@@ -22,6 +22,8 @@ import { formatPhone, phoneHref } from "@/lib/phone"
 import { FormError } from "./actions"
 import { EmptyState } from "./common"
 import { ContactForm } from "./settings-forms"
+import * as styles from "./saved-addresses.css"
+import { sx } from "@/styles/sprinkles.css"
 
 type Contact = { id: string; name: string; kind: "pickup" | "forwarder"; address: Address }
 
@@ -44,7 +46,7 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
               <Plus data-icon="inline-start" />
               Add address
             </DialogTrigger>
-            <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className={styles.dialog}>
               <DialogHeader>
                 <DialogTitle>Add address</DialogTitle>
                 <DialogDescription>
@@ -58,7 +60,7 @@ export function SavedAddresses({ contacts }: { contacts: Contact[] }) {
       </CardHeader>
       <CardContent>
         {contacts.length ? (
-          <ItemGroup className="gap-2">
+          <ItemGroup className={styles.list}>
             {contacts.map((contact) => (
               <SavedAddress key={contact.id} contact={contact} />
             ))}
@@ -96,8 +98,8 @@ function SavedAddress({ contact }: { contact: Contact }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <Item variant="outline" className="items-start">
+    <div className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
+      <Item variant="outline" className={styles.item}>
         <ItemMedia variant="icon">
           <Icon />
         </ItemMedia>
@@ -106,15 +108,15 @@ function SavedAddress({ contact }: { contact: Contact }) {
             {contact.name}
             <Badge variant="secondary">{label}</Badge>
           </ItemTitle>
-          <ItemDescription className="line-clamp-none">
+          <ItemDescription className={styles.unclamped}>
             {[address.name, address.addressLine1, address.addressLine2, address.city, address.countryCode]
               .filter(Boolean)
               .join(", ")}
           </ItemDescription>
           {(address.phoneNumber || address.email) && (
-            <ItemDescription className="flex flex-wrap gap-x-4 gap-y-1">
+            <ItemDescription className={styles.contactLinks}>
               {address.phoneNumber && (
-                <a className="tabular-nums" href={phoneHref(address.phoneNumber)}>
+                <a className={sx({ fontVariantNumeric: "tabular" })} href={phoneHref(address.phoneNumber)}>
                   {formatPhone(address.phoneNumber)}
                 </a>
               )}
@@ -122,7 +124,7 @@ function SavedAddress({ contact }: { contact: Contact }) {
             </ItemDescription>
           )}
           {contact.kind === "pickup" && !address.phoneNumber && (
-            <ItemDescription className="text-destructive">
+            <ItemDescription className={styles.warning}>
               Add a phone number to use this address on shipments.
             </ItemDescription>
           )}
@@ -132,7 +134,7 @@ function SavedAddress({ contact }: { contact: Contact }) {
             <DialogTrigger render={<Button size="icon-sm" variant="ghost" aria-label={`Edit ${contact.name}`} />}>
               <Pencil />
             </DialogTrigger>
-            <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className={styles.dialog}>
               <DialogHeader>
                 <DialogTitle>Edit address</DialogTitle>
                 <DialogDescription>

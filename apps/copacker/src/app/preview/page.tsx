@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { noLineClamp } from "./page.css"
+import { sx } from "@/styles/sprinkles.css"
 
 const titles: Record<string, string> = {
   orders: "Purchase orders",
@@ -57,7 +59,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
         <StatCard label="Ready for pickup" value="0" caption="Every carton accounted for" />
       </StatGrid>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { base: "1", xl: "mainAside" } })}>
         <Card>
           <CardHeader>
             <CardTitle>{view === "shipments" ? "Current shipments" : "Recent purchase orders"}</CardTitle>
@@ -70,58 +72,63 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
                   <TableHead>Purchase order</TableHead>
                   <TableHead>Supplier</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.reference}>
                     <TableCell>
-                      <p className="font-medium">{row.reference}</p>
-                      <p className="text-xs text-muted-foreground">{row.products}</p>
+                      <p className={sx({ fontWeight: "medium" })}>{row.reference}</p>
+                      <p className={sx({ text: "xs", color: "muted" })}>{row.products}</p>
                     </TableCell>
                     <TableCell>
                       <p>{row.supplier}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className={sx({ text: "xs", color: "muted" })}>
                         {row.pieces} to {row.destination}
                       </p>
                     </TableCell>
                     <TableCell>
                       <Status status={row.status} />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{row.value}</TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {row.value}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </CardContent>
-          <CardFooter className="text-xs text-muted-foreground">
+          <CardFooter className={sx({ text: "xs", color: "muted" })}>
             One destination per purchase order. Partial shipments welcome.
           </CardFooter>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="size-4 text-primary" />
+            <CardTitle className={sx({ display: "flex", alignItems: "center", gap: 2 })}>
+              <Truck className={sx({ size: 4, color: "primary" })} />
               Up next
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Item variant="muted" className="flex-col items-start">
+          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+            <Item variant="muted" className={sx({ flexDirection: "column", alignItems: "flex-start" })}>
               <Status status="waiting_labels" />
               <ItemContent>
                 <ItemTitle>Body cords to AWD USA</ItemTitle>
-                <ItemDescription className="line-clamp-none">
+                <ItemDescription className={noLineClamp}>
                   The supplier submitted 16 cartons. Book transportation in Amazon, then add shipping labels to release
                   the packet.
                 </ItemDescription>
               </ItemContent>
             </Item>
-            <ul className="flex flex-col gap-3">
+            <ul className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
               {["Official invoice uploaded", "Carton contents validated", "Amazon carton labels matched"].map((t) => (
-                <li key={t} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="size-4 text-primary" />
+                <li
+                  key={t}
+                  className={sx({ display: "flex", alignItems: "center", gap: 2, text: "sm", color: "muted" })}
+                >
+                  <CheckCircle2 className={sx({ size: 4, color: "primary" })} />
                   {t}
                 </li>
               ))}
@@ -135,10 +142,10 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
           <CardTitle>A clear path from PO to pickup</CardTitle>
         </CardHeader>
         <CardContent>
-          <ol className="grid gap-4 sm:grid-cols-4">
+          <ol className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "4" } })}>
             {steps.map((step, index) => (
-              <li key={step} className="flex items-center gap-2 text-sm">
-                <Badge variant="secondary" className="tabular-nums">
+              <li key={step} className={sx({ display: "flex", alignItems: "center", gap: 2, text: "sm" })}>
+                <Badge variant="secondary" className={sx({ fontVariantNumeric: "tabular" })}>
                   {index + 1}
                 </Badge>
                 {step}

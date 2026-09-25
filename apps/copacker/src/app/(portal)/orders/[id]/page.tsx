@@ -13,9 +13,12 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Upload } from "@/components/upload"
 import { db } from "@/db"
 import { documents, events, orderRevisions, shipments } from "@/db/schema"
+import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { session } from "@/server/auth"
 import { orderWorkflow } from "@/server/workflow"
+import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -56,8 +59,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         )}
       </PageHeader>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { base: "1", xl: "mainAside" } })}>
+        <div className={sx({ display: "flex", minWidth: 0, flexDirection: "column", gap: 6 })}>
           <Card>
             <CardHeader>
               <CardTitle>Products</CardTitle>
@@ -67,37 +70,49 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <TableHeader>
                   <TableRow>
                     <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Pieces</TableHead>
-                    <TableHead className="text-right">Pack size</TableHead>
-                    <TableHead className="text-right">Price per piece</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Pieces</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Pack size</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Price per piece</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {order.data.items.map((item) => (
-                    <TableRow key={item.id} className="align-top">
-                      <TableCell className="whitespace-normal">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-muted-foreground">{item.variant}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Buyer SKU: {item.buyerSku}</p>
-                        <p className="text-xs text-muted-foreground">
+                    <TableRow key={item.id} className={alignTop}>
+                      <TableCell className={sx({ whiteSpace: "normal" })}>
+                        <p className={sx({ fontWeight: "medium" })}>{item.name}</p>
+                        <p className={sx({ color: "muted" })}>{item.variant}</p>
+                        <p className={sx({ marginTop: 1, text: "xs", color: "muted" })}>Buyer SKU: {item.buyerSku}</p>
+                        <p className={sx({ text: "xs", color: "muted" })}>
                           Supplier SKU: {item.supplierSku || "Not provided"}
                         </p>
                         {item.instructions && (
-                          <p className="mt-2 max-w-sm text-xs whitespace-pre-line text-muted-foreground">
+                          <p
+                            className={sx({
+                              marginTop: 2,
+                              maxWidth: "sm",
+                              text: "xs",
+                              whiteSpace: "pre-line",
+                              color: "muted"
+                            })}
+                          >
                             {item.instructions}
                           </p>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
                         {item.pieces}
-                        <p className="text-xs text-muted-foreground">
+                        <p className={sx({ text: "xs", color: "muted" })}>
                           {workflow.items.find((row) => row.itemId === item.id)?.remainingPieces} remaining
                         </p>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{item.piecesPerSet}</TableCell>
-                      <TableCell className="text-right tabular-nums">{money(item.unitPrice, currency)}</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {item.piecesPerSet}
+                      </TableCell>
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {money(item.unitPrice, currency)}
+                      </TableCell>
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
                         {money(item.pieces * item.unitPrice, currency)}
                       </TableCell>
                     </TableRow>
@@ -106,7 +121,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={4}>PO total</TableCell>
-                    <TableCell className="text-right tabular-nums">{money(orderTotal(order.data), currency)}</TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {money(orderTotal(order.data), currency)}
+                    </TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
@@ -119,7 +136,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               {shipmentRows.length ? (
-                <ItemGroup className="gap-2">
+                <ItemGroup className={sx({ gap: 2 })}>
                   {shipmentRows.map((shipment, index) => (
                     <Item key={shipment.id} variant="outline" render={<Link href={`/shipments/${shipment.id}`} />}>
                       <ItemContent>
@@ -131,7 +148,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                       </ItemContent>
                       <ItemActions>
                         <Status status={shipment.status} />
-                        <ChevronRight className="size-4 text-muted-foreground" />
+                        <ChevronRight className={sx({ size: 4, color: "muted" })} />
                       </ItemActions>
                     </Item>
                   ))}
@@ -149,20 +166,28 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             <CardHeader>
               <CardTitle>Product labels</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
               {s.org.kind === "buyer" && <Upload orderId={id} kind="product_label" items={order.data.items} />}
               {labels.length > 0 && <DocumentList documents={labels} />}
             </CardContent>
           </Card>
         </div>
 
-        <aside className="flex flex-col gap-6">
+        <aside className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
           <Card>
             <CardHeader>
               <CardTitle>Order overview</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
+            <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+              <dl
+                className={sx({
+                  display: "grid",
+                  gridTemplateColumns: "labelValue",
+                  columnGap: 4,
+                  rowGap: 3,
+                  text: "sm"
+                })}
+              >
                 <Info label="Supplier" value={supplier.name} />
                 <Info label="Required date" value={order.data.dueDate} />
                 <Info label="Currency" value={currency} />
@@ -171,7 +196,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               {order.data.notes && (
                 <>
                   <Separator />
-                  <p className="text-sm whitespace-pre-line text-muted-foreground">{order.data.notes}</p>
+                  <p className={sx({ text: "sm", whiteSpace: "pre-line", color: "muted" })}>{order.data.notes}</p>
                 </>
               )}
             </CardContent>
@@ -183,18 +208,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               {history.length ? (
-                <ol className="flex flex-col gap-4">
+                <ol className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
                   {history.map((event) => (
-                    <li key={event.id} className="flex flex-col gap-0.5">
-                      <p className="text-sm">{event.message}</p>
-                      <time className="text-xs text-muted-foreground" dateTime={event.createdAt.toISOString()}>
+                    <li key={event.id} className={sx({ display: "flex", flexDirection: "column", gap: 0.5 })}>
+                      <p className={sx({ text: "sm" })}>{event.message}</p>
+                      <time className={sx({ text: "xs", color: "muted" })} dateTime={event.createdAt.toISOString()}>
                         {event.createdAt.toLocaleDateString("en-US")}
                       </time>
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="text-sm text-muted-foreground">Your order activity will appear here.</p>
+                <p className={sx({ text: "sm", color: "muted" })}>Your order activity will appear here.</p>
               )}
             </CardContent>
           </Card>
@@ -204,15 +229,24 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               <CardHeader>
                 <CardTitle>PO history</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
+              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
                 {revisions.map((r) => (
                   <Collapsible key={r.id}>
-                    <CollapsibleTrigger className="group/trigger flex w-full items-center justify-between gap-2 rounded-md py-1 text-left text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                    <CollapsibleTrigger className={revisionTrigger}>
                       Revision {r.revision}: {r.reason}
-                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-panel-open/trigger:rotate-180" />
+                      <ChevronDown className={cn(sx({ size: 4, flexShrink: 0, color: "muted" }), revisionChevron)} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <ul className="flex flex-col gap-1 py-2 text-xs text-muted-foreground">
+                      <ul
+                        className={sx({
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1,
+                          paddingY: 2,
+                          text: "xs",
+                          color: "muted"
+                        })}
+                      >
                         {r.data.items.map((i) => (
                           <li key={i.id}>
                             {i.buyerSku}: {i.pieces} pieces at {money(i.unitPrice, r.data.currency)}, supplier SKU{" "}
@@ -235,8 +269,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
+      <dt className={sx({ color: "muted" })}>{label}</dt>
+      <dd className={sx({ textAlign: "right", fontWeight: "medium" })}>{value}</dd>
     </>
   )
 }

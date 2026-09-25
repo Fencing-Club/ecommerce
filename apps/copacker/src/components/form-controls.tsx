@@ -7,6 +7,7 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
+import * as styles from "./form-controls.css"
 
 type Common = { name: string; label: string; description?: React.ReactNode; className?: string }
 type Option = { value: string; label: string; disabled?: boolean }
@@ -103,7 +104,7 @@ export function FormSelect({
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <NativeSelect
         id={id}
-        className="w-full"
+        className={styles.fullWidth}
         name={fieldName}
         ref={ref}
         value={fieldValue ?? ""}

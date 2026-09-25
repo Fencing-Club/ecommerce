@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
+import { sx } from "@/styles/sprinkles.css"
 
 export function ShipmentProgress({ processing, message }: { processing: boolean; message: string }) {
   const router = useRouter()
@@ -16,5 +17,5 @@ export function ShipmentProgress({ processing, message }: { processing: boolean;
     }, 5000)
     return () => clearInterval(timer)
   }, [processing, router])
-  return <output className="text-sm text-muted-foreground">{message}</output>
+  return <output className={sx({ text: "sm", color: "muted" })}>{message}</output>
 }

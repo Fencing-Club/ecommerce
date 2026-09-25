@@ -14,6 +14,8 @@ import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/ap
 import { FormError, SubmitButton } from "./actions"
 import { EmptyState } from "./common"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
+import * as styles from "./order-builder.css"
+import { sx } from "@/styles/sprinkles.css"
 
 const destinations = [
   { value: "awd_us", label: "Amazon AWD USA" },
@@ -83,13 +85,13 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
 
   return (
     <FormProvider {...form}>
-      <form className="flex flex-col gap-6" onSubmit={submit} noValidate>
+      <form className={sx({ display: "flex", flexDirection: "column", gap: 6 })} onSubmit={submit} noValidate>
         <Card>
           <CardHeader>
             <CardTitle>Order details</CardTitle>
           </CardHeader>
           <CardContent>
-            <FieldGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FieldGroup className={styles.detailsGrid}>
               <FormInput name="reference" label="PO reference" placeholder="PO-037" />
               <FormSelect
                 name="supplierId"
@@ -112,8 +114,8 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
               from each product’s SKU when you save.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex gap-2">
+          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+            <div className={sx({ display: "flex", gap: 2 })}>
               <Input
                 aria-label="Search Shopify catalog"
                 placeholder="Search by product name or SKU"
@@ -141,11 +143,11 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
               />
             )}
             {showResults && catalog.isSuccess && !catalog.isFetching && results.length === 0 && (
-              <p className="text-sm text-muted-foreground">No products match “{query}”.</p>
+              <p className={sx({ text: "sm", color: "muted" })}>No products match “{query}”.</p>
             )}
 
             {results.length > 0 && !catalog.isFetching && (
-              <ItemGroup className="max-h-72 overflow-auto rounded-lg border p-1">
+              <ItemGroup className={styles.results}>
                 {results.map((product) => (
                   <Item
                     key={product.id}
@@ -158,7 +160,7 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                         onClick={() => add(product)}
                       />
                     }
-                    className="w-full text-left hover:bg-muted disabled:opacity-50"
+                    className={styles.result}
                   >
                     <ItemContent>
                       <ItemTitle>
@@ -167,7 +169,7 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                       <ItemDescription>{product.sku}</ItemDescription>
                     </ItemContent>
                     <ItemActions>
-                      <Plus className="size-4" />
+                      <Plus className={sx({ size: 4 })} />
                     </ItemActions>
                   </Item>
                 ))}
@@ -184,7 +186,7 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                 const item = items[index]
                 const lineError = form.formState.errors.items?.[index]
                 return (
-                  <Card key={line.key} size="sm" className="bg-muted/30">
+                  <Card key={line.key} size="sm" className={styles.lineCard}>
                     <CardHeader>
                       <CardTitle>{line.name}</CardTitle>
                       <CardDescription>
@@ -203,7 +205,7 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                       </CardAction>
                     </CardHeader>
                     <CardContent>
-                      <FieldGroup className="grid gap-4 sm:grid-cols-3">
+                      <FieldGroup className={styles.lineGrid}>
                         <FormNumber name={`items.${index}.pieces`} label="Quantity (pieces)" min={1} step={1} />
                         <FormNumber
                           name={`items.${index}.piecesPerSet`}
@@ -219,9 +221,9 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                           scale={100}
                         />
                         <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepCategories} />
-                        <dl className="grid content-start gap-1 text-sm sm:col-span-2">
-                          <dt className="font-medium">Amazon identifiers</dt>
-                          <dd className="text-muted-foreground">
+                        <dl className={styles.identifiers}>
+                          <dt className={sx({ fontWeight: "medium" })}>Amazon identifiers</dt>
+                          <dd className={sx({ color: "muted" })}>
                             {line.asin ? `ASIN ${line.asin}` : "ASIN looked up on save"}
                             {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up on save"}
                           </dd>
@@ -230,12 +232,12 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
                           name={`items.${index}.instructions`}
                           label="Product instructions"
                           placeholder="Add handling, labeling, or preparation exceptions"
-                          className="sm:col-span-3"
+                          className={sx({ gridColumn: { sm: "span3" } })}
                         />
                       </FieldGroup>
                       <FormError message={lineError?.message ?? lineError?.root?.message} />
                     </CardContent>
-                    <CardFooter className="justify-end text-sm text-muted-foreground">
+                    <CardFooter className={sx({ justifyContent: "flex-end", text: "sm", color: "muted" })}>
                       {item?.pieces && item?.piecesPerSet ? item.pieces / item.piecesPerSet : 0} sellable units
                     </CardFooter>
                   </Card>
@@ -257,8 +259,16 @@ export function OrderBuilder({ suppliers }: { suppliers: Array<{ id: string; nam
         </Card>
 
         <FormError message={form.formState.errors.root?.server?.message} />
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div
+          className={sx({
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 4
+          })}
+        >
+          <p className={sx({ text: "sm", color: "muted" })}>
             {lineItems.fields.length} products, {pieces} pieces, {money(amount, currency)}
           </p>
           <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>

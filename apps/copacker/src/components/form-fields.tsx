@@ -1,6 +1,7 @@
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import * as styles from "./form-fields.css"
 
 type Option = { value: string; label: string; disabled?: boolean }
 
@@ -37,7 +38,7 @@ export function SelectField({
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <NativeSelect id={id} className="w-full" {...props}>
+      <NativeSelect id={id} className={styles.fullWidth} {...props}>
         {placeholder !== undefined && <NativeSelectOption value="">{placeholder}</NativeSelectOption>}
         {options.map((option) => (
           <NativeSelectOption key={option.value} value={option.value} disabled={option.disabled}>

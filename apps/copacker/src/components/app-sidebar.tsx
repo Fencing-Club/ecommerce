@@ -28,6 +28,8 @@ import {
   useSidebar
 } from "@/components/ui/sidebar"
 import { useActionMutation } from "@/lib/api"
+import * as styles from "./app-sidebar.css"
+import { sx } from "@/styles/sprinkles.css"
 
 type Workspace = { id: string; name: string }
 
@@ -60,7 +62,19 @@ export function CurrentSection({ preview = false, view }: { preview?: boolean; v
   const current = preview
     ? navigation.find((item) => item.view === (view ?? "orders"))
     : navigation.find((item) => pathname.startsWith(`/${item.view}`))
-  return <span className="truncate text-sm font-medium">{current?.label ?? "Copacker"}</span>
+  return (
+    <span
+      className={sx({
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        text: "sm",
+        fontWeight: "medium"
+      })}
+    >
+      {current?.label ?? "Copacker"}
+    </span>
+  )
 }
 
 function initials(name: string) {
@@ -148,12 +162,26 @@ function WorkspaceSwitcher({
 
   const logo = (
     <>
-      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-        <Box className="size-4" />
+      <div className={styles.logo}>
+        <Box className={sx({ size: 4 })} />
       </div>
-      <div className="grid flex-1 text-left text-sm leading-tight">
-        <span className="truncate font-medium">{current}</span>
-        <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
+      <div className={sx({ display: "grid", flex: 1, textAlign: "left", text: "sm", lineHeight: "tight" })}>
+        <span
+          className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "medium" })}
+        >
+          {current}
+        </span>
+        <span
+          className={sx({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            text: "xs",
+            color: "muted"
+          })}
+        >
+          {subtitle}
+        </span>
       </div>
     </>
   )
@@ -174,27 +202,27 @@ function WorkspaceSwitcher({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                className="data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground"
-              />
-            }
-          >
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className={styles.menuTrigger} />}>
             {logo}
-            <ChevronsUpDown className="ml-auto" />
+            <ChevronsUpDown className={styles.trailingIcon} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="min-w-56" side={isMobile ? "bottom" : "right"} align="start" sideOffset={4}>
+          <DropdownMenuContent
+            className={styles.menuContent}
+            side={isMobile ? "bottom" : "right"}
+            align="start"
+            sideOffset={4}
+          >
             <DropdownMenuGroup>
               <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
               {workspaces.map((workspace) => (
                 <DropdownMenuItem key={workspace.id} onClick={() => void switchTo(workspace.id)}>
-                  <Avatar size="sm" className="rounded-md after:rounded-md">
-                    <AvatarFallback className="rounded-md text-[0.625rem]">{initials(workspace.name)}</AvatarFallback>
+                  <Avatar size="sm" className={styles.workspaceAvatar}>
+                    <AvatarFallback className={styles.workspaceFallback}>{initials(workspace.name)}</AvatarFallback>
                   </Avatar>
-                  <span className="truncate">{workspace.name}</span>
-                  {workspace.id === active && <Check className="ml-auto" />}
+                  <span className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" })}>
+                    {workspace.name}
+                  </span>
+                  {workspace.id === active && <Check className={styles.trailingIcon} />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
@@ -209,12 +237,26 @@ function UserMenu({ name, email, preview }: { name: string; email: string; previ
   const { isMobile } = useSidebar()
   const identity = (
     <>
-      <Avatar className="rounded-lg after:rounded-lg">
-        <AvatarFallback className="rounded-lg">{initials(name)}</AvatarFallback>
+      <Avatar className={styles.userAvatar}>
+        <AvatarFallback className={styles.userFallback}>{initials(name)}</AvatarFallback>
       </Avatar>
-      <div className="grid flex-1 text-left text-sm leading-tight">
-        <span className="truncate font-medium">{name}</span>
-        <span className="truncate text-xs text-muted-foreground">{email}</span>
+      <div className={sx({ display: "grid", flex: 1, textAlign: "left", text: "sm", lineHeight: "tight" })}>
+        <span
+          className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "medium" })}
+        >
+          {name}
+        </span>
+        <span
+          className={sx({
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            text: "xs",
+            color: "muted"
+          })}
+        >
+          {email}
+        </span>
       </div>
     </>
   )
@@ -236,27 +278,23 @@ function UserMenu({ name, email, preview }: { name: string; email: string; previ
       <SidebarMenuItem>
         <form id="sign-out" action="/logout" method="post" hidden />
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                className="data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground"
-              />
-            }
-          >
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className={styles.menuTrigger} />}>
             {identity}
-            <ChevronsUpDown className="ml-auto" />
+            <ChevronsUpDown className={styles.trailingIcon} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="min-w-56" side={isMobile ? "bottom" : "right"} align="end" sideOffset={4}>
+          <DropdownMenuContent
+            className={styles.menuContent}
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            sideOffset={4}
+          >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="flex items-center gap-2 py-1.5 text-left text-sm font-normal text-foreground">
-                {identity}
-              </DropdownMenuLabel>
+              <DropdownMenuLabel className={styles.identityLabel}>{identity}</DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               nativeButton
-              render={<button type="submit" form="sign-out" aria-label="Sign out" className="w-full" />}
+              render={<button type="submit" form="sign-out" aria-label="Sign out" className={sx({ width: "full" })} />}
             >
               <LogOut />
               Sign out

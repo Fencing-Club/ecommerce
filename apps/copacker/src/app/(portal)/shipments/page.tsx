@@ -7,6 +7,8 @@ import { db } from "@/db"
 import { shipments } from "@/db/schema"
 import { visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
+import { rowLink } from "../portal.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function ShipmentsPage() {
   const s = await session()
@@ -48,7 +50,7 @@ export default async function ShipmentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Shipment</TableHead>
-                  <TableHead className="text-right">Cartons</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Cartons</TableHead>
                   <TableHead>Ready date</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -57,16 +59,15 @@ export default async function ShipmentsPage() {
                 {list.map((shipment) => (
                   <TableRow key={shipment.id}>
                     <TableCell>
-                      <Link
-                        className="font-medium underline-offset-4 hover:underline"
-                        href={`/shipments/${shipment.id}`}
-                      >
+                      <Link className={rowLink} href={`/shipments/${shipment.id}`}>
                         {shipment.amazonShipmentId ??
                           rows.find((r) => r.order.id === shipment.orderId)?.order.data.reference}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{shipment.packing?.cartons.length ?? 0}</TableCell>
-                    <TableCell className="text-muted-foreground">{shipment.packing?.readyDate ?? "Pending"}</TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {shipment.packing?.cartons.length ?? 0}
+                    </TableCell>
+                    <TableCell className={sx({ color: "muted" })}>{shipment.packing?.readyDate ?? "Pending"}</TableCell>
                     <TableCell>
                       <Status status={shipment.status} />
                     </TableCell>

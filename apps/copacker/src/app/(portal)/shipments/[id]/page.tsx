@@ -17,10 +17,13 @@ import { Upload } from "@/components/upload"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
 import { formatPhone, phoneHref } from "@/lib/phone"
+import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { session } from "@/server/auth"
 import { reservedPieces } from "@/server/readiness"
 import { orderWorkflow } from "@/server/workflow"
+import { issueList, packetAction, readyAlert, spinning } from "./page.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -97,29 +100,33 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           addresses={addresses}
         />
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
           {shipment.status === "approval" && (
             <Card>
               <CardHeader>
                 <CardTitle>Invoice changes need buyer approval</CardTitle>
                 <CardDescription>The supplier’s invoice differs from the purchase order.</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-6">
-                <ItemGroup className="gap-2">
+              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
+                <ItemGroup className={sx({ gap: 2 })}>
                   {changes.map(({ item, change }) => (
                     <Item key={change.itemId} variant="muted">
                       <ItemContent>
                         <ItemTitle>
                           {item.name} / {item.variant}
                         </ItemTitle>
-                        <ItemDescription className="flex flex-wrap items-center gap-1">
+                        <ItemDescription
+                          className={sx({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 })}
+                        >
                           Price per piece {money(item.unitPrice, snapshot.currency)}
-                          <ArrowRight className="size-3" aria-label="changed to" />
+                          <ArrowRight className={sx({ size: 3 })} aria-label="changed to" />
                           {money(change.unitPrice, snapshot.currency)}
                         </ItemDescription>
-                        <ItemDescription className="flex flex-wrap items-center gap-1">
+                        <ItemDescription
+                          className={sx({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 })}
+                        >
                           Supplier SKU {item.supplierSku || "not provided"}
-                          <ArrowRight className="size-3" aria-label="changed to" />
+                          <ArrowRight className={sx({ size: 3 })} aria-label="changed to" />
                           {change.supplierSku || "not provided"}
                         </ItemDescription>
                       </ItemContent>
@@ -129,7 +136,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                 {isBuyer ? (
                   <ApproveInvoice id={id} revision={shipment.revision} />
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className={sx({ text: "sm", color: "muted" })}>
                     The buyer will review these changes. Your carton quantities are reserved against this PO.
                   </p>
                 )}
@@ -147,7 +154,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                 </CardDescription>
               </CardHeader>
               {isBuyer && (
-                <CardContent className="flex flex-col gap-6">
+                <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
                   <div>
                     <Button
                       variant="outline"
@@ -172,7 +179,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                     cartons={shipment.packing?.cartons}
                   />
                   {step.issues.length > 0 && (
-                    <ul className="list-disc pl-5 text-sm">
+                    <ul className={cn(issueList, sx({ text: "sm" }))}>
                       {step.issues.map((issue, index) => (
                         <li key={index}>{issue.message}</li>
                       ))}
@@ -186,7 +193,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
 
           {["queued", "creating"].includes(shipment.status) && (
             <Alert role="note">
-              <Loader2 className="animate-spin" />
+              <Loader2 className={spinning} />
               <AlertTitle>Creating the Amazon shipment</AlertTitle>
               <AlertDescription>
                 This can take a few minutes. Refresh the page to see the latest status.
@@ -195,14 +202,14 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           )}
 
           {["ready", "collected"].includes(shipment.status) && (
-            <Alert role="note" className="border-primary/40">
-              <PackageCheck className="text-primary" />
+            <Alert role="note" className={readyAlert}>
+              <PackageCheck className={sx({ color: "primary" })} />
               <AlertTitle>Your supplier packet is ready</AlertTitle>
               <AlertDescription>
                 Print labels at actual size. The packet includes product labels, carton labels, shipping labels, and the
                 checklist.
               </AlertDescription>
-              <AlertAction className="static col-span-full mt-2 sm:absolute sm:mt-0">
+              <AlertAction className={packetAction}>
                 <Button
                   size="sm"
                   nativeButton={false}
@@ -225,27 +232,29 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                   <TableRow>
                     <TableHead>Supplier carton</TableHead>
                     <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Pieces</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Pieces</TableHead>
                     <TableHead>Dimensions (cm)</TableHead>
-                    <TableHead className="text-right">Weight (kg)</TableHead>
+                    <TableHead className={sx({ textAlign: "right" })}>Weight (kg)</TableHead>
                     <TableHead>Amazon label number</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {shipment.packing?.cartons.map((c) => (
                     <TableRow key={c.cartonId}>
-                      <TableCell className="font-medium">{c.cartonId}</TableCell>
+                      <TableCell className={sx({ fontWeight: "medium" })}>{c.cartonId}</TableCell>
                       <TableCell>
                         {c.items.map((i) => snapshot.items.find((p) => p.id === i.itemId)?.buyerSku).join(", ")}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
                         {c.items.reduce((n, i) => n + i.pieces, 0)}
                       </TableCell>
-                      <TableCell className="tabular-nums">
+                      <TableCell className={sx({ fontVariantNumeric: "tabular" })}>
                         {c.length} × {c.width} × {c.height}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{c.weight}</TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {c.weight}
+                      </TableCell>
+                      <TableCell className={sx({ fontFamily: "mono", text: "xs" })}>
                         {shipment.labels.find((l) => l.cartonId === c.cartonId)?.sscc ?? "Pending"}
                       </TableCell>
                     </TableRow>
@@ -255,21 +264,30 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { lg: "2" } })}>
             <Card>
               <CardHeader>
                 <CardTitle>Pickup contact</CardTitle>
               </CardHeader>
               <CardContent>
                 {origin && (
-                  <address className="flex flex-col gap-0.5 text-sm not-italic text-muted-foreground">
-                    <span className="font-medium text-foreground">{origin.name}</span>
+                  <address
+                    className={sx({
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
+                      text: "sm",
+                      fontStyle: "normal",
+                      color: "muted"
+                    })}
+                  >
+                    <span className={sx({ fontWeight: "medium", color: "foreground" })}>{origin.name}</span>
                     <span>{[origin.addressLine1, origin.addressLine2].filter(Boolean).join(", ")}</span>
                     <span>
                       {origin.city}, {origin.stateOrRegion} {origin.postalCode}, {origin.countryCode}
                     </span>
                     {origin.phoneNumber && (
-                      <a className="tabular-nums" href={phoneHref(origin.phoneNumber)}>
+                      <a className={sx({ fontVariantNumeric: "tabular" })} href={phoneHref(origin.phoneNumber)}>
                         {formatPhone(origin.phoneNumber)}
                       </a>
                     )}
@@ -286,7 +304,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                 {visibleDocs.length ? (
                   <DocumentList documents={visibleDocs} />
                 ) : (
-                  <p className="text-sm text-muted-foreground">No documents yet.</p>
+                  <p className={sx({ text: "sm", color: "muted" })}>No documents yet.</p>
                 )}
               </CardContent>
             </Card>

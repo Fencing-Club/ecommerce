@@ -13,6 +13,9 @@ import {
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import * as styles from "./common.css"
+import { sx } from "@/styles/sprinkles.css"
+import { srOnly } from "@/styles/utilities.css"
 
 type Tone = "neutral" | "progress" | "action" | "done" | "problem"
 
@@ -60,12 +63,24 @@ export function PageHeader({
   children?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>}
+    <div
+      className={sx({
+        display: "flex",
+        flexDirection: { base: "column", sm: "row" },
+        alignItems: { sm: "flex-end" },
+        justifyContent: { sm: "space-between" },
+        gap: 4
+      })}
+    >
+      <div className={sx({ display: "flex", flexDirection: "column", gap: 1 })}>
+        <h1 className={sx({ text: "2xl", fontWeight: "semibold", letterSpacing: "tight" })}>{title}</h1>
+        {description && <p className={sx({ maxWidth: "2xl", text: "sm", color: "muted" })}>{description}</p>}
       </div>
-      {children && <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>}
+      {children && (
+        <div className={sx({ display: "flex", flexShrink: 0, flexWrap: "wrap", alignItems: "center", gap: 2 })}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -101,15 +116,15 @@ export function StatCard({ label, value, caption }: { label: string; value: stri
     <Card>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums">{value}</CardTitle>
+        <CardTitle className={styles.statValue}>{value}</CardTitle>
       </CardHeader>
-      <CardFooter className="text-xs text-muted-foreground">{caption}</CardFooter>
+      <CardFooter className={sx({ text: "xs", color: "muted" })}>{caption}</CardFooter>
     </Card>
   )
 }
 
 export function StatGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 sm:grid-cols-3">{children}</div>
+  return <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "3" } })}>{children}</div>
 }
 
 export function EmptyState({
@@ -141,7 +156,7 @@ export function formatDestination(destination: string) {
 
 export function DocumentList({ documents }: { documents: Array<{ id: string; name: string }> }) {
   return (
-    <ItemGroup className="gap-2">
+    <ItemGroup className={styles.documentList}>
       {documents.map((d) => (
         <Item
           key={d.id}
@@ -156,8 +171,8 @@ export function DocumentList({ documents }: { documents: Array<{ id: string; nam
             <ItemTitle>{d.name}</ItemTitle>
           </ItemContent>
           <ItemActions>
-            <Download className="size-4 text-muted-foreground" />
-            <span className="sr-only">Download PDF</span>
+            <Download className={sx({ size: 4, color: "muted" })} />
+            <span className={srOnly}>Download PDF</span>
           </ItemActions>
         </Item>
       ))}

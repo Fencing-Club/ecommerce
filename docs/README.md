@@ -5,6 +5,7 @@
 - [Local development and launch](operations.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
+- [Styling with vanilla-extract](vanilla-extract.md)
 - [Preferred stack](tech-stack.md)
 
 Agency's top-level tools are retained: pnpm, Turborepo, oxlint/oxfmt, Knip, Vitest, Lefthook, Beachball, and Dependabot. Configurations name only the applications and packages present here.

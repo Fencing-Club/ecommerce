@@ -3,10 +3,11 @@
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { centeredPage } from "./shell.css"
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <main id="main-content" className="flex min-h-svh items-center justify-center p-6">
+    <main id="main-content" className={centeredPage}>
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">

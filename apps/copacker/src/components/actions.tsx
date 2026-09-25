@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
+import { sx } from "@/styles/sprinkles.css"
 
 export function FormError({ message }: { message?: string }) {
   if (!message) {
@@ -17,7 +18,7 @@ export function FormError({ message }: { message?: string }) {
   return (
     <Alert variant="destructive">
       <AlertCircle />
-      <AlertDescription className="whitespace-pre-line">{message}</AlertDescription>
+      <AlertDescription className={sx({ whiteSpace: "pre-line" })}>{message}</AlertDescription>
     </Alert>
   )
 }
@@ -64,7 +65,7 @@ export function ActionButton({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
       <SubmitButton variant={variant} pending={isLoading} onClick={click}>
         {children}
       </SubmitButton>

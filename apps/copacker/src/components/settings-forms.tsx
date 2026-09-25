@@ -6,6 +6,7 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput, FormSelect } from "./form-controls"
+import { sx } from "@/styles/sprinkles.css"
 
 const supplierSchema = z.object({ name: z.string().trim().min(2).max(120), email: z.email().max(254) })
 
@@ -74,7 +75,7 @@ export function ContactForm({ contact, onSuccess }: { contact?: SavedContact; on
   })
   return (
     <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"}>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
         <FormInput name="name" label="Address name" placeholder="Shenzhen warehouse" />
         <FormSelect
           name="kind"

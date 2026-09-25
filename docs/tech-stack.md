@@ -75,8 +75,11 @@ For building command-line tools.
 - ✅ **@fluentui/react-datepicker-compat** + **@fluentui/react-timepicker-compat** — date and time inputs for Fluent
   surfaces.
 - ◻️ **@fluentui/react-charting** or **recharts** — charts / data visualization.
-- ◻️ **shadcn/ui** — component scaffolding for apps and product surfaces that select the shadcn architecture
-  (`pnpm dlx shadcn@latest init -t <vite|start>`). Use its Tailwind CSS and CSS-variable token model consistently.
+- ✅ **shadcn/ui** — component patterns for apps and product surfaces that select the shadcn architecture. Copacker
+  keeps shadcn component structure on Base UI but styles it with vanilla-extract instead of Tailwind, so components are
+  maintained in the repo rather than regenerated with the shadcn CLI.
+- ✅ **@vanilla-extract/css** + **recipes** + **sprinkles** — typed, zero-runtime styling for shadcn-architecture
+  surfaces. See [Styling with vanilla-extract](vanilla-extract.md).
 
 Select Fluent UI or shadcn/ui at the app or product-surface boundary. Neither is a monorepo-wide requirement, and an
 existing surface should keep its established system unless its architecture is deliberately changed.

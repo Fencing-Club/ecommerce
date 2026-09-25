@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
+import { rowLink } from "../portal.css"
+import { sx } from "@/styles/sprinkles.css"
 
 export default async function OrdersPage() {
   const s = await session()
@@ -58,24 +60,26 @@ export default async function OrdersPage() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map(({ order, supplier }) => (
                   <TableRow key={order.id}>
                     <TableCell>
-                      <Link className="font-medium underline-offset-4 hover:underline" href={`/orders/${order.id}`}>
+                      <Link className={rowLink} href={`/orders/${order.id}`}>
                         {order.data.reference}
                       </Link>
-                      <p className="text-xs text-muted-foreground">{order.data.items.length} products</p>
+                      <p className={sx({ text: "xs", color: "muted" })}>{order.data.items.length} products</p>
                     </TableCell>
                     <TableCell>{supplier.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDestination(order.data.destination)}</TableCell>
+                    <TableCell className={sx({ color: "muted" })}>
+                      {formatDestination(order.data.destination)}
+                    </TableCell>
                     <TableCell>
                       <Status status={order.status} />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
                       {money(orderTotal(order.data), order.data.currency)}
                     </TableCell>
                   </TableRow>

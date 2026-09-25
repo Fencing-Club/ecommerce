@@ -2,6 +2,7 @@
 
 import { FieldGroup } from "@/components/ui/field"
 import { FormInput } from "./form-controls"
+import * as styles from "./address-fields.css"
 
 const addressFields = [
   { key: "name", label: "Contact name" },
@@ -30,7 +31,7 @@ export const emptyAddress = {
 // Binds to an address object at `path` in the surrounding form, such as "address" or "origin".
 export function AddressFields({ path, requirePhone = false }: { path: string; requirePhone?: boolean }) {
   return (
-    <FieldGroup className="grid gap-4 sm:grid-cols-2">
+    <FieldGroup className={styles.grid}>
       {addressFields.map((field) => {
         const optional = field.optional || (field.key === "phoneNumber" && !requirePhone)
         return (
