@@ -4,6 +4,7 @@ import { and, count, desc, eq, gte, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
+import { syncAmazonFees } from "./amazon-fees"
 import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
@@ -19,6 +20,9 @@ export type SalesSource = (typeof salesSources)[number]
 // How far back orders are kept, how much recent history each sync reads again (shipments and cancellations arrive
 // after the order), and the period each provider read covers.
 export const salesHistoryDays = 365
+// The shape of stored orders. Raise it when the readers copy new fields; the next sync reads stored orders again.
+// 1: prices (Shopify line prices and discounts, Amazon item proceeds).
+export const salesDataVersion = 1
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
@@ -26,15 +30,15 @@ const day = 86400000
 export class SalesSyncError extends Error {}
 
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
-export async function requestSalesSync(s: Session, source: SalesSource) {
-  if (s.org.kind !== "buyer") {
+export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: SalesSource) {
+  if (org.kind !== "buyer") {
     throw new SalesSyncError("A buyer workspace is required")
   }
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select({ externalId: connections.externalId, scopes: connections.scopes })
       .from(connections)
-      .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, source)))
+      .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
     if (!account) {
       throw new SalesSyncError(`Connect ${source === "shopify" ? "Shopify" : "Amazon"} in Settings first`)
     }
@@ -47,7 +51,7 @@ export async function requestSalesSync(s: Session, source: SalesSource) {
     const [current] = await tx
       .select()
       .from(salesSyncs)
-      .where(and(eq(salesSyncs.orgId, s.org.id), eq(salesSyncs.source, source)))
+      .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
       .for("update")
     if (current && ["queued", "running"].includes(current.status) && current.externalAccountId === account.externalId) {
       return { status: current.status }
@@ -65,14 +69,14 @@ export async function requestSalesSync(s: Session, source: SalesSource) {
     }
     await tx
       .insert(salesSyncs)
-      .values({ orgId: s.org.id, source, ...values })
+      .values({ orgId: org.id, source, ...values })
       .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
     await tx
       .insert(jobs)
       .values({
-        key: `sales:${s.org.id}:${source}:${revision}`,
+        key: `sales:${org.id}:${source}:${revision}`,
         kind: "sales",
-        payload: { orgId: s.org.id, source, revision }
+        payload: { orgId: org.id, source, revision }
       })
       .onConflictDoNothing()
     return { status: "queued" }
@@ -84,7 +88,7 @@ export async function requestSalesSync(s: Session, source: SalesSource) {
 // history start. With nothing usable stored, it reads from newest to oldest, so recent orders are usable soonest.
 export function syncChunks(
   now: number,
-  coverage: { coveredFrom: Date | null; coveredTo: Date | null },
+  coverage: { coveredFrom: Date | null; coveredTo: Date | null; dataVersion?: number },
   historyDays = salesHistoryDays
 ) {
   // Orders need a couple of minutes to settle.
@@ -94,7 +98,12 @@ export function syncChunks(
   const chunks: { from: Date; to: Date }[] = []
   // A stored range that stopped more than the refresh period ago would leave restock waiting while the sync crawls
   // forward from it, so it starts over from the newest orders; the copied orders stay until re-read.
-  const usable = coverage.coveredFrom && coverage.coveredTo && coverage.coveredTo.getTime() >= end - refreshDays * day
+  // Orders stored in an older shape are read again the same way, so they gain the newer fields.
+  const usable =
+    coverage.coveredFrom &&
+    coverage.coveredTo &&
+    coverage.coveredTo.getTime() >= end - refreshDays * day &&
+    (coverage.dataVersion ?? salesDataVersion) >= salesDataVersion
   if (!usable) {
     for (let to = end; to > historyStart; to -= size) {
       chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
@@ -152,7 +161,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     const { chunks, fresh } = syncChunks(Date.now(), sync, historyDays)
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
-    // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock.
+    // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
     let afterOrders: (() => Promise<void>) | null = null
     if (source === "shopify") {
       const shopify = await shopifyFor(orgId, account)
@@ -164,7 +173,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         }))
     } else {
       const amazon = await amazonFor(orgId, account)
-      afterOrders = () => syncLedger({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
+      afterOrders = async () => {
+        await syncLedger({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
+        await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
+      }
       read = async (window) =>
         (await collectAmazonSales(amazon, window, assertOwned)).map((order) => ({
           orderId: order.orderId,
@@ -215,7 +227,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       })
     }
     await afterOrders?.()
-    await db().update(salesSyncs).set({ status: "idle", finishedAt: new Date(), errorCode: null }).where(scope)
+    await db()
+      .update(salesSyncs)
+      .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: salesDataVersion })
+      .where(scope)
   } catch (error) {
     const errorCode = stockErrorCode(error)
     console.error(JSON.stringify({ event: "sales_sync_failed", source, orgId, errorCode, error: describeError(error) }))

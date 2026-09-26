@@ -41,7 +41,7 @@ const buyerId = randomUUID(),
 function actor(id: string): Session {
   return {
     user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
-    org: { id, kind: "buyer", name: "Fencing Club", workosId: null, createdAt: new Date() },
+    org: { id, kind: "buyer", name: "Fencing Club", workosId: null, timeZone: null, createdAt: new Date() },
     role: "owner",
     workspaces: []
   }

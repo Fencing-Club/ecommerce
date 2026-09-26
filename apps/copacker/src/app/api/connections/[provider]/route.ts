@@ -7,6 +7,7 @@ import { connections, oauthStates } from "@/db/schema"
 import { session, requireOwner, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
 import { appUrl, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
+import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
 export async function GET(request: Request, context: { params: Promise<{ provider: string }> }) {
   const s = await session()
@@ -135,5 +136,8 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       target: [connections.orgId, connections.provider],
       set: { externalId, encryptedToken, scopes }
     })
+  if (provider === "shopify") {
+    await queueShopifySubscription(s.org.id, randomUUID())
+  }
   return Response.redirect(`${appUrl()}/settings?connected=${provider}`)
 }

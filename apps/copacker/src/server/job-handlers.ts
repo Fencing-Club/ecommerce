@@ -152,13 +152,16 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
   }
   const input = z
     .object({
-      type: z.enum(["invite", "team", "po", "ready"]),
+      type: z.enum(["invite", "team", "po", "ready", "data_request"]),
       to: z.email(),
       orderId: z.uuid().optional(),
       revision: z.number().int().positive().optional(),
       shipmentId: z.uuid().optional(),
       invitation: z.string().optional(),
-      name: z.string().optional()
+      name: z.string().optional(),
+      shop: z.string().optional(),
+      requestId: z.number().int().optional(),
+      orders: z.array(z.string()).max(1000).optional()
     })
     .parse(payload)
   const attachments: Array<{ filename: string; content: string }> = []
@@ -171,6 +174,17 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     subject = `New purchase order: ${po.doc.name.replace(/\.pdf$/, "")}`
     text = `Your purchase order is attached. Upload your official commercial invoice and enter the carton details and pickup readiness date at ${appUrl()}/orders/${input.orderId}`
     attachments.push({ filename: po.doc.name, content: Buffer.from(po.bytes).toString("base64") })
+  } else if (input.type === "data_request") {
+    subject = `Customer data request for ${input.shop}`
+    const held = input.orders?.length
+      ? `For the orders in the request, Copacker stores only the order details it uses to plan restocks:\n\n${input.orders.join("\n")}`
+      : "Copacker doesn't hold any of the orders in the request."
+    text = [
+      `Shopify sent Copacker a customer data request (request ${input.requestId}) for ${input.shop}.`,
+      "Copacker doesn't store customers' names, email addresses, phone numbers, or mailing addresses.",
+      held,
+      "Include this information in your response to the customer."
+    ].join("\n\n")
   } else {
     subject = "Your shipment labels are ready"
     text = `Open your shipment to print the labels and Packing Checklist: ${appUrl()}/shipments/${input.shipmentId}`

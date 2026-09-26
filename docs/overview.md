@@ -1,29 +1,46 @@
 # Overview page
 
 `/overview` is where buyers land (`/` redirects buyers there and suppliers to `/orders`). It summarizes data Copacker
-already stores; it reads nothing from Shopify or Amazon directly. The data comes from `overview()` in
-`apps/copacker/src/server/overview.ts`, rendered by `components/overview.tsx`, with Recharts charts in
-`components/overview-charts.tsx`.
+already stores and reads nothing from Shopify or Amazon directly. `overview()` in `apps/copacker/src/server/overview.ts`
+assembles it, with the sales queries and maths in `overview-sales.ts`. The page renders `components/overview.tsx`, the
+cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
+
+## Days, channels and freshness
+
+- **Time zone.** Days and months follow the store's time zone (Settings, `organizations.timeZone`; UTC until set).
+  `lib/time-zone.ts` finds the instant each day starts, so days around daylight saving changes are 23 or 25 hours.
+- **Channel filter.** `?channel=amazon` or `?channel=shopify:<location>` narrows every card: restock figures to that
+  channel, sales to that source (a Shopify location shows the store's Shopify sales), and POs and their shipments to
+  those going to Amazon or received at that location.
+- **Freshness.** The line under the header says when each source's orders and stock last synced.
 
 ## What it shows
 
-- **Needs attention.** Items out of stock or running out before a reorder arrives, shipments waiting on the buyer or
-  needing attention, items due for a reorder, restock sources that can't be read, failed or stale order and stock syncs
-  (older than 2 days), Shopify's 60-day order limit, and unsent draft POs. Critical first, then warnings, then notes.
-- **Units sold and orders** over the last 30 full UTC days against the 30 before. The comparison appears only when every
-  connected source's stored orders cover both periods.
-- **Units sold chart** by source (Amazon, then Shopify) for 30 days, 90 days, or 12 months summed by week. Days a
-  source's stored orders don't cover are gaps, not zeros. Units are counted in SQL as the Orders page counts them: a
-  bundle once, other lines at their current quantity.
-- **Restock-derived figures**: stock by channel, stock value at cost, days of cover, lost selling days, reorder
-  estimate and best sellers. They come from `restockAllChannels()`, which runs the restock plan for every channel with
-  `restockDefaults` (56-day sales period, 56-day default lead time). Stock without a Shopify unit cost isn't valued, and
-  the page says "Not available" instead of showing $0.
-- **Purchasing**: open and draft PO value, open value by supplier, and PO value sent each month over the last year, in
-  the currency most of the spend is in. A PO's month is when it was first submitted to its supplier.
-- **Shipments in progress** grouped by stage; received, collected-and-closed and cancelled shipments are left out.
+- **Setup checklist** until Shopify, Amazon, order copies, stock, unit costs, a supplier and the time zone are in place.
+- **Needs attention:** items running out, shipments waiting or failing, reorders due, unreadable restock sources, failed
+  or stale syncs, Amazon fees that couldn't be copied, orders still without prices, Shopify's 60-day order limit and
+  unsent drafts. Critical first.
+- **Sales, gross profit, units and orders** over the last 30 full days, against the 30 before when every source covers
+  both. Sales are net product sales: after discounts, before tax, shipping and tips. Gross profit is sales less unit
+  cost (Shopify's, a bundle's being its components') and Amazon's fees, counted only over sales with a known unit cost.
+  Amazon posts fees about two days after shipping; orders without posted fees are estimated at the period's posted
+  rate, and the card says so.
+- **Sales by channel** chart: units or sales, 30 days, 90 days, or 12 months by week. Days a source's stored orders
+  don't cover are gaps.
+- **Inventory:** units on hand and on the way by channel, value at cost, retail value (each unit at its recent average
+  selling price in that channel, else its Shopify price) and the potential gross profit between them.
+- **Days of cover** with links into Restock per group, and the sales lost to stockouts (stockout days times the
+  in-stock sales rate, valued at the selling price).
+- **Upcoming spend:** reorders due now plus sent POs past due or due within 60 days, by PO due date.
+- **Trending products** (units in the last 30 days against the 30 before; items under 5 units in both are left out) and
+  **slow-moving stock** (over 3 months of cover, or no sales in 8 weeks), valued at cost.
+- **Best sellers, shipments in progress, open POs by supplier, and purchasing by month.**
 
-## Not shown yet
+Restock figures come from `restockAllChannels()` with `restockDefaults` (56-day sales period and lead time). That's the
+slowest part, so the result is cached per workspace for five minutes and dropped as soon as anything it reads changes
+(POs, shipments, stock snapshots, order syncs, product details, suppliers, locations, connections).
 
-Sales orders carry no prices, so there is no revenue, margin, fee, refund or ad spend figure. Adding them means storing
-line prices, discounts and refunds in the order sync first.
+## Links into Restock
+
+Restock accepts `channel`, `q` (search), `cover` (a days-of-cover group from `lib/cover.ts`) and `status=order` (items to
+reorder). A link calculates straight away; each filter can be cleared on the page.

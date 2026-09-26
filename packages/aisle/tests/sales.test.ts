@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
-import { collectShopifySales, collectAmazonSales, shopifySalesQueries } from "../src/sales"
+import {
+  collectAmazonTransactions,
+  collectShopifySales,
+  collectAmazonSales,
+  shopifySalesQueries,
+  transactionFees
+} from "../src/sales"
 const window = { from: "2026-08-01T00:00:00Z", to: "2026-09-01T00:00:00Z" }
 const pageInfo = { hasNextPage: false, endCursor: null }
 const header = {
@@ -132,7 +138,7 @@ describe("complete sales readers", () => {
     expect(await collectAmazonSales({ request }, window)).toHaveLength(1)
     const url = new URL(String(request.mock.calls[1]?.[1]), "https://example.com")
     expect(url.searchParams.get("paginationToken")).toBe("a + token")
-    expect(url.searchParams.get("includedData")).toBe("FULFILLMENT")
+    expect(url.searchParams.get("includedData")).toBe("FULFILLMENT,PROCEEDS")
     expect(url.searchParams.get("createdAfter")).toBe(window.from)
   })
   it("rejects duplicate tokens, items and marketplaces", async () => {
@@ -155,5 +161,93 @@ describe("complete sales readers", () => {
       "increasing sales window"
     )
     expect(api.graphql).not.toHaveBeenCalled()
+  })
+})
+
+describe("Amazon transactions", () => {
+  const money = (amount: number | string) => ({ currencyCode: "USD", currencyAmount: amount })
+  const payment = {
+    transactionId: "t1",
+    transactionType: "Shipment",
+    postedDate: "2026-08-10T03:00:00Z",
+    totalAmount: money(16.5),
+    relatedIdentifiers: [
+      { relatedIdentifierName: "SHIPMENT_ID", relatedIdentifierValue: "s1" },
+      { relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "111-1" }
+    ],
+    breakdowns: [
+      {
+        breakdownType: "Sales",
+        breakdownAmount: money(25),
+        breakdowns: [{ breakdownType: "ProductCharges", breakdownAmount: money(25) }]
+      },
+      {
+        breakdownType: "Expenses",
+        breakdownAmount: money(-8.5),
+        breakdowns: [
+          {
+            breakdownType: "AmazonFees",
+            breakdownAmount: money("-8.50"),
+            breakdowns: [
+              { breakdownType: "Commission", breakdownAmount: money(-3.75) },
+              { breakdownType: "FBAPerUnitFulfillmentFee", breakdownAmount: money(-4.75) }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+
+  it("counts each fee category once, as a positive cost, and a refunded fee as negative", () => {
+    expect(transactionFees(payment.breakdowns)).toBe(850)
+    expect(transactionFees([{ breakdownType: "Commission", breakdownAmount: money(3.75) }])).toBe(-375)
+    expect(transactionFees([{ breakdownType: "Tax", breakdownAmount: money(-2) }])).toBe(0)
+    expect(transactionFees(undefined)).toBe(0)
+  })
+
+  it("follows next tokens and links each transaction to its order", async () => {
+    const request = vi
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockResolvedValueOnce({ payload: { transactions: [payment], nextToken: "more" } })
+      .mockResolvedValueOnce({
+        payload: {
+          transactions: [
+            {
+              transactionId: "t2",
+              transactionType: "ServiceFee",
+              postedDate: "2026-08-11T00:00:00Z",
+              totalAmount: money(-39.99)
+            }
+          ]
+        }
+      })
+    expect(await collectAmazonTransactions({ request }, window)).toEqual([
+      expect.objectContaining({
+        transactionId: "t1",
+        orderId: "111-1",
+        postedAt: "2026-08-10T03:00:00.000Z",
+        type: "Shipment",
+        currency: "USD",
+        totalMinor: 1650,
+        feesMinor: 850
+      }),
+      expect.objectContaining({ transactionId: "t2", orderId: null, totalMinor: -3999, feesMinor: 0 })
+    ])
+    const first = new URL(String(request.mock.calls[0]?.[1]), "https://example.com")
+    expect(first.pathname).toBe("/finances/2024-06-19/transactions")
+    expect(first.searchParams.get("postedAfter")).toBe(window.from)
+    expect(first.searchParams.has("marketplaceId")).toBe(false)
+    expect(new URL(String(request.mock.calls[1]?.[1]), "https://example.com").searchParams.get("nextToken")).toBe(
+      "more"
+    )
+  })
+
+  it("refuses windows longer than Amazon allows and repeated tokens", async () => {
+    const request = vi.fn<(...args: unknown[]) => Promise<unknown>>()
+    await expect(
+      collectAmazonTransactions({ request }, { from: "2026-01-01T00:00:00Z", to: "2026-09-01T00:00:00Z" })
+    ).rejects.toThrow("180 days")
+    request.mockResolvedValue({ payload: { transactions: [], nextToken: "loop" } })
+    await expect(collectAmazonTransactions({ request }, window)).rejects.toThrow("Duplicate")
   })
 })

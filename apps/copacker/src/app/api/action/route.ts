@@ -19,6 +19,7 @@ import {
   supplierProfiles
 } from "@/db/schema"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
+import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
@@ -231,6 +232,12 @@ export async function POST(request: Request) {
       await db()
         .insert(contacts)
         .values({ orgId: s.org.id, ...input })
+      return Response.json({ ok: true })
+    }
+    if (action === "workspace.timeZone") {
+      requireOwner(s)
+      const input = z.object({ timeZone: z.string().refine(isTimeZone, "Choose a time zone") }).parse(data)
+      await db().update(organizations).set({ timeZone: input.timeZone }).where(eq(organizations.id, s.org.id))
       return Response.json({ ok: true })
     }
     if (action === "supplier.profile") {

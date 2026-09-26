@@ -1,71 +1,38 @@
-import { money } from "@repo/aisle"
 import {
-  AlertTriangle,
   ArrowDownRight,
-  ArrowRight,
   ArrowUpRight,
-  Boxes,
-  CheckCircle2,
-  ChevronRight,
-  ClipboardList,
-  Info,
+  Clock,
+  Globe,
   Minus,
   Package,
-  ShoppingBag,
-  Truck,
-  Warehouse
+  PiggyBank,
+  Receipt,
+  ShoppingBag
 } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { change, compactMoney, compactNumber, formatChange, formatNumber } from "@/lib/format"
-import type { AttentionItem, Money, Overview } from "@/server/overview"
-import { CoverChart, SalesTrend, Sparkline, SpendChart } from "./overview-charts"
+import { change, compactMoney, compactNumber, formatChange, formatNumber, formatPercent, timeAgo } from "@/lib/format"
+import { timeZoneLabel } from "@/lib/time-zone"
+import type { Overview } from "@/server/overview"
+import { SalesTrend, Sparkline } from "./overview-charts"
+import {
+  Attention,
+  BestSellers,
+  CardLink,
+  DaysOfCover,
+  OpenOrders,
+  Purchasing,
+  SetupChecklist,
+  Shipments,
+  SlowStock,
+  StockByChannel,
+  Trending,
+  UpcomingSpend
+} from "./overview-sections"
 import * as styles from "./overview.css"
-import { vars } from "@/styles/theme.css"
-
-function formatMoney(value: Money, compact = false) {
-  const [first] = value
-  if (!first) {
-    return compact ? "$0" : money(0)
-  }
-  return compact ? compactMoney(first.minor, first.currency) : money(first.minor, first.currency)
-}
-
-// Money in more than one currency can't be added up; the others are named under the headline figure.
-function otherCurrencies(value: Money) {
-  return value.length > 1
-    ? `Plus ${value
-        .slice(1)
-        .map((entry) => money(entry.minor, entry.currency))
-        .join(" and ")}`
-    : null
-}
 
 const unavailable = "Not available"
-
-// Stock value, or "Not available" when nothing in stock has a unit cost to value it by.
-function stockValue(restock: Overview["restock"], compact = false) {
-  return !restock.stockValue.length && restock.uncosted ? unavailable : formatMoney(restock.stockValue, compact)
-}
-
-function reorderCaption(restock: Overview["restock"]) {
-  const due = restock.stockouts + restock.reorders
-  if (!due) {
-    return "Nothing is due for a reorder"
-  }
-  const items = `${due} ${due === 1 ? "item" : "items"}`
-  if (restock.reorderUncosted === due) {
-    return `Add unit costs in Shopify to estimate ${due === 1 ? "the" : "all"} ${items} due`
-  }
-  if (restock.reorderUncosted) {
-    return `For ${items} due, ${restock.reorderUncosted} without a unit cost`
-  }
-  return `For ${items} due for a reorder`
-}
 
 function Delta({ current, previous, label }: { current: number; previous: number | null | undefined; label: string }) {
   const value = change(current, previous)
@@ -113,7 +80,7 @@ function Kpi({
         </div>
         <div className={styles.kpiBody}>
           <span className={value === unavailable ? styles.kpiUnavailable : styles.kpiValue}>{value}</span>
-          {trend && <Sparkline values={trend} />}
+          {trend && value !== unavailable && <Sparkline values={trend} />}
         </div>
         <div className={styles.kpiFoot}>{children}</div>
       </CardContent>
@@ -121,405 +88,176 @@ function Kpi({
   )
 }
 
-const toneIcons = { critical: AlertTriangle, warning: AlertTriangle, info: Info }
+type Cell = { orders: number; units: number; revenueMinor: number }
 
-function Attention({ items }: { items: AttentionItem[] }) {
+// A daily series over the last 30 days for the shown sources, null on days no source covers.
+function trend(sales: Overview["sales"], pick: (cell: Cell) => number) {
+  return sales.daily.slice(-30).map((row) => {
+    if (sales.sources.every((source) => row[source] === null)) {
+      return null
+    }
+    return sales.sources.reduce((sum, source) => {
+      const cell = row[source]
+      return sum + (cell ? pick(cell) : 0)
+    }, 0)
+  })
+}
+
+function SalesKpis({ sales }: { sales: Overview["sales"] }) {
+  const { last30 } = sales
+  const { previous } = last30
+  const hasSales = trend(sales, (cell) => cell.orders).some((value) => value !== null)
+  const { currency, profit, fees } = sales
+  // Sales compare only when neither period has orders without prices.
+  const salesComparable = previous !== null && previous.unpriced === 0 && last30.unpriced === 0
+  const notes: string[] = []
+  if (fees.estimatedOrders) {
+    notes.push(`Fees for ${formatNumber(fees.estimatedOrders)} recent Amazon orders are estimated`)
+  }
+  if (profit.currency && profit.revenueMinor > profit.costedRevenueMinor) {
+    notes.push(
+      `${compactMoney(profit.revenueMinor - profit.costedRevenueMinor, profit.currency)} of sales without a unit cost left out`
+    )
+  }
+  let profitCaption = "Add unit costs in Shopify to see profit"
+  if (!currency) {
+    profitCaption = hasSales ? "Sync orders to copy their prices" : "Sync orders to see sales"
+  }
+  const quiet = hasSales ? "Last 30 days" : "Sync orders to see sales"
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Needs attention</CardTitle>
-        <CardDescription>
-          {items.length
-            ? "The things that need you, most urgent first."
-            : "Stock, shipments and syncs are all on track."}
-        </CardDescription>
-        {items.length > 0 && (
-          <CardAction>
-            <Badge variant={items.some((item) => item.tone === "critical") ? "destructive" : "secondary"}>
-              {items.length} {items.length === 1 ? "item" : "items"}
-            </Badge>
-          </CardAction>
-        )}
-      </CardHeader>
-      <CardContent>
-        {items.length ? (
-          <div className={styles.attentionList}>
-            {items.map((item) => {
-              const Icon = toneIcons[item.tone]
-              return (
-                <Link key={item.key} href={item.href} className={styles.attentionRow}>
-                  <span className={styles.toneIcon[item.tone]} aria-hidden>
-                    <Icon />
-                  </span>
-                  <span className={styles.attentionText}>
-                    <span className={styles.attentionTitle}>{item.title}</span>
-                    <span className={styles.attentionDetail}>{item.detail}</span>
-                  </span>
-                  <span className={styles.attentionAction}>
-                    {item.action}
-                    <ChevronRight aria-hidden />
-                  </span>
-                </Link>
-              )
-            })}
-          </div>
+    <section className={styles.kpis} aria-label="Sales in the last 30 days">
+      <Kpi
+        label="Sales"
+        icon={Receipt}
+        value={currency ? compactMoney(last30.revenueMinor, currency) : unavailable}
+        trend={trend(sales, (cell) => cell.revenueMinor)}
+      >
+        {currency ? (
+          <>
+            {salesComparable ? (
+              <Delta current={last30.revenueMinor} previous={previous.revenueMinor} label="vs previous 30 days" />
+            ) : (
+              <span>Last 30 days, before tax and shipping</span>
+            )}
+            {last30.unpriced > 0 && (
+              <span className={styles.kpiNote}>{formatNumber(last30.unpriced)} orders without prices left out</span>
+            )}
+          </>
         ) : (
-          <div className={styles.attentionList}>
-            <div className={styles.attentionRow}>
-              <span className={styles.toneIcon.success} aria-hidden>
-                <CheckCircle2 />
-              </span>
-              <span className={styles.attentionText}>
-                <span className={styles.attentionTitle}>You’re all caught up</span>
-                <span className={styles.attentionDetail}>Nothing needs your attention right now.</span>
-              </span>
-            </div>
-          </div>
+          <span>{hasSales ? "Sync orders to copy their prices" : "Sync orders to see sales"}</span>
         )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} className={styles.cardLink}>
-      {children}
-      <ArrowRight aria-hidden />
-    </Link>
-  )
-}
-
-function StockByChannel({ restock }: { restock: Overview["restock"] }) {
-  const largest = Math.max(1, ...restock.channels.map((channel) => channel.available + channel.incoming))
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <Warehouse aria-hidden />
-          Stock by channel
-        </CardTitle>
-        <CardDescription>Sellable units on hand and on the way.</CardDescription>
-        <CardAction>
-          <CardLink href="/products">Products</CardLink>
-        </CardAction>
-      </CardHeader>
-      <CardContent className={styles.stack}>
-        {restock.channels.length ? (
-          <div className={styles.meters}>
-            {restock.channels.map((channel) => {
-              const color = channel.key === "amazon" ? vars.color.chart1 : vars.color.chart2
-              return (
-                <div key={channel.key} className={styles.meter}>
-                  <div className={styles.meterHead}>
-                    <span className={styles.meterName}>{channel.label}</span>
-                    <span className={styles.meterValue}>{formatNumber(channel.available)} on hand</span>
-                  </div>
-                  <div className={styles.meterTrack} aria-hidden>
-                    <span
-                      className={styles.meterFill}
-                      style={{ width: `${(channel.available / largest) * 100}%`, backgroundColor: color }}
-                    />
-                    {channel.incoming > 0 && (
-                      <span
-                        className={styles.meterFill}
-                        style={{
-                          width: `${(channel.incoming / largest) * 100}%`,
-                          backgroundColor: `color-mix(in oklch, ${color} 35%, transparent)`
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className={styles.meterDetail}>
-                    <span>{formatNumber(channel.incoming)} on the way</span>
-                    <span>{channel.value.length ? `${formatMoney(channel.value)} at cost` : "No unit costs"}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+      </Kpi>
+      <Kpi
+        label="Gross profit"
+        icon={PiggyBank}
+        value={
+          profit.currency && profit.costedRevenueMinor ? compactMoney(profit.profitMinor, profit.currency) : unavailable
+        }
+      >
+        {profit.margin === null ? (
+          <span>{profitCaption}</span>
         ) : (
-          <p className={styles.note}>Sync stock on the Products page to see it here.</p>
+          <>
+            <span className={styles.delta[profit.margin >= 0 ? "up" : "down"]}>{formatPercent(profit.margin)}</span>
+            <span>margin after unit costs{fees.feesMinor ? " and Amazon fees" : ""}</span>
+          </>
         )}
-        <div className={styles.figures}>
-          <div className={styles.figure}>
-            <span className={styles.figureLabel}>Units on hand</span>
-            <span className={styles.figureValue}>{formatNumber(restock.unitsOnHand)}</span>
-          </div>
-          <div className={styles.figure}>
-            <span className={styles.figureLabel}>Value at cost</span>
-            <span className={styles.figureValue}>{stockValue(restock)}</span>
-          </div>
-        </div>
-        {restock.uncosted > 0 && (
-          <p className={styles.note}>
-            {restock.uncosted} {restock.uncosted === 1 ? "item in stock has" : "items in stock have"} no unit cost in
-            Shopify, so {restock.uncosted === 1 ? "it isn't" : "they aren't"} counted in the value.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-const sellerStatus = {
-  stockout: { label: "Reorder now", variant: "destructive" },
-  reorder: { label: "Reorder soon", variant: "secondary" },
-  stocked: { label: "Stocked", variant: "outline" }
-} as const
-
-function BestSellers({ restock }: { restock: Overview["restock"] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <ShoppingBag aria-hidden />
-          Best sellers
-        </CardTitle>
-        <CardDescription>Units sold in the last {restock.days / 7} weeks, across every channel.</CardDescription>
-        <CardAction>
-          <CardLink href="/restock">Restock</CardLink>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        {restock.bestSellers.length ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className={styles.number}>Sold</TableHead>
-                <TableHead className={styles.number}>On hand</TableHead>
-                <TableHead className={styles.number}>Days of cover</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {restock.bestSellers.map((seller) => {
-                const status = sellerStatus[seller.status]
-                return (
-                  <TableRow key={seller.variantId}>
-                    <TableCell>
-                      <div className={styles.product}>
-                        {seller.imageUrl ? (
-                          <Image
-                            src={seller.imageUrl}
-                            alt=""
-                            width={36}
-                            height={36}
-                            unoptimized
-                            className={styles.thumb}
-                          />
-                        ) : (
-                          <span className={styles.thumbEmpty} aria-hidden>
-                            <Package />
-                          </span>
-                        )}
-                        <span className={styles.productText}>
-                          <span className={styles.productTitle}>{seller.product}</span>
-                          <span className={styles.productDetail}>
-                            {[seller.variant, seller.sku].filter(Boolean).join(", ") || seller.channels.join(", ")}
-                          </span>
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className={styles.number}>{formatNumber(seller.sold)}</TableCell>
-                    <TableCell className={styles.number}>{formatNumber(seller.available)}</TableCell>
-                    <TableCell className={styles.number}>
-                      {seller.daysRemaining === null ? "Unknown" : `${formatNumber(seller.daysRemaining)} days`}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+        {notes.map((note) => (
+          <span key={note} className={styles.kpiNote}>
+            {note}
+          </span>
+        ))}
+      </Kpi>
+      <Kpi
+        label="Units sold"
+        icon={Package}
+        value={hasSales ? compactNumber(last30.units) : unavailable}
+        trend={trend(sales, (cell) => cell.units)}
+      >
+        {previous ? (
+          <Delta current={last30.units} previous={previous.units} label="vs previous 30 days" />
         ) : (
-          <p className={styles.note}>Best sellers appear once orders and stock have synced.</p>
+          <span>{quiet}</span>
         )}
-      </CardContent>
-    </Card>
-  )
-}
-
-const stageDots = {
-  you: "you",
-  problem: "problem",
-  packing: "active",
-  booking: "active",
-  ready: "active",
-  transit: "active"
-} as const
-
-function Shipments({ stages }: { stages: Overview["shipments"] }) {
-  const total = stages.reduce((sum, stage) => sum + stage.shipments, 0)
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <Truck aria-hidden />
-          Shipments in progress
-        </CardTitle>
-        <CardDescription>
-          {total
-            ? `${total} ${total === 1 ? "shipment" : "shipments"} between supplier and Amazon.`
-            : "No shipments are in progress."}
-        </CardDescription>
-        <CardAction>
-          <CardLink href="/shipments">Shipments</CardLink>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        <div className={styles.stages}>
-          {stages.map((stage) => (
-            <div key={stage.key} className={styles.stage}>
-              <span className={styles.stageName}>
-                <span className={styles.stageDot[stage.shipments ? stageDots[stage.key] : "quiet"]} aria-hidden />
-                {stage.label}
-              </span>
-              <span className={styles.stageCount}>{stage.shipments}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] }) {
-  const largest = Math.max(1, ...purchasing.bySupplier.map((supplier) => supplier.value[0]?.minor ?? 0))
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <ClipboardList aria-hidden />
-          Open purchase orders
-        </CardTitle>
-        <CardDescription>Value sent to each supplier and not yet closed.</CardDescription>
-        <CardAction>
-          <CardLink href="/orders">Purchase orders</CardLink>
-        </CardAction>
-      </CardHeader>
-      <CardContent className={styles.stack}>
-        {purchasing.bySupplier.length ? (
-          <div className={styles.meters}>
-            {purchasing.bySupplier.slice(0, 5).map((supplier) => (
-              <div key={supplier.name} className={styles.meter}>
-                <div className={styles.meterHead}>
-                  <span className={styles.meterName}>{supplier.name}</span>
-                  <span className={styles.meterValue}>{formatMoney(supplier.value)}</span>
-                </div>
-                <div className={styles.meterTrack} aria-hidden>
-                  <span
-                    className={styles.meterFill}
-                    style={{
-                      width: `${((supplier.value[0]?.minor ?? 0) / largest) * 100}%`,
-                      backgroundColor: vars.color.chart1
-                    }}
-                  />
-                </div>
-                <div className={styles.meterDetail}>
-                  <span>
-                    {supplier.orders} {supplier.orders === 1 ? "order" : "orders"}
-                  </span>
-                  {otherCurrencies(supplier.value) && <span>{otherCurrencies(supplier.value)}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
+      </Kpi>
+      <Kpi
+        label="Orders"
+        icon={ShoppingBag}
+        value={hasSales ? compactNumber(last30.orders) : unavailable}
+        trend={trend(sales, (cell) => cell.orders)}
+      >
+        {previous ? (
+          <Delta current={last30.orders} previous={previous.orders} label="vs previous 30 days" />
         ) : (
-          <p className={styles.note}>No purchase orders are with suppliers.</p>
+          <span>{quiet}</span>
         )}
-        <div className={styles.figures}>
-          <div className={styles.figure}>
-            <span className={styles.figureLabel}>Open</span>
-            <span className={styles.figureValue}>{formatMoney(purchasing.open)}</span>
-          </div>
-          <div className={styles.figure}>
-            <span className={styles.figureLabel}>
-              {purchasing.draftCount} {purchasing.draftCount === 1 ? "draft" : "drafts"}
-            </span>
-            <span className={styles.figureValue}>{formatMoney(purchasing.drafts)}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </Kpi>
+    </section>
+  )
+}
+
+// When orders and stock were last copied, and the time zone days follow.
+export function Freshness({ data }: { data: Overview }) {
+  const now = new Date(data.generatedAt)
+  return (
+    <ul className={styles.freshness} aria-label="Data freshness">
+      {data.freshness.map((entry) => (
+        <li key={entry.key} className={styles.freshnessItem}>
+          <Clock aria-hidden />
+          <span>
+            {entry.label} {entry.at ? `synced ${timeAgo(entry.at, now)}` : "not synced yet"}
+          </span>
+        </li>
+      ))}
+      <li className={styles.freshnessItem}>
+        <Globe aria-hidden />
+        {data.timeZoneSet ? (
+          <span>Days in {timeZoneLabel(data.timeZone)}</span>
+        ) : (
+          <Link href="/settings" className={styles.freshnessLink}>
+            Days in UTC until you set your store’s time zone
+          </Link>
+        )}
+      </li>
+    </ul>
   )
 }
 
 export function OverviewDashboard({ data }: { data: Overview }) {
   const { sales, restock, purchasing } = data
-  const last30 = sales.daily.slice(-30)
-  const unitsTrend = last30.map((row) =>
-    sales.sources.every((source) => row[source] === null)
-      ? null
-      : sales.sources.reduce((sum, source) => sum + (row[source]?.units ?? 0), 0)
+  const channel = data.channel?.key ?? null
+  // Restock links open on the chosen channel.
+  const attention = data.attention.map((item) =>
+    channel && item.href.startsWith("/restock")
+      ? { ...item, href: `${item.href}&channel=${encodeURIComponent(channel)}` }
+      : item
   )
-  const ordersTrend = last30.map((row) =>
-    sales.sources.every((source) => row[source] === null)
-      ? null
-      : sales.sources.reduce((sum, source) => sum + (row[source]?.orders ?? 0), 0)
-  )
-  const hasSales = unitsTrend.some((value) => value !== null)
 
   return (
     <div className={styles.page}>
-      <Attention items={data.attention} />
+      {data.setup.some((step) => !step.done) && <SetupChecklist steps={data.setup} />}
+      <Attention items={attention} />
 
-      <section className={styles.kpis} aria-label="Key figures">
-        <Kpi
-          label="Units sold"
-          icon={Package}
-          value={hasSales ? compactNumber(sales.last30.units) : unavailable}
-          trend={unitsTrend}
-        >
-          <Delta current={sales.last30.units} previous={sales.last30.previous?.units} label="vs previous 30 days" />
-          {!sales.last30.previous && <span>{hasSales ? "Last 30 days" : "Sync orders to see sales"}</span>}
-        </Kpi>
-        <Kpi
-          label="Orders"
-          icon={ShoppingBag}
-          value={hasSales ? compactNumber(sales.last30.orders) : unavailable}
-          trend={ordersTrend}
-        >
-          <Delta current={sales.last30.orders} previous={sales.last30.previous?.orders} label="vs previous 30 days" />
-          {!sales.last30.previous && <span>{hasSales ? "Last 30 days" : "Sync orders to see sales"}</span>}
-        </Kpi>
-        <Kpi label="Stock value at cost" icon={Boxes} value={stockValue(restock, true)}>
-          <span>
-            {!restock.stockValue.length && restock.uncosted
-              ? "Add unit costs in Shopify to value your stock"
-              : `${formatNumber(restock.unitsOnHand)} units on hand`}
-          </span>
-        </Kpi>
-        <Kpi
-          label="Reorder estimate"
-          icon={Warehouse}
-          value={
-            !restock.reorderCost.length && restock.reorderUncosted
-              ? unavailable
-              : formatMoney(restock.reorderCost, true)
-          }
-        >
-          <span>{reorderCaption(restock)}</span>
-        </Kpi>
-      </section>
+      <SalesKpis sales={sales} />
 
       <div className={styles.wide}>
         <Card>
           <CardHeader>
-            <CardTitle>Units sold</CardTitle>
-            <CardDescription>By sales channel, from the orders copied from Shopify and Amazon.</CardDescription>
+            <CardTitle>Sales by channel</CardTitle>
+            <CardDescription>
+              From the orders copied from Shopify and Amazon. Sales are after discounts, before tax and shipping.
+            </CardDescription>
             <CardAction>
               <CardLink href="/sales">Orders</CardLink>
             </CardAction>
           </CardHeader>
           <CardContent>
-            {sales.sources.length ? (
-              <SalesTrend daily={sales.daily} sources={sales.sources} />
+            {sales.daily.some((row) => sales.sources.some((source) => row[source] !== null)) ? (
+              <SalesTrend daily={sales.daily} sources={sales.sources} currency={sales.currency} />
             ) : (
-              <p className={styles.note}>Connect Shopify or Amazon in Settings to see sales.</p>
+              <p className={styles.note}>
+                Sales appear here once orders are copied. Sync them on the <Link href="/sales">Orders</Link> page.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -527,46 +265,13 @@ export function OverviewDashboard({ data }: { data: Overview }) {
       </div>
 
       <div className={styles.halves}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Days of cover</CardTitle>
-            <CardDescription>
-              How long each item’s stock lasts in each channel at the last {restock.days / 7} weeks’ sales rate.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className={styles.stack}>
-            <CoverChart buckets={restock.cover} />
-            {restock.lostDays > 0 && (
-              <p className={styles.note}>
-                {restock.itemsOut} {restock.itemsOut === 1 ? "item was" : "items were"} out of stock for a combined{" "}
-                {formatNumber(restock.lostDays)} days in the last {restock.days / 7} weeks.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Purchasing</CardTitle>
-            <CardDescription>
-              {purchasing.spend.currency
-                ? `Purchase orders sent each month, in ${purchasing.spend.currency}.`
-                : "Purchase orders sent each month."}
-            </CardDescription>
-            <CardAction>
-              <CardLink href="/orders">Purchase orders</CardLink>
-            </CardAction>
-          </CardHeader>
-          <CardContent className={styles.stack}>
-            {purchasing.spend.currency ? (
-              <SpendChart months={purchasing.spend.months} currency={purchasing.spend.currency} />
-            ) : (
-              <p className={styles.note}>Send a purchase order to see spending by month.</p>
-            )}
-            {purchasing.spend.otherCurrencies && (
-              <p className={styles.note}>Purchase orders in other currencies aren’t included in the chart.</p>
-            )}
-          </CardContent>
-        </Card>
+        <DaysOfCover restock={restock} channel={channel} />
+        <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+      </div>
+
+      <div className={styles.halves}>
+        <Trending movers={sales.movers} comparable={sales.moversComparable} />
+        <SlowStock restock={restock} />
       </div>
 
       <div className={styles.wide}>
@@ -576,6 +281,8 @@ export function OverviewDashboard({ data }: { data: Overview }) {
           <OpenOrders purchasing={purchasing} />
         </div>
       </div>
+
+      <Purchasing purchasing={purchasing} />
     </div>
   )
 }

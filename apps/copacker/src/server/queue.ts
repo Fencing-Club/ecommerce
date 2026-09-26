@@ -3,7 +3,10 @@ import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
+import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
+import { shopifyComplianceJob } from "./shopify-compliance"
+import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
 import { stockJob } from "./stock"
 
 export async function runNextJob() {
@@ -70,6 +73,14 @@ export async function runNextJob() {
       await emailJob(job.payload, job.key, assertOwned)
     } else if (job.kind === "shopify") {
       await shopifyJob(job.payload, assertOwned)
+    } else if (job.kind === "shopify-event") {
+      await shopifyEventJob(job.payload)
+    } else if (job.kind === "shopify-subscribe") {
+      await shopifySubscribeJob(job.payload, assertOwned)
+    } else if (job.kind === "shopify-compliance") {
+      await shopifyComplianceJob(job.payload)
+    } else if (job.kind === "reconcile") {
+      await reconcileJob(job.payload, assertOwned)
     } else {
       throw new Error("Unknown job type")
     }

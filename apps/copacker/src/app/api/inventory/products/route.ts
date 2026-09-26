@@ -1,15 +1,11 @@
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { inventoryContext } from "@/server/inventory-context"
-import { type AmazonOnlyStock, groupInventory, inventoryLocations, pageSizes } from "@/server/inventory-products"
+import { type AmazonOnlyStock, groupInventory, pageSizes } from "@/server/inventory-products"
 import { type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 
 const querySchema = z.strictObject({
-  locationId: z
-    .string()
-    .regex(/^(gid:\/\/shopify\/Location\/\d+|amazon:(fba|awd))$/)
-    .optional(),
   q: z.string().trim().max(100).optional(),
   // "missing" lists only products with a variation that has no barcode.
   barcode: z.literal("missing").optional(),
@@ -37,12 +33,13 @@ export async function GET(request: Request) {
   if (!query.success) {
     return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
   }
-  const { page, pageSize, locationId, q, barcode } = query.data
+  const { page, pageSize, q, barcode } = query.data
   const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly } = await inventoryContext(
     s.org.id
   )
+  // Every Shopify product is listed, including those stocked only at locations that don't count toward the totals.
   const grouped = groupInventory(inventoryRows, {
-    locationId,
+    everyProduct: true,
     query: q,
     classifications: inventoryClassifications,
     onOrder
@@ -68,10 +65,6 @@ export async function GET(request: Request) {
             row.caseQuantity === undefined ||
             row.unitCostMinor === undefined
         ) || levels.some((level) => !level.locationKind),
-      // Only the locations that count toward the totals; Settings chooses which Shopify locations those are.
-      locations: inventoryLocations(inventoryRows, inventoryClassifications).filter(
-        (location) => location.classification === "merchant"
-      ),
       // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
       // listings Amazon still reports with nothing on hand or inbound, are left out.
       amazonOnly: amazonOnly.filter((stock) => !stock.resold && holdsStock(stock)),

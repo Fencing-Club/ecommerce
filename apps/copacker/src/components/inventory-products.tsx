@@ -12,14 +12,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import {
   type AmazonOnlyStock,
-  type InventoryLocation,
   type InventoryProduct,
   type InventoryVariant,
   pageSizes
@@ -33,7 +32,6 @@ import { srOnly } from "@/styles/utilities.css"
 type ProductsPage = {
   observedAt: string | null
   needsResync: boolean
-  locations: InventoryLocation[]
   page: number
   pageSize: number
   totalPages: number
@@ -51,7 +49,6 @@ type ProductsQuery = {
   page: number
   pageSize: number
   q: string
-  locationId: string
   missingBarcode: boolean
   // Part of the cache key so a finished sync of any source loads fresh results.
   syncKey: string
@@ -61,13 +58,12 @@ const productsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
     inventoryProducts: build.query<ProductsPage, ProductsQuery>({
-      query: ({ page, pageSize, q, locationId, missingBarcode }) => ({
+      query: ({ page, pageSize, q, missingBarcode }) => ({
         url: "inventory/products",
         params: {
           page,
           pageSize,
           ...(q && { q }),
-          ...(locationId && { locationId }),
           ...(missingBarcode && { barcode: "missing" })
         }
       }),
@@ -78,11 +74,6 @@ const productsApi = api.injectEndpoints({
 
 // Reloads the page of products after a row changes something.
 const RefreshContext = createContext<() => void>(() => undefined)
-
-const locationGroups = [
-  { label: "Shopify", matches: (id: string) => !id.startsWith("amazon:") },
-  { label: "Amazon", matches: (id: string) => id.startsWith("amazon:") }
-] as const
 
 // Amazon seller SKUs that don't match a single Shopify variant, such as listings with a different SKU.
 function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
@@ -389,7 +380,6 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
   const [q] = useDebouncedValue(search.trim(), 300)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(25)
-  const [locationId, setLocationId] = useState("")
   const [missingBarcode, setMissingBarcode] = useState(false)
   const {
     currentData,
@@ -399,7 +389,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
     isError,
     error,
     refetch
-  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, missingBarcode, syncKey })
+  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, missingBarcode, syncKey })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
 
@@ -438,33 +428,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
               />
             </div>
           </Field>
-          <Field>
-            <FieldLabel htmlFor="inventory-location">Location</FieldLabel>
-            <NativeSelect
-              id="inventory-location"
-              className={styles.fullWidth}
-              value={locationId}
-              onChange={(event) => {
-                setLocationId(event.target.value)
-                setPage(1)
-              }}
-            >
-              <NativeSelectOption value="">All locations</NativeSelectOption>
-              {locationGroups.map((group) => {
-                const options = data.locations.filter((location) => group.matches(location.id))
-                return options.length ? (
-                  <NativeSelectOptGroup key={group.label} label={group.label}>
-                    {options.map((location) => (
-                      <NativeSelectOption key={location.id} value={location.id}>
-                        {location.name}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelectOptGroup>
-                ) : null
-              })}
-            </NativeSelect>
-          </Field>
-          <p className={cn(styles.summary, styles.collective)}>
+          <p className={styles.summary}>
             Totals add your Shopify locations and Amazon FBA and AWD. Choose which Shopify locations count in{" "}
             <Link href="/settings">Settings</Link>.
           </p>

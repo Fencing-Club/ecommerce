@@ -25,6 +25,8 @@ export const organizations = pgTable("organizations", {
   name: text().notNull(),
   kind: text({ enum: ["buyer", "supplier"] }).notNull(),
   workosId: text().unique(),
+  // The store's IANA time zone, such as America/Los_Angeles. Days and months on the Overview use it; null means UTC.
+  timeZone: text(),
   createdAt: createdAt()
 })
 export const memberships = pgTable(
@@ -272,7 +274,20 @@ export const jobs = pgTable(
   {
     id: uuid().defaultRandom().primaryKey(),
     key: text().notNull().unique(),
-    kind: text({ enum: ["amazon", "email", "shopify", "import", "stock", "sales"] }).notNull(),
+    kind: text({
+      enum: [
+        "amazon",
+        "email",
+        "shopify",
+        "import",
+        "stock",
+        "sales",
+        "shopify-event",
+        "shopify-subscribe",
+        "shopify-compliance",
+        "reconcile"
+      ]
+    }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),
     status: text().notNull().default("pending"),
     attempts: integer().notNull().default(0),
@@ -427,7 +442,15 @@ export const salesSyncs = pgTable(
     // Amazon only: the unbroken period of daily FBA stock copied from the inventory ledger, and why it last failed.
     stockCoveredFrom: timestamp({ withTimezone: true }),
     stockCoveredTo: timestamp({ withTimezone: true }),
-    stockErrorCode: text()
+    stockErrorCode: text(),
+    // The shape of the stored orders. Orders stored by an older version are read again, newest first, so they gain
+    // the fields added since (such as prices).
+    dataVersion: integer().notNull().default(0),
+    // Amazon only: the unbroken period of posted Amazon transactions (fees and payouts) copied from the Finances API,
+    // and why that copy last failed.
+    feesCoveredFrom: timestamp({ withTimezone: true }),
+    feesCoveredTo: timestamp({ withTimezone: true }),
+    feesErrorCode: text()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.source] })]
 )
@@ -451,4 +474,29 @@ export const stockDays = pgTable(
     origin: text({ enum: ["ledger", "snapshot"] }).notNull()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.pool, t.scope, t.itemKey, t.day] })]
+)
+// Amazon transactions (order payments, refunds and their fees) copied from the Finances API, so margins can include
+// Amazon's fees. Each is linked to the order it belongs to, when Amazon names one.
+export const amazonTransactions = pgTable(
+  "amazon_transactions",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    externalAccountId: text().notNull(),
+    transactionId: text().notNull(),
+    orderId: text(),
+    postedAt: timestamp({ withTimezone: true }).notNull(),
+    type: text().notNull(),
+    currency: text().notNull(),
+    // What the seller is paid for the transaction, and the Amazon fees within it (positive when charged), in minor units.
+    totalMinor: integer().notNull(),
+    feesMinor: integer().notNull(),
+    data: jsonb().$type<Record<string, unknown>>().notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.orgId, t.externalAccountId, t.transactionId] }),
+    index("amazon_transaction_order").on(t.orgId, t.orderId),
+    index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt)
+  ]
 )

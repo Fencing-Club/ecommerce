@@ -60,30 +60,34 @@ export const stockSelection = z
     message: "Select the US marketplace for FBA only"
   })
 
-export async function refreshStock(s: Session, selection: z.infer<typeof stockSelection>) {
+// Starts a stock refresh for one scope unless one is already waiting or running.
+export async function refreshStock(
+  org: Pick<Session["org"], "id" | "kind">,
+  selection: z.infer<typeof stockSelection>
+) {
   const { source } = stockSelection.parse(selection)
   const { provider, scopeKey } = stockScopes[source]
-  if (s.org.kind !== "buyer") {
+  if (org.kind !== "buyer") {
     throw new Error("A buyer workspace is required")
   }
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select()
       .from(connections)
-      .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, provider)))
+      .where(and(eq(connections.orgId, org.id), eq(connections.provider, provider)))
       .for("update")
     if (!account) {
       return null
     }
     const scope = and(
-      eq(stockSnapshots.orgId, s.org.id),
+      eq(stockSnapshots.orgId, org.id),
       eq(stockSnapshots.source, source),
       eq(stockSnapshots.externalAccountId, account.externalId),
       eq(stockSnapshots.scopeKey, scopeKey)
     )
     await tx
       .insert(stockSnapshots)
-      .values({ orgId: s.org.id, source, externalAccountId: account.externalId, scopeKey })
+      .values({ orgId: org.id, source, externalAccountId: account.externalId, scopeKey })
       .onConflictDoNothing()
     const [current] = await tx.select().from(stockSnapshots).where(scope).for("update")
     if (!current) {

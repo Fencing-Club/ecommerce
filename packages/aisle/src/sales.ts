@@ -5,6 +5,8 @@ import type { Shopify } from "./shopify"
 const quantity = z.number().int().nonnegative().safe()
 const id = z.string().min(1)
 const pageInfo = z.object({ hasNextPage: z.boolean(), endCursor: z.string().nullable() })
+const decimal = z.string().regex(/^-?\d+(\.\d+)?$/)
+const shopMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
 export const salesWindowSchema = z
   .strictObject({ from: z.iso.datetime(), to: z.iso.datetime() })
   .refine(
@@ -19,7 +21,14 @@ const line = z.object({
   sku: z.string().nullable(),
   variant: z.object({ id }).nullable(),
   // Set on each component line when the customer bought a bundle; variantId is the bundle's variant.
-  lineItemGroup: z.object({ id, quantity, variantId: z.string().nullable() }).nullable().optional()
+  lineItemGroup: z.object({ id, quantity, variantId: z.string().nullable() }).nullable().optional(),
+  // The price of one unit before discounts, and the discounts (line and order discounts) given on the whole line, in
+  // the store's currency. Optional because orders stored before prices were copied lack them.
+  originalUnitPriceSet: z.object({ shopMoney }).optional(),
+  discountAllocations: z
+    .array(z.object({ allocatedAmountSet: z.object({ shopMoney }) }))
+    .max(250)
+    .optional()
 })
 const lines = z.object({ nodes: z.array(line).max(250), pageInfo })
 const fulfillmentLine = z.object({ id, quantity: quantity.nullable(), lineItem: z.object({ id }) })
@@ -35,7 +44,8 @@ const header = z.object({
   sourceName: z.string().nullable()
 })
 const headers = "id name createdAt cancelledAt test sourceName"
-const lineFields = "id quantity currentQuantity sku variant{id} lineItemGroup{id quantity variantId}"
+const money = "shopMoney{amount currencyCode}"
+const lineFields = `id quantity currentQuantity sku variant{id} lineItemGroup{id quantity variantId} originalUnitPriceSet{${money}} discountAllocations{allocatedAmountSet{${money}}}`
 const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
 const fulfillmentPage = "nodes{id quantity lineItem{id}} pageInfo{hasNextPage endCursor}"
 export const shopifySalesQueries = {
@@ -192,11 +202,25 @@ export async function collectShopifySales(
   return result
 }
 
+const amazonMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
 const amazonItem = z.object({
   orderItemId: id,
   quantityOrdered: quantity,
   product: z.object({ sellerSku: id.optional(), asin: id.optional() }),
-  fulfillment: z.object({ quantityFulfilled: quantity.optional(), quantityUnfulfilled: quantity.optional() }).optional()
+  fulfillment: z
+    .object({ quantityFulfilled: quantity.optional(), quantityUnfulfilled: quantity.optional() })
+    .optional(),
+  // What the seller receives for the item, by category (ITEM, SHIPPING, TAX, DISCOUNT and so on). Optional because
+  // orders stored before proceeds were copied lack them, and Amazon leaves them out until the order is priced.
+  proceeds: z
+    .object({
+      proceedsTotal: amazonMoney.optional(),
+      breakdowns: z
+        .array(z.object({ type: z.string(), subtotal: amazonMoney }))
+        .max(50)
+        .optional()
+    })
+    .optional()
 })
 const amazonSale = z.object({
   orderId: id,
@@ -217,7 +241,7 @@ export async function collectAmazonSales(
     createdAfter: window.from,
     createdBefore: window.to,
     marketplaceIds: "ATVPDKIKX0DER",
-    includedData: "FULFILLMENT",
+    includedData: "FULFILLMENT,PROCEEDS",
     maxResultsPerPage: "100"
   })
   const result: AmazonSale[] = [],
@@ -254,6 +278,120 @@ export async function collectAmazonSales(
     }
     unique(token, tokens)
     query.set("paginationToken", token)
+  }
+  return result
+}
+
+// Money in Amazon's finance reports: a decimal number or string.
+const financeAmount = z.object({
+  currencyCode: z.string().length(3),
+  currencyAmount: z.union([z.number(), z.string()])
+})
+type Breakdown = { breakdownType: string; breakdownAmount?: z.infer<typeof financeAmount>; breakdowns?: Breakdown[] }
+const breakdown: z.ZodType<Breakdown> = z.lazy(() =>
+  z.object({
+    breakdownType: z.string(),
+    breakdownAmount: financeAmount.optional(),
+    breakdowns: z.array(breakdown).max(200).optional()
+  })
+)
+const transaction = z
+  .object({
+    transactionId: id,
+    transactionType: z.string(),
+    postedDate: z.iso.datetime({ offset: true }),
+    totalAmount: financeAmount,
+    relatedIdentifiers: z
+      .array(z.object({ relatedIdentifierName: z.string(), relatedIdentifierValue: z.string() }))
+      .max(50)
+      .optional(),
+    breakdowns: z.array(breakdown).max(200).optional()
+  })
+  .loose()
+
+// An Amazon amount in minor units.
+export function minorUnits(amount: number | string) {
+  const value = Math.round(Number(amount) * 100)
+  if (!Number.isSafeInteger(value)) {
+    throw new Error("Amazon returned an invalid amount")
+  }
+  return value
+}
+
+// Amazon's fees in a transaction, positive when charged: every fee or commission in its breakdown tree (such as
+// AmazonFees, FBAFees and Commission). A fee category is counted whole, not again through its parts.
+export function transactionFees(breakdowns: readonly Breakdown[] | undefined): number {
+  let total = 0
+  for (const entry of breakdowns ?? []) {
+    if (/fee|commission/i.test(entry.breakdownType) && entry.breakdownAmount) {
+      total -= minorUnits(entry.breakdownAmount.currencyAmount)
+    } else {
+      total += transactionFees(entry.breakdowns)
+    }
+  }
+  return total
+}
+
+export type AmazonTransaction = {
+  transactionId: string
+  orderId: string | null
+  postedAt: string
+  type: string
+  currency: string
+  totalMinor: number
+  feesMinor: number
+  data: Record<string, unknown>
+}
+
+// Posted Amazon transactions (order payments, refunds and their fees) in a window of at most 180 days. No marketplace
+// is named, so merchant-fulfilled US orders are included too, as Amazon's reference advises.
+export async function collectAmazonTransactions(
+  client: Pick<Amazon, "request">,
+  input: SalesWindow,
+  assertActive?: () => Promise<void>
+) {
+  const window = salesWindowSchema.parse(input)
+  if (Date.parse(window.to) - Date.parse(window.from) > 180 * 86400000) {
+    throw new Error("Amazon transactions are read at most 180 days at a time")
+  }
+  const read = collection(assertActive)
+  const query = new URLSearchParams({ postedAfter: window.from, postedBefore: window.to })
+  const result: AmazonTransaction[] = [],
+    ids = new Set<string>(),
+    tokens = new Set<string>()
+  for (;;) {
+    const page = z
+      .object({
+        payload: z.object({
+          transactions: z.array(transaction).max(1000).optional(),
+          nextToken: z.string().nullable().optional()
+        })
+      })
+      .parse(await read(() => client.request("GET", `/finances/2024-06-19/transactions?${query}`)))
+    for (const entry of page.payload.transactions ?? []) {
+      unique(entry.transactionId, ids)
+      if (ids.size > 50000) {
+        throw new Error("Amazon transaction limit reached")
+      }
+      result.push({
+        transactionId: entry.transactionId,
+        orderId:
+          entry.relatedIdentifiers?.find((identifier) => identifier.relatedIdentifierName === "ORDER_ID")
+            ?.relatedIdentifierValue ?? null,
+        postedAt: new Date(entry.postedDate).toISOString(),
+        type: entry.transactionType,
+        currency: entry.totalAmount.currencyCode,
+        totalMinor: minorUnits(entry.totalAmount.currencyAmount),
+        feesMinor: transactionFees(entry.breakdowns),
+        data: entry
+      })
+    }
+    const token = page.payload.nextToken
+    if (!token) {
+      break
+    }
+    unique(token, tokens)
+    query.set("nextToken", token)
   }
   return result
 }

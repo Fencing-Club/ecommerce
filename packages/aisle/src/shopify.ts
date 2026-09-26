@@ -119,14 +119,15 @@ function positiveIntegerField(value: string, name: string) {
   }
   return Number(value)
 }
-function costMinor(amount: string) {
-  const match = amount.match(/^(\d+)(?:\.(\d{1,2}))?$/)
+function costMinor(amount: string, name = "unit cost") {
+  // Shopify returns prices such as "12.5" or "12.50".
+  const match = amount.match(/^(\d+)(?:\.(\d{1,2})0*)?$/)
   if (!match) {
-    throw new Error("Shopify unit cost must have at most two decimal places")
+    throw new Error(`Shopify ${name} must have at most two decimal places`)
   }
   const value = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"))
   if (!Number.isSafeInteger(value)) {
-    throw new Error("Shopify unit cost exceeds the supported range")
+    throw new Error(`Shopify ${name} exceeds the supported range`)
   }
   return value
 }
@@ -264,7 +265,7 @@ export class Shopify {
   async stockPage(after: string | null = null) {
     const parsed = z
       .object({
-        shop: z.object({ myshopifyDomain: z.literal(this.domain) }),
+        shop: z.object({ myshopifyDomain: z.literal(this.domain), currencyCode: z.string().length(3).optional() }),
         productVariants: z.object({
           nodes: z
             .array(
@@ -272,6 +273,10 @@ export class Shopify {
                 id: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
                 sku: z.string().nullable(),
                 title: z.string(),
+                price: z
+                  .string()
+                  .regex(/^\d+(\.\d+)?$/)
+                  .optional(),
                 product: z.object({
                   id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
                   title: z.string(),
@@ -298,14 +303,14 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
     if (!parsed.success) {
       throw new Error("Shopify stock page or store identity is invalid")
     }
-    return parsed.data.productVariants
+    return { ...parsed.data.productVariants, currency: parsed.data.shop.currencyCode ?? null }
   }
   async stockLevelsPage(inventoryItemId: string, after: string | null = null) {
     z.string()
@@ -349,6 +354,9 @@ export class Shopify {
       supplierSku?: string | null
       unitCostMinor?: number | null
       costCurrency?: string | null
+      // The variant's selling price in Shopify, in the store's currency.
+      priceMinor?: number | null
+      priceCurrency?: string | null
       // A bundle holds no stock of its own; Shopify reports how many can be sold from its components' stock instead.
       // Components are null when Shopify lists more than it returned in one page.
       bundle?: { available: number | null; components?: BundleComponent[] | null }
@@ -429,6 +437,10 @@ export class Shopify {
           ...(item.unitCost !== undefined && {
             unitCostMinor: item.unitCost === null ? null : costMinor(item.unitCost.amount),
             costCurrency: item.unitCost?.currencyCode ?? null
+          }),
+          ...(variant.price !== undefined && {
+            priceMinor: costMinor(variant.price, "price"),
+            priceCurrency: page.currency
           }),
           ...(variant.requiresComponents && {
             bundle: {
@@ -558,6 +570,35 @@ export class Shopify {
     if (response.inventoryItemUpdate.userErrors.length) {
       throw new Error("Shopify rejected unit cost update")
     }
+  }
+  // Has Shopify send each topic's events to the address, adding only the subscriptions that are missing. Subscriptions
+  // to other addresses stay, so another environment connected to the same store keeps receiving its events.
+  async subscribeWebhooks(address: string, topics: readonly string[]) {
+    const existing = z
+      .object({
+        webhookSubscriptions: z.object({ nodes: z.array(z.object({ topic: z.string(), uri: z.string() })).max(100) })
+      })
+      .parse(await this.graphql(`query Webhooks{webhookSubscriptions(first:100){nodes{topic uri}}}`))
+      .webhookSubscriptions.nodes.filter((subscription) => subscription.uri === address)
+      .map((subscription) => subscription.topic)
+    const missing = topics.filter((topic) => !existing.includes(topic))
+    for (const topic of missing) {
+      const response = z
+        .object({
+          webhookSubscriptionCreate: z.object({ userErrors: z.array(z.object({ message: z.string() })) })
+        })
+        .parse(
+          await this.graphql(
+            `mutation Subscribe($topic:WebhookSubscriptionTopic!,$uri:String!){webhookSubscriptionCreate(topic:$topic,webhookSubscription:{uri:$uri}){userErrors{message}}}`,
+            { topic, uri: address }
+          )
+        )
+      if (response.webhookSubscriptionCreate.userErrors.length) {
+        const messages = response.webhookSubscriptionCreate.userErrors.map((error) => error.message).join("; ")
+        throw new Error(`Shopify rejected the ${topic} subscription: ${messages}`)
+      }
+    }
+    return missing
   }
 }
 const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`

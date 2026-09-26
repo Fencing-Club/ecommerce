@@ -6,13 +6,14 @@ import { DisconnectButton } from "@/components/disconnect-button"
 import { TextField } from "@/components/form-fields"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { SavedAddresses } from "@/components/saved-addresses"
-import { SupplierProfileForm } from "@/components/settings-forms"
+import { SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup } from "@/components/ui/field"
 import { db } from "@/db"
 import { connections, contacts, supplierProfiles } from "@/db/schema"
+import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { pushToBottom } from "./page.css"
@@ -116,6 +117,28 @@ export default async function Settings() {
             )
           })}
         </div>
+      )}
+
+      {s.org.kind === "buyer" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Store time zone</CardTitle>
+            <CardDescription>
+              The Overview counts sales days and months from midnight in this time zone. Until you choose one, it uses
+              UTC.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {s.role === "owner" ? (
+              <TimeZoneForm
+                timeZone={s.org.timeZone}
+                zones={timeZones().map((zone) => ({ value: zone, label: timeZoneLabel(zone) }))}
+              />
+            ) : (
+              <p>{s.org.timeZone ? timeZoneLabel(s.org.timeZone) : "UTC (not set)"}</p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {s.org.kind === "supplier" && (

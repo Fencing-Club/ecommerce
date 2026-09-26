@@ -36,7 +36,7 @@ const linkB = randomUUID()
 function actor(id: string, kind: "buyer" | "supplier"): Session {
   return {
     user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
-    org: { id, kind, name: kind, workosId: null, createdAt: new Date() },
+    org: { id, kind, name: kind, workosId: null, timeZone: null, createdAt: new Date() },
     role: "owner",
     workspaces: []
   }

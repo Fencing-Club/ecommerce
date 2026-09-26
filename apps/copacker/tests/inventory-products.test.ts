@@ -92,6 +92,13 @@ describe("groupInventory", () => {
       ["Mixed", 52],
       ["Partner shoe", 50]
     ])
+    // The Products page lists every product; one stocked only at excluded locations counts none.
+    expect(
+      groupInventory(stock, { classifications, everyProduct: true }).map((p) => [p.title, p.available, p.onHand])
+    ).toEqual([
+      ["Mixed", 2, 2],
+      ["Partner shoe", 0, 0]
+    ])
     expect(
       inventoryLocations(stock, classifications).map((location) => [location.name, location.classification])
     ).toEqual([

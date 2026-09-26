@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Choose Shopify, AWD US, or FBA with the US marketplace" }, { status: 400, headers })
   }
-  const result = await refreshStock(s, parsed.data)
+  const result = await refreshStock(s.org, parsed.data)
   if (!result) {
     return Response.json({ error: "Connect the selected account before refreshing stock" }, { status: 409, headers })
   }

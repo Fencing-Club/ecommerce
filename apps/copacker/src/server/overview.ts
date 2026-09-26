@@ -1,38 +1,47 @@
 import { orderTotal, type OrderInput } from "@repo/aisle"
-import { and, eq, gte, inArray, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {
   connections,
+  contacts,
   events,
+  inventoryLocationMappings,
   orders,
-  salesOrders,
+  productDefaults,
   salesSyncs,
   type ShipmentState,
   shipments,
   stockSnapshots,
   suppliers
 } from "@/db/schema"
+import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
+import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
+import { receivingLocations } from "./inventory-products"
+import {
+  amazonFees,
+  amazonOrderFees,
+  catalogIndex,
+  dailySales,
+  grossProfit,
+  movers,
+  periodTotal,
+  periods,
+  salesByDay,
+  salesByItem,
+  sellingPrices
+} from "./overview-sales"
 import { restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockDefaults } from "./restock-report"
-import { salesHistoryDays, type SalesSource, salesSources } from "./sales-orders"
+import { salesDataVersion, salesHistoryDays, type SalesSource, salesSources } from "./sales-orders"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
 const staleAfter = 2 * day
-// Stock that sells out within this many days counts as low in the days-of-cover spread.
-export const coverBuckets = [
-  { key: "out", label: "Out of stock" },
-  { key: "under14", label: "Under 2 weeks" },
-  { key: "under30", label: "2 to 4 weeks" },
-  { key: "under60", label: "1 to 2 months" },
-  { key: "under90", label: "2 to 3 months" },
-  { key: "over90", label: "Over 3 months" },
-  { key: "unsold", label: "Not selling" }
-] as const
-export type CoverBucket = (typeof coverBuckets)[number]["key"]
+const amazonDestinations = new Set<string>(["fba", "awd_us", "awd_china", "amazon"])
 
 export type Money = { currency: string; minor: number }[]
+type Price = { minor: number; currency: string }
 
 function addMoney(totals: Map<string, number>, currency: string | null | undefined, minor: number | null | undefined) {
   if (currency && minor) {
@@ -48,115 +57,47 @@ function moneyList(totals: ReadonlyMap<string, number>): Money {
     .toSorted((a, b) => b.minor - a.minor)
 }
 
-// The UTC calendar day of a time, as the Orders page and stock history count days.
-export function dayKey(time: Date | number) {
-  return new Date(time).toISOString().slice(0, 10)
-}
-
-export type DailySales = { date: string } & Record<SalesSource, { orders: number; units: number } | null>
-
-// One row per day for the last `days` full days, oldest first. A source's day is null when its stored orders don't
-// cover the whole day, so charts show a gap instead of a false zero.
-export function dailySales(
-  rows: { source: SalesSource; date: string; orders: number; units: number }[],
-  coverage: Partial<Record<SalesSource, { from: Date; to: Date }>>,
-  today: Date,
-  days: number
-): DailySales[] {
-  const end = Date.parse(dayKey(today))
-  const byKey = new Map(rows.map((row) => [`${row.source}:${row.date}`, row]))
-  const series: DailySales[] = []
-  for (let index = days; index >= 1; index--) {
-    const start = end - index * day
-    const date = dayKey(start)
-    const cell = (source: SalesSource) => {
-      const covered = coverage[source]
-      if (!covered || covered.from.getTime() > start || covered.to.getTime() < start + day) {
-        return null
-      }
-      const row = byKey.get(`${source}:${date}`)
-      return { orders: row?.orders ?? 0, units: row?.units ?? 0 }
-    }
-    series.push({ date, shopify: cell("shopify"), amazon: cell("amazon") })
-  }
-  return series
-}
-
-export type PeriodTotal = { orders: number; units: number; previous: { orders: number; units: number } | null }
-
-// Orders and units over the last `days` days against the days before them. A comparison is made only when every
-// counted source covers both periods.
-export function periodTotal(series: DailySales[], sources: SalesSource[], days: number): PeriodTotal {
-  const sum = (rows: DailySales[]) => {
-    let orders = 0,
-      units = 0,
-      complete = true
-    for (const row of rows) {
-      for (const source of sources) {
-        const cell = row[source]
-        if (cell) {
-          orders += cell.orders
-          units += cell.units
-        } else {
-          complete = false
-        }
-      }
-    }
-    return { orders, units, complete }
-  }
-  const current = sum(series.slice(-days))
-  const before = series.length >= days * 2 ? sum(series.slice(-days * 2, -days)) : null
-  return {
-    orders: current.orders,
-    units: current.units,
-    previous:
-      before?.complete && current.complete && sources.length ? { orders: before.orders, units: before.units } : null
-  }
-}
-
-export function coverBucket(line: Pick<RestockLine, "available" | "sold" | "daysRemaining">): CoverBucket | null {
-  if (line.available === null) {
-    return null
-  }
-  if (line.available <= 0) {
-    return "out"
-  }
-  if (line.sold === 0) {
-    return "unsold"
-  }
-  if (line.daysRemaining === null) {
-    return null
-  }
-  if (line.daysRemaining < 14) {
-    return "under14"
-  }
-  if (line.daysRemaining < 30) {
-    return "under30"
-  }
-  if (line.daysRemaining < 60) {
-    return "under60"
-  }
-  return line.daysRemaining < 90 ? "under90" : "over90"
-}
-
 type ChannelLines = { key: string; label: string; lines: RestockLine[] }
 
-// What restock says across every channel: stock and its value at cost, days of cover, lost selling days, the items to
-// reorder and what reordering them costs, and the best sellers.
-export function summarizeRestock(channels: ChannelLines[]) {
+// What restock says across the chosen channels: stock and its value at cost and at retail, days of cover, lost
+// sales, slow-moving stock, the items to reorder and what reordering them costs, and the best sellers.
+// `priceFor` is what one unit sells for in a channel, when known.
+export function summarizeRestock(
+  channels: ChannelLines[],
+  priceFor: (line: RestockLine, channelKey: string) => Price | null = () => null
+) {
   const reorderCost = new Map<string, number>()
   const stockValue = new Map<string, number>()
-  const cover = new Map<CoverBucket, number>(coverBuckets.map((bucket) => [bucket.key, 0]))
+  const retailValue = new Map<string, number>()
+  const lostValue = new Map<string, number>()
+  const slowValue = new Map<string, number>()
+  const cover = new Map<CoverBucket, Map<string, number>>(coverBuckets.map((bucket) => [bucket.key, new Map()]))
+  const slow: {
+    variantId: string
+    channel: string
+    channelKey: string
+    product: string
+    variant: string | null
+    sku: string | null
+    imageUrl: string | null
+    available: number
+    daysRemaining: number | null
+    bucket: "over90" | "unsold"
+    value: Price | null
+  }[] = []
   let stockouts = 0,
     reorders = 0,
     blocked = 0,
     lostDays = 0,
+    lostUnits = 0,
     itemsOut = 0,
     unitsOnHand = 0,
     uncosted = 0,
+    unpriced = 0,
     reorderUncosted = 0
   const byChannel = channels.map((channel) => {
     const value = new Map<string, number>()
+    const retail = new Map<string, number>()
     let available = 0,
       incoming = 0
     for (const line of channel.lines) {
@@ -176,28 +117,70 @@ export function summarizeRestock(channels: ChannelLines[]) {
         }
         addMoney(reorderCost, line.costCurrency, line.estimatedCostMinor)
       }
+      const price = priceFor(line, channel.key)
       if (line.stockoutDays > 0) {
         lostDays += line.stockoutDays
         itemsOut++
+        // Sales it would have made on the days it was out, at the rate it sold while in stock.
+        if (line.sold) {
+          const units = (line.stockoutDays * line.sold) / line.rateDays
+          lostUnits += units
+          if (price) {
+            addMoney(lostValue, price.currency, Math.round(units * price.minor))
+          }
+        }
       }
       const bucket = coverBucket(line)
       if (bucket) {
-        cover.set(bucket, (cover.get(bucket) ?? 0) + 1)
+        const counts = cover.get(bucket)!
+        counts.set(channel.key, (counts.get(channel.key) ?? 0) + 1)
       }
       const onHand = Math.max(0, line.available ?? 0)
       available += onHand
       incoming += line.incoming ?? 0
       if (onHand > 0) {
-        if (line.unitCostMinor === null || !line.costCurrency) {
+        const cost = line.unitCostMinor !== null && line.costCurrency ? onHand * line.unitCostMinor : null
+        if (cost === null) {
           uncosted++
         } else {
-          addMoney(value, line.costCurrency, onHand * line.unitCostMinor)
-          addMoney(stockValue, line.costCurrency, onHand * line.unitCostMinor)
+          addMoney(value, line.costCurrency, cost)
+          addMoney(stockValue, line.costCurrency, cost)
+        }
+        if (price) {
+          addMoney(retail, price.currency, onHand * price.minor)
+          addMoney(retailValue, price.currency, onHand * price.minor)
+        } else {
+          unpriced++
+        }
+        if (bucket === "over90" || bucket === "unsold") {
+          if (cost !== null) {
+            addMoney(slowValue, line.costCurrency, cost)
+          }
+          slow.push({
+            variantId: line.variantId,
+            channel: channel.label,
+            channelKey: channel.key,
+            product: line.product,
+            variant: line.variant,
+            sku: line.sku,
+            imageUrl: line.imageUrl,
+            available: onHand,
+            daysRemaining: line.daysRemaining,
+            bucket,
+            value: cost === null ? null : { minor: cost, currency: line.costCurrency! }
+          })
         }
       }
     }
     unitsOnHand += available
-    return { key: channel.key, label: channel.label, available, incoming, value: moneyList(value) }
+    return {
+      key: channel.key,
+      label: channel.label,
+      available,
+      incoming,
+      value: moneyList(value),
+      retail: moneyList(retail)
+    }
   })
 
   // Best sellers across channels, one row per variation.
@@ -208,7 +191,7 @@ export function summarizeRestock(channels: ChannelLines[]) {
       available: number
       daysRemaining: number | null
       status: "stockout" | "reorder" | "stocked"
-      channels: string[]
+      channels: { key: string; label: string; sold: number }[]
     }
   >()
   const urgency = { stockout: 2, reorder: 1, stocked: 0 } as const
@@ -239,7 +222,7 @@ export function summarizeRestock(channels: ChannelLines[]) {
             ? current.daysRemaining
             : Math.min(current.daysRemaining ?? line.daysRemaining, line.daysRemaining),
         status: urgency[lineStatus] > urgency[current.status] ? lineStatus : current.status,
-        channels: [...current.channels, channel.label]
+        channels: [...current.channels, { key: channel.key, label: channel.label, sold: line.sold }]
       })
     }
   }
@@ -252,13 +235,42 @@ export function summarizeRestock(channels: ChannelLines[]) {
     // Items due for a reorder whose cost can't be estimated, because Shopify has no unit cost for them.
     reorderUncosted,
     lostDays,
+    lostUnits: Math.round(lostUnits),
+    lostValue: moneyList(lostValue),
     itemsOut,
     unitsOnHand,
     stockValue: moneyList(stockValue),
+    retailValue: moneyList(retailValue),
+    // Items in stock without a unit cost, or without a selling price, left out of those values.
     uncosted,
+    unpriced,
     channels: byChannel,
-    cover: coverBuckets.map((bucket) => ({ ...bucket, items: cover.get(bucket.key) ?? 0 })),
-    bestSellers: [...sellers.values()].toSorted((a, b) => b.sold - a.sold).slice(0, 8)
+    cover: coverBuckets.map((bucket) => {
+      const counts = cover.get(bucket.key)!
+      return {
+        ...bucket,
+        items: [...counts.values()].reduce((sum, count) => sum + count, 0),
+        // The channel holding most of the group's items, where Restock opens for it.
+        channel: [...counts].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null
+      }
+    }),
+    slow: {
+      items: slow.length,
+      units: slow.reduce((sum, item) => sum + item.available, 0),
+      value: moneyList(slowValue),
+      top: slow
+        .toSorted((a, b) => (b.value?.minor ?? -1) - (a.value?.minor ?? -1) || b.available - a.available)
+        .slice(0, 6)
+    },
+    bestSellers: [...sellers.values()]
+      .toSorted((a, b) => b.sold - a.sold)
+      .slice(0, 8)
+      .map((seller) => ({
+        ...seller,
+        // Restock opens on the channel it sells most in.
+        channel: seller.channels.toSorted((a, b) => b.sold - a.sold)[0]?.key ?? null,
+        channels: seller.channels.map((channel) => channel.label)
+      }))
   }
 }
 
@@ -288,8 +300,9 @@ type PurchaseOrder = {
   sentAt: Date | null
 }
 
-// Open and draft PO value, open value by supplier, and what was ordered each month over the last year.
-export function purchasing(list: PurchaseOrder[], today: Date) {
+// Open and draft PO value, open value by supplier, and what was sent each month over the last year, by the month in
+// the store's time zone.
+export function purchasing(list: PurchaseOrder[], now: Date, timeZone: string) {
   const open = new Map<string, number>()
   const drafts = new Map<string, number>()
   const bySupplier = new Map<string, { orders: number; value: Map<string, number> }>()
@@ -316,18 +329,13 @@ export function purchasing(list: PurchaseOrder[], today: Date) {
     addMoney(spendByCurrency, order.data.currency, orderTotal(order.data))
   }
   const currency = moneyList(spendByCurrency)[0]?.currency ?? null
-  const months: { month: string; minor: number }[] = []
-  const first = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 11, 1))
-  for (let index = 0; index < 12; index++) {
-    const month = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + index, 1))
-    const next = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1))
-    months.push({
-      month: month.toISOString().slice(0, 7),
-      minor: sent
-        .filter((order) => order.data.currency === currency && order.sentAt! >= month && order.sentAt! < next)
-        .reduce((sum, order) => sum + orderTotal(order.data), 0)
-    })
-  }
+  const thisMonth = zonedDay(now, timeZone).slice(0, 7)
+  const months = Array.from({ length: 12 }, (_, index) => addMonths(thisMonth, index - 11)).map((month) => ({
+    month,
+    minor: sent
+      .filter((order) => order.data.currency === currency && zonedDay(order.sentAt!, timeZone).slice(0, 7) === month)
+      .reduce((sum, order) => sum + orderTotal(order.data), 0)
+  }))
   return {
     openCount,
     open: moneyList(open),
@@ -337,6 +345,52 @@ export function purchasing(list: PurchaseOrder[], today: Date) {
       .map(([name, supplier]) => ({ name, orders: supplier.orders, value: moneyList(supplier.value) }))
       .toSorted((a, b) => (b.value[0]?.minor ?? 0) - (a.value[0]?.minor ?? 0)),
     spend: { currency, months, otherCurrencies: spendByCurrency.size > 1 }
+  }
+}
+
+// The money coming due: reorders that are due now, and sent POs by their due date.
+export function upcomingSpend(list: PurchaseOrder[], reorderCost: Money, today: string) {
+  const buckets = [
+    { key: "overdue", label: "Past due", totals: new Map<string, number>(), orders: 0 },
+    { key: "next30", label: "Due in the next 30 days", totals: new Map<string, number>(), orders: 0 },
+    { key: "next60", label: "Due in 31 to 60 days", totals: new Map<string, number>(), orders: 0 },
+    { key: "later", label: "Due later", totals: new Map<string, number>(), orders: 0 }
+  ]
+  for (const order of list) {
+    if (order.status !== "submitted") {
+      continue
+    }
+    const due = order.data.dueDate
+    let bucket = buckets[3]!
+    if (due < today) {
+      bucket = buckets[0]!
+    } else if (due <= addDays(today, 30)) {
+      bucket = buckets[1]!
+    } else if (due <= addDays(today, 60)) {
+      bucket = buckets[2]!
+    }
+    bucket.orders++
+    addMoney(bucket.totals, order.data.currency, orderTotal(order.data))
+  }
+  // Reorders are due now; with past-due and next-60-day POs, they're what's needed over the next 60 days.
+  const soon = new Map<string, number>()
+  for (const entry of reorderCost) {
+    addMoney(soon, entry.currency, entry.minor)
+  }
+  for (const bucket of buckets.slice(0, 3)) {
+    for (const [currency, minor] of bucket.totals) {
+      addMoney(soon, currency, minor)
+    }
+  }
+  return {
+    reorders: reorderCost,
+    purchaseOrders: buckets.map((bucket) => ({
+      key: bucket.key,
+      label: bucket.label,
+      orders: bucket.orders,
+      value: moneyList(bucket.totals)
+    })),
+    next60: moneyList(soon)
   }
 }
 
@@ -363,7 +417,16 @@ export function attentionItems(input: {
   }
   shipments: { waiting: number; problems: number }
   drafts: number
-  syncs: { source: SalesSource; status: string; coveredTo: Date | null; finishedAt: Date | null }[]
+  syncs: {
+    source: SalesSource
+    status: string
+    coveredTo: Date | null
+    finishedAt: Date | null
+    feesErrorCode?: string | null
+    // Orders in the last 30 days without prices, and whether a sync would copy them.
+    unpriced?: number
+    outdated?: boolean
+  }[]
   stock: { source: string; status: string; finishedAt: Date | null }[]
   shopifyHistoryLimited: boolean
 }): AttentionItem[] {
@@ -375,7 +438,7 @@ export function attentionItems(input: {
       tone: "critical",
       title: `${plural(input.restock.stockouts, "item is", "items are")} out of stock or will run out before a reorder arrives`,
       detail: "Reorder now to limit the days they can't sell.",
-      href: "/restock",
+      href: "/restock?status=order",
       action: "Plan restock"
     })
   }
@@ -405,7 +468,7 @@ export function attentionItems(input: {
       tone: "warning",
       title: `${plural(input.restock.reorders, "item is", "items are")} due for a reorder`,
       detail: "They have enough stock for now, but not through the next lead time.",
-      href: "/restock",
+      href: "/restock?status=order",
       action: "Plan restock"
     })
   }
@@ -423,6 +486,7 @@ export function attentionItems(input: {
   }
   for (const sync of input.syncs) {
     const name = sourceNames[sync.source]
+    const busy = ["queued", "running"].includes(sync.status)
     if (sync.status === "failed") {
       items.push({
         key: `sync-${sync.source}`,
@@ -432,16 +496,32 @@ export function attentionItems(input: {
         href: "/sales",
         action: "View orders"
       })
-    } else if (
-      !["queued", "running"].includes(sync.status) &&
-      sync.coveredTo &&
-      input.now.getTime() - sync.coveredTo.getTime() > staleAfter
-    ) {
+    } else if (!busy && sync.coveredTo && input.now.getTime() - sync.coveredTo.getTime() > staleAfter) {
       items.push({
         key: `sync-${sync.source}`,
         tone: "info",
         title: `${name} orders haven't synced in ${Math.floor((input.now.getTime() - sync.coveredTo.getTime()) / day)} days`,
         detail: "Sync them so sales and restock include recent orders.",
+        href: "/sales",
+        action: "View orders"
+      })
+    }
+    if (sync.feesErrorCode) {
+      items.push({
+        key: `fees-${sync.source}`,
+        tone: "warning",
+        title: "Amazon fees couldn't be copied",
+        detail: "Margins leave out Amazon's fees until the next order sync copies them.",
+        href: "/sales",
+        action: "View orders"
+      })
+    }
+    if (sync.unpriced && sync.outdated && !busy) {
+      items.push({
+        key: `prices-${sync.source}`,
+        tone: "info",
+        title: `Sync ${name} orders again to copy their prices`,
+        detail: `${plural(sync.unpriced, "order", "orders")} from the last 30 days ${sync.unpriced === 1 ? "has" : "have"} no price, so sales and margins leave ${sync.unpriced === 1 ? "it" : "them"} out.`,
         href: "/sales",
         action: "View orders"
       })
@@ -493,56 +573,125 @@ export function attentionItems(input: {
   return items.toSorted((a, b) => tones[a.tone] - tones[b.tone])
 }
 
-// Units in a stored order, counted as the Orders page counts them: a bundle once, lines at their current quantity.
-const orderUnits = sql<number>`case when ${salesOrders.source} = 'amazon' then
-  (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(${salesOrders.data}->'orderItems') item)
-else
-  (select coalesce(sum((line->>'currentQuantity')::int), 0) from jsonb_array_elements(${salesOrders.data}->'lines') line
-    where jsonb_typeof(line->'lineItemGroup') is distinct from 'object')
-  + (select coalesce(sum(grp.quantity), 0) from (
-      select distinct on (line->'lineItemGroup'->>'id') (line->'lineItemGroup'->>'quantity')::int as quantity
-      from jsonb_array_elements(${salesOrders.data}->'lines') line
-      where jsonb_typeof(line->'lineItemGroup') = 'object'
-    ) grp)
-end`
+export type SetupStep = { key: string; title: string; detail: string; href: string; done: boolean }
 
-// Orders and units per source and UTC day since `since`, for the connected accounts.
-export async function salesByDay(
-  orgId: string,
-  accounts: { provider: SalesSource; externalId: string }[],
-  since: Date
-) {
-  if (!accounts.length) {
-    return []
-  }
-  const date = sql<string>`to_char(${salesOrders.orderedAt} at time zone 'UTC', 'YYYY-MM-DD')`
-  const rows = await db()
-    .select({
-      source: salesOrders.source,
-      externalAccountId: salesOrders.externalAccountId,
-      date,
-      orders: sql<number>`count(*)::int`,
-      units: sql<number>`sum(${orderUnits})::int`
-    })
-    .from(salesOrders)
-    .where(
-      and(
-        eq(salesOrders.orgId, orgId),
-        gte(salesOrders.orderedAt, since),
-        inArray(
-          salesOrders.source,
-          accounts.map((account) => account.provider)
-        )
-      )
-    )
-    .groupBy(salesOrders.source, salesOrders.externalAccountId, date)
-  return rows.filter((row) =>
-    accounts.some((account) => account.provider === row.source && account.externalId === row.externalAccountId)
-  )
+// The steps that make the Overview complete, in the order a new buyer takes them.
+export function setupSteps(input: {
+  connected: SalesSource[]
+  ordersCopied: SalesSource[]
+  stockSynced: boolean
+  inStock: number
+  uncosted: number
+  suppliers: number
+  timeZone: string | null
+}): SetupStep[] {
+  const allCopied = input.connected.length > 0 && input.connected.every((source) => input.ordersCopied.includes(source))
+  return [
+    {
+      key: "shopify",
+      title: "Connect Shopify",
+      detail: "Your catalog, stock, costs and store orders.",
+      href: "/settings",
+      done: input.connected.includes("shopify")
+    },
+    {
+      key: "amazon",
+      title: "Connect Amazon",
+      detail: "Amazon orders, FBA and AWD stock, and fees.",
+      href: "/settings",
+      done: input.connected.includes("amazon")
+    },
+    {
+      key: "orders",
+      title: "Copy your orders",
+      detail: "Sales, trends and restock read the copied orders.",
+      href: "/sales",
+      done: allCopied
+    },
+    {
+      key: "stock",
+      title: "Sync your stock",
+      detail: "Stock by channel, days of cover and restock.",
+      href: "/products",
+      done: input.stockSynced
+    },
+    {
+      key: "costs",
+      title: "Add unit costs in Shopify",
+      detail: "Stock value, reorder estimates and margins need them.",
+      href: "/products",
+      done: input.inStock > 0 && input.uncosted === 0
+    },
+    {
+      key: "supplier",
+      title: "Invite a supplier",
+      detail: "Send purchase orders and track shipments together.",
+      href: "/suppliers",
+      done: input.suppliers > 0
+    },
+    {
+      key: "time-zone",
+      title: "Set your store's time zone",
+      detail: "Days and months on this page follow it.",
+      href: "/settings",
+      done: input.timeZone !== null
+    }
+  ]
 }
 
-// Everything the Overview shows for a buyer.
-export async function overview(orgId: string, now = new Date()) {
+// Restock for every channel is the slowest part of the page, so it's kept for a few minutes while nothing it reads
+// has changed: POs, shipments, stock and order syncs, product details, suppliers, locations and connections.
+type RestockResult = Awaited<ReturnType<typeof restockAllChannels>>
+const restockCache = new Map<string, { fingerprint: string; at: number; value: RestockResult }>()
+const restockCacheMs = 5 * 60 * 1000
+
+async function restockFingerprint(orgId: string) {
+  const result = await db().execute(sql`select concat_ws('|',
+    (select max(${orders.updatedAt})::text || count(*) from ${orders} where ${orders.buyerOrgId} = ${orgId}),
+    (select max(${shipments.updatedAt})::text || count(*) from ${shipments}
+      join ${orders} on ${orders.id} = ${shipments.orderId} where ${orders.buyerOrgId} = ${orgId}),
+    (select string_agg(coalesce(${stockSnapshots.snapshotId}::text, '') || ${stockSnapshots.status}, ','
+      order by ${stockSnapshots.source}, ${stockSnapshots.scopeKey}) from ${stockSnapshots}
+      where ${stockSnapshots.orgId} = ${orgId}),
+    (select string_agg(${salesSyncs.source} || ${salesSyncs.revision} || coalesce(${salesSyncs.coveredTo}::text, '')
+      || coalesce(${salesSyncs.stockCoveredTo}::text, ''), ',' order by ${salesSyncs.source}) from ${salesSyncs}
+      where ${salesSyncs.orgId} = ${orgId}),
+    (select max(${productDefaults.updatedAt})::text || count(*) from ${productDefaults}
+      where ${productDefaults.orgId} = ${orgId}),
+    (select string_agg(${suppliers.id}::text || coalesce(${suppliers.leadTimeDays}, -1)
+      || coalesce(${suppliers.amazonLeadTimeDays}, -1) || coalesce(${suppliers.removedAt}::text, ''), ','
+      order by ${suppliers.id}) from ${suppliers} where ${suppliers.buyerOrgId} = ${orgId}),
+    (select sum(${inventoryLocationMappings.revision})::text || count(*) from ${inventoryLocationMappings}
+      where ${inventoryLocationMappings.orgId} = ${orgId}),
+    (select string_agg(${contacts.id}::text || coalesce(${contacts.shopifyLocationId}, ''), ',' order by ${contacts.id})
+      from ${contacts} where ${contacts.orgId} = ${orgId}),
+    (select string_agg(${connections.provider} || ${connections.externalId}, ',' order by ${connections.provider})
+      from ${connections} where ${connections.orgId} = ${orgId})
+  ) as fingerprint`)
+  return String((result as unknown as { rows: { fingerprint: unknown }[] }).rows[0]?.fingerprint ?? "")
+}
+
+async function cachedRestock(orgId: string, now: number) {
+  const fingerprint = await restockFingerprint(orgId)
+  const cached = restockCache.get(orgId)
+  if (cached && cached.fingerprint === fingerprint && now - cached.at < restockCacheMs) {
+    return cached.value
+  }
+  const value = await restockAllChannels(orgId, restockDefaults.days, restockDefaults.leadTimeDays)
+  restockCache.set(orgId, { fingerprint, at: now, value })
+  return value
+}
+
+// Everything the Overview shows for a buyer, for every channel or one of them (a restock channel key: "amazon" or
+// "shopify:<location>").
+export async function overview(
+  org: { id: string; timeZone: string | null },
+  options: { channel?: string | null; now?: Date } = {}
+) {
+  const now = options.now ?? new Date()
+  const orgId = org.id
+  const timeZone = org.timeZone ?? "UTC"
+  const today = zonedDay(now, timeZone)
   const connected = await db()
     .select({ provider: connections.provider, externalId: connections.externalId, scopes: connections.scopes })
     .from(connections)
@@ -552,41 +701,63 @@ export async function overview(orgId: string, now = new Date()) {
       ? [{ provider: row.provider as SalesSource, externalId: row.externalId }]
       : []
   )
-  const [syncs, dailyRows, restock, purchaseOrders, sent, shipmentRows, stock] = await Promise.all([
-    db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
-    salesByDay(orgId, accounts, new Date(Date.parse(dayKey(now)) - salesHistoryDays * day)),
-    restockAllChannels(orgId, restockDefaults.days, restockDefaults.leadTimeDays),
-    db()
-      .select({
-        id: orders.id,
-        status: orders.status,
-        data: orders.data,
-        createdAt: orders.createdAt,
-        supplier: suppliers.name
-      })
-      .from(orders)
-      .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-      .where(eq(orders.buyerOrgId, orgId)),
-    db()
-      .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
-      .from(events)
-      .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
-      .groupBy(events.orderId),
-    db()
-      .select({ status: shipments.status })
-      .from(shipments)
-      .innerJoin(orders, eq(orders.id, shipments.orderId))
-      .where(eq(orders.buyerOrgId, orgId)),
-    db()
-      .select({
-        source: stockSnapshots.source,
-        status: stockSnapshots.status,
-        finishedAt: stockSnapshots.attemptFinishedAt
-      })
-      .from(stockSnapshots)
-      .where(eq(stockSnapshots.orgId, orgId))
-  ])
+  const restock = await cachedRestock(orgId, now.getTime())
+  const channelOptions = restock.channels.map((channel) => ({ key: channel.key, label: channel.label }))
+  const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
+  let channelSource: SalesSource | null = null
+  if (selected) {
+    channelSource = selected.key === "amazon" ? "amazon" : "shopify"
+  }
+  const scopedAccounts = accounts.filter((account) => !channelSource || account.provider === channelSource)
+  const window30 = periods(today, 30, timeZone)
+  const amazon = scopedAccounts.find((account) => account.provider === "amazon")
+
+  const [syncs, dayRows, itemRows, feeRows, purchaseOrders, sent, deliveries, shipmentRows, stock, supplierRows] =
+    await Promise.all([
+      db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
+      salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone),
+      salesByItem(orgId, scopedAccounts, window30),
+      amazon ? amazonOrderFees(orgId, amazon.externalId, window30.currentStart, window30.end) : Promise.resolve([]),
+      db()
+        .select({
+          id: orders.id,
+          status: orders.status,
+          data: orders.data,
+          createdAt: orders.createdAt,
+          supplier: suppliers.name
+        })
+        .from(orders)
+        .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
+        .where(eq(orders.buyerOrgId, orgId)),
+      db()
+        .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
+        .from(events)
+        .innerJoin(orders, eq(orders.id, events.orderId))
+        .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
+        .groupBy(events.orderId),
+      db()
+        .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
+        .from(contacts)
+        .where(and(eq(contacts.orgId, orgId), eq(contacts.kind, "delivery"))),
+      db()
+        .select({ status: shipments.status, orderId: shipments.orderId })
+        .from(shipments)
+        .innerJoin(orders, eq(orders.id, shipments.orderId))
+        .where(eq(orders.buyerOrgId, orgId)),
+      db()
+        .select({
+          source: stockSnapshots.source,
+          status: stockSnapshots.status,
+          finishedAt: stockSnapshots.attemptFinishedAt,
+          snapshotId: stockSnapshots.snapshotId
+        })
+        .from(stockSnapshots)
+        .where(eq(stockSnapshots.orgId, orgId)),
+      db()
+        .select({ id: suppliers.id, removedAt: suppliers.removedAt })
+        .from(suppliers)
+        .where(eq(suppliers.buyerOrgId, orgId))
+    ])
 
   const current = syncs.filter((sync) =>
     accounts.some((account) => account.provider === sync.source && account.externalId === sync.externalAccountId)
@@ -597,41 +768,119 @@ export async function overview(orgId: string, now = new Date()) {
       coverage[sync.source] = { from: sync.coveredFrom, to: sync.coveredTo }
     }
   }
-  const series = dailySales(dailyRows, coverage, now, salesHistoryDays)
-  const sources = accounts.map((account) => account.provider)
-  const summary = summarizeRestock(restock.channels)
+  const sources = scopedAccounts.map((account) => account.provider)
+  const covered = sources.filter((source) => coverage[source])
+  const series = dailySales(dayRows, coverage, today, salesHistoryDays, timeZone)
+  const last30 = periodTotal(series, covered, 30)
+  const salesCurrency =
+    dayRows.filter((row) => row.currency).toSorted((a, b) => b.revenueMinor - a.revenueMinor)[0]?.currency ?? null
+  const index = catalogIndex(restock.catalog)
+  const fees = amazonFees(feeRows)
+  const profit = grossProfit(itemRows, index, { amazonMinor: fees.feesMinor, amazonRevenueMinor: fees.revenueMinor })
+  // Trends compare the last 30 days with the 30 before, for sources whose orders cover both.
+  const comparable = covered.filter((source) => coverage[source]!.from <= window30.previousStart)
+  const trending = movers(itemRows, index, comparable)
+  const priceOf = sellingPrices(itemRows, index)
+
+  const scopedChannels = restock.channels.filter((channel) => !selected || channel.key === selected.key)
+  const summary = summarizeRestock(scopedChannels, (line, channelKey) => {
+    const source: SalesSource = channelKey === "amazon" ? "amazon" : "shopify"
+    const recent = priceOf(source, line.variantId)
+    if (recent) {
+      return recent
+    }
+    const row = index.byVariant.get(line.variantId)
+    return row?.priceMinor && row.priceCurrency ? { minor: row.priceMinor, currency: row.priceCurrency } : null
+  })
+  // The setup checklist looks at every channel, whichever is chosen.
+  const everyChannel = selected ? summarizeRestock(restock.channels) : summary
+
+  // POs (and their shipments) for the chosen channel: to Amazon, or received at the chosen Shopify location.
+  const deliveryLocations = new Map(deliveries.map((row) => [row.id, row.locationId]))
+  const scopedOrders = purchaseOrders.filter((order) => {
+    if (!selected) {
+      return true
+    }
+    if (selected.key === "amazon") {
+      return amazonDestinations.has(order.data.destination)
+    }
+    return receivingLocations(order.data, deliveryLocations).includes(selected.key.slice("shopify:".length))
+  })
+  const orderIds = new Set(scopedOrders.map((order) => order.id))
   const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
-  const buying = purchasing(
-    purchaseOrders.map((order) => ({
-      status: order.status,
-      supplier: order.supplier,
-      data: order.data,
-      // A PO sent before submissions were recorded counts from its creation.
-      sentAt: order.status === "draft" ? null : (sentAt.get(order.id) ?? order.createdAt)
-    })),
-    now
-  )
-  const states = shipmentRows.map((row) => row.status)
+  const poList = scopedOrders.map((order) => ({
+    status: order.status,
+    supplier: order.supplier,
+    data: order.data,
+    // A PO sent before submissions were recorded counts from its creation.
+    sentAt: order.status === "draft" ? null : (sentAt.get(order.id) ?? order.createdAt)
+  }))
+  const buying = purchasing(poList, now, timeZone)
+  const states = shipmentRows.filter((row) => orderIds.has(row.orderId)).map((row) => row.status)
   const shopify = connected.find((row) => row.provider === "shopify")
+  const unpricedBySource = (source: SalesSource) =>
+    series.slice(-30).reduce((sum, row) => sum + (row[source]?.unpriced ?? 0), 0)
+  const finishedStock = (source: "shopify" | "fba") =>
+    stock
+      .filter((row) => row.source === source && row.finishedAt)
+      .map((row) => row.finishedAt!)
+      .toSorted((a, b) => b.getTime() - a.getTime())[0] ?? null
+  const stockSources = [
+    ...(connected.some((row) => row.provider === "shopify") ? (["shopify"] as const) : []),
+    ...(connected.some((row) => row.provider === "amazon") ? (["fba"] as const) : [])
+  ]
 
   return {
     generatedAt: now.toISOString(),
-    connected: sources,
+    timeZone,
+    timeZoneSet: org.timeZone !== null,
+    connected: accounts.map((account) => account.provider),
+    channels: channelOptions,
+    channel: selected,
+    // When each kind of data was last copied, for the header.
+    freshness: [
+      ...accounts.map((account) => ({
+        key: `${account.provider}-orders`,
+        label: `${sourceNames[account.provider]} orders`,
+        at: current.find((row) => row.source === account.provider)?.finishedAt?.toISOString() ?? null
+      })),
+      ...stockSources.map((source) => ({
+        key: `${source}-stock`,
+        label: source === "shopify" ? "Shopify stock" : "Amazon stock",
+        at: finishedStock(source)?.toISOString() ?? null
+      }))
+    ],
+    setup: setupSteps({
+      connected: accounts.map((account) => account.provider),
+      ordersCopied: current.filter((sync) => sync.coveredTo).map((sync) => sync.source),
+      stockSynced:
+        stockSources.length > 0 &&
+        stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
+      inStock: everyChannel.unitsOnHand,
+      uncosted: everyChannel.uncosted,
+      suppliers: supplierRows.filter((row) => !row.removedAt).length,
+      timeZone: org.timeZone
+    }),
     sales: {
       sources,
       daily: series,
-      last30: periodTotal(
-        series,
-        sources.filter((source) => coverage[source]),
-        30
-      )
+      last30,
+      currency: salesCurrency,
+      profit,
+      fees: { ...fees, synced: current.some((sync) => sync.source === "amazon" && sync.feesCoveredTo) },
+      movers: trending,
+      moversComparable: comparable.length > 0
     },
     restock: { days: restockDefaults.days, leadTimeDays: restockDefaults.leadTimeDays, ...summary },
     purchasing: buying,
+    upcoming: upcomingSpend(poList, summary.reorderCost, today),
     shipments: shipmentPipeline(states),
     attention: attentionItems({
       now,
-      restock: { ...summary, sources: restock.sources },
+      restock: {
+        ...summary,
+        sources: restock.sources.filter((source) => !channelSource || source.source === channelSource)
+      },
       shipments: {
         waiting: states.filter((state) => state === "approval" || state === "waiting_labels").length,
         problems: states.filter((state) => state === "needs_attention").length
@@ -641,7 +890,10 @@ export async function overview(orgId: string, now = new Date()) {
         source: sync.source,
         status: sync.status,
         coveredTo: sync.coveredTo,
-        finishedAt: sync.finishedAt
+        finishedAt: sync.finishedAt,
+        feesErrorCode: sync.feesErrorCode,
+        unpriced: unpricedBySource(sync.source),
+        outdated: sync.dataVersion < salesDataVersion
       })),
       stock: stock.map((row) => ({ source: row.source, status: row.status, finishedAt: row.finishedAt })),
       shopifyHistoryLimited: Boolean(shopify && !shopify.scopes.split(/[,\s]+/).includes("read_all_orders"))

@@ -56,6 +56,7 @@ function total(values: (number | null)[]) {
 }
 
 const unknown: Quantities = { available: null, onHand: null, incoming: null }
+const none: Quantities = { available: 0, onHand: 0, incoming: 0 }
 
 function stockKind(row: StockRow): StockKind {
   if (row.bundle) {
@@ -270,12 +271,15 @@ export function groupInventory(
     query,
     classifications = new Map(),
     includeExcluded = false,
+    everyProduct = false,
     onOrder = new Map()
   }: {
     locationId?: string | null
     query?: string | null
     classifications?: ReadonlyMap<string, LocationClassification>
     includeExcluded?: boolean
+    // Keeps variants stocked only at uncounted locations, with none counted, instead of hiding them.
+    everyProduct?: boolean
     onOrder?: ReadonlyMap<string, PendingOrder[]>
   } = {}
 ): InventoryProduct[] {
@@ -284,12 +288,13 @@ export function groupInventory(
   for (const row of rows) {
     // Only the locations the buyer counts as its own stock (and the Amazon pools) add up, unless asked for all.
     // Shopify's Amazon location mirrors FBA, which comes from Amazon directly, and Collective holds partners' stock.
-    // A variant stocked only at uncounted locations is hidden with them.
+    // A variant stocked only at uncounted locations is hidden with them, unless every product is asked for.
     const counted = includeExcluded
       ? row.levels
       : row.levels.filter((level) => (classifications.get(level.locationId) ?? "merchant") === "merchant")
     const levels = locationId ? counted.filter((level) => level.locationId === locationId) : counted
-    if ((locationId || row.levels.length > 0) && levels.length === 0) {
+    const uncounted = row.levels.length > 0 && levels.length === 0
+    if ((locationId && levels.length === 0) || (uncounted && !everyProduct)) {
       continue
     }
     const title = row.productTitle ?? row.buyerSku ?? "Untitled product"
@@ -314,7 +319,7 @@ export function groupInventory(
     const stock = stockKind(row)
     const amazonLevels = levels.filter((level) => isAmazonPool(level.locationId))
     const variantTotals = {
-      tracked: () => totals(levels),
+      tracked: () => (uncounted ? none : totals(levels)),
       // Shopify reports a bundle's availability for the whole store, so it is unknown at any single Shopify location.
       // A multipack stocked at Amazon adds its own units.
       bundle: () => {

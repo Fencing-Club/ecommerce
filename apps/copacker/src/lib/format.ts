@@ -51,3 +51,47 @@ export function monthName(month: string, withYear = false) {
     timeZone: "UTC"
   })
 }
+
+// Amounts in one or more currencies, the largest first, as the Overview reports them.
+type MoneyList = readonly { currency: string; minor: number }[]
+
+const exact = (minor: number, currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(minor / 100)
+
+// The headline amount: the currency most of the money is in. `fallback` is the currency to show zero in.
+export function formatMoney(value: MoneyList, options: { compact?: boolean; fallback?: string } = {}) {
+  const first = value[0] ?? { minor: 0, currency: options.fallback ?? "USD" }
+  return options.compact ? compactMoney(first.minor, first.currency) : exact(first.minor, first.currency)
+}
+
+// Money in more than one currency can't be added up; the others are named under the headline figure.
+export function otherCurrencies(value: MoneyList) {
+  return value.length > 1
+    ? `Plus ${value
+        .slice(1)
+        .map((entry) => exact(entry.minor, entry.currency))
+        .join(" and ")}`
+    : null
+}
+
+export function formatPercent(value: number) {
+  return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value)
+}
+
+const relative = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" })
+
+// "5 minutes ago", "yesterday", "3 days ago".
+export function timeAgo(at: string | Date, now: Date = new Date()) {
+  const seconds = Math.round((new Date(at).getTime() - now.getTime()) / 1000)
+  const steps: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60]
+  ]
+  for (const [unit, size] of steps) {
+    if (Math.abs(seconds) >= size) {
+      return relative.format(Math.round(seconds / size), unit)
+    }
+  }
+  return "just now"
+}

@@ -1,6 +1,6 @@
 import { ProviderError } from "@repo/aisle/amazon"
 import { describe, expect, it, vi } from "vitest"
-import { syncChunks, throttled } from "../src/server/sales-orders"
+import { salesDataVersion, syncChunks, throttled } from "../src/server/sales-orders"
 import { ledgerChunks } from "../src/server/stock-days"
 
 const day = 86400000
@@ -23,6 +23,12 @@ describe("order and stock history syncs", () => {
     const always = vi.fn<() => Promise<string>>().mockRejectedValue(new ProviderError(429, null, "throttled"))
     await expect(throttled(always, owned, sleep)).rejects.toThrow("throttled")
     expect(always).toHaveBeenCalledTimes(5)
+  })
+  it("reads orders stored in an older shape again, newest first", () => {
+    const now = Date.parse("2026-09-25T12:00:00Z")
+    const coverage = { coveredFrom: new Date(now - 365 * day), coveredTo: new Date(now - day) }
+    expect(syncChunks(now, { ...coverage, dataVersion: 0 }).fresh).toBe(true)
+    expect(syncChunks(now, { ...coverage, dataVersion: salesDataVersion }).fresh).toBe(false)
   })
   it("starts over from the newest orders when the stored range stopped over a month ago", () => {
     const now = Date.parse("2026-09-25T12:00:00Z")

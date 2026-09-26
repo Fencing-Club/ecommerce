@@ -3,9 +3,10 @@
 import { useDebouncedValue, useLocalStorage } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { money } from "@repo/aisle"
-import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, Search } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, Search, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage, type SupplierOption, useSuppliersQuery } from "@/lib/api"
+import { type CoverBucket, coverBucket, coverBuckets, isCoverBucket } from "@/lib/cover"
 import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
 import { dayRange, restockDefaults } from "@/server/restock-report"
 import * as styles from "./restock-report.css"
@@ -42,6 +44,19 @@ type Report = {
   lines: RestockLine[]
 }
 type Request = { days: number; leadTimeDays: number; channel: RestockChannel; supplier: string }
+// Filters a link (such as one from the Overview) opens Restock with: a channel, a search, a days-of-cover group, or
+// only the items to reorder. A link calculates straight away.
+type LinkFilters = { channel: string | null; q: string; cover: CoverBucket | null; onlyOrders: boolean }
+
+function linkFilters(params: URLSearchParams | null): LinkFilters {
+  const cover = params?.get("cover")
+  return {
+    channel: params?.get("channel") || null,
+    q: params?.get("q") ?? "",
+    cover: isCoverBucket(cover) ? cover : null,
+    onlyOrders: params?.get("status") === "order"
+  }
+}
 
 const restockApi = api.injectEndpoints({
   overrideExisting: true,
@@ -524,7 +539,12 @@ function SupplierGroup({
 // Why nothing is listed. A supplier filter shows only products linked to that supplier, which can be none yet.
 function EmptyResults({ report, searching }: { report: Report; searching: boolean }) {
   if (searching) {
-    return <p className={styles.summary}>No products match.</p>
+    return (
+      <p className={styles.summary}>
+        No products match. Restock lists only products that have a supplier; set the rest on the{" "}
+        <Link href="/products">Products</Link> page.
+      </p>
+    )
   }
   if (report.supplier !== "all" && report.lines.length === 0) {
     const name = report.suppliers.find((supplier) => supplier.id === report.supplier)?.name ?? "this supplier"
@@ -590,8 +610,10 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
 
 type Sort = "urgency" | "quantity" | "name"
 
-function Results({ report }: { report: Report }) {
-  const [search, setSearch] = useState("")
+function Results({ report, filters }: { report: Report; filters: LinkFilters }) {
+  const [search, setSearch] = useState(filters.q)
+  const [cover, setCover] = useState(filters.cover)
+  const [onlyOrders, setOnlyOrders] = useState(filters.onlyOrders)
   const [query] = useDebouncedValue(search.trim().toLocaleLowerCase(), 200)
   const [sort, setSort] = useLocalStorage<Sort>({ key: "restock-sort", defaultValue: "urgency" })
   const [showAll, setShowAll] = useState(false)
@@ -601,16 +623,22 @@ function Results({ report }: { report: Report }) {
   const salesError = report.sources.some((source) => source.error)
   const matching = report.lines.filter(
     (line) =>
-      !query ||
-      line.product.toLocaleLowerCase().includes(query) ||
-      line.variant?.toLocaleLowerCase().includes(query) ||
-      line.sku?.toLocaleLowerCase().includes(query)
+      (!query ||
+        line.product.toLocaleLowerCase().includes(query) ||
+        line.variant?.toLocaleLowerCase().includes(query) ||
+        line.sku?.toLocaleLowerCase().includes(query)) &&
+      (!cover || coverBucket(line) === cover) &&
+      (!onlyOrders || line.status === "stockout" || line.status === "reorder")
   )
   const noListing = matching.filter((line) => line.status === "no_listing")
   const visible = matching
     .filter(
       (line) =>
-        showAll || line.status === "stockout" || line.status === "reorder" || (line.status === "blocked" && !salesError)
+        showAll ||
+        cover !== null ||
+        line.status === "stockout" ||
+        line.status === "reorder" ||
+        (line.status === "blocked" && !salesError)
     )
     .toSorted((a, b) => {
       if (sort === "name") {
@@ -665,6 +693,24 @@ function Results({ report }: { report: Report }) {
           {report.needsSupplier === 1 ? "it isn’t" : "they aren’t"} listed. Set suppliers on the{" "}
           <Link href="/products">Products</Link> page.
         </p>
+      )}
+      {(cover || onlyOrders) && (
+        <div className={styles.filters}>
+          {cover && (
+            <Button variant="outline" size="sm" onClick={() => setCover(null)}>
+              Days of cover: {coverBuckets.find((bucket) => bucket.key === cover)?.label}
+              <X data-icon="inline-end" aria-hidden />
+              <span className={srOnly}>Clear filter</span>
+            </Button>
+          )}
+          {onlyOrders && (
+            <Button variant="outline" size="sm" onClick={() => setOnlyOrders(false)}>
+              Items to reorder
+              <X data-icon="inline-end" aria-hidden />
+              <span className={srOnly}>Clear filter</span>
+            </Button>
+          )}
+        </div>
       )}
       <div className={styles.controls}>
         <Field className={styles.search}>
@@ -783,7 +829,11 @@ export function RestockReport() {
   const leadTimeDays = wholeDays(leadTimeText)
   const { data: channels = [], isLoading: channelsLoading } = restockApi.useRestockChannelsQuery()
   const { data: suppliers = [] } = useSuppliersQuery()
-  const channel = channels.find((item) => item.key === channelKey) ?? channels[0]
+  const params = useSearchParams()
+  const [filters] = useState(() => linkFilters(params))
+  // The linked channel wins until another is chosen.
+  const [linkedChannel, setLinkedChannel] = useState(filters.channel)
+  const channel = channels.find((item) => item.key === (linkedChannel ?? channelKey)) ?? channels[0]
   // A remembered choice that no longer exists, such as a removed supplier, falls back to all suppliers.
   const supplierChoice = supplier === "all" || suppliers.some((row) => row.id === supplier)
   const [submitted, setSubmitted] = useState<Request | null>(null)
@@ -794,6 +844,13 @@ export function RestockReport() {
       ? { days, leadTimeDays, channel: channel.channel, supplier: supplierChoice ? supplier : "all" }
       : null
   const current = request && JSON.stringify(request) === requestKey
+  const linked = Boolean(filters.channel || filters.q || filters.cover || filters.onlyOrders)
+  const [autoRan, setAutoRan] = useState(false)
+  // Opened from a link: calculate once the channels have loaded, without waiting for Suggest reorders.
+  if (linked && !autoRan && request && channels.length) {
+    setAutoRan(true)
+    setSubmitted(request)
+  }
   return (
     <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
       <div className={styles.controls}>
@@ -802,7 +859,10 @@ export function RestockReport() {
           <NativeSelect
             id="restock-channel"
             value={channel?.key ?? ""}
-            onChange={(event) => setChannelKey(event.target.value)}
+            onChange={(event) => {
+              setLinkedChannel(null)
+              setChannelKey(event.target.value)
+            }}
           >
             {!channel && (
               <NativeSelectOption value="">{channelsLoading ? "Loading…" : "Sync inventory first"}</NativeSelectOption>
@@ -878,7 +938,7 @@ export function RestockReport() {
         <Link href="/suppliers">Suppliers</Link> page.
       </p>
       {result.isError && <p role="alert">{errorMessage(result.error, "Restock couldn’t be calculated. Try again.")}</p>}
-      {result.currentData && current && <Results key={requestKey} report={result.currentData} />}
+      {result.currentData && current && <Results key={requestKey} report={result.currentData} filters={filters} />}
       {result.currentData && !current && (
         <p className={styles.summary}>Settings changed. Select Suggest reorders to update.</p>
       )}

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Choose Shopify or Amazon" }, { status: 400, headers })
   }
   try {
-    return Response.json(await requestSalesSync(s, input.data.source), { status: 202, headers })
+    return Response.json(await requestSalesSync(s.org, input.data.source), { status: 202, headers })
   } catch (error) {
     if (error instanceof SalesSyncError) {
       return Response.json({ error: error.message }, { status: 409, headers })

@@ -90,3 +90,5 @@ export const chevron = style({
 })
 export const groupTitle = style({ display: "flex", alignItems: "center", gap: space(2) })
 export const groupContent = style({ display: "flex", flexDirection: "column", gap: space(3) })
+// Filters a link opened Restock with, each clearable.
+export const filters = style({ display: "flex", flexWrap: "wrap", gap: space(2) })

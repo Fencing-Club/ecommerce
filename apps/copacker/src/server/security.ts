@@ -37,6 +37,13 @@ export function verifyShopifyHmac(params: URLSearchParams, secret: string) {
   const message = entries.map(([key, value]) => `${key}=${value}`).join("&")
   return timingSafeEqual(Buffer.from(provided, "hex"), createHmac("sha256", secret).update(message).digest())
 }
+// Shopify signs each webhook's raw body with the app's client secret; the signature is base64 in X-Shopify-Hmac-Sha256.
+export function verifyShopifyWebhook(body: string, signature: string | null, secret: string) {
+  if (!secret || !signature || !/^[A-Za-z0-9+/]{43}=$/.test(signature)) {
+    return false
+  }
+  return timingSafeEqual(Buffer.from(signature, "base64"), createHmac("sha256", secret).update(body, "utf8").digest())
+}
 export function appUrl() {
   const value = process.env.APP_URL ?? "http://localhost:3000"
   return new URL(value).origin

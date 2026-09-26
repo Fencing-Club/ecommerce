@@ -148,7 +148,7 @@ const orderData = orderInputSchema.parse({
 function actor(kind: "buyer" | "supplier", id: string): Session {
   return {
     user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true },
-    org: { id, kind, name: "Test org", workosId: null, createdAt: new Date() },
+    org: { id, kind, name: "Test org", workosId: null, timeZone: null, createdAt: new Date() },
     role: "owner",
     workspaces: []
   }
@@ -2716,6 +2716,10 @@ describe("stored sales orders", () => {
   // Answers each Amazon read with the listed orders created in its period.
   function amazonOrders(orders: ReturnType<typeof amazonOrder>[]) {
     provider.api.request.mockImplementation(async (_method: string, path: string) => {
+      // The order sync also copies Amazon's transactions for fees; none are posted here.
+      if (path.startsWith("/finances/")) {
+        return { payload: { transactions: [] } }
+      }
       const query = new URL(path, "https://amazon.test").searchParams
       const from = Date.parse(query.get("createdAfter") ?? ""),
         to = Date.parse(query.get("createdBefore") ?? "")
@@ -2760,8 +2764,8 @@ describe("stored sales orders", () => {
   it("copies orders, lists them and computes demand without asking Amazon again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
     await expect(storedDemand(buyerId, "amazon", 28)).rejects.toThrow("Sync Amazon orders")
-    expect(await requestSalesSync(buyer, "amazon")).toEqual({ status: "queued" })
-    expect(await requestSalesSync(buyer, "amazon")).toEqual({ status: "queued" })
+    expect(await requestSalesSync(buyer.org, "amazon")).toEqual({ status: "queued" })
+    expect(await requestSalesSync(buyer.org, "amazon")).toEqual({ status: "queued" })
     expect(await database.select().from(tables.jobs)).toHaveLength(1)
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs)
@@ -2795,15 +2799,62 @@ describe("stored sales orders", () => {
   })
   it("drops orders that disappear from the source when the period is synced again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
-    await requestSalesSync(buyer, "amazon")
+    await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     amazonOrders([amazonOrder("111-2", daysAgo(100), 3)])
-    const before = provider.api.request.mock.calls.length
-    await requestSalesSync(buyer, "amazon")
+    const orderReads = () =>
+      provider.api.request.mock.calls.filter((call) => String(call[1]).startsWith("/orders/")).length
+    const before = orderReads()
+    await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual(["111-2"])
     // Only the recent periods are read again.
-    expect(provider.api.request.mock.calls.length - before).toBe(3)
+    expect(orderReads() - before).toBe(3)
+  })
+  it("copies Amazon's transactions for fees and records the stored orders' shape", async () => {
+    const posted = daysAgo(5)
+    provider.api.request.mockImplementation(async (_method: string, path: string) => {
+      if (!path.startsWith("/finances/")) {
+        return { orders: [] }
+      }
+      const query = new URL(path, "https://amazon.test").searchParams
+      const inWindow =
+        Date.parse(posted) >= Date.parse(query.get("postedAfter") ?? "") &&
+        Date.parse(posted) < Date.parse(query.get("postedBefore") ?? "")
+      return {
+        payload: {
+          transactions: inWindow
+            ? [
+                {
+                  transactionId: "t1",
+                  transactionType: "Shipment",
+                  postedDate: posted,
+                  totalAmount: { currencyCode: "USD", currencyAmount: 12 },
+                  relatedIdentifiers: [{ relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "111-1" }],
+                  breakdowns: [
+                    { breakdownType: "AmazonFees", breakdownAmount: { currencyCode: "USD", currencyAmount: -3 } }
+                  ]
+                }
+              ]
+            : []
+        }
+      }
+    })
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
+    expect(sync).toMatchObject({ status: "idle", dataVersion: 1, feesErrorCode: null })
+    expect(sync?.feesCoveredTo).not.toBeNull()
+    expect(
+      await database
+        .select({
+          transactionId: tables.amazonTransactions.transactionId,
+          orderId: tables.amazonTransactions.orderId,
+          totalMinor: tables.amazonTransactions.totalMinor,
+          feesMinor: tables.amazonTransactions.feesMinor
+        })
+        .from(tables.amazonTransactions)
+    ).toEqual([{ transactionId: "t1", orderId: "111-1", totalMinor: 1200, feesMinor: 300 }])
   })
   it("copies daily FBA stock from Amazon's ledger and counts stockout days, except days the item sold", async () => {
     const dayMs = 86400000
@@ -2817,7 +2868,7 @@ describe("stored sales orders", () => {
         .map((value) => [value, "X1", "foil-2", "SELLABLE", "5"].join("\t"))
       return [["Date", "FNSKU", "MSKU", "Disposition", "Ending Warehouse Balance"].join("\t"), ...rows].join("\n")
     })
-    await requestSalesSync(buyer, "amazon")
+    await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ stockErrorCode: null, stockCoveredTo: new Date(today) })
@@ -2871,11 +2922,11 @@ describe("stored sales orders", () => {
   })
   it("records a failed sync and keeps the orders already copied", async () => {
     provider.api.request.mockRejectedValue(new Error("private provider text"))
-    await requestSalesSync(buyer, "amazon")
+    await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "failed", errorCode: "refresh_failed", coveredTo: null })
-    await expect(requestSalesSync(supplier, "amazon")).rejects.toThrow("buyer workspace")
+    await expect(requestSalesSync(supplier.org, "amazon")).rejects.toThrow("buyer workspace")
   })
 })
 
@@ -2919,5 +2970,26 @@ describe("product suppliers", () => {
     await expect(assignProductSupplier(supplier, { productIds: products, supplierId: null })).rejects.toThrow(
       "buyer workspace"
     )
+  })
+})
+
+describe("store time zone", () => {
+  const save = (timeZone: string) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "workspace.timeZone", data: { timeZone } })
+      })
+    )
+
+  it("saves a time zone the runtime knows for the workspace", async () => {
+    expect((await save("America/Los_Angeles")).status).toBe(200)
+    const [org] = await database
+      .select({ timeZone: tables.organizations.timeZone })
+      .from(tables.organizations)
+      .where(eq(tables.organizations.id, buyerId))
+    expect(org?.timeZone).toBe("America/Los_Angeles")
+    expect((await save("Mars/Olympus")).status).toBe(400)
   })
 })

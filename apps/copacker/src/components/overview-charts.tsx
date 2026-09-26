@@ -2,6 +2,8 @@
 
 import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
   Area,
@@ -18,7 +20,7 @@ import {
   YAxis
 } from "recharts"
 import { compactMoney, compactNumber, formatNumber, monthName, shortDate } from "@/lib/format"
-import type { DailySales } from "@/server/overview"
+import type { DailySales } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
 import * as styles from "./overview.css"
 import { vars } from "@/styles/theme.css"
@@ -74,6 +76,7 @@ function ChartTooltip({
 }
 
 type Point = { key: string; label: string; title: string } & Partial<Record<SalesSource, number | null>>
+type Metric = "units" | "sales"
 
 const ranges = [
   { value: "30", label: "30 days", days: 30 },
@@ -82,7 +85,7 @@ const ranges = [
 ] as const
 
 // Daily points for short ranges; a year is summed by week so the line stays readable.
-function points(daily: DailySales[], days: number, sources: SalesSource[]): Point[] {
+function points(daily: DailySales[], days: number, sources: SalesSource[], metric: Metric): Point[] {
   const rows = daily.slice(-days)
   const size = days > 90 ? 7 : 1
   const result: Point[] = []
@@ -98,27 +101,72 @@ function points(daily: DailySales[], days: number, sources: SalesSource[]): Poin
       const cells = group.map((row) => row[source])
       point[source] = cells.every((cell) => cell === null)
         ? null
-        : cells.reduce((sum, cell) => sum + (cell?.units ?? 0), 0)
+        : cells.reduce((sum, cell) => sum + ((metric === "units" ? cell?.units : cell?.revenueMinor) ?? 0), 0)
     }
     result.push(point)
   }
   return result
 }
 
-export function SalesTrend({ daily, sources }: { daily: DailySales[]; sources: SalesSource[] }) {
+function Switch<T extends string>({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string
+  value: T
+  options: readonly { value: T; label: string }[]
+  onChange: (value: T) => void
+}) {
+  return (
+    <ToggleGroup
+      className={styles.range}
+      value={[value]}
+      onValueChange={(next) => {
+        const option = options.find((candidate) => candidate.value === next[0])
+        if (option) {
+          onChange(option.value)
+        }
+      }}
+      aria-label={label}
+    >
+      {options.map((option) => (
+        <Toggle key={option.value} value={option.value} className={styles.rangeItem}>
+          {option.label}
+        </Toggle>
+      ))}
+    </ToggleGroup>
+  )
+}
+
+// Units or sales by source over 30 days, 90 days or a year. Sales appear once orders have prices; orders without a
+// price are left out of them.
+export function SalesTrend({
+  daily,
+  sources,
+  currency
+}: {
+  daily: DailySales[]
+  sources: SalesSource[]
+  currency: string | null
+}) {
   const [range, setRange] = useState<(typeof ranges)[number]["value"]>("30")
+  const [chosen, setMetric] = useState<Metric>("units")
+  const metric: Metric = currency ? chosen : "units"
   const days = ranges.find((option) => option.value === range)!.days
   const shown = sourceOrder.filter((source) => sources.includes(source))
-  const data = points(daily, days, shown)
+  const data = points(daily, days, shown, metric)
+  const format = (value: number) => (metric === "units" ? formatNumber(value) : compactMoney(value, currency ?? "USD"))
   const totals = shown.map((source) => ({
     source,
-    units: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
+    value: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
     known: data.some((point) => point[source] !== null)
   }))
 
   return (
     <div className={styles.stack}>
-      <div className={styles.kpiHead}>
+      <div className={styles.chartControls}>
         <div className={styles.legend}>
           {totals.map((total) => (
             <div key={total.source} className={styles.legendItem}>
@@ -126,27 +174,24 @@ export function SalesTrend({ daily, sources }: { daily: DailySales[]; sources: S
                 <span className={styles.swatch} style={{ backgroundColor: sourceSeries[total.source].color }} />
                 {sourceSeries[total.source].label}
               </span>
-              <span className={styles.legendValue}>{total.known ? formatNumber(total.units) : "No orders synced"}</span>
+              <span className={styles.legendValue}>{total.known ? format(total.value) : "No orders synced"}</span>
             </div>
           ))}
         </div>
-        <ToggleGroup
-          className={styles.range}
-          value={[range]}
-          onValueChange={(value) => {
-            const next = ranges.find((option) => option.value === value[0])
-            if (next) {
-              setRange(next.value)
-            }
-          }}
-          aria-label="Period"
-        >
-          {ranges.map((option) => (
-            <Toggle key={option.value} value={option.value} className={styles.rangeItem}>
-              {option.label}
-            </Toggle>
-          ))}
-        </ToggleGroup>
+        <div className={styles.switches}>
+          {currency && (
+            <Switch
+              label="Measure"
+              value={metric}
+              options={[
+                { value: "units", label: "Units" },
+                { value: "sales", label: "Sales" }
+              ]}
+              onChange={setMetric}
+            />
+          )}
+          <Switch label="Period" value={range} options={ranges} onChange={setRange} />
+        </div>
       </div>
       <div className={styles.chart}>
         <AreaChart
@@ -166,13 +211,18 @@ export function SalesTrend({ daily, sources }: { daily: DailySales[]; sources: S
           </defs>
           <CartesianGrid {...grid} />
           <XAxis dataKey="label" {...axis} minTickGap={24} />
-          <YAxis {...axis} width={44} allowDecimals={false} tickFormatter={compactNumber} />
+          <YAxis
+            {...axis}
+            width={metric === "units" ? 44 : 56}
+            allowDecimals={false}
+            tickFormatter={(value: number) => (metric === "units" ? compactNumber(value) : format(value))}
+          />
           <Tooltip
             cursor={cursor}
             content={
               <ChartTooltip
                 titleOf={(point: Point) => point.title}
-                format={(value) => `${formatNumber(value)} units`}
+                format={(value) => (metric === "units" ? `${formatNumber(value)} units` : format(value))}
               />
             }
           />
@@ -193,7 +243,9 @@ export function SalesTrend({ daily, sources }: { daily: DailySales[]; sources: S
         </AreaChart>
       </div>
       <table className={srOnly}>
-        <caption>Units sold by {days > 90 ? "week" : "day"}</caption>
+        <caption>
+          {metric === "units" ? "Units sold" : "Sales"} by {days > 90 ? "week" : "day"}
+        </caption>
         <thead>
           <tr>
             <th scope="col">{days > 90 ? "Week of" : "Day"}</th>
@@ -208,9 +260,10 @@ export function SalesTrend({ daily, sources }: { daily: DailySales[]; sources: S
           {data.map((point) => (
             <tr key={point.key}>
               <th scope="row">{point.label}</th>
-              {shown.map((source) => (
-                <td key={source}>{point[source] ?? "No data"}</td>
-              ))}
+              {shown.map((source) => {
+                const value = point[source]
+                return <td key={source}>{value === null || value === undefined ? "No data" : format(value)}</td>
+              })}
             </tr>
           ))}
         </tbody>
@@ -247,8 +300,14 @@ export function Sparkline({ values }: { values: (number | null)[] }) {
   )
 }
 
-// Items by how long their stock lasts, as horizontal bars so every label reads at any width.
-export function CoverChart({ buckets }: { buckets: { key: string; label: string; items: number }[] }) {
+// Items by how long their stock lasts, as horizontal bars so every label reads at any width. Each bar opens those
+// items in Restock; the links under the chart do the same for keyboard and screen reader users.
+export function CoverChart({
+  buckets
+}: {
+  buckets: { key: string; label: string; items: number; href: string | null }[]
+}) {
+  const router = useRouter()
   return (
     <>
       <div className={styles.chartShort} aria-hidden>
@@ -278,6 +337,13 @@ export function CoverChart({ buckets }: { buckets: { key: string; label: string;
             radius={[0, 4, 4, 0]}
             maxBarSize={20}
             isAnimationActive={false}
+            cursor="pointer"
+            onClick={(entry) => {
+              const href = (entry.payload as { href?: string | null } | undefined)?.href
+              if (href) {
+                router.push(href)
+              }
+            }}
           >
             <LabelList
               dataKey="items"
@@ -289,17 +355,18 @@ export function CoverChart({ buckets }: { buckets: { key: string; label: string;
           </Bar>
         </BarChart>
       </div>
-      <table className={srOnly}>
-        <caption>Items by days of cover</caption>
-        <tbody>
-          {buckets.map((bucket) => (
-            <tr key={bucket.key}>
-              <th scope="row">{bucket.label}</th>
-              <td>{bucket.items}</td>
-            </tr>
+      <ul className={styles.coverLinks}>
+        {buckets
+          .filter((bucket) => bucket.href && bucket.items > 0)
+          .map((bucket) => (
+            <li key={bucket.key}>
+              <Link href={bucket.href!} className={styles.coverLink}>
+                {bucket.label}
+                <span className={styles.coverCount}>{formatNumber(bucket.items)}</span>
+              </Link>
+            </li>
           ))}
-        </tbody>
-      </table>
+      </ul>
     </>
   )
 }

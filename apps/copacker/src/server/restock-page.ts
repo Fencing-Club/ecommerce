@@ -269,6 +269,8 @@ export async function restockAllChannels(orgId: string, days: number, leadTimeDa
   )
   return {
     channels,
-    sources: inputs.demand.sources.map(({ saleDays: _saleDays, ...source }) => source)
+    sources: inputs.demand.sources.map(({ saleDays: _saleDays, ...source }) => source),
+    // The Shopify catalog behind the lines: costs, prices and bundle components by variant.
+    catalog: inputs.context.rows
   }
 }

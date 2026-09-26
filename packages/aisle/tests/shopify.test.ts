@@ -108,6 +108,29 @@ describe("Shopify complete stock collection", () => {
     return { api: new Shopify(domain, "test", transport), transport }
   }
 
+  it("records each variant's selling price in the store's currency", async () => {
+    const { api, transport } = sequence([
+      {
+        shop: { myshopifyDomain: domain, currencyCode: "USD" },
+        productVariants: {
+          nodes: [
+            { ...node(1), price: "24.5" },
+            { ...node(2), price: "10.00" }
+          ],
+          pageInfo
+        }
+      }
+    ])
+    const rows = (await api.stock()).rows
+    expect(rows.map((row) => [row.priceMinor, row.priceCurrency])).toEqual([
+      [2450, "USD"],
+      [1000, "USD"]
+    ])
+    const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
+    expect(request.query).toContain("shop{myshopifyDomain currencyCode}")
+    expect(request.query).toContain("title price")
+  })
+
   it("records the existing Amazon stock target and rejects malformed values", async () => {
     const { api, transport } = sequence([
       {
@@ -360,7 +383,7 @@ describe("Shopify stock pages", () => {
       pageInfo: { hasNextPage: true, endCursor: "variants-next" }
     }
     const { api, transport } = stockClient({ shop: { myshopifyDomain: domain }, productVariants: page })
-    expect(await api.stockPage("prior")).toEqual(page)
+    expect(await api.stockPage("prior")).toEqual({ ...page, currency: null })
     const call = transport.mock.calls[0]
     expect(String(call?.[0])).toBe(`https://${domain}/admin/api/2026-07/graphql.json`)
     expect(JSON.parse(String(call?.[1]?.body)).variables).toEqual({ after: "prior" })
@@ -566,5 +589,47 @@ describe("bundle supplier components", () => {
         }
       })
     ).toThrow("supplier SKUs")
+  })
+})
+
+describe("Shopify webhook subscriptions", () => {
+  const address = "https://copacker.example/api/webhooks/shopify"
+  it("adds only the topics missing at this address and keeps other environments' subscriptions", async () => {
+    const bodies: Array<{ query: string; variables: Record<string, unknown> }> = []
+    const transport = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { query: string; variables: Record<string, unknown> }
+      bodies.push(body)
+      if (body.query.startsWith("query Webhooks")) {
+        return Response.json({
+          data: {
+            webhookSubscriptions: {
+              nodes: [
+                { topic: "ORDERS_CREATE", uri: address },
+                { topic: "ORDERS_UPDATED", uri: "https://dev.example/api/webhooks/shopify" }
+              ]
+            }
+          }
+        })
+      }
+      return Response.json({ data: { webhookSubscriptionCreate: { userErrors: [] } } })
+    })
+    const api = new Shopify(domain, "test", transport)
+    expect(await api.subscribeWebhooks(address, ["ORDERS_CREATE", "ORDERS_UPDATED"])).toEqual(["ORDERS_UPDATED"])
+    expect(bodies.slice(1).map((body) => body.variables)).toEqual([{ topic: "ORDERS_UPDATED", uri: address }])
+  })
+
+  it("reports why Shopify refused a subscription", async () => {
+    const transport = vi.fn<typeof fetch>(async (_url, init) =>
+      String(init?.body).includes("query Webhooks")
+        ? Response.json({ data: { webhookSubscriptions: { nodes: [] } } })
+        : Response.json({
+            data: {
+              webhookSubscriptionCreate: { userErrors: [{ message: "Protected customer data access required" }] }
+            }
+          })
+    )
+    await expect(new Shopify(domain, "test", transport).subscribeWebhooks(address, ["ORDERS_CREATE"])).rejects.toThrow(
+      "Shopify rejected the ORDERS_CREATE subscription: Protected customer data access required"
+    )
   })
 })

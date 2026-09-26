@@ -16,6 +16,7 @@ import {
   stockSnapshots,
   suppliers
 } from "../src/db/schema"
+import { salesDataVersion } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
 
 const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid")
@@ -58,12 +59,20 @@ const rows: Row[] = [
     buyerSku: "grip-left",
     productTitle: "Pro-grip glove",
     variantTitle: "Left",
+    unitCostMinor: 850,
+    costCurrency: "USD",
+    priceMinor: 2499,
+    priceCurrency: "USD",
     levels: [level("warehouse", 42, 20), level("amazon", 18)]
   }),
   variant(2, 10, {
     buyerSku: "grip-right",
     productTitle: "Pro-grip glove",
     variantTitle: "Right",
+    unitCostMinor: 850,
+    costCurrency: "USD",
+    priceMinor: 2499,
+    priceCurrency: "USD",
     levels: [level("warehouse", 7), level("amazon", 3)]
   }),
   // A multipack: a Shopify bundle of three left gloves, sold on Amazon under its own SKU.
@@ -71,6 +80,8 @@ const rows: Row[] = [
     buyerSku: "grip-left-3pk",
     productTitle: "Pro-grip glove 3-pack",
     variantTitle: "Default Title",
+    priceMinor: 6499,
+    priceCurrency: "USD",
     bundle: { available: 14, components: [{ variantId: "gid://shopify/ProductVariant/1", quantity: 3 }] },
     levels: [level("warehouse", null)]
   }),
@@ -78,6 +89,10 @@ const rows: Row[] = [
     buyerSku: "body-cord",
     productTitle: "Body cord",
     variantTitle: "Default Title",
+    unitCostMinor: 1200,
+    costCurrency: "USD",
+    priceMinor: 3499,
+    priceCurrency: "USD",
     levels: [level("warehouse", 120), level("amazon", 40)]
   }),
   variant(5, 13, {
@@ -95,24 +110,40 @@ const rows: Row[] = [
   })
 ]
 
-// 90 days of web orders shipped from the warehouse: a left glove daily, a right glove every other day, and two body
-// cords every third day. Restock reads these as stored Shopify orders.
+// 90 days of priced web orders shipped from the warehouse: a left glove daily (two every other day over the last month),
+// a right glove every other day, and two body cords every third day (every sixth over the last month), with 10% off
+// every fifth order. Restock and the Overview read these as stored Shopify orders.
+const prices: Record<number, string> = { 1: "24.99", 2: "24.99", 4: "34.99" }
 const day = 86400000
 const today = Math.floor(Date.now() / day) * day
 function demoOrders() {
   const sales: ShopifySale[] = []
   for (let ago = 1; ago <= 90; ago++) {
     const lines = [
-      { variant: 1, sku: "grip-left", quantity: 1 },
+      { variant: 1, sku: "grip-left", quantity: ago <= 30 && ago % 2 === 0 ? 2 : 1 },
       ...(ago % 2 === 0 ? [{ variant: 2, sku: "grip-right", quantity: 1 }] : []),
-      ...(ago % 3 === 0 ? [{ variant: 4, sku: "body-cord", quantity: 2 }] : [])
+      ...(ago % (ago <= 30 ? 6 : 3) === 0 ? [{ variant: 4, sku: "body-cord", quantity: 2 }] : [])
     ].map((line, index) => ({
       id: `gid://shopify/LineItem/${ago * 10 + index}`,
       quantity: line.quantity,
       currentQuantity: line.quantity,
       sku: line.sku,
       variant: { id: `gid://shopify/ProductVariant/${line.variant}` },
-      lineItemGroup: null
+      lineItemGroup: null,
+      originalUnitPriceSet: { shopMoney: { amount: prices[line.variant]!, currencyCode: "USD" } },
+      discountAllocations:
+        ago % 5 === 0
+          ? [
+              {
+                allocatedAmountSet: {
+                  shopMoney: {
+                    amount: ((Number(prices[line.variant]) * line.quantity) / 10).toFixed(2),
+                    currencyCode: "USD"
+                  }
+                }
+              }
+            ]
+          : []
     }))
     sales.push({
       id: `gid://shopify/Order/${ago}`,
@@ -171,11 +202,12 @@ for (const org of buyers) {
       externalAccountId: shop,
       scopeKey: "store",
       snapshotId: randomUUID(),
+      attemptFinishedAt: new Date(),
       data
     })
     .onConflictDoUpdate({
       target: [stockSnapshots.orgId, stockSnapshots.source, stockSnapshots.externalAccountId, stockSnapshots.scopeKey],
-      set: { data, snapshotId: randomUUID(), status: "idle" }
+      set: { data, snapshotId: randomUUID(), status: "idle", attemptFinishedAt: new Date() }
     })
   const [{ id: supplierId }] = await db()
     .insert(suppliers)
@@ -210,7 +242,9 @@ for (const org of buyers) {
     status: "idle" as const,
     coveredFrom: new Date(today - 120 * day),
     coveredTo: new Date(today),
-    finishedAt: new Date()
+    finishedAt: new Date(),
+    // The orders above carry prices, so they're stored in the current shape.
+    dataVersion: salesDataVersion
   }
   await db()
     .insert(salesSyncs)

@@ -2,18 +2,7 @@ import { globalStyle, style } from "@vanilla-extract/css"
 import { alpha, focusRing, fontSize, media, space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
-export const toolbar = style({
-  display: "grid",
-  gap: space(3),
-  alignItems: "start",
-  "@media": { [media.md]: { gridTemplateColumns: "minmax(0, 1fr) 16rem" } }
-})
-
-// The Collective switch sits under the search and location filters.
-export const collective = style({ "@media": { [media.md]: { gridColumn: "1 / -1" } } })
-
-// Overrides NativeSelect's fit-content width inside the toolbar.
-export const fullWidth = style({ selectors: { "&&": { width: "100%" } } })
+export const toolbar = style({ display: "flex", flexDirection: "column", gap: space(3) })
 
 export const listHeader = style({
   display: "flex",

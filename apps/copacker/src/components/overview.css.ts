@@ -285,21 +285,11 @@ export const stageName = style({
   color: vars.color.mutedForeground
 })
 export const stageCount = style({ fontWeight: 600, fontVariantNumeric: "tabular-nums" })
-export const stageDot = styleVariants({
-  quiet: { width: space(2), height: space(2), borderRadius: vars.radius.full, backgroundColor: vars.color.border },
-  active: { width: space(2), height: space(2), borderRadius: vars.radius.full, backgroundColor: vars.color.chart1 },
-  you: { width: space(2), height: space(2), borderRadius: vars.radius.full, backgroundColor: vars.color.warning },
-  problem: {
-    width: space(2),
-    height: space(2),
-    borderRadius: vars.radius.full,
-    backgroundColor: vars.color.destructive
-  }
-})
+export const stageDot = style({ width: space(2), height: space(2), borderRadius: vars.radius.full, flexShrink: 0 })
 
 // Best sellers.
 export const product = style({ display: "flex", alignItems: "center", gap: space(3), minWidth: "12rem" })
-export const productText = style({ display: "flex", flexDirection: "column", minWidth: 0 })
+export const productText = style({ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 })
 export const productTitle = style({
   ...fontSize.sm,
   fontWeight: 500,
@@ -342,3 +332,186 @@ export const skeleton = styleVariants({
   kpi: { height: "8.5rem", borderRadius: vars.radius.xl },
   panel: { height: "24rem", borderRadius: vars.radius.xl }
 })
+
+// Chart legend with its switches; they wrap under the legend on narrow screens.
+export const chartControls = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3)
+})
+export const switches = style({ display: "flex", flexWrap: "wrap", gap: space(2) })
+
+export const kpiNote = style({ flexBasis: "100%", color: vars.color.mutedForeground })
+export const figureNote = style({ ...fontSize.xs, color: vars.color.mutedForeground })
+
+// Links under the days-of-cover chart, one per group, opening those items in Restock.
+export const coverLinks = style({ display: "flex", flexWrap: "wrap", gap: space(2), listStyle: "none" })
+export const coverLink = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: space(1.5),
+  height: space(7),
+  paddingInline: space(2.5),
+  borderRadius: vars.radius.full,
+  boxShadow: `inset 0 0 0 1px ${vars.color.border}`,
+  ...fontSize.xs,
+  fontWeight: 500,
+  color: vars.color.foreground,
+  textDecoration: "none",
+  transition: "background-color 150ms ease",
+  selectors: { "&:hover": { backgroundColor: vars.color.muted }, "&:focus-visible": focusRing }
+})
+export const coverCount = style({ color: vars.color.mutedForeground, fontVariantNumeric: "tabular-nums" })
+
+// Freshness line and channel filter above the cards.
+export const toolbar = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3)
+})
+export const freshness = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  columnGap: space(4),
+  rowGap: space(1.5),
+  listStyle: "none",
+  ...fontSize.xs,
+  color: vars.color.mutedForeground
+})
+export const freshnessItem = style({ display: "inline-flex", alignItems: "center", gap: space(1.5) })
+globalStyle(`${freshnessItem} svg`, { width: "0.875rem", height: "0.875rem", flexShrink: 0 })
+export const freshnessLink = style({
+  color: "inherit",
+  textDecoration: "underline",
+  textUnderlineOffset: "2px",
+  selectors: { "&:hover": { color: vars.color.foreground }, "&:focus-visible": focusRing }
+})
+export const channelFilter = style({ selectors: { "&&": { width: "auto", alignItems: "center" } } })
+
+// Setup checklist.
+export const progressTrack = style({
+  height: space(1.5),
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.muted,
+  overflow: "hidden"
+})
+export const progressFill = style({
+  display: "block",
+  height: "100%",
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.primary,
+  transition: "width 300ms ease"
+})
+export const steps = style({
+  display: "grid",
+  gap: space(1),
+  listStyle: "none",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  "@media": { [media.md]: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } }
+})
+export const step = style({
+  display: "flex",
+  alignItems: "center",
+  gap: space(3),
+  paddingBlock: space(2),
+  paddingInline: space(3),
+  borderRadius: vars.radius.lg,
+  color: "inherit",
+  textDecoration: "none",
+  transition: "background-color 150ms ease",
+  selectors: {
+    "a&:hover": { backgroundColor: alpha(vars.color.muted, 80) },
+    "&:focus-visible": focusRing,
+    "&[data-done]": { color: vars.color.mutedForeground }
+  }
+})
+export const stepTitle = style({ ...fontSize.sm, fontWeight: 500 })
+export const stepDone = style({ width: "1.125rem", height: "1.125rem", flexShrink: 0, color: vars.color.success })
+export const stepTodo = style({ width: "1.125rem", height: "1.125rem", flexShrink: 0, color: vars.color.border })
+export const stepChevron = style({
+  width: "1rem",
+  height: "1rem",
+  marginLeft: "auto",
+  flexShrink: 0,
+  color: vars.color.mutedForeground
+})
+
+// A highlighted sentence inside a card.
+export const callout = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: space(2.5),
+  padding: space(3),
+  borderRadius: vars.radius.lg,
+  backgroundColor: alpha(vars.color.warning, 12),
+  ...fontSize.sm
+})
+globalStyle(`${callout} > svg`, {
+  width: "1rem",
+  height: "1rem",
+  marginTop: "0.125rem",
+  flexShrink: 0,
+  color: `color-mix(in oklch, ${vars.color.warning} 70%, ${vars.color.foreground})`
+})
+globalStyle(`${callout} strong`, { fontWeight: 600 })
+
+// A card's single large figure.
+export const hero = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
+export const heroValue = style({
+  fontSize: "1.875rem",
+  lineHeight: "2.25rem",
+  fontWeight: 600,
+  letterSpacing: "-0.02em",
+  fontVariantNumeric: "tabular-nums"
+})
+export const spendRow = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3),
+  paddingBlock: space(2),
+  paddingInline: space(2),
+  marginInline: `calc(${space(2)} * -1)`,
+  borderRadius: vars.radius.md,
+  color: "inherit",
+  textDecoration: "none",
+  selectors: {
+    "&:hover": { backgroundColor: alpha(vars.color.muted, 80) },
+    "&:focus-visible": focusRing,
+    "& + &": { borderTop: `1px solid ${vars.color.border}`, borderTopLeftRadius: 0, borderTopRightRadius: 0 }
+  }
+})
+
+// Trending products.
+export const movers = style({
+  display: "grid",
+  gap: space(6),
+  gridTemplateColumns: "minmax(0, 1fr)",
+  "@media": { [media.md]: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } }
+})
+export const listHeading = style({
+  ...fontSize.xs,
+  fontWeight: 600,
+  letterSpacing: "0.02em",
+  textTransform: "uppercase",
+  color: vars.color.mutedForeground
+})
+export const moverList = style({ display: "flex", flexDirection: "column", gap: space(3), listStyle: "none" })
+export const mover = style({ display: "flex", alignItems: "center", gap: space(3), minWidth: 0 })
+export const productLink = style([
+  productTitle,
+  {
+    color: "inherit",
+    textDecoration: "none",
+    borderRadius: vars.radius.sm,
+    selectors: {
+      "&:hover": { textDecoration: "underline", textUnderlineOffset: "2px" },
+      "&:focus-visible": focusRing
+    }
+  }
+])
