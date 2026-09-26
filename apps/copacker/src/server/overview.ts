@@ -15,6 +15,7 @@ import {
   suppliers
 } from "@/db/schema"
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
+import { comparisons, rangeLabel, readPeriod } from "@/lib/date-range"
 import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import { receivingLocations } from "./inventory-products"
@@ -32,7 +33,7 @@ import {
   periodTotal,
   platformCharges,
   platformFees,
-  periods,
+  rangeBounds,
   reportingCurrency,
   salesByDay,
   salesByItem,
@@ -41,7 +42,7 @@ import {
 import { restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockDefaults } from "./restock-report"
-import { salesDataVersion, salesHistoryDays, type SalesSource, salesSources } from "./sales-orders"
+import { salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
@@ -73,8 +74,10 @@ type ChannelLines = { key: string; label: string; lines: RestockLine[] }
 export function summarizeRestock(
   channels: ChannelLines[],
   priceFor: (line: RestockLine, channelKey: string) => Price | null = () => null,
-  // Freight, duty and charges as a share of the supplier's price, by variant, when known.
-  markupFor: (variantId: string) => number = () => 0
+  // What one unit cost to land, when known. Restock's own unit cost by default; the Overview's includes PO landed costs
+  // and prices a bundle held as its own item (such as a 2-pack at Amazon) from its components, which restock doesn't.
+  unitCostFor: (line: RestockLine) => Price | null = (line) =>
+    line.unitCostMinor !== null && line.costCurrency ? { minor: line.unitCostMinor, currency: line.costCurrency } : null
 ) {
   const reorderCost = new Map<string, number>()
   const stockValue = new Map<string, number>()
@@ -149,15 +152,13 @@ export function summarizeRestock(
       available += onHand
       incoming += line.incoming ?? 0
       if (onHand > 0) {
-        const cost =
-          line.unitCostMinor !== null && line.costCurrency
-            ? Math.round(onHand * line.unitCostMinor * (1 + markupFor(line.variantId)))
-            : null
+        const unit = unitCostFor(line)
+        const cost = unit ? Math.round(onHand * unit.minor) : null
         if (cost === null) {
           uncosted++
         } else {
-          addMoney(value, line.costCurrency, cost)
-          addMoney(stockValue, line.costCurrency, cost)
+          addMoney(value, unit!.currency, cost)
+          addMoney(stockValue, unit!.currency, cost)
         }
         if (price) {
           addMoney(retail, price.currency, onHand * price.minor)
@@ -167,7 +168,7 @@ export function summarizeRestock(
         }
         if (bucket === "over90" || bucket === "unsold") {
           if (cost !== null) {
-            addMoney(slowValue, line.costCurrency, cost)
+            addMoney(slowValue, unit!.currency, cost)
           }
           slow.push({
             variantId: line.variantId,
@@ -180,7 +181,7 @@ export function summarizeRestock(
             available: onHand,
             daysRemaining: line.daysRemaining,
             bucket,
-            value: cost === null ? null : { minor: cost, currency: line.costCurrency! }
+            value: cost === null ? null : { minor: cost, currency: unit!.currency }
           })
         }
       }
@@ -436,7 +437,7 @@ export function attentionItems(input: {
     coveredTo: Date | null
     finishedAt: Date | null
     feesErrorCode?: string | null
-    // Orders in the last 30 days without prices, and whether a sync would copy them.
+    // Orders in the chosen period without prices, and whether a sync would copy them.
     unpriced?: number
     outdated?: boolean
   }[]
@@ -546,7 +547,7 @@ export function attentionItems(input: {
         key: `prices-${sync.source}`,
         tone: "info",
         title: `Sync ${name} orders again to copy their prices`,
-        detail: `${plural(sync.unpriced, "order", "orders")} from the last 30 days ${sync.unpriced === 1 ? "has" : "have"} no price, so sales and margins leave ${sync.unpriced === 1 ? "it" : "them"} out.`,
+        detail: `${plural(sync.unpriced, "order", "orders")} in this period ${sync.unpriced === 1 ? "has" : "have"} no price, so sales and margins leave ${sync.unpriced === 1 ? "it" : "them"} out.`,
         href: "/sales",
         action: "View orders"
       })
@@ -711,7 +712,8 @@ async function cachedRestock(orgId: string, now: number) {
 // "shopify:<location>").
 export async function overview(
   org: { id: string; timeZone: string | null },
-  options: { channel?: string | null; now?: Date } = {}
+  // `period` is the page's query: `period`, or `from` and `to`, and `compare` (see readPeriod).
+  options: { channel?: string | null; period?: Record<string, string | string[] | undefined>; now?: Date } = {}
 ) {
   const now = options.now ?? new Date()
   const orgId = org.id
@@ -745,7 +747,21 @@ export async function overview(
       withoutAmazon: account.provider === "shopify" && amazonConnected
     }))
   const shopifyWithoutAmazon = scopedAccounts.find((account) => account.provider === "shopify" && account.withoutAmazon)
-  const window30 = periods(today, 30, timeZone)
+  const period = readPeriod(options.period ?? {}, today)
+  const window = {
+    current: rangeBounds(period.range, timeZone),
+    previous: period.previous ? rangeBounds(period.previous, timeZone) : null
+  }
+  // Inbound freight is costed over the year up to the period's end, and retail value uses the last 60 days' prices,
+  // whatever the period.
+  const yearStart = zonedStart(addDays(period.range.to, -364), timeZone)
+  const priceWindow = {
+    current: rangeBounds({ from: addDays(today, -60), to: addDays(today, -1) }, timeZone),
+    previous: null
+  }
+  const earliest = new Date(
+    Math.min(yearStart.getTime(), window.current.from.getTime(), window.previous?.from.getTime() ?? Infinity)
+  )
 
   const [
     syncs,
@@ -762,15 +778,16 @@ export async function overview(
     otherMarketplaces,
     platformLines,
     costs,
-    linkedFreight
+    linkedFreight,
+    priceRows
   ] = await Promise.all([
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
-    salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone, currency),
-    salesByItem(orgId, scopedAccounts, window30, currency),
+    salesByDay(orgId, scopedAccounts, earliest, timeZone, currency),
+    salesByItem(orgId, scopedAccounts, window, currency),
     Promise.all(
       scopedAccounts.map(async (account) => ({
         source: account.provider,
-        list: await orderFees(orgId, account, window30.currentStart, window30.end, currency)
+        list: await orderFees(orgId, account, window.current.from, window.current.to, currency)
       }))
     ),
     db()
@@ -814,17 +831,18 @@ export async function overview(
       .where(eq(suppliers.buyerOrgId, orgId)),
     landedMarkupsFor(orgId),
     shopifyWithoutAmazon
-      ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window30.currentStart, window30.end)
+      ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window.current.from, window.current.to)
       : Promise.resolve(0),
-    platformCharges(orgId, scopedAccounts, window30.currentStart, window30.end, currency),
+    platformCharges(orgId, scopedAccounts, window.current.from, window.current.to, currency),
     listMonthlyCosts(orgId),
-    amazonFreightByOrder(orgId)
+    amazonFreightByOrder(orgId),
+    salesByItem(orgId, scopedAccounts, priceWindow, currency)
   ])
   // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
   const monthly: ChargeLine[] = monthlyCostShares(
     costs.filter((cost) => cost.currency === currency && (!channelSource || cost.channel === channelSource)),
-    addDays(today, -30),
-    today
+    period.range.from,
+    addDays(period.range.to, 1)
   ).map((cost) => ({
     key: `monthly:${cost.id}`,
     label: `${cost.name}, monthly cost`,
@@ -844,40 +862,47 @@ export async function overview(
   }
   const sources = scopedAccounts.map((account) => account.provider)
   const covered = sources.filter((source) => coverage[source])
-  const series = dailySales(dayRows, coverage, today, salesHistoryDays, timeZone)
-  const last30 = periodTotal(series, covered, 30)
+  const series = dailySales(dayRows, coverage, period.range, timeZone, now)
+  const previousSeries = period.previous ? dailySales(dayRows, coverage, period.previous, timeZone, now) : null
+  const totals = periodTotal(series, previousSeries, covered)
   const salesCurrency =
     dayRows.filter((row) => row.currency).toSorted((a, b) => b.revenueMinor - a.revenueMinor)[0]?.currency ?? null
   const index = catalogIndex(restock.catalog, markups)
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
     Record<SalesSource, ReturnType<typeof platformFees>>
   >
-  // Amazon inbound freight over the last year (or the stretch Amazon's orders cover, if shorter), as a cost per unit:
-  // by the SKUs each shipment carried, and the rest over the Amazon units sold in it. Freight for shipments sent from a
-  // PO is in that PO's landed costs instead.
+  // Amazon inbound freight over the year up to the period's end (or the stretch Amazon's orders cover, if shorter), as a
+  // cost per unit: by the SKUs each shipment carried, and the rest over the Amazon units sold in it. Freight for
+  // shipments sent from a PO is in that PO's landed costs instead.
   const amazonAccount = scopedAccounts.find((account) => account.provider === "amazon")
-  const freightFrom = coverage.amazon
-    ? new Date(Math.max(coverage.amazon.from.getTime(), zonedStart(addDays(today, -365), timeZone).getTime()))
-    : null
-  const freightDays = series.filter((row) => freightFrom && zonedStart(row.date, timeZone) >= freightFrom)
+  const freightFrom = coverage.amazon ? new Date(Math.max(coverage.amazon.from.getTime(), yearStart.getTime())) : null
+  const freightDays = dayRows.filter(
+    (row) =>
+      row.source === "amazon" &&
+      freightFrom &&
+      zonedStart(row.date, timeZone) >= freightFrom &&
+      zonedStart(row.date, timeZone) < window.current.to
+  )
   const freight =
     amazonAccount && freightFrom
       ? await amazonFreight(
           orgId,
           amazonAccount.externalId,
-          { from: freightFrom, to: window30.end },
+          { from: freightFrom, to: window.current.to },
           currency,
-          freightDays.reduce((sum, row) => sum + (row.amazon?.units ?? 0), 0),
+          freightDays.reduce((sum, row) => sum + row.units, 0),
           new Set(linkedFreight.map((row) => row.reference))
         )
       : null
   const profit = grossProfit(itemRows, index, fees, charges, freight)
-  // Trends compare the last 30 days with the 30 before, for sources whose orders cover both.
-  const comparable = covered.filter((source) => coverage[source]!.from <= window30.previousStart)
+  // Trends compare the period with the one it's compared with, for sources whose orders cover both.
+  const previousStart = window.previous?.from
+  const comparable = previousStart ? covered.filter((source) => coverage[source]!.from <= previousStart) : []
   const trending = movers(itemRows, index, comparable)
-  const priceOf = sellingPrices(itemRows, index)
+  const priceOf = sellingPrices(priceRows, index)
 
   const scopedChannels = restock.channels.filter((channel) => !selected || channel.key === selected.key)
+  const landedCost = (line: RestockLine) => index.unitCost(index.byVariant.get(line.variantId) ?? null)
   const summary = summarizeRestock(
     scopedChannels,
     (line, channelKey) => {
@@ -889,10 +914,10 @@ export async function overview(
       const row = index.byVariant.get(line.variantId)
       return row?.priceMinor && row.priceCurrency ? { minor: row.priceMinor, currency: row.priceCurrency } : null
     },
-    (variantId) => markups.get(variantId) ?? 0
+    landedCost
   )
   // The setup checklist looks at every channel, whichever is chosen.
-  const everyChannel = selected ? summarizeRestock(restock.channels) : summary
+  const everyChannel = selected ? summarizeRestock(restock.channels, undefined, landedCost) : summary
 
   // POs (and their shipments) for the chosen channel: to Amazon, or received at the chosen Shopify location.
   const deliveryLocations = new Map(deliveries.map((row) => [row.id, row.locationId]))
@@ -917,8 +942,7 @@ export async function overview(
   const buying = purchasing(poList, now, timeZone)
   const states = shipmentRows.filter((row) => orderIds.has(row.orderId)).map((row) => row.status)
   const shopify = connected.find((row) => row.provider === "shopify")
-  const unpricedBySource = (source: SalesSource) =>
-    series.slice(-30).reduce((sum, row) => sum + (row[source]?.unpriced ?? 0), 0)
+  const unpricedBySource = (source: SalesSource) => series.reduce((sum, row) => sum + (row[source]?.unpriced ?? 0), 0)
   const finishedStock = (source: "shopify" | "fba") =>
     stock
       .filter((row) => row.source === source && row.finishedAt)
@@ -936,6 +960,17 @@ export async function overview(
     connected: accounts.map((account) => account.provider),
     channels: channelOptions,
     channel: selected,
+    period: {
+      key: period.key,
+      label: period.label,
+      range: period.range,
+      rangeLabel: rangeLabel(period.range),
+      comparison: period.comparison,
+      comparisonLabel: comparisons.find((option) => option.key === period.comparison)!.label,
+      previous: period.previous,
+      previousLabel: period.previous ? rangeLabel(period.previous) : null,
+      today
+    },
     // When each kind of data was last copied, for the header.
     freshness: [
       ...accounts.map((account) => ({
@@ -963,7 +998,9 @@ export async function overview(
     sales: {
       sources,
       daily: series,
-      last30,
+      totals,
+      // The previous period's days, for the chart's comparison line.
+      previousDaily: previousSeries,
       currency: salesCurrency,
       profit,
       fees: {
@@ -971,7 +1008,7 @@ export async function overview(
         estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
       },
       movers: trending,
-      // Shopify copies of orders from Amazon marketplaces other than the US, left out over the last 30 days.
+      // Shopify copies of orders from Amazon marketplaces Copacker doesn't read, left out over the period.
       otherMarketplaceOrders: otherMarketplaces,
       moversComparable: comparable.length > 0
     },

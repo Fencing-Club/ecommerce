@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import { db } from "@/db"
+import { type DayRange, rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import type { SalesSource } from "./sales-orders"
@@ -23,7 +24,15 @@ const itemRevenue = sql.raw(`(select coalesce(sum(case b->>'type'
     when 'DISCOUNT' then -abs((b->'subtotal'->>'amount')::numeric)
     else 0 end), 0)
   from jsonb_array_elements(coalesce(item->'proceeds'->'breakdowns', '[]'::jsonb)) b)`)
-const itemPriced = sql.raw(`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array')`)
+// An Amazon item has its price once Amazon adds its proceeds. A line with nothing ordered has none to add, and an order
+// Amazon paid nothing for (a free replacement, whose payments all post at zero) is priced at zero.
+const amazonFreeOrder = `(exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
+    and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment')
+  and not exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
+    and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment'
+    and t."totalMinor" <> 0))`
+const itemPriced = sql.raw(`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
+  or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`)
 
 const orderUnits = sql.raw(`case when o.source = 'amazon' then
   (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(o.data->'orderItems') item)
@@ -66,14 +75,18 @@ function shippedFrom(locationId: string | null | undefined) {
     : sql``
 }
 
+// Cancelled orders sold nothing.
+const notCancelled = sql.raw(`(coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') <> 'CANCELLED'
+  and o.data->>'cancelledAt' is null)`)
+
 function accountFilter(accounts: Account[]) {
-  return sql.join(
+  return sql`(${sql.join(
     accounts.map(
       (account) =>
         sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``})`
     ),
     sql` or `
-  )
+  )}) and ${notCancelled}`
 }
 
 function rows(result: unknown) {
@@ -157,20 +170,21 @@ export type ItemRow = {
   currency: string | null
 }
 
-// Units and sales per item over the current period and the one before it, with sales in `currency`. A Shopify bundle
-// counts once, under the bundle's variant, with its components' sales.
+// Units and sales per item over the current period and the one it's compared with, with sales in `currency`. A
+// Shopify bundle counts once, under the bundle's variant, with its components' sales.
 export async function salesByItem(
   orgId: string,
   accounts: Account[],
-  periods: { previousStart: Date; currentStart: Date; end: Date },
+  periods: { current: Bounds; previous: Bounds | null },
   currency: string
 ) {
   if (!accounts.length) {
     return []
   }
-  const period = sql`case when o."orderedAt" >= ${periods.currentStart} then 'current' else 'previous' end`
-  const scope = sql`o."orgId" = ${orgId} and o."orderedAt" >= ${periods.previousStart}
-    and o."orderedAt" < ${periods.end} and (${accountFilter(accounts)})`
+  const within = (bounds: Bounds) => sql`(o."orderedAt" >= ${bounds.from} and o."orderedAt" < ${bounds.to})`
+  const period = sql`case when ${within(periods.current)} then 'current' else 'previous' end`
+  const scope = sql`o."orgId" = ${orgId} and (${within(periods.current)}${periods.previous ? sql` or ${within(periods.previous)}` : sql``})
+    and (${accountFilter(accounts)})`
   const result = await db().execute(sql`
     with raw as (
       select o."orderId" as "orderId", o.source, ${period} as period, o."orderedAt" as at,
@@ -240,7 +254,7 @@ export async function orderFees(orgId: string, account: Account, from: Date, to:
   const result = await db().execute(sql`
     select o."orderId" as "orderId",
       case when ${sales.priced} then round(${sales.revenue} * 100) end as revenue,
-      round(${fee} * ${sales.rate}) as fees
+      case when ${fee} = 0 then 0 else round(${fee} * ${sales.rate}) end as fees
     from sales_orders o
     where o."orgId" = ${orgId} and (${accountFilter([account])})
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to}`)
@@ -276,24 +290,31 @@ export function platformFees(list: OrderFees[]) {
 export type SourceDay = { orders: number; units: number; revenueMinor: number; unpriced: number }
 export type DailySales = { date: string } & Record<SalesSource, SourceDay | null>
 
-// One row per day for the last `days` full days in the store's time zone, oldest first. A source's day is null when
-// its stored orders don't cover the whole day, so charts show a gap instead of a false zero.
+// When a range of days starts and ends (the day after its last) in the store's time zone.
+export type Bounds = { from: Date; to: Date }
+export function rangeBounds(range: DayRange, timeZone: string): Bounds {
+  return { from: zonedStart(range.from, timeZone), to: zonedStart(addDays(range.to, 1), timeZone) }
+}
+
+// One row per day of a range in the store's time zone, oldest first. A source's day is null when its stored orders
+// don't cover it, so charts show a gap instead of a false zero. Today counts as covered up to the last sync.
 export function dailySales(
   list: DayRow[],
   coverage: Partial<Record<SalesSource, { from: Date; to: Date }>>,
-  today: string,
-  days: number,
-  timeZone: string
+  range: DayRange,
+  timeZone: string,
+  now: Date = new Date()
 ): DailySales[] {
   const byKey = new Map(list.map((row) => [`${row.source}:${row.date}`, row]))
   const series: DailySales[] = []
-  for (let index = days; index >= 1; index--) {
-    const date = addDays(today, -index)
+  for (let index = 0; index < rangeDays(range); index++) {
+    const date = addDays(range.from, index)
     const start = zonedStart(date, timeZone).getTime()
     const end = zonedStart(addDays(date, 1), timeZone).getTime()
     const cell = (source: SalesSource): SourceDay | null => {
       const covered = coverage[source]
-      if (!covered || covered.from.getTime() > start || covered.to.getTime() < end) {
+      const through = end > now.getTime() ? start + 1 : end
+      if (!covered || covered.from.getTime() > start || covered.to.getTime() < through || start > now.getTime()) {
         return null
       }
       const row = byKey.get(`${source}:${date}`)
@@ -312,9 +333,8 @@ export function dailySales(
 type Totals = { orders: number; units: number; revenueMinor: number; unpriced: number }
 export type PeriodTotal = Totals & { previous: Totals | null }
 
-// Orders, units and sales over the last `days` days against the days before them. A comparison is made only when
-// every counted source covers both periods.
-export function periodTotal(series: DailySales[], sources: SalesSource[], days: number): PeriodTotal {
+// Orders, units and sales over a period, and over the one it's compared with when every counted source covers both.
+export function periodTotal(current: DailySales[], previous: DailySales[] | null, sources: SalesSource[]): PeriodTotal {
   const sum = (list: DailySales[]) => {
     const totals = { orders: 0, units: 0, revenueMinor: 0, unpriced: 0 }
     let complete = true
@@ -333,20 +353,11 @@ export function periodTotal(series: DailySales[], sources: SalesSource[], days: 
     }
     return { totals, complete }
   }
-  const current = sum(series.slice(-days))
-  const before = series.length >= days * 2 ? sum(series.slice(-days * 2, -days)) : null
+  const now = sum(current)
+  const before = previous ? sum(previous) : null
   return {
-    ...current.totals,
-    previous: before?.complete && current.complete && sources.length ? before.totals : null
-  }
-}
-
-// The window boundaries for the last `days` full days and the same number before them, in the store's time zone.
-export function periods(today: string, days: number, timeZone: string) {
-  return {
-    previousStart: zonedStart(addDays(today, -days * 2), timeZone),
-    currentStart: zonedStart(addDays(today, -days), timeZone),
-    end: zonedStart(today, timeZone)
+    ...now.totals,
+    previous: before?.complete && now.complete && sources.length ? before.totals : null
   }
 }
 
@@ -438,13 +449,15 @@ export function grossProfit(
       continue
     }
     revenue += item.revenueMinor
-    const row = index.variantFor(item.source, item.key)
-    const unit = index.unitCost(row)
+    // Amazon resells returned units as used (Grade and Resell, under SKUs starting "amzn.gr."). Their cost and freight
+    // were counted when they first sold.
+    const resold = item.source === "amazon" && item.key.startsWith("amzn.gr.")
+    const unit = resold ? { minor: 0, currency } : index.unitCost(index.variantFor(item.source, item.key))
     if (unit && unit.currency === currency) {
       costed += item.revenueMinor
       cost += unit.minor * item.pricedUnits
       costedBySource[item.source] += item.revenueMinor
-      if (item.source === "amazon" && amazonFreight?.currency === currency) {
+      if (item.source === "amazon" && !resold && amazonFreight?.currency === currency) {
         freight += ((amazonFreight.bySku?.get(item.key) ?? 0) + amazonFreight.perUnitMinor) * item.pricedUnits
       }
     }

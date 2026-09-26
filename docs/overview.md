@@ -13,6 +13,13 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
   channel, sales to that source (a Shopify location shows the Shopify orders with a successful fulfillment from it, so
   unfulfilled orders count for no location), and POs and their shipments to those going to Amazon or received at that
   location.
+- **Period.** A picker like Shopify's (`components/period-picker.tsx`, `lib/date-range.ts`) chooses the days every sales
+  figure covers: presets relative to today in the store's time zone (Today, Yesterday, Last 7/30/90/365 days, last
+  week, month, quarter, 12 months or year, week/month/quarter/year to date) or any range on the calendar, in the URL as
+  `?period=` or `?from=&to=`. Last 30 days is the default. Figures compare with the same number of days just before.
+  The sales chart draws the period by day (up to about 3 months), week (up to a year) or month, with the previous
+  period's total dotted. Stock, cover, upcoming spend, slow stock, shipments and purchasing are as of now; retail value
+  uses the last 60 days' prices and inbound freight the year up to the period's end, whatever the period.
 - **Freshness.** The line under the header says when each source's orders and stock last synced.
 - **Currency.** Money is reported in the Shopify store's currency (US dollars without Shopify sales). Sales, fees and
   charges in other currencies (Amazon Canada, Mexico and Brazil) are converted at the European Central Bank's rate on
@@ -25,13 +32,17 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 - **Needs attention:** items running out, shipments waiting or failing, reorders due, unreadable restock sources, failed
   or stale syncs, Amazon fees that couldn't be copied, orders still without prices, Shopify's 60-day order limit and
   unsent drafts. Critical first.
-- **Sales, gross profit, units and orders** over the last 30 full days, against the 30 before when every source covers
-  both. Sales are net product sales: after discounts, before tax, shipping and tips. When Amazon is connected, the
+- **Sales, gross profit, units, average order value and orders** over the period, against the previous period when
+  every source covers both. Sales are net product sales: after discounts, before tax, shipping and tips. Cancelled orders aren't counted.
+  An Amazon order is priced once Amazon adds its proceeds (pending orders wait); an order whose payments all post at
+  zero (a free replacement) counts at zero, with its units' cost. When Amazon is connected, the
   Shopify copies of Amazon orders (Shopify's Amazon sales channel, sources such as `amazon-us`) are left out, since
   Amazon's own orders count them. Amazon orders are read from the US, Canada, Mexico and Brazil (whichever the seller
   sells in); copies from other marketplaces are left out too, and the card says how many.
 - **Gross profit** (with a line-by-line card) is sales with a unit cost, less:
-  - the landed cost of the units sold (Shopify's unit cost, a bundle's being its components', plus the PO markup);
+  - the landed cost of the units sold (Shopify's unit cost, a bundle's being its components', plus the PO markup).
+    Units Amazon resells after a return (Grade and Resell, SKUs starting `amzn.gr.`) cost nothing more: their cost
+    and freight were counted when they first sold;
   - each order's own fees: Amazon's fees on the order payment, and Shopify Payments' processing fees (Amazon posts
     fees about two days after shipping; orders without them are estimated at the period's posted rate);
   - Amazon's inbound freight (its freight service, inbound placement and transport, AWD transport) posted over the last
@@ -53,7 +64,8 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
     charges.
 - **Sales by channel** chart: units or sales, 30 days, 90 days, or 12 months by week. Days a source's stored orders
   don't cover are gaps.
-- **Inventory:** units on hand and on the way by channel, value at cost, retail value (each unit at its recent average
+- **Inventory:** units on hand and on the way by channel, value at cost (a bundle held as its own item, such as a
+  2-pack at Amazon, at its components' cost; Shopify's bundles are made from component stock and aren't counted), retail value (each unit at its recent average
   selling price in that channel, else its Shopify price) and the potential gross profit between them.
 - **Days of cover** with links into Restock per group, and the sales lost to stockouts (stockout days times the
   in-stock sales rate, valued at the selling price).

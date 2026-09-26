@@ -385,7 +385,15 @@ function MoverRow({ mover }: { mover: Overview["sales"]["movers"]["rising"][numb
   )
 }
 
-export function Trending({ movers, comparable }: { movers: Overview["sales"]["movers"]; comparable: boolean }) {
+export function Trending({
+  movers,
+  comparable,
+  period
+}: {
+  movers: Overview["sales"]["movers"]
+  comparable: boolean
+  period: Overview["period"]
+}) {
   return (
     <Card>
       <CardHeader>
@@ -393,10 +401,20 @@ export function Trending({ movers, comparable }: { movers: Overview["sales"]["mo
           <TrendingUp aria-hidden />
           Trending products
         </CardTitle>
-        <CardDescription>Units sold in the last 30 days against the 30 days before.</CardDescription>
+        <CardDescription>
+          {period.previousLabel
+            ? `Units sold ${period.rangeLabel} against ${period.previousLabel}.`
+            : "Units sold in the period against the one before it."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {!comparable && <p className={styles.note}>Trends appear once orders cover the last 60 days.</p>}
+        {!comparable && (
+          <p className={styles.note}>
+            {period.previousLabel
+              ? "Trends appear once orders cover both periods."
+              : "Choose a comparison to see what’s selling more and less."}
+          </p>
+        )}
         {comparable && !movers.rising.length && !movers.falling.length && (
           <p className={styles.note}>Sales are steady: no product changed by more than a few units.</p>
         )}
@@ -715,8 +733,8 @@ export function Purchasing({ purchasing }: { purchasing: Overview["purchasing"] 
   )
 }
 
-// Gross profit line by line: sales with a unit cost, then everything taken off them over the last 30 days.
-export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
+// Gross profit line by line: sales with a unit cost, then everything taken off them over the period.
+export function ProfitBreakdown({ sales, period }: { sales: Overview["sales"]; period: Overview["period"] }) {
   const { profit } = sales
   const currency = profit.currency
   const format = (minor: number) => formatMoney([{ minor, currency: currency! }])
@@ -736,7 +754,7 @@ export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
           <Wallet aria-hidden />
           Gross profit
         </CardTitle>
-        <CardDescription>The last 30 days, from sales with a unit cost to what’s left.</CardDescription>
+        <CardDescription>{period.rangeLabel}, from sales with a unit cost to what’s left.</CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         {currency && profit.costedRevenueMinor > 0 ? (

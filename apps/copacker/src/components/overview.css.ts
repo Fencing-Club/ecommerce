@@ -11,7 +11,8 @@ export const kpis = style({
   gridTemplateColumns: "minmax(0, 1fr)",
   "@media": {
     [media.sm]: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" },
-    [media.xl]: { gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }
+    [media.lg]: { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" },
+    [media.xl]: { gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }
   }
 })
 export const wide = style({
@@ -168,6 +169,13 @@ export const legendLabel = style({
 })
 export const legendValue = style({ ...fontSize.lg, fontWeight: 600, fontVariantNumeric: "tabular-nums" })
 export const swatch = style({ width: space(2.5), height: space(2.5), borderRadius: "3px", flexShrink: 0 })
+// The compared period's line: dashed, in muted ink.
+export const swatchDashed = style({
+  width: space(3),
+  height: 0,
+  borderTop: `2px dashed ${vars.color.mutedForeground}`,
+  flexShrink: 0
+})
 export const note = style({ ...fontSize.xs, color: vars.color.mutedForeground })
 
 // Chart tooltip.
@@ -373,6 +381,7 @@ export const toolbar = style({
   justifyContent: "space-between",
   gap: space(3)
 })
+export const filters = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space(2) })
 export const freshness = style({
   display: "flex",
   flexWrap: "wrap",

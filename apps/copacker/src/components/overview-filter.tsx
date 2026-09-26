@@ -1,6 +1,6 @@
 "use client"
 
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import * as styles from "./overview.css"
@@ -9,6 +9,7 @@ import * as styles from "./overview.css"
 export function ChannelFilter({ channels, value }: { channels: { key: string; label: string }[]; value: string }) {
   const router = useRouter()
   const pathname = usePathname()
+  const params = useSearchParams()
   const shopifyLocations = channels.filter((channel) => channel.key !== "amazon").length
   return (
     <Field orientation="horizontal" className={styles.channelFilter}>
@@ -17,8 +18,15 @@ export function ChannelFilter({ channels, value }: { channels: { key: string; la
         id="overview-channel"
         value={value}
         onChange={(event) => {
-          const next = event.target.value
-          router.push(next ? `${pathname}?channel=${encodeURIComponent(next)}` : pathname)
+          // The period stays as chosen.
+          const query = new URLSearchParams(params)
+          if (event.target.value) {
+            query.set("channel", event.target.value)
+          } else {
+            query.delete("channel")
+          }
+          const search = query.toString()
+          router.push(search ? `${pathname}?${search}` : pathname)
         }}
       >
         <NativeSelectOption value="">All channels</NativeSelectOption>

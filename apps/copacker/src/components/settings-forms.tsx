@@ -45,7 +45,8 @@ export function SupplierProfileForm({ website, phoneNumber }: { website: string;
   const { form, submit } = useActionForm({
     schema: supplierProfileSchema,
     action: "supplier.profile",
-    defaultValues: { website, phoneNumber }
+    defaultValues: { website, phoneNumber },
+    keepSaved: true
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Save profile">
@@ -70,7 +71,8 @@ export function TimeZoneForm({
   const { form, submit } = useActionForm({
     schema: timeZoneSchema,
     action: "workspace.timeZone",
-    defaultValues: { timeZone: timeZone ?? "" }
+    defaultValues: { timeZone: timeZone ?? "" },
+    keepSaved: true
   })
   // Suggests the browser's own zone until one is saved. The server doesn't know it, so it's read after hydration.
   const browserZone = useSyncExternalStore(

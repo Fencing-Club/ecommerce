@@ -81,15 +81,15 @@ function order(items: { pieces: number; unitPrice: number }[], currency = "USD",
 }
 
 describe("dailySales", () => {
-  const today = "2026-09-25"
+  const now = new Date("2026-09-25T12:00:00Z")
 
   it("fills uncovered days with null and covered days without orders with zero", () => {
     const series = dailySales(
       [{ source: "amazon", date: "2026-09-23", orders: 2, units: 5, priced: 1, revenueMinor: 1500, currency: "USD" }],
       { amazon: { from: new Date("2026-09-22T00:00:00Z"), to: new Date("2026-09-25T10:00:00Z") } },
-      today,
-      4,
-      "UTC"
+      { from: "2026-09-21", to: "2026-09-24" },
+      "UTC",
+      now
     )
     expect(series.map((row) => row.date)).toEqual(["2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24"])
     expect(series.map((row) => row.amazon)).toEqual([
@@ -104,8 +104,15 @@ describe("dailySales", () => {
   it("measures coverage from the store's midnight", () => {
     // Orders cover from 06:00 UTC on Sep 24, before midnight in Los Angeles (07:00 UTC) but after it in UTC.
     const coverage = { shopify: { from: new Date("2026-09-24T06:00:00Z"), to: new Date("2026-09-25T08:00:00Z") } }
-    expect(dailySales([], coverage, today, 1, "UTC")[0]?.shopify).toBeNull()
-    expect(dailySales([], coverage, today, 1, "America/Los_Angeles")[0]?.shopify).not.toBeNull()
+    const day = { from: "2026-09-24", to: "2026-09-24" }
+    expect(dailySales([], coverage, day, "UTC", now)[0]?.shopify).toBeNull()
+    expect(dailySales([], coverage, day, "America/Los_Angeles", now)[0]?.shopify).not.toBeNull()
+  })
+
+  it("counts today up to the last sync, and nothing after now", () => {
+    const coverage = { amazon: { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-09-25T11:00:00Z") } }
+    const series = dailySales([], coverage, { from: "2026-09-25", to: "2026-09-26" }, "UTC", now)
+    expect(series.map((row) => row.amazon !== null)).toEqual([true, false])
   })
 
   it("compares with the previous period only when both are fully covered", () => {
@@ -139,16 +146,21 @@ describe("dailySales", () => {
         currency: "USD"
       }
     ]
-    const series = dailySales(rows, { amazon: covered }, today, 60, "UTC")
-    expect(periodTotal(series, ["amazon"], 30)).toEqual({
+    const current = { from: "2026-08-26", to: "2026-09-24" }
+    const previous = { from: "2026-07-27", to: "2026-08-25" }
+    const series = (coverage: { from: Date; to: Date }, range: { from: string; to: string }) =>
+      dailySales(rows, { amazon: coverage }, range, "UTC", now)
+    expect(periodTotal(series(covered, current), series(covered, previous), ["amazon"])).toEqual({
       orders: 4,
       units: 8,
       revenueMinor: 800,
       unpriced: 0,
       previous: { orders: 2, units: 4, revenueMinor: 400, unpriced: 0 }
     })
-    const short = dailySales(rows, { amazon: { ...covered, from: new Date("2026-09-01T00:00:00Z") } }, today, 60, "UTC")
-    expect(periodTotal(short, ["amazon"], 30).previous).toBeNull()
+    const short = { ...covered, from: new Date("2026-09-01T00:00:00Z") }
+    expect(periodTotal(series(short, current), series(short, previous), ["amazon"]).previous).toBeNull()
+    // Without a comparison, only the period's totals.
+    expect(periodTotal(series(covered, current), null, ["amazon"]).previous).toBeNull()
   })
 })
 
@@ -338,7 +350,7 @@ describe("attentionItems", () => {
     expect(items[0]?.title).toBe("2 items are out of stock or will run out before a reorder arrives")
     expect(items.find((item) => item.key === "sync-shopify")?.title).toBe("Shopify orders haven't synced in 5 days")
     expect(items.find((item) => item.key === "prices-shopify")?.detail).toBe(
-      "12 orders from the last 30 days have no price, so sales and margins leave them out."
+      "12 orders in this period have no price, so sales and margins leave them out."
     )
   })
 })
@@ -501,6 +513,25 @@ describe("margins and trends", () => {
     expect(result.profitMinor).toBe(18000 - (4000 + 2200 + 1200) - 2200)
   })
 
+  it("counts units Amazon resold after a return at no further cost", () => {
+    const result = grossProfit(
+      [
+        item({
+          source: "amazon",
+          key: "amzn.gr.fc-glove-nonslip-right-fah6RU-LN",
+          units: 1,
+          pricedUnits: 1,
+          revenueMinor: 1341
+        })
+      ],
+      catalogIndex([]),
+      {},
+      [],
+      { perUnitMinor: 150, bySku: new Map(), currency: "USD" }
+    )
+    expect(result).toMatchObject({ costedRevenueMinor: 1341, costMinor: 0, chargesMinor: 0, profitMinor: 1341 })
+  })
+
   it("lists items selling more and less than before, leaving out small sellers", () => {
     const result = movers(
       [
@@ -648,6 +679,24 @@ describe("sales queries", () => {
       amazonOrder("a2", "2026-08-10T05:00:00Z", [
         { orderItemId: "i3", quantityOrdered: 2, product: { sellerSku: "A" } }
       ]),
+      // Cancelled: not counted at all.
+      {
+        ...amazonOrder("a3", "2026-09-23T06:00:00Z", [
+          { orderItemId: "i4", quantityOrdered: 1, product: { sellerSku: "A" } }
+        ]),
+        data: {
+          orderId: "a3",
+          createdTime: "2026-09-23T06:00:00Z",
+          fulfillment: { fulfillmentStatus: "CANCELLED" },
+          orderItems: [{ orderItemId: "i4", quantityOrdered: 1, product: { sellerSku: "A" } }]
+        }
+      },
+      // A free replacement: Amazon posts its payment at zero and never adds proceeds.
+      amazonOrder("a4", "2026-09-23T06:30:00Z", [
+        { orderItemId: "i5", quantityOrdered: 2, product: { sellerSku: "A" } },
+        // A line with nothing ordered has no proceeds either.
+        { orderItemId: "i6", quantityOrdered: 0, product: { sellerSku: "B" } }
+      ]),
       // Another account's orders aren't counted.
       { ...shopifyOrder("s3", "2026-09-24T10:00:00Z", []), externalAccountId: "old.myshopify.com" }
     ] as (typeof tables.salesOrders.$inferInsert)[])
@@ -693,6 +742,18 @@ describe("sales queries", () => {
         totalMinor: -500,
         feesMinor: -50,
         data: {}
+      },
+      {
+        orgId,
+        externalAccountId: "SELLER",
+        transactionId: "t4",
+        orderId: "a4",
+        postedAt: new Date("2026-09-24T00:00:00Z"),
+        type: "Shipment",
+        currency: "USD",
+        totalMinor: 0,
+        feesMinor: 0,
+        data: {}
       }
     ])
   })
@@ -709,7 +770,8 @@ describe("sales queries", () => {
       "USD"
     )
     expect(rows.toSorted((a, b) => a.source.localeCompare(b.source))).toEqual([
-      { source: "amazon", date: "2026-09-22", orders: 1, units: 4, priced: 1, revenueMinor: 2700, currency: "USD" },
+      // a1, and a4 at zero; the cancelled a3 isn't counted.
+      { source: "amazon", date: "2026-09-22", orders: 2, units: 6, priced: 2, revenueMinor: 2700, currency: "USD" },
       // $20 less 2/3 of $3, plus the $20 bundle; the unpriced order counts its unit but no sales.
       { source: "shopify", date: "2026-09-24", orders: 2, units: 5, priced: 1, revenueMinor: 3800, currency: "USD" }
     ])
@@ -739,16 +801,15 @@ describe("sales queries", () => {
       orgId,
       [shopifyAccount, amazonAccount],
       {
-        previousStart: new Date("2026-08-01T00:00:00Z"),
-        currentStart: new Date("2026-09-01T00:00:00Z"),
-        end: new Date("2026-09-26T00:00:00Z")
+        current: { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-09-26T00:00:00Z") },
+        previous: { from: new Date("2026-08-01T00:00:00Z"), to: new Date("2026-09-01T00:00:00Z") }
       },
       "USD"
     )
     const byKey = Object.fromEntries(rows.map((row) => [`${row.source}:${row.period}:${row.key}`, row]))
     expect(byKey["shopify:current:va"]).toMatchObject({ units: 3, pricedUnits: 2, revenueMinor: 1800 })
     expect(byKey["shopify:current:vbundle"]).toMatchObject({ units: 2, pricedUnits: 2, revenueMinor: 2000 })
-    expect(byKey["amazon:current:A"]).toMatchObject({ units: 3, pricedUnits: 3, revenueMinor: 2700, currency: "USD" })
+    expect(byKey["amazon:current:A"]).toMatchObject({ units: 5, pricedUnits: 5, revenueMinor: 2700, currency: "USD" })
     expect(byKey["amazon:current:B"]).toMatchObject({ units: 1, pricedUnits: 1, revenueMinor: 0 })
     expect(byKey["amazon:previous:A"]).toMatchObject({ units: 2, pricedUnits: 0, revenueMinor: 0 })
     expect(byKey["shopify:current:vb"]).toBeUndefined()
@@ -765,7 +826,8 @@ describe("sales queries", () => {
     expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
       // The order payment's fees only: the refund is counted with refunds, and the release repeats the payment.
       { orderId: "a1", revenueMinor: 2700, feesMinor: 450 },
-      { orderId: "a2", revenueMinor: null, feesMinor: null }
+      { orderId: "a2", revenueMinor: null, feesMinor: null },
+      { orderId: "a4", revenueMinor: 0, feesMinor: 0 }
     ])
   })
 

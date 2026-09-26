@@ -20,7 +20,7 @@ import {
   YAxis
 } from "recharts"
 import { compactMoney, compactNumber, formatNumber, monthName, shortDate } from "@/lib/format"
-import type { DailySales } from "@/server/overview-sales"
+import type { DailySales, SourceDay } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
 import * as styles from "./overview.css"
 import { vars } from "@/styles/theme.css"
@@ -75,16 +75,12 @@ function ChartTooltip({
   )
 }
 
-type Point = { key: string; label: string; title: string } & Partial<Record<SalesSource, number | null>>
+type Point = { key: string; label: string; title: string; previous?: number | null } & Partial<
+  Record<SalesSource, number | null>
+>
 type Metric = "orders" | "units" | "sales"
 // What each measure counts, named wherever a number appears so units aren't read as orders.
 const metricNames = { orders: ["order", "orders"], units: ["unit", "units"] } as const
-
-const ranges = [
-  { value: "30", label: "30 days", days: 30 },
-  { value: "90", label: "90 days", days: 90 },
-  { value: "365", label: "12 months", days: 364 }
-] as const
 
 function measure(cell: { orders: number; units: number; revenueMinor: number }, metric: Metric) {
   if (metric === "sales") {
@@ -93,28 +89,68 @@ function measure(cell: { orders: number; units: number; revenueMinor: number }, 
   return metric === "units" ? cell.units : cell.orders
 }
 
-// Daily points for short ranges; a year is summed by week so the line stays readable.
-function points(daily: DailySales[], days: number, sources: SalesSource[], metric: Metric): Point[] {
-  const rows = daily.slice(-days)
-  const size = days > 90 ? 7 : 1
-  const result: Point[] = []
-  for (let index = 0; index < rows.length; index += size) {
-    const group = rows.slice(index, index + size)
-    const first = group[0]!.date
-    const point: Point = {
-      key: first,
-      label: shortDate(first),
-      title: size === 1 ? shortDate(first) : `Week of ${shortDate(first)}`
+// How a period is drawn: by day up to about three months, by week up to about a year, and by month beyond.
+type Step = "day" | "week" | "month"
+function stepFor(days: number): Step {
+  if (days <= 92) {
+    return "day"
+  }
+  return days <= 400 ? "week" : "month"
+}
+
+// The rows each point sums: one day, seven days, or a calendar month.
+function groups(rows: DailySales[], step: Step) {
+  const result: { start: number; end: number }[] = []
+  for (let index = 0; index < rows.length; ) {
+    let end = index + 1
+    if (step === "week") {
+      end = Math.min(rows.length, index + 7)
+    } else if (step === "month") {
+      while (end < rows.length && rows[end]!.date.slice(0, 7) === rows[index]!.date.slice(0, 7)) {
+        end++
+      }
     }
-    for (const source of sources) {
-      const cells = group.map((row) => row[source])
-      point[source] = cells.every((cell) => cell === null)
-        ? null
-        : cells.reduce((sum, cell) => sum + (cell ? measure(cell, metric) : 0), 0)
-    }
-    result.push(point)
+    result.push({ start: index, end })
+    index = end
   }
   return result
+}
+
+const pointTitle = (first: string, step: Step) => {
+  if (step === "day") {
+    return shortDate(first)
+  }
+  return step === "week" ? `Week of ${shortDate(first)}` : monthName(first.slice(0, 7), true)
+}
+
+// The period's points by source, and the compared period's total alongside, lined up point for point.
+function points(
+  daily: DailySales[],
+  previous: DailySales[] | null,
+  sources: SalesSource[],
+  metric: Metric,
+  step: Step
+): Point[] {
+  const sum = (cells: (SourceDay | null)[]) =>
+    cells.every((cell) => cell === null)
+      ? null
+      : cells.reduce((total, cell) => total + (cell ? measure(cell, metric) : 0), 0)
+  return groups(daily, step).map(({ start, end }) => {
+    const first = daily[start]!.date
+    const point: Point = {
+      key: first,
+      label: step === "month" ? monthName(first.slice(0, 7)) : shortDate(first),
+      title: pointTitle(first, step)
+    }
+    for (const source of sources) {
+      point[source] = sum(daily.slice(start, end).map((row) => row[source]))
+    }
+    if (previous) {
+      const before = previous.slice(start, end)
+      point.previous = before.length ? sum(before.flatMap((row) => sources.map((source) => row[source]))) : null
+    }
+    return point
+  })
 }
 
 function Switch<T extends string>({
@@ -149,24 +185,28 @@ function Switch<T extends string>({
   )
 }
 
-// Units or sales by source over 30 days, 90 days or a year. Sales appear once orders have prices; orders without a
-// price are left out of them.
+// Units or sales by source over the Overview's period, with the compared period as a dotted line. Sales appear once
+// orders have prices; orders without a price are left out of them.
 export function SalesTrend({
   daily,
+  previous,
+  previousLabel,
   sources,
   currency
 }: {
   daily: DailySales[]
+  previous: DailySales[] | null
+  previousLabel: string
   sources: SalesSource[]
   currency: string | null
 }) {
-  const [range, setRange] = useState<(typeof ranges)[number]["value"]>("30")
   // Sales first when orders have prices; orders otherwise.
   const [chosen, setMetric] = useState<Metric>(currency ? "sales" : "orders")
   const metric: Metric = currency || chosen !== "sales" ? chosen : "orders"
-  const days = ranges.find((option) => option.value === range)!.days
+  const step = stepFor(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
-  const data = points(daily, days, shown, metric)
+  const data = points(daily, previous, shown, metric, step)
+  const compared = data.some((point) => point.previous !== null && point.previous !== undefined)
   const format = (value: number) => (metric === "sales" ? compactMoney(value, currency ?? "USD") : formatNumber(value))
   // "12 orders", "1 unit", "$4.2K".
   const describe = (value: number) =>
@@ -195,6 +235,14 @@ export function SalesTrend({
               </span>
             </div>
           ))}
+          {compared && (
+            <div className={styles.legendItem}>
+              <span className={styles.legendLabel}>
+                <span className={styles.swatchDashed} />
+                {previousLabel}, total
+              </span>
+            </div>
+          )}
         </div>
         <div className={styles.switches}>
           <Switch
@@ -207,7 +255,6 @@ export function SalesTrend({
             ]}
             onChange={setMetric}
           />
-          <Switch label="Period" value={range} options={ranges} onChange={setRange} />
         </div>
       </div>
       <div className={styles.chart}>
@@ -238,6 +285,20 @@ export function SalesTrend({
             cursor={cursor}
             content={<ChartTooltip titleOf={(point: Point) => point.title} format={describe} />}
           />
+          {compared && (
+            <Area
+              type="monotone"
+              dataKey="previous"
+              name={previousLabel}
+              stroke={vars.color.mutedForeground}
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              fill="none"
+              activeDot={false}
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+          )}
           {shown.map((source) => (
             <Area
               key={source}
@@ -256,16 +317,17 @@ export function SalesTrend({
       </div>
       <table className={srOnly}>
         <caption>
-          {{ orders: "Orders", units: "Units sold", sales: "Sales" }[metric]} by {days > 90 ? "week" : "day"}
+          {{ orders: "Orders", units: "Units sold", sales: "Sales" }[metric]} by {step}
         </caption>
         <thead>
           <tr>
-            <th scope="col">{days > 90 ? "Week of" : "Day"}</th>
+            <th scope="col">{{ day: "Day", week: "Week of", month: "Month" }[step]}</th>
             {shown.map((source) => (
               <th key={source} scope="col">
                 {sourceSeries[source].label}
               </th>
             ))}
+            {compared && <th scope="col">{previousLabel}</th>}
           </tr>
         </thead>
         <tbody>
@@ -276,6 +338,9 @@ export function SalesTrend({
                 const value = point[source]
                 return <td key={source}>{value === null || value === undefined ? "No data" : format(value)}</td>
               })}
+              {compared && (
+                <td>{point.previous === null || point.previous === undefined ? "No data" : format(point.previous)}</td>
+              )}
             </tr>
           ))}
         </tbody>

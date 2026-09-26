@@ -6,14 +6,18 @@ import { EmptyState, PageHeader } from "@/components/common"
 import { Freshness, OverviewDashboard, OverviewSkeleton } from "@/components/overview"
 import { ChannelFilter } from "@/components/overview-filter"
 import { SetupChecklist } from "@/components/overview-sections"
+import { PeriodPicker } from "@/components/period-picker"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { type Session, session } from "@/server/auth"
 import { overview } from "@/server/overview"
 import * as styles from "@/components/overview.css"
 
-async function Dashboard({ org, channel }: { org: Session["org"]; channel: string | null }) {
-  const data = await overview(org, { channel })
+type Query = Record<string, string | string[] | undefined>
+
+async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) {
+  const channel = typeof query.channel === "string" ? query.channel : null
+  const data = await overview(org, { channel, period: query })
   if (!data.connected.length) {
     return (
       <div className={styles.page}>
@@ -36,20 +40,23 @@ async function Dashboard({ org, channel }: { org: Session["org"]; channel: strin
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
+        <div className={styles.filters}>
+          <PeriodPicker period={data.period} />
+          {data.channels.length > 1 && <ChannelFilter channels={data.channels} value={data.channel?.key ?? ""} />}
+        </div>
         <Freshness data={data} />
-        {data.channels.length > 1 && <ChannelFilter channels={data.channels} value={data.channel?.key ?? ""} />}
       </div>
       <OverviewDashboard data={data} />
     </div>
   )
 }
 
-export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ channel?: string }> }) {
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
   const s = await session()
   if (s.org.kind !== "buyer") {
     redirect("/orders")
   }
-  const { channel } = await searchParams
+  const query = await searchParams
   return (
     <>
       <PageHeader title="Overview" description="Sales, stock, purchasing and shipments at a glance.">
@@ -61,8 +68,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           Plan restock
         </Button>
       </PageHeader>
-      <Suspense key={channel ?? ""} fallback={<OverviewSkeleton />}>
-        <Dashboard org={s.org} channel={channel ?? null} />
+      <Suspense key={JSON.stringify(query)} fallback={<OverviewSkeleton />}>
+        <Dashboard org={s.org} query={query} />
       </Suspense>
     </>
   )
