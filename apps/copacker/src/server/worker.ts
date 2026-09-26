@@ -1,8 +1,10 @@
 import { setTimeout as wait } from "node:timers/promises"
 import { SQSClient } from "@aws-sdk/client-sqs"
-import { pollAmazonNotifications, sqsQueue } from "./amazon-notifications"
+import { pollAmazonNotifications } from "./amazon-notifications"
 import { runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
+import { pollShopifyEvents } from "./shopify-webhooks"
+import { type NotificationQueue, sqsQueue } from "./sqs"
 let stopped = false
 process.on("SIGTERM", () => {
   stopped = true
@@ -11,17 +13,20 @@ process.on("SIGINT", () => {
   stopped = true
 })
 
-// Amazon's notifications arrive in an SQS queue. Reading it waits up to 20 seconds for messages, so it runs beside
-// the job loop rather than in it. The AWS region and credentials come from the standard AWS_* variables.
-async function readAmazonNotifications(queueUrl: string) {
-  const queue = sqsQueue(new SQSClient({}), queueUrl)
+// Amazon's notifications and Shopify's EventBridge events arrive in SQS queues. Reading one waits up to 20 seconds for
+// messages, so each queue has its own loop beside the job loops. The AWS region and credentials come from the standard
+// AWS_* variables.
+const sqs = new SQSClient({})
+async function readQueue(name: string, queueUrl: string, poll: (queue: NotificationQueue) => Promise<number>) {
+  const queue = sqsQueue(sqs, queueUrl)
   while (!stopped) {
     try {
-      await pollAmazonNotifications(queue)
+      await poll(queue)
     } catch (error) {
       console.error(
         JSON.stringify({
-          event: "amazon_notifications_read_failed",
+          event: "queue_read_failed",
+          queue: name,
           error: error instanceof Error ? error.message : "unknown error"
         })
       )
@@ -29,8 +34,12 @@ async function readAmazonNotifications(queueUrl: string) {
     }
   }
 }
-const queueUrl = process.env.AMAZON_NOTIFICATIONS_QUEUE_URL
-const notifications = queueUrl ? readAmazonNotifications(queueUrl) : Promise.resolve()
+const amazonQueueUrl = process.env.AMAZON_NOTIFICATIONS_QUEUE_URL
+const shopifyQueueUrl = process.env.SHOPIFY_EVENTS_QUEUE_URL
+const queueReaders = Promise.all([
+  amazonQueueUrl ? readQueue("amazon", amazonQueueUrl, (queue) => pollAmazonNotifications(queue)) : null,
+  shopifyQueueUrl ? readQueue("shopify", shopifyQueueUrl, (queue) => pollShopifyEvents(queue)) : null
+])
 
 // Jobs run in several loops, so a long job (a year of Amazon orders) doesn't hold up the rest. Each claim skips jobs
 // another loop holds, and each sync guards against a second run for the same workspace and source.
@@ -61,5 +70,5 @@ async function scheduleReconciliation() {
 void scheduleReconciliation()
 await Promise.all(Array.from({ length: jobLoops }, () => runJobs()))
 // A message being handled when the worker stops is received again later, since it is only removed once handled.
-await Promise.race([notifications, wait(25000)])
+await Promise.race([queueReaders, wait(25000)])
 process.exit(0)

@@ -22,7 +22,6 @@ vi.mock("../src/server/connections", async (original) => ({
 import {
   amazonEventJob,
   amazonNotificationTypes,
-  amazonQueueArn,
   amazonSubscribeJob,
   pollAmazonNotifications,
   receiveAmazonNotification
@@ -30,6 +29,7 @@ import {
 import { PollAgain } from "../src/server/job-handlers"
 import { runNextJob } from "../src/server/queue"
 import { salesDataVersion } from "../src/server/sales-orders"
+import { queueArn } from "../src/server/sqs"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
@@ -257,15 +257,15 @@ describe("Amazon order updates", () => {
 
 describe("Amazon notification subscriptions", () => {
   it("reads the queue's ARN from its URL", () => {
-    expect(amazonQueueArn(queueUrl)).toBe("arn:aws:sqs:us-east-1:316338643347:copacker-amazon-notifications")
-    expect(() => amazonQueueArn("https://example.com/queue")).toThrow("SQS queue URL")
+    expect(queueArn(queueUrl)).toBe("arn:aws:sqs:us-east-1:316338643347:copacker-amazon-notifications")
+    expect(() => queueArn("https://example.com/queue")).toThrow("isn't an SQS queue URL")
   })
 
   it("subscribes the seller to each notification at the queue's destination", async () => {
     vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", queueUrl)
     amazon.notificationDestination.mockResolvedValue("dest")
     await amazonSubscribeJob({ orgId: buyerId }, owned)
-    expect(amazon.notificationDestination).toHaveBeenCalledWith(amazonQueueArn(queueUrl), "copacker")
+    expect(amazon.notificationDestination).toHaveBeenCalledWith(queueArn(queueUrl), "copacker")
     expect(amazon.subscribeNotifications.mock.calls).toEqual([
       [
         "ORDER_CHANGE",

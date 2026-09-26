@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { ShopifyRequestError } from "@repo/aisle/shopify"
+import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -19,7 +20,13 @@ import { POST as webhook } from "../src/app/api/webhooks/shopify/route"
 import { emailJob, PollAgain } from "../src/server/job-handlers"
 import { queueReconciliation, reconcileJob } from "../src/server/reconcile"
 import { shopifyComplianceJob } from "../src/server/shopify-compliance"
-import { shopifyEventJob, shopifySubscribeJob, shopifyWebhookTopics } from "../src/server/shopify-webhooks"
+import {
+  pollShopifyEvents,
+  receiveShopifyEvent,
+  shopifyEventJob,
+  shopifySubscribeJob,
+  shopifyWebhookTopics
+} from "../src/server/shopify-webhooks"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
@@ -273,10 +280,32 @@ describe("Shopify privacy webhooks", () => {
     expect(sent.text).not.toContain("#1002")
   })
 
-  it("acknowledges customer erasure requests, since no customer details are stored", async () => {
-    const body = JSON.stringify({ shop_domain: shop, customer: { id: 7 }, orders_to_redact: [1001] })
+  it("removes an erased customer's ID from their stored orders, keeping only IDs from the request", async () => {
+    await storeOrder(buyerId, 1001, "CORD-2")
+    await storeOrder(buyerId, 1002, "CORD-2")
+    await storeOrder(buyerId, 1003, "CORD-2")
+    await database.execute(
+      sql`update sales_orders set data = data || jsonb_build_object('customerId', case "orderId"
+        when 'gid://shopify/Order/1003' then 'gid://shopify/Customer/8' else 'gid://shopify/Customer/7' end)`
+    )
+    const body = JSON.stringify({
+      shop_domain: shop,
+      customer: { id: 7, email: "customer@example.com", phone: "555-0100" },
+      orders_to_redact: [1001]
+    })
     expect((await webhook(delivery("customers/redact", body))).status).toBe(200)
-    expect(await database.select().from(tables.jobs)).toEqual([])
+    const [job] = await queued("shopify-compliance")
+    expect(JSON.stringify(job!.payload)).not.toContain("customer@example.com")
+    await shopifyComplianceJob(job!.payload)
+    const stored = await database.select().from(tables.salesOrders)
+    expect(
+      Object.fromEntries(stored.map((row) => [row.orderId, "lines" in row.data ? (row.data.customerId ?? null) : null]))
+    ).toEqual({
+      "gid://shopify/Order/1001": null,
+      "gid://shopify/Order/1002": null,
+      // Another customer's order keeps its ID.
+      "gid://shopify/Order/1003": "gid://shopify/Customer/8"
+    })
   })
 
   it("rejects a signed privacy request it can't read", async () => {
@@ -296,5 +325,74 @@ describe("Shopify privacy webhooks", () => {
     await shopifyComplianceJob(job!.payload)
     expect((await database.select().from(tables.salesOrders)).map((row) => row.orgId)).toEqual([buyerId])
     expect((await database.select().from(tables.stockSnapshots)).map((row) => row.orgId)).toEqual([buyerId])
+  })
+})
+
+describe("Shopify events through EventBridge", () => {
+  const source = "arn:aws:events:us-east-1::event-source/aws.partner/shopify.com/428016009217/copacker-production"
+  // As Shopify's EventBridge integration delivers a webhook: its headers as metadata, its body as the payload.
+  const event = (topic: string, payload: unknown = { id: 1 }) =>
+    JSON.stringify({
+      version: "0",
+      id: `event-${topic}`,
+      "detail-type": "shopifyWebhook",
+      source: "aws.partner/shopify.com/428016009217/copacker-production",
+      detail: {
+        payload,
+        metadata: {
+          "Content-Type": "application/json",
+          "X-Shopify-Topic": topic,
+          "X-Shopify-Shop-Domain": shop,
+          "X-Shopify-Webhook-Id": `webhook-${topic}`
+        }
+      }
+    })
+
+  it("queues the same work as the webhook route", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-09-25T12:01:00Z"), toFake: ["Date"] })
+    expect(await receiveShopifyEvent(event("orders/updated"))).toBe(true)
+    expect(await receiveShopifyEvent(event("inventory_levels/update"))).toBe(true)
+    expect((await queued("shopify-event")).map((job) => job.payload.target).sort()).toEqual(["sales", "stock"])
+  })
+
+  it("handles privacy requests, and drops messages that aren't Shopify events", async () => {
+    const request = { shop_domain: shop, orders_requested: [1001], customer: { id: 7 }, data_request: { id: 42 } }
+    expect(await receiveShopifyEvent(event("customers/data_request", request))).toBe(true)
+    expect((await queued("shopify-compliance")).map((job) => job.key)).toEqual([
+      "shopify-compliance:webhook-customers/data_request"
+    ])
+    const warned = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    expect(await receiveShopifyEvent("not json")).toBe(false)
+    expect(await receiveShopifyEvent(JSON.stringify({ detail: {} }))).toBe(false)
+    warned.mockRestore()
+  })
+
+  it("removes each message from the queue once its work is queued", async () => {
+    const queue = {
+      receive: vi
+        .fn<() => Promise<{ body: string; handle: string }[]>>()
+        .mockResolvedValue([{ body: event("orders/create"), handle: "h1" }]),
+      remove: vi.fn<(handle: string) => Promise<void>>()
+    }
+    expect(await pollShopifyEvents(queue)).toBe(1)
+    expect(queue.remove).toHaveBeenCalledWith("h1")
+    expect(await queued("shopify-event")).toHaveLength(1)
+  })
+
+  it("subscribes the store at the HTTPS address and the EventBridge source", async () => {
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", source)
+    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    expect(shopify.subscribeWebhooks.mock.calls).toEqual([
+      ["https://copacker.example/api/webhooks/shopify", shopifyWebhookTopics],
+      [source, shopifyWebhookTopics]
+    ])
+    // Without HTTPS, only EventBridge.
+    vi.stubEnv("APP_URL", "http://localhost:3000")
+    shopify.subscribeWebhooks.mockClear()
+    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, shopifyWebhookTopics]])
+    vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", "arn:aws:sqs:us-east-1:1:not-a-source")
+    await expect(shopifySubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow("Invalid string")
   })
 })
