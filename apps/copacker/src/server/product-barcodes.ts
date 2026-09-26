@@ -1,11 +1,16 @@
 import { randomUUID } from "node:crypto"
+import { amazonDestinations } from "@repo/aisle"
 import { splitPdfPages } from "@repo/aisle/labels"
+import { labelTitle, standardProductLabels } from "@repo/aisle/product-labels"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, documents, productBarcodes, stockSnapshots } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
+import { amazonFor, shopifyFor } from "./connections"
+import { inventoryContext } from "./inventory-context"
+import { type ProductDefaults, readProductDefaults } from "./product-defaults"
 import { describeError } from "./stock"
 import { copyFile, deleteFile, getFile, putFile, validatePdf } from "./storage"
 
@@ -39,13 +44,42 @@ async function shopifyDomain(s: Session) {
   return account.domain
 }
 
-// Variations in the buyer's connected store that have a saved barcode.
-export async function barcodedVariants(orgId: string) {
+async function storeRows(orgId: string, domain: string) {
+  const [stock] = await db()
+    .select({ data: stockSnapshots.data })
+    .from(stockSnapshots)
+    .where(
+      and(
+        eq(stockSnapshots.orgId, orgId),
+        eq(stockSnapshots.source, "shopify"),
+        eq(stockSnapshots.externalAccountId, domain),
+        eq(stockSnapshots.scopeKey, "store")
+      )
+    )
+  return stock?.data?.source === "shopify" ? stock.data.rows : []
+}
+
+// Whether a variation's product needs an uploaded label rather than the standard FNSKU label.
+const needsUpload = (defaults: ReadonlyMap<string, ProductDefaults>, productId: string | undefined) =>
+  productId !== undefined && defaults.get(productId)?.productLabel === "uploaded"
+
+// Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
+export async function variantsNeedingBarcode(orgId: string) {
   const [account] = await db()
     .select({ domain: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
-  return account ? [...(await readProductBarcodes(orgId, account.domain)).keys()] : []
+  if (!account) {
+    return []
+  }
+  const [rows, defaults, barcodes] = await Promise.all([
+    storeRows(orgId, account.domain),
+    readProductDefaults(orgId, account.domain),
+    readProductBarcodes(orgId, account.domain)
+  ])
+  return rows
+    .filter((row) => needsUpload(defaults, row.productId) && !barcodes.has(row.variantId))
+    .map((row) => row.variantId)
 }
 
 export async function readProductBarcodes(orgId: string, domain: string) {
@@ -95,7 +129,7 @@ function resolveVariant(rows: StockRow[], variantId: string | null, sku: string)
 }
 
 // Deleting a replaced or removed file only tidies storage; a failure is logged and leaves the file behind.
-async function discardFile(objectKey: string) {
+export async function discardFile(objectKey: string) {
   try {
     await deleteFile(objectKey)
   } catch (error) {
@@ -118,22 +152,7 @@ export async function saveProductBarcode(s: Session, form: FormData) {
   }
   const rawSku = form.get("sku")
   const sku = typeof rawSku === "string" && rawSku.trim() ? rawSku.trim() : skuFromFileName(file.name)
-  const [stock] = await db()
-    .select({ data: stockSnapshots.data })
-    .from(stockSnapshots)
-    .where(
-      and(
-        eq(stockSnapshots.orgId, s.org.id),
-        eq(stockSnapshots.source, "shopify"),
-        eq(stockSnapshots.externalAccountId, domain),
-        eq(stockSnapshots.scopeKey, "store")
-      )
-    )
-  const row = resolveVariant(
-    stock?.data?.source === "shopify" ? stock.data.rows : [],
-    variantId?.data ?? null,
-    sku.slice(0, 255)
-  )
+  const row = resolveVariant(await storeRows(s.org.id, domain), variantId?.data ?? null, sku.slice(0, 255))
   const bytes = new Uint8Array(await file.arrayBuffer())
   try {
     await validatePdf(bytes)
@@ -210,20 +229,103 @@ export async function removeProductBarcode(s: Session, variantId: string) {
   }
 }
 
-export async function productBarcodeFile(s: Session, variantId: string) {
+// A variation's product label: its uploaded barcode, or else the standard FNSKU label sheet, unless its product needs
+// an uploaded one. The FNSKU comes from the latest FBA stock sync.
+export async function productLabelFile(s: Session, variantId: string) {
   const domain = await shopifyDomain(s)
   const [barcode] = await db()
     .select()
     .from(productBarcodes)
     .where(barcodeScope(s.org.id, domain, variantId))
-  if (!barcode) {
-    throw new ProductBarcodeError("This variation has no barcode", 404)
+  if (barcode) {
+    return { name: barcode.name, bytes: await getFile(barcode.objectKey) }
   }
-  return { name: barcode.name, bytes: await getFile(barcode.objectKey) }
+  const context = await inventoryContext(s.org.id)
+  const row = context.rows.find((item) => item.variantId === variantId)
+  if (!row) {
+    throw new ProductBarcodeError("This product isn't in your synced Shopify inventory", 404)
+  }
+  if (needsUpload(await readProductDefaults(s.org.id, domain), row.productId)) {
+    throw new ProductBarcodeError("This product needs an uploaded label", 404)
+  }
+  const code = await labelCode(s.org.id, context.fbaRows ?? [], row.buyerSku)
+  const title = labelTitle(row.productTitle ?? row.buyerSku ?? "Untitled product", row.variantTitle ?? null)
+  const [origin] = await countriesOfOrigin(s.org.id, domain, [variantId])
+  return {
+    name: labelFileName(title),
+    bytes: await standardProductLabels({ code, title, countryOfOrigin: origin?.[1] ?? null })
+  }
 }
 
-// Copies saved barcodes onto a PO as product labels for the lines that don't have one yet. Labels uploaded on the PO
-// itself are kept.
+async function amazonSeller(orgId: string) {
+  const [amazon] = await db()
+    .select({ sellerId: connections.externalId })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "amazon")))
+  return amazon?.sellerId ?? null
+}
+
+// The code a variation's standard label prints: its FNSKU from the latest FBA stock sync, or else from Amazon's listing
+// for its SKU, which also covers products Amazon holds no stock of. Without Amazon, or for a product Amazon doesn't
+// list, it's the Shopify SKU.
+async function labelCode(orgId: string, fbaRows: { sellerSku: string; fnSku?: string }[], sku: string | null) {
+  if (!sku) {
+    throw new ProductBarcodeError("This variation has no SKU to print. Add one in Shopify.", 404)
+  }
+  const synced = fnskuFor(fbaRows, sku)
+  if (synced) {
+    return synced
+  }
+  const sellerId = await amazonSeller(orgId)
+  if (!sellerId) {
+    return sku
+  }
+  let listed: string | undefined
+  try {
+    listed = (await (await amazonFor(orgId, sellerId)).listings(sellerId, [sku])).get(sku)?.fnsku
+  } catch (error) {
+    console.error(JSON.stringify({ event: "label_fnsku_lookup_failed", orgId, error: describeError(error) }))
+    throw new ProductBarcodeError("Amazon couldn't be reached to look up the FNSKU. Try again.", 409)
+  }
+  return listed ?? sku
+}
+
+// Each variation's country of origin as Shopify records it on the inventory item, for the label's "Made in" line.
+async function countriesOfOrigin(orgId: string, domain: string, variantIds: string[]) {
+  if (!variantIds.length) {
+    return []
+  }
+  let variants: Awaited<ReturnType<Awaited<ReturnType<typeof shopifyFor>>["variants"]>>
+  try {
+    variants = await (await shopifyFor(orgId, domain)).variants(variantIds)
+  } catch (error) {
+    console.error(JSON.stringify({ event: "label_origin_lookup_failed", orgId, error: describeError(error) }))
+    throw new ProductBarcodeError("Shopify couldn't be reached to look up the country of origin. Try again.", 409)
+  }
+  return variants.flatMap((variant) =>
+    variant ? [[variant.id, variant.inventoryItem.countryCodeOfOrigin ?? null] as const] : []
+  )
+}
+
+// A generated label's file name: its title, such as "Pro-Grip Fencing Glove (10, Left).pdf", without characters
+// Windows and macOS don't allow in file names.
+export function labelFileName(title: string) {
+  const name = title
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180)
+  return `${name || "Product label"}.pdf`
+}
+
+// The FNSKU Amazon lists for a seller SKU, when exactly one is known.
+export function fnskuFor(rows: { sellerSku: string; fnSku?: string }[], sku: string) {
+  const fnskus = new Set(rows.flatMap((row) => (row.sellerSku === sku && row.fnSku ? [row.fnSku] : [])))
+  return fnskus.size === 1 ? [...fnskus][0]! : null
+}
+
+// Adds product labels to a PO's lines that don't have one: the variation's uploaded barcode, or else the standard FNSKU
+// label with the Shopify title, unless its product needs an uploaded label. Labels uploaded on the PO itself are kept.
 export async function attachProductBarcodes(s: Session, orderId: string) {
   if (s.org.kind !== "buyer") {
     return
@@ -237,50 +339,82 @@ export async function attachProductBarcodes(s: Session, orderId: string) {
   if (!missing.length) {
     return
   }
-  const barcodes = await db()
-    .select()
-    .from(productBarcodes)
-    .where(
-      and(
-        eq(productBarcodes.orgId, order.buyerOrgId),
-        eq(productBarcodes.shopifyDomain, order.shopifyDomain),
-        inArray(
-          productBarcodes.variantId,
-          missing.map((item) => item.variantId)
+  const [barcodes, defaults, rows] = await Promise.all([
+    db()
+      .select()
+      .from(productBarcodes)
+      .where(
+        and(
+          eq(productBarcodes.orgId, order.buyerOrgId),
+          eq(productBarcodes.shopifyDomain, order.shopifyDomain),
+          inArray(
+            productBarcodes.variantId,
+            missing.map((item) => item.variantId)
+          )
         )
-      )
-    )
+      ),
+    readProductDefaults(order.buyerOrgId, order.shopifyDomain),
+    storeRows(order.buyerOrgId, order.shopifyDomain)
+  ])
+  // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
+  // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
+  const forAmazon = amazonDestinations.includes(order.data.destination)
+  // Standard labels print each variation's country of origin, looked up in one Shopify request. If Shopify can't be
+  // reached, those lines stay without a label; the PO shows them, and sending it tries again.
+  const standard = missing.filter(
+    (item) =>
+      !barcodes.some((row) => row.variantId === item.variantId) &&
+      !needsUpload(defaults, rows.find((row) => row.variantId === item.variantId)?.productId)
+  )
+  const origins = await countriesOfOrigin(
+    order.buyerOrgId,
+    order.shopifyDomain,
+    standard.map((item) => item.variantId)
+  )
+    .then((entries) => new Map(entries))
+    .catch(() => null)
   const staged: (typeof documents.$inferInsert)[] = []
   for (const item of missing) {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
-    if (!barcode) {
-      continue
-    }
+    const productId = rows.find((row) => row.variantId === item.variantId)?.productId
     const id = randomUUID()
     const objectKey = `orders/${orderId}/${id}.pdf`
-    await copyFile(barcode.objectKey, objectKey)
-    staged.push({
+    const label = {
       id,
       orderId,
-      kind: "product_label",
+      kind: "product_label" as const,
       itemId: item.id,
       objectKey,
-      name: barcode.name,
-      bytes: barcode.bytes,
-      orderRevision: order.revision,
-      uploadedBy: barcode.uploadedBy
-    })
+      orderRevision: order.revision
+    }
+    if (barcode) {
+      await copyFile(barcode.objectKey, objectKey)
+      staged.push({ ...label, name: barcode.name, bytes: barcode.bytes, uploadedBy: barcode.uploadedBy })
+    } else if (!needsUpload(defaults, productId)) {
+      const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
+      if (!code || !origins) {
+        continue
+      }
+      const title = labelTitle(item.name, item.variant)
+      const bytes = await standardProductLabels({
+        code,
+        title,
+        countryOfOrigin: origins.get(item.variantId) ?? null
+      })
+      await putFile(objectKey, bytes)
+      staged.push({ ...label, name: labelFileName(title), bytes: bytes.length, uploadedBy: "system" })
+    }
   }
   if (!staged.length) {
     return
   }
-  await db().transaction(async (tx) => {
+  const kept = await db().transaction(async (tx) => {
     const { order: fresh } = await accessibleOrder(s, orderId, tx, true)
     const current = await tx
       .select({ itemId: documents.itemId })
       .from(documents)
       .where(and(eq(documents.orderId, orderId), eq(documents.kind, "product_label"), eq(documents.outdated, 0)))
-    // A label uploaded meanwhile, or a line removed from the PO, wins over the saved barcode.
+    // A label uploaded meanwhile, or a line removed from the PO, wins over the saved or standard one.
     const values = staged.filter(
       (doc) =>
         fresh.data.items.some((item) => item.id === doc.itemId) && !current.some((label) => label.itemId === doc.itemId)
@@ -288,5 +422,11 @@ export async function attachProductBarcodes(s: Session, orderId: string) {
     if (values.length) {
       await tx.insert(documents).values(values)
     }
+    return values
   })
+  for (const doc of staged) {
+    if (!kept.includes(doc)) {
+      await discardFile(doc.objectKey)
+    }
+  }
 }

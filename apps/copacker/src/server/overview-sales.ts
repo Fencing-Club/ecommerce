@@ -48,11 +48,29 @@ end`
 const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',
   jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}')`)
 
-type Account = { provider: SalesSource; externalId: string }
+// A connected account, optionally narrowed to the Shopify orders shipped from one location. `withoutAmazon` leaves out
+// the Shopify copies of Amazon orders (from Shopify's Amazon sales channel), counted from Amazon itself when it's
+// connected.
+type Account = { provider: SalesSource; externalId: string; locationId?: string | null; withoutAmazon?: boolean }
+
+// Shopify's Amazon sales channel copies each marketplace's orders into Shopify under a source such as "amazon-us".
+export const amazonImport = sql.raw(`(coalesce(o.data->>'sourceName', '') like 'amazon%')`)
+
+// An order counts for a location when any of its successful fulfillments shipped from there, so unfulfilled orders
+// aren't counted for any location.
+function shippedFrom(locationId: string | null | undefined) {
+  return locationId
+    ? sql` and exists (select 1 from jsonb_array_elements(o.data->'fulfillments') f
+        where f->>'status' = 'SUCCESS' and f->'location'->>'id' = ${locationId})`
+    : sql``
+}
 
 function accountFilter(accounts: Account[]) {
   return sql.join(
-    accounts.map((account) => sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId})`),
+    accounts.map(
+      (account) =>
+        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``})`
+    ),
     sql` or `
   )
 }
@@ -169,8 +187,11 @@ export async function salesByItem(
 export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
 
 // Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
+// A release of a deferred payment repeats that payment's fees, so releases are left out (also for rows copied before
+// the reader stopped counting them).
 const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
-  where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId")`)
+  where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
+    and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
 // Shopify Payments' fees on an order, with their tax, from its successful payments (null when copied without them).
 const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
   (select coalesce(sum(round(((fee->'amount'->>'amount')::numeric + (fee->'taxAmount'->>'amount')::numeric) * 100)), 0)
@@ -179,14 +200,14 @@ const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
 end`)
 
 // Each order from one account in a period, with its sales (null without prices) and the platform's fees on it.
-export async function orderFees(orgId: string, source: SalesSource, account: string, from: Date, to: Date) {
-  const fee = source === "amazon" ? amazonOrderFee : shopifyOrderFee
+export async function orderFees(orgId: string, account: Account, from: Date, to: Date) {
+  const fee = account.provider === "amazon" ? amazonOrderFee : shopifyOrderFee
   const result = await db().execute(sql`
     select o."orderId" as "orderId",
       case when ${orderPriced} then round(${orderRevenue} * 100) end as revenue,
       ${fee} as fees
     from sales_orders o
-    where o."orgId" = ${orgId} and o.source = ${source} and o."externalAccountId" = ${account}
+    where o."orgId" = ${orgId} and (${accountFilter([account])})
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to}`)
   return rows(result).map(
     (row): OrderFees => ({
@@ -309,7 +330,9 @@ type CatalogRow = {
 
 // Looks up catalog details by Shopify variant or Amazon seller SKU. An Amazon SKU matches a variant only when
 // exactly one variant carries it.
-export function catalogIndex(catalog: readonly CatalogRow[]) {
+// `markups` are landed markups by variant (freight, duty and charges as a share of the supplier's price); a unit's cost
+// includes its markup when one is known.
+export function catalogIndex(catalog: readonly CatalogRow[], markups: ReadonlyMap<string, number> = new Map()) {
   const byVariant = new Map(catalog.map((row) => [row.variantId, row]))
   const bySku = new Map<string, CatalogRow | null>()
   for (const row of catalog) {
@@ -319,11 +342,13 @@ export function catalogIndex(catalog: readonly CatalogRow[]) {
   }
   const variantFor = (source: SalesSource, key: string) =>
     source === "shopify" ? (byVariant.get(key) ?? null) : (bySku.get(key) ?? null)
-  // A unit's cost: its own, or for a bundle the sum of its components' costs. Null when any is missing.
-  const unitCost = (row: CatalogRow | null): { minor: number; currency: string } | null => {
+  // A unit's landed cost: its own, or for a bundle the sum of its components' costs, each with its landed markup (a
+  // component without one takes the bundle's). Null when any cost is missing.
+  const unitCost = (row: CatalogRow | null, fallbackMarkup = 0): { minor: number; currency: string } | null => {
     if (!row) {
       return null
     }
+    const markup = markups.get(row.variantId) ?? fallbackMarkup
     if (row.bundle) {
       const components = row.bundle.components
       if (!components?.length) {
@@ -332,7 +357,7 @@ export function catalogIndex(catalog: readonly CatalogRow[]) {
       let minor = 0,
         currency: string | null = null
       for (const component of components) {
-        const part = unitCost(byVariant.get(component.variantId) ?? null)
+        const part = unitCost(byVariant.get(component.variantId) ?? null, markup)
         if (!part || (currency && part.currency !== currency)) {
           return null
         }
@@ -342,7 +367,7 @@ export function catalogIndex(catalog: readonly CatalogRow[]) {
       return currency ? { minor, currency } : null
     }
     return row.unitCostMinor !== null && row.unitCostMinor !== undefined && row.costCurrency
-      ? { minor: row.unitCostMinor, currency: row.costCurrency }
+      ? { minor: Math.round(row.unitCostMinor * (1 + markup)), currency: row.costCurrency }
       : null
   }
   return { byVariant, variantFor, unitCost }
@@ -466,4 +491,15 @@ export function sellingPrices(items: ItemRow[], index: ReturnType<typeof catalog
       ? { minor: Math.round(entry.revenue / entry.units), currency: entry.currency }
       : null
   }
+}
+
+// Shopify copies of orders from Amazon marketplaces Copacker doesn't read (anything but the US), in a period. They're
+// left out once Amazon is connected, so the page says how many.
+export async function otherMarketplaceOrders(orgId: string, account: string, from: Date, to: Date) {
+  const result = await db().execute(sql`
+    select count(*) as orders from sales_orders o
+    where o."orgId" = ${orgId} and o.source = 'shopify' and o."externalAccountId" = ${account}
+      and o."orderedAt" >= ${from} and o."orderedAt" < ${to} and ${amazonImport}
+      and coalesce(o.data->>'sourceName', '') not in ('amazon', 'amazon-us')`)
+  return count(rows(result)[0]?.orders)
 }

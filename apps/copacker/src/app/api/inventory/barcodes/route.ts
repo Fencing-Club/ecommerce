@@ -1,7 +1,7 @@
 import { session } from "@/server/auth"
 import {
   ProductBarcodeError,
-  productBarcodeFile,
+  productLabelFile,
   removeProductBarcode,
   saveProductBarcode,
   variantIdSchema
@@ -47,12 +47,14 @@ export async function GET(request: Request) {
     return Response.json({ error: "Choose a product variation" }, { status: 400, headers })
   }
   try {
-    const file = await productBarcodeFile(s, variantId.data)
+    const file = await productLabelFile(s, variantId.data)
+    // "view=inline" shows the label in the browser, such as in the product's preview.
+    const disposition = new URL(request.url).searchParams.get("view") === "inline" ? "inline" : "attachment"
     return new Response(Buffer.from(file.bytes), {
       headers: {
         ...headers,
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(file.name)}`,
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "sandbox"
       }

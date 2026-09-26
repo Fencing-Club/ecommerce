@@ -253,6 +253,9 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
         </div>
         <p className={styles.note}>
           Retail value prices each unit at what it sold for in that channel over the last 60 days, or its Shopify price.
+          {restock.landedProducts > 0
+            ? ` Costs include freight and duty for ${plural(restock.landedProducts, "product", "products")}, from the landed costs on ${restock.landedProducts === 1 ? "its latest purchase order" : "their latest purchase orders"}.`
+            : " Costs are Shopify unit costs; add landed costs to a purchase order to include freight and duty."}
           {restock.uncosted > 0 &&
             ` ${plural(restock.uncosted, "item in stock has", "items in stock have")} no unit cost in Shopify.`}
           {restock.unpriced > 0 && ` ${plural(restock.unpriced, "item has", "items have")} no price.`}

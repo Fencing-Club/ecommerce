@@ -17,12 +17,14 @@ import {
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
 import { receivingLocations } from "./inventory-products"
+import { landedMarkupsFor } from "./landed-costs"
 import {
   catalogIndex,
   dailySales,
   grossProfit,
   movers,
   orderFees,
+  otherMarketplaceOrders,
   periodTotal,
   platformFees,
   periods,
@@ -64,7 +66,9 @@ type ChannelLines = { key: string; label: string; lines: RestockLine[] }
 // `priceFor` is what one unit sells for in a channel, when known.
 export function summarizeRestock(
   channels: ChannelLines[],
-  priceFor: (line: RestockLine, channelKey: string) => Price | null = () => null
+  priceFor: (line: RestockLine, channelKey: string) => Price | null = () => null,
+  // Freight, duty and charges as a share of the supplier's price, by variant, when known.
+  markupFor: (variantId: string) => number = () => 0
 ) {
   const reorderCost = new Map<string, number>()
   const stockValue = new Map<string, number>()
@@ -139,7 +143,10 @@ export function summarizeRestock(
       available += onHand
       incoming += line.incoming ?? 0
       if (onHand > 0) {
-        const cost = line.unitCostMinor !== null && line.costCurrency ? onHand * line.unitCostMinor : null
+        const cost =
+          line.unitCostMinor !== null && line.costCurrency
+            ? Math.round(onHand * line.unitCostMinor * (1 + markupFor(line.variantId)))
+            : null
         if (cost === null) {
           uncosted++
         } else {
@@ -708,60 +715,87 @@ export async function overview(
   if (selected) {
     channelSource = selected.key === "amazon" ? "amazon" : "shopify"
   }
-  const scopedAccounts = accounts.filter((account) => !channelSource || account.provider === channelSource)
+  // A Shopify location shows the Shopify orders shipped from it.
+  const locationId = selected?.key.startsWith("shopify:") ? selected.key.slice("shopify:".length) : null
+  // With Amazon connected, its orders come from Amazon, not from the copies Shopify's Amazon channel keeps.
+  const amazonConnected = accounts.some((account) => account.provider === "amazon")
+  const scopedAccounts = accounts
+    .filter((account) => !channelSource || account.provider === channelSource)
+    .map((account) => ({
+      ...account,
+      locationId: account.provider === "shopify" ? locationId : null,
+      withoutAmazon: account.provider === "shopify" && amazonConnected
+    }))
+  const shopifyWithoutAmazon = scopedAccounts.find((account) => account.provider === "shopify" && account.withoutAmazon)
   const window30 = periods(today, 30, timeZone)
 
-  const [syncs, dayRows, itemRows, feeRows, purchaseOrders, sent, deliveries, shipmentRows, stock, supplierRows] =
-    await Promise.all([
-      db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
-      salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone),
-      salesByItem(orgId, scopedAccounts, window30),
-      Promise.all(
-        scopedAccounts.map(async (account) => ({
-          source: account.provider,
-          list: await orderFees(orgId, account.provider, account.externalId, window30.currentStart, window30.end)
-        }))
-      ),
-      db()
-        .select({
-          id: orders.id,
-          status: orders.status,
-          data: orders.data,
-          createdAt: orders.createdAt,
-          supplier: suppliers.name
-        })
-        .from(orders)
-        .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-        .where(eq(orders.buyerOrgId, orgId)),
-      db()
-        .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
-        .from(events)
-        .innerJoin(orders, eq(orders.id, events.orderId))
-        .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
-        .groupBy(events.orderId),
-      db()
-        .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
-        .from(contacts)
-        .where(and(eq(contacts.orgId, orgId), eq(contacts.kind, "delivery"))),
-      db()
-        .select({ status: shipments.status, orderId: shipments.orderId })
-        .from(shipments)
-        .innerJoin(orders, eq(orders.id, shipments.orderId))
-        .where(eq(orders.buyerOrgId, orgId)),
-      db()
-        .select({
-          source: stockSnapshots.source,
-          status: stockSnapshots.status,
-          finishedAt: stockSnapshots.attemptFinishedAt,
-          snapshotId: stockSnapshots.snapshotId
-        })
-        .from(stockSnapshots)
-        .where(eq(stockSnapshots.orgId, orgId)),
-      db()
-        .select({ id: suppliers.id, removedAt: suppliers.removedAt })
-        .from(suppliers)
-        .where(eq(suppliers.buyerOrgId, orgId))
-    ])
+  const [
+    syncs,
+    dayRows,
+    itemRows,
+    feeRows,
+    purchaseOrders,
+    sent,
+    deliveries,
+    shipmentRows,
+    stock,
+    supplierRows,
+    markups,
+    otherMarketplaces
+  ] = await Promise.all([
+    db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
+    salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone),
+    salesByItem(orgId, scopedAccounts, window30),
+    Promise.all(
+      scopedAccounts.map(async (account) => ({
+        source: account.provider,
+        list: await orderFees(orgId, account, window30.currentStart, window30.end)
+      }))
+    ),
+    db()
+      .select({
+        id: orders.id,
+        status: orders.status,
+        data: orders.data,
+        createdAt: orders.createdAt,
+        supplier: suppliers.name
+      })
+      .from(orders)
+      .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
+      .where(eq(orders.buyerOrgId, orgId)),
+    db()
+      .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
+      .from(events)
+      .innerJoin(orders, eq(orders.id, events.orderId))
+      .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
+      .groupBy(events.orderId),
+    db()
+      .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
+      .from(contacts)
+      .where(and(eq(contacts.orgId, orgId), eq(contacts.kind, "delivery"))),
+    db()
+      .select({ status: shipments.status, orderId: shipments.orderId })
+      .from(shipments)
+      .innerJoin(orders, eq(orders.id, shipments.orderId))
+      .where(eq(orders.buyerOrgId, orgId)),
+    db()
+      .select({
+        source: stockSnapshots.source,
+        status: stockSnapshots.status,
+        finishedAt: stockSnapshots.attemptFinishedAt,
+        snapshotId: stockSnapshots.snapshotId
+      })
+      .from(stockSnapshots)
+      .where(eq(stockSnapshots.orgId, orgId)),
+    db()
+      .select({ id: suppliers.id, removedAt: suppliers.removedAt })
+      .from(suppliers)
+      .where(eq(suppliers.buyerOrgId, orgId)),
+    landedMarkupsFor(orgId),
+    shopifyWithoutAmazon
+      ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window30.currentStart, window30.end)
+      : Promise.resolve(0)
+  ])
 
   const current = syncs.filter((sync) =>
     accounts.some((account) => account.provider === sync.source && account.externalId === sync.externalAccountId)
@@ -778,7 +812,7 @@ export async function overview(
   const last30 = periodTotal(series, covered, 30)
   const salesCurrency =
     dayRows.filter((row) => row.currency).toSorted((a, b) => b.revenueMinor - a.revenueMinor)[0]?.currency ?? null
-  const index = catalogIndex(restock.catalog)
+  const index = catalogIndex(restock.catalog, markups)
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
     Record<SalesSource, ReturnType<typeof platformFees>>
   >
@@ -789,15 +823,19 @@ export async function overview(
   const priceOf = sellingPrices(itemRows, index)
 
   const scopedChannels = restock.channels.filter((channel) => !selected || channel.key === selected.key)
-  const summary = summarizeRestock(scopedChannels, (line, channelKey) => {
-    const source: SalesSource = channelKey === "amazon" ? "amazon" : "shopify"
-    const recent = priceOf(source, line.variantId)
-    if (recent) {
-      return recent
-    }
-    const row = index.byVariant.get(line.variantId)
-    return row?.priceMinor && row.priceCurrency ? { minor: row.priceMinor, currency: row.priceCurrency } : null
-  })
+  const summary = summarizeRestock(
+    scopedChannels,
+    (line, channelKey) => {
+      const source: SalesSource = channelKey === "amazon" ? "amazon" : "shopify"
+      const recent = priceOf(source, line.variantId)
+      if (recent) {
+        return recent
+      }
+      const row = index.byVariant.get(line.variantId)
+      return row?.priceMinor && row.priceCurrency ? { minor: row.priceMinor, currency: row.priceCurrency } : null
+    },
+    (variantId) => markups.get(variantId) ?? 0
+  )
   // The setup checklist looks at every channel, whichever is chosen.
   const everyChannel = selected ? summarizeRestock(restock.channels) : summary
 
@@ -810,7 +848,7 @@ export async function overview(
     if (selected.key === "amazon") {
       return amazonDestinations.has(order.data.destination)
     }
-    return receivingLocations(order.data, deliveryLocations).includes(selected.key.slice("shopify:".length))
+    return receivingLocations(order.data, deliveryLocations).includes(locationId!)
   })
   const orderIds = new Set(scopedOrders.map((order) => order.id))
   const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
@@ -878,9 +916,17 @@ export async function overview(
         estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
       },
       movers: trending,
+      // Shopify copies of orders from Amazon marketplaces other than the US, left out over the last 30 days.
+      otherMarketplaceOrders: otherMarketplaces,
       moversComparable: comparable.length > 0
     },
-    restock: { days: restockDefaults.days, leadTimeDays: restockDefaults.leadTimeDays, ...summary },
+    restock: {
+      days: restockDefaults.days,
+      leadTimeDays: restockDefaults.leadTimeDays,
+      ...summary,
+      // Products whose costs include freight and duty from a PO's landed costs.
+      landedProducts: markups.size
+    },
     purchasing: buying,
     upcoming: upcomingSpend(poList, summary.reorderCost, today),
     shipments: shipmentPipeline(states),

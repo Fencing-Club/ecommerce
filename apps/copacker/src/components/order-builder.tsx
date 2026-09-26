@@ -57,7 +57,7 @@ export function OrderBuilder({
   initialDestination = "amazon",
   initialDeliveryId,
   initialSupplierId,
-  barcodedVariantIds
+  needsBarcodeVariantIds = []
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
@@ -68,10 +68,11 @@ export function OrderBuilder({
   initialDeliveryId?: string
   // The supplier restock grouped these lines under.
   initialSupplierId?: string
-  // Variations with a saved barcode, which becomes the line's product label when the PO is saved.
-  barcodedVariantIds?: string[]
+  // Variations whose product needs an uploaded label, such as one with size measurements, that don't have one yet.
+  // Other lines get their saved barcode or the standard FNSKU label.
+  needsBarcodeVariantIds?: string[]
 }) {
-  const barcoded = barcodedVariantIds ? new Set(barcodedVariantIds) : null
+  const needsBarcode = new Set(needsBarcodeVariantIds)
   const [query, setQuery] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [searchCatalog, catalog] = useLazyCatalogQuery()
@@ -337,10 +338,10 @@ export function OrderBuilder({
                       </CardAction>
                     </CardHeader>
                     <CardContent>
-                      {barcoded && !barcoded.has(line.variantId) && (
+                      {needsBarcode.has(line.variantId) && (
                         <WarningNote className={sx({ marginBottom: 3 })}>
-                          This variation has no barcode. Add one on the Products page, or upload its product label on
-                          the PO after you save it.
+                          This product needs an uploaded label, such as one with its size measurements. Add it on the
+                          Products page, or upload it on the PO after you save it.
                         </WarningNote>
                       )}
                       <FieldGroup className={styles.lineGrid}>

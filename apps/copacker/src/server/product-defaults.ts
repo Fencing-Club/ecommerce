@@ -5,6 +5,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, productDefaults, stockSnapshots, suppliers } from "@/db/schema"
 import { type CasePack, casePackSchema } from "@/lib/case-packs"
+import { type ProductLabel, productLabels } from "@/lib/product-label"
 import type { Session } from "./auth"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
@@ -14,6 +15,8 @@ export type ProductDefaults = {
   casePacks: CasePack[]
   minimumOrder: number | null
   supplierId: string | null
+  // Uploaded barcode, or else Amazon's FNSKU label ("standard") unless the product needs its own ("uploaded").
+  productLabel: ProductLabel
   revision: number
 }
 export const noDefaults: ProductDefaults = {
@@ -22,6 +25,7 @@ export const noDefaults: ProductDefaults = {
   casePacks: [],
   minimumOrder: null,
   supplierId: null,
+  productLabel: "standard",
   revision: 0
 }
 
@@ -33,6 +37,7 @@ export const productDefaultsInputSchema = z.strictObject({
   minimumOrder: z.number().int().min(1).max(1000000).nullable(),
   // Left out keeps the saved supplier.
   supplierId: z.uuid().nullable().optional(),
+  productLabel: z.enum(productLabels),
   expectedRevision: z.number().int().nonnegative()
 })
 
@@ -67,6 +72,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
         casePacks: row.casePacks,
         minimumOrder: row.minimumOrder,
         supplierId: row.supplierId,
+        productLabel: row.productLabel,
         revision: row.revision
       }
     ])
@@ -121,6 +127,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       casePacks: input.casePacks,
       minimumOrder: input.minimumOrder,
       supplierId,
+      productLabel: input.productLabel,
       revision: input.expectedRevision + 1,
       updatedAt: new Date()
     }
@@ -137,6 +144,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       casePacks: value.casePacks,
       minimumOrder: value.minimumOrder,
       supplierId: value.supplierId,
+      productLabel: value.productLabel,
       revision: value.revision
     }
   })

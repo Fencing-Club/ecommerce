@@ -10,8 +10,9 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 - **Time zone.** Days and months follow the store's time zone (Settings, `organizations.timeZone`; UTC until set).
   `lib/time-zone.ts` finds the instant each day starts, so days around daylight saving changes are 23 or 25 hours.
 - **Channel filter.** `?channel=amazon` or `?channel=shopify:<location>` narrows every card: restock figures to that
-  channel, sales to that source (a Shopify location shows the store's Shopify sales), and POs and their shipments to
-  those going to Amazon or received at that location.
+  channel, sales to that source (a Shopify location shows the Shopify orders with a successful fulfillment from it, so
+  unfulfilled orders count for no location), and POs and their shipments to those going to Amazon or received at that
+  location.
 - **Freshness.** The line under the header says when each source's orders and stock last synced.
 
 ## What it shows
@@ -45,3 +46,13 @@ slowest part, so the result is cached per workspace for five minutes and dropped
 
 Restock accepts `channel`, `q` (search), `cover` (a days-of-cover group from `lib/cover.ts`) and `status=order` (items to
 reorder). A link calculates straight away; each filter can be cleared on the page.
+
+## Landed costs
+
+A PO page has a buyer-only **Landed costs** card for freight, duty and other bills, entered in the PO's currency
+(`landed_costs`, kept apart from the PO so the supplier never sees them and they can be added as bills arrive). A PO's
+landed markup is its landed costs plus its charges and discounts, as a share of its products' price. Each product takes
+the markup of its latest sent PO that has landed costs, so a PO whose freight isn't entered yet doesn't hide the one
+before. The Overview applies it to Shopify unit costs for stock value, slow-stock value and gross profit; a bundle's
+components use their own markup, else the bundle's. Shopify's unit cost and Restock's reorder estimate stay the
+supplier's price.

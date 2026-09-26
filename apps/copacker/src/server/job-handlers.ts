@@ -9,7 +9,17 @@ import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
 import { appUrl } from "./security"
 
-export class PollAgain extends Error {}
+// A job that isn't finished and should run again: after `delayMs` (30 seconds unless given), with `payload` replacing
+// its payload when given, such as where to resume. A job that got further this run sets `progressed`, so the limit on
+// retries counts only runs that made no headway.
+export class PollAgain extends Error {
+  constructor(
+    message: string,
+    readonly options: { delayMs?: number; payload?: Record<string, unknown>; progressed?: boolean } = {}
+  ) {
+    super(message)
+  }
+}
 export async function amazonJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   await assertOwned()
   const { shipmentId, revision } = z.object({ shipmentId: z.uuid(), revision: z.number() }).parse(payload)

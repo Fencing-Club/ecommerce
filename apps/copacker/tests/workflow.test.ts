@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal } from "@repo/aisle"
+import { ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument } from "pdf-lib"
@@ -86,6 +87,7 @@ import { saveImportedOrder } from "../src/server/import-save"
 import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
 import { amazonJob } from "../src/server/job-handlers"
+import { orderLandedCosts } from "../src/server/landed-costs"
 import {
   approveInvoice,
   submitPacking,
@@ -893,6 +895,7 @@ describe("Postgres workflow and authorization", () => {
       prepCategory: "TAPING",
       casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
       minimumOrder: 48,
+      productLabel: "uploaded",
       expectedRevision: 0
     }
     expect(await saveProductDefaults(buyer, input)).toEqual({
@@ -901,6 +904,7 @@ describe("Postgres workflow and authorization", () => {
       casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
       minimumOrder: 48,
       supplierId: null,
+      productLabel: "uploaded",
       revision: 1
     })
     await expect(saveProductDefaults(buyer, input)).rejects.toThrow("Someone else changed")
@@ -2817,6 +2821,88 @@ describe("stored sales orders", () => {
     // Only the recent periods are read again.
     expect(orderReads() - before).toBe(3)
   })
+  it("gets a current Shopify token for each period, so a long sync outlives an hour-long token", async () => {
+    await database.insert(tables.connections).values({
+      orgId: buyerId,
+      provider: "shopify",
+      externalId: "test.myshopify.com",
+      encryptedToken: "test-only",
+      scopes: "read_orders"
+    })
+    const graphql = vi.fn<() => Promise<unknown>>().mockResolvedValue({
+      shop: { myshopifyDomain: "test.myshopify.com" },
+      orders: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }
+    })
+    provider.shopifyFor.mockResolvedValue({ graphql })
+    await requestSalesSync(buyer.org, "shopify")
+    await runNextJob()
+    const [sync] = await database
+      .select()
+      .from(tables.salesSyncs)
+      .where(and(eq(tables.salesSyncs.orgId, buyerId), eq(tables.salesSyncs.source, "shopify")))
+    expect(sync?.status).toBe("idle")
+    // 60 days of history (no read_all_orders) is five 14-day periods, each with its own client.
+    expect(graphql).toHaveBeenCalledTimes(5)
+    expect(provider.shopifyFor).toHaveBeenCalledTimes(5)
+  })
+
+  it("starts a sync again when the job of one still marked queued has failed", async () => {
+    await requestSalesSync(buyer.org, "amazon")
+    await database.update(tables.jobs).set({ status: "failed", error: "Unknown job type" })
+    expect(await requestSalesSync(buyer.org, "amazon")).toEqual({ status: "queued" })
+    const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
+    expect(sync?.revision).toBe(2)
+    const pending = await database.select().from(tables.jobs).where(eq(tables.jobs.status, "pending"))
+    expect(pending.map((job) => job.key)).toEqual([`sales:${buyerId}:amazon:2`])
+  })
+
+  it("pauses an Amazon sync that's throttled and resumes where it stopped, without holding the worker", async () => {
+    const orders = [amazonOrder("111-1", daysAgo(3), 1), amazonOrder("111-2", daysAgo(40), 2)]
+    const reads: string[] = []
+    let throttle = true
+    provider.api.request.mockImplementation(async (_method: string, path: string) => {
+      if (path.startsWith("/finances/")) {
+        return { payload: { transactions: [] } }
+      }
+      const query = new URL(path, "https://amazon.test").searchParams
+      const from = Date.parse(query.get("createdAfter") ?? ""),
+        to = Date.parse(query.get("createdBefore") ?? "")
+      reads.push(query.get("createdAfter") ?? "")
+      // The third period read is refused once.
+      if (reads.length === 3 && throttle) {
+        throttle = false
+        throw new ProviderError(429, null, "throttled")
+      }
+      return {
+        orders: orders.filter((order) => Date.parse(order.createdTime) >= from && Date.parse(order.createdTime) < to)
+      }
+    })
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    const [paused] = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "sales"))
+    expect(paused).toMatchObject({ status: "pending", attempts: 0 })
+    expect(paused!.runAt.getTime()).toBeGreaterThan(Date.now() + 170000)
+    const resume = (paused!.payload as { resume: { remaining: { from: string }[]; covered: unknown } }).resume
+    expect(resume.remaining[0]!.from).toBe(reads[2])
+    expect(resume.covered).not.toBeNull()
+    const [waiting] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
+    expect(waiting?.status).toBe("running")
+    // What's stored so far was read in the current shape, so a sync that stops here won't start over.
+    expect(waiting?.dataVersion).toBe(salesDataVersion)
+
+    await database.update(tables.jobs).set({ runAt: new Date() }).where(eq(tables.jobs.id, paused!.id))
+    await runNextJob()
+    // The two periods read before the pause aren't read again.
+    expect(reads.slice(3, 4)).toEqual([reads[2]])
+    expect(reads.filter((from) => from === reads[0])).toHaveLength(1)
+    const [done] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
+    expect(done?.status).toBe("idle")
+    expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual([
+      "111-1",
+      "111-2"
+    ])
+  })
+
   it("copies Amazon's transactions for fees and records the stored orders' shape", async () => {
     const posted = daysAgo(5)
     provider.api.request.mockImplementation(async (_method: string, path: string) => {
@@ -2997,5 +3083,42 @@ describe("store time zone", () => {
       .where(eq(tables.organizations.id, buyerId))
     expect(org?.timeZone).toBe("America/Los_Angeles")
     expect((await save("Mars/Olympus")).status).toBe(400)
+  })
+})
+
+describe("landed costs", () => {
+  const send = (name: string, data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: name, data })
+      })
+    )
+
+  it("lets the buyer record freight and duty on a PO, and keeps them from the supplier", async () => {
+    const created = await send("landedCost.create", {
+      orderId,
+      kind: "freight",
+      description: "Forwarder invoice",
+      amount: 12000
+    })
+    expect(created.status).toBe(200)
+    const { id } = (await created.json()) as { id: string }
+    expect(await orderLandedCosts(orderId)).toEqual([
+      { id, kind: "freight", description: "Forwarder invoice", amountMinor: 12000 }
+    ])
+    expect((await send("landedCost.create", { orderId, kind: "duty", amount: 0 })).status).toBe(400)
+
+    context.actor = supplier
+    expect((await send("landedCost.create", { orderId, kind: "duty", amount: 500 })).status).toBe(400)
+    expect((await send("landedCost.delete", { id })).status).toBe(400)
+
+    context.actor = actor("buyer", otherId)
+    expect((await send("landedCost.delete", { id })).status).toBe(400)
+
+    context.actor = buyer
+    expect((await send("landedCost.delete", { id })).status).toBe(200)
+    expect(await orderLandedCosts(orderId)).toEqual([])
   })
 })

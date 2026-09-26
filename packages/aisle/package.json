@@ -10,7 +10,8 @@
     "./shopify": "./src/shopify.ts",
     "./sales": "./src/sales.ts",
     "./ledger": "./src/ledger.ts",
-    "./documents": "./src/documents.ts"
+    "./documents": "./src/documents.ts",
+    "./product-labels": "./src/product-labels.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

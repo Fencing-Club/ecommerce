@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { prepCategories } from "@repo/aisle"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { Fragment, useState } from "react"
-import { FormProvider, useFieldArray, useForm } from "react-hook-form"
+import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +20,7 @@ import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
 import { formErrorMap } from "@/lib/form-errors"
 import { prepOptions } from "@/lib/prep"
+import { productLabels } from "@/lib/product-label"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError } from "./actions"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
@@ -46,6 +47,7 @@ const schema = z.object({
   minimumOrder: z.number().int().min(1).max(1000000).optional(),
   // Empty means not chosen; restock then uses the last PO or the supplier's catalog.
   supplierId: z.string(),
+  productLabel: z.enum(productLabels),
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
@@ -168,9 +170,11 @@ export function ProductDetails({
       prepCategory: defaults.prepCategory ?? "",
       minimumOrder: defaults.minimumOrder ?? undefined,
       supplierId: defaults.supplierId ?? "",
+      productLabel: defaults.productLabel,
       casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined }))
     }
   })
+  const productLabel = useWatch({ control: form.control, name: "productLabel" })
   const submit = form.handleSubmit(async (values) => {
     try {
       await save({
@@ -179,6 +183,7 @@ export function ProductDetails({
         prepCategory: values.prepCategory || null,
         minimumOrder: values.minimumOrder ?? null,
         supplierId: values.supplierId || null,
+        productLabel: values.productLabel,
         casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
         expectedRevision: defaults.revision
       }).unwrap()
@@ -232,7 +237,21 @@ export function ProductDetails({
                 step={1}
               />
               <CasePacks suggestedUnits={shopifyCaseQuantity} />
-              <ProductBarcodes productTitle={title} variations={variants} onChanged={onSaved} />
+              <FormSelect
+                name="productLabel"
+                label="Product label"
+                description="Standard prints Amazon’s FNSKU barcode, or the Shopify SKU without Amazon, with the Shopify title. Choose Uploaded for labels that show more, such as size measurements on uniforms."
+                options={[
+                  { value: "standard", label: "Standard label" },
+                  { value: "uploaded", label: "Uploaded label" }
+                ]}
+              />
+              <ProductBarcodes
+                productTitle={title}
+                productLabel={productLabel}
+                variations={variants}
+                onChanged={onSaved}
+              />
               <FromShopify caseQuantity={shopifyCaseQuantity} variants={variants} />
               <FormError message={form.formState.errors.root?.server?.message} />
             </div>

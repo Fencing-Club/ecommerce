@@ -193,6 +193,7 @@ export const amazonOnlyTrigger = style({
 })
 export const numberCell = style({ textAlign: "right", fontVariantNumeric: "tabular-nums" })
 export const skuCell = style({ overflowWrap: "anywhere", whiteSpace: "normal" })
+export const duplicateList = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
 
 // Product details sheet: each variation's barcode label.
 export const barcodes = style({ display: "flex", flexDirection: "column", gap: space(2) })
@@ -214,3 +215,12 @@ export const barcode = style({
 export const barcodeInfo = style({ display: "flex", flexDirection: "column", gap: space(0.5), minWidth: 0 })
 export const barcodeActions = style({ display: "flex", flexWrap: "wrap", gap: space(1) })
 export const barcodeError = style({ flexBasis: "100%" })
+// A label shown in the browser's PDF viewer, wide enough to read the first rows of a sheet.
+export const preview = style({
+  flexBasis: "100%",
+  width: "100%",
+  height: "18rem",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  backgroundColor: vars.color.muted
+})

@@ -379,6 +379,11 @@ export const productDefaults = pgTable(
     minimumOrder: integer(),
     // The supplier this product is ordered from, chosen by the buyer. Restock groups it under this supplier.
     supplierId: uuid().references(() => suppliers.id),
+    // Where a PO line's product label comes from when no barcode was uploaded: "standard" prints Amazon's FNSKU label
+    // with the Shopify title; "uploaded" needs the buyer's own, such as a label with size measurements.
+    productLabel: text({ enum: ["standard", "uploaded"] })
+      .notNull()
+      .default("standard"),
     revision: integer().notNull().default(1),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -501,4 +506,22 @@ export const amazonTransactions = pgTable(
     index("amazon_transaction_order").on(t.orgId, t.orderId),
     index("amazon_transaction_posted").on(t.orgId, t.externalAccountId, t.postedAt)
   ]
+)
+// What getting a PO's goods to the buyer cost beyond the supplier's price: freight, duty and other charges, in the
+// PO's currency. The buyer's own record, kept apart from the PO so the supplier never sees it and it can be added as
+// the bills arrive.
+export const landedCosts = pgTable(
+  "landed_costs",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id),
+    kind: text({ enum: ["freight", "duty", "other"] }).notNull(),
+    description: text().notNull(),
+    amountMinor: integer().notNull(),
+    createdBy: text().notNull(),
+    createdAt: createdAt()
+  },
+  (t) => [index("landed_cost_order").on(t.orderId)]
 )

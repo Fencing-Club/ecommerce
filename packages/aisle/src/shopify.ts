@@ -138,7 +138,9 @@ const variant = z.object({
   product: z.object({ id: z.string(), title: z.string() }),
   inventoryItem: z.object({
     id: z.string(),
-    unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable()
+    unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable(),
+    // ISO 3166 code of the country the item is made in, as recorded in Shopify; printed on product labels.
+    countryCodeOfOrigin: z.string().nullable().optional()
   }),
   supplierSku: field,
   asin: field,
@@ -601,4 +603,4 @@ export class Shopify {
     return missing
   }
 }
-const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode}} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`
+const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode} countryCodeOfOrigin} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`

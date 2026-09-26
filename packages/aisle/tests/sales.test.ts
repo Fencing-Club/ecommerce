@@ -207,6 +207,16 @@ describe("Amazon transactions", () => {
     expect(transactionFees([{ breakdownType: "Commission", breakdownAmount: money(3.75) }])).toBe(-375)
     expect(transactionFees([{ breakdownType: "Tax", breakdownAmount: money(-2) }])).toBe(0)
     expect(transactionFees(undefined)).toBe(0)
+    // Amazon sends null for a breakdown with no parts.
+    expect(
+      transactionFees([
+        {
+          breakdownType: "Expenses",
+          breakdownAmount: null,
+          breakdowns: [{ breakdownType: "AmazonFees", breakdownAmount: money(-2.5), breakdowns: null }]
+        }
+      ])
+    ).toBe(250)
   })
 
   it("follows next tokens and links each transaction to its order", async () => {
@@ -244,6 +254,34 @@ describe("Amazon transactions", () => {
     expect(new URL(String(request.mock.calls[1]?.[1]), "https://example.com").searchParams.get("nextToken")).toBe(
       "more"
     )
+  })
+
+  it("counts a deferred payment's fees once, not again when Amazon releases it", async () => {
+    const deferred = {
+      ...payment,
+      transactionId: "deferred",
+      relatedIdentifiers: [
+        ...payment.relatedIdentifiers,
+        { relatedIdentifierName: "RELEASE_TRANSACTION_ID", relatedIdentifierValue: "release" }
+      ]
+    }
+    const release = {
+      ...payment,
+      transactionId: "release",
+      relatedIdentifiers: [
+        ...payment.relatedIdentifiers,
+        { relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "deferred" }
+      ]
+    }
+    const request = vi
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockResolvedValue({ payload: { transactions: [deferred, release] } })
+    expect(
+      (await collectAmazonTransactions({ request }, window)).map((row) => [row.transactionId, row.feesMinor])
+    ).toEqual([
+      ["deferred", 850],
+      ["release", 0]
+    ])
   })
 
   it("refuses windows longer than Amazon allows and repeated tokens", async () => {

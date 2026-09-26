@@ -13,8 +13,9 @@ import {
   WarningNote,
   formatDestination
 } from "@/components/common"
-import { ClosePurchaseOrder } from "@/components/order-actions"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { LandedCostForm } from "@/components/landed-costs"
+import { ClosePurchaseOrder, DeleteDraftOrder } from "@/components/order-actions"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Separator } from "@/components/ui/separator"
@@ -25,9 +26,11 @@ import { documents, events, orderRevisions, shipments } from "@/db/schema"
 import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { session } from "@/server/auth"
+import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
 import { orderWorkflow } from "@/server/workflow"
 import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
+import { srOnly } from "@/styles/utilities.css"
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -46,6 +49,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const editable = workflow.shipments.some((row) => row.editable)
   const remaining = workflow.items.some((item) => item.remainingPieces > 0)
   const { currency } = order.data
+  const landed = s.org.kind === "buyer" ? await orderLandedCosts(id) : []
+  const landedTotal = landed.reduce((sum, cost) => sum + cost.amountMinor, 0)
+  const markup = landedMarkup(order.data, landedTotal)
   const labels = docs.filter((d) => d.kind === "product_label" || d.kind === "purchase_order")
   // Lines the supplier can't label yet. Closed POs no longer need them.
   const unlabelled = new Set(
@@ -65,9 +71,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       >
         <Status status={order.status} />
         {order.status === "draft" && s.org.kind === "buyer" && (
-          <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-            Submit to supplier
-          </ActionButton>
+          <>
+            <DeleteDraftOrder id={id} reference={order.data.reference} />
+            <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
+              Submit to supplier
+            </ActionButton>
+          </>
         )}
         {order.status === "submitted" && (editable || remaining) && (
           <ActionButton action="shipment.create" data={{ id }}>
@@ -109,7 +118,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         {unlabelled.has(item.id) && (
                           <WarningNote className={sx({ marginTop: 1 })}>
                             {s.org.kind === "buyer"
-                              ? "No product label. Upload one below, or add a barcode on the Products page for future POs."
+                              ? "No product label. Upload one below. For future POs, set this product’s label on the Products page."
                               : "The buyer hasn’t added a product label yet."}
                           </WarningNote>
                         )}
@@ -247,6 +256,71 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               )}
             </CardContent>
           </Card>
+
+          {s.org.kind === "buyer" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Landed costs</CardTitle>
+                <CardDescription>
+                  Freight, duty and other costs of getting these goods to you. Only your team sees them. The Overview
+                  adds them to your products’ unit costs.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+                {landed.length > 0 && (
+                  <ul className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
+                    {landed.map((cost) => (
+                      <li
+                        key={cost.id}
+                        className={sx({
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 3
+                        })}
+                      >
+                        <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
+                          <span className={sx({ text: "sm", fontWeight: "medium" })}>{landedCostKinds[cost.kind]}</span>
+                          {cost.description && (
+                            <span className={sx({ text: "xs", color: "muted" })}>{cost.description}</span>
+                          )}
+                        </span>
+                        <span className={sx({ display: "flex", alignItems: "center", gap: 3 })}>
+                          <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
+                            {money(cost.amountMinor, currency)}
+                          </span>
+                          <ActionButton action="landedCost.delete" data={{ id: cost.id }} variant="outline" size="sm">
+                            Remove<span className={srOnly}> {landedCostKinds[cost.kind].toLowerCase()} cost</span>
+                          </ActionButton>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <dl
+                  className={sx({
+                    display: "grid",
+                    gridTemplateColumns: "labelValue",
+                    columnGap: 4,
+                    rowGap: 2,
+                    text: "sm"
+                  })}
+                >
+                  <Info label="Supplier total" value={money(orderTotal(order.data), currency)} />
+                  <Info label="Landed costs" value={money(landedTotal, currency)} />
+                  <Info label="Landed total" value={money(orderTotal(order.data) + landedTotal, currency)} />
+                  {markup !== null && landedTotal > 0 && (
+                    <Info
+                      label="Markup"
+                      value={`${new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(markup)} on product cost`}
+                    />
+                  )}
+                </dl>
+                <Separator />
+                <LandedCostForm orderId={id} currency={currency} />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

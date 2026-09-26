@@ -29,6 +29,7 @@ import {
   type ItemRow,
   movers,
   orderFees,
+  otherMarketplaceOrders,
   periodTotal,
   platformFees,
   salesByDay,
@@ -572,6 +573,7 @@ describe("sales queries", () => {
           }
         ],
         {
+          fulfillments: [{ id: "f1", status: "SUCCESS", location: { id: "loc1" }, lines: [] }],
           transactions: [
             {
               id: "p1",
@@ -626,6 +628,24 @@ describe("sales queries", () => {
         feesMinor: 450,
         data: {}
       },
+      // Amazon's release of t1, deferred: the same fees again, which aren't counted twice.
+      {
+        orgId,
+        externalAccountId: "SELLER",
+        transactionId: "t1-release",
+        orderId: "a1",
+        postedAt: new Date("2026-09-24T12:00:00Z"),
+        type: "Shipment",
+        currency: "USD",
+        totalMinor: 2000,
+        feesMinor: 450,
+        data: {
+          relatedIdentifiers: [
+            { relatedIdentifierName: "ORDER_ID", relatedIdentifierValue: "a1" },
+            { relatedIdentifierName: "DEFERRED_TRANSACTION_ID", relatedIdentifierValue: "t1" }
+          ]
+        }
+      },
       {
         orgId,
         externalAccountId: "SELLER",
@@ -658,6 +678,24 @@ describe("sales queries", () => {
     ])
   })
 
+  it("narrows Shopify sales to the orders shipped from a location", async () => {
+    const since = new Date("2026-09-01T00:00:00Z")
+    const at = (locationId: string) =>
+      salesByDay(orgId, [{ ...shopifyAccount, locationId }], since, "America/Los_Angeles")
+    // s2 was never fulfilled, so it counts for no location.
+    expect(await at("loc1")).toEqual([
+      { source: "shopify", date: "2026-09-24", orders: 1, units: 4, priced: 1, revenueMinor: 3800, currency: "USD" }
+    ])
+    expect(await at("loc2")).toEqual([])
+    const fees = await orderFees(
+      orgId,
+      { ...shopifyAccount, locationId: "loc1" },
+      since,
+      new Date("2026-09-26T00:00:00Z")
+    )
+    expect(fees.map((row) => row.orderId)).toEqual(["s1"])
+  })
+
   it("adds up units and sales per item, a bundle once under its own variant", async () => {
     const rows = await salesByItem(orgId, [shopifyAccount, amazonAccount], {
       previousStart: new Date("2026-08-01T00:00:00Z"),
@@ -676,8 +714,7 @@ describe("sales queries", () => {
   it("joins Amazon orders to the fees posted for them", async () => {
     const rows = await orderFees(
       orgId,
-      "amazon",
-      "SELLER",
+      amazonAccount,
       new Date("2026-08-01T00:00:00Z"),
       new Date("2026-09-26T00:00:00Z")
     )
@@ -690,8 +727,7 @@ describe("sales queries", () => {
   it("adds up Shopify Payments fees from each order's successful payments", async () => {
     const rows = await orderFees(
       orgId,
-      "shopify",
-      "club.myshopify.com",
+      shopifyAccount,
       new Date("2026-09-01T00:00:00Z"),
       new Date("2026-09-26T00:00:00Z")
     )
@@ -701,5 +737,42 @@ describe("sales queries", () => {
       // Copied before payments were: unknown.
       { orderId: "s2", revenueMinor: null, feesMinor: null }
     ])
+  })
+
+  it("leaves out Shopify's copies of Amazon orders once Amazon is connected", async () => {
+    const copy = (id: string, sourceName: string) => ({
+      orgId,
+      source: "shopify" as const,
+      externalAccountId: "club.myshopify.com",
+      orderId: id,
+      orderedAt: new Date("2026-09-20T10:00:00Z"),
+      data: {
+        id,
+        name: "#2",
+        createdAt: "2026-09-20T10:00:00Z",
+        cancelledAt: null,
+        test: false,
+        sourceName,
+        fulfillments: [],
+        lines: [
+          {
+            id: `${id}-l`,
+            quantity: 1,
+            currentQuantity: 1,
+            sku: "A",
+            variant: { id: "va" },
+            originalUnitPriceSet: money("10.00")
+          }
+        ]
+      }
+    })
+    await database
+      .insert(tables.salesOrders)
+      .values([copy("us1", "amazon-us"), copy("ca1", "amazon-ca")] as (typeof tables.salesOrders.$inferInsert)[])
+    const since = new Date("2026-09-01T00:00:00Z")
+    const day = (rows: Awaited<ReturnType<typeof salesByDay>>) => rows.find((row) => row.date === "2026-09-20")
+    expect(day(await salesByDay(orgId, [shopifyAccount], since, "UTC"))?.orders).toBe(2)
+    expect(day(await salesByDay(orgId, [{ ...shopifyAccount, withoutAmazon: true }], since, "UTC"))).toBeUndefined()
+    expect(await otherMarketplaceOrders(orgId, "club.myshopify.com", since, new Date("2026-09-26T00:00:00Z"))).toBe(1)
   })
 })

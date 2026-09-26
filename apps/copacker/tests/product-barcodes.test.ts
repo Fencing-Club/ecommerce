@@ -29,9 +29,20 @@ vi.mock("../src/server/storage", async (original) => ({
   deleteFile: async (key: string) => void storage.files.delete(key)
 }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+// Shopify records each test variation as made in Pakistan.
+const shopify = vi.hoisted(() => ({
+  variants: vi.fn<(ids: string[]) => Promise<{ id: string; inventoryItem: { countryCodeOfOrigin: string } }[]>>(
+    async (ids) => ids.map((id) => ({ id, inventoryItem: { countryCodeOfOrigin: "PK" } }))
+  )
+}))
+vi.mock("../src/server/connections", async (original) => ({
+  ...(await original<typeof import("../src/server/connections")>()),
+  shopifyFor: async () => shopify
+}))
 
 import { DELETE, GET, POST } from "../src/app/api/inventory/barcodes/route"
-import { attachProductBarcodes } from "../src/server/product-barcodes"
+import { deleteDraftOrder } from "../src/server/orders"
+import { attachProductBarcodes, labelFileName } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -89,6 +100,9 @@ const barcodeKeys = () => [...storage.files.keys()].filter((key) => key.startsWi
 
 const barcodeUrl = (variantId: string) => `${appUrl()}/api/inventory/barcodes?${new URLSearchParams({ variantId })}`
 
+// The test store's SKUs, as the stock snapshot below lists them.
+const skus: Record<string, string> = { [variantA]: "CORD-1", [variantB]: "GLOVE-6" }
+
 function item(id: string, variantId: string): OrderInput["items"][number] {
   return {
     id,
@@ -96,7 +110,7 @@ function item(id: string, variantId: string): OrderInput["items"][number] {
     inventoryItemId: "gid://shopify/InventoryItem/1",
     name: "Foil cord",
     variant: "",
-    buyerSku: variantId,
+    buyerSku: skus[variantId] ?? variantId,
     supplierSku: "",
     asin: "",
     fnsku: "",
@@ -108,8 +122,8 @@ function item(id: string, variantId: string): OrderInput["items"][number] {
   }
 }
 
-async function order(items: OrderInput["items"]) {
-  const data = { reference: "PO-1", supplierId, currency: "USD", destination: "warehouse", items } as OrderInput
+async function order(items: OrderInput["items"], destination: OrderInput["destination"] = "warehouse") {
+  const data = { reference: "PO-1", supplierId, currency: "USD", destination, items } as OrderInput
   const [row] = await database
     .insert(tables.orders)
     .values({ buyerOrgId: buyerId, supplierId, shopifyDomain: domain, data })
@@ -186,7 +200,7 @@ describe("product barcodes", () => {
     expect((await GET(new Request(barcodeUrl(variantA)))).status).toBe(403)
   })
 
-  it("copies saved barcodes onto a PO's unlabelled lines and keeps labels uploaded on the PO", async () => {
+  it("copies saved barcodes onto a PO's lines, prints the SKU label without Amazon, and keeps PO uploads", async () => {
     const withLabel = randomUUID()
     const withBarcode = randomUUID()
     const without = randomUUID()
@@ -206,12 +220,14 @@ describe("product barcodes", () => {
     expect(attached.map((doc) => [doc.itemId, doc.name]).toSorted()).toEqual(
       [
         [withLabel, "manual.pdf"],
-        [withBarcode, "second.pdf"]
+        [withBarcode, "second.pdf"],
+        // No upload and no Amazon, so the standard label prints the Shopify SKU.
+        [without, "Foil cord.pdf"]
       ].toSorted()
     )
     // Running again, such as on submit, adds nothing.
     await attachProductBarcodes(actor(buyerId, "buyer"), created.id)
-    expect(await labels(created.id)).toHaveLength(2)
+    expect(await labels(created.id)).toHaveLength(3)
   })
 
   it("matches bulk uploads by the SKU in the file name, or a SKU given instead", async () => {
@@ -246,6 +262,97 @@ describe("product barcodes", () => {
     ).toEqual([])
     expect(storage.files.has(saved!.objectKey)).toBe(false)
     expect(storage.copies.every((copy) => storage.files.has(copy.to))).toBe(true)
-    expect((await GET(new Request(barcodeUrl(variantA)))).status).toBe(404)
+    // With the upload gone the standard label applies; without Amazon it prints the Shopify SKU.
+    const standard = await GET(new Request(barcodeUrl(variantA)))
+    expect(standard.status).toBe(200)
+    expect(standard.headers.get("content-disposition")).toContain(encodeURIComponent("Foil cord.pdf"))
+  })
+})
+
+describe("standard product labels", () => {
+  const fnsku = "X00CORD001"
+  const setProductLabel = (productLabel: "standard" | "uploaded") =>
+    database
+      .insert(tables.productDefaults)
+      .values({ orgId: buyerId, shopifyDomain: domain, productId: "gid://shopify/Product/1", productLabel })
+      .onConflictDoUpdate({
+        target: [tables.productDefaults.orgId, tables.productDefaults.shopifyDomain, tables.productDefaults.productId],
+        set: { productLabel }
+      })
+
+  beforeAll(async () => {
+    await database
+      .insert(tables.connections)
+      .values({ orgId: buyerId, provider: "amazon", externalId: "SELLER1", encryptedToken: "token" })
+    await database.insert(tables.stockSnapshots).values({
+      orgId: buyerId,
+      source: "fba",
+      externalAccountId: "SELLER1",
+      scopeKey: "ATVPDKIKX0DER",
+      data: {
+        source: "fba",
+        rows: [{ sellerSku: "CORD-1", fnSku: fnsku }]
+      } as unknown as typeof tables.stockSnapshots.$inferInsert.data
+    })
+  })
+
+  it("previews the standard FNSKU label for a variation without an upload", async () => {
+    const preview = await GET(new Request(`${barcodeUrl(variantA)}&view=inline`))
+    expect(preview.status).toBe(200)
+    expect(preview.headers.get("content-disposition")).toBe(
+      `inline; filename*=UTF-8''${encodeURIComponent("Foil cord.pdf")}`
+    )
+    const pdf = await PDFDocument.load(new Uint8Array(await preview.arrayBuffer()))
+    expect(pdf.getPage(0).getSize()).toEqual({ width: 612, height: 792 })
+  })
+
+  it("prints the standard label on PO lines with an FNSKU, unless the product needs an uploaded one", async () => {
+    const line = randomUUID()
+    const standard = await order([{ ...item(line, variantA), fnsku }])
+    await attachProductBarcodes(actor(buyerId, "buyer"), standard.id)
+    expect(await labels(standard.id)).toMatchObject([{ itemId: line, name: "Foil cord.pdf", uploadedBy: "system" }])
+
+    await setProductLabel("uploaded")
+    const sized = await order([{ ...item(randomUUID(), variantA), fnsku }])
+    await attachProductBarcodes(actor(buyerId, "buyer"), sized.id)
+    expect(await labels(sized.id)).toEqual([])
+    const preview = await GET(new Request(barcodeUrl(variantA)))
+    expect(preview.status).toBe(404)
+    expect(await preview.json()).toEqual({ error: "This product needs an uploaded label" })
+    await setProductLabel("standard")
+  })
+
+  it("waits for the FNSKU on Amazon POs instead of printing the SKU", async () => {
+    const amazonBound = await order([item(randomUUID(), variantA)], "awd_us")
+    await attachProductBarcodes(actor(buyerId, "buyer"), amazonBound.id)
+    expect(await labels(amazonBound.id)).toEqual([])
+  })
+})
+
+describe("deleting draft POs", () => {
+  it("deletes a draft with its labels and files, and keeps sent POs", async () => {
+    const draft = await order([{ ...item(randomUUID(), variantA), fnsku: "X00CORD001" }])
+    await attachProductBarcodes(actor(buyerId, "buyer"), draft.id)
+    const [label] = await labels(draft.id)
+    expect(storage.files.has(label!.objectKey)).toBe(true)
+    await deleteDraftOrder(actor(buyerId, "buyer"), draft.id)
+    expect(await database.select().from(tables.orders).where(eq(tables.orders.id, draft.id))).toEqual([])
+    expect(await labels(draft.id)).toEqual([])
+    expect(storage.files.has(label!.objectKey)).toBe(false)
+
+    const sent = await order([item(randomUUID(), variantA)])
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, sent.id))
+    await expect(deleteDraftOrder(actor(buyerId, "buyer"), sent.id)).rejects.toThrow("Only draft POs can be deleted")
+    await expect(deleteDraftOrder(actor(supplierOrgId, "supplier"), sent.id)).rejects.toThrow(
+      "A buyer workspace is required"
+    )
+  })
+})
+
+describe("label file names", () => {
+  it("names a generated label after its product and variation, without characters files can't have", () => {
+    expect(labelFileName("Pro-Grip Fencing Glove (10, Left)")).toBe("Pro-Grip Fencing Glove (10, Left).pdf")
+    expect(labelFileName('Mask: "Pro" 3/4')).toBe("Mask- -Pro- 3-4.pdf")
+    expect(labelFileName("  ")).toBe("Product label.pdf")
   })
 })

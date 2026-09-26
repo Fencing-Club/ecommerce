@@ -245,7 +245,10 @@ export function OverviewDashboard({ data }: { data: Overview }) {
           <CardHeader>
             <CardTitle>Sales by channel</CardTitle>
             <CardDescription>
-              From the orders copied from Shopify and Amazon. Sales are after discounts, before tax and shipping.
+              {data.channel && data.channel.key !== "amazon"
+                ? `Shopify orders shipped from ${data.channel.label}. Orders not yet fulfilled aren’t counted.`
+                : "From the orders copied from Shopify and Amazon."}{" "}
+              Sales are after discounts, before tax and shipping.
             </CardDescription>
             <CardAction>
               <CardLink href="/sales">Orders</CardLink>
@@ -253,7 +256,18 @@ export function OverviewDashboard({ data }: { data: Overview }) {
           </CardHeader>
           <CardContent>
             {sales.daily.some((row) => sales.sources.some((source) => row[source] !== null)) ? (
-              <SalesTrend daily={sales.daily} sources={sales.sources} currency={sales.currency} />
+              <div className={styles.stack}>
+                <SalesTrend daily={sales.daily} sources={sales.sources} currency={sales.currency} />
+                {sales.otherMarketplaceOrders > 0 && (
+                  <p className={styles.note}>
+                    Amazon orders that Shopify’s Amazon channel copies into Shopify are counted once, from Amazon.{" "}
+                    {sales.otherMarketplaceOrders} {sales.otherMarketplaceOrders === 1 ? "order" : "orders"} from Amazon
+                    marketplaces outside the US in the last 30 days{" "}
+                    {sales.otherMarketplaceOrders === 1 ? "isn’t" : "aren’t"} counted, since Copacker reads Amazon US
+                    only.
+                  </p>
+                )}
+              </div>
             ) : (
               <p className={styles.note}>
                 Sales appear here once orders are copied. Sync them on the <Link href="/sales">Orders</Link> page.

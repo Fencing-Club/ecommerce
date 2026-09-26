@@ -6,7 +6,7 @@ import {
   packingDraftSchema
 } from "@repo/aisle"
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import {
@@ -20,13 +20,15 @@ import {
   connections,
   contacts,
   supplierProducts,
+  landedCosts,
+  poImports,
   type ShipmentState
 } from "@/db/schema"
 import { bundleQuote } from "@/lib/bundle-quote"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
-import { attachProductBarcodes } from "./product-barcodes"
+import { attachProductBarcodes, discardFile } from "./product-barcodes"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
@@ -257,9 +259,7 @@ async function missingAmazonIdentities(s: Session, id: string) {
 export async function submitOrder(s: Session, id: string, expectedRevision: number) {
   requireBuyer(s)
   const completed = await missingAmazonIdentities(s, id)
-  // Barcodes saved after the PO was created become its product labels before the supplier sees it.
-  await attachProductBarcodes(s, id)
-  return db().transaction(async (tx) => {
+  const submitted = await db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, id, tx, true)
     if (
       order.status !== "draft" ||
@@ -310,6 +310,10 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "PO submitted to supplier" })
     return { shipmentId: shipment!.id }
   })
+  // Lines still without a label get one now: barcodes saved since the PO was created, and standard labels for the
+  // FNSKUs completed above.
+  await attachProductBarcodes(s, id)
+  return submitted
 }
 export async function newShipment(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
@@ -601,6 +605,37 @@ const inProgress = new Set<ShipmentState>([
 
 // Closes a sent PO: nothing more will ship, so it drops out of On order. Shipments the supplier hasn't packed are
 // cancelled; shipments still being created or collected keep the PO open.
+// Deletes a draft PO, which the supplier has never seen, with its documents, history and landed costs. A PO import
+// saved as this draft goes back to review, so it can be saved again.
+export async function deleteDraftOrder(s: Session, id: string) {
+  requireBuyer(s)
+  const files = await db().transaction(async (tx) => {
+    const { order } = await accessibleOrder(s, id, tx, true)
+    if (order.status !== "draft") {
+      throw new Error("Only draft POs can be deleted. Close a sent PO instead")
+    }
+    const [shipment] = await tx.select({ id: shipments.id }).from(shipments).where(eq(shipments.orderId, id))
+    if (shipment) {
+      throw new Error("This PO has shipments, so it can't be deleted")
+    }
+    const removed = await tx
+      .delete(documents)
+      .where(eq(documents.orderId, id))
+      .returning({ objectKey: documents.objectKey })
+    await tx.delete(events).where(eq(events.orderId, id))
+    await tx.delete(landedCosts).where(eq(landedCosts.orderId, id))
+    await tx.delete(orderRevisions).where(eq(orderRevisions.orderId, id))
+    await tx
+      .update(poImports)
+      .set({ status: "review", orderId: null, revision: sql`${poImports.revision} + 1`, updatedAt: new Date() })
+      .where(eq(poImports.orderId, id))
+    await tx.delete(orders).where(eq(orders.id, id))
+    return removed.map((doc) => doc.objectKey)
+  })
+  for (const objectKey of files) {
+    await discardFile(objectKey)
+  }
+}
 export async function closeOrder(s: Session, id: string) {
   requireBuyer(s)
   return db().transaction(async (tx) => {

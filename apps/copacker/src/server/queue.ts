@@ -92,6 +92,7 @@ export async function runNextJob() {
     await db().update(jobs).set({ status: "complete", error: null }).where(owned)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job failed"
+    const poll = error instanceof PollAgain ? error.options : null
     const polling = error instanceof PollAgain && job.attempts < 60
     // The error is also stored on the job; logging it shows failures in the service logs without a database read.
     if (!polling) {
@@ -108,7 +109,13 @@ export async function runNextJob() {
     await db().transaction(async (tx) => {
       const updated = await tx
         .update(jobs)
-        .set({ status: polling ? "pending" : "failed", error: message, runAt: new Date(Date.now() + 30000) })
+        .set({
+          status: polling ? "pending" : "failed",
+          error: message,
+          runAt: new Date(Date.now() + (poll?.delayMs ?? 30000)),
+          ...(poll?.payload && { payload: poll.payload }),
+          ...(poll?.progressed && { attempts: 0 })
+        })
         .where(owned)
         .returning({ id: jobs.id })
       if (

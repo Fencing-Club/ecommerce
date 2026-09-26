@@ -15,6 +15,7 @@ import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
+import { PollAgain } from "./job-handlers"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { describeError, stockErrorCode } from "./stock"
@@ -61,7 +62,14 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
       .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
       .for("update")
     if (current && ["queued", "running"].includes(current.status) && current.externalAccountId === account.externalId) {
-      return { status: current.status }
+      // A sync whose job failed or went missing (such as one a worker couldn't run) would wait forever; it starts again.
+      const [job] = await tx
+        .select({ status: jobs.status })
+        .from(jobs)
+        .where(eq(jobs.key, `sales:${org.id}:${source}:${current.revision}`))
+      if (job && ["pending", "running"].includes(job.status)) {
+        return { status: current.status }
+      }
     }
     // A different account starts over; its orders don't belong to the new one.
     const sameAccount = current?.externalAccountId === account.externalId
@@ -147,12 +155,22 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const payloadSchema = z.object({ orgId: z.uuid(), source: z.enum(salesSources), revision: z.number().int().positive() })
+const period = z.object({ from: z.iso.datetime(), to: z.iso.datetime() })
+const payloadSchema = z.object({
+  orgId: z.uuid(),
+  source: z.enum(salesSources),
+  revision: z.number().int().positive(),
+  // Where a paused sync picks up: the periods still to read, and the unbroken period stored so far in this sync.
+  resume: z.object({ remaining: z.array(period), covered: period.nullable() }).optional()
+})
+
+// Amazon's order search allows about one request every three minutes once its burst of 20 is spent.
+const amazonSearchInterval = 180000
 
 // Worker job: copies one source's orders into sales_orders, a chunk at a time. Each chunk replaces the stored orders
 // in its period, so cancelled or test orders that disappear from the source disappear here too.
 export async function salesJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
-  const { orgId, source, revision } = payloadSchema.parse(payload)
+  const { orgId, source, revision, resume } = payloadSchema.parse(payload)
   const scope = and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, source), eq(salesSyncs.revision, revision))
   const [sync] = await db().select().from(salesSyncs).where(scope)
   if (!sync || !["queued", "running"].includes(sync.status)) {
@@ -160,29 +178,40 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
   }
   await db().update(salesSyncs).set({ status: "running" }).where(scope)
   const account = sync.externalAccountId
+  let searches = 0
   try {
     const { scopes } = await connection(orgId, source)
     // Without read_all_orders Shopify shares only the last 60 days.
     const historyDays =
       source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
-    const { chunks, fresh } = syncChunks(Date.now(), sync, historyDays)
+    const planned = resume ? null : syncChunks(Date.now(), sync, historyDays)
+    const chunks =
+      resume?.remaining.map((chunk) => ({ from: new Date(chunk.from), to: new Date(chunk.to) })) ?? planned!.chunks
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
     // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
     let afterOrders: (() => Promise<void>) | null = null
     if (source === "shopify") {
-      const shopify = await shopifyFor(orgId, account)
+      // Shopify access tokens last about an hour and a year of orders can take longer, so each period gets a current
+      // token (renewed when it's about to expire) instead of one from the start of the sync.
       read = async (window) =>
-        (await collectShopifySales(shopify, account, window, assertOwned)).map((order) => ({
+        (await collectShopifySales(await shopifyFor(orgId, account), account, window, assertOwned)).map((order) => ({
           orderId: order.id,
           orderedAt: new Date(order.createdAt),
           data: order
         }))
     } else {
-      const amazon = await amazonFor(orgId, account)
+      const client = await amazonFor(orgId, account)
+      // Order searches are counted, so a throttled period waits long enough to read all its pages when it resumes.
+      const amazon = {
+        request: ((...args) => {
+          searches++
+          return client.request(...args)
+        }) as typeof client.request
+      }
       afterOrders = async () => {
-        await syncLedger({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
-        await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
+        await syncLedger({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
       }
       read = async (window) =>
         (await collectAmazonSales(amazon, window, assertOwned)).map((order) => ({
@@ -191,12 +220,43 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           data: order
         }))
     }
-    let covered = fresh || !sync.coveredFrom || !sync.coveredTo ? null : { from: sync.coveredFrom, to: sync.coveredTo }
-    for (const chunk of chunks) {
-      const orders = await throttled(
-        () => read({ from: chunk.from.toISOString(), to: chunk.to.toISOString() }),
-        assertOwned
-      )
+    let covered: { from: Date; to: Date } | null = null
+    if (resume) {
+      covered = resume.covered && { from: new Date(resume.covered.from), to: new Date(resume.covered.to) }
+    } else if (!planned!.fresh && sync.coveredFrom && sync.coveredTo) {
+      covered = { from: sync.coveredFrom, to: sync.coveredTo }
+    }
+    for (const [index, chunk] of chunks.entries()) {
+      const window = { from: chunk.from.toISOString(), to: chunk.to.toISOString() }
+      let orders: Stored[]
+      if (source === "amazon") {
+        // A throttled Amazon read hands the worker back instead of sleeping, so other jobs run meanwhile, and resumes
+        // at this period once Amazon allows enough searches to read all of it.
+        searches = 0
+        try {
+          orders = await read(window)
+        } catch (error) {
+          if (!(error instanceof ProviderError) || ![429, 503].includes(error.status)) {
+            throw error
+          }
+          const iso = (range: { from: Date; to: Date }) => ({
+            from: range.from.toISOString(),
+            to: range.to.toISOString()
+          })
+          throw new PollAgain("Amazon is limiting order searches; the sync resumes shortly", {
+            delayMs: Math.max(error.retryAfterMs ?? 0, amazonSearchInterval * Math.max(1, searches)),
+            payload: {
+              orgId,
+              source,
+              revision,
+              resume: { remaining: chunks.slice(index).map(iso), covered: covered && iso(covered) }
+            },
+            progressed: index > 0
+          })
+        }
+      } else {
+        orders = await throttled(() => read(window), assertOwned)
+      }
       await assertOwned()
       covered = covered
         ? {
@@ -230,7 +290,12 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
               set: { orderedAt: sql`excluded."orderedAt"`, data: sql`excluded.data`, syncedAt: new Date() }
             })
         }
-        await tx.update(salesSyncs).set({ coveredFrom: range.from, coveredTo: range.to }).where(scope)
+        // The stored range now holds only orders read by this sync, so it's in the current shape: a sync that stops
+        // partway continues from here next time instead of reading everything again.
+        await tx
+          .update(salesSyncs)
+          .set({ coveredFrom: range.from, coveredTo: range.to, dataVersion: salesDataVersion })
+          .where(scope)
       })
     }
     await afterOrders?.()
@@ -239,6 +304,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: salesDataVersion })
       .where(scope)
   } catch (error) {
+    // A paused sync stays running; the queue runs it again.
+    if (error instanceof PollAgain) {
+      throw error
+    }
     const errorCode = stockErrorCode(error)
     console.error(JSON.stringify({ event: "sales_sync_failed", source, orgId, errorCode, error: describeError(error) }))
     await db().update(salesSyncs).set({ status: "failed", finishedAt: new Date(), errorCode }).where(scope)
@@ -483,6 +552,10 @@ export function summarizeSalesOrder(
     let channel = "Other app"
     if (data.sourceName && shopifyChannels[data.sourceName]) {
       channel = shopifyChannels[data.sourceName]!
+    } else if (data.sourceName?.startsWith("amazon")) {
+      // Shopify's Amazon sales channel copies Amazon orders into Shopify, such as "amazon-us".
+      const marketplace = data.sourceName.slice("amazon-".length).toUpperCase()
+      channel = marketplace ? `Amazon ${marketplace}, via Shopify` : "Amazon, via Shopify"
     }
     return {
       source,
@@ -576,7 +649,14 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
           fees: sql<number>`sum(${amazonTransactions.feesMinor})`.mapWith(Number)
         })
         .from(amazonTransactions)
-        .where(and(eq(amazonTransactions.orgId, orgId), inArray(amazonTransactions.orderId, amazonIds)))
+        .where(
+          and(
+            eq(amazonTransactions.orgId, orgId),
+            inArray(amazonTransactions.orderId, amazonIds),
+            // A release of a deferred payment repeats that payment's fees.
+            sql`not coalesce(${amazonTransactions.data}->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'`
+          )
+        )
         .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)
     : []
   return {

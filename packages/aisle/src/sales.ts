@@ -339,12 +339,17 @@ const financeAmount = z.object({
   currencyCode: z.string().length(3),
   currencyAmount: z.union([z.number(), z.string()])
 })
-type Breakdown = { breakdownType: string; breakdownAmount?: z.infer<typeof financeAmount>; breakdowns?: Breakdown[] }
+// Amazon sends null, not an empty list, for a breakdown with no parts.
+type Breakdown = {
+  breakdownType: string
+  breakdownAmount?: z.infer<typeof financeAmount> | null
+  breakdowns?: Breakdown[] | null
+}
 const breakdown: z.ZodType<Breakdown> = z.lazy(() =>
   z.object({
     breakdownType: z.string(),
-    breakdownAmount: financeAmount.optional(),
-    breakdowns: z.array(breakdown).max(200).optional()
+    breakdownAmount: financeAmount.nullable().optional(),
+    breakdowns: z.array(breakdown).max(200).nullable().optional()
   })
 )
 const transaction = z
@@ -356,8 +361,9 @@ const transaction = z
     relatedIdentifiers: z
       .array(z.object({ relatedIdentifierName: z.string(), relatedIdentifierValue: z.string() }))
       .max(50)
+      .nullable()
       .optional(),
-    breakdowns: z.array(breakdown).max(200).optional()
+    breakdowns: z.array(breakdown).max(200).nullable().optional()
   })
   .loose()
 
@@ -372,7 +378,7 @@ export function minorUnits(amount: number | string) {
 
 // Amazon's fees in a transaction, positive when charged: every fee or commission in its breakdown tree (such as
 // AmazonFees, FBAFees and Commission). A fee category is counted whole, not again through its parts.
-export function transactionFees(breakdowns: readonly Breakdown[] | undefined): number {
+export function transactionFees(breakdowns: readonly Breakdown[] | null | undefined): number {
   let total = 0
   for (const entry of breakdowns ?? []) {
     if (/fee|commission/i.test(entry.breakdownType) && entry.breakdownAmount) {
@@ -425,16 +431,19 @@ export async function collectAmazonTransactions(
       if (ids.size > 50000) {
         throw new Error("Amazon transaction limit reached")
       }
+      const related = (name: string) =>
+        entry.relatedIdentifiers?.find((identifier) => identifier.relatedIdentifierName === name)
+          ?.relatedIdentifierValue ?? null
       result.push({
         transactionId: entry.transactionId,
-        orderId:
-          entry.relatedIdentifiers?.find((identifier) => identifier.relatedIdentifierName === "ORDER_ID")
-            ?.relatedIdentifierValue ?? null,
+        orderId: related("ORDER_ID"),
         postedAt: new Date(entry.postedDate).toISOString(),
         type: entry.transactionType,
         currency: entry.totalAmount.currencyCode,
         totalMinor: minorUnits(entry.totalAmount.currencyAmount),
-        feesMinor: transactionFees(entry.breakdowns),
+        // Amazon lists a deferred payment again when it releases it, with the same fees; the release names the deferred
+        // transaction, which already counts them.
+        feesMinor: related("DEFERRED_TRANSACTION_ID") ? 0 : transactionFees(entry.breakdowns),
         data: entry
       })
     }

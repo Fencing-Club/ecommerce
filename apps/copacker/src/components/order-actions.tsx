@@ -62,3 +62,48 @@ export function ClosePurchaseOrder({ id, reference }: { id: string; reference: s
     </AlertDialog>
   )
 }
+
+// Deletes a draft PO the supplier hasn't seen, then returns to the list.
+export function DeleteDraftOrder({ id, reference }: { id: string; reference: string }) {
+  const router = useRouter()
+  const [run] = useActionMutation()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState("")
+
+  async function remove() {
+    setPending(true)
+    setError("")
+    try {
+      const result = await run({ action: "order.delete", data: { id } }).unwrap()
+      setOpen(false)
+      router.push(result.redirect ?? "/orders")
+    } catch (e) {
+      setError(errorMessage(e, `Couldn’t delete ${reference}`))
+      setPending(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger render={<Button variant="outline" />}>Delete draft</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {reference}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This draft, its product labels and its landed costs are deleted. Your supplier hasn’t seen it. You can’t
+            undo this.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <FormError message={error} />
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={pending} aria-busy={pending} onClick={remove}>
+            {pending && <Spinner data-icon="inline-start" />}
+            Delete draft
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}

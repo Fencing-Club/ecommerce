@@ -25,6 +25,7 @@ import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { acceptSupplierInvitation } from "@/server/invitations"
+import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import {
   createOrder,
   submitOrder,
@@ -35,6 +36,7 @@ import {
   savePacking,
   checkPacking,
   closeOrder,
+  deleteDraftOrder,
   receiveShipment
 } from "@/server/orders"
 import { releaseIssues } from "@/server/readiness"
@@ -465,6 +467,17 @@ export async function POST(request: Request) {
     if (action === "shipment.received") {
       await receiveShipment(s, id())
       return Response.json({ ok: true })
+    }
+    if (action === "landedCost.create") {
+      return Response.json(await addLandedCost(s, data))
+    }
+    if (action === "landedCost.delete") {
+      await removeLandedCost(s, id())
+      return Response.json({ ok: true })
+    }
+    if (action === "order.delete") {
+      await deleteDraftOrder(s, id())
+      return Response.json({ redirect: "/orders" })
     }
     if (action === "order.close") {
       await closeOrder(s, id())

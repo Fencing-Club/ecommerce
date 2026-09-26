@@ -211,14 +211,21 @@ FBA reads use `GET /api/inventory?source=fba&marketplaceId=ATVPDKIKX0DER`. The m
 Shopify inventory reads accept optional `locationId` (a Shopify Location GID). Filtering is applied to the entire tenant snapshot before row pagination, and only matching levels are returned. `locations` lists observed location IDs/names from the complete snapshot. Unknown observed locations and location filters on Amazon sources return 400. Cursors bind to both snapshot ID and selected location; reusing a cursor after changing the filter returns 409. A location filter changes the view only; it does not classify merchant stock or Amazon mirrors.
 
 
-### Product barcodes
+### Product labels
 
-Each Shopify variation can have one barcode label: a one-page PDF (32 MB or less, no active content) that the buyer uploads on the Products page. New POs copy it as the line's product label when the PO is created or imported, and again on submit for lines still without one. A label uploaded on the PO itself is never replaced. Replacing or removing a barcode doesn't change POs that already have its label.
+Each PO line needs a product label for the supplier to print. A variation's label is, in order:
+
+1. The barcode the buyer uploaded for it: a one-page PDF (32 MB or less, no active content), on the Products page or in bulk.
+2. Otherwise, when its product's `productLabel` setting is `standard` (the default), the standard label: a US Letter sheet of 30 labels (2 5/8 × 1 in), laid out like Fencing Club's glove labels: a Code 128 barcode of the code with the code centered under it, then, left-aligned, the Shopify title with the variant's options in parentheses ("Pro-Grip Fencing Glove (10, Left)") and "Made in {country}" from the country of origin Shopify records on the inventory item (left out when none is recorded). No condition is printed. The code is Amazon's FNSKU, or the Shopify SKU without Amazon or for a product Amazon doesn't list. Lines on POs to Amazon only get the FNSKU, filled in when the PO is sent.
+3. A product set to `uploaded`, such as uniforms and chest protectors whose labels show size measurements, gets no standard label; its variations are flagged until a label is uploaded.
+
+New POs get their labels when the PO is created or imported, and again after it is sent (when missing FNSKUs have been filled in) for lines still without one. A label uploaded on the PO itself is never replaced. Replacing or removing a barcode doesn't change POs that already have its label.
 
 - Buyer-only `POST /api/inventory/barcodes` (same origin, multipart) saves or replaces the barcode and returns `{name, bytes, uploadedAt, replaced, target: {variantId, sku, product, variant}}`. It names the variation with `variantId` or, for bulk uploads, by SKU: the `sku` field, or else the file name without `.pdf`, matched exactly ignoring case. A multi-page or invalid PDF returns 400; an unknown variation or a SKU no variation has returns 404; a SKU several variations share, or no Shopify connection, returns 409.
 - Replacing or removing a barcode deletes its stored file. POs keep their own copy. A failed delete is logged as `barcode_file_delete_failed` and leaves the file behind.
-- `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` downloads the PDF; `DELETE` with the same query (same origin) removes it. Supplier workspaces get 403.
-- `GET /api/inventory/products` adds `barcode` (or null) to each variant and `missingBarcodes`, the number of variations in the selection without one. `barcode=missing` lists only products with such a variation.
+- `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` downloads the variation's label: its upload, or else the standard sheet. Its FNSKU comes from the latest FBA stock sync or else Amazon's listing for the SKU; without either, the Shopify SKU is printed. `view=inline` shows it in the browser instead. It returns 404 when the product needs an uploaded label or the variation has no SKU, and 409 when Amazon can't be reached. `DELETE` with the same query (same origin) removes the upload. Supplier workspaces get 403.
+- `GET /api/inventory/products` adds `barcode` (or null) and `fnsku` (or null) to each variant; `missingBarcodes`, the number of variations whose product needs an uploaded label and has none; and `duplicateSkus`, the SKUs more than one variation uses. `barcode=missing` lists only products with such a variation.
+- Action `order.delete` (buyer only) deletes a draft PO with its documents, history and landed costs, and returns `{redirect: "/orders"}`. A PO import saved as that draft goes back to review. Sent POs are closed instead.
 
 ### Inventory location settings
 

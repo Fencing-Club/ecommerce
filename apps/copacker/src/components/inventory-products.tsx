@@ -40,11 +40,14 @@ type ProductsPage = {
   totalProducts: number
   totalVariants: number
   missingBarcodes: number
+  duplicateSkus: DuplicateSku[]
   products: ListedProduct[]
   amazonOnly: AmazonOnlyStock[]
 }
-// A product on the page with the details and barcodes Copacker keeps for it.
-type ListedVariant = InventoryVariant & { barcode: ProductBarcode | null }
+// A product on the page with the details and labels Copacker keeps for it.
+type ListedVariant = InventoryVariant & { barcode: ProductBarcode | null; fnsku: string | null }
+// A SKU more than one Shopify variation uses.
+type DuplicateSku = { sku: string; variants: { variantId: string; product: string; variant: string | null }[] }
 type ListedProduct = Omit<InventoryProduct, "variants"> & { defaults: ProductDefaults; variants: ListedVariant[] }
 
 type ProductsQuery = {
@@ -76,6 +79,55 @@ const productsApi = api.injectEndpoints({
 
 // Reloads the page of products after a row changes something.
 const RefreshContext = createContext<() => void>(() => undefined)
+
+// SKUs several Shopify variations share. Uploads by file name and Amazon matching can't tell them apart.
+function DuplicateSkus({ duplicates }: { duplicates: DuplicateSku[] }) {
+  if (!duplicates.length) {
+    return null
+  }
+  return (
+    <Collapsible className={styles.amazonOnly}>
+      <CollapsibleTrigger className={styles.amazonOnlyTrigger}>
+        <ChevronRight className={styles.chevron} aria-hidden="true" />
+        <WarningNote>
+          {duplicates.length === 1
+            ? "1 SKU is used by more than one variation"
+            : `${duplicates.length} SKUs are used by more than one variation`}
+        </WarningNote>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <p className={styles.summary}>
+          Give each variation its own SKU in Shopify, then sync. Until then, upload their labels from each product’s
+          Edit panel, and check restock and Amazon quantities for them.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>SKU</TableHead>
+              <TableHead>Variations</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {duplicates.map((duplicate) => (
+              <TableRow key={duplicate.sku}>
+                <TableCell className={styles.skuCell}>{duplicate.sku}</TableCell>
+                <TableCell className={styles.skuCell}>
+                  <ul className={styles.duplicateList}>
+                    {duplicate.variants.map((variant) => (
+                      <li key={variant.variantId}>
+                        {variant.variant ? `${variant.product}, ${variant.variant}` : variant.product}
+                      </li>
+                    ))}
+                  </ul>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
 
 // Amazon seller SKUs that don't match a single Shopify variant, such as listings with a different SKU.
 function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
@@ -172,10 +224,14 @@ function Thumbnail({ url, small = false }: { url: string | null; small?: boolean
   )
 }
 
-// Warns that a variation has no barcode label, which its PO lines need.
-function NoBarcode({ children = "No barcode" }: { children?: string }) {
+// Warns that a variation's product needs an uploaded label, such as one with size measurements, and it has none.
+function NoLabel({ children = "No label uploaded" }: { children?: string }) {
   return <WarningNote>{children}</WarningNote>
 }
+
+// Whether a variation still needs its label uploaded: the standard FNSKU label doesn't suit its product.
+const needsLabel = (product: ListedProduct, variant: ListedVariant) =>
+  product.defaults.productLabel === "uploaded" && !variant.barcode
 
 function Locations({ variant }: { variant: InventoryVariant }) {
   if (variant.levels.length <= 1 || variant.stock !== "tracked") {
@@ -262,7 +318,8 @@ function Actions({ product, className }: { product: ListedProduct; className: st
           variantId: variant.variantId,
           title: variant.title,
           amazonStockTarget: variant.amazonStockTarget,
-          barcode: variant.barcode
+          barcode: variant.barcode,
+          fnsku: variant.fnsku
         }))}
       />
     </span>
@@ -284,7 +341,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
               {amazonTargetNote(only.amazonStockTarget)}
               {stockNotes[only.stock]}
             </span>
-            {!only.barcode && <NoBarcode />}
+            {needsLabel(product, only) && <NoLabel />}
             <Locations variant={only} />
             <Actions product={product} className={styles.actions} />
           </span>
@@ -294,7 +351,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
     )
   }
   const count = product.variants.length
-  const unlabelled = product.variants.filter((variant) => !variant.barcode).length
+  const unlabelled = product.variants.filter((variant) => needsLabel(product, variant)).length
   return (
     <Collapsible render={<li className={styles.product} />}>
       <CollapsibleTrigger className={styles.productRow}>
@@ -307,11 +364,11 @@ function ProductRow({ product }: { product: ListedProduct }) {
             {stockNotes[product.stock]}
           </span>
           {unlabelled > 0 && (
-            <NoBarcode>
+            <NoLabel>
               {unlabelled === count
-                ? "No barcodes"
-                : `${unlabelled} ${unlabelled === 1 ? "variation needs a barcode" : "variations need barcodes"}`}
-            </NoBarcode>
+                ? "No labels uploaded"
+                : `${unlabelled} ${unlabelled === 1 ? "variation needs its label uploaded" : "variations need their labels uploaded"}`}
+            </NoLabel>
           )}
         </span>
         <Quantities item={product} />
@@ -330,7 +387,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
                   {amazonTargetNote(variant.amazonStockTarget)}
                   {product.stock === variant.stock ? null : stockNotes[variant.stock]}
                 </span>
-                {!variant.barcode && <NoBarcode />}
+                {needsLabel(product, variant) && <NoLabel />}
                 <Locations variant={variant} />
               </span>
               <Quantities item={variant} />
@@ -433,8 +490,8 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
         {data.missingBarcodes > 0 && (
           <WarningNote>
             {data.missingBarcodes === 1
-              ? "1 variation doesn’t have a barcode. Add it with Upload barcodes or from the product’s Edit panel, so new POs include its label."
-              : `${data.missingBarcodes} variations don’t have a barcode. Add them with Upload barcodes or from each product’s Edit panel, so new POs include their labels.`}
+              ? "1 variation needs its label uploaded, such as one with size measurements. Add it with Upload barcodes or from the product’s Edit panel."
+              : `${data.missingBarcodes} variations need their labels uploaded, such as ones with size measurements. Add them with Upload barcodes or from each product’s Edit panel.`}
           </WarningNote>
         )}
         <div className={styles.listHeader}>
@@ -454,7 +511,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
                   setPage(1)
                 }}
               />
-              <FieldLabel htmlFor="inventory-missing-barcode">Missing barcode only</FieldLabel>
+              <FieldLabel htmlFor="inventory-missing-barcode">Needs a label only</FieldLabel>
             </Field>
             <Field orientation="horizontal" className={styles.pageSize}>
               <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
@@ -488,6 +545,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
           </ul>
         )}
         {data.totalPages > 1 && <Pager data={data} onPage={setPage} />}
+        <DuplicateSkus duplicates={data.duplicateSkus} />
         <AmazonOnly stock={data.amazonOnly} />
       </div>
     </RefreshContext>
