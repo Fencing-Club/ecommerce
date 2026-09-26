@@ -76,13 +76,22 @@ function ChartTooltip({
 }
 
 type Point = { key: string; label: string; title: string } & Partial<Record<SalesSource, number | null>>
-type Metric = "units" | "sales"
+type Metric = "orders" | "units" | "sales"
+// What each measure counts, named wherever a number appears so units aren't read as orders.
+const metricNames = { orders: ["order", "orders"], units: ["unit", "units"] } as const
 
 const ranges = [
   { value: "30", label: "30 days", days: 30 },
   { value: "90", label: "90 days", days: 90 },
   { value: "365", label: "12 months", days: 364 }
 ] as const
+
+function measure(cell: { orders: number; units: number; revenueMinor: number }, metric: Metric) {
+  if (metric === "sales") {
+    return cell.revenueMinor
+  }
+  return metric === "units" ? cell.units : cell.orders
+}
 
 // Daily points for short ranges; a year is summed by week so the line stays readable.
 function points(daily: DailySales[], days: number, sources: SalesSource[], metric: Metric): Point[] {
@@ -101,7 +110,7 @@ function points(daily: DailySales[], days: number, sources: SalesSource[], metri
       const cells = group.map((row) => row[source])
       point[source] = cells.every((cell) => cell === null)
         ? null
-        : cells.reduce((sum, cell) => sum + ((metric === "units" ? cell?.units : cell?.revenueMinor) ?? 0), 0)
+        : cells.reduce((sum, cell) => sum + (cell ? measure(cell, metric) : 0), 0)
     }
     result.push(point)
   }
@@ -152,12 +161,16 @@ export function SalesTrend({
   currency: string | null
 }) {
   const [range, setRange] = useState<(typeof ranges)[number]["value"]>("30")
-  const [chosen, setMetric] = useState<Metric>("units")
-  const metric: Metric = currency ? chosen : "units"
+  // Sales first when orders have prices; orders otherwise.
+  const [chosen, setMetric] = useState<Metric>(currency ? "sales" : "orders")
+  const metric: Metric = currency || chosen !== "sales" ? chosen : "orders"
   const days = ranges.find((option) => option.value === range)!.days
   const shown = sourceOrder.filter((source) => sources.includes(source))
   const data = points(daily, days, shown, metric)
-  const format = (value: number) => (metric === "units" ? formatNumber(value) : compactMoney(value, currency ?? "USD"))
+  const format = (value: number) => (metric === "sales" ? compactMoney(value, currency ?? "USD") : formatNumber(value))
+  // "12 orders", "1 unit", "$4.2K".
+  const describe = (value: number) =>
+    metric === "sales" ? format(value) : `${formatNumber(value)} ${metricNames[metric][value === 1 ? 0 : 1]}`
   const totals = shown.map((source) => ({
     source,
     value: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
@@ -174,22 +187,26 @@ export function SalesTrend({
                 <span className={styles.swatch} style={{ backgroundColor: sourceSeries[total.source].color }} />
                 {sourceSeries[total.source].label}
               </span>
-              <span className={styles.legendValue}>{total.known ? format(total.value) : "No orders synced"}</span>
+              <span className={styles.legendValue}>
+                {total.known ? format(total.value) : "No orders synced"}
+                {total.known && metric !== "sales" && (
+                  <span className={styles.legendUnit}> {metricNames[metric][total.value === 1 ? 0 : 1]}</span>
+                )}
+              </span>
             </div>
           ))}
         </div>
         <div className={styles.switches}>
-          {currency && (
-            <Switch
-              label="Measure"
-              value={metric}
-              options={[
-                { value: "units", label: "Units" },
-                { value: "sales", label: "Sales" }
-              ]}
-              onChange={setMetric}
-            />
-          )}
+          <Switch
+            label="Measure"
+            value={metric}
+            options={[
+              ...(currency ? [{ value: "sales" as const, label: "Sales" }] : []),
+              { value: "orders" as const, label: "Orders" },
+              { value: "units" as const, label: "Units" }
+            ]}
+            onChange={setMetric}
+          />
           <Switch label="Period" value={range} options={ranges} onChange={setRange} />
         </div>
       </div>
@@ -213,18 +230,13 @@ export function SalesTrend({
           <XAxis dataKey="label" {...axis} minTickGap={24} />
           <YAxis
             {...axis}
-            width={metric === "units" ? 44 : 56}
+            width={metric === "sales" ? 56 : 44}
             allowDecimals={false}
-            tickFormatter={(value: number) => (metric === "units" ? compactNumber(value) : format(value))}
+            tickFormatter={(value: number) => (metric === "sales" ? format(value) : compactNumber(value))}
           />
           <Tooltip
             cursor={cursor}
-            content={
-              <ChartTooltip
-                titleOf={(point: Point) => point.title}
-                format={(value) => (metric === "units" ? `${formatNumber(value)} units` : format(value))}
-              />
-            }
+            content={<ChartTooltip titleOf={(point: Point) => point.title} format={describe} />}
           />
           {shown.map((source) => (
             <Area
@@ -244,7 +256,7 @@ export function SalesTrend({
       </div>
       <table className={srOnly}>
         <caption>
-          {metric === "units" ? "Units sold" : "Sales"} by {days > 90 ? "week" : "day"}
+          {{ orders: "Orders", units: "Units sold", sales: "Sales" }[metric]} by {days > 90 ? "week" : "day"}
         </caption>
         <thead>
           <tr>

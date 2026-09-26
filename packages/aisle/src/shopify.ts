@@ -295,6 +295,7 @@ export class Shopify {
                   id: z.string().regex(/^gid:\/\/shopify\/InventoryItem\/\d+$/),
                   tracked: z.boolean(),
                   unitCost: z.object({ amount: z.string(), currencyCode: z.string() }).nullable().optional(),
+                  countryCodeOfOrigin: z.string().nullable().optional(),
                   inventoryLevels: stockLevels
                 })
               })
@@ -305,7 +306,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} countryCodeOfOrigin inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -356,6 +357,8 @@ export class Shopify {
       supplierSku?: string | null
       unitCostMinor?: number | null
       costCurrency?: string | null
+      // ISO 3166 code of the country the item is made in; null when Shopify has none. Printed on product labels.
+      countryOfOrigin?: string | null
       // The variant's selling price in Shopify, in the store's currency.
       priceMinor?: number | null
       priceCurrency?: string | null
@@ -440,6 +443,7 @@ export class Shopify {
             unitCostMinor: item.unitCost === null ? null : costMinor(item.unitCost.amount),
             costCurrency: item.unitCost?.currencyCode ?? null
           }),
+          ...(item.countryCodeOfOrigin !== undefined && { countryOfOrigin: item.countryCodeOfOrigin }),
           ...(variant.price !== undefined && {
             priceMinor: costMinor(variant.price, "price"),
             priceCurrency: page.currency

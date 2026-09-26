@@ -16,18 +16,24 @@ import {
 } from "@/db/schema"
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
+import { amazonFreightByOrder } from "./amazon-shipments"
 import { receivingLocations } from "./inventory-products"
 import { landedMarkupsFor } from "./landed-costs"
+import { listMonthlyCosts, monthlyCostShares } from "./monthly-costs"
 import {
+  amazonFreight,
   catalogIndex,
+  type ChargeLine,
   dailySales,
   grossProfit,
   movers,
   orderFees,
   otherMarketplaceOrders,
   periodTotal,
+  platformCharges,
   platformFees,
   periods,
+  reportingCurrency,
   salesByDay,
   salesByItem,
   sellingPrices
@@ -513,12 +519,24 @@ export function attentionItems(input: {
         action: "View orders"
       })
     }
-    if (sync.feesErrorCode) {
+    if (sync.feesErrorCode === "reconnect") {
       items.push({
         key: `fees-${sync.source}`,
         tone: "warning",
-        title: "Amazon fees couldn't be copied",
-        detail: "Margins leave out Amazon's fees until the next order sync copies them.",
+        title: `Reconnect ${name} to include shipping labels and ${name} charges`,
+        detail: "Gross profit leaves them out until Copacker can read your payouts.",
+        href: "/settings",
+        action: "Open settings"
+      })
+    } else if (sync.feesErrorCode) {
+      items.push({
+        key: `fees-${sync.source}`,
+        tone: "warning",
+        title: sync.source === "amazon" ? "Amazon fees couldn't be copied" : "Shopify charges couldn't be copied",
+        detail:
+          sync.source === "amazon"
+            ? "Margins leave out Amazon's fees until the next order sync copies them."
+            : "Gross profit leaves out shipping labels and Shopify charges until the next order sync copies them.",
         href: "/sales",
         action: "View orders"
       })
@@ -708,7 +726,7 @@ export async function overview(
       ? [{ provider: row.provider as SalesSource, externalId: row.externalId }]
       : []
   )
-  const restock = await cachedRestock(orgId, now.getTime())
+  const [restock, currency] = await Promise.all([cachedRestock(orgId, now.getTime()), reportingCurrency(orgId)])
   const channelOptions = restock.channels.map((channel) => ({ key: channel.key, label: channel.label }))
   const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
   let channelSource: SalesSource | null = null
@@ -741,15 +759,18 @@ export async function overview(
     stock,
     supplierRows,
     markups,
-    otherMarketplaces
+    otherMarketplaces,
+    platformLines,
+    costs,
+    linkedFreight
   ] = await Promise.all([
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
-    salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone),
-    salesByItem(orgId, scopedAccounts, window30),
+    salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone, currency),
+    salesByItem(orgId, scopedAccounts, window30, currency),
     Promise.all(
       scopedAccounts.map(async (account) => ({
         source: account.provider,
-        list: await orderFees(orgId, account, window30.currentStart, window30.end)
+        list: await orderFees(orgId, account, window30.currentStart, window30.end, currency)
       }))
     ),
     db()
@@ -794,8 +815,23 @@ export async function overview(
     landedMarkupsFor(orgId),
     shopifyWithoutAmazon
       ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window30.currentStart, window30.end)
-      : Promise.resolve(0)
+      : Promise.resolve(0),
+    platformCharges(orgId, scopedAccounts, window30.currentStart, window30.end, currency),
+    listMonthlyCosts(orgId),
+    amazonFreightByOrder(orgId)
   ])
+  // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
+  const monthly: ChargeLine[] = monthlyCostShares(
+    costs.filter((cost) => cost.currency === currency && (!channelSource || cost.channel === channelSource)),
+    addDays(today, -30),
+    today
+  ).map((cost) => ({
+    key: `monthly:${cost.id}`,
+    label: `${cost.name}, monthly cost`,
+    minor: -cost.shareMinor,
+    currency
+  }))
+  const charges = [...platformLines, ...monthly]
 
   const current = syncs.filter((sync) =>
     accounts.some((account) => account.provider === sync.source && account.externalId === sync.externalAccountId)
@@ -816,7 +852,26 @@ export async function overview(
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
     Record<SalesSource, ReturnType<typeof platformFees>>
   >
-  const profit = grossProfit(itemRows, index, fees)
+  // Amazon inbound freight over the last year (or the stretch Amazon's orders cover, if shorter), as a cost per unit:
+  // by the SKUs each shipment carried, and the rest over the Amazon units sold in it. Freight for shipments sent from a
+  // PO is in that PO's landed costs instead.
+  const amazonAccount = scopedAccounts.find((account) => account.provider === "amazon")
+  const freightFrom = coverage.amazon
+    ? new Date(Math.max(coverage.amazon.from.getTime(), zonedStart(addDays(today, -365), timeZone).getTime()))
+    : null
+  const freightDays = series.filter((row) => freightFrom && zonedStart(row.date, timeZone) >= freightFrom)
+  const freight =
+    amazonAccount && freightFrom
+      ? await amazonFreight(
+          orgId,
+          amazonAccount.externalId,
+          { from: freightFrom, to: window30.end },
+          currency,
+          freightDays.reduce((sum, row) => sum + (row.amazon?.units ?? 0), 0),
+          new Set(linkedFreight.map((row) => row.reference))
+        )
+      : null
+  const profit = grossProfit(itemRows, index, fees, charges, freight)
   // Trends compare the last 30 days with the 30 before, for sources whose orders cover both.
   const comparable = covered.filter((source) => coverage[source]!.from <= window30.previousStart)
   const trending = movers(itemRows, index, comparable)

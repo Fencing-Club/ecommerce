@@ -1,4 +1,5 @@
 import { DeleteMessageCommand, ReceiveMessageCommand, type SQSClient } from "@aws-sdk/client-sqs"
+import { ProviderError } from "@repo/aisle/amazon"
 import { collectUpdatedAmazonSales } from "@repo/aisle/sales"
 import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -6,12 +7,19 @@ import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
 import { amazonApp, amazonFor } from "./connections"
 import { PollAgain } from "./job-handlers"
-import { requestSalesSync, salesDataVersion, throttled } from "./sales-orders"
+import { amazonSalesMarketplaces, requestSalesSync, salesDataVersion } from "./sales-orders"
 import { refreshStock } from "./stock"
 
 // Amazon sends notifications to an SQS queue (it has no HTTPS webhooks). Order changes update the stored orders by
 // reading only the orders changed since the last read; FBA stock changes start a stock refresh.
 export const amazonNotificationTypes = ["ORDER_CHANGE", "FBA_INVENTORY_AVAILABILITY_CHANGES"] as const
+// Order changes are requested the way Amazon's ORDER_CHANGE tutorial does: status changes and buyer-requested changes
+// (cancellations and address changes).
+const processingDirectives: Partial<Record<(typeof amazonNotificationTypes)[number], Record<string, unknown>>> = {
+  ORDER_CHANGE: {
+    eventFilter: { eventFilterType: "ORDER_CHANGE", orderChangeTypes: ["OrderStatusChange", "BuyerRequestedChange"] }
+  }
+}
 // Notifications are gathered into five-minute periods, and each period's work starts three minutes after it ends, when
 // the orders in it have settled (see syncChunks).
 const batchMs = 5 * 60000
@@ -20,6 +28,10 @@ const settleMs = 3 * 60000
 const overlapMs = 5 * 60000
 // Stored orders older than this are brought up to date by a full sync instead.
 const incrementalDays = 7
+// How long to wait before checking again whether a full sync has finished.
+const syncWaitMs = 2 * 60000
+// Amazon's order search refills about one request every three minutes once its burst is spent.
+const throttleWaitMs = 3 * 60000
 
 // The queue's ARN, from its URL (https://sqs.<region>.amazonaws.com/<account>/<name>).
 export function amazonQueueArn(queueUrl: string) {
@@ -169,27 +181,43 @@ async function updateStoredOrders(
   ) {
     const started = await requestSalesSync(org, "amazon")
     if (started.status === "running") {
-      throw new PollAgain("Waiting for the running Amazon sync to finish")
+      throw new PollAgain("Waiting for the running Amazon sync to finish", { delayMs: syncWaitMs })
     }
     return
   }
   // A full sync replaces periods of stored orders; let it finish rather than write alongside it.
   if (sync.status === "queued" || sync.status === "running") {
-    throw new PollAgain("Waiting for the Amazon sync to finish")
+    throw new PollAgain("Waiting for the Amazon sync to finish", { delayMs: syncWaitMs })
   }
   const coveredFrom = sync.coveredFrom
   const end = new Date(now - settleMs)
   const since = new Date(sync.coveredTo.getTime() - overlapMs).toISOString()
   const amazon = await amazonFor(org.id, sellerId)
-  const orders = (await throttled(() => collectUpdatedAmazonSales(amazon, since, assertOwned), assertOwned)).filter(
-    // Orders placed before the stored period aren't kept.
-    (order) => Date.parse(order.createdTime) >= coveredFrom.getTime()
-  )
+  let changed
+  try {
+    changed = await collectUpdatedAmazonSales(
+      amazon,
+      since,
+      assertOwned,
+      await amazonSalesMarketplaces(sellerId, amazon)
+    )
+  } catch (error) {
+    // Throttled: come back after Amazon's interval rather than hold the worker. Nothing is saved yet, so the read
+    // simply starts again.
+    if (error instanceof ProviderError && [429, 503].includes(error.status)) {
+      throw new PollAgain("Amazon is limiting order reads; reading again shortly", {
+        delayMs: Math.max(error.retryAfterMs ?? 0, throttleWaitMs)
+      })
+    }
+    throw error
+  }
+  // Orders placed before the stored period aren't kept.
+  const orders = changed.filter((order) => Date.parse(order.createdTime) >= coveredFrom.getTime())
   await assertOwned()
   await db().transaction(async (tx) => {
     const [current] = await tx.select().from(salesSyncs).where(scope).for("update")
     if (!current || current.revision !== sync.revision || current.status === "queued" || current.status === "running") {
-      throw new PollAgain("A newer Amazon sync started; reading again after it")
+      throw new PollAgain("A newer Amazon sync started; reading again after it", { delayMs: syncWaitMs })
     }
     for (let index = 0; index < orders.length; index += 200) {
       await tx
@@ -245,6 +273,13 @@ export async function amazonSubscribeJob(payload: Record<string, unknown>, asser
   const seller = await amazonFor(orgId, account.externalId)
   for (const type of amazonNotificationTypes) {
     await assertOwned()
-    await seller.subscribeNotifications(type, destinationId)
+    try {
+      await seller.subscribeNotifications(type, destinationId, processingDirectives[type])
+    } catch (error) {
+      throw new Error(
+        `Amazon ${type} subscription failed: ${error instanceof Error ? error.message : "unknown error"}`,
+        { cause: error }
+      )
+    }
   }
 }

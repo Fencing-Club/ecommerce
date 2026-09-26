@@ -25,6 +25,7 @@ import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError } from "./actions"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
+import { type SupplierSkuVariation, SupplierSkus } from "./supplier-skus"
 import * as styles from "./inventory-products.css"
 
 const detailsApi = api.injectEndpoints({
@@ -51,7 +52,7 @@ const schema = z.object({
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
-type Variation = BarcodeVariation & { amazonStockTarget: number | null }
+type Variation = BarcodeVariation & SupplierSkuVariation & { amazonStockTarget: number | null }
 
 // What Shopify holds for this product, shown for reference because it's edited in Shopify.
 function FromShopify({ caseQuantity, variants }: { caseQuantity: number | null; variants: Variation[] }) {
@@ -143,8 +144,8 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
   )
 }
 
-// Edits the product details Copacker keeps itself, and its variations' barcodes. Titles, SKUs, photos, costs and Amazon
-// identifiers come from Shopify and Amazon, so they are edited there.
+// Edits the product details Copacker keeps itself, and its variations' supplier SKUs (saved to Shopify) and barcodes.
+// Titles, SKUs, photos, costs and Amazon identifiers come from Shopify and Amazon, so they are edited there.
 export function ProductDetails({
   productId,
   title,
@@ -205,8 +206,8 @@ export function ProductDetails({
             <SheetHeader>
               <SheetTitle>{title}</SheetTitle>
               <SheetDescription>
-                Details Copacker keeps for this product. Titles, SKUs, photos, costs and Shopify fields are edited in
-                Shopify.
+                Details Copacker keeps for this product. Titles, SKUs, photos, costs and other Shopify fields are edited
+                in Shopify.
               </SheetDescription>
             </SheetHeader>
             <div className={styles.locationSettings}>
@@ -246,6 +247,7 @@ export function ProductDetails({
                   { value: "uploaded", label: "Uploaded label" }
                 ]}
               />
+              <SupplierSkus productTitle={title} variations={variants} onChanged={onSaved} />
               <ProductBarcodes
                 productTitle={title}
                 productLabel={productLabel}

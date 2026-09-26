@@ -9,6 +9,8 @@ const querySchema = z.strictObject({
   q: z.string().trim().max(100).optional(),
   // "missing" lists only products with a variation that has no barcode.
   barcode: z.literal("missing").optional(),
+  // "missing" lists only products with a standard-label variation that has no country of origin in Shopify.
+  country: z.literal("missing").optional(),
   page: z
     .string()
     .regex(/^[1-9]\d{0,4}$/)
@@ -58,7 +60,7 @@ export async function GET(request: Request) {
   if (!query.success) {
     return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
   }
-  const { page, pageSize, q, barcode } = query.data
+  const { page, pageSize, q, barcode, country } = query.data
   const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly, fbaRows } =
     await inventoryContext(s.org.id)
   // Every Shopify product is listed, including those stocked only at locations that don't count toward the totals.
@@ -77,10 +79,20 @@ export async function GET(request: Request) {
     defaults.get(product.productId)?.productLabel === "uploaded"
       ? product.variants.filter((variant) => !barcodes.has(variant.variantId)).length
       : 0
-  const products = barcode ? grouped.filter((product) => unlabelled(product) > 0) : grouped
+  // Standard-label variations with no country of origin in Shopify, whose labels leave out "Made in". Undefined means
+  // the snapshot predates collecting it.
+  const countries = new Map(rows.map((row) => [row.variantId, row.countryOfOrigin]))
+  const withoutCountry = (product: (typeof grouped)[number]) =>
+    defaults.get(product.productId)?.productLabel === "uploaded"
+      ? 0
+      : product.variants.filter((variant) => countries.get(variant.variantId) === null).length
+  const products = grouped.filter(
+    (product) => (!barcode || unlabelled(product) > 0) && (!country || withoutCountry(product) > 0)
+  )
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
   const levels = rows.flatMap((row) => row.levels)
+  const supplierSkus = new Map(rows.map((row) => [row.variantId, row.supplierSku ?? null]))
   return Response.json(
     {
       observedAt: data?.observedAt ?? null,
@@ -91,7 +103,8 @@ export async function GET(request: Request) {
             row.productId === undefined ||
             row.amazonStockTarget === undefined ||
             row.caseQuantity === undefined ||
-            row.unitCostMinor === undefined
+            row.unitCostMinor === undefined ||
+            row.countryOfOrigin === undefined
         ) || levels.some((level) => !level.locationKind),
       // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
       // listings Amazon still reports with nothing on hand or inbound, are left out.
@@ -103,6 +116,7 @@ export async function GET(request: Request) {
       totalVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
       // Variations in this selection that need an uploaded label and don't have one.
       missingBarcodes: grouped.reduce((sum, product) => sum + unlabelled(product), 0),
+      missingCountries: grouped.reduce((sum, product) => sum + withoutCountry(product), 0),
       duplicateSkus: duplicateSkus(rows),
       products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map((product) => ({
         ...product,
@@ -111,7 +125,11 @@ export async function GET(request: Request) {
           ...variant,
           barcode: barcodes.get(variant.variantId) ?? null,
           // For the standard label; null until Amazon's FBA sync reports exactly one for the SKU.
-          fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null
+          fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null,
+          // Shopify's custom.supplier_sku, edited from the product's Edit panel.
+          supplierSku: supplierSkus.get(variant.variantId) ?? null,
+          // ISO code from Shopify, null when none is recorded, or left out before a sync collects it.
+          countryOfOrigin: countries.get(variant.variantId)
         }))
       }))
     },

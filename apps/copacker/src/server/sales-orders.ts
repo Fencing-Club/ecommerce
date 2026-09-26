@@ -1,4 +1,4 @@
-import { ProviderError } from "@repo/aisle/amazon"
+import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import {
   type AmazonSale,
   collectAmazonSales,
@@ -11,13 +11,16 @@ import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
 import { syncAmazonFees } from "./amazon-fees"
+import { syncInboundShipments } from "./amazon-shipments"
 import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
+import { syncExchangeRates } from "./exchange-rates"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
+import { syncShopifyBalance } from "./shopify-balance"
 import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 
@@ -30,12 +33,30 @@ export const salesHistoryDays = 365
 // The shape of stored orders. Raise it when the readers copy new fields; the next sync reads stored orders again.
 // 1: prices (Shopify line prices and discounts, Amazon item proceeds).
 // 2: Shopify payments, with Shopify Payments' processing fees.
-export const salesDataVersion = 2
+// 3: Amazon orders from Canada, Mexico and Brazil as well as the US.
+export const salesDataVersion = 3
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
 
 export class SalesSyncError extends Error {}
+
+// The marketplaces each seller's orders are read from, kept for a few hours: they rarely change, and Amazon allows few
+// requests for them.
+const marketplaceCache = new Map<string, { ids: string[]; at: number }>()
+export async function amazonSalesMarketplaces(
+  sellerId: string,
+  amazon: Pick<Amazon, "salesMarketplaces">,
+  now = Date.now()
+) {
+  const cached = marketplaceCache.get(sellerId)
+  if (cached && now - cached.at < 6 * 3600000) {
+    return cached.ids
+  }
+  const ids = await amazon.salesMarketplaces()
+  marketplaceCache.set(sellerId, { ids, at: now })
+  return ids
+}
 
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
 export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: SalesSource) {
@@ -192,6 +213,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
     let afterOrders: (() => Promise<void>) | null = null
     if (source === "shopify") {
+      // Shopify Payments' labels, bills and dispute fees are copied after the orders.
+      afterOrders = () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
       // Shopify access tokens last about an hour and a year of orders can take longer, so each period gets a current
       // token (renewed when it's about to expire) instead of one from the start of the sync.
       read = async (window) =>
@@ -212,9 +235,18 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       afterOrders = async () => {
         await syncLedger({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
         await syncAmazonFees({ orgId, externalAccountId: account, revision, amazon: client }, assertOwned)
+        // Neither fails the order sync: freight without its shipments' contents is spread over every unit, and amounts
+        // without rates stay unconverted until the next sync.
+        await syncInboundShipments({ orgId, externalAccountId: account, amazon: client }, assertOwned).catch((error) =>
+          console.error(JSON.stringify({ event: "inbound_shipments_failed", orgId, error: describeError(error) }))
+        )
+        await syncExchangeRates(orgId).catch((error) =>
+          console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
+        )
       }
+      const marketplaces = await amazonSalesMarketplaces(account, client)
       read = async (window) =>
-        (await collectAmazonSales(amazon, window, assertOwned)).map((order) => ({
+        (await collectAmazonSales(amazon, window, assertOwned, marketplaces)).map((order) => ({
           orderId: order.orderId,
           orderedAt: new Date(order.createdTime),
           data: order

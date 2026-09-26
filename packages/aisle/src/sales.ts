@@ -234,6 +234,7 @@ export async function collectShopifySales(
   return result
 }
 
+const usMarketplace = "ATVPDKIKX0DER"
 const amazonMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
 const amazonItem = z.object({
   orderItemId: id,
@@ -262,14 +263,16 @@ const amazonSale = z.object({
   orderItems: z.array(amazonItem).max(1000)
 })
 export type AmazonSale = z.infer<typeof amazonSale>
+// Orders from the given marketplaces (the US alone by default).
 export async function collectAmazonSales(
   client: Pick<Amazon, "request">,
   input: SalesWindow,
-  assertActive?: () => Promise<void>
+  assertActive?: () => Promise<void>,
+  marketplaceIds: readonly string[] = [usMarketplace]
 ) {
   const window = salesWindowSchema.parse(input)
   const query = new URLSearchParams({ createdAfter: window.from, createdBefore: window.to })
-  return searchAmazonSales(client, query, assertActive, (order) => {
+  return searchAmazonSales(client, query, marketplaceIds, assertActive, (order) => {
     // Amazon's end boundary is inclusive; use a half-open window consistently with Shopify.
     if (Date.parse(order.createdTime) === Date.parse(window.to)) {
       return false
@@ -284,19 +287,24 @@ export async function collectAmazonSales(
 export async function collectUpdatedAmazonSales(
   client: Pick<Amazon, "request">,
   updatedAfter: string,
-  assertActive?: () => Promise<void>
+  assertActive?: () => Promise<void>,
+  marketplaceIds: readonly string[] = [usMarketplace]
 ) {
   const query = new URLSearchParams({ lastUpdatedAfter: z.iso.datetime({ offset: true }).parse(updatedAfter) })
-  return searchAmazonSales(client, query, assertActive, () => true)
+  return searchAmazonSales(client, query, marketplaceIds, assertActive, () => true)
 }
 async function searchAmazonSales(
   client: Pick<Amazon, "request">,
   query: URLSearchParams,
+  marketplaceIds: readonly string[],
   assertActive: (() => Promise<void>) | undefined,
   keep: (order: AmazonSale) => boolean
 ) {
   const read = collection(assertActive)
-  query.set("marketplaceIds", "ATVPDKIKX0DER")
+  if (!marketplaceIds.length) {
+    throw new Error("Choose at least one Amazon marketplace")
+  }
+  query.set("marketplaceIds", marketplaceIds.join(","))
   // Proceeds carry the prices the Overview needs.
   query.set("includedData", "FULFILLMENT,PROCEEDS")
   query.set("maxResultsPerPage", "100")
@@ -312,7 +320,7 @@ async function searchAmazonSales(
       if (ids.size > 10000) {
         throw new Error("Sales order limit reached")
       }
-      if (order.salesChannel.marketplaceId !== "ATVPDKIKX0DER") {
+      if (!marketplaceIds.includes(order.salesChannel.marketplaceId ?? "")) {
         throw new Error("Amazon returned a different marketplace")
       }
       if (!keep(order)) {
@@ -454,5 +462,87 @@ export async function collectAmazonTransactions(
     unique(token, tokens)
     query.set("nextToken", token)
   }
+  return result
+}
+
+// Shopify Payments balance transactions: what Shopify added to or took from the payout balance, such as shipping
+// labels, the Shopify bill paid from payouts, and dispute fees. Payouts themselves are left out.
+const balanceMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
+const balanceTransaction = z
+  .object({
+    id,
+    type: z.string(),
+    test: z.boolean(),
+    transactionDate: z.iso.datetime({ offset: true }),
+    amount: balanceMoney,
+    fee: balanceMoney,
+    net: balanceMoney,
+    associatedOrder: z.object({ id }).nullable().optional(),
+    adjustmentReason: z.string().nullable().optional()
+  })
+  .loose()
+export const shopifyBalanceQuery = `query Balance($query:String!,$after:String){shopifyPaymentsAccount{balanceTransactions(first:100,after:$after,query:$query,hideTransfers:true){nodes{id type test transactionDate amount{amount currencyCode} fee{amount currencyCode} net{amount currencyCode} associatedOrder{id} adjustmentReason} pageInfo{hasNextPage endCursor}}}}`
+
+export type ShopifyBalanceTransaction = {
+  transactionId: string
+  type: string
+  processedAt: string
+  orderId: string | null
+  currency: string
+  amountMinor: number
+  feeMinor: number
+  netMinor: number
+  data: Record<string, unknown>
+}
+
+// Balance transactions processed in a window. A store without Shopify Payments has none.
+export async function collectShopifyBalanceTransactions(
+  client: Pick<Shopify, "graphql">,
+  input: SalesWindow,
+  assertActive?: () => Promise<void>
+) {
+  const window = salesWindowSchema.parse(input)
+  const read = collection(assertActive)
+  const result: ShopifyBalanceTransaction[] = [],
+    ids = new Set<string>(),
+    cursors = new Set<string>()
+  let after: string | null = null
+  do {
+    const account = z
+      .object({
+        shopifyPaymentsAccount: z
+          .object({ balanceTransactions: z.object({ nodes: z.array(balanceTransaction).max(100), pageInfo }) })
+          .nullable()
+      })
+      .parse(
+        await read(() =>
+          client.graphql(shopifyBalanceQuery, {
+            query: `processed_at:>='${window.from}' processed_at:<'${window.to}'`,
+            after
+          })
+        )
+      ).shopifyPaymentsAccount
+    if (!account) {
+      return result
+    }
+    for (const entry of account.balanceTransactions.nodes) {
+      unique(entry.id, ids)
+      if (entry.test) {
+        continue
+      }
+      result.push({
+        transactionId: entry.id,
+        type: entry.type,
+        processedAt: new Date(entry.transactionDate).toISOString(),
+        orderId: entry.associatedOrder?.id ?? null,
+        currency: entry.net.currencyCode,
+        amountMinor: minorUnits(entry.amount.amount),
+        feeMinor: minorUnits(entry.fee.amount),
+        netMinor: minorUnits(entry.net.amount),
+        data: entry
+      })
+    }
+    after = nextCursor(account.balanceTransactions.pageInfo, cursors)
+  } while (after !== null)
   return result
 }

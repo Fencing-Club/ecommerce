@@ -381,3 +381,86 @@ describe("FBA complete stock", () => {
     expect(calls).toHaveLength(100)
   })
 })
+
+describe("inbound shipment contents", () => {
+  it("adds up an FBA shipment's units by SKU across pages", async () => {
+    const { api, calls } = client([
+      {
+        payload: {
+          ItemData: [
+            { SellerSKU: "A", QuantityShipped: 10, QuantityReceived: 9 },
+            { SellerSKU: "B", QuantityShipped: 0, QuantityReceived: 4 }
+          ],
+          NextToken: "next"
+        }
+      },
+      {
+        payload: {
+          ItemData: [
+            { ShipmentId: "FBA1ABCDEF", SellerSKU: "A", QuantityShipped: 5 },
+            // Another shipment's items aren't counted.
+            { ShipmentId: "FBA2OTHER", SellerSKU: "A", QuantityShipped: 7 }
+          ],
+          NextToken: "again"
+        }
+      },
+      // Amazon hands out a token even with nothing left.
+      { payload: { ItemData: [], NextToken: "empty" } }
+    ])
+    expect(Object.fromEntries((await api.fbaShipmentUnits("FBA1ABCDEF"))!)).toEqual({ A: 15, B: 4 })
+    expect(calls[0]?.pathname).toBe("/fba/inbound/v0/shipments/FBA1ABCDEF/items")
+    expect(calls[1]?.pathname).toBe("/fba/inbound/v0/shipmentItems")
+    expect(calls[1]?.searchParams.get("QueryType")).toBe("NEXT_TOKEN")
+    expect(calls[1]?.searchParams.get("NextToken")).toBe("next")
+    expect(calls).toHaveLength(3)
+  })
+
+  it("counts an AWD shipment's units from its cartons, and cartons within pallets", async () => {
+    const product = (sku: string, quantity: number) => ({ sku, quantity, attributes: [] })
+    const { api, calls } = client([
+      {
+        shipmentContainerQuantities: [
+          { count: 2, distributionPackage: { type: "CASE", contents: { products: [product("A", 80)], packages: [] } } },
+          {
+            count: 1,
+            distributionPackage: {
+              type: "PALLET",
+              contents: {
+                products: [],
+                packages: [
+                  { count: 3, distributionPackage: { type: "CASE", contents: { products: [product("B", 10)] } } }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ])
+    expect(Object.fromEntries((await api.awdShipmentUnits("STAR-1"))!)).toEqual({ A: 160, B: 30 })
+    expect(calls[0]?.pathname).toBe("/awd/2024-05-09/inboundShipments/STAR-1")
+  })
+
+  it("returns null for a shipment Amazon has no record of", async () => {
+    const { api } = client([
+      Response.json({ errors: [{ code: "NotFound", message: "No shipment" }] }, { status: 404 }),
+      Response.json({ errors: [{ code: "InvalidInput", message: "Unknown shipment" }] }, { status: 400 })
+    ])
+    expect(await api.awdShipmentUnits("STAR-X")).toBeNull()
+    expect(await api.fbaShipmentUnits("FBA1X")).toBeNull()
+  })
+
+  it("lists the North American marketplaces the seller sells in, the US first", async () => {
+    const { api } = client([
+      {
+        payload: [
+          { marketplace: { id: "A1AM78C64UM0Y8" }, participation: { isParticipating: true } },
+          { marketplace: { id: "ATVPDKIKX0DER" }, participation: { isParticipating: true } },
+          { marketplace: { id: "A2Q3Y263D00KWC" }, participation: { isParticipating: false } },
+          // Non-Amazon (multi-channel fulfillment) isn't a sales marketplace.
+          { marketplace: { id: "A2ZV50J4W1RKNI" }, participation: { isParticipating: true } }
+        ]
+      }
+    ])
+    expect(await api.salesMarketplaces()).toEqual(["ATVPDKIKX0DER", "A1AM78C64UM0Y8"])
+  })
+})

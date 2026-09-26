@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
+import { ProviderError } from "@repo/aisle/amazon"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -8,6 +9,8 @@ const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 const amazon = vi.hoisted(() => ({
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  // The seller also sells in Canada.
+  salesMarketplaces: async () => ["ATVPDKIKX0DER", "A2EUQ1WTGCTBG2"],
   subscribeNotifications: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
   notificationDestination: vi.fn<(...args: unknown[]) => Promise<string>>()
 }))
@@ -193,6 +196,7 @@ describe("Amazon order updates", () => {
     await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
     const query = new URL(String(amazon.request.mock.calls[0]?.[1]), "https://amazon.test").searchParams
     expect(query.get("lastUpdatedAfter")).toBe("2026-09-25T06:55:00.000Z")
+    expect(query.get("marketplaceIds")).toBe("ATVPDKIKX0DER,A2EUQ1WTGCTBG2")
     const stored = await database.select().from(tables.salesOrders)
     expect(
       stored
@@ -224,6 +228,16 @@ describe("Amazon order updates", () => {
     expect(amazon.request).not.toHaveBeenCalled()
   })
 
+  it("comes back after Amazon's interval when order reads are throttled, instead of waiting in the worker", async () => {
+    await storedSync()
+    amazon.request.mockRejectedValue(new ProviderError(429, null, "Amazon request failed (429)", 5000))
+    const attempt = amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
+    await expect(attempt).rejects.toBeInstanceOf(PollAgain)
+    await expect(attempt).rejects.toMatchObject({ options: { delayMs: 180000 } })
+    expect(amazon.request).toHaveBeenCalledTimes(1)
+    expect((await database.select().from(tables.salesSyncs))[0]?.coveredTo).toEqual(coveredTo)
+  })
+
   it("waits for a queued full sync instead of writing beside it", async () => {
     await storedSync({ status: "queued" })
     await expect(amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)).rejects.toBeInstanceOf(
@@ -252,7 +266,19 @@ describe("Amazon notification subscriptions", () => {
     amazon.notificationDestination.mockResolvedValue("dest")
     await amazonSubscribeJob({ orgId: buyerId }, owned)
     expect(amazon.notificationDestination).toHaveBeenCalledWith(amazonQueueArn(queueUrl), "copacker")
-    expect(amazon.subscribeNotifications.mock.calls).toEqual(amazonNotificationTypes.map((type) => [type, "dest"]))
+    expect(amazon.subscribeNotifications.mock.calls).toEqual([
+      [
+        "ORDER_CHANGE",
+        "dest",
+        {
+          eventFilter: {
+            eventFilterType: "ORDER_CHANGE",
+            orderChangeTypes: ["OrderStatusChange", "BuyerRequestedChange"]
+          }
+        }
+      ],
+      ["FBA_INVENTORY_AVAILABILITY_CHANGES", "dest", undefined]
+    ])
     await amazonSubscribeJob({ orgId: otherBuyerId }, owned)
     expect(amazon.subscribeNotifications).toHaveBeenCalledTimes(amazonNotificationTypes.length)
   })
@@ -275,6 +301,17 @@ describe("Amazon notification subscriptions", () => {
       error: { message: "Amazon request failed (400): InvalidInput bad ARN" }
     })
     logged.mockRestore()
+  })
+
+  it("says which notification type Amazon refused", async () => {
+    vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", queueUrl)
+    amazon.notificationDestination.mockResolvedValue("dest")
+    amazon.subscribeNotifications
+      .mockResolvedValueOnce(true)
+      .mockRejectedValueOnce(new Error("Amazon request failed (400)"))
+    await expect(amazonSubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow(
+      "Amazon FBA_INVENTORY_AVAILABILITY_CHANGES subscription failed: Amazon request failed (400)"
+    )
   })
 
   it("skips subscribing when no queue is configured", async () => {

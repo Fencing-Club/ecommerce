@@ -8,6 +8,7 @@ import { createContext, use, useState } from "react"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
 import { ProductDetails } from "@/components/product-details"
+import { ProductLabelBulk } from "@/components/product-label-bulk"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -40,12 +41,19 @@ type ProductsPage = {
   totalProducts: number
   totalVariants: number
   missingBarcodes: number
+  missingCountries: number
   duplicateSkus: DuplicateSku[]
   products: ListedProduct[]
   amazonOnly: AmazonOnlyStock[]
 }
 // A product on the page with the details and labels Copacker keeps for it.
-type ListedVariant = InventoryVariant & { barcode: ProductBarcode | null; fnsku: string | null }
+type ListedVariant = InventoryVariant & {
+  barcode: ProductBarcode | null
+  fnsku: string | null
+  supplierSku: string | null
+  // ISO code from Shopify; null when none is recorded, left out before a sync collects it.
+  countryOfOrigin?: string | null
+}
 // A SKU more than one Shopify variation uses.
 type DuplicateSku = { sku: string; variants: { variantId: string; product: string; variant: string | null }[] }
 type ListedProduct = Omit<InventoryProduct, "variants"> & { defaults: ProductDefaults; variants: ListedVariant[] }
@@ -55,6 +63,7 @@ type ProductsQuery = {
   pageSize: number
   q: string
   missingBarcode: boolean
+  missingCountry: boolean
   // Part of the cache key so a finished sync of any source loads fresh results.
   syncKey: string
 }
@@ -63,13 +72,14 @@ const productsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
     inventoryProducts: build.query<ProductsPage, ProductsQuery>({
-      query: ({ page, pageSize, q, missingBarcode }) => ({
+      query: ({ page, pageSize, q, missingBarcode, missingCountry }) => ({
         url: "inventory/products",
         params: {
           page,
           pageSize,
           ...(q && { q }),
-          ...(missingBarcode && { barcode: "missing" })
+          ...(missingBarcode && { barcode: "missing" }),
+          ...(missingCountry && { country: "missing" })
         }
       }),
       keepUnusedDataFor: 60
@@ -233,6 +243,10 @@ function NoLabel({ children = "No label uploaded" }: { children?: string }) {
 const needsLabel = (product: ListedProduct, variant: ListedVariant) =>
   product.defaults.productLabel === "uploaded" && !variant.barcode
 
+// Whether a variation's standard label leaves out "Made in" because Shopify has no country of origin for it.
+const needsCountry = (product: ListedProduct, variant: ListedVariant) =>
+  product.defaults.productLabel === "standard" && !variant.barcode && variant.countryOfOrigin === null
+
 function Locations({ variant }: { variant: InventoryVariant }) {
   if (variant.levels.length <= 1 || variant.stock !== "tracked") {
     return null
@@ -318,6 +332,7 @@ function Actions({ product, className }: { product: ListedProduct; className: st
           variantId: variant.variantId,
           title: variant.title,
           amazonStockTarget: variant.amazonStockTarget,
+          supplierSku: variant.supplierSku,
           barcode: variant.barcode,
           fnsku: variant.fnsku
         }))}
@@ -342,6 +357,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
               {stockNotes[only.stock]}
             </span>
             {needsLabel(product, only) && <NoLabel />}
+            {needsCountry(product, only) && <WarningNote>No country of origin</WarningNote>}
             <Locations variant={only} />
             <Actions product={product} className={styles.actions} />
           </span>
@@ -352,6 +368,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
   }
   const count = product.variants.length
   const unlabelled = product.variants.filter((variant) => needsLabel(product, variant)).length
+  const noCountry = product.variants.filter((variant) => needsCountry(product, variant)).length
   return (
     <Collapsible render={<li className={styles.product} />}>
       <CollapsibleTrigger className={styles.productRow}>
@@ -369,6 +386,13 @@ function ProductRow({ product }: { product: ListedProduct }) {
                 ? "No labels uploaded"
                 : `${unlabelled} ${unlabelled === 1 ? "variation needs its label uploaded" : "variations need their labels uploaded"}`}
             </NoLabel>
+          )}
+          {noCountry > 0 && (
+            <WarningNote>
+              {noCountry === count
+                ? "No country of origin"
+                : `${noCountry} ${noCountry === 1 ? "variation has" : "variations have"} no country of origin`}
+            </WarningNote>
           )}
         </span>
         <Quantities item={product} />
@@ -388,6 +412,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
                   {product.stock === variant.stock ? null : stockNotes[variant.stock]}
                 </span>
                 {needsLabel(product, variant) && <NoLabel />}
+                {needsCountry(product, variant) && <WarningNote>No country of origin</WarningNote>}
                 <Locations variant={variant} />
               </span>
               <Quantities item={variant} />
@@ -435,6 +460,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(25)
   const [missingBarcode, setMissingBarcode] = useState(false)
+  const [missingCountry, setMissingCountry] = useState(false)
   const {
     currentData,
     data: previous,
@@ -443,7 +469,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
     isError,
     error,
     refetch
-  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, missingBarcode, syncKey })
+  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, missingBarcode, missingCountry, syncKey })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
 
@@ -464,7 +490,11 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
   return (
     <RefreshContext value={() => void refetch()}>
       <div className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-        {data.needsResync && <p className={styles.summary}>Sync again to load product photos and location types.</p>}
+        {data.needsResync && (
+          <p className={styles.summary}>
+            Sync Shopify again to load the latest product details, such as country of origin.
+          </p>
+        )}
         <div className={styles.toolbar}>
           <Field>
             <FieldLabel htmlFor="inventory-search">Search products</FieldLabel>
@@ -494,14 +524,22 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
               : `${data.missingBarcodes} variations need their labels uploaded, such as ones with size measurements. Add them with Upload barcodes or from each product’s Edit panel.`}
           </WarningNote>
         )}
+        {data.missingCountries > 0 && (
+          <WarningNote>
+            {data.missingCountries === 1
+              ? "1 variation has no country of origin in Shopify, so its label leaves out “Made in”. Add it to the item in Shopify, then sync."
+              : `${data.missingCountries} variations have no country of origin in Shopify, so their labels leave out “Made in”. Add it to each item in Shopify, then sync.`}
+          </WarningNote>
+        )}
         <div className={styles.listHeader}>
           <p className={styles.summary} aria-live="polite">
-            {q || missingBarcode
+            {q || missingBarcode || missingCountry
               ? `${data.totalProducts} products match`
               : `${data.totalProducts} products, ${data.totalVariants} variations`}
           </p>
           <div className={styles.listActions}>
             <BulkBarcodeUpload onChanged={() => void refetch()} />
+            <ProductLabelBulk onChanged={() => void refetch()} />
             <Field orientation="horizontal" className={styles.pageSize}>
               <Checkbox
                 id="inventory-missing-barcode"
@@ -512,6 +550,17 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
                 }}
               />
               <FieldLabel htmlFor="inventory-missing-barcode">Needs a label only</FieldLabel>
+            </Field>
+            <Field orientation="horizontal" className={styles.pageSize}>
+              <Checkbox
+                id="inventory-missing-country"
+                checked={missingCountry}
+                onCheckedChange={(checked) => {
+                  setMissingCountry(checked)
+                  setPage(1)
+                }}
+              />
+              <FieldLabel htmlFor="inventory-missing-country">No country only</FieldLabel>
             </Field>
             <Field orientation="horizontal" className={styles.pageSize}>
               <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
@@ -535,7 +584,9 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
         </div>
         {data.products.length === 0 ? (
           <p className={styles.summary}>
-            {q || missingBarcode ? "No products match." : "No inventory was reported for this selection."}
+            {q || missingBarcode || missingCountry
+              ? "No products match."
+              : "No inventory was reported for this selection."}
           </p>
         ) : (
           <ul className={styles.list} aria-busy={isFetching}>

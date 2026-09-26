@@ -25,7 +25,10 @@ const provider = vi.hoisted(() => ({
     listings: vi.fn<(...args: never[]) => Promise<unknown>>(),
     stock: vi.fn<(...args: never[]) => Promise<unknown>>(),
     fbaStock: vi.fn<(...args: never[]) => Promise<unknown>>(),
-    awdStock: vi.fn<(...args: never[]) => Promise<unknown>>()
+    awdStock: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    salesMarketplaces: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaShipmentUnits: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    awdShipmentUnits: vi.fn<(...args: never[]) => Promise<unknown>>()
   }
 }))
 vi.mock("../src/server/connections", () => ({
@@ -178,6 +181,9 @@ beforeEach(async () => {
   vi.resetAllMocks()
   context.actor = buyer
   provider.amazonFor.mockResolvedValue(provider.api)
+  provider.api.salesMarketplaces.mockResolvedValue(["ATVPDKIKX0DER"])
+  provider.api.fbaShipmentUnits.mockResolvedValue(null)
+  provider.api.awdShipmentUnits.mockResolvedValue(null)
   await pg.exec("TRUNCATE organizations, jobs CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
@@ -2844,6 +2850,8 @@ describe("stored sales orders", () => {
     // 60 days of history (no read_all_orders) is five 14-day periods, each with its own client.
     expect(graphql).toHaveBeenCalledTimes(5)
     expect(provider.shopifyFor).toHaveBeenCalledTimes(5)
+    // Without the payouts permission, labels and Shopify charges wait for the store to reconnect.
+    expect(sync?.feesErrorCode).toBe("reconnect")
   })
 
   it("starts a sync again when the job of one still marked queued has failed", async () => {

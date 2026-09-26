@@ -67,6 +67,15 @@ describe("Amazon notification setup", () => {
       body: { payloadVersion: "1.0", destinationId: "dest" }
     })
     expect(created.calls[0]!.url.pathname).toBe("/notifications/v1/subscriptions/ORDER_CHANGE")
+    const filtered = client([Response.json({ payload: {} })], seller)
+    await filtered.api.subscribeNotifications("ORDER_CHANGE", "dest", {
+      eventFilter: { eventFilterType: "ORDER_CHANGE" }
+    })
+    expect(filtered.calls[0]?.body).toEqual({
+      payloadVersion: "1.0",
+      destinationId: "dest",
+      processingDirective: { eventFilter: { eventFilterType: "ORDER_CHANGE" } }
+    })
 
     const conflict = () => new Response(null, { status: 409 })
     const same = client([conflict(), Response.json({ payload: { destinationId: "dest" } })], seller)
@@ -83,7 +92,15 @@ describe("Amazon rejections", () => {
     const { api } = client(
       [
         Response.json(
-          { errors: [{ code: "InvalidInput", message: "Destination already exists", details: "" }] },
+          {
+            errors: [
+              {
+                code: "InvalidInput",
+                message: "Destination already exists",
+                details: "EventFilter payload failed to validate"
+              }
+            ]
+          },
           { status: 400 }
         ),
         new Response("not json", { status: 500 })
@@ -91,7 +108,7 @@ describe("Amazon rejections", () => {
       grantless
     )
     await expect(api.request("GET", "/notifications/v1/destinations")).rejects.toThrow(
-      "Amazon request failed (400): InvalidInput Destination already exists"
+      "Amazon request failed (400): InvalidInput Destination already exists EventFilter payload failed to validate"
     )
     await expect(api.request("GET", "/notifications/v1/destinations")).rejects.toThrow(
       /^Amazon request failed \(500\)$/

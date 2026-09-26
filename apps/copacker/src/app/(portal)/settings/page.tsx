@@ -1,10 +1,13 @@
+import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import { CheckCircle2 } from "lucide-react"
+import { ActionButton } from "@/components/actions"
 import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { TextField } from "@/components/form-fields"
 import { InventoryLocations } from "@/components/inventory-locations"
+import { MonthlyCostForm } from "@/components/monthly-costs"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
@@ -16,8 +19,11 @@ import { connections, contacts, supplierProfiles } from "@/db/schema"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
 import { readLocationMappings } from "@/server/inventory-location-settings"
+import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
+import { reportingCurrency } from "@/server/overview-sales"
 import { pushToBottom } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
+import { srOnly } from "@/styles/utilities.css"
 
 const providers = [
   {
@@ -36,13 +42,16 @@ const providers = [
 
 export default async function Settings() {
   const s = await session()
-  const [linked, saved, [profile]] = await Promise.all([
+  const buyer = s.org.kind === "buyer"
+  const [linked, saved, [profile], costs, currency] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
       .from(connections)
       .where(eq(connections.orgId, s.org.id)),
     db().select().from(contacts).where(eq(contacts.orgId, s.org.id)),
-    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id))
+    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id)),
+    buyer ? listMonthlyCosts(s.org.id) : Promise.resolve([]),
+    buyer ? reportingCurrency(s.org.id) : Promise.resolve("USD")
   ])
 
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
@@ -141,6 +150,48 @@ export default async function Settings() {
         </Card>
       )}
 
+      {buyer && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly costs</CardTitle>
+            <CardDescription>
+              Costs you pay every month that Shopify and Amazon don’t report, such as apps billed to a card. The
+              Overview takes each month’s share off gross profit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+            {costs.length > 0 ? (
+              <ul className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
+                {costs.map((cost) => (
+                  <li
+                    key={cost.id}
+                    className={sx({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3 })}
+                  >
+                    <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
+                      <span className={sx({ text: "sm", fontWeight: "medium" })}>{cost.name}</span>
+                      <span className={sx({ text: "xs", color: "muted" })}>{costDetails(cost)}</span>
+                    </span>
+                    <span className={sx({ display: "flex", alignItems: "center", gap: 3 })}>
+                      <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
+                        {money(cost.amountMinor, cost.currency)} a month
+                      </span>
+                      {s.role === "owner" && (
+                        <ActionButton action="monthlyCost.delete" data={{ id: cost.id }} variant="outline" size="sm">
+                          Remove<span className={srOnly}> {cost.name}</span>
+                        </ActionButton>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={sx({ text: "sm", color: "muted" })}>No monthly costs yet.</p>
+            )}
+            {s.role === "owner" && <MonthlyCostForm currency={currency} />}
+          </CardContent>
+        </Card>
+      )}
+
       {s.org.kind === "supplier" && (
         <Card>
           <CardHeader>
@@ -160,4 +211,23 @@ export default async function Settings() {
       <SavedAddresses contacts={saved} supplier={s.org.kind === "supplier"} locations={ownLocations} />
     </>
   )
+}
+
+// Which channel a monthly cost is for and when it's paid, such as "Amazon, since Jan 5, 2026".
+function costDetails(cost: MonthlyCost) {
+  const date = (day: string) =>
+    new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC"
+    })
+  const channel = cost.channel ? monthlyCostChannels[cost.channel] : "The whole business"
+  if (cost.startsOn && cost.endsOn) {
+    return `${channel}, ${date(cost.startsOn)} to ${date(cost.endsOn)}`
+  }
+  if (cost.startsOn) {
+    return `${channel}, since ${date(cost.startsOn)}`
+  }
+  return cost.endsOn ? `${channel}, until ${date(cost.endsOn)}` : channel
 }

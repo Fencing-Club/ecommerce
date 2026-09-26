@@ -1,6 +1,6 @@
 import { money, orderTotal } from "@repo/aisle"
 import { and, desc, eq } from "drizzle-orm"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight, Download } from "lucide-react"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
@@ -15,6 +15,7 @@ import {
 } from "@/components/common"
 import { LandedCostForm } from "@/components/landed-costs"
 import { ClosePurchaseOrder, DeleteDraftOrder } from "@/components/order-actions"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
@@ -25,6 +26,7 @@ import { db } from "@/db"
 import { documents, events, orderRevisions, shipments } from "@/db/schema"
 import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
+import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
 import { orderWorkflow } from "@/server/workflow"
@@ -49,8 +51,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const editable = workflow.shipments.some((row) => row.editable)
   const remaining = workflow.items.some((item) => item.remainingPieces > 0)
   const { currency } = order.data
-  const landed = s.org.kind === "buyer" ? await orderLandedCosts(id) : []
-  const landedTotal = landed.reduce((sum, cost) => sum + cost.amountMinor, 0)
+  const [landed, freight] =
+    s.org.kind === "buyer"
+      ? await Promise.all([
+          orderLandedCosts(id),
+          amazonFreightByOrder(s.org.id).then((rows) =>
+            rows.filter((row) => row.orderId === id && row.currency === currency)
+          )
+        ])
+      : [[], []]
+  // Amazon's freight for this PO's shipments counts with the costs recorded here.
+  const landedTotal =
+    landed.reduce((sum, cost) => sum + cost.amountMinor, 0) + freight.reduce((sum, row) => sum + row.freightMinor, 0)
   const markup = landedMarkup(order.data, landedTotal)
   const labels = docs.filter((d) => d.kind === "product_label" || d.kind === "purchase_order")
   // Lines the supplier can't label yet. Closed POs no longer need them.
@@ -220,8 +232,36 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <Card>
             <CardHeader>
               <CardTitle>Product labels</CardTitle>
+              <CardDescription>
+                Copacker adds each line’s uploaded barcode or standard label. Update labels after changing a barcode,
+                title, FNSKU or country of origin.
+              </CardDescription>
             </CardHeader>
             <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+              <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
+                {s.org.kind === "buyer" && order.status !== "closed" && (
+                  <ActionButton
+                    action="order.labels"
+                    data={{ id }}
+                    variant="outline"
+                    size="sm"
+                    successMessage="Labels are up to date."
+                  >
+                    Update labels
+                  </ActionButton>
+                )}
+                {docs.some((doc) => doc.kind === "product_label") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    nativeButton={false}
+                    render={<a href={`/api/orders/${id}/labels`} download aria-label="Download all product labels" />}
+                  >
+                    <Download data-icon="inline-start" />
+                    Download all labels
+                  </Button>
+                )}
+              </div>
               {s.org.kind === "buyer" && <Upload orderId={id} kind="product_label" items={order.data.items} />}
               {labels.length > 0 && <DocumentList documents={labels} />}
             </CardContent>
@@ -263,12 +303,34 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <CardTitle>Landed costs</CardTitle>
                 <CardDescription>
                   Freight, duty and other costs of getting these goods to you. Only your team sees them. The Overview
-                  adds them to your products’ unit costs.
+                  adds them to your products’ unit costs. Freight Amazon charges for this PO’s shipments is added
+                  automatically.
                 </CardDescription>
               </CardHeader>
               <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                {landed.length > 0 && (
+                {landed.length + freight.length > 0 && (
                   <ul className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
+                    {freight.map((row) => (
+                      <li
+                        key={row.reference}
+                        className={sx({
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 3
+                        })}
+                      >
+                        <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
+                          <span className={sx({ text: "sm", fontWeight: "medium" })}>Amazon inbound freight</span>
+                          <span className={sx({ text: "xs", color: "muted" })}>
+                            Shipment {row.reference}, from Amazon’s charges
+                          </span>
+                        </span>
+                        <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
+                          {money(row.freightMinor, currency)}
+                        </span>
+                      </li>
+                    ))}
                     {landed.map((cost) => (
                       <li
                         key={cost.id}

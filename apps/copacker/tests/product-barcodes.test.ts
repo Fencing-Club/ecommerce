@@ -35,14 +35,25 @@ const shopify = vi.hoisted(() => ({
     async (ids) => ids.map((id) => ({ id, inventoryItem: { countryCodeOfOrigin: "PK" } }))
   )
 }))
+// Amazon lists only GLOVE-6 when Copacker asks for FNSKUs it hasn't synced.
+const amazon = vi.hoisted(() => ({
+  listings: vi.fn<(sellerId: string, skus: string[]) => Promise<Map<string, { asin: string; fnsku: string }>>>(
+    async (_sellerId, skus) =>
+      new Map(skus.filter((sku) => sku === "GLOVE-6").map((sku) => [sku, { asin: "B00GLOVE06", fnsku: "X00GLOVE06" }]))
+  )
+}))
 vi.mock("../src/server/connections", async (original) => ({
   ...(await original<typeof import("../src/server/connections")>()),
-  shopifyFor: async () => shopify
+  shopifyFor: async () => shopify,
+  amazonFor: async () => amazon
 }))
 
 import { DELETE, GET, POST } from "../src/app/api/inventory/barcodes/route"
+import { POST as downloadLabels } from "../src/app/api/inventory/labels/route"
+import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/app/api/inventory/product-labels/route"
+import { GET as orderLabels } from "../src/app/api/orders/[id]/labels/route"
 import { deleteDraftOrder } from "../src/server/orders"
-import { attachProductBarcodes, labelFileName } from "../src/server/product-barcodes"
+import { attachProductBarcodes, labelFileName, refreshProductLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -346,6 +357,98 @@ describe("deleting draft POs", () => {
     await expect(deleteDraftOrder(actor(supplierOrgId, "supplier"), sent.id)).rejects.toThrow(
       "A buyer workspace is required"
     )
+  })
+})
+
+describe("labels in bulk", () => {
+  const product = "gid://shopify/Product/1"
+  const json = (url: string, method: string, body: unknown) =>
+    new Request(url, {
+      method,
+      headers: { origin: appUrl(), "content-type": "application/json" },
+      body: JSON.stringify(body)
+    })
+  const pages = async (response: Response) =>
+    (await PDFDocument.load(new Uint8Array(await response.arrayBuffer()))).getPageCount()
+
+  it("sets the label type for several products and downloads their labels as one PDF", async () => {
+    expect(await (await listLabelTypes()).json()).toEqual([
+      { productId: product, title: "Foil cord", variations: 4, productLabel: "standard" }
+    ])
+    // CORD-1 has a synced FNSKU, GLOVE-6 an upload, and the two SHARED variations print their SKU.
+    const all = await downloadLabels(json(`${appUrl()}/api/inventory/labels`, "POST", { productIds: [product] }))
+    expect(all.status).toBe(200)
+    expect(all.headers.get("x-skipped-labels")).toBe("0")
+    expect(await pages(all)).toBe(4)
+
+    const set = await setLabelTypes(
+      json(`${appUrl()}/api/inventory/product-labels`, "PATCH", { productIds: [product], productLabel: "uploaded" })
+    )
+    expect(await set.json()).toEqual({ updated: 1 })
+    // Only GLOVE-6 has an uploaded label now; the rest are left out.
+    const uploadedOnly = await downloadLabels(
+      json(`${appUrl()}/api/inventory/labels`, "POST", { productIds: [product] })
+    )
+    expect(uploadedOnly.headers.get("x-skipped-labels")).toBe("3")
+    expect(await pages(uploadedOnly)).toBe(1)
+    await setLabelTypes(
+      json(`${appUrl()}/api/inventory/product-labels`, "PATCH", { productIds: [product], productLabel: "standard" })
+    )
+  })
+
+  it("looks up an FNSKU Amazon lists when the stock sync doesn't have it", async () => {
+    await DELETE(new Request(barcodeUrl(variantB), { method: "DELETE", headers: { origin: appUrl() } }))
+    const glove = await GET(new Request(barcodeUrl(variantB)))
+    expect(glove.status).toBe(200)
+    expect(amazon.listings).toHaveBeenCalledWith("SELLER1", ["GLOVE-6"])
+  })
+
+  it("refreshes labels Copacker added, keeping PO uploads and released lines, and combines them", async () => {
+    const standard = randomUUID()
+    const released = randomUUID()
+    const uploaded = randomUUID()
+    const po = await order([
+      { ...item(standard, variantA), fnsku: "X00CORD001" },
+      { ...item(released, variantA), fnsku: "X00CORD001" },
+      item(uploaded, variantB)
+    ])
+    const manualKey = `orders/${po.id}/manual.pdf`
+    storage.files.set(manualKey, await pdf(1))
+    await database.insert(tables.documents).values({
+      orderId: po.id,
+      kind: "product_label",
+      itemId: uploaded,
+      objectKey: manualKey,
+      name: "manual.pdf",
+      bytes: 1,
+      orderRevision: 1,
+      uploadedBy: "user"
+    })
+    await attachProductBarcodes(actor(buyerId, "buyer"), po.id)
+    const before = await labels(po.id)
+    await database.insert(tables.shipments).values({
+      orderId: po.id,
+      orderRevision: 1,
+      status: "ready",
+      packing: { cartons: [{ cartonId: "1", items: [{ itemId: released, pieces: 10 }] }] } as never
+    })
+
+    expect(await refreshProductLabels(actor(buyerId, "buyer"), po.id)).toEqual({ updated: 1 })
+    const current = (await labels(po.id)).filter((label) => label.outdated === 0)
+    const byItem = (itemId: string) => current.filter((label) => label.itemId === itemId)
+    expect(byItem(standard)).toHaveLength(1)
+    expect(byItem(standard)[0]!.id).not.toBe(before.find((label) => label.itemId === standard)!.id)
+    expect(byItem(released)[0]!.id).toBe(before.find((label) => label.itemId === released)!.id)
+    expect(byItem(uploaded)[0]!.name).toBe("manual.pdf")
+
+    const combined = await orderLabels(new Request(`${appUrl()}/api/orders/${po.id}/labels`), {
+      params: Promise.resolve({ id: po.id })
+    })
+    expect(combined.status).toBe(200)
+    expect(await pages(combined)).toBe(3)
+
+    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, po.id))
+    await expect(refreshProductLabels(actor(buyerId, "buyer"), po.id)).rejects.toThrow("This PO is closed")
   })
 })
 

@@ -714,3 +714,72 @@ export function Purchasing({ purchasing }: { purchasing: Overview["purchasing"] 
     </Card>
   )
 }
+
+// Gross profit line by line: sales with a unit cost, then everything taken off them over the last 30 days.
+export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
+  const { profit } = sales
+  const currency = profit.currency
+  const format = (minor: number) => formatMoney([{ minor, currency: currency! }])
+  const share = (minor: number) =>
+    profit.costedRevenueMinor > 0 ? `${Math.round((Math.abs(minor) / profit.costedRevenueMinor) * 100)}%` : ""
+  const lines = currency
+    ? [
+        { key: "cost", label: "Cost of goods", minor: -profit.costMinor },
+        { key: "fees", label: "Order fees (Amazon and Shopify Payments)", minor: -profit.feesMinor },
+        ...profit.charges.toSorted((a, b) => a.minor - b.minor)
+      ]
+    : []
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className={styles.sectionTitle}>
+          <Wallet aria-hidden />
+          Gross profit
+        </CardTitle>
+        <CardDescription>The last 30 days, from sales with a unit cost to what’s left.</CardDescription>
+      </CardHeader>
+      <CardContent className={styles.stack}>
+        {currency && profit.costedRevenueMinor > 0 ? (
+          <>
+            <div className={styles.stages}>
+              <div className={styles.stage}>
+                <span className={styles.stepTitle}>Sales</span>
+                <span className={styles.stageCount}>{format(profit.costedRevenueMinor)}</span>
+              </div>
+              {lines.map((line) => (
+                <div key={line.key} className={styles.stage}>
+                  <span className={styles.stageName}>{line.label}</span>
+                  <span className={styles.profitLine}>
+                    <span className={styles.note}>{share(line.minor)}</span>
+                    <span className={styles.stageCount}>{format(line.minor)}</span>
+                  </span>
+                </div>
+              ))}
+              <div className={styles.stage}>
+                <span className={styles.stepTitle}>Gross profit</span>
+                <span className={styles.profitLine}>
+                  {profit.margin !== null && <span className={styles.note}>{formatPercentShort(profit.margin)}</span>}
+                  <span className={styles.stageCount}>{format(profit.profitMinor)}</span>
+                </span>
+              </div>
+            </div>
+            <p className={styles.note}>
+              Refunds and platform charges are counted when they’re posted. Amazon’s inbound freight is shared by the
+              units of each shipment it paid for. Apps, your plan and other costs billed to a card come from your{" "}
+              <Link href="/settings">monthly costs</Link>. Shipping labels bought on your Shopify bill aren’t included,
+              because Shopify doesn’t share them unless the bill is paid from Shopify Payments payouts.
+              {profit.revenueMinor > profit.costedRevenueMinor &&
+                ` ${format(profit.revenueMinor - profit.costedRevenueMinor)} of sales without a unit cost aren’t included.`}
+            </p>
+          </>
+        ) : (
+          <p className={styles.note}>Gross profit appears once orders have prices and products have unit costs.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function formatPercentShort(value: number) {
+  return `${Math.round(value * 100)}%`
+}

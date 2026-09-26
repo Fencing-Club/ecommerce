@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm"
 import { db } from "@/db"
 import { addDays, zonedStart } from "@/lib/time-zone"
+import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import type { SalesSource } from "./sales-orders"
 
 // Money here is net product sales: what customers paid for the products, after discounts, without tax, shipping or
@@ -81,6 +82,20 @@ function rows(result: unknown) {
 
 const count = (value: unknown) => (value === null || value === undefined ? 0 : Number(value))
 
+// The currency the Overview reports in: the Shopify store's, or US dollars without Shopify sales. Amounts in other
+// currencies are converted at each day's rate (see syncExchangeRates).
+export async function reportingCurrency(orgId: string) {
+  const result = await db().execute(sql`
+    select o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}' as currency
+    from sales_orders o
+    where o."orgId" = ${orgId} and o.source = 'shopify'
+      and o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}' is not null
+    order by o."orderedAt" desc
+    limit 1`)
+  const currency = rows(result)[0]?.currency
+  return typeof currency === "string" ? currency : "USD"
+}
+
 export type DayRow = {
   source: SalesSource
   date: string
@@ -92,17 +107,29 @@ export type DayRow = {
   currency: string | null
 }
 
-// Orders, units and sales per source and day in the store's time zone since `since`, for the connected accounts.
-export async function salesByDay(orgId: string, accounts: Account[], since: Date, timeZone: string) {
+// An order's sales converted to `currency` at the rate on the day it was placed, and whether it has prices that can be
+// converted (an order in a currency without rates counts as unpriced).
+function converted(currency: string) {
+  const rate = sql`fx_rate(${orderCurrency}, ${currency}, o."orderedAt")`
+  return {
+    rate,
+    revenue: sql`(case when ${orderRevenue} = 0 then 0 else ${orderRevenue} * ${rate} end)`,
+    priced: sql`(${orderPriced} and (${rate} is not null or ${orderRevenue} = 0))`
+  }
+}
+
+// Orders, units and sales per source and day in the store's time zone since `since`, for the connected accounts, with
+// sales in `currency`.
+export async function salesByDay(orgId: string, accounts: Account[], since: Date, timeZone: string, currency: string) {
   if (!accounts.length) {
     return []
   }
   const date = sql`to_char(o."orderedAt" at time zone ${timeZone}, 'YYYY-MM-DD')`
+  const sales = converted(currency)
   const result = await db().execute(sql`
     select o.source, ${date} as date, count(*) as orders, sum(${orderUnits}) as units,
-      count(*) filter (where ${orderPriced}) as priced,
-      round(coalesce(sum(${orderRevenue}) filter (where ${orderPriced}), 0) * 100) as revenue,
-      max(${orderCurrency}) filter (where ${orderPriced}) as currency
+      count(*) filter (where ${sales.priced}) as priced,
+      round(coalesce(sum(${sales.revenue}) filter (where ${sales.priced}), 0) * 100) as revenue
     from sales_orders o
     where o."orgId" = ${orgId} and o."orderedAt" >= ${since} and (${accountFilter(accounts)})
     group by 1, 2`)
@@ -114,7 +141,7 @@ export async function salesByDay(orgId: string, accounts: Account[], since: Date
       units: count(row.units),
       priced: count(row.priced),
       revenueMinor: count(row.revenue),
-      currency: (row.currency as string | null) ?? null
+      currency: count(row.priced) > 0 ? currency : null
     })
   )
 }
@@ -130,12 +157,13 @@ export type ItemRow = {
   currency: string | null
 }
 
-// Units and sales per item over the current period and the one before it. A Shopify bundle counts once, under the
-// bundle's variant, with its components' sales.
+// Units and sales per item over the current period and the one before it, with sales in `currency`. A Shopify bundle
+// counts once, under the bundle's variant, with its components' sales.
 export async function salesByItem(
   orgId: string,
   accounts: Account[],
-  periods: { previousStart: Date; currentStart: Date; end: Date }
+  periods: { previousStart: Date; currentStart: Date; end: Date },
+  currency: string
 ) {
   if (!accounts.length) {
     return []
@@ -144,8 +172,8 @@ export async function salesByItem(
   const scope = sql`o."orgId" = ${orgId} and o."orderedAt" >= ${periods.previousStart}
     and o."orderedAt" < ${periods.end} and (${accountFilter(accounts)})`
   const result = await db().execute(sql`
-    with lines as (
-      select o."orderId" as "orderId", o.source, ${period} as period,
+    with raw as (
+      select o."orderId" as "orderId", o.source, ${period} as period, o."orderedAt" as at,
         coalesce(line->'lineItemGroup'->>'variantId', line->'variant'->>'id') as key,
         coalesce(line->'lineItemGroup'->>'id', line->>'id') as grp,
         case when jsonb_typeof(line->'lineItemGroup') = 'object' then (line->'lineItemGroup'->>'quantity')::int
@@ -155,20 +183,24 @@ export async function salesByItem(
       from sales_orders o, jsonb_array_elements(o.data->'lines') line
       where o.source = 'shopify' and ${scope}
       union all
-      select o."orderId", o.source, ${period}, item->'product'->>'sellerSku', item->>'orderItemId',
+      select o."orderId", o.source, ${period}, o."orderedAt", item->'product'->>'sellerSku', item->>'orderItemId',
         (item->>'quantityOrdered')::int, ${itemRevenue}, ${itemPriced},
         jsonb_path_query_first(item, '$.proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}'
       from sales_orders o, jsonb_array_elements(o.data->'orderItems') item
       where o.source = 'amazon' and ${scope}
+    ), lines as (
+      select raw.*, fx_rate(raw.currency, ${currency}, raw.at) as rate from raw
     ), grouped as (
-      select "orderId", source, period, key, grp, max(units) as units, sum(revenue) as revenue,
-        bool_and(priced) as priced, max(currency) as currency
+      -- An item sold for nothing needs no rate.
+      select "orderId", source, period, key, grp, max(units) as units,
+        sum(case when revenue = 0 then 0 else revenue * rate end) as revenue,
+        bool_and(priced and (rate is not null or revenue = 0)) as priced
       from lines where key is not null
       group by "orderId", source, period, key, grp
     )
     select source, period, key, sum(units) as units,
       round(coalesce(sum(revenue) filter (where priced), 0) * 100) as revenue,
-      coalesce(sum(units) filter (where priced), 0) as "pricedUnits", max(currency) as currency
+      coalesce(sum(units) filter (where priced), 0) as "pricedUnits"
     from grouped
     group by source, period, key`)
   return rows(result).map(
@@ -179,7 +211,7 @@ export async function salesByItem(
       units: count(row.units),
       revenueMinor: count(row.revenue),
       pricedUnits: count(row.pricedUnits),
-      currency: (row.currency as string | null) ?? null
+      currency: count(row.pricedUnits) > 0 ? currency : null
     })
   )
 }
@@ -187,11 +219,12 @@ export async function salesByItem(
 export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
 
 // Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
+// The fees on an order's payment. Refunds and other charges are counted by when they're posted (see platformCharges).
 // A release of a deferred payment repeats that payment's fees, so releases are left out (also for rows copied before
 // the reader stopped counting them).
 const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
   where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
-    and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
+    and t.type = 'Shipment' and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
 // Shopify Payments' fees on an order, with their tax, from its successful payments (null when copied without them).
 const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
   (select coalesce(sum(round(((fee->'amount'->>'amount')::numeric + (fee->'taxAmount'->>'amount')::numeric) * 100)), 0)
@@ -199,13 +232,15 @@ const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
     where payment->>'status' = 'SUCCESS')
 end`)
 
-// Each order from one account in a period, with its sales (null without prices) and the platform's fees on it.
-export async function orderFees(orgId: string, account: Account, from: Date, to: Date) {
+// Each order from one account in a period, with its sales (null without prices) and the platform's fees on it, in
+// `currency`. The fees are converted at the same rate as the order's sales.
+export async function orderFees(orgId: string, account: Account, from: Date, to: Date, currency: string) {
   const fee = account.provider === "amazon" ? amazonOrderFee : shopifyOrderFee
+  const sales = converted(currency)
   const result = await db().execute(sql`
     select o."orderId" as "orderId",
-      case when ${orderPriced} then round(${orderRevenue} * 100) end as revenue,
-      ${fee} as fees
+      case when ${sales.priced} then round(${sales.revenue} * 100) end as revenue,
+      round(${fee} * ${sales.rate}) as fees
     from sales_orders o
     where o."orgId" = ${orgId} and (${accountFilter([account])})
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to}`)
@@ -379,7 +414,12 @@ export function catalogIndex(catalog: readonly CatalogRow[], markups: ReadonlyMa
 export function grossProfit(
   items: ItemRow[],
   index: ReturnType<typeof catalogIndex>,
-  fees: Partial<Record<SalesSource, { feesMinor: number; revenueMinor: number }>>
+  fees: Partial<Record<SalesSource, { feesMinor: number; revenueMinor: number }>>,
+  // Refunds and the platforms' other charges in the period (negative when a cost), taken off in full.
+  charges: ChargeLine[] = [],
+  // Amazon's inbound freight per unit: by seller SKU for the shipments whose contents are known, and spread over every
+  // Amazon unit for the rest.
+  amazonFreight: { perUnitMinor: number; bySku?: ReadonlyMap<string, number>; currency: string } | null = null
 ) {
   const current = items.filter((item) => item.period === "current" && item.pricedUnits > 0 && item.currency)
   // Sales in more than one currency can't be added up; the currency most sales are in is used.
@@ -390,18 +430,23 @@ export function grossProfit(
   const currency = [...byCurrency].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null
   let revenue = 0,
     costed = 0,
-    cost = 0
+    cost = 0,
+    freight = 0
   const costedBySource: Record<SalesSource, number> = { shopify: 0, amazon: 0 }
   for (const item of current) {
     if (item.currency !== currency) {
       continue
     }
     revenue += item.revenueMinor
-    const unit = index.unitCost(index.variantFor(item.source, item.key))
+    const row = index.variantFor(item.source, item.key)
+    const unit = index.unitCost(row)
     if (unit && unit.currency === currency) {
       costed += item.revenueMinor
       cost += unit.minor * item.pricedUnits
       costedBySource[item.source] += item.revenueMinor
+      if (item.source === "amazon" && amazonFreight?.currency === currency) {
+        freight += ((amazonFreight.bySku?.get(item.key) ?? 0) + amazonFreight.perUnitMinor) * item.pricedUnits
+      }
     }
   }
   // Fees follow the sales they're charged on, so only the costed share of each platform's sales carries its fees.
@@ -412,13 +457,25 @@ export function grossProfit(
       feesMinor += Math.round(platform.feesMinor * Math.min(1, costedBySource[source] / platform.revenueMinor))
     }
   }
-  const profit = costed - cost - feesMinor
+  const counted = charges.filter((line) => line.currency === currency)
+  if (freight > 0 && currency) {
+    counted.push({
+      key: "amazon-freight",
+      label: "Amazon inbound freight",
+      minor: -Math.round(freight),
+      currency
+    })
+  }
+  const chargesMinor = counted.reduce((sum, line) => sum + line.minor, 0)
+  const profit = costed - cost - feesMinor + chargesMinor
   return {
     currency,
     revenueMinor: revenue,
     costedRevenueMinor: costed,
     costMinor: cost,
     feesMinor,
+    charges: counted,
+    chargesMinor,
     profitMinor: profit,
     margin: costed > 0 ? profit / costed : null
   }
@@ -493,13 +550,164 @@ export function sellingPrices(items: ItemRow[], index: ReturnType<typeof catalog
   }
 }
 
-// Shopify copies of orders from Amazon marketplaces Copacker doesn't read (anything but the US), in a period. They're
-// left out once Amazon is connected, so the page says how many.
+// Shopify copies of orders from Amazon marketplaces Copacker doesn't read (outside the US, Canada, Mexico and Brazil),
+// in a period. They're left out once Amazon is connected, so the page says how many.
 export async function otherMarketplaceOrders(orgId: string, account: string, from: Date, to: Date) {
   const result = await db().execute(sql`
     select count(*) as orders from sales_orders o
     where o."orgId" = ${orgId} and o.source = 'shopify' and o."externalAccountId" = ${account}
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to} and ${amazonImport}
-      and coalesce(o.data->>'sourceName', '') not in ('amazon', 'amazon-us')`)
+      and coalesce(o.data->>'sourceName', '') not in ('amazon', 'amazon-us', 'amazon-ca', 'amazon-mx', 'amazon-br')`)
   return count(rows(result)[0]?.orders)
+}
+
+export type ChargeLine = { key: string; label: string; minor: number; currency: string }
+
+// Amazon transactions that move money between the seller and Amazon rather than cost or earn anything.
+const amazonCashTypes = [
+  "Shipment",
+  "Refund",
+  "Disbursement",
+  "InitiateDisbursement",
+  "DisbursementFailureAfterSuccess",
+  "Transfer",
+  "Reserve",
+  "DebtRecovery",
+  "DebtPayment"
+]
+
+// Payouts, reserves and debt payments that Amazon records under other types, such as Adjustment.
+const amazonCashDescriptions = [
+  "Disbursement",
+  "DisbursementFailureAfterSuccess",
+  "InitiateDisbursement",
+  "Reserve",
+  "DebtPayment"
+]
+// What the platforms charged or credited in a period beyond each order's own fees, by when it was posted: Amazon
+// refunds, ads and account charges (storage, placement, adjustments, less reimbursements), and Shopify Payments'
+// shipping labels, the Shopify bill paid from payouts, dispute fees, and the duties and import taxes it collects on
+// international orders. Negative amounts are costs, converted to `currency` at the rate on the day each was posted.
+export async function platformCharges(
+  orgId: string,
+  accounts: Account[],
+  from: Date,
+  to: Date,
+  currency: string
+): Promise<ChargeLine[]> {
+  const lines: ChargeLine[] = []
+  for (const account of accounts) {
+    if (account.provider === "amazon") {
+      const result = await db().execute(sql`
+        select case when type = 'Refund' then 'amazon-refunds'
+            when type = 'ProductAdsPayment' then 'amazon-ads'
+            when type = 'Shipment' then 'amazon-mcf'
+            else 'amazon-charges' end as key,
+          round(sum("totalMinor" * fx_rate(currency, ${currency}, "postedAt"))) as minor
+        from amazon_transactions
+        where "orgId" = ${orgId} and "externalAccountId" = ${account.externalId}
+          and "postedAt" >= ${from} and "postedAt" < ${to}
+          -- Amazon's fee for fulfilling a Shopify order (multi-channel fulfillment) comes as a shipment described as a
+          -- fulfillment fee, such as FBAShipmentInjectionFulfillmentFee, rather than an order payment.
+          and (type = 'Refund' or (type = 'Shipment' and coalesce(data->>'description', '') like '%FulfillmentFee')
+            or type not in (${sql.join(
+              amazonCashTypes.map((type) => sql`${type}`),
+              sql`, `
+            )}))
+          -- Amazon also records payouts and reserves as adjustments; they're told apart by their description. Inbound
+          -- freight is spread over the units it carried instead (see amazonFreight).
+          and coalesce(data->>'description', '') not in (${sql.join(
+            amazonCashDescriptions.map((name) => sql`${name}`),
+            sql`, `
+          )}, ${freightDescriptions})
+          and not coalesce(data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'
+        group by 1`)
+      for (const row of rows(result)) {
+        lines.push({
+          key: String(row.key),
+          label: amazonChargeLabels[String(row.key)] ?? "Amazon charges",
+          minor: count(row.minor),
+          currency
+        })
+      }
+    } else if (!account.locationId) {
+      const result = await db().execute(sql`
+        select case when type like 'SHIPPING%' then 'shopify-labels'
+            when type like '%BILLING_DEBIT%' then 'shopify-bill'
+            when type like 'IMPORT_TAX%' or type like 'CUSTOMS_DUTY%' or type like 'TAX_ADJUSTMENT%' then 'shopify-duties'
+            else 'shopify-disputes' end as key,
+          round(sum("netMinor" * fx_rate(currency, ${currency}, "processedAt"))) as minor
+        from shopify_balance_transactions
+        where "orgId" = ${orgId} and "externalAccountId" = ${account.externalId}
+          and "processedAt" >= ${from} and "processedAt" < ${to}
+          and (type like 'SHIPPING%' or type like '%BILLING_DEBIT%' or type like 'CHARGEBACK%' or type like 'DISPUTE%'
+            or type like 'IMPORT_TAX%' or type like 'CUSTOMS_DUTY%' or type like 'TAX_ADJUSTMENT%')
+        group by 1`)
+      for (const row of rows(result)) {
+        lines.push({
+          key: String(row.key),
+          label: shopifyChargeLabels[String(row.key)] ?? "Shopify charges",
+          minor: count(row.minor),
+          currency
+        })
+      }
+    }
+  }
+  return lines.filter((line) => line.minor !== 0)
+}
+
+const amazonChargeLabels: Record<string, string> = {
+  "amazon-refunds": "Amazon refunds",
+  "amazon-ads": "Amazon ads",
+  "amazon-charges": "Amazon account charges",
+  "amazon-mcf": "Amazon fulfillment for Shopify orders"
+}
+const shopifyChargeLabels: Record<string, string> = {
+  "shopify-labels": "Shopify shipping labels",
+  "shopify-bill": "Shopify bill (plan and apps)",
+  "shopify-disputes": "Shopify disputes",
+  "shopify-duties": "Duties and import taxes"
+}
+
+// Amazon's inbound freight (freight service, placement and transport into its warehouses) posted over a stretch, in
+// `currency`, as a cost per unit: each shipment's freight shared by the units it carried, by seller SKU. Freight for
+// shipments sent from a PO (in `linked`) is left out, since it's part of that PO's landed costs. What can't be traced
+// to a shipment's contents is spread over the Amazon units sold in the stretch.
+export async function amazonFreight(
+  orgId: string,
+  account: string,
+  range: { from: Date; to: Date },
+  currency: string,
+  unitsSold: number,
+  linked: ReadonlySet<string> = new Set()
+) {
+  const [charges, shipments] = await Promise.all([
+    db().execute(sql`
+      select "orderId" as reference, -sum("totalMinor" * fx_rate(currency, ${currency}, "postedAt")) as freight
+      from amazon_transactions
+      where "orgId" = ${orgId} and "externalAccountId" = ${account}
+        and "postedAt" >= ${range.from} and "postedAt" < ${range.to}
+        and data->>'description' in (${freightDescriptions})
+      group by 1`),
+    db().execute(sql`
+      select "shipmentId", units from amazon_inbound_shipments
+      where "orgId" = ${orgId} and "externalAccountId" = ${account}`)
+  ])
+  const list = rows(charges)
+    .map((row) => ({ reference: (row.reference as string | null) ?? null, freightMinor: count(row.freight) }))
+    .filter((charge) => !charge.reference || !linked.has(charge.reference))
+  const contents = new Map(
+    rows(shipments).map((row) => [String(row.shipmentId), (row.units as Record<string, number> | null) ?? null])
+  )
+  const { perUnit, unallocatedMinor } = freightPerSku(list, contents)
+  const freightMinor = list.reduce((sum, charge) => sum + charge.freightMinor, 0)
+  if (freightMinor <= 0) {
+    return null
+  }
+  return {
+    currency,
+    freightMinor,
+    bySku: perUnit,
+    perUnitMinor: unitsSold > 0 && unallocatedMinor > 0 ? unallocatedMinor / unitsSold : 0
+  }
 }

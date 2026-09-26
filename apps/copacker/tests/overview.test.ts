@@ -27,10 +27,12 @@ import {
   dailySales,
   grossProfit,
   type ItemRow,
+  amazonFreight,
   movers,
   orderFees,
   otherMarketplaceOrders,
   periodTotal,
+  platformCharges,
   platformFees,
   salesByDay,
   salesByItem,
@@ -451,7 +453,12 @@ describe("margins and trends", () => {
         item({ period: "previous", revenueMinor: 99999 })
       ],
       index,
-      { amazon: { feesMinor: 900, revenueMinor: 6000 }, shopify: { feesMinor: 600, revenueMinor: 20000 } }
+      { amazon: { feesMinor: 900, revenueMinor: 6000 }, shopify: { feesMinor: 600, revenueMinor: 20000 } },
+      [
+        { key: "amazon-refunds", label: "Amazon refunds", minor: -1000, currency: "USD" },
+        // Another currency can't be taken off USD sales.
+        { key: "shopify-labels", label: "Shopify shipping labels", minor: -50, currency: "EUR" }
+      ]
     )
     expect(result).toEqual({
       currency: "USD",
@@ -460,9 +467,38 @@ describe("margins and trends", () => {
       costMinor: 4000 + 2400,
       // All of Amazon's costed sales carry its fees; half of Shopify's sales are costed, so half its fees.
       feesMinor: 900 + 300,
-      profitMinor: 16000 - 6400 - 1200,
-      margin: (16000 - 6400 - 1200) / 16000
+      charges: [{ key: "amazon-refunds", label: "Amazon refunds", minor: -1000, currency: "USD" }],
+      chargesMinor: -1000,
+      profitMinor: 16000 - 6400 - 1200 - 1000,
+      margin: (16000 - 6400 - 1200 - 1000) / 16000
     })
+  })
+
+  it("adds Amazon's inbound freight to each Amazon unit, by SKU where its shipment is known", () => {
+    const landedIndex = catalogIndex(
+      [
+        { variantId: "va", buyerSku: "A", unitCostMinor: 400, costCurrency: "USD" },
+        { variantId: "vb", buyerSku: "B", unitCostMinor: 1000, costCurrency: "USD" }
+      ],
+      new Map([["vb", 0.1]])
+    )
+    const result = grossProfit(
+      [
+        item({ source: "amazon", key: "A", units: 10, pricedUnits: 10, revenueMinor: 10000 }),
+        // B's shipments cost $2 a unit to bring in, on top of the freight spread over every unit.
+        item({ source: "amazon", key: "B", units: 2, pricedUnits: 2, revenueMinor: 5000 }),
+        // Shopify units don't pass through Amazon's warehouses.
+        item({ source: "shopify", key: "va", units: 3, pricedUnits: 3, revenueMinor: 3000 })
+      ],
+      landedIndex,
+      {},
+      [],
+      { perUnitMinor: 150, bySku: new Map([["B", 200]]), currency: "USD" }
+    )
+    expect(result.charges).toEqual([
+      { key: "amazon-freight", label: "Amazon inbound freight", minor: -(150 * 12 + 200 * 2), currency: "USD" }
+    ])
+    expect(result.profitMinor).toBe(18000 - (4000 + 2200 + 1200) - 2200)
   })
 
   it("lists items selling more and less than before, leaving out small sellers", () => {
@@ -669,7 +705,8 @@ describe("sales queries", () => {
       orgId,
       [shopifyAccount, amazonAccount],
       new Date("2026-09-01T00:00:00Z"),
-      "America/Los_Angeles"
+      "America/Los_Angeles",
+      "USD"
     )
     expect(rows.toSorted((a, b) => a.source.localeCompare(b.source))).toEqual([
       { source: "amazon", date: "2026-09-22", orders: 1, units: 4, priced: 1, revenueMinor: 2700, currency: "USD" },
@@ -681,7 +718,7 @@ describe("sales queries", () => {
   it("narrows Shopify sales to the orders shipped from a location", async () => {
     const since = new Date("2026-09-01T00:00:00Z")
     const at = (locationId: string) =>
-      salesByDay(orgId, [{ ...shopifyAccount, locationId }], since, "America/Los_Angeles")
+      salesByDay(orgId, [{ ...shopifyAccount, locationId }], since, "America/Los_Angeles", "USD")
     // s2 was never fulfilled, so it counts for no location.
     expect(await at("loc1")).toEqual([
       { source: "shopify", date: "2026-09-24", orders: 1, units: 4, priced: 1, revenueMinor: 3800, currency: "USD" }
@@ -691,17 +728,23 @@ describe("sales queries", () => {
       orgId,
       { ...shopifyAccount, locationId: "loc1" },
       since,
-      new Date("2026-09-26T00:00:00Z")
+      new Date("2026-09-26T00:00:00Z"),
+      "USD"
     )
     expect(fees.map((row) => row.orderId)).toEqual(["s1"])
   })
 
   it("adds up units and sales per item, a bundle once under its own variant", async () => {
-    const rows = await salesByItem(orgId, [shopifyAccount, amazonAccount], {
-      previousStart: new Date("2026-08-01T00:00:00Z"),
-      currentStart: new Date("2026-09-01T00:00:00Z"),
-      end: new Date("2026-09-26T00:00:00Z")
-    })
+    const rows = await salesByItem(
+      orgId,
+      [shopifyAccount, amazonAccount],
+      {
+        previousStart: new Date("2026-08-01T00:00:00Z"),
+        currentStart: new Date("2026-09-01T00:00:00Z"),
+        end: new Date("2026-09-26T00:00:00Z")
+      },
+      "USD"
+    )
     const byKey = Object.fromEntries(rows.map((row) => [`${row.source}:${row.period}:${row.key}`, row]))
     expect(byKey["shopify:current:va"]).toMatchObject({ units: 3, pricedUnits: 2, revenueMinor: 1800 })
     expect(byKey["shopify:current:vbundle"]).toMatchObject({ units: 2, pricedUnits: 2, revenueMinor: 2000 })
@@ -716,10 +759,12 @@ describe("sales queries", () => {
       orgId,
       amazonAccount,
       new Date("2026-08-01T00:00:00Z"),
-      new Date("2026-09-26T00:00:00Z")
+      new Date("2026-09-26T00:00:00Z"),
+      "USD"
     )
     expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
-      { orderId: "a1", revenueMinor: 2700, feesMinor: 400 },
+      // The order payment's fees only: the refund is counted with refunds, and the release repeats the payment.
+      { orderId: "a1", revenueMinor: 2700, feesMinor: 450 },
       { orderId: "a2", revenueMinor: null, feesMinor: null }
     ])
   })
@@ -729,7 +774,8 @@ describe("sales queries", () => {
       orgId,
       shopifyAccount,
       new Date("2026-09-01T00:00:00Z"),
-      new Date("2026-09-26T00:00:00Z")
+      new Date("2026-09-26T00:00:00Z"),
+      "USD"
     )
     expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
       // $1.36 fee plus $0.11 tax; the failed payment's fee isn't charged.
@@ -768,11 +814,102 @@ describe("sales queries", () => {
     })
     await database
       .insert(tables.salesOrders)
-      .values([copy("us1", "amazon-us"), copy("ca1", "amazon-ca")] as (typeof tables.salesOrders.$inferInsert)[])
+      .values([
+        copy("us1", "amazon-us"),
+        copy("ca1", "amazon-ca"),
+        copy("uk1", "amazon-uk")
+      ] as (typeof tables.salesOrders.$inferInsert)[])
     const since = new Date("2026-09-01T00:00:00Z")
     const day = (rows: Awaited<ReturnType<typeof salesByDay>>) => rows.find((row) => row.date === "2026-09-20")
-    expect(day(await salesByDay(orgId, [shopifyAccount], since, "UTC"))?.orders).toBe(2)
-    expect(day(await salesByDay(orgId, [{ ...shopifyAccount, withoutAmazon: true }], since, "UTC"))).toBeUndefined()
+    expect(day(await salesByDay(orgId, [shopifyAccount], since, "UTC", "USD"))?.orders).toBe(3)
+    expect(
+      day(await salesByDay(orgId, [{ ...shopifyAccount, withoutAmazon: true }], since, "UTC", "USD"))
+    ).toBeUndefined()
+    // Canada's orders are read from Amazon too; the UK's aren't.
     expect(await otherMarketplaceOrders(orgId, "club.myshopify.com", since, new Date("2026-09-26T00:00:00Z"))).toBe(1)
+  })
+
+  it("adds up refunds and platform charges by when they're posted, leaving out payouts", async () => {
+    await database.insert(tables.amazonTransactions).values(
+      [
+        ["ads", "ProductAdsPayment", -14563],
+        ["storage", "ServiceFee", -4500],
+        ["reimbursed", "FBAInventoryReimbursement", 1200],
+        ["payout", "Disbursement", -90000],
+        // Amazon fulfilling a Shopify order.
+        ["mcf", "Shipment", -744, "FBAShipmentInjectionFulfillmentFee"],
+        // A payment for an order from a marketplace Copacker doesn't read: neither its sales nor its fees count.
+        ["canada", "Shipment", 3660, "Order Payment"],
+        // A payout Amazon records as an adjustment isn't a cost or a credit.
+        ["payout-adjustment", "Adjustment", 244154, "Disbursement"],
+        ["freight", "ServiceFee", -199539, "FBAInternationalInboundFreightCharge"]
+      ].map(([transactionId, type, totalMinor, description]) => ({
+        orgId,
+        externalAccountId: "SELLER",
+        transactionId: String(transactionId),
+        orderId: null,
+        postedAt: new Date("2026-09-10T00:00:00Z"),
+        type: String(type),
+        currency: "USD",
+        totalMinor: Number(totalMinor),
+        feesMinor: 0,
+        data: description ? { description } : {}
+      }))
+    )
+    await database.insert(tables.shopifyBalanceTransactions).values(
+      [
+        ["b1", "SHIPPING_LABEL", -1234],
+        ["b2", "SHIPPING_LABEL_ADJUSTMENT_SURCHARGE", -100],
+        ["b3", "BILLING_DEBIT", -8999],
+        ["b4", "CHARGEBACK_FEE", -1500],
+        ["b6", "IMPORT_TAX", -2377],
+        ["b7", "CUSTOMS_DUTY", -499],
+        // A card payment: its processing fee is counted with the order.
+        ["b5", "CHARGE", 4800]
+      ].map(([transactionId, type, netMinor]) => ({
+        orgId,
+        externalAccountId: "club.myshopify.com",
+        transactionId: String(transactionId),
+        type: String(type),
+        processedAt: new Date("2026-09-12T00:00:00Z"),
+        orderId: null,
+        currency: "USD",
+        amountMinor: Number(netMinor),
+        feeMinor: 0,
+        netMinor: Number(netMinor),
+        data: {}
+      }))
+    )
+    const lines = await platformCharges(
+      orgId,
+      [amazonAccount, shopifyAccount],
+      new Date("2026-09-01T00:00:00Z"),
+      new Date("2026-09-26T00:00:00Z"),
+      "USD"
+    )
+    expect(Object.fromEntries(lines.map((line) => [line.key, line.minor]))).toEqual({
+      // t2, the refund on a1; its fees came back with it.
+      "amazon-refunds": -500,
+      "amazon-ads": -14563,
+      "amazon-charges": -4500 + 1200,
+      "amazon-mcf": -744,
+      "shopify-labels": -1334,
+      "shopify-bill": -8999,
+      "shopify-disputes": -1500,
+      "shopify-duties": -2876
+    })
+    // Inbound freight isn't a charge when posted: it's spread over the units sold.
+    const range = { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-09-26T00:00:00Z") }
+    const freight = await amazonFreight(orgId, "SELLER", range, "USD", 500)
+    expect(freight).toEqual({ perUnitMinor: 199539 / 500, bySku: new Map(), currency: "USD", freightMinor: 199539 })
+    // A Shopify location's view leaves out charges that belong to the whole store.
+    const atLocation = await platformCharges(
+      orgId,
+      [{ ...shopifyAccount, locationId: "loc1" }],
+      new Date("2026-09-01T00:00:00Z"),
+      new Date("2026-09-26T00:00:00Z"),
+      "USD"
+    )
+    expect(atLocation).toEqual([])
   })
 })

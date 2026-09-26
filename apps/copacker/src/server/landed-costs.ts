@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { events, landedCosts, orders } from "@/db/schema"
 import { accessibleOrder } from "./access"
+import { amazonFreightByOrder } from "./amazon-shipments"
 import type { Session } from "./auth"
 
 // Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
@@ -99,9 +100,10 @@ export function landedMarkups(
   return markups
 }
 
-// The buyer's landed markups by variant, from their sent and closed POs.
+// The buyer's landed markups by variant, from their sent and closed POs: the landed costs recorded on each, and the
+// freight Amazon charged for its shipments (in the PO's currency).
 export async function landedMarkupsFor(orgId: string) {
-  const [list, totals, sent] = await Promise.all([
+  const [list, totals, sent, freight] = await Promise.all([
     db()
       .select({ id: orders.id, data: orders.data, createdAt: orders.createdAt })
       .from(orders)
@@ -117,9 +119,16 @@ export async function landedMarkupsFor(orgId: string) {
       .from(events)
       .innerJoin(orders, eq(orders.id, events.orderId))
       .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
-      .groupBy(events.orderId)
+      .groupBy(events.orderId),
+    amazonFreightByOrder(orgId)
   ])
   const landed = new Map(totals.map((row) => [row.orderId, row.amount]))
+  const currencies = new Map(list.map((order) => [order.id, order.data.currency]))
+  for (const row of freight) {
+    if (currencies.get(row.orderId) === row.currency) {
+      landed.set(row.orderId, (landed.get(row.orderId) ?? 0) + row.freightMinor)
+    }
+  }
   const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
   return landedMarkups(
     list

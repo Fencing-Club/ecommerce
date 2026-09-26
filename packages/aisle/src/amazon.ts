@@ -126,6 +126,56 @@ export const amazonOrderSchema = z.object({
     .optional()
 })
 
+// The North American marketplaces orders are read from: the US, Canada, Mexico and Brazil. They share one seller
+// account and one endpoint; orders from the others are fulfilled from US stock (FBA remote fulfillment) or shipped by
+// the seller.
+export const salesMarketplaceIds = ["ATVPDKIKX0DER", "A2EUQ1WTGCTBG2", "A1AM78C64UM0Y8", "A2Q3Y263D00KWC"]
+const fbaShipmentItemsPage = z.object({
+  payload: z
+    .object({
+      ItemData: z
+        .array(
+          z.object({
+            ShipmentId: z.string().optional(),
+            SellerSKU: z.string().min(1),
+            QuantityShipped: z.number().int().nonnegative().optional(),
+            QuantityReceived: z.number().int().nonnegative().optional()
+          })
+        )
+        .max(1000)
+        .optional(),
+      NextToken: z.string().min(1).nullish()
+    })
+    .optional()
+})
+type AwdContents = {
+  products?: { sku: string; quantity: number }[] | null
+  packages?: { count: number; distributionPackage: { contents: AwdContents } }[] | null
+}
+const awdContents: z.ZodType<AwdContents> = z.lazy(() =>
+  z.object({
+    products: z
+      .array(z.object({ sku: z.string().min(1), quantity: z.number().int().nonnegative() }))
+      .max(1000)
+      .nullish(),
+    packages: z
+      .array(z.object({ count: z.number().int().positive(), distributionPackage: z.object({ contents: awdContents }) }))
+      .max(1000)
+      .nullish()
+  })
+)
+const awdShipment = z.object({
+  shipmentContainerQuantities: z
+    .array(
+      z.object({
+        count: z.number().int().positive(),
+        distributionPackage: z.object({ contents: awdContents })
+      })
+    )
+    .max(1000)
+    .nullish()
+})
+
 export class ProviderError extends Error {
   constructor(
     public readonly status: number,
@@ -208,10 +258,14 @@ export class Amazon {
     if (!response.ok) {
       // Amazon explains a rejection in its errors list; the codes and messages describe the request, not seller data.
       const reasons = z
-        .object({ errors: z.array(z.object({ code: z.string(), message: z.string() })).max(10) })
+        .object({
+          errors: z.array(z.object({ code: z.string(), message: z.string(), details: z.string().optional() })).max(10)
+        })
         .safeParse(await response.json().catch(() => null))
       const reason = reasons.success
-        ? `: ${reasons.data.errors.map((error) => `${error.code} ${error.message}`.slice(0, 300)).join("; ")}`
+        ? `: ${reasons.data.errors
+            .map((error) => [error.code, error.message, error.details].filter(Boolean).join(" ").slice(0, 500))
+            .join("; ")}`
         : ""
       const retryAfter = response.headers.get("retry-after")
       const retryAfterMs = retryAfter === null ? NaN : Number(retryAfter) * 1000
@@ -423,6 +477,99 @@ export class Amazon {
         )
       )
   }
+  /** The North American marketplaces the seller sells in that orders are read from, the US first. */
+  async salesMarketplaces() {
+    const participations = z
+      .object({
+        payload: z.array(
+          z.object({
+            marketplace: z.object({ id: z.string() }),
+            participation: z.object({ isParticipating: z.boolean() }).optional()
+          })
+        )
+      })
+      .parse(await this.request("GET", "/sellers/v1/marketplaceParticipations"))
+    const active = new Set(
+      participations.payload
+        .filter((entry) => entry.participation?.isParticipating !== false)
+        .map((entry) => entry.marketplace.id)
+    )
+    return salesMarketplaceIds.filter((id) => active.has(id))
+  }
+  /**
+   * The units of each seller SKU shipped in an FBA inbound shipment, by its shipment ID (such as FBA15ABC12). Null when
+   * Amazon has no such shipment.
+   */
+  async fbaShipmentUnits(shipmentId: string) {
+    const units = new Map<string, number>()
+    const tokens = new Set<string>()
+    // The first page comes from the shipment; later pages from Amazon's list of shipment items, by the page token.
+    let path = `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentId)}/items?${new URLSearchParams({
+      MarketplaceId: "ATVPDKIKX0DER"
+    })}`
+    for (let pageNumber = 0; pageNumber < 50; pageNumber++) {
+      let response: unknown
+      try {
+        response = await this.request("GET", path)
+      } catch (error) {
+        if (pageNumber === 0 && error instanceof ProviderError && [400, 404].includes(error.status)) {
+          return null
+        }
+        throw error
+      }
+      const page = fbaShipmentItemsPage.parse(response).payload
+      for (const item of page?.ItemData ?? []) {
+        if (item.ShipmentId && item.ShipmentId !== shipmentId) {
+          continue
+        }
+        const quantity = item.QuantityShipped || item.QuantityReceived || 0
+        units.set(item.SellerSKU, (units.get(item.SellerSKU) ?? 0) + quantity)
+      }
+      const next = page?.NextToken
+      if (!next || !page?.ItemData?.length) {
+        return units
+      }
+      if (tokens.has(next)) {
+        throw new Error("FBA shipment items repeated a page token")
+      }
+      tokens.add(next)
+      path = `/fba/inbound/v0/shipmentItems?${new URLSearchParams({
+        MarketplaceId: "ATVPDKIKX0DER",
+        QueryType: "NEXT_TOKEN",
+        NextToken: next
+      })}`
+    }
+    throw new Error("FBA shipment items exceed the supported page limit")
+  }
+  /**
+   * The units of each seller SKU in an AWD inbound shipment, by its shipment ID (such as STAR-ABC123): each carton's
+   * products times the number of those cartons. Null when Amazon has no such shipment.
+   */
+  async awdShipmentUnits(shipmentId: string) {
+    let response: unknown
+    try {
+      response = await this.request("GET", `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}`)
+    } catch (error) {
+      if (error instanceof ProviderError && [400, 404].includes(error.status)) {
+        return null
+      }
+      throw error
+    }
+    const shipment = awdShipment.parse(response)
+    const units = new Map<string, number>()
+    const add = (contents: AwdContents, multiplier: number) => {
+      for (const product of contents.products ?? []) {
+        units.set(product.sku, (units.get(product.sku) ?? 0) + product.quantity * multiplier)
+      }
+      for (const inner of contents.packages ?? []) {
+        add(inner.distributionPackage.contents, multiplier * inner.count)
+      }
+    }
+    for (const container of shipment.shipmentContainerQuantities ?? []) {
+      add(container.distributionPackage.contents, container.count)
+    }
+    return units
+  }
   /**
    * Requests a report and returns its text once Amazon has built it, or null when Amazon cancels it because there is
    * no data for the period. Building takes from seconds to many minutes; the caller's deadline bounds the wait.
@@ -585,11 +732,16 @@ export class Amazon {
   // Subscribes the seller to a notification type at the destination. Returns false when the subscription already
   // exists there. A seller has one subscription per type for the app, so one pointing elsewhere (another environment
   // using the same app) is reported rather than taken over.
-  async subscribeNotifications(notificationType: string, destinationId: string) {
+  async subscribeNotifications(
+    notificationType: string,
+    destinationId: string,
+    processingDirective?: Record<string, unknown>
+  ) {
     try {
       await this.request("POST", `/notifications/v1/subscriptions/${notificationType}`, {
         payloadVersion: "1.0",
-        destinationId
+        destinationId,
+        ...(processingDirective && { processingDirective })
       })
       return true
     } catch (error) {

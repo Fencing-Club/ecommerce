@@ -224,3 +224,20 @@ export const preview = style({
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.muted
 })
+
+// Each variation's supplier SKU in the product's Edit panel, saved to Shopify one row at a time.
+export const supplierSkus = style({ display: "flex", flexDirection: "column", gap: space(2) })
+export const supplierSkuList = style({
+  display: "flex",
+  flexDirection: "column",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg
+})
+export const supplierSku = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: space(1.5),
+  padding: space(3),
+  selectors: { "& + &": { borderTop: `1px solid ${vars.color.border}` } }
+})
+export const supplierSkuField = style({ display: "flex", alignItems: "center", gap: space(2) })

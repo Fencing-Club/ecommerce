@@ -140,7 +140,11 @@ describe("Shopify complete stock collection", () => {
               ...node(1),
               amazonTarget: { value: "1" },
               product: { ...productDetails.product, caseQuantity: { value: "160" } },
-              inventoryItem: { ...node(1).inventoryItem, unitCost: { amount: "21.43", currencyCode: "USD" } }
+              inventoryItem: {
+                ...node(1).inventoryItem,
+                unitCost: { amount: "21.43", currencyCode: "USD" },
+                countryCodeOfOrigin: "CN"
+              }
             }
           ],
           pageInfo
@@ -151,7 +155,8 @@ describe("Shopify complete stock collection", () => {
       amazonStockTarget: 1,
       caseQuantity: 160,
       unitCostMinor: 2143,
-      costCurrency: "USD"
+      costCurrency: "USD",
+      countryOfOrigin: "CN"
     })
     const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
     expect(request.query).toContain('amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target")')

@@ -204,6 +204,53 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
   })
 }
 
+export const assignProductLabelInputSchema = z.strictObject({
+  productIds: z
+    .array(z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/))
+    .min(1)
+    .max(500),
+  productLabel: z.enum(productLabels)
+})
+
+// Sets the label type for several products at once, such as marking uniforms as needing uploaded labels. Other
+// product details are kept.
+export async function assignProductLabel(s: Session, raw: unknown) {
+  if (s.org.kind !== "buyer") {
+    throw new ProductDefaultsError("A buyer workspace is required", 403)
+  }
+  const input = assignProductLabelInputSchema.parse(raw)
+  return db().transaction(async (tx) => {
+    const [account] = await tx
+      .select({ domain: connections.externalId })
+      .from(connections)
+      .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
+      .for("share")
+    if (!account) {
+      throw new ProductDefaultsError("Connect Shopify before editing products", 409)
+    }
+    const productIds = [...new Set(input.productIds)]
+    await tx
+      .insert(productDefaults)
+      .values(
+        productIds.map((productId) => ({
+          orgId: s.org.id,
+          shopifyDomain: account.domain,
+          productId,
+          productLabel: input.productLabel
+        }))
+      )
+      .onConflictDoUpdate({
+        target: [productDefaults.orgId, productDefaults.shopifyDomain, productDefaults.productId],
+        set: {
+          productLabel: input.productLabel,
+          revision: sql`${productDefaults.revision} + 1`,
+          updatedAt: new Date()
+        }
+      })
+    return { updated: productIds.length }
+  })
+}
+
 // What a new PO line for a Shopify variant starts with: pieces per unit from Shopify, description and preparation from
 // the product's saved defaults.
 export async function lineDefaultsFor(orgId: string) {

@@ -22,6 +22,7 @@ import {
   CardLink,
   DaysOfCover,
   OpenOrders,
+  ProfitBreakdown,
   Purchasing,
   SetupChecklist,
   Shipments,
@@ -159,7 +160,7 @@ function SalesKpis({ sales }: { sales: Overview["sales"] }) {
         ) : (
           <>
             <span className={styles.delta[profit.margin >= 0 ? "up" : "down"]}>{formatPercent(profit.margin)}</span>
-            <span>margin after unit costs{fees.feesMinor ? " and platform fees" : ""}</span>
+            <span>margin after costs, fees, refunds and platform charges</span>
           </>
         )}
         {notes.map((note) => (
@@ -275,26 +276,28 @@ export function OverviewDashboard({ data }: { data: Overview }) {
             )}
           </CardContent>
         </Card>
-        <StockByChannel restock={restock} />
+        <ProfitBreakdown sales={sales} />
       </div>
 
       <div className={styles.halves}>
+        <StockByChannel restock={restock} />
         <DaysOfCover restock={restock} channel={channel} />
+      </div>
+
+      <div className={styles.halves}>
         <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+        <SlowStock restock={restock} />
       </div>
 
       <div className={styles.halves}>
         <Trending movers={sales.movers} comparable={sales.moversComparable} />
-        <SlowStock restock={restock} />
-      </div>
-
-      <div className={styles.wide}>
-        <BestSellers restock={restock} />
         <div className={styles.stack}>
           <Shipments stages={data.shipments} />
           <OpenOrders purchasing={purchasing} />
         </div>
       </div>
+
+      <BestSellers restock={restock} />
 
       <Purchasing purchasing={purchasing} />
     </div>

@@ -26,6 +26,7 @@ import { identity, session, requireOwner, requireBuyer, requireMembership } from
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { acceptSupplierInvitation } from "@/server/invitations"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
+import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
 import {
   createOrder,
   submitOrder,
@@ -39,6 +40,7 @@ import {
   deleteDraftOrder,
   receiveShipment
 } from "@/server/orders"
+import { refreshProductLabels } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
 import { removeSupplier, updateSupplier } from "@/server/suppliers"
@@ -475,9 +477,19 @@ export async function POST(request: Request) {
       await removeLandedCost(s, id())
       return Response.json({ ok: true })
     }
+    if (action === "monthlyCost.create") {
+      return Response.json(await addMonthlyCost(s, data))
+    }
+    if (action === "monthlyCost.delete") {
+      await removeMonthlyCost(s, id())
+      return Response.json({ ok: true })
+    }
     if (action === "order.delete") {
       await deleteDraftOrder(s, id())
       return Response.json({ redirect: "/orders" })
+    }
+    if (action === "order.labels") {
+      return Response.json({ ok: true, ...(await refreshProductLabels(s, id())) })
     }
     if (action === "order.close") {
       await closeOrder(s, id())

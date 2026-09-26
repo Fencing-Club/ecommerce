@@ -9,6 +9,7 @@ import * as styles from "./overview.css"
 export function ChannelFilter({ channels, value }: { channels: { key: string; label: string }[]; value: string }) {
   const router = useRouter()
   const pathname = usePathname()
+  const shopifyLocations = channels.filter((channel) => channel.key !== "amazon").length
   return (
     <Field orientation="horizontal" className={styles.channelFilter}>
       <FieldLabel htmlFor="overview-channel">Channel</FieldLabel>
@@ -23,10 +24,18 @@ export function ChannelFilter({ channels, value }: { channels: { key: string; la
         <NativeSelectOption value="">All channels</NativeSelectOption>
         {channels.map((channel) => (
           <NativeSelectOption key={channel.key} value={channel.key}>
-            {channel.key === "amazon" ? channel.label : `Shopify: ${channel.label}`}
+            {channelName(channel, shopifyLocations)}
           </NativeSelectOption>
         ))}
       </NativeSelect>
     </Field>
   )
+}
+
+// "Shopify" for a store with one location of its own; with several, each is named.
+function channelName(channel: { key: string; label: string }, shopifyLocations: number) {
+  if (channel.key === "amazon") {
+    return channel.label
+  }
+  return shopifyLocations > 1 ? `Shopify: ${channel.label}` : "Shopify"
 }

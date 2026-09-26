@@ -13,7 +13,8 @@ import {
   uniqueIndex,
   index,
   primaryKey,
-  date
+  date,
+  numeric
 } from "drizzle-orm/pg-core"
 import type { CasePack } from "../lib/case-packs"
 import { contactKinds } from "../lib/contacts"
@@ -453,8 +454,8 @@ export const salesSyncs = pgTable(
     // The shape of the stored orders. Orders stored by an older version are read again, newest first, so they gain
     // the fields added since (such as prices).
     dataVersion: integer().notNull().default(0),
-    // Amazon only: the unbroken period of posted Amazon transactions (fees and payouts) copied from the Finances API,
-    // and why that copy last failed.
+    // The unbroken period of the platform's money movements copied after its orders, and why that copy last failed:
+    // Amazon's posted transactions (Finances API), or Shopify Payments balance transactions (labels, bills, disputes).
     feesCoveredFrom: timestamp({ withTimezone: true }),
     feesCoveredTo: timestamp({ withTimezone: true }),
     feesErrorCode: text()
@@ -524,4 +525,80 @@ export const landedCosts = pgTable(
     createdAt: createdAt()
   },
   (t) => [index("landed_cost_order").on(t.orderId)]
+)
+// Shopify Payments balance transactions: what Shopify added to or took from the payout balance, such as shipping labels,
+// the Shopify bill when it's paid from payouts, and dispute fees. Copied so gross profit can include them.
+export const shopifyBalanceTransactions = pgTable(
+  "shopify_balance_transactions",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    externalAccountId: text().notNull(),
+    transactionId: text().notNull(),
+    type: text().notNull(),
+    processedAt: timestamp({ withTimezone: true }).notNull(),
+    orderId: text(),
+    currency: text().notNull(),
+    // The transaction's amount, Shopify's fee on it, and what it added to the balance (negative when taken), in minor
+    // units.
+    amountMinor: integer().notNull(),
+    feeMinor: integer().notNull(),
+    netMinor: integer().notNull(),
+    data: jsonb().$type<Record<string, unknown>>().notNull()
+  },
+  (t) => [
+    primaryKey({ columns: [t.orgId, t.externalAccountId, t.transactionId] }),
+    index("shopify_balance_processed").on(t.orgId, t.externalAccountId, t.processedAt)
+  ]
+)
+// Costs paid every month that no platform reports, such as an app billed to a card. Each month's amount is spread over
+// its days, so gross profit over any period carries its share.
+export const monthlyCosts = pgTable(
+  "monthly_costs",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    name: text().notNull(),
+    amountMinor: integer().notNull(),
+    currency: text().notNull(),
+    // The channel it's paid for, or null for the whole business.
+    channel: text({ enum: ["amazon", "shopify"] }),
+    // The first and last days it's paid; null for since before the sales history and for ongoing.
+    startsOn: date({ mode: "string" }),
+    endsOn: date({ mode: "string" }),
+    createdBy: text().notNull(),
+    createdAt: createdAt()
+  },
+  (t) => [index("monthly_cost_org").on(t.orgId)]
+)
+// Daily exchange rates (the European Central Bank's reference rates), as units of each currency per US dollar, so
+// sales in several currencies can be added up. Shared by every workspace.
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    currency: text().notNull(),
+    day: date({ mode: "string" }).notNull(),
+    perUsd: numeric({ precision: 20, scale: 10 }).notNull()
+  },
+  (t) => [primaryKey({ columns: [t.currency, t.day] })]
+)
+// The FBA and AWD inbound shipments Amazon charged freight for, with the units of each seller SKU in them, so the
+// freight can be spread over the products it carried.
+export const amazonInboundShipments = pgTable(
+  "amazon_inbound_shipments",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    externalAccountId: text().notNull(),
+    shipmentId: text().notNull(),
+    network: text({ enum: ["fba", "awd"] }).notNull(),
+    // Units by seller SKU; null when Amazon has no record of the shipment.
+    units: jsonb().$type<Record<string, number>>(),
+    fetchedAt: timestamp({ withTimezone: true }).notNull()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.shipmentId] })]
 )

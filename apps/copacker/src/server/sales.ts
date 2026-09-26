@@ -7,6 +7,7 @@ import { requireBuyer, type Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
+import { amazonSalesMarketplaces } from "./sales-orders"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
 export class DemandAccessError extends Error {}
@@ -53,8 +54,9 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
     )
     result = attributeShopifySales(orders, await effectiveLocationClassifications(s.org.id, account.externalId))
   } else {
+    const amazon = await amazonFor(s.org.id, account.externalId)
     result = attributeAmazonSales(
-      await collectAmazonSales(await amazonFor(s.org.id, account.externalId), window, check)
+      await collectAmazonSales(amazon, window, check, await amazonSalesMarketplaces(account.externalId, amazon))
     )
   }
   await check()

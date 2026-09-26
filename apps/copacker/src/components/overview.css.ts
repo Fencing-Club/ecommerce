@@ -515,3 +515,6 @@ export const productLink = style([
     }
   }
 ])
+
+export const profitLine = style({ display: "flex", alignItems: "baseline", gap: space(3) })
+export const legendUnit = style({ ...fontSize.sm, fontWeight: 400, color: vars.color.mutedForeground })

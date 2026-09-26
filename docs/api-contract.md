@@ -225,7 +225,18 @@ New POs get their labels when the PO is created or imported, and again after it 
 - Replacing or removing a barcode deletes its stored file. POs keep their own copy. A failed delete is logged as `barcode_file_delete_failed` and leaves the file behind.
 - `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` downloads the variation's label: its upload, or else the standard sheet. Its FNSKU comes from the latest FBA stock sync or else Amazon's listing for the SKU; without either, the Shopify SKU is printed. `view=inline` shows it in the browser instead. It returns 404 when the product needs an uploaded label or the variation has no SKU, and 409 when Amazon can't be reached. `DELETE` with the same query (same origin) removes the upload. Supplier workspaces get 403.
 - `GET /api/inventory/products` adds `barcode` (or null) and `fnsku` (or null) to each variant; `missingBarcodes`, the number of variations whose product needs an uploaded label and has none; and `duplicateSkus`, the SKUs more than one variation uses. `barcode=missing` lists only products with such a variation.
+- `GET /api/inventory/product-labels` lists every synced product as `{productId, title, variations, productLabel}`. `PATCH` (same origin) with `{productIds, productLabel}` sets the label type for up to 500 products at once and returns `{updated}`.
+- `POST /api/inventory/labels` (same origin) with `{productIds}` returns one PDF with a label sheet for each of their variations, made the same way as a single download with batched Amazon and Shopify lookups. `X-Skipped-Labels` counts variations left out because they have no label yet; none at all returns 404, and more than 1,000 variations returns 400.
+- `GET /api/inventory/products` also adds `countryOfOrigin` to each variant (null when Shopify has none; left out until a Shopify stock sync collects it) and `missingCountries`, the number of standard-label variations without one. `country=missing` lists only products with such a variation.
+- Action `order.labels` (buyer only, open POs) adds missing product labels and makes again the ones Copacker added, from current barcodes and Shopify and Amazon details. Labels uploaded on the PO and lines in released shipments are kept; replaced labels stay as outdated versions. It returns `{updated}`.
+- `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, for anyone who can see the PO; 404 when it has none.
 - Action `order.delete` (buyer only) deletes a draft PO with its documents, history and landed costs, and returns `{redirect: "/orders"}`. A PO import saved as that draft goes back to review. Sent POs are closed instead.
+
+### Supplier SKUs
+
+A variation's supplier SKU is Shopify's `custom.supplier_sku` variant metafield; supplier catalog matching and PO lines use it. `GET /api/inventory/products` returns it on each variant as `supplierSku` (or null), from the latest Shopify stock sync.
+
+Buyer-only `PATCH /api/inventory/supplier-sku` (same origin) accepts `{ "variantId": "gid://shopify/ProductVariant/1", "supplierSku": "AB-100" }`. The SKU is trimmed, one line and up to 255 characters; an empty string removes it. The variation must be in the synced Shopify stock snapshot (404 otherwise). It's written to Shopify, then to that variation's row in the stored snapshot, and returns `{supplierSku}` (null when removed). Invalid input returns 400, supplier workspaces 403, no Shopify connection 409, and a Shopify failure 502 (logged as `supplier_sku_failed`).
 
 ### Inventory location settings
 

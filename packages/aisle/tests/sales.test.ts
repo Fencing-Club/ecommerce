@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import {
   collectAmazonTransactions,
+  collectShopifyBalanceTransactions,
   shopifyPaymentFees,
   collectShopifySales,
   collectAmazonSales,
@@ -144,6 +145,17 @@ describe("complete sales readers", () => {
     expect(url.searchParams.get("paginationToken")).toBe("a + token")
     expect(url.searchParams.get("includedData")).toBe("FULFILLMENT,PROCEEDS")
     expect(url.searchParams.get("createdAfter")).toBe(window.from)
+  })
+  it("reads orders from several marketplaces at once", async () => {
+    const canada = { ...amazonOrder, salesChannel: { channelName: "Amazon.ca", marketplaceId: "A2EUQ1WTGCTBG2" } }
+    const request = vi.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ orders: [canada] })
+    expect(await collectAmazonSales({ request }, window, undefined, ["ATVPDKIKX0DER", "A2EUQ1WTGCTBG2"])).toEqual([
+      canada
+    ])
+    const url = new URL(String(request.mock.calls[0]?.[1]), "https://example.com")
+    expect(url.searchParams.get("marketplaceIds")).toBe("ATVPDKIKX0DER,A2EUQ1WTGCTBG2")
+    // Only the US unless told otherwise.
+    await expect(collectAmazonSales({ request }, window)).rejects.toThrow("marketplace")
   })
   it("rejects duplicate tokens, items and marketplaces", async () => {
     const request = vi
@@ -314,5 +326,55 @@ describe("Shopify payment fees", () => {
     expect(shopifySalesQueries.order).toContain(
       "transactions(first:100){id kind status fees{amount{amount currencyCode}"
     )
+  })
+})
+
+describe("Shopify Payments balance transactions", () => {
+  const usd = (amount: string) => ({ amount, currencyCode: "USD" })
+  const node = (id: string, type: string, net: string, test = false) => ({
+    id,
+    type,
+    test,
+    transactionDate: "2026-08-10T12:00:00Z",
+    amount: usd(net),
+    fee: usd("0.00"),
+    net: usd(net),
+    associatedOrder: null,
+    adjustmentReason: null
+  })
+
+  it("reads each page in the window, leaving out test transactions", async () => {
+    const graphql = vi
+      .fn<(_query: string, _variables?: Record<string, unknown>) => Promise<unknown>>()
+      .mockResolvedValueOnce({
+        shopifyPaymentsAccount: {
+          balanceTransactions: {
+            nodes: [node("t1", "SHIPPING_LABEL", "-12.34"), node("t2", "CHARGE", "48.00", true)],
+            pageInfo: { hasNextPage: true, endCursor: "next" }
+          }
+        }
+      })
+      .mockResolvedValueOnce({
+        shopifyPaymentsAccount: {
+          balanceTransactions: { nodes: [node("t3", "BILLING_DEBIT", "-89.99")], pageInfo }
+        }
+      })
+    const rows = await collectShopifyBalanceTransactions({ graphql }, window)
+    expect(rows.map((row) => [row.transactionId, row.type, row.netMinor])).toEqual([
+      ["t1", "SHIPPING_LABEL", -1234],
+      ["t3", "BILLING_DEBIT", -8999]
+    ])
+    expect(graphql.mock.calls[0]?.[1]).toEqual({
+      query: `processed_at:>='${window.from}' processed_at:<'${window.to}'`,
+      after: null
+    })
+    expect(graphql.mock.calls[1]?.[1]).toMatchObject({ after: "next" })
+  })
+
+  it("returns nothing for a store without Shopify Payments", async () => {
+    const graphql = vi
+      .fn<(_query: string, _variables?: Record<string, unknown>) => Promise<unknown>>()
+      .mockResolvedValue({ shopifyPaymentsAccount: null })
+    expect(await collectShopifyBalanceTransactions({ graphql }, window)).toEqual([])
   })
 })
