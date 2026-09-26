@@ -1,5 +1,9 @@
 # Sales demand integration
 
+## Stored orders
+
+Restock reads orders copied into `sales_orders`, not the providers. The Sales page (`/sales`) queues a `sales` worker job per source. The first sync copies the last 180 days (60 for Shopify without read_all_orders) in 14-day periods; later syncs copy from 30 days before the stored end, so late fulfillments and cancellations are picked up. Each period replaces the stored orders created in it, in one transaction, so orders the source drops (cancelled or test) disappear. `sales_syncs` records the unbroken stored period; restock's sales period ends at that period's end and is refused if it would reach further back than the stored orders. Changing the connected account starts over. A background schedule will replace the manual Sync button.
+
 ## Manual API
 
 POST `/api/inventory/demand` requires a buyer session and same-origin Origin header. The server chooses the connected account; clients cannot supply an organization, seller or shop ID.
@@ -20,7 +24,7 @@ The response contains source, externalAccountId, window, observedAt, basis, quan
 
 Rows contain variantId, buyerSku, locationId, pool and fulfilledUnits. Pools are shopify, fba and fbm_unassigned. Join Amazon seller SKU to Shopify only through an exact, unambiguous product mapping with verified pack units. Never match by title.
 
-This is a manual direct read, not scheduled syncing or customer-order ingestion. No sales data is persisted. Retain the response while adjusting report settings rather than refetching for every change. Limits are five minutes, 2,000 requests, 10,000 orders and 32 MB. Pagination includes Shopify order lines and fulfillment lines. Failed, duplicate or truncated collections return no partial report. Provider throttles fail safely; Amazon's long order-search rate window is not blindly retried. Larger stores may require shorter windows or a future durable collection job.
+This is a manual direct read for diagnostics; restock uses stored orders (above). This endpoint persists nothing. Retain the response while adjusting report settings rather than refetching for every change. Limits are five minutes, 2,000 requests, 10,000 orders and 32 MB. Pagination includes Shopify order lines and fulfillment lines. Failed, duplicate or truncated collections return no partial report. Provider throttles fail safely; Amazon's long order-search rate window is not blindly retried. Larger stores may require shorter windows or a future durable collection job.
 
 Responses are private/no-store. Invalid input is 400, supplier/invalid-origin requests 403, unsupported history/grants or changed accounts 409, and other provider failures 503. Account identity is checked around every provider read and before returning.
 

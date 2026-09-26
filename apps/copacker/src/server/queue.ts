@@ -3,6 +3,7 @@ import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
+import { salesJob } from "./sales-orders"
 import { stockJob } from "./stock"
 
 export async function runNextJob() {
@@ -59,6 +60,8 @@ export async function runNextJob() {
   try {
     if (job.kind === "stock") {
       await stockJob(job.payload, assertOwned, job)
+    } else if (job.kind === "sales") {
+      await salesJob(job.payload, assertOwned)
     } else if (job.kind === "import") {
       await importJob(job.payload, assertOwned)
     } else if (job.kind === "amazon") {

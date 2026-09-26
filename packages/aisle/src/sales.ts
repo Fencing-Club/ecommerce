@@ -27,12 +27,14 @@ const fulfillmentLines = z.object({ nodes: z.array(fulfillmentLine).max(250), pa
 const fulfillment = z.object({ id, status: z.string(), location: z.object({ id }).nullable() })
 const header = z.object({
   id,
+  // The order number shown in Shopify, such as #1001.
+  name: z.string(),
   createdAt: z.iso.datetime({ offset: true }),
   cancelledAt: z.string().nullable(),
   test: z.boolean(),
   sourceName: z.string().nullable()
 })
-const headers = "id createdAt cancelledAt test sourceName"
+const headers = "id name createdAt cancelledAt test sourceName"
 const lineFields = "id quantity currentQuantity sku variant{id} lineItemGroup{id quantity variantId}"
 const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
 const fulfillmentPage = "nodes{id quantity lineItem{id}} pageInfo{hasNextPage endCursor}"
@@ -141,6 +143,7 @@ export async function collectShopifySales(
         if (
           JSON.stringify({
             id: detail.id,
+            name: detail.name,
             createdAt: detail.createdAt,
             cancelledAt: detail.cancelledAt,
             test: detail.test,

@@ -1,6 +1,7 @@
 import { type Address, type OrderInput, type Packing, type PackingDraft, prepCategories } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
+import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
 import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core"
 import type { CasePack } from "../lib/case-packs"
@@ -256,7 +257,7 @@ export const jobs = pgTable(
   {
     id: uuid().defaultRandom().primaryKey(),
     key: text().notNull().unique(),
-    kind: text({ enum: ["amazon", "email", "shopify", "import", "stock"] }).notNull(),
+    kind: text({ enum: ["amazon", "email", "shopify", "import", "stock", "sales"] }).notNull(),
     payload: jsonb().$type<Record<string, unknown>>().notNull(),
     status: text().notNull().default("pending"),
     attempts: integer().notNull().default(0),
@@ -348,4 +349,45 @@ export const productDefaults = pgTable(
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.productId] })]
+)
+// Sales orders copied from Shopify and Amazon, as their readers return them, so restock can read any period quickly.
+export const salesOrders = pgTable(
+  "sales_orders",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    externalAccountId: text().notNull(),
+    orderId: text().notNull(),
+    orderedAt: timestamp({ withTimezone: true }).notNull(),
+    data: jsonb().$type<ShopifySale | AmazonSale>().notNull(),
+    syncedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [
+    uniqueIndex("sales_order_identity").on(t.orgId, t.source, t.externalAccountId, t.orderId),
+    index("sales_order_period").on(t.orgId, t.source, t.orderedAt)
+  ]
+)
+// Each source's order sync: its state and the unbroken period of orders stored.
+export const salesSyncs = pgTable(
+  "sales_syncs",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    externalAccountId: text().notNull(),
+    status: text({ enum: ["idle", "queued", "running", "failed"] })
+      .notNull()
+      .default("idle"),
+    revision: integer().notNull().default(0),
+    coveredFrom: timestamp({ withTimezone: true }),
+    coveredTo: timestamp({ withTimezone: true }),
+    requestedAt: timestamp({ withTimezone: true }),
+    finishedAt: timestamp({ withTimezone: true }),
+    errorCode: text()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.source] })]
 )

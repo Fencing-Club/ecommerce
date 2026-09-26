@@ -63,6 +63,7 @@ describe("Shopify bundle lines", () => {
       [
         {
           id: "gid://shopify/Order/1",
+          name: "#1001",
           createdAt: "2026-09-01T00:00:00Z",
           cancelledAt: null,
           test: false,

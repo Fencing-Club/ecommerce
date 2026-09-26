@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from "vitest"
 import { collectShopifySales, collectAmazonSales, shopifySalesQueries } from "../src/sales"
 const window = { from: "2026-08-01T00:00:00Z", to: "2026-09-01T00:00:00Z" }
 const pageInfo = { hasNextPage: false, endCursor: null }
-const header = { id: "order1", createdAt: "2026-08-20T00:00:00Z", cancelledAt: null, test: false, sourceName: "web" }
+const header = {
+  id: "order1",
+  name: "#1001",
+  createdAt: "2026-08-20T00:00:00Z",
+  cancelledAt: null,
+  test: false,
+  sourceName: "web"
+}
 const line = { id: "line1", quantity: 2, currentQuantity: 2, sku: "SKU", variant: { id: "variant1" } }
 function shopify() {
   const graphql = vi

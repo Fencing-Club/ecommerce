@@ -40,6 +40,7 @@ it("separates unfulfilled units from mapping failures and unknown quantities", (
 })
 const order: ShopifySale = {
   id: "order1",
+  name: "#1001",
   createdAt: "2026-08-20T00:00:00Z",
   cancelledAt: null,
   test: false,

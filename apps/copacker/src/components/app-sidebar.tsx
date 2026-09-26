@@ -7,6 +7,7 @@ import {
   ClipboardList,
   LogOut,
   PackagePlus,
+  Receipt,
   Settings,
   Truck,
   Users,
@@ -55,6 +56,7 @@ export type AppSidebarProps = {
 
 const navigation = [
   { view: "orders", label: "Purchase orders", icon: ClipboardList },
+  { view: "sales", label: "Sales", icon: Receipt, buyerOnly: true },
   { view: "inventory", label: "Inventory", icon: Box, buyerOnly: true },
   { view: "restock", label: "Restock", icon: PackagePlus, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },

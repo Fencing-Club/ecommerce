@@ -10,8 +10,8 @@ import { inventoryLocations } from "@/server/inventory-products"
 import { readProductDefaults } from "@/server/product-defaults"
 import { restockPoolReport, type RestockTarget } from "@/server/restock-pool-report"
 import { dayRange } from "@/server/restock-report"
-import { DemandAccessError, readSalesDemand } from "@/server/sales"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "@/server/sales-attribution"
+import { SalesSyncError, storedDemand } from "@/server/sales-orders"
 import { appUrl } from "@/server/security"
 import { describeError } from "@/server/stock"
 
@@ -26,8 +26,6 @@ const inputSchema = z.strictObject({
     ])
     .optional()
 })
-
-export const maxDuration = 300
 
 // Sales per variant for the Inventory page: sold alone, sold in bundles, and bundles sold, from every connected store.
 export async function POST(request: Request) {
@@ -46,9 +44,6 @@ export async function POST(request: Request) {
       { status: 400, headers }
     )
   }
-  // Orders need a couple of minutes to settle, so the window ends on a whole minute a few minutes ago.
-  const to = new Date(Math.floor((Date.now() - 180000) / 60000) * 60000)
-  const window = { from: new Date(to.getTime() - input.data.days * 86400000).toISOString(), to: to.toISOString() }
   const connected = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
     .from(connections)
@@ -58,13 +53,16 @@ export async function POST(request: Request) {
   let shopifySales: SourceSales | null = null
   let amazonSales: SourceSales | null = null
   const sources = []
+  // Each source's period ends where its copied orders end.
+  const windows: { from: string; to: string }[] = []
   for (const source of ["shopify", "amazon"] as const) {
     if (!connected.some((account) => account.provider === source)) {
       continue
     }
     try {
-      const result = await readSalesDemand(s, { source, window }, async () => request.signal.throwIfAborted())
+      const result = await storedDemand(s.org.id, source, input.data.days)
       rows.push(...result.rows)
+      windows.push(result.window)
       if (source === "shopify") {
         shopifySales = result
       } else {
@@ -73,6 +71,7 @@ export async function POST(request: Request) {
       sources.push({
         source,
         error: null,
+        window: result.window,
         // Units the source reported but couldn't place, such as unfulfilled orders or unmapped sales channels.
         gapUnits: result.gaps.reduce((sum, gap) => sum + (gap.units ?? 0), 0),
         gapReasons: summarizeDemandGaps(result.gaps)
@@ -83,16 +82,18 @@ export async function POST(request: Request) {
       )
       sources.push({
         source,
-        // Access problems say what to do; anything else is logged and summarized.
+        // Setup problems say what to do; anything else is logged and summarized.
         error:
-          error instanceof DemandAccessError || error instanceof ReconnectRequiredError
+          error instanceof SalesSyncError || error instanceof ReconnectRequiredError
             ? error.message
-            : "Sales couldn't be read. Check the connection and try again.",
+            : "Sales couldn't be read. Try again.",
+        window: null,
         gapUnits: 0,
         gapReasons: {}
       })
     }
   }
+  const window = windows[0] ?? null
   const { domain, rows: catalog, classifications, onOrder } = await inventoryContext(s.org.id)
   const { variants, unmatchedUnits } = bundleSales(catalog, rows)
   const target = input.data.target as RestockTarget | undefined

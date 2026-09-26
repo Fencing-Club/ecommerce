@@ -100,6 +100,7 @@ import {
 import { lineDefaultsFor, saveProductDefaults } from "../src/server/product-defaults"
 import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
+import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
@@ -2651,5 +2652,99 @@ describe("tenant sales demand reads", () => {
     expect(await failed.text()).not.toContain("private provider text")
     expect(failed.headers.get("cache-control")).toBe("private, no-store")
     expect((await readDemand(request())).status).toBe(200)
+  })
+})
+
+describe("stored sales orders", () => {
+  const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString()
+  const amazonOrder = (orderId: string, createdTime: string, quantity: number) => ({
+    orderId,
+    createdTime,
+    salesChannel: { channelName: "AMAZON", marketplaceId: "ATVPDKIKX0DER" },
+    fulfillment: { fulfillmentStatus: "SHIPPED", fulfilledBy: "AMAZON" },
+    orderItems: [
+      {
+        orderItemId: `${orderId}-1`,
+        quantityOrdered: quantity,
+        product: { sellerSku: "foil-2", asin: "B000000001" },
+        fulfillment: { quantityFulfilled: quantity }
+      }
+    ]
+  })
+  // Answers each Amazon read with the listed orders created in its period.
+  function amazonOrders(orders: ReturnType<typeof amazonOrder>[]) {
+    provider.api.request.mockImplementation(async (_method: string, path: string) => {
+      const query = new URL(path, "https://amazon.test").searchParams
+      const from = Date.parse(query.get("createdAfter") ?? ""),
+        to = Date.parse(query.get("createdBefore") ?? "")
+      return {
+        orders: orders.filter((order) => Date.parse(order.createdTime) >= from && Date.parse(order.createdTime) < to)
+      }
+    })
+  }
+  beforeEach(async () => {
+    await orderConnectionsAmazonOnly()
+    provider.connection.mockImplementation(async (orgId: string, kind: string) => {
+      const rows = await database.select().from(tables.connections)
+      const row = rows.find((row) => row.orgId === orgId && row.provider === kind)
+      if (!row) {
+        throw new Error("not connected")
+      }
+      return row
+    })
+  })
+  it("splits the first sync into periods covering the history, and later syncs into the recent ones", () => {
+    const now = Date.parse("2026-09-25T12:00:00Z")
+    const first = syncChunks(now, { coveredFrom: null, coveredTo: null })
+    expect(first.backfill).toBe(true)
+    expect(first.chunks).toHaveLength(13)
+    expect(first.chunks.at(-1)?.to.toISOString()).toBe("2026-09-25T11:57:00.000Z")
+    const later = syncChunks(now, { coveredFrom: first.chunks[0]!.from, coveredTo: new Date(now - 86400000) })
+    expect(later.backfill).toBe(false)
+    expect(later.chunks).toHaveLength(3)
+    expect(later.chunks[0]!.from.getTime()).toBe(now - 31 * 86400000)
+  })
+  it("copies orders, lists them and computes demand without asking Amazon again", async () => {
+    amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
+    await expect(storedDemand(buyerId, "amazon", 28)).rejects.toThrow("Sync Amazon orders")
+    expect(await requestSalesSync(buyer, "amazon")).toEqual({ status: "queued" })
+    expect(await requestSalesSync(buyer, "amazon")).toEqual({ status: "queued" })
+    expect(await database.select().from(tables.jobs)).toHaveLength(1)
+    await runNextJob()
+    const [sync] = await database.select().from(tables.salesSyncs)
+    expect(sync).toMatchObject({ status: "idle", externalAccountId: "A123456789", errorCode: null })
+    expect(await listSalesOrders(buyerId, { page: 0 })).toMatchObject({
+      total: 2,
+      orders: [
+        { source: "amazon", number: "111-1", units: 2, channel: "FBA", status: "SHIPPED" },
+        { number: "111-2", units: 3 }
+      ]
+    })
+    const calls = provider.api.request.mock.calls.length
+    const demand = await storedDemand(buyerId, "amazon", 28)
+    expect(demand.rows).toEqual([expect.objectContaining({ buyerSku: "foil-2", pool: "fba", fulfilledUnits: 2 })])
+    expect(demand.window.to).toBe(sync!.coveredTo!.toISOString())
+    expect((await storedDemand(buyerId, "amazon", 120)).rows[0]?.fulfilledUnits).toBe(5)
+    await expect(storedDemand(buyerId, "amazon", 365)).rejects.toThrow("go back 180 days")
+    expect(provider.api.request.mock.calls.length).toBe(calls)
+  })
+  it("drops orders that disappear from the source when the period is synced again", async () => {
+    amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])
+    await requestSalesSync(buyer, "amazon")
+    await runNextJob()
+    amazonOrders([amazonOrder("111-2", daysAgo(100), 3)])
+    await requestSalesSync(buyer, "amazon")
+    await runNextJob()
+    expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual(["111-2"])
+    // Only the recent periods are read again.
+    expect(provider.api.request.mock.calls.length).toBeLessThan(20)
+  })
+  it("records a failed sync and keeps the orders already copied", async () => {
+    provider.api.request.mockRejectedValue(new Error("private provider text"))
+    await requestSalesSync(buyer, "amazon")
+    await runNextJob()
+    const [sync] = await database.select().from(tables.salesSyncs)
+    expect(sync).toMatchObject({ status: "failed", errorCode: "refresh_failed", coveredTo: null })
+    await expect(requestSalesSync(supplier, "amazon")).rejects.toThrow("buyer workspace")
   })
 })
