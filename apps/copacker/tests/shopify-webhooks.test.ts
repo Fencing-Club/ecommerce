@@ -9,7 +9,8 @@ const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 const shopify = vi.hoisted(() => ({
   graphql: vi.fn<(...args: never[]) => Promise<unknown>>(),
-  subscribeWebhooks: vi.fn<(...args: never[]) => Promise<string[]>>()
+  subscribeWebhooks: vi.fn<(...args: never[]) => Promise<string[]>>(),
+  unsubscribeWebhooks: vi.fn<(...args: never[]) => Promise<number>>()
 }))
 vi.mock("../src/server/connections", async (original) => ({
   ...(await original<typeof import("../src/server/connections")>()),
@@ -356,19 +357,19 @@ describe("Shopify events through EventBridge", () => {
     expect(await queued("shopify-event")).toHaveLength(1)
   })
 
-  it("subscribes the store at the HTTPS address and the EventBridge source", async () => {
+  it("subscribes the store at the EventBridge source and removes its HTTPS webhooks", async () => {
     vi.stubEnv("APP_URL", "https://copacker.example")
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", source)
     await shopifySubscribeJob({ orgId: buyerId }, owned)
-    expect(shopify.subscribeWebhooks.mock.calls).toEqual([
-      ["https://copacker.example/api/webhooks/shopify", shopifyWebhookTopics],
-      [source, shopifyWebhookTopics]
-    ])
-    // Without HTTPS, only EventBridge.
+    expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, shopifyWebhookTopics]])
+    expect(shopify.unsubscribeWebhooks.mock.calls).toEqual([["https://copacker.example/api/webhooks/shopify"]])
+    // Without HTTPS there are no webhooks to remove.
     vi.stubEnv("APP_URL", "http://localhost:3000")
     shopify.subscribeWebhooks.mockClear()
+    shopify.unsubscribeWebhooks.mockClear()
     await shopifySubscribeJob({ orgId: buyerId }, owned)
     expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, shopifyWebhookTopics]])
+    expect(shopify.unsubscribeWebhooks).not.toHaveBeenCalled()
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", "arn:aws:sqs:us-east-1:1:not-a-source")
     await expect(shopifySubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow("Invalid string")
   })

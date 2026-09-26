@@ -38,16 +38,20 @@ export function shopifyWebhookAddress() {
   return `${appUrl()}/api/webhooks/shopify`
 }
 
-// Where Shopify delivers events: the HTTPS webhook route (only when the app is reachable over HTTPS) and, when
-// configured, the app's Amazon EventBridge source, which forwards to an SQS queue the worker reads. A queue keeps
-// events through outages that HTTPS retries don't outlast.
+// Where Shopify delivers events. With the app's Amazon EventBridge source configured, only there: it forwards to an
+// SQS queue the worker reads, which keeps events through outages that HTTPS retries don't outlast, and HTTPS webhooks
+// left from before are removed. Otherwise the HTTPS webhook route, when the app is reachable over HTTPS.
 const eventBridgeSource = z
   .string()
   .regex(/^arn:aws:events:[a-z0-9-]+::event-source\/aws\.partner\/shopify\.com\/\d+\/[\w.-]+$/)
 export function shopifyEventAddresses() {
   const https = shopifyWebhookAddress()
+  const reachable = https.startsWith("https://") ? [https] : []
   const source = process.env.SHOPIFY_EVENTBRIDGE_SOURCE_ARN
-  return [...(https.startsWith("https://") ? [https] : []), ...(source ? [eventBridgeSource.parse(source)] : [])]
+  if (source) {
+    return { subscribe: [eventBridgeSource.parse(source)], retire: reachable }
+  }
+  return { subscribe: reachable, retire: [] }
 }
 
 // Queues the work a verified webhook calls for, for every workspace connected to the store. Returns how many were.
@@ -146,12 +150,13 @@ export async function queueShopifySubscription(orgId: string, key: string) {
     .onConflictDoNothing()
 }
 
-// Worker job: subscribes the connected store to each topic it isn't subscribed to yet, at every delivery address.
+// Worker job: subscribes the connected store to each topic it isn't subscribed to yet, and removes subscriptions at
+// addresses Copacker no longer delivers to.
 export async function shopifySubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
-  const addresses = shopifyEventAddresses()
+  const { subscribe, retire } = shopifyEventAddresses()
   // Shopify only delivers to HTTPS or EventBridge, so a local app without either can't subscribe.
-  if (!addresses.length) {
+  if (!subscribe.length) {
     console.warn(
       JSON.stringify({ event: "shopify_webhooks_skipped", orgId, reason: "no HTTPS or EventBridge address" })
     )
@@ -165,9 +170,13 @@ export async function shopifySubscribeJob(payload: Record<string, unknown>, asse
     return
   }
   const shopify = await shopifyFor(orgId)
-  for (const address of addresses) {
+  for (const address of subscribe) {
     await assertOwned()
     await shopify.subscribeWebhooks(address, shopifyWebhookTopics)
+  }
+  for (const address of retire) {
+    await assertOwned()
+    await shopify.unsubscribeWebhooks(address)
   }
 }
 
