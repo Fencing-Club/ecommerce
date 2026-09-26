@@ -88,12 +88,13 @@ export function ledgerChunks(now: number, coverage: { from: Date | null; to: Dat
   const start = end - stockHistoryDays * dayMs
   const size = 30 * dayMs
   const chunks: { from: Date; to: Date }[] = []
-  const usable = coverage.from && coverage.to && coverage.to.getTime() >= start
+  // A range that stopped over a month ago starts over from the newest days, as order syncs do.
+  const usable = coverage.from && coverage.to && coverage.to.getTime() >= end - 30 * dayMs
   if (!usable) {
     for (let to = end; to > start; to -= size) {
       chunks.push({ from: new Date(Math.max(start, to - size)), to: new Date(to) })
     }
-    return chunks
+    return { chunks, fresh: true }
   }
   const storedFrom = coverage.from!.getTime()
   const storedTo = coverage.to!.getTime()
@@ -103,7 +104,7 @@ export function ledgerChunks(now: number, coverage: { from: Date | null; to: Dat
   for (let to = storedFrom; to > start; to -= size) {
     chunks.push({ from: new Date(Math.max(start, to - size)), to: new Date(to) })
   }
-  return chunks
+  return { chunks, fresh: false }
 }
 
 // Copies a year of daily FBA stock from Amazon's inventory ledger. A failure is recorded on the sync but doesn't fail
@@ -120,8 +121,8 @@ export async function syncLedger(
   }
   let covered =
     sync.stockCoveredFrom && sync.stockCoveredTo ? { from: sync.stockCoveredFrom, to: sync.stockCoveredTo } : null
-  const chunks = ledgerChunks(Date.now(), { from: covered?.from ?? null, to: covered?.to ?? null })
-  if (chunks.length && covered && covered.to.getTime() < Date.now() - (stockHistoryDays + 1) * dayMs) {
+  const { chunks, fresh } = ledgerChunks(Date.now(), { from: covered?.from ?? null, to: covered?.to ?? null })
+  if (fresh) {
     covered = null
   }
   try {

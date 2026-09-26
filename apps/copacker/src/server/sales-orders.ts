@@ -1,3 +1,4 @@
+import { ProviderError } from "@repo/aisle/amazon"
 import { type AmazonSale, collectAmazonSales, collectShopifySales, type ShopifySale } from "@repo/aisle/sales"
 import { and, count, desc, eq, gte, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -91,7 +92,9 @@ export function syncChunks(
   const historyStart = end - historyDays * day
   const size = chunkDays * day
   const chunks: { from: Date; to: Date }[] = []
-  const usable = coverage.coveredFrom && coverage.coveredTo && coverage.coveredTo.getTime() >= historyStart
+  // A stored range that stopped more than the refresh period ago would leave restock waiting while the sync crawls
+  // forward from it, so it starts over from the newest orders; the copied orders stay until re-read.
+  const usable = coverage.coveredFrom && coverage.coveredTo && coverage.coveredTo.getTime() >= end - refreshDays * day
   if (!usable) {
     for (let to = end; to > historyStart; to -= size) {
       chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
@@ -107,6 +110,25 @@ export function syncChunks(
     chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
   }
   return { chunks, fresh: false }
+}
+
+// Amazon's order search allows few requests, and a year is many periods. A throttled period waits and tries again,
+// up to 5 times, instead of failing the whole sync.
+export async function throttled<T>(read: () => Promise<T>, assertOwned: () => Promise<void>, sleep = wait): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await read()
+    } catch (error) {
+      if (!(error instanceof ProviderError) || ![429, 503].includes(error.status) || attempt >= 4) {
+        throw error
+      }
+      await sleep(Math.max(error.retryAfterMs ?? 0, 60000 * (attempt + 1)))
+      await assertOwned()
+    }
+  }
+}
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 const payloadSchema = z.object({ orgId: z.uuid(), source: z.enum(salesSources), revision: z.number().int().positive() })
@@ -152,7 +174,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     }
     let covered = fresh || !sync.coveredFrom || !sync.coveredTo ? null : { from: sync.coveredFrom, to: sync.coveredTo }
     for (const chunk of chunks) {
-      const orders = await read({ from: chunk.from.toISOString(), to: chunk.to.toISOString() })
+      const orders = await throttled(
+        () => read({ from: chunk.from.toISOString(), to: chunk.to.toISOString() }),
+        assertOwned
+      )
       await assertOwned()
       covered = covered
         ? {
