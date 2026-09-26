@@ -21,13 +21,16 @@ const locationsApi = api.injectEndpoints({
   endpoints: (build) => ({
     inventoryLocationSettings: build.query<LocationSettings, void>({
       query: () => "inventory/locations",
-      keepUnusedDataFor: 0
+      keepUnusedDataFor: 0,
+      providesTags: ["InventoryLocation"]
     }),
     saveInventoryLocation: build.mutation<
       unknown,
       { locationId: string; classification: LocationClassification; snapshotId: string; expectedRevision: number }
     >({
-      query: (body) => ({ url: "inventory/locations", method: "PATCH", body })
+      query: (body) => ({ url: "inventory/locations", method: "PATCH", body }),
+      // The checkbox shows the saved setting, and which locations count changes restock's numbers.
+      invalidatesTags: ["InventoryLocation", "Restock"]
     })
   })
 })

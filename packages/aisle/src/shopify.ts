@@ -188,7 +188,20 @@ export class Shopify {
         throw new ShopifyRequestError(response.status)
       }
       const envelope = z
-        .object({ data: z.unknown().optional(), errors: z.array(z.unknown()).optional() })
+        .object({
+          data: z.unknown().optional(),
+          errors: z.array(z.unknown()).optional(),
+          extensions: z
+            .object({
+              cost: z
+                .object({
+                  requestedQueryCost: z.number(),
+                  throttleStatus: z.object({ currentlyAvailable: z.number(), restoreRate: z.number().positive() })
+                })
+                .optional()
+            })
+            .optional()
+        })
         .parse(await response.json())
       if (
         envelope.errors?.some(
@@ -204,7 +217,16 @@ export class Shopify {
             z.object({ message: z.literal("Throttled") }).safeParse(error).success
         )
         if (throttled && attempt < 4) {
-          await this.delay(1000 * 2 ** attempt)
+          // Shopify says how many points the query needs and how fast they refill; wait for that, plus a second.
+          const cost = envelope.extensions?.cost
+          const refill = cost
+            ? Math.ceil(
+                (Math.max(0, cost.requestedQueryCost - cost.throttleStatus.currentlyAvailable) /
+                  cost.throttleStatus.restoreRate) *
+                  1000
+              ) + 1000
+            : 0
+          await this.delay(Math.min(60000, Math.max(refill, 1000 * 2 ** attempt)))
           continue
         }
         // GraphQL error messages describe the query, not the store's data, so they are safe to keep for diagnosis.

@@ -20,11 +20,11 @@ export type SupplierOption = {
 
 // Server-rendered pages refresh with router.refresh(). Data cached here is tagged, so a change made anywhere re-renders
 // every view that shows it: "Supplier" for supplier names and lead times, "Restock" for restock results, and
-// "ProductSupplier" for which products have a supplier.
+// "ProductSupplier" for which products have a supplier, and "InventoryLocation" for which Shopify locations count.
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["Supplier", "Restock", "ProductSupplier"],
+  tagTypes: ["Supplier", "Restock", "ProductSupplier", "InventoryLocation"],
   endpoints: (build) => ({
     action: build.mutation<ActionResult, { action: string; data: Record<string, unknown> }>({
       query: (body) => ({ url: "action", method: "POST", body }),

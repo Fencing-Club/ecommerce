@@ -59,6 +59,23 @@ describe("Shopify throttling", () => {
     expect(waits).toEqual([1000, 2000])
   })
 
+  it("waits as long as Shopify says the query's points take to refill", async () => {
+    const throttled = (available: number) =>
+      Response.json({
+        errors: [{ message: "Throttled", extensions: { code: "THROTTLED" } }],
+        extensions: {
+          cost: { requestedQueryCost: 900, throttleStatus: { currentlyAvailable: available, restoreRate: 50 } }
+        }
+      })
+    const responses = [throttled(100), throttled(0), Response.json({ data: { shop: { myshopifyDomain: domain } } })]
+    const transport = vi.fn<typeof fetch>(async () => responses.shift() ?? Response.json({ data: {} }))
+    const delay = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined)
+    const api = new Shopify(domain, "test", transport, delay)
+    await api.graphql("query Shop { shop { myshopifyDomain } }")
+    // 800 points short at 50 a second is 16 seconds, plus one; 900 short is 18, plus one.
+    expect(delay.mock.calls).toEqual([[17000], [19000]])
+  })
+
   it("does not retry permission or other GraphQL errors", async () => {
     const transport = vi.fn<typeof fetch>(async () =>
       Response.json({ errors: [{ message: "Invalid query", extensions: { code: "GRAPHQL_VALIDATION_FAILED" } }] })
