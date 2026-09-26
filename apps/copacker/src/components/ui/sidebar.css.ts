@@ -143,6 +143,8 @@ export const inset = style({
   display: "flex",
   width: "100%",
   flex: "1 1 0%",
+  // A flex item beside the sidebar; without this, a wide table widens the page instead of scrolling in its container.
+  minWidth: 0,
   flexDirection: "column",
   backgroundColor: vars.color.background,
   "@media": {
