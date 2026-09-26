@@ -152,6 +152,9 @@ describe("restock plan", () => {
     })
     expect(notStocked).toMatchObject({ status: "not_stocked", purchaseUnits: 0 })
   })
+  it("leaves out listings Amazon holds no stock of and has no target for, even with FBM sales", () => {
+    expect(restockPlan({ ...base, channel: amazon, fbaRows: [], awdRows: [] })).toEqual([])
+  })
   it("uses the supplier's lead time for the channel", () => {
     const withSupplier = { ...base, supplierFor: () => supplier }
     expect(restockPlan({ ...withSupplier, channel: amazon })[0]).toMatchObject({

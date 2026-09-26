@@ -2698,7 +2698,7 @@ describe("stored sales orders", () => {
     const now = Date.parse("2026-09-25T12:00:00Z")
     const first = syncChunks(now, { coveredFrom: null, coveredTo: null })
     expect(first.backfill).toBe(true)
-    expect(first.chunks).toHaveLength(13)
+    expect(first.chunks).toHaveLength(27)
     expect(first.chunks.at(-1)?.to.toISOString()).toBe("2026-09-25T11:57:00.000Z")
     const later = syncChunks(now, { coveredFrom: first.chunks[0]!.from, coveredTo: new Date(now - 86400000) })
     expect(later.backfill).toBe(false)
@@ -2717,16 +2717,28 @@ describe("stored sales orders", () => {
     expect(await listSalesOrders(buyerId, { page: 0 })).toMatchObject({
       total: 2,
       orders: [
-        { source: "amazon", number: "111-1", units: 2, channel: "FBA", status: "SHIPPED" },
+        {
+          source: "amazon",
+          number: "111-1",
+          units: 2,
+          items: [{ sku: "foil-2", quantity: 2 }],
+          channel: "Amazon FBA",
+          status: "Shipped",
+          url: "https://sellercentral.amazon.com/orders-v3/order/111-1"
+        },
         { number: "111-2", units: 3 }
       ]
     })
+    expect((await listSalesOrders(buyerId, { page: 0, q: "111-2" })).orders.map((order) => order.number)).toEqual([
+      "111-2"
+    ])
+    expect((await listSalesOrders(buyerId, { page: 0, q: "100%" })).total).toBe(0)
     const calls = provider.api.request.mock.calls.length
     const demand = await storedDemand(buyerId, "amazon", 28)
     expect(demand.rows).toEqual([expect.objectContaining({ buyerSku: "foil-2", pool: "fba", fulfilledUnits: 2 })])
     expect(demand.window.to).toBe(sync!.coveredTo!.toISOString())
     expect((await storedDemand(buyerId, "amazon", 120)).rows[0]?.fulfilledUnits).toBe(5)
-    await expect(storedDemand(buyerId, "amazon", 365)).rejects.toThrow("go back 180 days")
+    await expect(storedDemand(buyerId, "amazon", 400)).rejects.toThrow("go back 365 days")
     expect(provider.api.request.mock.calls.length).toBe(calls)
   })
   it("drops orders that disappear from the source when the period is synced again", async () => {
@@ -2734,11 +2746,12 @@ describe("stored sales orders", () => {
     await requestSalesSync(buyer, "amazon")
     await runNextJob()
     amazonOrders([amazonOrder("111-2", daysAgo(100), 3)])
+    const before = provider.api.request.mock.calls.length
     await requestSalesSync(buyer, "amazon")
     await runNextJob()
     expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual(["111-2"])
     // Only the recent periods are read again.
-    expect(provider.api.request.mock.calls.length).toBeLessThan(20)
+    expect(provider.api.request.mock.calls.length - before).toBe(3)
   })
   it("records a failed sync and keeps the orders already copied", async () => {
     provider.api.request.mockRejectedValue(new Error("private provider text"))

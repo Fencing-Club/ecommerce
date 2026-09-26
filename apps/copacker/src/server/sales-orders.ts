@@ -16,7 +16,7 @@ export type SalesSource = (typeof salesSources)[number]
 
 // How far back orders are kept, how much recent history each sync reads again (shipments and cancellations arrive
 // after the order), and the period each provider read covers.
-export const salesHistoryDays = 180
+export const salesHistoryDays = 365
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
@@ -180,7 +180,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
 
 // Each connected source's sync state and the orders stored for it.
 export async function salesSyncStatus(orgId: string) {
-  const [accounts, syncs, stored] = await Promise.all([
+  const since = new Date(Date.now() - 30 * day)
+  const [accounts, syncs, stored, recent] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
       .from(connections)
@@ -194,7 +195,16 @@ export async function salesSyncStatus(orgId: string) {
       })
       .from(salesOrders)
       .where(eq(salesOrders.orgId, orgId))
-      .groupBy(salesOrders.source, salesOrders.externalAccountId)
+      .groupBy(salesOrders.source, salesOrders.externalAccountId),
+    db()
+      .select({
+        source: salesOrders.source,
+        externalAccountId: salesOrders.externalAccountId,
+        orderedAt: salesOrders.orderedAt,
+        data: salesOrders.data
+      })
+      .from(salesOrders)
+      .where(and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since)))
   ])
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
@@ -203,6 +213,9 @@ export async function salesSyncStatus(orgId: string) {
     }
     const sync = syncs.find((row) => row.source === source && row.externalAccountId === account.externalId)
     const orders = stored.find((row) => row.source === source && row.externalAccountId === account.externalId)
+    const last30 = recent
+      .filter((row) => row.source === source && row.externalAccountId === account.externalId)
+      .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId))
     return [
       {
         source,
@@ -212,7 +225,9 @@ export async function salesSyncStatus(orgId: string) {
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
         coveredTo: sync?.coveredTo?.toISOString() ?? null,
         finishedAt: sync?.finishedAt?.toISOString() ?? null,
-        orders: orders?.orders ?? 0
+        orders: orders?.orders ?? 0,
+        // Orders and units in the last 30 days.
+        recent: { orders: last30.length, units: last30.reduce((sum, order) => sum + order.units, 0) }
       }
     ]
   })
@@ -240,7 +255,7 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
       )
     )
   if (!sync?.coveredFrom || !sync.coveredTo) {
-    throw new SalesSyncError(`Sync ${title} orders on the Sales page first`)
+    throw new SalesSyncError(`Sync ${title} orders on the Orders page first`)
   }
   const to = sync.coveredTo
   const from = new Date(to.getTime() - days * day)
@@ -277,53 +292,98 @@ export type SalesOrderSummary = {
   number: string
   orderedAt: string
   units: number
-  channel: string | null
+  // What was bought: SKUs and quantities, a bundle once under its own SKU.
+  items: { sku: string | null; quantity: number }[]
+  channel: string
   status: string
+  // The order in Shopify admin or Seller Central.
+  url: string
 }
 
-// A stored order as the Sales page lists it. Bundle components count once, as the bundle bought.
-export function summarizeSalesOrder(source: SalesSource, orderedAt: Date, data: ShopifySale | AmazonSale) {
+const shopifyChannels: Record<string, string> = {
+  web: "Online store",
+  pos: "Point of sale",
+  shopify_draft_order: "Draft order"
+}
+
+// Amazon reports statuses such as PARTIALLY_SHIPPED; shown as words.
+function words(value: string) {
+  const text = value.replaceAll("_", " ").toLocaleLowerCase()
+  return text.charAt(0).toLocaleUpperCase() + text.slice(1)
+}
+
+// A stored order as the Orders page lists it. Bundle components count once, as the bundle bought.
+export function summarizeSalesOrder(
+  source: SalesSource,
+  orderedAt: Date,
+  data: ShopifySale | AmazonSale,
+  account: string
+): SalesOrderSummary {
   if (source === "shopify" && "lines" in data) {
-    const groups = new Map<string, number>()
-    let units = 0
+    const items: SalesOrderSummary["items"] = []
+    const groups = new Set<string>()
     for (const line of data.lines) {
       if (line.lineItemGroup) {
-        groups.set(line.lineItemGroup.id, line.lineItemGroup.quantity)
-      } else {
-        units += line.currentQuantity
+        if (!groups.has(line.lineItemGroup.id)) {
+          groups.add(line.lineItemGroup.id)
+          items.push({ sku: null, quantity: line.lineItemGroup.quantity })
+        }
+      } else if (line.currentQuantity > 0) {
+        items.push({ sku: line.sku, quantity: line.currentQuantity })
       }
     }
-    for (const quantity of groups.values()) {
-      units += quantity
+    let status = "Unfulfilled"
+    if (data.fulfillments.length) {
+      const shipped = new Set(
+        data.fulfillments.flatMap((fulfillment) => fulfillment.lines.map((line) => line.lineItem.id))
+      )
+      status = data.lines.every((line) => line.currentQuantity === 0 || shipped.has(line.id))
+        ? "Fulfilled"
+        : "Partially fulfilled"
+    }
+    let channel = "Other app"
+    if (data.sourceName && shopifyChannels[data.sourceName]) {
+      channel = shopifyChannels[data.sourceName]!
     }
     return {
       source,
       orderId: data.id,
       number: data.name,
       orderedAt: orderedAt.toISOString(),
-      units,
-      channel: data.sourceName,
-      status: data.fulfillments.length > 0 ? "Fulfilled" : "Unfulfilled"
-    } satisfies SalesOrderSummary
+      units: items.reduce((sum, item) => sum + item.quantity, 0),
+      items,
+      channel,
+      status,
+      url: `https://admin.shopify.com/store/${account.replace(/\.myshopify\.com$/, "")}/orders/${data.id.split("/").at(-1)}`
+    }
   }
   if (source === "amazon" && "orderItems" in data) {
+    const fulfilledBy = data.fulfillment?.fulfilledBy
+    let channel = "Amazon"
+    if (fulfilledBy === "AMAZON") {
+      channel = "Amazon FBA"
+    } else if (fulfilledBy === "MERCHANT") {
+      channel = "Amazon FBM"
+    }
     return {
       source,
       orderId: data.orderId,
       number: data.orderId,
       orderedAt: orderedAt.toISOString(),
       units: data.orderItems.reduce((sum, item) => sum + item.quantityOrdered, 0),
-      channel: data.fulfillment?.fulfilledBy === "AMAZON" ? "FBA" : (data.fulfillment?.fulfilledBy ?? null),
-      status: data.fulfillment?.fulfillmentStatus ?? "Unknown"
-    } satisfies SalesOrderSummary
+      items: data.orderItems.map((item) => ({ sku: item.product.sellerSku ?? null, quantity: item.quantityOrdered })),
+      channel,
+      status: words(data.fulfillment?.fulfillmentStatus ?? "Unknown"),
+      url: `https://sellercentral.amazon.com/orders-v3/order/${encodeURIComponent(data.orderId)}`
+    }
   }
   throw new Error("Stored order doesn't match its source")
 }
 
 export const salesOrdersPageSize = 50
 
-// Stored orders, newest first, for the connected accounts.
-export async function listSalesOrders(orgId: string, filter: { source?: SalesSource; page: number }) {
+// Stored orders, newest first, for the connected accounts. The search matches order numbers and SKUs.
+export async function listSalesOrders(orgId: string, filter: { source?: SalesSource; page: number; q?: string }) {
   const accounts = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
     .from(connections)
@@ -336,10 +396,22 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
   if (scopes.length === 0) {
     return { orders: [], total: 0 }
   }
-  const where = and(eq(salesOrders.orgId, orgId), or(...scopes))
+  const q = filter.q?.trim()
+  // ILIKE treats %, _ and \ as special; escape them so they match literally.
+  const pattern = q ? `%${q.replace(/[\\%_]/g, (match) => `\\${match}`)}%` : null
+  const where = and(
+    eq(salesOrders.orgId, orgId),
+    or(...scopes),
+    pattern ? sql`${salesOrders.data}::text ilike ${pattern}` : undefined
+  )
   const [rows, [total]] = await Promise.all([
     db()
-      .select({ source: salesOrders.source, orderedAt: salesOrders.orderedAt, data: salesOrders.data })
+      .select({
+        source: salesOrders.source,
+        externalAccountId: salesOrders.externalAccountId,
+        orderedAt: salesOrders.orderedAt,
+        data: salesOrders.data
+      })
       .from(salesOrders)
       .where(where)
       .orderBy(desc(salesOrders.orderedAt), desc(salesOrders.orderId))
@@ -348,7 +420,7 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
     db().select({ total: count() }).from(salesOrders).where(where)
   ])
   return {
-    orders: rows.map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data)),
+    orders: rows.map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)),
     total: total?.total ?? 0
   }
 }

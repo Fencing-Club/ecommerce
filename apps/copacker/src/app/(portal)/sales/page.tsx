@@ -11,8 +11,8 @@ export default async function SalesPage() {
   return (
     <>
       <PageHeader
-        title="Sales"
-        description="Orders copied from Shopify and Amazon. Restock suggestions use these orders."
+        title="Orders"
+        description="Customer orders copied from Shopify and Amazon. Restock suggestions use these orders."
       />
       <SalesOrders />
     </>

@@ -28,4 +28,5 @@ export const separator = style({
   selectors: { "&&[data-orientation='vertical']": { height: space(4), alignSelf: "auto" } }
 })
 
-export const main = style({ marginInline: "auto" })
+// A flex item; without minWidth 0 a wide table stretches the page instead of scrolling inside its container.
+export const main = style({ marginInline: "auto", minWidth: 0, maxWidth: "100%" })

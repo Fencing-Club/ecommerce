@@ -188,7 +188,8 @@ export function restockPlan(input: {
               (demand) => demand.buyerSku === sku && (demand.pool === "fba" || demand.pool === "fbm_unassigned")
             ) ?? [])
           : []
-        if (!sku || (!fba && !awd && !(amazonTarget && amazonTarget > 0) && amazonSold.length === 0)) {
+        // Only what Amazon holds, or should: a listing sold only from the buyer's own stock (FBM) isn't restocked there.
+        if (!sku || (!fba && !awd && !(amazonTarget !== null && amazonTarget > 0))) {
           continue
         }
         notStocked = amazonTarget === 0

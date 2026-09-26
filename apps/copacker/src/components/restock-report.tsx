@@ -150,7 +150,7 @@ function Notes({ report }: { report: Report }) {
   const notes = report.sources.flatMap(({ source, error, gapUnits, gapReasons, window }) => [
     error ? `${sourceNames[source]}: ${error}` : null,
     window
-      ? `${sourceNames[source]} sales from ${new Date(window.from).toLocaleDateString()} to ${new Date(window.to).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Sync orders on the Sales page for newer ones.`
+      ? `${sourceNames[source]} sales from ${new Date(window.from).toLocaleDateString()} to ${new Date(window.to).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Sync on the Orders page for newer ones.`
       : null,
     gapUnits > 0 || Object.values(gapReasons).some((gap) => gap.unknownCount > 0)
       ? `${sourceNames[source]}: not counted, ${Object.entries(gapReasons)
@@ -656,7 +656,7 @@ export function RestockReport() {
         </Button>
       </div>
       <p className={styles.summary}>
-        Uses orders copied on the <Link href="/sales">Sales</Link> page and stock from the{" "}
+        Uses orders copied on the <Link href="/sales">Orders</Link> page and stock from the{" "}
         <Link href="/inventory">Inventory</Link> page. Suppliers’ own lead times replace the default; set them on the{" "}
         <Link href="/suppliers">Suppliers</Link> page.
       </p>

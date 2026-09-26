@@ -4,7 +4,8 @@ import { listSalesOrders, salesSources } from "@/server/sales-orders"
 
 const inputSchema = z.object({
   source: z.enum(salesSources).optional(),
-  page: z.coerce.number().int().min(0).max(10000).default(0)
+  page: z.coerce.number().int().min(0).max(10000).default(0),
+  q: z.string().max(100).optional()
 })
 
 // Stored sales orders, newest first.
@@ -17,7 +18,8 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams
   const input = inputSchema.safeParse({
     source: params.get("source") || undefined,
-    page: params.get("page") ?? undefined
+    page: params.get("page") ?? undefined,
+    q: params.get("q") || undefined
   })
   if (!input.success) {
     return Response.json({ error: "Check the filters and try again" }, { status: 400, headers })
