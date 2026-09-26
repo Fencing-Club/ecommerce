@@ -206,13 +206,20 @@ export class Amazon {
       signal: AbortSignal.timeout(30000)
     })
     if (!response.ok) {
+      // Amazon explains a rejection in its errors list; the codes and messages describe the request, not seller data.
+      const reasons = z
+        .object({ errors: z.array(z.object({ code: z.string(), message: z.string() })).max(10) })
+        .safeParse(await response.json().catch(() => null))
+      const reason = reasons.success
+        ? `: ${reasons.data.errors.map((error) => `${error.code} ${error.message}`.slice(0, 300)).join("; ")}`
+        : ""
       const retryAfter = response.headers.get("retry-after")
       const retryAfterMs = retryAfter === null ? NaN : Number(retryAfter) * 1000
       const delay = Number.isFinite(retryAfterMs) ? retryAfterMs : Date.parse(retryAfter ?? "") - Date.now()
       throw new ProviderError(
         response.status,
         response.headers.get("x-amzn-RequestId"),
-        `Amazon request failed (${response.status})`,
+        `Amazon request failed (${response.status})${reason}`,
         Number.isFinite(delay) ? Math.max(0, delay) : null
       )
     }

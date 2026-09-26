@@ -78,6 +78,27 @@ describe("Amazon notification setup", () => {
   })
 })
 
+describe("Amazon rejections", () => {
+  it("keeps Amazon's reason for rejecting a request", async () => {
+    const { api } = client(
+      [
+        Response.json(
+          { errors: [{ code: "InvalidInput", message: "Destination already exists", details: "" }] },
+          { status: 400 }
+        ),
+        new Response("not json", { status: 500 })
+      ],
+      grantless
+    )
+    await expect(api.request("GET", "/notifications/v1/destinations")).rejects.toThrow(
+      "Amazon request failed (400): InvalidInput Destination already exists"
+    )
+    await expect(api.request("GET", "/notifications/v1/destinations")).rejects.toThrow(
+      /^Amazon request failed \(500\)$/
+    )
+  })
+})
+
 describe("orders changed since a time", () => {
   it("reads by last update with prices, keeping orders placed long before", async () => {
     const order = {

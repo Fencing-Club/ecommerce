@@ -8,7 +8,7 @@ import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
 import { shopifyComplianceJob } from "./shopify-compliance"
 import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
-import { stockJob } from "./stock"
+import { describeError, stockJob } from "./stock"
 
 export async function runNextJob() {
   const job = await db().transaction(async (tx) => {
@@ -93,6 +93,18 @@ export async function runNextJob() {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job failed"
     const polling = error instanceof PollAgain && job.attempts < 60
+    // The error is also stored on the job; logging it shows failures in the service logs without a database read.
+    if (!polling) {
+      console.error(
+        JSON.stringify({
+          event: "job_failed",
+          kind: job.kind,
+          key: job.key,
+          attempt: job.attempts,
+          error: describeError(error)
+        })
+      )
+    }
     await db().transaction(async (tx) => {
       const updated = await tx
         .update(jobs)

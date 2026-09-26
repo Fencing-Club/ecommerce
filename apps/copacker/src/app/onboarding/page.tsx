@@ -6,6 +6,8 @@ import { identity } from "@/server/auth"
 import { brandTile, centeredPage, mutedBackground } from "../shell.css"
 import { sx } from "@/styles/sprinkles.css"
 
+// Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
+export const dynamic = "force-dynamic"
 export default async function Onboarding() {
   await identity()
   return (

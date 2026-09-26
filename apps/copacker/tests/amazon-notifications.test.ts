@@ -25,6 +25,7 @@ import {
   receiveAmazonNotification
 } from "../src/server/amazon-notifications"
 import { PollAgain } from "../src/server/job-handlers"
+import { runNextJob } from "../src/server/queue"
 import { salesDataVersion } from "../src/server/sales-orders"
 import { applyMigrations } from "./migrations"
 
@@ -254,6 +255,26 @@ describe("Amazon notification subscriptions", () => {
     expect(amazon.subscribeNotifications.mock.calls).toEqual(amazonNotificationTypes.map((type) => [type, "dest"]))
     await amazonSubscribeJob({ orgId: otherBuyerId }, owned)
     expect(amazon.subscribeNotifications).toHaveBeenCalledTimes(amazonNotificationTypes.length)
+  })
+
+  it("logs a job that fails, with the provider's reason", async () => {
+    vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", queueUrl)
+    amazon.notificationDestination.mockRejectedValue(new Error("Amazon request failed (400): InvalidInput bad ARN"))
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    await database
+      .insert(tables.jobs)
+      .values({ key: "amazon-subscribe:test", kind: "amazon-subscribe", payload: { orgId: buyerId } })
+    await runNextJob()
+    const [job] = await queued("amazon-subscribe")
+    expect(job).toMatchObject({ status: "failed", error: "Amazon request failed (400): InvalidInput bad ARN" })
+    expect(JSON.parse(String(logged.mock.calls[0]?.[0]))).toMatchObject({
+      event: "job_failed",
+      kind: "amazon-subscribe",
+      key: "amazon-subscribe:test",
+      attempt: 1,
+      error: { message: "Amazon request failed (400): InvalidInput bad ARN" }
+    })
+    logged.mockRestore()
   })
 
   it("skips subscribing when no queue is configured", async () => {
