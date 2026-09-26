@@ -2694,16 +2694,27 @@ describe("stored sales orders", () => {
       return row
     })
   })
-  it("splits the first sync into periods covering the history, and later syncs into the recent ones", () => {
+  it("reads newest first, then keeps the stored range unbroken while refreshing and extending it", () => {
     const now = Date.parse("2026-09-25T12:00:00Z")
+    const end = Date.parse("2026-09-25T11:57:00Z")
     const first = syncChunks(now, { coveredFrom: null, coveredTo: null })
-    expect(first.backfill).toBe(true)
+    expect(first.fresh).toBe(true)
     expect(first.chunks).toHaveLength(27)
-    expect(first.chunks.at(-1)?.to.toISOString()).toBe("2026-09-25T11:57:00.000Z")
-    const later = syncChunks(now, { coveredFrom: first.chunks[0]!.from, coveredTo: new Date(now - 86400000) })
-    expect(later.backfill).toBe(false)
+    expect(first.chunks[0]!.to.getTime()).toBe(end)
+    expect(first.chunks.at(-1)!.from.getTime()).toBe(end - 365 * 86400000)
+    // A full year stored until yesterday: only the last 31 days are read again.
+    const later = syncChunks(now, { coveredFrom: first.chunks.at(-1)!.from, coveredTo: new Date(now - 86400000) })
+    expect(later.fresh).toBe(false)
     expect(later.chunks).toHaveLength(3)
     expect(later.chunks[0]!.from.getTime()).toBe(now - 31 * 86400000)
+    // 180 days stored: refresh the recent end, then extend backwards from the stored start.
+    const storedFrom = new Date(end - 180 * 86400000)
+    const extended = syncChunks(now, { coveredFrom: storedFrom, coveredTo: new Date(end) })
+    expect(extended.chunks.slice(0, 3).map((chunk) => chunk.to.getTime() <= end)).toEqual([true, true, true])
+    expect(extended.chunks[3]).toEqual({ from: new Date(storedFrom.getTime() - 14 * 86400000), to: storedFrom })
+    expect(extended.chunks.at(-1)!.from.getTime()).toBe(end - 365 * 86400000)
+    // A stored range entirely before the history start is replaced.
+    expect(syncChunks(now, { coveredFrom: new Date(0), coveredTo: new Date(86400000) }).fresh).toBe(true)
   })
   it("copies orders, lists them and computes demand without asking Amazon again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])

@@ -77,8 +77,9 @@ export async function requestSalesSync(s: Session, source: SalesSource) {
   })
 }
 
-// The periods a sync reads: everything since the stored copy's end (less the refresh period), or the whole history
-// when nothing, or not enough, is stored yet.
+// The periods a sync reads, in order. Each touches the stored range, so the range stays unbroken and grows as the sync
+// runs: first the recent orders (from the refresh period before the stored end), then older history backwards to the
+// history start. With nothing usable stored, it reads from newest to oldest, so recent orders are usable soonest.
 export function syncChunks(
   now: number,
   coverage: { coveredFrom: Date | null; coveredTo: Date | null },
@@ -87,15 +88,24 @@ export function syncChunks(
   // Orders need a couple of minutes to settle.
   const end = Math.floor((now - 180000) / 60000) * 60000
   const historyStart = end - historyDays * day
-  const resume =
-    coverage.coveredFrom && coverage.coveredTo && coverage.coveredFrom.getTime() <= historyStart
-      ? Math.max(historyStart, coverage.coveredTo.getTime() - refreshDays * day)
-      : historyStart
+  const size = chunkDays * day
   const chunks: { from: Date; to: Date }[] = []
-  for (let from = resume; from < end; from += chunkDays * day) {
-    chunks.push({ from: new Date(from), to: new Date(Math.min(from + chunkDays * day, end)) })
+  const usable = coverage.coveredFrom && coverage.coveredTo && coverage.coveredTo.getTime() >= historyStart
+  if (!usable) {
+    for (let to = end; to > historyStart; to -= size) {
+      chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
+    }
+    return { chunks, fresh: true }
   }
-  return { chunks, backfill: resume === historyStart }
+  const storedFrom = coverage.coveredFrom!.getTime()
+  const storedTo = coverage.coveredTo!.getTime()
+  for (let from = Math.max(historyStart, storedFrom, storedTo - refreshDays * day); from < end; from += size) {
+    chunks.push({ from: new Date(from), to: new Date(Math.min(from + size, end)) })
+  }
+  for (let to = storedFrom; to > historyStart; to -= size) {
+    chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
+  }
+  return { chunks, fresh: false }
 }
 
 const payloadSchema = z.object({ orgId: z.uuid(), source: z.enum(salesSources), revision: z.number().int().positive() })
@@ -116,7 +126,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     // Without read_all_orders Shopify shares only the last 60 days.
     const historyDays =
       source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
-    const { chunks, backfill } = syncChunks(Date.now(), sync, historyDays)
+    const { chunks, fresh } = syncChunks(Date.now(), sync, historyDays)
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
     if (source === "shopify") {
@@ -136,11 +146,17 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
           data: order
         }))
     }
-    let coveredFrom = backfill ? null : sync.coveredFrom
+    let covered = fresh || !sync.coveredFrom || !sync.coveredTo ? null : { from: sync.coveredFrom, to: sync.coveredTo }
     for (const chunk of chunks) {
       const orders = await read({ from: chunk.from.toISOString(), to: chunk.to.toISOString() })
       await assertOwned()
-      coveredFrom ??= chunk.from
+      covered = covered
+        ? {
+            from: chunk.from < covered.from ? chunk.from : covered.from,
+            to: chunk.to > covered.to ? chunk.to : covered.to
+          }
+        : chunk
+      const range = covered
       await db().transaction(async (tx) => {
         const [current] = await tx.select({ revision: salesSyncs.revision }).from(salesSyncs).where(scope).for("update")
         if (!current) {
@@ -166,7 +182,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
               set: { orderedAt: sql`excluded."orderedAt"`, data: sql`excluded.data`, syncedAt: new Date() }
             })
         }
-        await tx.update(salesSyncs).set({ coveredFrom, coveredTo: chunk.to }).where(scope)
+        await tx.update(salesSyncs).set({ coveredFrom: range.from, coveredTo: range.to }).where(scope)
       })
     }
     await db().update(salesSyncs).set({ status: "idle", finishedAt: new Date(), errorCode: null }).where(scope)

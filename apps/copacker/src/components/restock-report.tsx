@@ -26,6 +26,7 @@ type Report = {
   days: number
   leadTimeDays: number
   channel: RestockChannel
+  supplier: string
   suppliers: SupplierOption[]
   sources: {
     source: "shopify" | "amazon"
@@ -430,6 +431,27 @@ function SupplierGroup({
   )
 }
 
+// Why nothing is listed. A supplier filter shows only products linked to that supplier, which can be none yet.
+function EmptyResults({ report, searching }: { report: Report; searching: boolean }) {
+  if (searching) {
+    return <p className={styles.summary}>No products match.</p>
+  }
+  if (report.supplier !== "all" && report.lines.length === 0) {
+    const name =
+      report.supplier === "none"
+        ? null
+        : (report.suppliers.find((supplier) => supplier.id === report.supplier)?.name ?? "this supplier")
+    return (
+      <p className={styles.summary}>
+        {name
+          ? `No products are linked to ${name} yet. A product links to a supplier once it’s on a PO to them, or when its Shopify supplier SKU is in their catalog. Choose All suppliers to see everything.`
+          : "Every product here is linked to a supplier."}
+      </p>
+    )
+  }
+  return <p className={styles.summary}>Nothing needs reordering.</p>
+}
+
 type Sort = "urgency" | "quantity" | "name"
 
 function Results({ report }: { report: Report }) {
@@ -532,9 +554,7 @@ function Results({ report }: { report: Report }) {
           <FieldLabel htmlFor="restock-show-all">Show products with enough stock</FieldLabel>
         </Field>
       </div>
-      {ordered.length === 0 && (
-        <p className={styles.summary}>{matching.length ? "Nothing needs reordering." : "No products match."}</p>
-      )}
+      {ordered.length === 0 && <EmptyResults report={report} searching={matching.length < report.lines.length} />}
       {ordered.map((group) => (
         <SupplierGroup
           key={group.supplierId ?? "none"}

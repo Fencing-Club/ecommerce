@@ -150,6 +150,7 @@ export async function restockReport(s: Session, raw: unknown) {
     days: input.days,
     leadTimeDays: input.leadTimeDays,
     channel,
+    supplier: input.supplier,
     suppliers: lookup.list,
     sources: demand.sources.filter((source) => source.source === salesSource),
     lines
