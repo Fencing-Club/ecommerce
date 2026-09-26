@@ -7,6 +7,7 @@ import { poImports } from "@/db/schema"
 import { requireBuyer, type Session } from "./auth"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
+import { attachProductBarcodes } from "./product-barcodes"
 
 const saveSchema = z
   .object({
@@ -87,7 +88,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   ) {
     throw new Error("The connected merchant account changed. Import against the correct accounts before saving")
   }
-  return db().transaction(async (tx) => {
+  const saved = await db().transaction(async (tx) => {
     const [current] = await tx.select().from(poImports).where(scope).for("update")
     if (current?.status === "saved" && current.orderId) {
       return { id: current.orderId }
@@ -102,4 +103,6 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       .where(scope)
     return { id: order.id }
   })
+  await attachProductBarcodes(s, saved.id)
+  return saved
 }

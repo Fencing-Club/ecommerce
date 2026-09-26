@@ -211,6 +211,14 @@ FBA reads use `GET /api/inventory?source=fba&marketplaceId=ATVPDKIKX0DER`. The m
 Shopify inventory reads accept optional `locationId` (a Shopify Location GID). Filtering is applied to the entire tenant snapshot before row pagination, and only matching levels are returned. `locations` lists observed location IDs/names from the complete snapshot. Unknown observed locations and location filters on Amazon sources return 400. Cursors bind to both snapshot ID and selected location; reusing a cursor after changing the filter returns 409. A location filter changes the view only; it does not classify merchant stock or Amazon mirrors.
 
 
+### Product barcodes
+
+Each Shopify variation can have one barcode label: a one-page PDF (32 MB or less, no active content) that the buyer uploads on the Products page. New POs copy it as the line's product label when the PO is created or imported, and again on submit for lines still without one. A label uploaded on the PO itself is never replaced. Replacing or removing a barcode doesn't change POs that already have its label.
+
+- Buyer-only `POST /api/inventory/barcodes` (same origin, multipart `variantId` + `file`) saves or replaces the barcode and returns `{name, bytes, uploadedAt}`. A multi-page or invalid PDF returns 400, a variation missing from the synced Shopify inventory returns 404, and no Shopify connection returns 409.
+- `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` downloads the PDF; `DELETE` with the same query (same origin) removes it. Supplier workspaces get 403.
+- `GET /api/inventory/products` adds `barcode` (or null) to each variant and `missingBarcodes`, the number of variations in the selection without one. `barcode=missing` lists only products with such a variation.
+
 ### Inventory location settings
 
 Buyer-only `GET /api/inventory/locations` returns the connected Shopify domain, current snapshot ID/time, observed locations with classification and revision, and previously configured but unobserved location IDs. No connection/snapshot means no observed locations, not zero inventory. Names never determine classification.

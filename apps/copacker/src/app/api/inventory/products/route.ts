@@ -2,6 +2,7 @@ import { z } from "zod"
 import { session } from "@/server/auth"
 import { inventoryContext } from "@/server/inventory-context"
 import { type AmazonOnlyStock, groupInventory, inventoryLocations, pageSizes } from "@/server/inventory-products"
+import { type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 
 const querySchema = z.strictObject({
@@ -10,6 +11,8 @@ const querySchema = z.strictObject({
     .regex(/^(gid:\/\/shopify\/Location\/\d+|amazon:(fba|awd))$/)
     .optional(),
   q: z.string().trim().max(100).optional(),
+  // "missing" lists only products with a variation that has no barcode.
+  barcode: z.literal("missing").optional(),
   page: z
     .string()
     .regex(/^[1-9]\d{0,4}$/)
@@ -34,17 +37,22 @@ export async function GET(request: Request) {
   if (!query.success) {
     return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
   }
-  const { page, pageSize, locationId, q } = query.data
+  const { page, pageSize, locationId, q, barcode } = query.data
   const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly } = await inventoryContext(
     s.org.id
   )
-  const products = groupInventory(inventoryRows, {
+  const grouped = groupInventory(inventoryRows, {
     locationId,
     query: q,
     classifications: inventoryClassifications,
     onOrder
   })
-  const defaults = domain ? await readProductDefaults(s.org.id, domain) : new Map()
+  const [defaults, barcodes] = domain
+    ? await Promise.all([readProductDefaults(s.org.id, domain), readProductBarcodes(s.org.id, domain)])
+    : [new Map(), new Map<string, ProductBarcode>()]
+  const unlabelled = (product: (typeof grouped)[number]) =>
+    product.variants.filter((variant) => !barcodes.has(variant.variantId)).length
+  const products = barcode ? grouped.filter((product) => unlabelled(product) > 0) : grouped
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize))
   const pageNumber = Math.min(page, totalPages)
   const levels = rows.flatMap((row) => row.levels)
@@ -72,9 +80,16 @@ export async function GET(request: Request) {
       totalPages,
       totalProducts: products.length,
       totalVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
-      products: products
-        .slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
-        .map((product) => ({ ...product, defaults: defaults.get(product.productId) ?? noDefaults }))
+      // Variations in this selection without a barcode label, which new POs need.
+      missingBarcodes: grouped.reduce((sum, product) => sum + unlabelled(product), 0),
+      products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map((product) => ({
+        ...product,
+        defaults: defaults.get(product.productId) ?? noDefaults,
+        variants: product.variants.map((variant) => ({
+          ...variant,
+          barcode: barcodes.get(variant.variantId) ?? null
+        }))
+      }))
     },
     { headers }
   )

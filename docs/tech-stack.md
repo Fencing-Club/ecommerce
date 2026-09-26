@@ -74,7 +74,8 @@ For building command-line tools.
 - ✅ **@1js/fluentui-modal-manager** — implicit and awaitable modals for Fluent surfaces.
 - ✅ **@fluentui/react-datepicker-compat** + **@fluentui/react-timepicker-compat** — date and time inputs for Fluent
   surfaces.
-- ◻️ **@fluentui/react-charting** or **recharts** — charts / data visualization.
+- ✅ **recharts** — charts / data visualization (Copacker's Overview; colors come from the `chart1`/`chart2` theme
+  tokens). ◻️ **@fluentui/react-charting** for Fluent surfaces.
 - ✅ **shadcn/ui** — component patterns for apps and product surfaces that select the shadcn architecture. Copacker
   keeps shadcn component structure on Base UI but styles it with vanilla-extract instead of Tailwind, so components are
   maintained in the repo rather than regenerated with the shadcn CLI.

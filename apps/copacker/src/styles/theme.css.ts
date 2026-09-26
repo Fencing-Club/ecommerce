@@ -29,7 +29,13 @@ export const vars = createGlobalThemeContract(
       sidebarAccent: "sidebar-accent",
       sidebarAccentForeground: "sidebar-accent-foreground",
       sidebarBorder: "sidebar-border",
-      sidebarRing: "sidebar-ring"
+      sidebarRing: "sidebar-ring",
+      // Chart series, in fixed order: Amazon, then Shopify. Validated for color vision deficiency on the card surface.
+      chart1: "chart-1",
+      chart2: "chart-2",
+      // Status marks and positive-change text. Always paired with an icon or label.
+      success: "success",
+      warning: "warning"
     },
     radius: { sm: "radius-sm", md: "radius-md", lg: "radius-lg", xl: "radius-xl", full: "radius-full" },
     font: { sans: "font-sans", mono: "font-mono" },
@@ -67,7 +73,11 @@ createGlobalTheme(":root", vars, {
     sidebarAccent: "oklch(0.97 0 0)",
     sidebarAccentForeground: "oklch(0.205 0 0)",
     sidebarBorder: "oklch(0.922 0 0)",
-    sidebarRing: "oklch(0.75 0.183 55.934)"
+    sidebarRing: "oklch(0.75 0.183 55.934)",
+    chart1: "#2a78d6",
+    chart2: "#eb6834",
+    success: "#006300",
+    warning: "#fab219"
   },
   radius: {
     sm: `calc(${radius} * 0.6)`,
@@ -114,5 +124,9 @@ createGlobalTheme(".dark", vars.color, {
   sidebarAccent: "oklch(0.269 0 0)",
   sidebarAccentForeground: "oklch(0.985 0 0)",
   sidebarBorder: "oklch(1 0 0 / 10%)",
-  sidebarRing: "oklch(0.408 0.123 38.172)"
+  sidebarRing: "oklch(0.408 0.123 38.172)",
+  chart1: "#3987e5",
+  chart2: "#d95926",
+  success: "#0ca30c",
+  warning: "#fab219"
 })

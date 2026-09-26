@@ -15,7 +15,7 @@ const variantIds = z
   .max(100)
   .catch([])
 
-// Variants passed as ?variant=… (Reorder and restock on Inventory) start as lines on the new PO. "<id>@<units>" also
+// Variants passed as ?variant=… (Reorder on Products, and restock) start as lines on the new PO. "<id>@<units>" also
 // sets the quantity in sellable units.
 async function reorderLines(orgId: string, raw: string | string[] | undefined) {
   const units = new Map(

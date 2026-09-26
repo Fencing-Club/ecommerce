@@ -6,7 +6,7 @@ import { amazonPools, onOrderByVariant, withAmazonStock } from "./inventory-prod
 import { receivedPieces } from "./readiness"
 import { stockScopes } from "./stock"
 
-// Everything the Inventory page and restock read for a buyer: the Shopify snapshot, how each location counts, and
+// Everything the Products page and restock read for a buyer: the Shopify snapshot, how each location counts, and
 // what's on order where.
 export async function inventoryContext(orgId: string) {
   const { scopeKey, provider } = stockScopes.shopify

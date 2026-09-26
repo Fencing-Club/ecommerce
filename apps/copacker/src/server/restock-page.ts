@@ -21,15 +21,25 @@ export const restockInputSchema = z.strictObject({
     z.strictObject({ kind: z.literal("shopify"), locationId: z.string().regex(/^gid:\/\/shopify\/Location\/\d+$/) })
   ]),
   // Every supplier, one supplier's products, or products never ordered from a supplier.
-  supplier: z.union([z.literal("all"), z.literal("none"), z.uuid()]).default("all")
+  supplier: z.union([z.literal("all"), z.uuid()]).default("all")
 })
 
 export class RestockInputError extends Error {}
 
+type InventoryContext = Awaited<ReturnType<typeof inventoryContext>>
+export type RestockChannelOption = {
+  key: string
+  label: string
+  channel: z.infer<typeof restockInputSchema>["channel"]
+}
+
 // The channels a buyer can restock: Amazon once its stock has synced, and each Shopify location it counts.
 export async function restockChannels(orgId: string) {
-  const context = await inventoryContext(orgId)
-  const channels: { key: string; label: string; channel: z.infer<typeof restockInputSchema>["channel"] }[] = []
+  return channelsIn(await inventoryContext(orgId))
+}
+
+function channelsIn(context: InventoryContext) {
+  const channels: RestockChannelOption[] = []
   if (context.fbaRows || context.awdRows) {
     channels.push({ key: "amazon", label: "Amazon", channel: { kind: "amazon" } })
   }
@@ -47,7 +57,7 @@ export async function restockChannels(orgId: string) {
 
 // The buyer's suppliers with their lead times, and each variation's supplier: the one it was last ordered from, else
 // the one linked supplier whose active catalog holds its Shopify supplier SKU.
-async function supplierLookup(
+export async function supplierLookup(
   orgId: string,
   catalog: { variantId: string; productId?: string; supplierSku?: string | null }[],
   chosen: ReadonlyMap<string, { supplierId: string | null }>
@@ -160,10 +170,58 @@ async function channelStockouts(
   })
 }
 
+// Everything restock reads once for a buyer, shared by every channel: stock, orders over the sales period, suppliers
+// and product defaults.
+async function restockInputs(orgId: string, days: number) {
+  const context = await inventoryContext(orgId)
+  const connected = await db()
+    .select({ provider: connections.provider })
+    .from(connections)
+    .where(eq(connections.orgId, orgId))
+  const productDefaults: Map<string, ProductDefaults> = context.domain
+    ? await readProductDefaults(orgId, context.domain)
+    : new Map()
+  const [demand, lookup] = await Promise.all([
+    restockDemand(
+      orgId,
+      connected.map((row) => row.provider),
+      days
+    ),
+    supplierLookup(orgId, context.rows, productDefaults)
+  ])
+  return { orgId, days, context, productDefaults, demand, lookup }
+}
+
+async function channelPlan(
+  inputs: Awaited<ReturnType<typeof restockInputs>>,
+  channel: z.infer<typeof restockInputSchema>["channel"],
+  leadTimeDays: number
+) {
+  const { context, demand } = inputs
+  const stockouts = await channelStockouts(inputs.orgId, channel, context.rows, demand.sources)
+  return restockPlan({
+    channel,
+    catalog: context.rows,
+    classifications: context.classifications,
+    onOrder: context.onOrder,
+    shopifySales: demand.shopifySales,
+    amazonSales: demand.amazonSales,
+    fbaRows: context.fbaRows,
+    awdRows: context.awdRows,
+    salesDays: inputs.days,
+    leadTimeDays,
+    productDefaults: inputs.productDefaults,
+    supplierFor: inputs.lookup.supplierFor,
+    // Amazon history is by seller SKU, Shopify's by variant.
+    stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
+  })
+}
+
 // Restock suggestions for one channel from stored orders, current stock and open POs.
 export async function restockReport(s: Session, raw: unknown) {
   const input = restockInputSchema.parse(raw)
-  const context = await inventoryContext(s.org.id)
+  const inputs = await restockInputs(s.org.id, input.days)
+  const { context } = inputs
   const { channel } = input
   if (
     channel.kind === "shopify" &&
@@ -174,55 +232,43 @@ export async function restockReport(s: Session, raw: unknown) {
     throw new RestockInputError("Choose a location included in inventory")
   }
   if (channel.kind === "amazon" && !context.fbaRows && !context.awdRows) {
-    throw new RestockInputError("Sync Amazon on the Inventory page before restocking Amazon")
+    throw new RestockInputError("Sync Amazon on the Products page before restocking Amazon")
   }
-  const connected = await db()
-    .select({ provider: connections.provider })
-    .from(connections)
-    .where(eq(connections.orgId, s.org.id))
-  const productDefaults: Map<string, ProductDefaults> = context.domain
-    ? await readProductDefaults(s.org.id, context.domain)
-    : new Map()
-  const [demand, lookup] = await Promise.all([
-    restockDemand(
-      s.org.id,
-      connected.map((row) => row.provider),
-      input.days
-    ),
-    supplierLookup(s.org.id, context.rows, productDefaults)
-  ])
-  const stockouts = await channelStockouts(s.org.id, channel, context.rows, demand.sources)
-  const lines = restockPlan({
-    channel,
-    catalog: context.rows,
-    classifications: context.classifications,
-    onOrder: context.onOrder,
-    shopifySales: demand.shopifySales,
-    amazonSales: demand.amazonSales,
-    fbaRows: context.fbaRows,
-    awdRows: context.awdRows,
-    salesDays: input.days,
-    leadTimeDays: input.leadTimeDays,
-    productDefaults,
-    supplierFor: lookup.supplierFor,
-    // Amazon history is by seller SKU, Shopify's by variant.
-    stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
-  }).filter((line) => {
-    if (input.supplier === "all") {
-      return true
-    }
-    return input.supplier === "none" ? line.supplier === null : line.supplier?.id === input.supplier
-  })
+  const plan = await channelPlan(inputs, channel, input.leadTimeDays)
+  // Restock lists only products with a known supplier; the Products page warns about the rest.
+  const lines = plan.filter(
+    (line) => line.supplier !== null && (input.supplier === "all" || line.supplier.id === input.supplier)
+  )
+  const needsSupplier = plan.filter(
+    (line) => line.supplier === null && (line.status === "stockout" || line.status === "reorder")
+  ).length
   const salesSource = channel.kind === "amazon" ? "amazon" : "shopify"
   return {
     days: input.days,
     leadTimeDays: input.leadTimeDays,
     channel,
     supplier: input.supplier,
-    suppliers: lookup.list,
-    sources: demand.sources
+    // Products that need reordering here but have no supplier, so they aren't listed.
+    needsSupplier,
+    suppliers: inputs.lookup.list,
+    sources: inputs.demand.sources
       .filter((source) => source.source === salesSource)
       .map(({ saleDays: _saleDays, ...source }) => source),
     lines
+  }
+}
+
+// Restock suggestions for every channel at once, for the Overview: each channel's lines and each source's read.
+export async function restockAllChannels(orgId: string, days: number, leadTimeDays: number) {
+  const inputs = await restockInputs(orgId, days)
+  const channels = await Promise.all(
+    channelsIn(inputs.context).map(async (option) => ({
+      ...option,
+      lines: await channelPlan(inputs, option.channel, leadTimeDays)
+    }))
+  )
+  return {
+    channels,
+    sources: inputs.demand.sources.map(({ saleDays: _saleDays, ...source }) => source)
   }
 }

@@ -1,13 +1,14 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ImageOff, Search, TriangleAlert } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { createContext, use, useState } from "react"
 import { ProductDetails } from "@/components/product-details"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,7 @@ import {
   type InventoryVariant,
   pageSizes
 } from "@/server/inventory-products"
+import type { ProductBarcode } from "@/server/product-barcodes"
 import type { ProductDefaults } from "@/server/product-defaults"
 import * as styles from "./inventory-products.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -37,17 +39,20 @@ type ProductsPage = {
   totalPages: number
   totalProducts: number
   totalVariants: number
+  missingBarcodes: number
   products: ListedProduct[]
   amazonOnly: AmazonOnlyStock[]
 }
-// A product on the page with the details Copacker keeps for it.
-type ListedProduct = InventoryProduct & { defaults: ProductDefaults }
+// A product on the page with the details and barcodes Copacker keeps for it.
+type ListedVariant = InventoryVariant & { barcode: ProductBarcode | null }
+type ListedProduct = Omit<InventoryProduct, "variants"> & { defaults: ProductDefaults; variants: ListedVariant[] }
 
 type ProductsQuery = {
   page: number
   pageSize: number
   q: string
   locationId: string
+  missingBarcode: boolean
   // Part of the cache key so a finished sync of any source loads fresh results.
   syncKey: string
 }
@@ -56,13 +61,14 @@ const productsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
     inventoryProducts: build.query<ProductsPage, ProductsQuery>({
-      query: ({ page, pageSize, q, locationId }) => ({
+      query: ({ page, pageSize, q, locationId, missingBarcode }) => ({
         url: "inventory/products",
         params: {
           page,
           pageSize,
           ...(q && { q }),
-          ...(locationId && { locationId })
+          ...(locationId && { locationId }),
+          ...(missingBarcode && { barcode: "missing" })
         }
       }),
       keepUnusedDataFor: 60
@@ -173,6 +179,16 @@ function Thumbnail({ url, small = false }: { url: string | null; small?: boolean
   )
 }
 
+// Warns that a variation has no barcode label, which its PO lines need.
+function NoBarcode({ children = "No barcode" }: { children?: string }) {
+  return (
+    <span className={styles.missing}>
+      <TriangleAlert aria-hidden="true" />
+      {children}
+    </span>
+  )
+}
+
 function Locations({ variant }: { variant: InventoryVariant }) {
   if (variant.levels.length <= 1 || variant.stock !== "tracked") {
     return null
@@ -207,12 +223,12 @@ const stockNotes = {
   untracked: ", inventory not tracked"
 } as const
 
-// Shopify's Amazon stock target, after the SKU: what restock keeps at Amazon.
+// Shopify's minimum stock at Amazon, after the SKU: what restock keeps there at least.
 function amazonTargetNote(target: number | null) {
   if (target === null) {
     return null
   }
-  return target === 0 ? ", not stocked at Amazon" : `, Amazon target ${target}`
+  return target === 0 ? ", not stocked at Amazon" : `, keep at least ${target} at Amazon`
 }
 
 // Opens a new PO with these variations already added.
@@ -255,8 +271,10 @@ function Actions({ product, className }: { product: ListedProduct; className: st
         onSaved={refresh}
         shopifyCaseQuantity={product.shopifyCaseQuantity}
         variants={product.variants.map((variant) => ({
+          variantId: variant.variantId,
           title: variant.title,
-          amazonStockTarget: variant.amazonStockTarget
+          amazonStockTarget: variant.amazonStockTarget,
+          barcode: variant.barcode
         }))}
       />
     </span>
@@ -278,6 +296,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
               {amazonTargetNote(only.amazonStockTarget)}
               {stockNotes[only.stock]}
             </span>
+            {!only.barcode && <NoBarcode />}
             <Locations variant={only} />
             <Actions product={product} className={styles.actions} />
           </span>
@@ -287,6 +306,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
     )
   }
   const count = product.variants.length
+  const unlabelled = product.variants.filter((variant) => !variant.barcode).length
   return (
     <Collapsible render={<li className={styles.product} />}>
       <CollapsibleTrigger className={styles.productRow}>
@@ -298,6 +318,13 @@ function ProductRow({ product }: { product: ListedProduct }) {
             {count === 1 ? "1 variation" : `${count} variations`}
             {stockNotes[product.stock]}
           </span>
+          {unlabelled > 0 && (
+            <NoBarcode>
+              {unlabelled === count
+                ? "No barcodes"
+                : `${unlabelled} ${unlabelled === 1 ? "variation needs a barcode" : "variations need barcodes"}`}
+            </NoBarcode>
+          )}
         </span>
         <Quantities item={product} />
       </CollapsibleTrigger>
@@ -315,6 +342,7 @@ function ProductRow({ product }: { product: ListedProduct }) {
                   {amazonTargetNote(variant.amazonStockTarget)}
                   {product.stock === variant.stock ? null : stockNotes[variant.stock]}
                 </span>
+                {!variant.barcode && <NoBarcode />}
                 <Locations variant={variant} />
               </span>
               <Quantities item={variant} />
@@ -362,6 +390,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(25)
   const [locationId, setLocationId] = useState("")
+  const [missingBarcode, setMissingBarcode] = useState(false)
   const {
     currentData,
     data: previous,
@@ -370,7 +399,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
     isError,
     error,
     refetch
-  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, syncKey })
+  } = productsApi.useInventoryProductsQuery({ page, pageSize, q, locationId, missingBarcode, syncKey })
   // Keep showing the last page while the next one loads, so the list doesn't flash empty.
   const data = currentData ?? previous
 
@@ -440,13 +469,32 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
             <Link href="/settings">Settings</Link>.
           </p>
         </div>
+        {data.missingBarcodes > 0 && (
+          <p className={styles.missing}>
+            <TriangleAlert aria-hidden="true" />
+            {data.missingBarcodes === 1
+              ? "1 variation doesn’t have a barcode. Add it from the product’s Edit panel so new POs include its label."
+              : `${data.missingBarcodes} variations don’t have a barcode. Add them from each product’s Edit panel so new POs include their labels.`}
+          </p>
+        )}
         <div className={styles.listHeader}>
           <p className={styles.summary} aria-live="polite">
-            {q
+            {q || missingBarcode
               ? `${data.totalProducts} products match`
               : `${data.totalProducts} products, ${data.totalVariants} variations`}
           </p>
           <div className={styles.listActions}>
+            <Field orientation="horizontal" className={styles.pageSize}>
+              <Checkbox
+                id="inventory-missing-barcode"
+                checked={missingBarcode}
+                onCheckedChange={(checked) => {
+                  setMissingBarcode(checked)
+                  setPage(1)
+                }}
+              />
+              <FieldLabel htmlFor="inventory-missing-barcode">Missing barcode only</FieldLabel>
+            </Field>
             <Field orientation="horizontal" className={styles.pageSize}>
               <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
               <NativeSelect
@@ -469,7 +517,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
         </div>
         {data.products.length === 0 ? (
           <p className={styles.summary}>
-            {q ? "No products match your search." : "No inventory was reported for this selection."}
+            {q || missingBarcode ? "No products match." : "No inventory was reported for this selection."}
           </p>
         ) : (
           <ul className={styles.list} aria-busy={isFetching}>

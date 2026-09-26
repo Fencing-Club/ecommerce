@@ -81,7 +81,7 @@ export function InventoryLocations() {
       <legend className={styles.legend}>Locations to include in inventory</legend>
       {isLoading && <p className={styles.detail}>Loading locations…</p>}
       {isError && <p role="alert">{errorMessage(error, "Locations couldn't be loaded.")}</p>}
-      {data && !snapshotId && <p className={styles.detail}>Sync Shopify on the Inventory page to see its locations.</p>}
+      {data && !snapshotId && <p className={styles.detail}>Sync Shopify on the Products page to see its locations.</p>}
       {snapshotId &&
         data?.locations
           .toSorted((a, b) => Number(b.classification === "merchant") - Number(a.classification === "merchant"))

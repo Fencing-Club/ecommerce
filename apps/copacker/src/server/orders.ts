@@ -26,6 +26,7 @@ import { bundleQuote } from "@/lib/bundle-quote"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
+import { attachProductBarcodes } from "./product-barcodes"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
@@ -221,7 +222,9 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
 }
 export async function createOrder(s: Session, raw: unknown) {
   const prepared = await prepareOrder(s, raw)
-  return db().transaction((tx) => persistOrder(tx, s, prepared))
+  const order = await db().transaction((tx) => persistOrder(tx, s, prepared))
+  await attachProductBarcodes(s, order.id)
+  return order
 }
 // Amazon shipments need every item's ASIN and FNSKU. A PO saved before Amazon was connected gets them here, before the
 // supplier packs against it.
@@ -254,6 +257,8 @@ async function missingAmazonIdentities(s: Session, id: string) {
 export async function submitOrder(s: Session, id: string, expectedRevision: number) {
   requireBuyer(s)
   const completed = await missingAmazonIdentities(s, id)
+  // Barcodes saved after the PO was created become its product labels before the supplier sees it.
+  await attachProductBarcodes(s, id)
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, id, tx, true)
     if (

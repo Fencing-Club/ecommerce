@@ -3,6 +3,8 @@ import type { InventoryProduct } from "./inventory-products"
 
 // Sales periods and lead times are whole days; Amazon keeps two years of orders.
 export const dayRange = { min: 1, max: 730 } as const
+// The sales period and lead time restock starts from; the Overview always uses them.
+export const restockDefaults = { days: 56, leadTimeDays: 56 } as const
 
 export type RestockSuggestion = {
   // Days until the counted stock runs out at the observed rate; null without sales.

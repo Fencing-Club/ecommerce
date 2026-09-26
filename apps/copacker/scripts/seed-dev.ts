@@ -1,11 +1,21 @@
-// Fills the local database with a demo Shopify store for every buyer workspace, so Inventory and POs can be tried
-// without connecting real accounts. Refuses to run against anything but a local database.
+// Fills the local database with a demo Shopify store for every buyer workspace, so Inventory, POs and Restock can be
+// tried without connecting real accounts. Refuses to run against anything but a local database.
 // Usage: pnpm db:seed (after signing in locally once, so a workspace exists).
 import { randomUUID } from "node:crypto"
+import type { ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
 import { and, eq } from "drizzle-orm"
 import { db } from "../src/db/index"
-import { connections, orders, organizations, stockSnapshots, suppliers } from "../src/db/schema"
+import {
+  connections,
+  orders,
+  organizations,
+  productDefaults,
+  salesOrders,
+  salesSyncs,
+  stockSnapshots,
+  suppliers
+} from "../src/db/schema"
 import { encrypt } from "../src/server/security"
 
 const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid")
@@ -85,6 +95,46 @@ const rows: Row[] = [
   })
 ]
 
+// 90 days of web orders shipped from the warehouse: a left glove daily, a right glove every other day, and two body
+// cords every third day. Restock reads these as stored Shopify orders.
+const day = 86400000
+const today = Math.floor(Date.now() / day) * day
+function demoOrders() {
+  const sales: ShopifySale[] = []
+  for (let ago = 1; ago <= 90; ago++) {
+    const lines = [
+      { variant: 1, sku: "grip-left", quantity: 1 },
+      ...(ago % 2 === 0 ? [{ variant: 2, sku: "grip-right", quantity: 1 }] : []),
+      ...(ago % 3 === 0 ? [{ variant: 4, sku: "body-cord", quantity: 2 }] : [])
+    ].map((line, index) => ({
+      id: `gid://shopify/LineItem/${ago * 10 + index}`,
+      quantity: line.quantity,
+      currentQuantity: line.quantity,
+      sku: line.sku,
+      variant: { id: `gid://shopify/ProductVariant/${line.variant}` },
+      lineItemGroup: null
+    }))
+    sales.push({
+      id: `gid://shopify/Order/${ago}`,
+      name: `#${2000 - ago}`,
+      createdAt: new Date(today - ago * day + 12 * 3600000).toISOString(),
+      cancelledAt: null,
+      test: false,
+      sourceName: "web",
+      lines,
+      fulfillments: [
+        {
+          id: `gid://shopify/Fulfillment/${ago}`,
+          status: "SUCCESS",
+          location: { id: locations.warehouse.locationId },
+          lines: lines.map((line) => ({ id: `${line.id}/f`, quantity: line.quantity, lineItem: { id: line.id } }))
+        }
+      ]
+    })
+  }
+  return sales
+}
+
 const buyers = await db().select().from(organizations).where(eq(organizations.kind, "buyer"))
 if (!buyers.length) {
   throw new Error("Sign in locally first so a buyer workspace exists")
@@ -130,8 +180,42 @@ for (const org of buyers) {
   const [{ id: supplierId }] = await db()
     .insert(suppliers)
     .values({ buyerOrgId: org.id, name: "Demo supplier", email: "supplier@example.com" })
-    .onConflictDoUpdate({ target: [suppliers.buyerOrgId, suppliers.email], set: { name: "Demo supplier" } })
+    .onConflictDoUpdate({ target: [suppliers.buyerOrgId, suppliers.name], set: { email: "supplier@example.com" } })
     .returning({ id: suppliers.id })
+  // The gloves come from the demo supplier; the body cord has no supplier yet, so Restock shows both groups.
+  await db()
+    .insert(productDefaults)
+    .values({ orgId: org.id, shopifyDomain: shop, productId: "gid://shopify/Product/10", supplierId })
+    .onConflictDoUpdate({
+      target: [productDefaults.orgId, productDefaults.shopifyDomain, productDefaults.productId],
+      set: { supplierId }
+    })
+  await db()
+    .delete(salesOrders)
+    .where(and(eq(salesOrders.orgId, org.id), eq(salesOrders.externalAccountId, shop)))
+  await db()
+    .insert(salesOrders)
+    .values(
+      demoOrders().map((sale) => ({
+        orgId: org.id,
+        source: "shopify" as const,
+        externalAccountId: shop,
+        orderId: sale.id,
+        orderedAt: new Date(sale.createdAt),
+        data: sale
+      }))
+    )
+  const sync = {
+    externalAccountId: shop,
+    status: "idle" as const,
+    coveredFrom: new Date(today - 120 * day),
+    coveredTo: new Date(today),
+    finishedAt: new Date()
+  }
+  await db()
+    .insert(salesSyncs)
+    .values({ orgId: org.id, source: "shopify", ...sync })
+    .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: sync })
   const existing = await db().select({ id: orders.id }).from(orders).where(eq(orders.buyerOrgId, org.id))
   if (!existing.length) {
     // A sent PO to Amazon AWD, so On order shows at the Amazon location.

@@ -11,13 +11,30 @@ export type CatalogProduct = CatalogVariant & {
   lineDefaults: Pick<LineDefaults, "piecesPerSet" | "description" | "prepCategory">
 }
 
-// Server state lives on the server and pages refresh with router.refresh(), so RTK Query is used only for requests.
+export type SupplierOption = {
+  id: string
+  name: string
+  leadTimeDays: number | null
+  amazonLeadTimeDays: number | null
+}
+
+// Server-rendered pages refresh with router.refresh(). Data cached here is tagged, so a change made anywhere re-renders
+// every view that shows it: "Supplier" for supplier names and lead times, "Restock" for restock results, and
+// "ProductSupplier" for which products have a supplier.
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
+  tagTypes: ["Supplier", "Restock", "ProductSupplier"],
   endpoints: (build) => ({
     action: build.mutation<ActionResult, { action: string; data: Record<string, unknown> }>({
-      query: (body) => ({ url: "action", method: "POST", body })
+      query: (body) => ({ url: "action", method: "POST", body }),
+      invalidatesTags: (_result, _error, { action }) =>
+        action.startsWith("supplier.") ? ["Supplier", "ProductSupplier"] : []
+    }),
+    // The buyer's current suppliers, for pickers and restock.
+    suppliers: build.query<SupplierOption[], void>({
+      query: () => "restock/suppliers",
+      providesTags: ["Supplier"]
     }),
     catalog: build.query<CatalogProduct[], string>({
       query: (q) => ({ url: "catalog", params: { q } }),
@@ -29,7 +46,7 @@ export const api = createApi({
   })
 })
 
-export const { useActionMutation, useLazyCatalogQuery, useUploadDocumentMutation } = api
+export const { useActionMutation, useLazyCatalogQuery, useSuppliersQuery, useUploadDocumentMutation } = api
 
 export function errorMessage(error: unknown, fallback = "Something went wrong. Try again.") {
   if (typeof error === "object" && error !== null) {

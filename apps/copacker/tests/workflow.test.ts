@@ -104,6 +104,7 @@ import {
   readProductDefaults,
   saveProductDefaults
 } from "../src/server/product-defaults"
+import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
 import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
@@ -842,6 +843,38 @@ describe("Postgres workflow and authorization", () => {
     expect(saved.map((contact) => contact.kind).toSorted()).toEqual(["delivery", "forwarder", "pickup"])
   })
 
+  it("lists tracked products without a supplier until one is chosen", async () => {
+    await shopifyStockAccount()
+    const tracked = (id: number, productId: string, productTitle: string) => ({
+      ...shopifyStock.rows[0],
+      variantId: `gid://shopify/ProductVariant/${id}`,
+      inventoryItemId: `gid://shopify/InventoryItem/${id}`,
+      buyerSku: `sku-${id}`,
+      tracked: true,
+      productId,
+      productTitle
+    })
+    provider.api.stock.mockResolvedValue({
+      ...shopifyStock,
+      rows: [
+        tracked(1, "gid://shopify/Product/10", "Glove"),
+        tracked(2, "gid://shopify/Product/10", "Glove"),
+        tracked(3, "gid://shopify/Product/11", "Cord"),
+        tracked(5, "gid://shopify/Product/13", "Mask"),
+        // Untracked items, such as gift cards, aren't ordered.
+        { ...shopifyStock.rows[0], variantId: "gid://shopify/ProductVariant/4", productId: "gid://shopify/Product/12" }
+      ]
+    })
+    await refreshShopify()
+    await runNextJob()
+    // The glove's first variant is on a PO to the test supplier, so the glove has a supplier.
+    expect(await productsWithoutSupplier(buyerId)).toEqual([
+      { productId: "gid://shopify/Product/11", title: "Cord", imageUrl: null, skus: ["sku-3"] },
+      { productId: "gid://shopify/Product/13", title: "Mask", imageUrl: null, skus: ["sku-5"] }
+    ])
+    await assignProductSupplier(buyer, { productIds: ["gid://shopify/Product/13"], supplierId: supplierLinkId })
+    expect((await productsWithoutSupplier(buyerId)).map((product) => product.title)).toEqual(["Cord"])
+  })
   it("saves product defaults for synced products with revision checks", async () => {
     await shopifyStockAccount()
     const productId = "gid://shopify/Product/10"

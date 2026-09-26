@@ -3,6 +3,7 @@
 - [Copacker specification, tasks, and evidence](implementation.md)
 - [Copacker API and workflow handoff](api-contract.md)
 - [Sales demand integration contract](sales-demand.md)
+- [Overview page](overview.md)
 - [Local development and launch](operations.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)

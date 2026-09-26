@@ -3,6 +3,7 @@
 import { RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { InventoryProducts } from "@/components/inventory-products"
+import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { api, errorMessage } from "@/lib/api"
@@ -169,7 +170,10 @@ export function InventorySync({ providers }: { providers: string[] }) {
           ))}
         </ul>
         {anySynced ? (
-          <InventoryProducts syncKey={syncKey} />
+          <>
+            <ProductsWithoutSupplier syncKey={syncKey} />
+            <InventoryProducts syncKey={syncKey} />
+          </>
         ) : (
           <p className={styles.detail}>Sync a source to see your inventory.</p>
         )}

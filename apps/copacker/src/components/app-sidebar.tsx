@@ -5,6 +5,7 @@ import {
   Check,
   ChevronsUpDown,
   ClipboardList,
+  LayoutDashboard,
   LogOut,
   PackagePlus,
   Receipt,
@@ -55,9 +56,10 @@ export type AppSidebarProps = {
 }
 
 const navigation = [
+  { view: "overview", label: "Overview", icon: LayoutDashboard, buyerOnly: true },
   { view: "orders", label: "Purchase orders", icon: ClipboardList },
   { view: "sales", label: "Orders", icon: Receipt, buyerOnly: true },
-  { view: "inventory", label: "Inventory", icon: Box, buyerOnly: true },
+  { view: "products", label: "Products", icon: Box, buyerOnly: true },
   { view: "restock", label: "Restock", icon: PackagePlus, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },
   { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
@@ -175,7 +177,7 @@ function WorkspaceSwitcher({
   async function switchTo(id: string) {
     await run({ action: "workspace.switch", data: { id } }).unwrap()
     // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
-    window.location.assign("/orders")
+    window.location.assign("/")
   }
 
   const logo = (

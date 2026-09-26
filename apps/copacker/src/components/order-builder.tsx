@@ -61,7 +61,7 @@ export function OrderBuilder({
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
   deliveries?: Array<{ id: string; name: string }>
-  // Lines added before the builder opens, such as a reorder from Inventory.
+  // Lines added before the builder opens, such as a reorder from Products.
   initialItems?: ReturnType<typeof orderLine>[]
   initialDestination?: "amazon" | "awd_us" | "fba" | "warehouse"
   initialDeliveryId?: string

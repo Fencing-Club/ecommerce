@@ -7,7 +7,7 @@ export type LineDefaults = {
   fnsku?: string
   // From the Shopify bundle (see piecesPerUnit); the server sets it again when the PO is saved.
   piecesPerSet?: number
-  // The product's saved defaults from Inventory.
+  // The product's saved defaults from Products.
   description?: string
   prepCategory?: PrepCategory | null
 }

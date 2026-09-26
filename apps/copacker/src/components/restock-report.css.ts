@@ -58,7 +58,7 @@ globalStyle(`${searchBox} > svg`, {
   pointerEvents: "none"
 })
 globalStyle(`${searchBox} input`, { paddingLeft: space(8) })
-export const stockout = style([detail, { display: "block", whiteSpace: "nowrap" }])
+export const stockoutCell = style([number, { color: vars.color.destructive, fontWeight: 500 }])
 export const groupActions = style({ display: "flex", alignItems: "center", gap: space(4) })
 export const groupCost = style({ display: "flex", flexDirection: "column", alignItems: "flex-end", ...fontSize.sm })
 export const grandTotal = style({
@@ -88,5 +88,5 @@ export const chevron = style({
   transition: "transform 150ms",
   selectors: { "[data-panel-open] &": { transform: "rotate(90deg)" } }
 })
-export const assign = style({ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: space(3) })
-export const problem = style({ ...fontSize.sm, color: vars.color.destructive, flexBasis: "100%" })
+export const groupTitle = style({ display: "flex", alignItems: "center", gap: space(2) })
+export const groupContent = style({ display: "flex", flexDirection: "column", gap: space(3) })

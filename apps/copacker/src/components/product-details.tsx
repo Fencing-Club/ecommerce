@@ -16,24 +16,25 @@ import {
   SheetTitle,
   SheetTrigger
 } from "@/components/ui/sheet"
-import { api, errorMessage } from "@/lib/api"
+import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
 import { formErrorMap } from "@/lib/form-errors"
 import { prepOptions } from "@/lib/prep"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError } from "./actions"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
+import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
 import * as styles from "./inventory-products.css"
 
 const detailsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
-    productSuppliers: build.query<{ id: string; name: string }[], void>({ query: () => "restock/suppliers" }),
     saveProductDefaults: build.mutation<
       ProductDefaults,
       Omit<ProductDefaults, "revision"> & { productId: string; expectedRevision: number }
     >({
-      query: (body) => ({ url: "inventory/product-defaults", method: "PATCH", body })
+      query: (body) => ({ url: "inventory/product-defaults", method: "PATCH", body }),
+      invalidatesTags: ["Restock", "ProductSupplier"]
     })
   })
 })
@@ -48,7 +49,7 @@ const schema = z.object({
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
-type Variation = { title: string | null; amazonStockTarget: number | null }
+type Variation = BarcodeVariation & { amazonStockTarget: number | null }
 
 // What Shopify holds for this product, shown for reference because it's edited in Shopify.
 function FromShopify({ caseQuantity, variants }: { caseQuantity: number | null; variants: Variation[] }) {
@@ -68,13 +69,13 @@ function FromShopify({ caseQuantity, variants }: { caseQuantity: number | null; 
         <dd>{caseQuantity === null ? "Not set" : `${caseQuantity} units per case`}</dd>
         {variants.length === 1 ? (
           <>
-            <dt>Amazon stock target</dt>
+            <dt>Minimum stock at Amazon</dt>
             <dd>{target(variants[0]?.amazonStockTarget ?? null)}</dd>
           </>
         ) : (
           variants.map((variant) => (
-            <Fragment key={variant.title}>
-              <dt>Amazon stock target, {variant.title}</dt>
+            <Fragment key={variant.variantId}>
+              <dt>Minimum stock at Amazon, {variant.title}</dt>
               <dd>{target(variant.amazonStockTarget)}</dd>
             </Fragment>
           ))
@@ -140,8 +141,8 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
   )
 }
 
-// Edits the product details Copacker keeps itself. Titles, SKUs, photos, costs and Amazon identifiers come from Shopify
-// and Amazon, so they are edited there.
+// Edits the product details Copacker keeps itself, and its variations' barcodes. Titles, SKUs, photos, costs and Amazon
+// identifiers come from Shopify and Amazon, so they are edited there.
 export function ProductDetails({
   productId,
   title,
@@ -159,7 +160,7 @@ export function ProductDetails({
 }) {
   const [open, setOpen] = useState(false)
   const [save] = detailsApi.useSaveProductDefaultsMutation()
-  const { data: suppliers = [] } = detailsApi.useProductSuppliersQuery(undefined, { skip: !open })
+  const { data: suppliers = [] } = useSuppliersQuery(undefined, { skip: !open })
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema, { error: formErrorMap }),
     values: {
@@ -231,6 +232,7 @@ export function ProductDetails({
                 step={1}
               />
               <CasePacks suggestedUnits={shopifyCaseQuantity} />
+              <ProductBarcodes productTitle={title} variations={variants} onChanged={onSaved} />
               <FromShopify caseQuantity={shopifyCaseQuantity} variants={variants} />
               <FormError message={form.formState.errors.root?.server?.message} />
             </div>

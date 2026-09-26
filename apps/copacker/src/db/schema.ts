@@ -367,6 +367,25 @@ export const productDefaults = pgTable(
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.productId] })]
 )
+// A product variation's barcode label, a one-page PDF the buyer uploads once. New POs copy it as the line's product
+// label, so the supplier prints it without the buyer uploading it again.
+export const productBarcodes = pgTable(
+  "product_barcodes",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    productId: text().notNull(),
+    objectKey: text().notNull().unique(),
+    name: text().notNull(),
+    bytes: integer().notNull(),
+    uploadedBy: text().notNull(),
+    createdAt: createdAt()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.variantId] })]
+)
 // Sales orders copied from Shopify and Amazon, as their readers return them, so restock can read any period quickly.
 export const salesOrders = pgTable(
   "sales_orders",

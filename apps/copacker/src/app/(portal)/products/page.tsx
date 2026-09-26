@@ -6,7 +6,7 @@ import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { session } from "@/server/auth"
 
-export default async function InventoryPage() {
+export default async function ProductsPage() {
   const s = await session()
   if (s.org.kind !== "buyer") {
     redirect("/orders")
@@ -18,8 +18,8 @@ export default async function InventoryPage() {
   return (
     <>
       <PageHeader
-        title="Inventory"
-        description="Sync inventory from your connected accounts. Each source keeps its last successful result."
+        title="Products"
+        description="Your products with stock from your connected accounts. Edit a product to set its supplier, case packs and barcodes."
       />
       <InventorySync providers={linked.map((row) => row.provider)} />
     </>

@@ -234,7 +234,7 @@ export function withAmazonStock(rows: StockRow[], fba: FbaRow[] | null, awd: Awd
   return { rows: merged, amazonOnly }
 }
 
-// Products per page the Inventory page offers.
+// Products per page the Products page offers.
 export const pageSizes = [10, 25, 50, 100] as const
 
 const byName = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })

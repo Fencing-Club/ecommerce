@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         await tx.insert(memberships).values({ orgId: id, userId: user.id, email: user.email, role: "owner" })
       })
       await setWorkspace(id)
-      const next = typeof data.next === "string" && data.next.startsWith("/invite?") ? data.next : "/orders"
+      const next = typeof data.next === "string" && data.next.startsWith("/invite?") ? data.next : "/"
       return Response.json({ redirect: next })
     }
     if (action === "team.accept") {
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         await tx.delete(teamInvitations).where(eq(teamInvitations.id, row.id))
         await setWorkspace(row.orgId)
       })
-      return Response.json({ redirect: "/orders" })
+      return Response.json({ redirect: "/" })
     }
     const s = await session()
     const id = () => z.uuid().parse(data.id),
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     if (action === "workspace.switch") {
       await requireMembership(s.user.id, id())
       await setWorkspace(id())
-      return Response.json({ redirect: "/orders" })
+      return Response.json({ redirect: "/" })
     }
     if (action === "supplier.create") {
       requireBuyer(s)
