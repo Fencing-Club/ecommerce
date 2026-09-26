@@ -24,7 +24,9 @@ const applied: Record<string, string> = {
   "0012_product_barcodes": "17c853f1d41791f247ed8f80c17fc9f58440dfa8240feb3c70678475623f6a9e",
   "0013_overview_finance": "9846c6286d4dde1420e6f4be8b92e144ec1e3e2384fcf0247cf94d53dbb9a2d7",
   "0014_landed_costs": "0013865e698965cda40f9c5fe5daaaf6fdbf7cb71adf1558d2f2f2db68035953",
-  "0015_product_label_source": "676864851442ea2b7489331a2aca7479f562b653605a3da94c0afbb320d41b8e"
+  "0015_product_label_source": "676864851442ea2b7489331a2aca7479f562b653605a3da94c0afbb320d41b8e",
+  "0016_shopify_balance": "6d8db37e608a1b47256c52438e4ad232174239e7514b5e7e7f109a8412aee478",
+  "0017_finance_links": "7e1f7d65b9be8b96c807d5ed44e75f8866e82be39cc4affa1071de9ef6578a86"
 }
 
 async function sha256(tag: string) {

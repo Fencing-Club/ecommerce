@@ -5,6 +5,7 @@
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)
 - [Local development and launch](operations.md)
+- [Shopify webhooks and Amazon notifications](notifications.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
 - [Styling with vanilla-extract](vanilla-extract.md)
