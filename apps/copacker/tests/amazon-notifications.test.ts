@@ -320,3 +320,24 @@ describe("Amazon notification subscriptions", () => {
     expect(amazon.notificationDestination).not.toHaveBeenCalled()
   })
 })
+
+describe("job queue", () => {
+  it("lets concurrent workers claim different jobs, past one that is still running", async () => {
+    vi.stubEnv("AMAZON_NOTIFICATIONS_QUEUE_URL", "")
+    const warned = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    await database.insert(tables.jobs).values([
+      // A long job another worker loop holds; its lease is fresh.
+      { key: "sales:long", kind: "sales", payload: {}, status: "running", attempts: 1, leaseAt: new Date() },
+      { key: "amazon-subscribe:a", kind: "amazon-subscribe", payload: { orgId: buyerId } },
+      { key: "amazon-subscribe:b", kind: "amazon-subscribe", payload: { orgId: otherBuyerId } }
+    ])
+    expect((await Promise.all([runNextJob(), runNextJob(), runNextJob()])).sort()).toEqual([false, true, true])
+    const rows = await database.select().from(tables.jobs)
+    expect(rows.map((row) => [row.key, row.status, row.attempts]).sort()).toEqual([
+      ["amazon-subscribe:a", "complete", 1],
+      ["amazon-subscribe:b", "complete", 1],
+      ["sales:long", "running", 1]
+    ])
+    warned.mockRestore()
+  })
+})
