@@ -28,6 +28,7 @@ import * as styles from "./inventory-products.css"
 const detailsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
+    productSuppliers: build.query<{ id: string; name: string }[], void>({ query: () => "restock/suppliers" }),
     saveProductDefaults: build.mutation<
       ProductDefaults,
       Omit<ProductDefaults, "revision"> & { productId: string; expectedRevision: number }
@@ -42,6 +43,8 @@ const schema = z.object({
   // Empty means no default; new PO lines then start with a sealed polybag.
   prepCategory: z.enum(prepCategories).or(z.literal("")),
   minimumOrder: z.number().int().min(1).max(1000000).optional(),
+  // Empty means not chosen; restock then uses the last PO or the supplier's catalog.
+  supplierId: z.string(),
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
@@ -156,12 +159,14 @@ export function ProductDetails({
 }) {
   const [open, setOpen] = useState(false)
   const [save] = detailsApi.useSaveProductDefaultsMutation()
+  const { data: suppliers = [] } = detailsApi.useProductSuppliersQuery(undefined, { skip: !open })
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema, { error: formErrorMap }),
     values: {
       description: defaults.description,
       prepCategory: defaults.prepCategory ?? "",
       minimumOrder: defaults.minimumOrder ?? undefined,
+      supplierId: defaults.supplierId ?? "",
       casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined }))
     }
   })
@@ -172,6 +177,7 @@ export function ProductDetails({
         description: values.description,
         prepCategory: values.prepCategory || null,
         minimumOrder: values.minimumOrder ?? null,
+        supplierId: values.supplierId || null,
         casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
         expectedRevision: defaults.revision
       }).unwrap()
@@ -209,6 +215,13 @@ export function ProductDetails({
                 label="Default preparation"
                 placeholder="Not set (sealed polybag)"
                 options={prepOptions}
+              />
+              <FormSelect
+                name="supplierId"
+                label="Supplier"
+                description="Restock groups this product under this supplier and uses their lead time."
+                placeholder="Not set"
+                options={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))}
               />
               <FormNumber
                 name="minimumOrder"

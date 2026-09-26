@@ -5,7 +5,7 @@ import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/
 import type { Session } from "./auth"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
-import { readProductDefaults } from "./product-defaults"
+import { type ProductDefaults, readProductDefaults } from "./product-defaults"
 import { restockPlan, type RestockSupplier } from "./restock-plan"
 import { dayRange } from "./restock-report"
 import { resolveRestockSupplier } from "./restock-supplier"
@@ -47,7 +47,11 @@ export async function restockChannels(orgId: string) {
 
 // The buyer's suppliers with their lead times, and each variation's supplier: the one it was last ordered from, else
 // the one linked supplier whose active catalog holds its Shopify supplier SKU.
-async function supplierLookup(orgId: string, catalog: { variantId: string; supplierSku?: string | null }[]) {
+async function supplierLookup(
+  orgId: string,
+  catalog: { variantId: string; productId?: string; supplierSku?: string | null }[],
+  chosen: ReadonlyMap<string, { supplierId: string | null }>
+) {
   const [links, history] = await Promise.all([
     db()
       .select()
@@ -68,6 +72,14 @@ async function supplierLookup(orgId: string, catalog: { variantId: string; suppl
   }))
   const byId = new Map(list.map((supplier) => [supplier.id, supplier]))
   const byVariant = new Map<string, RestockSupplier>()
+  // The supplier the buyer chose for the product comes first.
+  for (const row of catalog) {
+    const supplierId = row.productId ? chosen.get(row.productId)?.supplierId : null
+    const supplier = supplierId ? byId.get(supplierId) : undefined
+    if (supplier) {
+      byVariant.set(row.variantId, supplier)
+    }
+  }
   for (const order of history) {
     const supplier = byId.get(order.supplierId)
     if (!supplier) {
@@ -168,14 +180,16 @@ export async function restockReport(s: Session, raw: unknown) {
     .select({ provider: connections.provider })
     .from(connections)
     .where(eq(connections.orgId, s.org.id))
-  const [demand, lookup, productDefaults] = await Promise.all([
+  const productDefaults: Map<string, ProductDefaults> = context.domain
+    ? await readProductDefaults(s.org.id, context.domain)
+    : new Map()
+  const [demand, lookup] = await Promise.all([
     restockDemand(
       s.org.id,
       connected.map((row) => row.provider),
       input.days
     ),
-    supplierLookup(s.org.id, context.rows),
-    context.domain ? readProductDefaults(s.org.id, context.domain) : new Map()
+    supplierLookup(s.org.id, context.rows, productDefaults)
   ])
   const stockouts = await channelStockouts(s.org.id, channel, context.rows, demand.sources)
   const lines = restockPlan({

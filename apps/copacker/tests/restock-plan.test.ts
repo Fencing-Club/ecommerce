@@ -144,7 +144,21 @@ describe("restock plan", () => {
       fbaRows: [],
       awdRows: []
     })
-    expect(target).toMatchObject({ targetStock: 1, available: 0, purchaseUnits: 1113 })
+    // Amazon has no inventory for the SKU: there's no listing to send stock to yet.
+    expect(target).toMatchObject({ targetStock: 1, status: "no_listing", purchaseUnits: null })
+    const [emptyListing] = restockPlan({
+      ...base,
+      channel: amazon,
+      catalog: catalog.map((row) => ({ ...row, amazonStockTarget: 1 })),
+      fbaRows: base.fbaRows.map((row) => ({
+        ...row,
+        totalQuantity: 0,
+        inventoryDetails: { ...row.inventoryDetails, fulfillableQuantity: 0 }
+      })),
+      awdRows: []
+    })
+    // An FBA listing with no stock tops up to the target: 1112 sold plus a target of 1.
+    expect(emptyListing).toMatchObject({ targetStock: 1, available: 0, purchaseUnits: 1113, status: "stockout" })
     const [notStocked] = restockPlan({
       ...base,
       channel: amazon,

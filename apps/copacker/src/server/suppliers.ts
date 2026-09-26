@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { orders, suppliers } from "@/db/schema"
@@ -30,18 +30,26 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
   })
 }
 
-export const leadTimesSchema = z.strictObject({
+export const supplierUpdateSchema = z.strictObject({
   id: z.uuid(),
+  name: z.string().trim().min(1).max(120),
   leadTimeDays: z.number().int().min(1).max(730).nullable(),
   amazonLeadTimeDays: z.number().int().min(1).max(730).nullable()
 })
 
-// How long a supplier takes to deliver to the buyer's locations and to Amazon, used by restock.
-export async function saveSupplierLeadTimes(buyerOrgId: string, raw: unknown) {
-  const input = leadTimesSchema.parse(raw)
+// A supplier's name, and how long they take to deliver to the buyer's locations and to Amazon (used by restock).
+export async function updateSupplier(buyerOrgId: string, raw: unknown) {
+  const input = supplierUpdateSchema.parse(raw)
+  const [taken] = await db()
+    .select({ id: suppliers.id })
+    .from(suppliers)
+    .where(and(eq(suppliers.buyerOrgId, buyerOrgId), eq(suppliers.name, input.name), ne(suppliers.id, input.id)))
+  if (taken) {
+    throw new Error("Another supplier already has this name")
+  }
   const updated = await db()
     .update(suppliers)
-    .set({ leadTimeDays: input.leadTimeDays, amazonLeadTimeDays: input.amazonLeadTimeDays })
+    .set({ name: input.name, leadTimeDays: input.leadTimeDays, amazonLeadTimeDays: input.amazonLeadTimeDays })
     .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
     .returning({ id: suppliers.id })
   if (!updated.length) {

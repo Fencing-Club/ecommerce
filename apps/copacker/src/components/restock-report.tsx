@@ -2,17 +2,19 @@
 
 import { useDebouncedValue, useLocalStorage } from "@mantine/hooks"
 import { money } from "@repo/aisle"
-import { ChevronDown, ChevronRight, ImageOff, Search } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, Search } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
 import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
 import { dayRange } from "@/server/restock-report"
@@ -46,6 +48,9 @@ const restockApi = api.injectEndpoints({
     restockSuppliers: build.query<SupplierOption[], void>({ query: () => "restock/suppliers" }),
     restockPlan: build.mutation<Report, Request>({
       query: (body) => ({ url: "restock/plan", method: "POST", body })
+    }),
+    assignSupplier: build.mutation<{ updated: number }, { productIds: string[]; supplierId: string }>({
+      query: (body) => ({ url: "restock/assign-supplier", method: "POST", body })
     })
   })
 })
@@ -65,14 +70,16 @@ const statusLabels: Record<RestockStatus, string> = {
   reorder: "Reorder",
   stocked: "Enough stock",
   blocked: "Can’t calculate",
-  not_stocked: "Not stocked at Amazon"
+  not_stocked: "Not stocked at Amazon",
+  no_listing: "No Amazon listing"
 }
 const statusVariants: Record<RestockStatus, "destructive" | "default" | "secondary" | "outline"> = {
   stockout: "destructive",
   reorder: "default",
   stocked: "secondary",
   blocked: "outline",
-  not_stocked: "outline"
+  not_stocked: "outline",
+  no_listing: "outline"
 }
 const blockNames: Record<BlockReason, string> = {
   stock_unknown: "the stock count is unknown",
@@ -80,7 +87,14 @@ const blockNames: Record<BlockReason, string> = {
   incoming_unknown: "incoming stock is unknown",
   sku_ambiguous: "its SKU matches more than one product"
 }
-const statusRank: Record<RestockStatus, number> = { stockout: 0, reorder: 1, blocked: 2, stocked: 3, not_stocked: 4 }
+const statusRank: Record<RestockStatus, number> = {
+  stockout: 0,
+  reorder: 1,
+  blocked: 2,
+  stocked: 3,
+  not_stocked: 4,
+  no_listing: 5
+}
 // A PO holds up to 100 lines.
 const poLineLimit = 100
 
@@ -186,51 +200,64 @@ function orderUnits(line: RestockLine, edit: Edit | undefined) {
   return line.status === "stockout" || line.status === "reorder" ? (line.purchaseUnits ?? 0) : 0
 }
 
-function Totals({ lines, edits }: { lines: RestockLine[]; edits: ReadonlyMap<string, Edit> }) {
-  let units = 0
-  let cases = 0
-  let volume = 0
-  let weight = 0
-  let unknownSize = 0
-  const cost = new Map<string, number>()
-  let unknownCost = 0
-  let count = 0
+// What the selected lines add up to. Costs are kept per currency; lines without a unit cost or case pack are counted
+// so the totals say what they leave out.
+function orderTotals(lines: RestockLine[], edits: ReadonlyMap<string, Edit>) {
+  const totals = {
+    count: 0,
+    units: 0,
+    cases: 0,
+    volume: 0,
+    weight: 0,
+    unknownSize: 0,
+    unknownCost: 0,
+    cost: new Map<string, number>()
+  }
   for (const line of lines) {
     const ordered = orderUnits(line, edits.get(line.variantId))
     if (!ordered) {
       continue
     }
-    count++
-    units += ordered
+    totals.count++
+    totals.units += ordered
     if (line.casePack) {
       const packs = Math.ceil(ordered / line.casePack.units)
-      cases += packs
-      volume += (packs * line.casePack.lengthCm * line.casePack.widthCm * line.casePack.heightCm) / 1e6
-      weight += packs * (line.casePack.weightKg ?? 0)
+      totals.cases += packs
+      totals.volume += (packs * line.casePack.lengthCm * line.casePack.widthCm * line.casePack.heightCm) / 1e6
+      totals.weight += packs * (line.casePack.weightKg ?? 0)
     } else {
-      unknownSize++
+      totals.unknownSize++
     }
     if (line.unitCostMinor !== null && line.costCurrency) {
-      cost.set(line.costCurrency, (cost.get(line.costCurrency) ?? 0) + ordered * line.unitCostMinor)
+      totals.cost.set(line.costCurrency, (totals.cost.get(line.costCurrency) ?? 0) + ordered * line.unitCostMinor)
     } else {
-      unknownCost++
+      totals.unknownCost++
     }
   }
-  if (!count) {
+  return totals
+}
+type OrderTotals = ReturnType<typeof orderTotals>
+
+function costText(totals: OrderTotals) {
+  const amounts = [...totals.cost].map(([currency, minor]) => money(minor, currency))
+  return amounts.length ? amounts.join(" + ") : "Unknown"
+}
+
+function Totals({ totals }: { totals: OrderTotals }) {
+  if (!totals.count) {
     return <p className={styles.detail}>Nothing selected.</p>
   }
-  const parts = [`${count} ${count === 1 ? "line" : "lines"}`, `${units.toLocaleString()} units`]
-  if (cases) {
-    parts.push(`${cases} cases, ${volume.toFixed(2)} m³${weight ? `, ${weight.toFixed(1)} kg` : ""}`)
-  }
-  for (const [currency, minor] of cost) {
-    parts.push(`about ${money(minor, currency)}`)
+  const parts = [`${totals.count} ${totals.count === 1 ? "line" : "lines"}`, `${totals.units.toLocaleString()} units`]
+  if (totals.cases) {
+    parts.push(
+      `${totals.cases} cases, ${totals.volume.toFixed(2)} m³${totals.weight ? `, ${totals.weight.toFixed(1)} kg` : ""}`
+    )
   }
   return (
     <p className={styles.detail}>
       {parts.join(", ")}
-      {unknownSize > 0 && `. ${unknownSize} without a case pack`}
-      {unknownCost > 0 && `. ${unknownCost} without a unit cost`}
+      {totals.unknownSize > 0 && `. ${totals.unknownSize} without a case pack`}
+      {totals.unknownCost > 0 && `. ${totals.unknownCost} without a unit cost, not in the cost`}
     </p>
   )
 }
@@ -254,6 +281,13 @@ function createPoHref(
     params.set("supplierId", supplierId)
   }
   return { href: `/orders/new?${params}`, count: chosen.length }
+}
+
+function StockLeft({ line }: { line: RestockLine }) {
+  if (line.daysRemaining !== null) {
+    return `${line.daysRemaining} days`
+  }
+  return line.sold === 0 ? "No sales" : "Unknown"
 }
 
 function LineRows({
@@ -296,7 +330,7 @@ function LineRows({
           <Badge variant={statusVariants[line.status]}>{statusLabels[line.status]}</Badge>
         </TableCell>
         <TableCell className={styles.number}>
-          {line.daysRemaining === null ? "Unknown" : `${line.daysRemaining} days`}
+          <StockLeft line={line} />
         </TableCell>
         <TableCell className={styles.number}>
           {line.sold ?? "Unknown"}
@@ -352,13 +386,81 @@ function LineRows({
   )
 }
 
+// Links the ticked products in "No supplier yet" to a supplier, saved on each product, then recalculates.
+function AssignSupplier({
+  lines,
+  edits,
+  suppliers,
+  onAssigned
+}: {
+  lines: RestockLine[]
+  edits: ReadonlyMap<string, Edit>
+  suppliers: SupplierOption[]
+  onAssigned: () => void
+}) {
+  const [supplierId, setSupplierId] = useState("")
+  const [assign, result] = restockApi.useAssignSupplierMutation()
+  const productIds = [
+    ...new Set(
+      lines.flatMap((line) =>
+        orderUnits(line, edits.get(line.variantId)) > 0 && line.productId ? [line.productId] : []
+      )
+    )
+  ]
+  if (!suppliers.length) {
+    return null
+  }
+  return (
+    <div className={styles.assign}>
+      <Field className={styles.control}>
+        <FieldLabel htmlFor="restock-assign-supplier">Supplier for the ticked products</FieldLabel>
+        <NativeSelect
+          id="restock-assign-supplier"
+          value={supplierId}
+          onChange={(event) => setSupplierId(event.target.value)}
+        >
+          <NativeSelectOption value="">Choose a supplier</NativeSelectOption>
+          {suppliers.map((supplier) => (
+            <NativeSelectOption key={supplier.id} value={supplier.id}>
+              {supplier.name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      </Field>
+      <Button
+        variant="outline"
+        disabled={!supplierId || !productIds.length || result.isLoading}
+        onClick={async () => {
+          try {
+            await assign({ productIds, supplierId }).unwrap()
+            onAssigned()
+          } catch {
+            // RTK Query keeps the failure for the message below.
+          }
+        }}
+      >
+        {result.isLoading
+          ? "Assigning…"
+          : `Assign ${productIds.length} ${productIds.length === 1 ? "product" : "products"}`}
+      </Button>
+      {result.isError && (
+        <p role="alert" className={styles.problem}>
+          {errorMessage(result.error, "The supplier couldn’t be saved. Try again.")}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function SupplierGroup({
   name,
   supplierId,
   lines,
   channel,
   edits,
-  setEdit
+  setEdit,
+  suppliers,
+  onAssigned
 }: {
   name: string
   supplierId: string | null
@@ -366,11 +468,14 @@ function SupplierGroup({
   channel: RestockChannel
   edits: ReadonlyMap<string, Edit>
   setEdit: (variantId: string, edit: Edit) => void
+  suppliers: SupplierOption[]
+  onAssigned: () => void
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const po = createPoHref(lines, edits, channel, supplierId)
   const headingId = `supplier-${supplierId ?? "none"}`
   const leadTimes = [...new Set(lines.map((line) => line.leadTimeDays))]
+  const totals = orderTotals(lines, edits)
   return (
     <section className={styles.section} aria-labelledby={headingId}>
       <div className={styles.heading}>
@@ -380,18 +485,27 @@ function SupplierGroup({
           </h2>
           <span className={styles.detail}>
             Lead time {leadTimes.join(" or ")} days.{" "}
-            {supplierId ? "" : "These haven’t been ordered from a supplier yet; choose one on the PO."}
+            {supplierId
+              ? ""
+              : "Copacker doesn’t know who supplies these yet. Tick them and choose their supplier below, or set it on the product in Inventory."}
           </span>
-          <Totals lines={lines} edits={edits} />
+          <Totals totals={totals} />
         </span>
-        {po.count > 0 ? (
-          <Button nativeButton={false} render={<Link href={po.href} />}>
-            Create PO
-          </Button>
-        ) : (
-          <Button disabled>Create PO</Button>
-        )}
+        <span className={styles.groupActions}>
+          <span className={styles.groupCost}>
+            <span className={styles.detail}>Estimated cost</span>
+            <strong>{costText(totals)}</strong>
+          </span>
+          {po.count > 0 ? (
+            <Button nativeButton={false} render={<Link href={po.href} />}>
+              Create PO
+            </Button>
+          ) : (
+            <Button disabled>Create PO</Button>
+          )}
+        </span>
       </div>
+      {!supplierId && <AssignSupplier lines={lines} edits={edits} suppliers={suppliers} onAssigned={onAssigned} />}
       <Table>
         <TableHeader>
           <TableRow>
@@ -431,6 +545,15 @@ function SupplierGroup({
             />
           ))}
         </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell />
+            <TableCell colSpan={6}>Total selected</TableCell>
+            <TableCell className={styles.number}>{totals.units.toLocaleString()}</TableCell>
+            <TableCell className={styles.number}>{costText(totals)}</TableCell>
+            <TableCell />
+          </TableRow>
+        </TableFooter>
       </Table>
       {po.count === poLineLimit && <p className={styles.detail}>A PO holds 100 lines; the first 100 are included.</p>}
     </section>
@@ -458,9 +581,59 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
   return <p className={styles.summary}>Nothing needs reordering.</p>
 }
 
+// Items Shopify says to keep at Amazon, but Amazon has no inventory for: there's nothing to send stock to yet.
+function NoListing({ lines }: { lines: RestockLine[] }) {
+  if (!lines.length) {
+    return null
+  }
+  return (
+    <Alert>
+      <AlertTriangle />
+      <AlertTitle>
+        {lines.length} {lines.length === 1 ? "product has" : "products have"} an Amazon stock target but no Amazon
+        listing
+      </AlertTitle>
+      <AlertDescription>
+        <p>
+          Shopify’s Amazon stock target says to keep these at Amazon, but Amazon has no FBA or AWD inventory for their
+          SKUs, so they aren’t suggested. Create the FBA listing with the same SKU, or set the target to 0 in Shopify.
+        </p>
+        <Collapsible className={styles.noListing}>
+          <CollapsibleTrigger className={styles.noListingTrigger}>
+            <ChevronRight className={styles.chevron} aria-hidden="true" />
+            Show products
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead className={styles.number}>Amazon stock target</TableHead>
+                  <TableHead className={styles.number}>Sold</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lines.map((line) => (
+                  <TableRow key={line.variantId}>
+                    <TableCell>
+                      <Name line={line} />
+                    </TableCell>
+                    <TableCell className={styles.number}>{line.targetStock}</TableCell>
+                    <TableCell className={styles.number}>{line.sold ?? "Unknown"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CollapsibleContent>
+        </Collapsible>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
 type Sort = "urgency" | "quantity" | "name"
 
-function Results({ report }: { report: Report }) {
+function Results({ report, reload }: { report: Report; reload: () => void }) {
   const [search, setSearch] = useState("")
   const [query] = useDebouncedValue(search.trim().toLocaleLowerCase(), 200)
   const [sort, setSort] = useLocalStorage<Sort>({ key: "restock-sort", defaultValue: "urgency" })
@@ -474,6 +647,7 @@ function Results({ report }: { report: Report }) {
       line.variant?.toLocaleLowerCase().includes(query) ||
       line.sku?.toLocaleLowerCase().includes(query)
   )
+  const noListing = matching.filter((line) => line.status === "no_listing")
   const visible = matching
     .filter(
       (line) =>
@@ -511,6 +685,7 @@ function Results({ report }: { report: Report }) {
     blocked: report.lines.filter((line) => line.status === "blocked").length,
     fine: report.lines.filter((line) => line.status === "stocked" || line.status === "not_stocked").length
   }
+  const selected = orderTotals(visible, edits)
   return (
     <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
       <Notes report={report} />
@@ -560,6 +735,15 @@ function Results({ report }: { report: Report }) {
           <FieldLabel htmlFor="restock-show-all">Show products with enough stock</FieldLabel>
         </Field>
       </div>
+      {selected.count > 0 && (
+        <div className={styles.grandTotal} aria-live="polite">
+          <span>
+            <strong>Total for all suppliers</strong>
+            <Totals totals={selected} />
+          </span>
+          <strong className={styles.grandCost}>{costText(selected)}</strong>
+        </div>
+      )}
       {ordered.length === 0 && <EmptyResults report={report} searching={matching.length < report.lines.length} />}
       {ordered.map((group) => (
         <SupplierGroup
@@ -568,6 +752,8 @@ function Results({ report }: { report: Report }) {
           supplierId={group.supplierId}
           lines={group.lines}
           channel={report.channel}
+          suppliers={report.suppliers}
+          onAssigned={reload}
           edits={edits}
           setEdit={(variantId, edit) =>
             setEdits((current) => {
@@ -578,6 +764,7 @@ function Results({ report }: { report: Report }) {
           }
         />
       ))}
+      <NoListing lines={noListing} />
     </div>
   )
 }
@@ -687,7 +874,17 @@ export function RestockReport() {
         <Link href="/suppliers">Suppliers</Link> page.
       </p>
       {result.isError && <p role="alert">{errorMessage(result.error, "Restock couldn’t be calculated. Try again.")}</p>}
-      {result.data && current && !result.isLoading && <Results key={requestKey} report={result.data} />}
+      {result.data && current && !result.isLoading && (
+        <Results
+          key={requestKey}
+          report={result.data}
+          reload={() => {
+            if (request) {
+              void load(request)
+            }
+          }}
+        />
+      )}
       {result.data && !current && !result.isLoading && (
         <p className={styles.summary}>Settings changed. Select Suggest reorders to update.</p>
       )}

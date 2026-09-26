@@ -360,6 +360,8 @@ export const productDefaults = pgTable(
     casePacks: jsonb().$type<CasePack[]>().notNull().default([]),
     // The smallest quantity worth ordering, in sellable units. Restock never suggests less.
     minimumOrder: integer(),
+    // The supplier this product is ordered from, chosen by the buyer. Restock groups it under this supplier.
+    supplierId: uuid().references(() => suppliers.id),
     revision: integer().notNull().default(1),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },

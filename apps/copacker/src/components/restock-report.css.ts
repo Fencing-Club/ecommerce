@@ -59,3 +59,34 @@ globalStyle(`${searchBox} > svg`, {
 })
 globalStyle(`${searchBox} input`, { paddingLeft: space(8) })
 export const stockout = style([detail, { display: "block", whiteSpace: "nowrap" }])
+export const groupActions = style({ display: "flex", alignItems: "center", gap: space(4) })
+export const groupCost = style({ display: "flex", flexDirection: "column", alignItems: "flex-end", ...fontSize.sm })
+export const grandTotal = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3),
+  padding: space(4),
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
+  backgroundColor: vars.color.muted
+})
+export const grandCost = style({ ...fontSize.xl, fontVariantNumeric: "tabular-nums" })
+export const noListing = style({ display: "flex", flexDirection: "column", gap: space(3), marginTop: space(3) })
+export const noListingTrigger = style({
+  display: "flex",
+  alignItems: "center",
+  gap: space(2),
+  fontWeight: 500,
+  outline: "none",
+  selectors: { "&:focus-visible": { outline: `2px solid ${vars.color.ring}`, outlineOffset: 2 } }
+})
+export const chevron = style({
+  width: "1rem",
+  height: "1rem",
+  transition: "transform 150ms",
+  selectors: { "[data-panel-open] &": { transform: "rotate(90deg)" } }
+})
+export const assign = style({ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: space(3) })
+export const problem = style({ ...fontSize.sm, color: vars.color.destructive, flexBasis: "100%" })

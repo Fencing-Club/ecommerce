@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { CheckCircle2, Clock, TimerOff } from "lucide-react"
 import { ActionButton } from "@/components/actions"
 import { EmptyState, PageHeader } from "@/components/common"
-import { InviteSupplier, RemoveSupplier, SupplierLeadTimes } from "@/components/supplier-actions"
+import { EditSupplier, InviteSupplier, RemoveSupplier } from "@/components/supplier-actions"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -108,7 +108,7 @@ export default async function SuppliersPage() {
                         )}
                       </div>
                     )}
-                    <SupplierLeadTimes
+                    <EditSupplier
                       id={row.id}
                       name={row.name}
                       leadTimeDays={row.leadTimeDays}

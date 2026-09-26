@@ -1,0 +1,2 @@
+ALTER TABLE "product_defaults" ADD COLUMN "supplierId" uuid;--> statement-breakpoint
+ALTER TABLE "product_defaults" ADD CONSTRAINT "product_defaults_supplierId_suppliers_id_fk" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;

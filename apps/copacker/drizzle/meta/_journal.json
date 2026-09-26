@@ -78,6 +78,13 @@
       "when": 1790397104877,
       "tag": "0010_stock_days",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790398254332,
+      "tag": "0011_product_supplier",
+      "breakpoints": true
     }
   ]
 }

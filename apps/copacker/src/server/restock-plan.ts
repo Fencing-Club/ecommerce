@@ -23,7 +23,9 @@ export type RestockSupplier = {
   amazonLeadTimeDays: number | null
 }
 
-export type RestockStatus = "stockout" | "reorder" | "stocked" | "blocked" | "not_stocked"
+// "no_listing": Shopify sets an Amazon stock target, but Amazon has no FBA or AWD inventory for the SKU, so there's
+// nothing to send stock to until the listing exists.
+export type RestockStatus = "stockout" | "reorder" | "stocked" | "blocked" | "not_stocked" | "no_listing"
 export type BlockReason = "stock_unknown" | "demand_unknown" | "incoming_unknown" | "sku_ambiguous"
 
 export type RestockLine = {
@@ -167,6 +169,7 @@ export function restockPlan(input: {
       let sold: number | null = null
       let targetStock: number | null = null
       let notStocked = false
+      let noListing = false
       if (channel.kind === "shopify") {
         // Bundles hold no stock of their own at a Shopify location; their components are restocked instead.
         if (variant.stock !== "tracked") {
@@ -198,6 +201,7 @@ export function restockPlan(input: {
           continue
         }
         notStocked = amazonTarget === 0
+        noListing = !fba && !awd
         targetStock = amazonTarget
         if (skuCount.get(sku) !== 1 || (fba?.length ?? 0) > 1 || (awd?.length ?? 0) > 1) {
           blocked.push("sku_ambiguous")
@@ -292,7 +296,13 @@ export function restockPlan(input: {
         estimatedCostMinor: result.estimatedCostMinor,
         daysRemaining: result.daysRemaining === null ? null : Math.floor(result.daysRemaining)
       }
-      lines.push({ ...line, status: notStocked ? "not_stocked" : status(line) })
+      if (notStocked) {
+        lines.push({ ...line, status: "not_stocked" })
+      } else if (noListing) {
+        lines.push({ ...line, status: "no_listing", purchaseUnits: null, caseCount: null, estimatedCostMinor: null })
+      } else {
+        lines.push({ ...line, status: status(line) })
+      }
     }
   }
   return lines

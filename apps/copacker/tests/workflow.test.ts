@@ -98,13 +98,18 @@ import {
   closeOrder,
   receiveShipment
 } from "../src/server/orders"
-import { lineDefaultsFor, saveProductDefaults } from "../src/server/product-defaults"
+import {
+  assignProductSupplier,
+  lineDefaultsFor,
+  readProductDefaults,
+  saveProductDefaults
+} from "../src/server/product-defaults"
 import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
 import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
-import { saveSupplierLeadTimes } from "../src/server/suppliers"
+import { updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
 
@@ -856,6 +861,7 @@ describe("Postgres workflow and authorization", () => {
       prepCategory: "TAPING",
       casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
       minimumOrder: 48,
+      supplierId: null,
       revision: 1
     })
     await expect(saveProductDefaults(buyer, input)).rejects.toThrow("Someone else changed")
@@ -2841,15 +2847,44 @@ describe("stored sales orders", () => {
 })
 
 describe("supplier lead times", () => {
-  it("saves lead times only for the buyer's own current suppliers", async () => {
-    await saveSupplierLeadTimes(buyerId, { id: supplierLinkId, leadTimeDays: 45, amazonLeadTimeDays: 60 })
+  it("renames suppliers and saves lead times only for the buyer's own current suppliers", async () => {
+    const edit = { id: supplierLinkId, name: "Renamed", leadTimeDays: 45, amazonLeadTimeDays: 60 }
+    await updateSupplier(buyerId, edit)
     const [link] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
-    expect(link).toMatchObject({ leadTimeDays: 45, amazonLeadTimeDays: 60 })
-    await expect(
-      saveSupplierLeadTimes(otherId, { id: supplierLinkId, leadTimeDays: 1, amazonLeadTimeDays: null })
-    ).rejects.toThrow("removed")
-    await expect(
-      saveSupplierLeadTimes(buyerId, { id: supplierLinkId, leadTimeDays: 0, amazonLeadTimeDays: null })
-    ).rejects.toThrow("expected number to be >=1")
+    expect(link).toMatchObject({ name: "Renamed", leadTimeDays: 45, amazonLeadTimeDays: 60 })
+    await expect(updateSupplier(otherId, { ...edit, leadTimeDays: 1 })).rejects.toThrow("removed")
+    await expect(updateSupplier(buyerId, { ...edit, leadTimeDays: 0 })).rejects.toThrow("expected number to be >=1")
+    await database.insert(tables.suppliers).values({ buyerOrgId: buyerId, name: "Taken", email: "taken@example.com" })
+    await expect(updateSupplier(buyerId, { ...edit, name: "Taken" })).rejects.toThrow("already has this name")
+  })
+})
+
+describe("product suppliers", () => {
+  beforeEach(orderConnections)
+  it("assigns a current supplier to several products and keeps their other details", async () => {
+    const products = ["gid://shopify/Product/1", "gid://shopify/Product/2"]
+    expect(await assignProductSupplier(buyer, { productIds: products, supplierId: supplierLinkId })).toEqual({
+      updated: 2
+    })
+    const saved = await readProductDefaults(buyerId, "test.myshopify.com")
+    expect(saved.get(products[0]!)).toMatchObject({ supplierId: supplierLinkId, revision: 1, description: "" })
+    await assignProductSupplier(buyer, { productIds: [products[0]!], supplierId: null })
+    expect((await readProductDefaults(buyerId, "test.myshopify.com")).get(products[0]!)).toMatchObject({
+      supplierId: null,
+      revision: 2
+    })
+    await expect(assignProductSupplier(buyer, { productIds: products, supplierId: randomUUID() })).rejects.toThrow(
+      "current suppliers"
+    )
+    await database
+      .update(tables.suppliers)
+      .set({ removedAt: new Date() })
+      .where(eq(tables.suppliers.id, supplierLinkId))
+    await expect(assignProductSupplier(buyer, { productIds: products, supplierId: supplierLinkId })).rejects.toThrow(
+      "current suppliers"
+    )
+    await expect(assignProductSupplier(supplier, { productIds: products, supplierId: null })).rejects.toThrow(
+      "buyer workspace"
+    )
   })
 })
