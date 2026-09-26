@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { inventoryContext } from "@/server/inventory-context"
-import { groupInventory, inventoryLocations, pageSizes } from "@/server/inventory-products"
+import { type AmazonOnlyStock, groupInventory, inventoryLocations, pageSizes } from "@/server/inventory-products"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 
 const querySchema = z.strictObject({
@@ -17,6 +17,11 @@ const querySchema = z.strictObject({
     .default(1),
   pageSize: z.enum(pageSizes.map(String)).transform(Number).default(25)
 })
+
+const holdsStock = (stock: AmazonOnlyStock) =>
+  [stock.fba, stock.awd].some((pool) =>
+    [pool?.available, pool?.onHand, pool?.incoming].some((value) => (value ?? 0) > 0)
+  )
 
 // Inventory across Shopify's counted locations and Amazon's FBA and AWD, grouped by product, one page at a time.
 export async function GET(request: Request) {
@@ -59,8 +64,9 @@ export async function GET(request: Request) {
       locations: inventoryLocations(inventoryRows, inventoryClassifications).filter(
         (location) => location.classification === "merchant"
       ),
-      // Amazon SKUs that match no single Shopify variant. Resold-returns listings are left out.
-      amazonOnly: amazonOnly.filter((stock) => !stock.resold),
+      // Amazon SKUs that match no single Shopify variant and hold or expect stock. Resold-returns listings, and
+      // listings Amazon still reports with nothing on hand or inbound, are left out.
+      amazonOnly: amazonOnly.filter((stock) => !stock.resold && holdsStock(stock)),
       page: pageNumber,
       pageSize,
       totalPages,
