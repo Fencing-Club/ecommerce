@@ -1,7 +1,10 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
 
-export type AmazonCredentials = { clientId: string; clientSecret: string; refreshToken: string }
+export type AmazonCredentials =
+  | { clientId: string; clientSecret: string; refreshToken: string }
+  // Grantless operations, such as managing notification destinations, act for the app rather than a seller.
+  | { clientId: string; clientSecret: string; grantlessScope: string }
 const stockQuantity = z.number().int().nonnegative().safe()
 const awdStockPage = z.object({
   inventory: z
@@ -180,8 +183,9 @@ export class Amazon {
     const response = await this.transport("https://api.amazon.com/auth/o2/token", {
       method: "POST",
       body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: this.credentials.refreshToken,
+        ...("refreshToken" in this.credentials
+          ? { grant_type: "refresh_token", refresh_token: this.credentials.refreshToken }
+          : { grant_type: "client_credentials", scope: this.credentials.grantlessScope }),
         client_id: this.credentials.clientId,
         client_secret: this.credentials.clientSecret
       }),
@@ -544,6 +548,55 @@ export class Amazon {
       }
     }
     return result
+  }
+  // The app's notification destination for an SQS queue, created the first time. Needs grantless credentials with the
+  // sellingpartnerapi::notifications scope.
+  async notificationDestination(queueArn: string, name: string) {
+    const existing = z
+      .object({
+        payload: z
+          .array(
+            z.object({
+              destinationId: z.string(),
+              resource: z.object({ sqs: z.object({ arn: z.string() }).optional() }).optional()
+            })
+          )
+          .max(100)
+      })
+      .parse(await this.request("GET", "/notifications/v1/destinations"))
+      .payload.find((destination) => destination.resource?.sqs?.arn === queueArn)
+    if (existing) {
+      return existing.destinationId
+    }
+    return z.object({ payload: z.object({ destinationId: z.string() }) }).parse(
+      await this.request("POST", "/notifications/v1/destinations", {
+        name,
+        resourceSpecification: { sqs: { arn: queueArn } }
+      })
+    ).payload.destinationId
+  }
+  // Subscribes the seller to a notification type at the destination. Returns false when the subscription already
+  // exists there. A seller has one subscription per type for the app, so one pointing elsewhere (another environment
+  // using the same app) is reported rather than taken over.
+  async subscribeNotifications(notificationType: string, destinationId: string) {
+    try {
+      await this.request("POST", `/notifications/v1/subscriptions/${notificationType}`, {
+        payloadVersion: "1.0",
+        destinationId
+      })
+      return true
+    } catch (error) {
+      if (!(error instanceof ProviderError) || error.status !== 409) {
+        throw error
+      }
+    }
+    const current = z
+      .object({ payload: z.object({ destinationId: z.string() }) })
+      .parse(await this.request("GET", `/notifications/v1/subscriptions/${notificationType}`)).payload
+    if (current.destinationId !== destinationId) {
+      throw new Error(`Amazon already sends this seller's ${notificationType} notifications to another destination`)
+    }
+    return false
   }
 }
 export async function downloadAmazonLabels(raw: string) {

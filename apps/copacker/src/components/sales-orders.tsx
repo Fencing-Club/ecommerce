@@ -1,6 +1,7 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
+import { money } from "@repo/aisle"
 import { ChevronLeft, ChevronRight, ExternalLink, RefreshCw, Search } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -157,7 +158,10 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
     <Card>
       <CardHeader>
         <CardTitle>Orders</CardTitle>
-        <CardDescription>Newest first. Open an order in Shopify or Seller Central for full details.</CardDescription>
+        <CardDescription>
+          Newest first. Sales are after discounts, before tax and shipping. Fees are Amazon’s fees, or Shopify Payments’
+          processing fees. Open an order in Shopify or Seller Central to compare.
+        </CardDescription>
       </CardHeader>
       <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
         <div className={styles.filters}>
@@ -214,6 +218,8 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
                   <TableHead>Channel</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className={styles.numberCell}>Units</TableHead>
+                  <TableHead className={styles.numberCell}>Sales</TableHead>
+                  <TableHead className={styles.numberCell}>Fees</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -242,6 +248,16 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
                       <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
                     </TableCell>
                     <TableCell className={styles.numberCell}>{order.units}</TableCell>
+                    <TableCell className={styles.numberCell}>
+                      {order.sales ? money(order.sales.minor, order.sales.currency) : <Muted>Not priced yet</Muted>}
+                    </TableCell>
+                    <TableCell className={styles.numberCell}>
+                      {order.fees ? (
+                        money(order.fees.minor, order.fees.currency)
+                      ) : (
+                        <Muted>{order.source === "amazon" ? "Not posted yet" : "Not copied yet"}</Muted>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -308,4 +324,9 @@ export function SalesOrders() {
       <OrderList sources={currentData.sources} syncKey={syncKey} />
     </div>
   )
+}
+
+// A value that isn't known yet, quieter than the figures around it.
+function Muted({ children }: { children: React.ReactNode }) {
+  return <span className={sx({ color: "muted", whiteSpace: "nowrap" })}>{children}</span>
 }

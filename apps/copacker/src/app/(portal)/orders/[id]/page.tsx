@@ -4,7 +4,15 @@ import { ChevronDown, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import { DocumentList, EmptyState, PageBreadcrumb, PageHeader, Status, formatDestination } from "@/components/common"
+import {
+  DocumentList,
+  EmptyState,
+  PageBreadcrumb,
+  PageHeader,
+  Status,
+  WarningNote,
+  formatDestination
+} from "@/components/common"
 import { ClosePurchaseOrder } from "@/components/order-actions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -39,6 +47,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const remaining = workflow.items.some((item) => item.remainingPieces > 0)
   const { currency } = order.data
   const labels = docs.filter((d) => d.kind === "product_label" || d.kind === "purchase_order")
+  // Lines the supplier can't label yet. Closed POs no longer need them.
+  const unlabelled = new Set(
+    order.status === "closed"
+      ? []
+      : order.data.items
+          .filter((item) => !docs.some((doc) => doc.kind === "product_label" && doc.itemId === item.id))
+          .map((item) => item.id)
+  )
 
   return (
     <>
@@ -90,6 +106,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         <p className={sx({ text: "xs", color: "muted" })}>
                           Supplier SKU: {item.supplierSku || "Not provided"}
                         </p>
+                        {unlabelled.has(item.id) && (
+                          <WarningNote className={sx({ marginTop: 1 })}>
+                            {s.org.kind === "buyer"
+                              ? "No product label. Upload one below, or add a barcode on the Products page for future POs."
+                              : "The buyer hasn’t added a product label yet."}
+                          </WarningNote>
+                        )}
                         {item.instructions && (
                           <p
                             className={sx({

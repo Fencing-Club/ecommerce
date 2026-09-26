@@ -15,7 +15,7 @@ import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
 import { orderLine } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { FormError, SubmitButton } from "./actions"
-import { EmptyState } from "./common"
+import { EmptyState, WarningNote } from "./common"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import * as styles from "./order-builder.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -56,7 +56,8 @@ export function OrderBuilder({
   initialItems = [],
   initialDestination = "amazon",
   initialDeliveryId,
-  initialSupplierId
+  initialSupplierId,
+  barcodedVariantIds
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
@@ -67,7 +68,10 @@ export function OrderBuilder({
   initialDeliveryId?: string
   // The supplier restock grouped these lines under.
   initialSupplierId?: string
+  // Variations with a saved barcode, which becomes the line's product label when the PO is saved.
+  barcodedVariantIds?: string[]
 }) {
+  const barcoded = barcodedVariantIds ? new Set(barcodedVariantIds) : null
   const [query, setQuery] = useState("")
   const [showResults, setShowResults] = useState(false)
   const [searchCatalog, catalog] = useLazyCatalogQuery()
@@ -333,6 +337,12 @@ export function OrderBuilder({
                       </CardAction>
                     </CardHeader>
                     <CardContent>
+                      {barcoded && !barcoded.has(line.variantId) && (
+                        <WarningNote className={sx({ marginBottom: 3 })}>
+                          This variation has no barcode. Add one on the Products page, or upload its product label on
+                          the PO after you save it.
+                        </WarningNote>
+                      )}
                       <FieldGroup className={styles.lineGrid}>
                         <FormNumber
                           name={`items.${index}.pieces`}

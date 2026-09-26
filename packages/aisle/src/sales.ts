@@ -34,6 +34,14 @@ const lines = z.object({ nodes: z.array(line).max(250), pageInfo })
 const fulfillmentLine = z.object({ id, quantity: quantity.nullable(), lineItem: z.object({ id }) })
 const fulfillmentLines = z.object({ nodes: z.array(fulfillmentLine).max(250), pageInfo })
 const fulfillment = z.object({ id, status: z.string(), location: z.object({ id }).nullable() })
+const feeMoney = z.object({ amount: decimal, currencyCode: z.string().length(3) })
+// A payment on the order. Shopify Payments lists its processing fees (and the tax on them); other gateways list none.
+const payment = z.object({
+  id,
+  kind: z.string(),
+  status: z.string(),
+  fees: z.array(z.object({ amount: feeMoney, taxAmount: feeMoney })).max(50)
+})
 const header = z.object({
   id,
   // The order number shown in Shopify, such as #1001.
@@ -50,7 +58,7 @@ const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
 const fulfillmentPage = "nodes{id quantity lineItem{id}} pageInfo{hasNextPage endCursor}"
 export const shopifySalesQueries = {
   orders: `query SalesOrders($query:String!,$after:String){shop{myshopifyDomain} orders(first:100,after:$after,query:$query,sortKey:CREATED_AT){nodes{${headers}} pageInfo{hasNextPage endCursor}}}`,
-  order: `query SalesOrder($id:ID!,$after:String){order(id:$id){${headers} lineItems(first:250,after:$after){${linePage}} fulfillmentsCount{count precision} fulfillments(first:250){id status location{id}}}}`,
+  order: `query SalesOrder($id:ID!,$after:String){order(id:$id){${headers} lineItems(first:250,after:$after){${linePage}} fulfillmentsCount{count precision} fulfillments(first:250){id status location{id}} transactions(first:100){id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}`,
   fulfillment: `query SalesFulfillment($id:ID!,$after:String){fulfillment(id:$id){id fulfillmentLineItems(first:250,after:$after){${fulfillmentPage}}}}`
 }
 
@@ -95,6 +103,28 @@ function within(created: string, window: SalesWindow) {
 export type ShopifySale = z.infer<typeof header> & {
   lines: z.infer<typeof line>[]
   fulfillments: (z.infer<typeof fulfillment> & { lines: z.infer<typeof fulfillmentLine>[] })[]
+  // Optional because orders stored before payments were copied lack them.
+  transactions?: z.infer<typeof payment>[]
+}
+
+// Shopify Payments' processing fees on an order, with the tax on them, in minor units: null when the order was copied
+// without its payments, zero when it was paid another way.
+export function shopifyPaymentFees(sale: Pick<ShopifySale, "transactions">) {
+  if (!sale.transactions) {
+    return null
+  }
+  let minor = 0,
+    currency: string | null = null
+  for (const payment of sale.transactions) {
+    if (payment.status !== "SUCCESS") {
+      continue
+    }
+    for (const fee of payment.fees) {
+      currency ??= fee.amount.currencyCode
+      minor += Math.round(Number(fee.amount.amount) * 100) + Math.round(Number(fee.taxAmount.amount) * 100)
+    }
+  }
+  return { minor, currency }
 }
 export async function collectShopifySales(
   client: Pick<Shopify, "graphql">,
@@ -144,7 +174,8 @@ export async function collectShopifySales(
             order: header.extend({
               lineItems: lines,
               fulfillmentsCount: z.object({ count: quantity, precision: z.literal("EXACT") }),
-              fulfillments: z.array(fulfillment).max(250)
+              fulfillments: z.array(fulfillment).max(250),
+              transactions: z.array(payment).max(100)
             })
           })
           .parse(
@@ -167,6 +198,7 @@ export async function collectShopifySales(
         }
         if (lineAfter === null) {
           sale.fulfillments = detail.fulfillments.map((f) => ({ ...f, lines: [] }))
+          sale.transactions = detail.transactions
         }
         for (const item of detail.lineItems.nodes) {
           unique(item.id, lineIds)
@@ -235,15 +267,39 @@ export async function collectAmazonSales(
   input: SalesWindow,
   assertActive?: () => Promise<void>
 ) {
-  const window = salesWindowSchema.parse(input),
-    read = collection(assertActive)
-  const query = new URLSearchParams({
-    createdAfter: window.from,
-    createdBefore: window.to,
-    marketplaceIds: "ATVPDKIKX0DER",
-    includedData: "FULFILLMENT,PROCEEDS",
-    maxResultsPerPage: "100"
+  const window = salesWindowSchema.parse(input)
+  const query = new URLSearchParams({ createdAfter: window.from, createdBefore: window.to })
+  return searchAmazonSales(client, query, assertActive, (order) => {
+    // Amazon's end boundary is inclusive; use a half-open window consistently with Shopify.
+    if (Date.parse(order.createdTime) === Date.parse(window.to)) {
+      return false
+    }
+    if (!within(order.createdTime, window)) {
+      throw new Error("Amazon returned an order outside the sales window")
+    }
+    return true
   })
+}
+// Every order changed at or after the time, whenever it was placed: new orders, shipments, cancellations and refunds.
+export async function collectUpdatedAmazonSales(
+  client: Pick<Amazon, "request">,
+  updatedAfter: string,
+  assertActive?: () => Promise<void>
+) {
+  const query = new URLSearchParams({ lastUpdatedAfter: z.iso.datetime({ offset: true }).parse(updatedAfter) })
+  return searchAmazonSales(client, query, assertActive, () => true)
+}
+async function searchAmazonSales(
+  client: Pick<Amazon, "request">,
+  query: URLSearchParams,
+  assertActive: (() => Promise<void>) | undefined,
+  keep: (order: AmazonSale) => boolean
+) {
+  const read = collection(assertActive)
+  query.set("marketplaceIds", "ATVPDKIKX0DER")
+  // Proceeds carry the prices the Overview needs.
+  query.set("includedData", "FULFILLMENT,PROCEEDS")
+  query.set("maxResultsPerPage", "100")
   const result: AmazonSale[] = [],
     ids = new Set<string>(),
     tokens = new Set<string>()
@@ -259,12 +315,8 @@ export async function collectAmazonSales(
       if (order.salesChannel.marketplaceId !== "ATVPDKIKX0DER") {
         throw new Error("Amazon returned a different marketplace")
       }
-      // Amazon's end boundary is inclusive; use a half-open window consistently with Shopify.
-      if (Date.parse(order.createdTime) === Date.parse(window.to)) {
+      if (!keep(order)) {
         continue
-      }
-      if (!within(order.createdTime, window)) {
-        throw new Error("Amazon returned an order outside the sales window")
       }
       const itemIds = new Set<string>()
       for (const item of order.orderItems) {

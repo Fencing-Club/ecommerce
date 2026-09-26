@@ -194,25 +194,6 @@ export const amazonOnlyTrigger = style({
 export const numberCell = style({ textAlign: "right", fontVariantNumeric: "tabular-nums" })
 export const skuCell = style({ overflowWrap: "anywhere", whiteSpace: "normal" })
 
-// A variation without a barcode label: a warning in the list and in the product's details.
-export const missing = style({
-  display: "inline-flex",
-  // Keeps the icon on the first line when the text wraps.
-  alignItems: "flex-start",
-  gap: space(1),
-  ...fontSize.xs,
-  fontWeight: 500,
-  color: vars.color.foreground
-})
-// The warning color is too light for text, so only the icon uses it.
-globalStyle(`${missing} > svg`, {
-  width: space(3.5),
-  height: space(3.5),
-  flexShrink: 0,
-  marginTop: "0.0625rem",
-  color: vars.color.warning
-})
-
 // Product details sheet: each variation's barcode label.
 export const barcodes = style({ display: "flex", flexDirection: "column", gap: space(2) })
 export const barcodeList = style({

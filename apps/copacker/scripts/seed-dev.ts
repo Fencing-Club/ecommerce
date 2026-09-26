@@ -110,7 +110,7 @@ const rows: Row[] = [
   })
 ]
 
-// 90 days of priced web orders shipped from the warehouse: a left glove daily (two every other day over the last month),
+// 90 days of priced web orders, paid with Shopify Payments and shipped from the warehouse: a left glove daily (two every other day over the last month),
 // a right glove every other day, and two body cords every third day (every sixth over the last month), with 10% off
 // every fifth order. Restock and the Overview read these as stored Shopify orders.
 const prices: Record<number, string> = { 1: "24.99", 2: "24.99", 4: "34.99" }
@@ -153,6 +153,30 @@ function demoOrders() {
       test: false,
       sourceName: "web",
       lines,
+      // Paid with Shopify Payments: 2.9% plus 30 cents.
+      transactions: [
+        {
+          id: `gid://shopify/OrderTransaction/${ago}`,
+          kind: "SALE",
+          status: "SUCCESS",
+          fees: [
+            {
+              amount: {
+                amount: (
+                  lines.reduce(
+                    (sum, line) => sum + Number(line.originalUnitPriceSet.shopMoney.amount) * line.quantity,
+                    0
+                  ) *
+                    0.029 +
+                  0.3
+                ).toFixed(2),
+                currencyCode: "USD"
+              },
+              taxAmount: { amount: "0.00", currencyCode: "USD" }
+            }
+          ]
+        }
+      ],
       fulfillments: [
         {
           id: `gid://shopify/Fulfillment/${ago}`,

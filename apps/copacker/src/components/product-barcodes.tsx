@@ -1,17 +1,18 @@
 "use client"
 
-import { Download, TriangleAlert, Trash2, Upload } from "lucide-react"
+import { Download, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { api, errorMessage } from "@/lib/api"
-import type { ProductBarcode } from "@/server/product-barcodes"
+import type { BarcodeTarget, ProductBarcode } from "@/server/product-barcodes"
 import { FormError } from "./actions"
+import { WarningNote } from "./common"
 import * as styles from "./inventory-products.css"
 
 const barcodesApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
-    uploadBarcode: build.mutation<ProductBarcode, FormData>({
+    uploadBarcode: build.mutation<ProductBarcode & { replaced: boolean; target: BarcodeTarget }, FormData>({
       query: (body) => ({ url: "inventory/barcodes", method: "POST", body })
     }),
     removeBarcode: build.mutation<{ ok: true }, string>({
@@ -19,6 +20,8 @@ const barcodesApi = api.injectEndpoints({
     })
   })
 })
+
+export const { useUploadBarcodeMutation } = barcodesApi
 
 export type BarcodeVariation = { variantId: string; title: string | null; barcode: ProductBarcode | null }
 
@@ -67,14 +70,7 @@ function BarcodeRow({
     <li className={styles.barcode}>
       <div className={styles.barcodeInfo}>
         <span className={styles.title}>{label}</span>
-        {barcode ? (
-          <span className={styles.detail}>{barcode.name}</span>
-        ) : (
-          <span className={styles.missing}>
-            <TriangleAlert aria-hidden="true" />
-            No barcode
-          </span>
-        )}
+        {barcode ? <span className={styles.detail}>{barcode.name}</span> : <WarningNote>No barcode</WarningNote>}
       </div>
       <div className={styles.barcodeActions}>
         <input

@@ -18,13 +18,13 @@ import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
 import { receivingLocations } from "./inventory-products"
 import {
-  amazonFees,
-  amazonOrderFees,
   catalogIndex,
   dailySales,
   grossProfit,
   movers,
+  orderFees,
   periodTotal,
+  platformFees,
   periods,
   salesByDay,
   salesByItem,
@@ -710,14 +710,18 @@ export async function overview(
   }
   const scopedAccounts = accounts.filter((account) => !channelSource || account.provider === channelSource)
   const window30 = periods(today, 30, timeZone)
-  const amazon = scopedAccounts.find((account) => account.provider === "amazon")
 
   const [syncs, dayRows, itemRows, feeRows, purchaseOrders, sent, deliveries, shipmentRows, stock, supplierRows] =
     await Promise.all([
       db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
       salesByDay(orgId, scopedAccounts, zonedStart(addDays(today, -salesHistoryDays), timeZone), timeZone),
       salesByItem(orgId, scopedAccounts, window30),
-      amazon ? amazonOrderFees(orgId, amazon.externalId, window30.currentStart, window30.end) : Promise.resolve([]),
+      Promise.all(
+        scopedAccounts.map(async (account) => ({
+          source: account.provider,
+          list: await orderFees(orgId, account.provider, account.externalId, window30.currentStart, window30.end)
+        }))
+      ),
       db()
         .select({
           id: orders.id,
@@ -775,8 +779,10 @@ export async function overview(
   const salesCurrency =
     dayRows.filter((row) => row.currency).toSorted((a, b) => b.revenueMinor - a.revenueMinor)[0]?.currency ?? null
   const index = catalogIndex(restock.catalog)
-  const fees = amazonFees(feeRows)
-  const profit = grossProfit(itemRows, index, { amazonMinor: fees.feesMinor, amazonRevenueMinor: fees.revenueMinor })
+  const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
+    Record<SalesSource, ReturnType<typeof platformFees>>
+  >
+  const profit = grossProfit(itemRows, index, fees)
   // Trends compare the last 30 days with the 30 before, for sources whose orders cover both.
   const comparable = covered.filter((source) => coverage[source]!.from <= window30.previousStart)
   const trending = movers(itemRows, index, comparable)
@@ -867,7 +873,10 @@ export async function overview(
       last30,
       currency: salesCurrency,
       profit,
-      fees: { ...fees, synced: current.some((sync) => sync.source === "amazon" && sync.feesCoveredTo) },
+      fees: {
+        feesMinor: Object.values(fees).reduce((sum, platform) => sum + platform.feesMinor, 0),
+        estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
+      },
       movers: trending,
       moversComparable: comparable.length > 0
     },

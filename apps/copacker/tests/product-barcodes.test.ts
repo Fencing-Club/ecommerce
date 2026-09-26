@@ -25,7 +25,8 @@ vi.mock("../src/server/storage", async (original) => ({
   copyFile: async (from: string, to: string) => {
     storage.copies.push({ from, to })
     storage.files.set(to, storage.files.get(from)!)
-  }
+  },
+  deleteFile: async (key: string) => void storage.files.delete(key)
 }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 
@@ -42,6 +43,8 @@ const supplierId = randomUUID()
 const domain = "shop.myshopify.com"
 const variantA = "gid://shopify/ProductVariant/1"
 const variantB = "gid://shopify/ProductVariant/2"
+const sharedA = "gid://shopify/ProductVariant/3"
+const sharedB = "gid://shopify/ProductVariant/4"
 const unknownVariant = "gid://shopify/ProductVariant/99"
 
 function actor(id: string, kind: "buyer" | "supplier"): Session {
@@ -69,6 +72,20 @@ async function upload(variantId: string, pages = 1, name = "label.pdf") {
     new Request(`${appUrl()}/api/inventory/barcodes`, { method: "POST", headers: { origin: appUrl() }, body: form })
   )
 }
+
+// A bulk upload: no variation chosen, so the SKU comes from the sku field or the file name.
+async function uploadBySku(name: string, sku?: string) {
+  const form = new FormData()
+  form.set("file", new File([await pdf(1)], name, { type: "application/pdf" }))
+  if (sku) {
+    form.set("sku", sku)
+  }
+  return POST(
+    new Request(`${appUrl()}/api/inventory/barcodes`, { method: "POST", headers: { origin: appUrl() }, body: form })
+  )
+}
+
+const barcodeKeys = () => [...storage.files.keys()].filter((key) => key.startsWith("barcodes/"))
 
 const barcodeUrl = (variantId: string) => `${appUrl()}/api/inventory/barcodes?${new URLSearchParams({ variantId })}`
 
@@ -119,11 +136,12 @@ beforeAll(async () => {
   await database
     .insert(tables.connections)
     .values({ orgId: buyerId, provider: "shopify", externalId: domain, encryptedToken: "token" })
-  const rows = [variantA, variantB].map((variantId) => ({
-    variantId,
-    productId: "gid://shopify/Product/1",
-    levels: []
-  }))
+  const rows = [
+    { variantId: variantA, buyerSku: "CORD-1", productTitle: "Foil cord", variantTitle: "Default Title" },
+    { variantId: variantB, buyerSku: "GLOVE-6", productTitle: "Glove", variantTitle: "6 / Left" },
+    { variantId: sharedA, buyerSku: "SHARED", productTitle: "Mask", variantTitle: "S" },
+    { variantId: sharedB, buyerSku: "SHARED", productTitle: "Mask", variantTitle: "M" }
+  ].map((row) => ({ ...row, productId: "gid://shopify/Product/1", levels: [] }))
   await database.insert(tables.stockSnapshots).values({
     orgId: buyerId,
     source: "shopify",
@@ -146,10 +164,13 @@ describe("product barcodes", () => {
     const first = await upload(variantA, 1, "first.pdf")
     expect(first.status).toBe(200)
     expect(await first.json()).toMatchObject({ name: "first.pdf" })
-    await upload(variantA, 1, "second.pdf")
+    const second = await upload(variantA, 1, "second.pdf")
+    expect(await second.json()).toMatchObject({ replaced: true, target: { sku: "CORD-1", variant: null } })
     const rows = await database.select().from(tables.productBarcodes)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ variantId: variantA, productId: "gid://shopify/Product/1", name: "second.pdf" })
+    // The replaced file is deleted from storage.
+    expect(barcodeKeys()).toEqual([rows[0]!.objectKey])
     const download = await GET(new Request(barcodeUrl(variantA)))
     expect(download.status).toBe(200)
     expect(download.headers.get("content-type")).toBe("application/pdf")
@@ -193,10 +214,38 @@ describe("product barcodes", () => {
     expect(await labels(created.id)).toHaveLength(2)
   })
 
-  it("removes a barcode", async () => {
+  it("matches bulk uploads by the SKU in the file name, or a SKU given instead", async () => {
+    const byName = await uploadBySku("glove-6.PDF")
+    expect(byName.status).toBe(200)
+    expect(await byName.json()).toMatchObject({
+      replaced: false,
+      target: { variantId: variantB, sku: "GLOVE-6", product: "Glove", variant: "6 / Left" }
+    })
+    const unknown = await uploadBySku("scan 001.pdf")
+    expect(unknown.status).toBe(404)
+    expect(await unknown.json()).toEqual({ error: 'No variation has the SKU "scan 001"' })
+    const shared = await uploadBySku("shared.pdf")
+    expect(shared.status).toBe(409)
+    expect((await shared.json()).error).toMatch(/^2 variations share the SKU "shared"/)
+    const retried = await uploadBySku("scan 001.pdf", " glove-6 ")
+    expect(await retried.json()).toMatchObject({ replaced: true, target: { variantId: variantB } })
+    // Only the saved barcodes' files remain; files for rejected uploads were never stored.
+    const saved = await database.select().from(tables.productBarcodes)
+    expect(barcodeKeys().toSorted()).toEqual(saved.map((row) => row.objectKey).toSorted())
+  })
+
+  it("removes a barcode and its file, keeping the copy on POs", async () => {
+    const [saved] = await database
+      .select()
+      .from(tables.productBarcodes)
+      .where(eq(tables.productBarcodes.variantId, variantA))
     const removed = await DELETE(new Request(barcodeUrl(variantA), { method: "DELETE", headers: { origin: appUrl() } }))
     expect(removed.status).toBe(200)
-    expect(await database.select().from(tables.productBarcodes)).toEqual([])
+    expect(
+      await database.select().from(tables.productBarcodes).where(eq(tables.productBarcodes.variantId, variantA))
+    ).toEqual([])
+    expect(storage.files.has(saved!.objectKey)).toBe(false)
+    expect(storage.copies.every((copy) => storage.files.has(copy.to))).toBe(true)
     expect((await GET(new Request(barcodeUrl(variantA)))).status).toBe(404)
   })
 })

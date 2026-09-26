@@ -107,7 +107,13 @@ import {
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
-import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
+import {
+  listSalesOrders,
+  requestSalesSync,
+  salesDataVersion,
+  storedDemand,
+  syncChunks
+} from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
 import { updateSupplier } from "../src/server/suppliers"
@@ -2843,7 +2849,7 @@ describe("stored sales orders", () => {
     await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
-    expect(sync).toMatchObject({ status: "idle", dataVersion: 1, feesErrorCode: null })
+    expect(sync).toMatchObject({ status: "idle", dataVersion: salesDataVersion, feesErrorCode: null })
     expect(sync?.feesCoveredTo).not.toBeNull()
     expect(
       await database

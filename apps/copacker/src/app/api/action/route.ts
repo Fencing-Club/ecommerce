@@ -21,6 +21,7 @@ import {
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
+import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { acceptSupplierInvitation } from "@/server/invitations"
@@ -305,7 +306,9 @@ export async function POST(request: Request) {
     if (action === "connection.amazonSelfAuthorized") {
       requireOwner(s)
       requireBuyer(s)
-      return Response.json({ ok: true, ...(await connectAmazonSelfAuthorized(s.org.id, data)) })
+      const connected = await connectAmazonSelfAuthorized(s.org.id, data)
+      await queueAmazonSubscription(s.org.id, randomUUID())
+      return Response.json({ ok: true, ...connected })
     }
     if (action === "connection.delete") {
       requireOwner(s)

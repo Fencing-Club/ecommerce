@@ -8,6 +8,7 @@ import { contacts, suppliers } from "@/db/schema"
 import { orderLine } from "@/lib/order-lines"
 import { requireBuyer, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
+import { barcodedVariants } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
 
 const variantIds = z
@@ -48,7 +49,10 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
     .select()
     .from(suppliers)
     .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
-  const initialItems = await reorderLines(s.org.id, params.variant)
+  const [initialItems, barcoded] = await Promise.all([
+    reorderLines(s.org.id, params.variant),
+    barcodedVariants(s.org.id)
+  ])
   const deliveries = await db()
     .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
     .from(contacts)
@@ -70,6 +74,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
         deliveries={deliveries}
         initialItems={initialItems}
+        barcodedVariantIds={barcoded}
         initialDestination={initialDestination}
         initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
         initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}

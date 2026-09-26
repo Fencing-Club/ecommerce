@@ -2,12 +2,13 @@
 
 ## Stored orders
 
-Restock reads orders copied into `sales_orders`, not the providers. The Orders page (`/sales`) queues a `sales` worker job per source. The first sync copies the last 365 days (60 for Shopify without read_all_orders) in 14-day periods; later syncs copy from 30 days before the stored end, so late fulfillments and cancellations are picked up. Each period replaces the stored orders created in it, in one transaction, so orders the source drops (cancelled or test) disappear. `sales_syncs` records the unbroken stored period; restock's sales period ends at that period's end and is refused if it would reach further back than the stored orders. Changing the connected account starts over. A background schedule will replace the manual Sync button.
+Restock reads orders copied into `sales_orders`, not the providers. The Orders page (`/sales`) queues a `sales` worker job per source. The first sync copies the last 365 days (60 for Shopify without read_all_orders) in 14-day periods; later syncs copy from 30 days before the stored end, so late fulfillments and cancellations are picked up. Each period replaces the stored orders created in it, in one transaction, so orders the source drops (cancelled or test) disappear. `sales_syncs` records the unbroken stored period; restock's sales period ends at that period's end and is refused if it would reach further back than the stored orders. Changing the connected account starts over. Besides the Sync button, the worker syncs every connected source daily at 07:00 UTC (`reconcile.ts`), and Shopify order webhooks start a sync as orders change.
 
 Orders carry prices: Shopify lines their unit price and discount allocations (`originalUnitPriceSet`,
 `discountAllocations`), Amazon items their proceeds (`includedData=FULFILLMENT,PROCEEDS`). `sales_syncs.dataVersion`
 records the shape the stored orders were copied in; when `salesDataVersion` rises, the next sync reads the whole history
-again, newest first, so older orders gain the new fields.
+again, newest first, so older orders gain the new fields. Version 2 added Shopify payments (`transactions`, with Shopify
+Payments' processing `fees` and the tax on them); other gateways report no fees.
 
 The Amazon sync also copies posted transactions from the Finances API (`/finances/2024-06-19/transactions`, 14-day
 periods, the same refresh rule as orders) into `amazon_transactions`, each linked to its order ID. `feesMinor` counts

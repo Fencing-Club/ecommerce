@@ -13,6 +13,7 @@ import {
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { cn } from "@/lib/utils"
 import * as styles from "./common.css"
 import { sx } from "@/styles/sprinkles.css"
 import { srOnly } from "@/styles/utilities.css"
@@ -159,6 +160,16 @@ const destinationNames: Record<string, string> = {
   fba: "FBA",
   forwarder: "your freight forwarder",
   warehouse: "your location"
+}
+
+// A short warning next to what it's about, such as a variation without a barcode.
+export function WarningNote({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span className={cn(styles.warningNote, className)}>
+      <AlertTriangle aria-hidden="true" />
+      <span>{children}</span>
+    </span>
+  )
 }
 
 export function formatDestination(destination: string) {

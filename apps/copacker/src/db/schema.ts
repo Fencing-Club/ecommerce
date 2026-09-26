@@ -285,6 +285,8 @@ export const jobs = pgTable(
         "shopify-event",
         "shopify-subscribe",
         "shopify-compliance",
+        "amazon-event",
+        "amazon-subscribe",
         "reconcile"
       ]
     }).notNull(),

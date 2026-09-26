@@ -90,6 +90,17 @@ export async function amazonFor(orgId: string, expectedSellerId?: string | null)
     refreshToken: c.token
   })
 }
+// Copacker's own Amazon app, for grantless operations such as managing notification destinations.
+export function amazonApp(scope: string) {
+  if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
+    throw new Error("Amazon developer credentials are not configured")
+  }
+  return new Amazon({
+    clientId: process.env.AMAZON_CLIENT_ID,
+    clientSecret: process.env.AMAZON_CLIENT_SECRET,
+    grantlessScope: scope
+  })
+}
 // Returns whether the provider confirmed the revocation. Local credentials are always removed.
 export async function disconnect(orgId: string, provider: "amazon" | "shopify") {
   let revoked = false

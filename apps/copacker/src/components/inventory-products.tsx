@@ -1,10 +1,12 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { ChevronLeft, ChevronRight, ImageOff, Search, TriangleAlert } from "lucide-react"
+import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { createContext, use, useState } from "react"
+import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
+import { WarningNote } from "@/components/common"
 import { ProductDetails } from "@/components/product-details"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -172,12 +174,7 @@ function Thumbnail({ url, small = false }: { url: string | null; small?: boolean
 
 // Warns that a variation has no barcode label, which its PO lines need.
 function NoBarcode({ children = "No barcode" }: { children?: string }) {
-  return (
-    <span className={styles.missing}>
-      <TriangleAlert aria-hidden="true" />
-      {children}
-    </span>
-  )
+  return <WarningNote>{children}</WarningNote>
 }
 
 function Locations({ variant }: { variant: InventoryVariant }) {
@@ -434,12 +431,11 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
           </p>
         </div>
         {data.missingBarcodes > 0 && (
-          <p className={styles.missing}>
-            <TriangleAlert aria-hidden="true" />
+          <WarningNote>
             {data.missingBarcodes === 1
-              ? "1 variation doesn’t have a barcode. Add it from the product’s Edit panel so new POs include its label."
-              : `${data.missingBarcodes} variations don’t have a barcode. Add them from each product’s Edit panel so new POs include their labels.`}
-          </p>
+              ? "1 variation doesn’t have a barcode. Add it with Upload barcodes or from the product’s Edit panel, so new POs include its label."
+              : `${data.missingBarcodes} variations don’t have a barcode. Add them with Upload barcodes or from each product’s Edit panel, so new POs include their labels.`}
+          </WarningNote>
         )}
         <div className={styles.listHeader}>
           <p className={styles.summary} aria-live="polite">
@@ -448,6 +444,7 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
               : `${data.totalProducts} products, ${data.totalVariants} variations`}
           </p>
           <div className={styles.listActions}>
+            <BulkBarcodeUpload onChanged={() => void refetch()} />
             <Field orientation="horizontal" className={styles.pageSize}>
               <Checkbox
                 id="inventory-missing-barcode"

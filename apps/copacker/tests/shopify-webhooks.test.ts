@@ -203,6 +203,9 @@ describe("daily reconciliation", () => {
     expect((await queued("shopify-subscribe")).map((job) => job.key)).toEqual([
       `shopify-subscribe:${buyerId}:2026-09-25`
     ])
+    expect((await queued("amazon-subscribe")).map((job) => job.key)).toEqual([
+      `amazon-subscribe:${otherBuyerId}:2026-09-25`
+    ])
   })
 })
 

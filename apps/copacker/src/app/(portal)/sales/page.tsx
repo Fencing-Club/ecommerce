@@ -12,7 +12,7 @@ export default async function SalesPage() {
     <>
       <PageHeader
         title="Orders"
-        description="Customer orders copied from Shopify and Amazon. Restock suggestions use these orders."
+        description="Customer orders copied from Shopify and Amazon. They sync every day, and Shopify orders as soon as they change. Restock and the Overview use them."
       />
       <SalesOrders />
     </>

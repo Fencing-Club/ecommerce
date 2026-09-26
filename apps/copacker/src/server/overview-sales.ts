@@ -166,22 +166,30 @@ export async function salesByItem(
   )
 }
 
-export type AmazonOrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
+export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
 
-// Each Amazon order in a period with its sales (null without prices) and the fees posted for it (null until Amazon
-// posts its payment, usually within two days of shipping).
-export async function amazonOrderFees(orgId: string, account: string, from: Date, to: Date) {
+// Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
+const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
+  where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId")`)
+// Shopify Payments' fees on an order, with their tax, from its successful payments (null when copied without them).
+const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
+  (select coalesce(sum(round(((fee->'amount'->>'amount')::numeric + (fee->'taxAmount'->>'amount')::numeric) * 100)), 0)
+    from jsonb_array_elements(o.data->'transactions') payment, jsonb_array_elements(payment->'fees') fee
+    where payment->>'status' = 'SUCCESS')
+end`)
+
+// Each order from one account in a period, with its sales (null without prices) and the platform's fees on it.
+export async function orderFees(orgId: string, source: SalesSource, account: string, from: Date, to: Date) {
+  const fee = source === "amazon" ? amazonOrderFee : shopifyOrderFee
   const result = await db().execute(sql`
     select o."orderId" as "orderId",
       case when ${orderPriced} then round(${orderRevenue} * 100) end as revenue,
-      (select sum(t."feesMinor") from amazon_transactions t
-        where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId")
-        as fees
+      ${fee} as fees
     from sales_orders o
-    where o."orgId" = ${orgId} and o.source = 'amazon' and o."externalAccountId" = ${account}
+    where o."orgId" = ${orgId} and o.source = ${source} and o."externalAccountId" = ${account}
       and o."orderedAt" >= ${from} and o."orderedAt" < ${to}`)
   return rows(result).map(
-    (row): AmazonOrderFees => ({
+    (row): OrderFees => ({
       orderId: String(row.orderId),
       revenueMinor: row.revenue === null || row.revenue === undefined ? null : Number(row.revenue),
       feesMinor: row.fees === null || row.fees === undefined ? null : Number(row.fees)
@@ -189,9 +197,9 @@ export async function amazonOrderFees(orgId: string, account: string, from: Date
   )
 }
 
-// Amazon's fees on a period's orders. Orders whose payment isn't posted yet are estimated at the rate of the posted
-// ones; the estimate is reported so the page can say so.
-export function amazonFees(list: AmazonOrderFees[]) {
+// A platform's fees on a period's orders. Orders whose fees aren't known yet (Amazon posts them after shipping) are
+// estimated at the rate of the known ones; the estimate is reported so the page can say so.
+export function platformFees(list: OrderFees[]) {
   const posted = list.filter((order) => order.feesMinor !== null && order.revenueMinor !== null)
   const postedRevenue = posted.reduce((sum, order) => sum + order.revenueMinor!, 0)
   const postedFees = posted.reduce((sum, order) => sum + order.feesMinor!, 0)
@@ -202,7 +210,7 @@ export function amazonFees(list: AmazonOrderFees[]) {
     feesMinor: postedFees + estimated,
     estimatedMinor: estimated,
     estimatedOrders: rate === null ? 0 : waiting.length,
-    // Orders with sales but no fees to go on: nothing posted in the period to estimate from.
+    // Orders with sales but no fees to go on: nothing known in the period to estimate from.
     unknownOrders: rate === null ? waiting.length : 0,
     revenueMinor: list.reduce((sum, order) => sum + (order.revenueMinor ?? 0), 0),
     rate
@@ -340,12 +348,13 @@ export function catalogIndex(catalog: readonly CatalogRow[]) {
   return { byVariant, variantFor, unitCost }
 }
 
-// Gross profit over the current period: sales less the cost of the units sold and Amazon's fees. Only items with a
-// unit cost in the sales currency count; the sales left out are reported so the page can say so.
+// Gross profit over the current period: sales less the cost of the units sold and each platform's fees (Amazon's
+// fees, Shopify Payments' processing fees). Only items with a unit cost in the sales currency count; the sales left
+// out are reported so the page can say so.
 export function grossProfit(
   items: ItemRow[],
   index: ReturnType<typeof catalogIndex>,
-  fees: { amazonMinor: number; amazonRevenueMinor: number }
+  fees: Partial<Record<SalesSource, { feesMinor: number; revenueMinor: number }>>
 ) {
   const current = items.filter((item) => item.period === "current" && item.pricedUnits > 0 && item.currency)
   // Sales in more than one currency can't be added up; the currency most sales are in is used.
@@ -356,8 +365,8 @@ export function grossProfit(
   const currency = [...byCurrency].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null
   let revenue = 0,
     costed = 0,
-    cost = 0,
-    amazonCosted = 0
+    cost = 0
+  const costedBySource: Record<SalesSource, number> = { shopify: 0, amazon: 0 }
   for (const item of current) {
     if (item.currency !== currency) {
       continue
@@ -367,14 +376,17 @@ export function grossProfit(
     if (unit && unit.currency === currency) {
       costed += item.revenueMinor
       cost += unit.minor * item.pricedUnits
-      if (item.source === "amazon") {
-        amazonCosted += item.revenueMinor
-      }
+      costedBySource[item.source] += item.revenueMinor
     }
   }
-  // Fees follow the sales they're charged on, so only the costed share of Amazon's sales carries its fees.
-  const feeShare = fees.amazonRevenueMinor > 0 ? Math.min(1, amazonCosted / fees.amazonRevenueMinor) : 0
-  const feesMinor = Math.round(fees.amazonMinor * feeShare)
+  // Fees follow the sales they're charged on, so only the costed share of each platform's sales carries its fees.
+  let feesMinor = 0
+  for (const source of ["shopify", "amazon"] as const) {
+    const platform = fees[source]
+    if (platform && platform.revenueMinor > 0) {
+      feesMinor += Math.round(platform.feesMinor * Math.min(1, costedBySource[source] / platform.revenueMinor))
+    }
+  }
   const profit = costed - cost - feesMinor
   return {
     currency,

@@ -22,7 +22,8 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
   unsent drafts. Critical first.
 - **Sales, gross profit, units and orders** over the last 30 full days, against the 30 before when every source covers
   both. Sales are net product sales: after discounts, before tax, shipping and tips. Gross profit is sales less unit
-  cost (Shopify's, a bundle's being its components') and Amazon's fees, counted only over sales with a known unit cost.
+  cost (Shopify's, a bundle's being its components') and platform fees: Amazon's fees and Shopify Payments'
+  processing fees, counted only over sales with a known unit cost.
   Amazon posts fees about two days after shipping; orders without posted fees are estimated at the period's posted
   rate, and the card says so.
 - **Sales by channel** chart: units or sales, 30 days, 90 days, or 12 months by week. Days a source's stored orders

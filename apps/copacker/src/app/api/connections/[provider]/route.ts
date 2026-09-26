@@ -4,6 +4,7 @@ import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
+import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireOwner, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
 import { appUrl, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
@@ -138,6 +139,8 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     })
   if (provider === "shopify") {
     await queueShopifySubscription(s.org.id, randomUUID())
+  } else {
+    await queueAmazonSubscription(s.org.id, randomUUID())
   }
   return Response.redirect(`${appUrl()}/settings?connected=${provider}`)
 }

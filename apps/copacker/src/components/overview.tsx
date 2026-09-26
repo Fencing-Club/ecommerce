@@ -112,7 +112,7 @@ function SalesKpis({ sales }: { sales: Overview["sales"] }) {
   const salesComparable = previous !== null && previous.unpriced === 0 && last30.unpriced === 0
   const notes: string[] = []
   if (fees.estimatedOrders) {
-    notes.push(`Fees for ${formatNumber(fees.estimatedOrders)} recent Amazon orders are estimated`)
+    notes.push(`Fees for ${formatNumber(fees.estimatedOrders)} recent orders are estimated`)
   }
   if (profit.currency && profit.revenueMinor > profit.costedRevenueMinor) {
     notes.push(
@@ -159,7 +159,7 @@ function SalesKpis({ sales }: { sales: Overview["sales"] }) {
         ) : (
           <>
             <span className={styles.delta[profit.margin >= 0 ? "up" : "down"]}>{formatPercent(profit.margin)}</span>
-            <span>margin after unit costs{fees.feesMinor ? " and Amazon fees" : ""}</span>
+            <span>margin after unit costs{fees.feesMinor ? " and platform fees" : ""}</span>
           </>
         )}
         {notes.map((note) => (

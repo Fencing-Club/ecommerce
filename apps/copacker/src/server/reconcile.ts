@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, stockSnapshots } from "@/db/schema"
+import { queueAmazonSubscription } from "./amazon-notifications"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { queueShopifySubscription } from "./shopify-webhooks"
 import { refreshStock, stockScopes, stockSelection } from "./stock"
@@ -17,7 +18,7 @@ export async function queueReconciliation(now = new Date()) {
 }
 
 // Worker job: starts a sales sync and a refresh of each stock scope already in use for every buyer connection, and
-// renews Shopify webhook subscriptions. Work already waiting or running is left as it is.
+// renews Shopify webhook and Amazon notification subscriptions. Work already waiting or running is left as it is.
 export async function reconcileJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   const { date } = z.object({ date: z.iso.date() }).parse(payload)
   const accounts = await db()
@@ -66,6 +67,8 @@ export async function reconcileJob(payload: Record<string, unknown>, assertOwned
     }
     if (account.provider === "shopify") {
       await queueShopifySubscription(account.orgId, date)
+    } else {
+      await queueAmazonSubscription(account.orgId, date)
     }
   }
 }

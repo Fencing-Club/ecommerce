@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import {
   collectAmazonTransactions,
+  shopifyPaymentFees,
   collectShopifySales,
   collectAmazonSales,
   shopifySalesQueries,
@@ -26,6 +27,7 @@ function shopify() {
         ...header,
         lineItems: { nodes: [line], pageInfo },
         fulfillmentsCount: { count: 1, precision: "EXACT" },
+        transactions: [],
         fulfillments: [{ id: "fulfillment1", status: "SUCCESS", location: { id: "location1" } }]
       }
     })
@@ -70,6 +72,7 @@ describe("complete sales readers", () => {
     const details = {
       ...header,
       fulfillmentsCount: { count: 1, precision: "EXACT" },
+      transactions: [],
       fulfillments: [{ id: "f1", status: "SUCCESS", location: { id: "loc" } }]
     }
     api.graphql
@@ -119,6 +122,7 @@ describe("complete sales readers", () => {
           ...header,
           lineItems: { nodes: [line], pageInfo },
           fulfillmentsCount: { count: 251, precision: "EXACT" },
+          transactions: [],
           fulfillments: []
         }
       })
@@ -249,5 +253,28 @@ describe("Amazon transactions", () => {
     ).rejects.toThrow("180 days")
     request.mockResolvedValue({ payload: { transactions: [], nextToken: "loop" } })
     await expect(collectAmazonTransactions({ request }, window)).rejects.toThrow("Duplicate")
+  })
+})
+
+describe("Shopify payment fees", () => {
+  const money = (amount: string) => ({ amount, currencyCode: "USD" })
+  it("adds Shopify Payments fees and their tax on successful payments", () => {
+    expect(
+      shopifyPaymentFees({
+        transactions: [
+          { id: "p1", kind: "SALE", status: "SUCCESS", fees: [{ amount: money("1.75"), taxAmount: money("0.10") }] },
+          { id: "p2", kind: "SALE", status: "FAILURE", fees: [{ amount: money("9.99"), taxAmount: money("0") }] },
+          { id: "p3", kind: "REFUND", status: "SUCCESS", fees: [] }
+        ]
+      })
+    ).toEqual({ minor: 185, currency: "USD" })
+    expect(shopifyPaymentFees({ transactions: [] })).toEqual({ minor: 0, currency: null })
+    expect(shopifyPaymentFees({})).toBeNull()
+  })
+
+  it("asks Shopify for each order's payments and their fees", () => {
+    expect(shopifySalesQueries.order).toContain(
+      "transactions(first:100){id kind status fees{amount{amount currencyCode}"
+    )
   })
 })

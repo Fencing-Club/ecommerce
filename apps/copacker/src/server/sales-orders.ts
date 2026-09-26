@@ -1,9 +1,15 @@
 import { ProviderError } from "@repo/aisle/amazon"
-import { type AmazonSale, collectAmazonSales, collectShopifySales, type ShopifySale } from "@repo/aisle/sales"
-import { and, count, desc, eq, gte, lt, or, sql } from "drizzle-orm"
+import {
+  type AmazonSale,
+  collectAmazonSales,
+  collectShopifySales,
+  type ShopifySale,
+  shopifyPaymentFees
+} from "@repo/aisle/sales"
+import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
+import { amazonTransactions, connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
 import { syncAmazonFees } from "./amazon-fees"
 import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
@@ -22,7 +28,8 @@ export type SalesSource = (typeof salesSources)[number]
 export const salesHistoryDays = 365
 // The shape of stored orders. Raise it when the readers copy new fields; the next sync reads stored orders again.
 // 1: prices (Shopify line prices and discounts, Amazon item proceeds).
-export const salesDataVersion = 1
+// 2: Shopify payments, with Shopify Payments' processing fees.
+export const salesDataVersion = 2
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
@@ -379,6 +386,57 @@ export type SalesOrderSummary = {
   status: string
   // The order in Shopify admin or Seller Central.
   url: string
+  // Net product sales (after discounts, before tax and shipping), or null when the order was copied without prices.
+  sales: { minor: number; currency: string } | null
+  // Fees the platform charged on the order: Amazon's posted fees, or Shopify Payments' processing fees. Null when none
+  // are known yet.
+  fees: { minor: number; currency: string } | null
+}
+
+// An order's net product sales, counted as the Overview counts them: Shopify lines at their current quantity less
+// their share of discounts; Amazon items' ITEM proceeds less any DISCOUNT. Null when any line has no price.
+// Shopify Payments' fees on an order, in its sales currency when it was paid another way (so the list shows zero).
+function shopifyFees(data: ShopifySale) {
+  const fees = shopifyPaymentFees(data)
+  const currency = fees?.currency ?? orderSales(data)?.currency
+  return fees && currency ? { minor: fees.minor, currency } : null
+}
+
+export function orderSales(data: ShopifySale | AmazonSale): { minor: number; currency: string } | null {
+  let total = 0,
+    currency: string | null = null
+  if ("lines" in data) {
+    for (const line of data.lines) {
+      const price = line.originalUnitPriceSet?.shopMoney
+      if (!price) {
+        return null
+      }
+      currency ??= price.currencyCode
+      const discount = (line.discountAllocations ?? []).reduce(
+        (sum, allocation) => sum + Number(allocation.allocatedAmountSet.shopMoney.amount),
+        0
+      )
+      total +=
+        Number(price.amount) * line.currentQuantity -
+        (line.quantity > 0 ? (discount * line.currentQuantity) / line.quantity : 0)
+    }
+  } else {
+    for (const item of data.orderItems) {
+      const breakdowns = item.proceeds?.breakdowns
+      if (!breakdowns) {
+        return null
+      }
+      for (const entry of breakdowns) {
+        currency ??= entry.subtotal.currencyCode
+        if (entry.type === "ITEM") {
+          total += Number(entry.subtotal.amount)
+        } else if (entry.type === "DISCOUNT") {
+          total -= Math.abs(Number(entry.subtotal.amount))
+        }
+      }
+    }
+  }
+  return currency ? { minor: Math.round(total * 100), currency } : null
 }
 
 const shopifyChannels: Record<string, string> = {
@@ -435,6 +493,8 @@ export function summarizeSalesOrder(
       items,
       channel,
       status,
+      sales: orderSales(data),
+      fees: shopifyFees(data),
       url: `https://admin.shopify.com/store/${account.replace(/\.myshopify\.com$/, "")}/orders/${data.id.split("/").at(-1)}`
     }
   }
@@ -455,6 +515,9 @@ export function summarizeSalesOrder(
       items: data.orderItems.map((item) => ({ sku: item.product.sellerSku ?? null, quantity: item.quantityOrdered })),
       channel,
       status: words(data.fulfillment?.fulfillmentStatus ?? "Unknown"),
+      sales: orderSales(data),
+      // Posted with Amazon's transactions; the Orders page adds them.
+      fees: null,
       url: `https://sellercentral.amazon.com/orders-v3/order/${encodeURIComponent(data.orderId)}`
     }
   }
@@ -500,8 +563,33 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
       .offset(filter.page * salesOrdersPageSize),
     db().select({ total: count() }).from(salesOrders).where(where)
   ])
+  // Amazon's fees on the listed orders, from the transactions copied so far.
+  const amazonIds = rows.flatMap((row) =>
+    row.source === "amazon" && "orderItems" in row.data ? [row.data.orderId] : []
+  )
+  const posted = amazonIds.length
+    ? await db()
+        .select({
+          orderId: amazonTransactions.orderId,
+          externalAccountId: amazonTransactions.externalAccountId,
+          currency: amazonTransactions.currency,
+          fees: sql<number>`sum(${amazonTransactions.feesMinor})`.mapWith(Number)
+        })
+        .from(amazonTransactions)
+        .where(and(eq(amazonTransactions.orgId, orgId), inArray(amazonTransactions.orderId, amazonIds)))
+        .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)
+    : []
   return {
-    orders: rows.map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)),
+    orders: rows.map((row) => {
+      const order = summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)
+      if (row.source !== "amazon") {
+        return order
+      }
+      const fee = posted.find(
+        (entry) => entry.orderId === order.orderId && entry.externalAccountId === row.externalAccountId
+      )
+      return fee ? { ...order, fees: { minor: fee.fees, currency: fee.currency } } : order
+    }),
     total: total?.total ?? 0
   }
 }

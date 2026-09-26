@@ -6,7 +6,8 @@ import { db } from "@/db"
 import { connections, documents, productBarcodes, stockSnapshots } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
-import { copyFile, getFile, putFile, validatePdf } from "./storage"
+import { describeError } from "./stock"
+import { copyFile, deleteFile, getFile, putFile, validatePdf } from "./storage"
 
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
@@ -38,6 +39,15 @@ async function shopifyDomain(s: Session) {
   return account.domain
 }
 
+// Variations in the buyer's connected store that have a saved barcode.
+export async function barcodedVariants(orgId: string) {
+  const [account] = await db()
+    .select({ domain: connections.externalId })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
+  return account ? [...(await readProductBarcodes(orgId, account.domain)).keys()] : []
+}
+
 export async function readProductBarcodes(orgId: string, domain: string) {
   const rows = await db()
     .select()
@@ -48,26 +58,66 @@ export async function readProductBarcodes(orgId: string, domain: string) {
   )
 }
 
-// Saves a variation's barcode label, replacing any earlier one. POs that already have a label keep theirs.
+// The variation a barcode upload is for, as the products page and bulk upload report it.
+export type BarcodeTarget = { variantId: string; sku: string | null; product: string; variant: string | null }
+
+// The SKU a file name gives, such as "fc-allenkey-wrench" for "fc-allenkey-wrench.pdf".
+export function skuFromFileName(name: string) {
+  return name.replace(/\.pdf$/i, "").trim()
+}
+
+type StockRow = Extract<NonNullable<typeof stockSnapshots.$inferSelect.data>, { source: "shopify" }>["rows"][number]
+
+// Finds the variation by its ID or, for bulk uploads, by an exact SKU (ignoring case). A SKU several variations share
+// can't choose one, so those barcodes are uploaded from the product's Edit panel.
+function resolveVariant(rows: StockRow[], variantId: string | null, sku: string) {
+  if (variantId) {
+    const row = rows.find((item) => item.variantId === variantId)
+    if (!row?.productId) {
+      throw new ProductBarcodeError("This product isn't in your synced Shopify inventory", 404)
+    }
+    return row
+  }
+  if (!sku) {
+    throw new ProductBarcodeError("Enter the variation's SKU", 400)
+  }
+  const matches = rows.filter((item) => item.buyerSku?.trim().toLowerCase() === sku.toLowerCase())
+  if (matches.length > 1) {
+    throw new ProductBarcodeError(
+      `${matches.length} variations share the SKU "${sku}". Upload this barcode from the product's Edit panel.`,
+      409
+    )
+  }
+  if (!matches[0]?.productId) {
+    throw new ProductBarcodeError(`No variation has the SKU "${sku}"`, 404)
+  }
+  return matches[0]
+}
+
+// Deleting a replaced or removed file only tidies storage; a failure is logged and leaves the file behind.
+async function discardFile(objectKey: string) {
+  try {
+    await deleteFile(objectKey)
+  } catch (error) {
+    console.error(JSON.stringify({ event: "barcode_file_delete_failed", objectKey, error: describeError(error) }))
+  }
+}
+
+// Saves a variation's barcode label, replacing any earlier one. POs that already have a label keep their own copy.
+// The form names the variation with variantId, or with a SKU: the sku field, or else the file's name.
 export async function saveProductBarcode(s: Session, form: FormData) {
   const domain = await shopifyDomain(s)
-  const variantId = variantIdSchema.safeParse(form.get("variantId"))
-  if (!variantId.success) {
+  const rawVariant = form.get("variantId")
+  const variantId = rawVariant === null ? null : variantIdSchema.safeParse(rawVariant)
+  if (variantId && !variantId.success) {
     throw new ProductBarcodeError("Choose a product variation", 400)
   }
   const file = form.get("file")
   if (!(file instanceof File) || file.size > maxBytes) {
     throw new ProductBarcodeError("Choose a PDF smaller than 32 MB", 400)
   }
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  try {
-    await validatePdf(bytes)
-  } catch (error) {
-    throw new ProductBarcodeError(error instanceof Error ? error.message : "Upload a PDF smaller than 32 MB", 400)
-  }
-  if ((await splitPdfPages(bytes)).length !== 1) {
-    throw new ProductBarcodeError("Upload a barcode PDF with one page", 400)
-  }
+  const rawSku = form.get("sku")
+  const sku = typeof rawSku === "string" && rawSku.trim() ? rawSku.trim() : skuFromFileName(file.name)
   const [stock] = await db()
     .select({ data: stockSnapshots.data })
     .from(stockSnapshots)
@@ -79,29 +129,66 @@ export async function saveProductBarcode(s: Session, form: FormData) {
         eq(stockSnapshots.scopeKey, "store")
       )
     )
-  const row =
-    stock?.data?.source === "shopify" ? stock.data.rows.find((item) => item.variantId === variantId.data) : undefined
-  if (!row?.productId) {
-    throw new ProductBarcodeError("This product isn't in your synced Shopify inventory", 404)
+  const row = resolveVariant(
+    stock?.data?.source === "shopify" ? stock.data.rows : [],
+    variantId?.data ?? null,
+    sku.slice(0, 255)
+  )
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  try {
+    await validatePdf(bytes)
+  } catch (error) {
+    throw new ProductBarcodeError(error instanceof Error ? error.message : "Upload a PDF smaller than 32 MB", 400)
+  }
+  if ((await splitPdfPages(bytes)).length !== 1) {
+    throw new ProductBarcodeError("Upload a barcode PDF with one page", 400)
   }
   const objectKey = `barcodes/${s.org.id}/${randomUUID()}.pdf`
   await putFile(objectKey, bytes)
   const value = {
-    productId: row.productId,
+    productId: row.productId!,
     objectKey,
     name: file.name.replace(/[^a-zA-Z0-9 ._-]/g, "_").slice(0, 180) || "Barcode.pdf",
     bytes: bytes.length,
     uploadedBy: s.user.id,
     createdAt: new Date()
   }
-  await db()
-    .insert(productBarcodes)
-    .values({ orgId: s.org.id, shopifyDomain: domain, variantId: variantId.data, ...value })
-    .onConflictDoUpdate({
-      target: [productBarcodes.orgId, productBarcodes.shopifyDomain, productBarcodes.variantId],
-      set: value
+  let replaced: string | null
+  try {
+    replaced = await db().transaction(async (tx) => {
+      const [previous] = await tx
+        .select({ objectKey: productBarcodes.objectKey })
+        .from(productBarcodes)
+        .where(barcodeScope(s.org.id, domain, row.variantId))
+        .for("update")
+      await tx
+        .insert(productBarcodes)
+        .values({ orgId: s.org.id, shopifyDomain: domain, variantId: row.variantId, ...value })
+        .onConflictDoUpdate({
+          target: [productBarcodes.orgId, productBarcodes.shopifyDomain, productBarcodes.variantId],
+          set: value
+        })
+      return previous?.objectKey ?? null
     })
-  return { name: value.name, bytes: value.bytes, uploadedAt: value.createdAt.toISOString() } satisfies ProductBarcode
+  } catch (error) {
+    await discardFile(objectKey)
+    throw error
+  }
+  if (replaced) {
+    await discardFile(replaced)
+  }
+  return {
+    name: value.name,
+    bytes: value.bytes,
+    uploadedAt: value.createdAt.toISOString(),
+    replaced: replaced !== null,
+    target: {
+      variantId: row.variantId,
+      sku: row.buyerSku,
+      product: row.productTitle ?? row.buyerSku ?? "Untitled product",
+      variant: row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
+    } satisfies BarcodeTarget
+  }
 }
 
 function barcodeScope(orgId: string, domain: string, variantId: string) {
@@ -114,9 +201,13 @@ function barcodeScope(orgId: string, domain: string, variantId: string) {
 
 export async function removeProductBarcode(s: Session, variantId: string) {
   const domain = await shopifyDomain(s)
-  await db()
+  const removed = await db()
     .delete(productBarcodes)
     .where(barcodeScope(s.org.id, domain, variantId))
+    .returning({ objectKey: productBarcodes.objectKey })
+  for (const { objectKey } of removed) {
+    await discardFile(objectKey)
+  }
 }
 
 export async function productBarcodeFile(s: Session, variantId: string) {

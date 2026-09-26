@@ -1,6 +1,7 @@
 import { and, eq, sql, lt, lte, inArray } from "drizzle-orm"
 import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
+import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
 import { reconcileJob } from "./reconcile"
@@ -79,6 +80,10 @@ export async function runNextJob() {
       await shopifySubscribeJob(job.payload, assertOwned)
     } else if (job.kind === "shopify-compliance") {
       await shopifyComplianceJob(job.payload)
+    } else if (job.kind === "amazon-event") {
+      await amazonEventJob(job.payload, assertOwned)
+    } else if (job.kind === "amazon-subscribe") {
+      await amazonSubscribeJob(job.payload, assertOwned)
     } else if (job.kind === "reconcile") {
       await reconcileJob(job.payload, assertOwned)
     } else {

@@ -23,14 +23,14 @@ import {
   upcomingSpend
 } from "../src/server/overview"
 import {
-  amazonFees,
-  amazonOrderFees,
   catalogIndex,
   dailySales,
   grossProfit,
   type ItemRow,
   movers,
+  orderFees,
   periodTotal,
+  platformFees,
   salesByDay,
   salesByItem,
   sellingPrices
@@ -426,7 +426,7 @@ describe("margins and trends", () => {
 
   it("estimates Amazon fees for orders not posted yet at the posted rate", () => {
     expect(
-      amazonFees([
+      platformFees([
         { orderId: "1", revenueMinor: 10000, feesMinor: 1500 },
         { orderId: "2", revenueMinor: 4000, feesMinor: null },
         { orderId: "3", revenueMinor: null, feesMinor: null }
@@ -450,16 +450,17 @@ describe("margins and trends", () => {
         item({ period: "previous", revenueMinor: 99999 })
       ],
       index,
-      { amazonMinor: 900, amazonRevenueMinor: 6000 }
+      { amazon: { feesMinor: 900, revenueMinor: 6000 }, shopify: { feesMinor: 600, revenueMinor: 20000 } }
     )
     expect(result).toEqual({
       currency: "USD",
       revenueMinor: 21000,
       costedRevenueMinor: 16000,
       costMinor: 4000 + 2400,
-      feesMinor: 900,
-      profitMinor: 16000 - 6400 - 900,
-      margin: (16000 - 6400 - 900) / 16000
+      // All of Amazon's costed sales carry its fees; half of Shopify's sales are costed, so half its fees.
+      feesMinor: 900 + 300,
+      profitMinor: 16000 - 6400 - 1200,
+      margin: (16000 - 6400 - 1200) / 16000
     })
   })
 
@@ -508,13 +509,23 @@ describe("sales queries", () => {
     context.current = database
     await applyMigrations(pg)
     await database.insert(tables.organizations).values({ id: orgId, name: "Fencing Club", kind: "buyer" })
-    const shopifyOrder = (id: string, createdAt: string, lines: unknown[]) => ({
+    const shopifyOrder = (id: string, createdAt: string, lines: unknown[], extra: Record<string, unknown> = {}) => ({
       orgId,
       source: "shopify" as const,
       externalAccountId: "club.myshopify.com",
       orderId: id,
       orderedAt: new Date(createdAt),
-      data: { id, name: "#1", createdAt, cancelledAt: null, test: false, sourceName: "web", lines, fulfillments: [] }
+      data: {
+        id,
+        name: "#1",
+        createdAt,
+        cancelledAt: null,
+        test: false,
+        sourceName: "web",
+        lines,
+        fulfillments: [],
+        ...extra
+      }
     })
     const amazonOrder = (id: string, createdAt: string, items: unknown[]) => ({
       orgId,
@@ -527,36 +538,56 @@ describe("sales queries", () => {
     await database.insert(tables.salesOrders).values([
       // 3 bought, 1 refunded: 2 units at $10 less their share of a $3 discount. A bundle of 2 counts once, at its
       // components' prices.
-      shopifyOrder("s1", "2026-09-24T10:00:00Z", [
+      shopifyOrder(
+        "s1",
+        "2026-09-24T10:00:00Z",
+        [
+          {
+            id: "l1",
+            quantity: 3,
+            currentQuantity: 2,
+            sku: "A",
+            variant: { id: "va" },
+            lineItemGroup: null,
+            originalUnitPriceSet: money("10.00"),
+            discountAllocations: [{ allocatedAmountSet: money("3.00") }]
+          },
+          {
+            id: "l2",
+            quantity: 2,
+            currentQuantity: 2,
+            sku: "B",
+            variant: { id: "vb" },
+            lineItemGroup: { id: "g1", quantity: 2, variantId: "vbundle" },
+            originalUnitPriceSet: money("5.00")
+          },
+          {
+            id: "l3",
+            quantity: 4,
+            currentQuantity: 4,
+            sku: "C",
+            variant: { id: "vc" },
+            lineItemGroup: { id: "g1", quantity: 2, variantId: "vbundle" },
+            originalUnitPriceSet: money("2.50")
+          }
+        ],
         {
-          id: "l1",
-          quantity: 3,
-          currentQuantity: 2,
-          sku: "A",
-          variant: { id: "va" },
-          lineItemGroup: null,
-          originalUnitPriceSet: money("10.00"),
-          discountAllocations: [{ allocatedAmountSet: money("3.00") }]
-        },
-        {
-          id: "l2",
-          quantity: 2,
-          currentQuantity: 2,
-          sku: "B",
-          variant: { id: "vb" },
-          lineItemGroup: { id: "g1", quantity: 2, variantId: "vbundle" },
-          originalUnitPriceSet: money("5.00")
-        },
-        {
-          id: "l3",
-          quantity: 4,
-          currentQuantity: 4,
-          sku: "C",
-          variant: { id: "vc" },
-          lineItemGroup: { id: "g1", quantity: 2, variantId: "vbundle" },
-          originalUnitPriceSet: money("2.50")
+          transactions: [
+            {
+              id: "p1",
+              kind: "SALE",
+              status: "SUCCESS",
+              fees: [{ amount: money("1.36").shopMoney, taxAmount: money("0.11").shopMoney }]
+            },
+            {
+              id: "p2",
+              kind: "SALE",
+              status: "FAILURE",
+              fees: [{ amount: money("5.00").shopMoney, taxAmount: money("0").shopMoney }]
+            }
+          ]
         }
-      ]),
+      ),
       // Before midnight on Sep 25 in UTC, but Sep 24 in Los Angeles. Copied before prices were.
       shopifyOrder("s2", "2026-09-25T03:30:00Z", [
         { id: "l4", quantity: 1, currentQuantity: 1, sku: "A", variant: { id: "va" } }
@@ -643,8 +674,9 @@ describe("sales queries", () => {
   })
 
   it("joins Amazon orders to the fees posted for them", async () => {
-    const rows = await amazonOrderFees(
+    const rows = await orderFees(
       orgId,
+      "amazon",
       "SELLER",
       new Date("2026-08-01T00:00:00Z"),
       new Date("2026-09-26T00:00:00Z")
@@ -652,6 +684,22 @@ describe("sales queries", () => {
     expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
       { orderId: "a1", revenueMinor: 2700, feesMinor: 400 },
       { orderId: "a2", revenueMinor: null, feesMinor: null }
+    ])
+  })
+
+  it("adds up Shopify Payments fees from each order's successful payments", async () => {
+    const rows = await orderFees(
+      orgId,
+      "shopify",
+      "club.myshopify.com",
+      new Date("2026-09-01T00:00:00Z"),
+      new Date("2026-09-26T00:00:00Z")
+    )
+    expect(rows.toSorted((a, b) => a.orderId.localeCompare(b.orderId))).toEqual([
+      // $1.36 fee plus $0.11 tax; the failed payment's fee isn't charged.
+      { orderId: "s1", revenueMinor: 3800, feesMinor: 147 },
+      // Copied before payments were: unknown.
+      { orderId: "s2", revenueMinor: null, feesMinor: null }
     ])
   })
 })
