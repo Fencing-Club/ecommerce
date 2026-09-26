@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, orders, supplierProducts, suppliers } from "@/db/schema"
+import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
 import type { Session } from "./auth"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
@@ -10,6 +10,7 @@ import { restockPlan, type RestockSupplier } from "./restock-plan"
 import { dayRange } from "./restock-report"
 import { resolveRestockSupplier } from "./restock-supplier"
 import { restockDemand } from "./sales-orders"
+import { stockoutDays } from "./stock-days"
 
 const days = z.number().int().min(dayRange.min).max(dayRange.max)
 export const restockInputSchema = z.strictObject({
@@ -97,6 +98,56 @@ async function supplierLookup(orgId: string, catalog: { variantId: string; suppl
   return { list, supplierFor: (variantId: string) => byVariant.get(variantId) ?? null }
 }
 
+// Stockout days per item over the channel's sales period: FBA by seller SKU (from Amazon's ledger and stock syncs),
+// or one Shopify location by variant (from stock syncs since Copacker started recording them).
+async function channelStockouts(
+  orgId: string,
+  channel: z.infer<typeof restockInputSchema>["channel"],
+  catalog: { variantId: string; buyerSku: string | null }[],
+  sources: {
+    source: "shopify" | "amazon"
+    window: { from: string; to: string } | null
+    saleDays: ReadonlyMap<string, ReadonlySet<string>>
+  }[]
+) {
+  const source = channel.kind === "amazon" ? "amazon" : "shopify"
+  const sales = sources.find((row) => row.source === source)
+  const window = sales?.window
+  const [account] = await db()
+    .select({ externalId: connections.externalId })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, source)))
+  if (!window || !account) {
+    return new Map<string, number>()
+  }
+  const range = { from: new Date(window.from), to: new Date(window.to) }
+  if (channel.kind === "shopify") {
+    return stockoutDays({
+      orgId,
+      externalAccountId: account.externalId,
+      pool: "shopify",
+      scope: channel.locationId,
+      itemKeys: catalog.map((row) => row.variantId),
+      ...range,
+      saleDays: sales?.saleDays
+    })
+  }
+  const [sync] = await db()
+    .select({ from: salesSyncs.stockCoveredFrom, to: salesSyncs.stockCoveredTo })
+    .from(salesSyncs)
+    .where(and(eq(salesSyncs.orgId, orgId), eq(salesSyncs.source, "amazon")))
+  return stockoutDays({
+    orgId,
+    externalAccountId: account.externalId,
+    pool: "fba",
+    scope: "ATVPDKIKX0DER",
+    itemKeys: [...new Set(catalog.flatMap((row) => (row.buyerSku ? [row.buyerSku] : [])))],
+    ...range,
+    saleDays: sales?.saleDays,
+    ledger: sync?.from && sync.to ? { from: sync.from, to: sync.to } : null
+  })
+}
+
 // Restock suggestions for one channel from stored orders, current stock and open POs.
 export async function restockReport(s: Session, raw: unknown) {
   const input = restockInputSchema.parse(raw)
@@ -126,6 +177,7 @@ export async function restockReport(s: Session, raw: unknown) {
     supplierLookup(s.org.id, context.rows),
     context.domain ? readProductDefaults(s.org.id, context.domain) : new Map()
   ])
+  const stockouts = await channelStockouts(s.org.id, channel, context.rows, demand.sources)
   const lines = restockPlan({
     channel,
     catalog: context.rows,
@@ -138,7 +190,9 @@ export async function restockReport(s: Session, raw: unknown) {
     salesDays: input.days,
     leadTimeDays: input.leadTimeDays,
     productDefaults,
-    supplierFor: lookup.supplierFor
+    supplierFor: lookup.supplierFor,
+    // Amazon history is by seller SKU, Shopify's by variant.
+    stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
   }).filter((line) => {
     if (input.supplier === "all") {
       return true
@@ -152,7 +206,9 @@ export async function restockReport(s: Session, raw: unknown) {
     channel,
     supplier: input.supplier,
     suppliers: lookup.list,
-    sources: demand.sources.filter((source) => source.source === salesSource),
+    sources: demand.sources
+      .filter((source) => source.source === salesSource)
+      .map(({ saleDays: _saleDays, ...source }) => source),
     lines
   }
 }

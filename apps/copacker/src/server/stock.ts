@@ -8,6 +8,7 @@ import { connections, jobs, stockSnapshots } from "@/db/schema"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
+import { recordStockDays } from "./stock-days"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
 export const stockScopes = {
@@ -191,6 +192,12 @@ export async function stockJob(
         })
         .where(owned)
     })
+    // Daily history for restock's stockout days; the snapshot above is already saved, so a failure here is only logged.
+    try {
+      await recordStockDays(claimed.orgId, claimed.externalAccountId, data)
+    } catch (error) {
+      console.error(JSON.stringify({ event: "stock_days_failed", orgId: claimed.orgId, error: describeError(error) }))
+    }
   } catch (error) {
     const errorCode = stockErrorCode(error)
     console.error(

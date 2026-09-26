@@ -10,6 +10,7 @@ import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { describeError, stockErrorCode } from "./stock"
+import { syncLedger } from "./stock-days"
 
 export const salesSources = ["shopify", "amazon"] as const
 export type SalesSource = (typeof salesSources)[number]
@@ -129,6 +130,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     const { chunks, fresh } = syncChunks(Date.now(), sync, historyDays)
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
+    // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock.
+    let afterOrders: (() => Promise<void>) | null = null
     if (source === "shopify") {
       const shopify = await shopifyFor(orgId, account)
       read = async (window) =>
@@ -139,6 +142,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         }))
     } else {
       const amazon = await amazonFor(orgId, account)
+      afterOrders = () => syncLedger({ orgId, externalAccountId: account, revision, amazon }, assertOwned)
       read = async (window) =>
         (await collectAmazonSales(amazon, window, assertOwned)).map((order) => ({
           orderId: order.orderId,
@@ -185,6 +189,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         await tx.update(salesSyncs).set({ coveredFrom: range.from, coveredTo: range.to }).where(scope)
       })
     }
+    await afterOrders?.()
     await db().update(salesSyncs).set({ status: "idle", finishedAt: new Date(), errorCode: null }).where(scope)
   } catch (error) {
     const errorCode = stockErrorCode(error)
@@ -299,7 +304,27 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
           await effectiveLocationClassifications(orgId, account.externalId)
         )
       : attributeAmazonSales(orders.filter((order) => "orderItems" in order))
-  return { ...demand, window: { from: from.toISOString(), to: to.toISOString() } }
+  // The days each item sold (by variant on Shopify, by seller SKU on Amazon): it was in stock somewhere on those days.
+  const saleDays = new Map<string, Set<string>>()
+  const sold = (key: string | null | undefined, at: string) => {
+    if (key) {
+      const days = saleDays.get(key) ?? new Set<string>()
+      days.add(at.slice(0, 10))
+      saleDays.set(key, days)
+    }
+  }
+  for (const order of orders) {
+    if ("lines" in order) {
+      for (const line of order.lines) {
+        sold(line.variant?.id, new Date(order.createdAt).toISOString())
+      }
+    } else {
+      for (const item of order.orderItems) {
+        sold(item.product.sellerSku, new Date(order.createdTime).toISOString())
+      }
+    }
+  }
+  return { ...demand, saleDays, window: { from: from.toISOString(), to: to.toISOString() } }
 }
 
 export type SalesOrderSummary = {
@@ -463,6 +488,7 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
         source,
         error: null,
         window: result.window,
+        saleDays: result.saleDays,
         // Units the source reported but couldn't place, such as unfulfilled orders or unmapped sales channels.
         gapUnits: result.gaps.reduce((total, gap) => total + (gap.units ?? 0), 0),
         gapReasons: summarizeDemandGaps(result.gaps)
@@ -477,6 +503,7 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
             ? error.message
             : "Sales couldn't be read. Try again.",
         window: null,
+        saleDays: new Map<string, Set<string>>(),
         gapUnits: 0,
         gapReasons: {}
       })

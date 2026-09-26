@@ -43,6 +43,9 @@ export type RestockLine = {
   soldAlone: number | null
   soldInBundles: number | null
   salesDays: number
+  // Days of the sales period the item was out of stock, and the days the sales rate is measured over.
+  stockoutDays: number
+  rateDays: number
   leadTimeDays: number
   available: number | null
   incoming: number | null
@@ -108,6 +111,8 @@ export function restockPlan(input: {
   productDefaults: ReadonlyMap<string, Pick<ProductDefaults, "casePacks" | "minimumOrder">>
   // The supplier each variation was last ordered from.
   supplierFor: (variantId: string) => RestockSupplier | null
+  // Days of the sales period the variation was out of stock in this channel, when known.
+  stockoutsFor?: (variantId: string, sku: string | null) => number
 }): RestockLine[] {
   const { channel, catalog } = input
   const products = groupInventory(catalog, {
@@ -227,6 +232,10 @@ export function restockPlan(input: {
       if (incoming === null) {
         blocked.push("incoming_unknown")
       }
+      // Sales stop while an item is out of stock, so the rate uses only the days it was in stock. At least a week
+      // (or the whole period, if shorter) keeps a few lucky days from inflating it.
+      const stockoutDays = Math.min(input.salesDays, input.stockoutsFor?.(variant.variantId, variant.sku) ?? 0)
+      const rateDays = Math.max(Math.min(input.salesDays, 7), input.salesDays - stockoutDays)
       const casePack = bundle && channel.kind === "shopify" ? null : (details?.casePacks[0] ?? null)
       const caseQuantity = casePack?.units ?? (bundle ? null : (row?.caseQuantity ?? null))
       const minimumOrder = details?.minimumOrder ?? null
@@ -244,7 +253,7 @@ export function restockPlan(input: {
             stocked: !notStocked,
             unitsVerified: !blocked.includes("sku_ambiguous")
           },
-          { leadTimeDays, salesWindowDays: input.salesDays }
+          { leadTimeDays, salesWindowDays: rateDays }
         )
       const result = recommend(caseQuantity, minimumOrder)
       const need = blocked.length ? null : recommend(null, null).purchaseUnits
@@ -266,6 +275,8 @@ export function restockPlan(input: {
         soldAlone: channel.kind === "shopify" ? (split.get(variant.variantId)?.soldAlone ?? 0) : null,
         soldInBundles: channel.kind === "shopify" ? (split.get(variant.variantId)?.soldInBundles ?? 0) : null,
         salesDays: input.salesDays,
+        stockoutDays,
+        rateDays,
         leadTimeDays,
         available,
         incoming,

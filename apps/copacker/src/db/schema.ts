@@ -3,7 +3,18 @@ import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
-import { pgTable, uuid, text, timestamp, integer, jsonb, uniqueIndex, index, primaryKey } from "drizzle-orm/pg-core"
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  integer,
+  jsonb,
+  uniqueIndex,
+  index,
+  primaryKey,
+  date
+} from "drizzle-orm/pg-core"
 import type { CasePack } from "../lib/case-packs"
 import { contactKinds } from "../lib/contacts"
 import type { ImportProposal } from "../server/import-proposal"
@@ -391,7 +402,32 @@ export const salesSyncs = pgTable(
     coveredTo: timestamp({ withTimezone: true }),
     requestedAt: timestamp({ withTimezone: true }),
     finishedAt: timestamp({ withTimezone: true }),
-    errorCode: text()
+    errorCode: text(),
+    // Amazon only: the unbroken period of daily FBA stock copied from the inventory ledger, and why it last failed.
+    stockCoveredFrom: timestamp({ withTimezone: true }),
+    stockCoveredTo: timestamp({ withTimezone: true }),
+    stockErrorCode: text()
   },
   (t) => [primaryKey({ columns: [t.orgId, t.source] })]
+)
+// Sellable stock at the end of each day (or the lowest seen that day), so restock can leave out days an item was out
+// of stock. Pool "fba" is keyed by seller SKU from Amazon's ledger; "shopify" by variant at one location, recorded
+// from stock syncs.
+export const stockDays = pgTable(
+  "stock_days",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    externalAccountId: text().notNull(),
+    pool: text({ enum: ["fba", "shopify"] }).notNull(),
+    // The Shopify location, or the Amazon marketplace.
+    scope: text().notNull(),
+    // Seller SKU for FBA, variant ID for Shopify.
+    itemKey: text().notNull(),
+    day: date({ mode: "string" }).notNull(),
+    units: integer().notNull(),
+    origin: text({ enum: ["ledger", "snapshot"] }).notNull()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.externalAccountId, t.pool, t.scope, t.itemKey, t.day] })]
 )

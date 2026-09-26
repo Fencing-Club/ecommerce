@@ -15,6 +15,7 @@ const provider = vi.hoisted(() => ({
   api: {
     graphql: vi.fn<(...args: never[]) => Promise<unknown>>(),
     request: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    report: vi.fn<(...args: never[]) => Promise<unknown>>(),
     eligibility: vi.fn<(...args: never[]) => Promise<unknown>>(),
     create: vi.fn<(...args: never[]) => Promise<unknown>>(),
     order: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -102,6 +103,7 @@ import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
 import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
+import { recordStockDays, stockoutDays } from "../src/server/stock-days"
 import { saveSupplierLeadTimes } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
@@ -2763,6 +2765,70 @@ describe("stored sales orders", () => {
     expect((await listSalesOrders(buyerId, { page: 0 })).orders.map((order) => order.number)).toEqual(["111-2"])
     // Only the recent periods are read again.
     expect(provider.api.request.mock.calls.length - before).toBe(3)
+  })
+  it("copies daily FBA stock from Amazon's ledger and counts stockout days, except days the item sold", async () => {
+    const dayMs = 86400000
+    const today = Math.floor(Date.now() / dayMs) * dayMs
+    const day = (ago: number) => new Date(today - ago * dayMs).toISOString().slice(0, 10)
+    amazonOrders([amazonOrder("111-1", new Date(today - 3 * dayMs + 3600000).toISOString(), 2)])
+    const inStock = [day(5), day(4)]
+    provider.api.report.mockImplementation(async (input: { dataStartTime: string; dataEndTime: string }) => {
+      const rows = inStock
+        .filter((value) => value >= input.dataStartTime.slice(0, 10) && value <= input.dataEndTime.slice(0, 10))
+        .map((value) => [value, "X1", "foil-2", "SELLABLE", "5"].join("\t"))
+      return [["Date", "FNSKU", "MSKU", "Disposition", "Ending Warehouse Balance"].join("\t"), ...rows].join("\n")
+    })
+    await requestSalesSync(buyer, "amazon")
+    await runNextJob()
+    const [sync] = await database.select().from(tables.salesSyncs)
+    expect(sync).toMatchObject({ stockErrorCode: null, stockCoveredTo: new Date(today) })
+    const rows = await database.select().from(tables.stockDays)
+    expect(rows.map((row) => [row.itemKey, row.day, row.units, row.origin])).toEqual([
+      ["foil-2", day(5), 5, "ledger"],
+      ["foil-2", day(4), 5, "ledger"]
+    ])
+    const demand = await storedDemand(buyerId, "amazon", 10)
+    const out = await stockoutDays({
+      orgId: buyerId,
+      externalAccountId: "A123456789",
+      pool: "fba",
+      scope: "ATVPDKIKX0DER",
+      itemKeys: ["foil-2"],
+      from: new Date(today - 10 * dayMs),
+      to: new Date(today),
+      ledger: { from: sync!.stockCoveredFrom!, to: sync!.stockCoveredTo! },
+      saleDays: demand.saleDays
+    })
+    // Ten days: in stock on two, sold on a third.
+    expect(out.get("foil-2")).toBe(7)
+  })
+  it("keeps the lowest stock seen each day from stock syncs", async () => {
+    const fba = (units: number) => ({
+      source: "fba" as const,
+      scopeKey: "ATVPDKIKX0DER" as const,
+      startedAt: "2026-09-25T00:00:00Z",
+      observedAt: "2026-09-25T00:00:00Z",
+      rows: [
+        {
+          sellerSku: "foil-2",
+          unit: "amazon_sellable_unit" as const,
+          totalQuantity: units,
+          inventoryDetails: {
+            fulfillableQuantity: units,
+            inboundWorkingQuantity: 0,
+            inboundShippedQuantity: 0,
+            inboundReceivingQuantity: 0
+          }
+        }
+      ]
+    })
+    const now = Date.parse("2026-09-25T12:00:00Z")
+    await recordStockDays(buyerId, "A123456789", fba(4), now)
+    await recordStockDays(buyerId, "A123456789", fba(0), now + 3600000)
+    await recordStockDays(buyerId, "A123456789", fba(9), now + 7200000)
+    expect(await database.select().from(tables.stockDays)).toMatchObject([
+      { pool: "fba", itemKey: "foil-2", day: "2026-09-25", units: 0, origin: "snapshot" }
+    ])
   })
   it("records a failed sync and keeps the orders already copied", async () => {
     provider.api.request.mockRejectedValue(new Error("private provider text"))

@@ -71,6 +71,13 @@
       "when": 1790395397912,
       "tag": "0009_supplier_lead_times",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790397104877,
+      "tag": "0010_stock_days",
+      "breakpoints": true
     }
   ]
 }

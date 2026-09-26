@@ -123,12 +123,15 @@ function explain(line: RestockLine) {
     ]
   }
   const sold = line.sold ?? 0
-  const perDay = sold / line.salesDays
-  const leadDemand = Math.ceil((sold * line.leadTimeDays) / line.salesDays)
+  const perDay = sold / line.rateDays
+  const leadDemand = Math.ceil((sold * line.leadTimeDays) / line.rateDays)
   const steps = [
-    `Sold ${sold} in the last ${line.salesDays} days, about ${perDay.toFixed(1)} a day${
+    `Sold ${sold} in the last ${line.salesDays} days${
       line.soldInBundles ? ` (${line.soldAlone} alone and ${line.soldInBundles} in bundles)` : ""
     }.`,
+    line.stockoutDays
+      ? `Out of stock ${line.stockoutDays} of those days, so the rate uses the ${line.rateDays} days it could sell: about ${perDay.toFixed(1)} a day.`
+      : `About ${perDay.toFixed(1)} a day.`,
     `Over the ${line.leadTimeDays}-day lead time that’s about ${leadDemand}.`
   ]
   if (line.targetStock) {
@@ -295,7 +298,10 @@ function LineRows({
         <TableCell className={styles.number}>
           {line.daysRemaining === null ? "Unknown" : `${line.daysRemaining} days`}
         </TableCell>
-        <TableCell className={styles.number}>{line.sold ?? "Unknown"}</TableCell>
+        <TableCell className={styles.number}>
+          {line.sold ?? "Unknown"}
+          {line.stockoutDays > 0 && <span className={styles.stockout}>{line.stockoutDays} days out of stock</span>}
+        </TableCell>
         <TableCell className={styles.number}>{line.available ?? "Unknown"}</TableCell>
         <TableCell className={styles.number}>{line.incoming ?? "Unknown"}</TableCell>
         <TableCell className={styles.number}>

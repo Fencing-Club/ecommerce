@@ -58,3 +58,4 @@ globalStyle(`${searchBox} > svg`, {
   pointerEvents: "none"
 })
 globalStyle(`${searchBox} input`, { paddingLeft: space(8) })
+export const stockout = style([detail, { display: "block", whiteSpace: "nowrap" }])

@@ -1,3 +1,4 @@
+import { gunzipSync } from "node:zlib"
 import { z } from "zod"
 
 export type AmazonCredentials = { clientId: string; clientSecret: string; refreshToken: string }
@@ -410,6 +411,60 @@ export class Amazon {
           `/awd/2024-05-09/inboundShipments/${encodeURIComponent(id)}/labels?pageType=PLAIN_PAPER&formatType=PDF`
         )
       )
+  }
+  /**
+   * Requests a report and returns its text once Amazon has built it, or null when Amazon cancels it because there is
+   * no data for the period. Building takes from seconds to many minutes; the caller's deadline bounds the wait.
+   */
+  async report(
+    input: {
+      reportType: string
+      marketplaceIds: string[]
+      dataStartTime: string
+      dataEndTime: string
+      reportOptions?: Record<string, string>
+    },
+    options: { deadline: number; pollMs?: number; assertActive?: () => Promise<void> }
+  ) {
+    const read = stockReader(options.deadline, options.assertActive)
+    const created = z
+      .object({ reportId: z.string().min(1) })
+      .parse(await read(() => this.request("POST", "/reports/2021-06-30/reports", input)))
+    for (;;) {
+      const report = z
+        .object({
+          processingStatus: z.enum(["IN_QUEUE", "IN_PROGRESS", "DONE", "CANCELLED", "FATAL"]),
+          reportDocumentId: z.string().min(1).optional()
+        })
+        .parse(
+          await read(() => this.request("GET", `/reports/2021-06-30/reports/${encodeURIComponent(created.reportId)}`))
+        )
+      if (report.processingStatus === "CANCELLED") {
+        return null
+      }
+      if (report.processingStatus === "FATAL") {
+        throw new Error(`Amazon couldn't build the ${input.reportType} report`)
+      }
+      if (report.processingStatus === "DONE" && report.reportDocumentId) {
+        const documentId = report.reportDocumentId
+        const document = z
+          .object({ url: z.url(), compressionAlgorithm: z.literal("GZIP").optional() })
+          .parse(
+            await read(() => this.request("GET", `/reports/2021-06-30/documents/${encodeURIComponent(documentId)}`))
+          )
+        const response = await read(() => this.transport(document.url, { signal: AbortSignal.timeout(120000) }))
+        if (!response.ok) {
+          throw new ProviderError(response.status, null, `Amazon report download failed (${response.status})`)
+        }
+        const bytes = Buffer.from(await response.arrayBuffer())
+        return (document.compressionAlgorithm ? gunzipSync(bytes) : bytes).toString("utf8")
+      }
+      const wait = options.pollMs ?? 15000
+      if (Date.now() + wait >= options.deadline) {
+        throw new Error("Amazon is still building the report; try again later")
+      }
+      await new Promise((resolve) => setTimeout(resolve, wait))
+    }
   }
   async listings(sellerId: string, skus: string[]) {
     const marketplaceId = "ATVPDKIKX0DER"

@@ -195,6 +195,16 @@ describe("restock plan", () => {
     })
     expect(line).toMatchObject({ status: "blocked", blocked: ["sku_ambiguous"] })
   })
+  it("measures the sales rate over the days the item was in stock", () => {
+    const [line] = restockPlan({ ...base, channel: shopify, stockoutsFor: () => 28 })
+    // 112 sold in the 28 days it was in stock is 4 a day: 224 over the lead time, less 80 available.
+    expect(line).toMatchObject({ stockoutDays: 28, rateDays: 28, purchaseUnits: 144 })
+    // A week is the shortest period the rate is measured over.
+    expect(restockPlan({ ...base, channel: shopify, stockoutsFor: () => 60 })[0]).toMatchObject({
+      stockoutDays: 56,
+      rateDays: 7
+    })
+  })
   it("shows enough stock when nothing needs ordering", () => {
     const [line] = restockPlan({ ...base, channel: shopify, shopifySales: { rows: [], gaps: [] } })
     expect(line).toMatchObject({ status: "stocked", sold: 0, purchaseUnits: 0 })

@@ -9,6 +9,7 @@
     "./amazon": "./src/amazon.ts",
     "./shopify": "./src/shopify.ts",
     "./sales": "./src/sales.ts",
+    "./ledger": "./src/ledger.ts",
     "./documents": "./src/documents.ts"
   },
   "scripts": {
