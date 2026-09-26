@@ -1,4 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import { db } from "@/db"
 import { orders, suppliers } from "@/db/schema"
 
@@ -27,4 +28,23 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
       .set({ removedAt: new Date(), invitationHash: null, expiresAt: null })
       .where(eq(suppliers.id, supplierId))
   })
+}
+
+export const leadTimesSchema = z.strictObject({
+  id: z.uuid(),
+  leadTimeDays: z.number().int().min(1).max(730).nullable(),
+  amazonLeadTimeDays: z.number().int().min(1).max(730).nullable()
+})
+
+// How long a supplier takes to deliver to the buyer's locations and to Amazon, used by restock.
+export async function saveSupplierLeadTimes(buyerOrgId: string, raw: unknown) {
+  const input = leadTimesSchema.parse(raw)
+  const updated = await db()
+    .update(suppliers)
+    .set({ leadTimeDays: input.leadTimeDays, amazonLeadTimeDays: input.amazonLeadTimeDays })
+    .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
+    .returning({ id: suppliers.id })
+  if (!updated.length) {
+    throw new Error("This supplier was removed")
+  }
 }

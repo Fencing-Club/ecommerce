@@ -54,7 +54,9 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
     .from(contacts)
     .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
   const initialDestination =
-    params.destination === "warehouse" || params.destination === "fba" ? params.destination : "awd_us"
+    params.destination === "warehouse" || params.destination === "fba" || params.destination === "awd_us"
+      ? params.destination
+      : "amazon"
   const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
 
   return (
@@ -69,6 +71,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         deliveries={deliveries}
         initialItems={initialItems}
         initialDestination={initialDestination}
+        initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
         initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
       />
     </>

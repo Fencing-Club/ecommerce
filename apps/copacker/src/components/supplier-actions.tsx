@@ -1,8 +1,11 @@
 "use client"
 
-import { Plus } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Clock, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { FormProvider, useForm } from "react-hook-form"
+import { z } from "zod"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +22,18 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
+import { formErrorMap } from "@/lib/form-errors"
 import { FormError } from "./actions"
+import { FormNumber } from "./form-controls"
 import { SupplierForm } from "./settings-forms"
+import { sx } from "@/styles/sprinkles.css"
 
 export function InviteSupplier() {
   const [open, setOpen] = useState(false)
@@ -93,5 +100,79 @@ export function RemoveSupplier({ id, name, joined }: { id: string; name: string;
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+const leadTimeSchema = z.object({
+  leadTimeDays: z.number().int().min(1).max(730).optional(),
+  amazonLeadTimeDays: z.number().int().min(1).max(730).optional()
+})
+
+// Days from ordering until stock arrives, which restock uses for this supplier's products.
+export function SupplierLeadTimes({
+  id,
+  name,
+  leadTimeDays,
+  amazonLeadTimeDays
+}: {
+  id: string
+  name: string
+  leadTimeDays: number | null
+  amazonLeadTimeDays: number | null
+}) {
+  const router = useRouter()
+  const [run] = useActionMutation()
+  const [open, setOpen] = useState(false)
+  const form = useForm<z.input<typeof leadTimeSchema>, unknown, z.output<typeof leadTimeSchema>>({
+    resolver: zodResolver(leadTimeSchema, { error: formErrorMap }),
+    values: { leadTimeDays: leadTimeDays ?? undefined, amazonLeadTimeDays: amazonLeadTimeDays ?? undefined }
+  })
+  const submit = form.handleSubmit(async (values) => {
+    try {
+      await run({
+        action: "supplier.leadTimes",
+        data: { id, leadTimeDays: values.leadTimeDays ?? null, amazonLeadTimeDays: values.amazonLeadTimeDays ?? null }
+      }).unwrap()
+      setOpen(false)
+      router.refresh()
+    } catch (error) {
+      form.setError("root.server", { message: errorMessage(error, "Couldn’t save the lead times. Try again.") })
+    }
+  })
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={`Lead times for ${name}`} />}>
+        <Clock data-icon="inline-start" />
+        Lead times
+      </DialogTrigger>
+      <DialogContent>
+        <FormProvider {...form}>
+          <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+            <DialogHeader>
+              <DialogTitle>Lead times for {name}</DialogTitle>
+              <DialogDescription>
+                Days from sending a PO until the stock can be sold. Restock orders enough to last this long. Leave a
+                field empty to use the lead time on the Restock page.
+              </DialogDescription>
+            </DialogHeader>
+            <FormNumber name="leadTimeDays" label="To your locations (days)" min={1} max={730} step={1} />
+            <FormNumber
+              name="amazonLeadTimeDays"
+              label="To Amazon (days)"
+              description="Include Amazon’s receiving time. Empty uses the lead time to your locations."
+              min={1}
+              max={730}
+              step={1}
+            />
+            <FormError message={form.formState.errors.root?.server?.message} />
+            <DialogFooter>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </FormProvider>
+      </DialogContent>
+    </Dialog>
   )
 }

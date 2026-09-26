@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { CheckCircle2, Clock, TimerOff } from "lucide-react"
 import { ActionButton } from "@/components/actions"
 import { EmptyState, PageHeader } from "@/components/common"
-import { InviteSupplier, RemoveSupplier } from "@/components/supplier-actions"
+import { InviteSupplier, RemoveSupplier, SupplierLeadTimes } from "@/components/supplier-actions"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,6 +19,20 @@ async function loadSuppliers(orgId: string) {
     .where(and(eq(suppliers.buyerOrgId, orgId), isNull(suppliers.removedAt)))
   const now = Date.now()
   return rows.map((row) => ({ ...row, expired: row.expiresAt !== null && row.expiresAt.getTime() < now }))
+}
+
+function leadTimeSummary(local: number | null, amazon: number | null) {
+  if (local === null && amazon === null) {
+    return "Lead time not set; restock uses its default"
+  }
+  const parts = []
+  if (local !== null) {
+    parts.push(`${local} days to your locations`)
+  }
+  if (amazon !== null) {
+    parts.push(`${amazon} days to Amazon`)
+  }
+  return `Lead time: ${parts.join(", ")}`
 }
 
 export default async function SuppliersPage() {
@@ -56,7 +70,11 @@ export default async function SuppliersPage() {
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{row.name}</ItemTitle>
-                    <ItemDescription>{row.email}</ItemDescription>
+                    <ItemDescription>
+                      {row.email}
+                      <br />
+                      {leadTimeSummary(row.leadTimeDays, row.amazonLeadTimeDays)}
+                    </ItemDescription>
                   </ItemContent>
                   <ItemActions className={sx({ flexWrap: "wrap" })}>
                     {row.supplierOrgId ? (
@@ -90,6 +108,12 @@ export default async function SuppliersPage() {
                         )}
                       </div>
                     )}
+                    <SupplierLeadTimes
+                      id={row.id}
+                      name={row.name}
+                      leadTimeDays={row.leadTimeDays}
+                      amazonLeadTimeDays={row.amazonLeadTimeDays}
+                    />
                     {s.role === "owner" && (
                       <RemoveSupplier id={row.id} name={row.name} joined={row.supplierOrgId !== null} />
                     )}

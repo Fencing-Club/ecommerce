@@ -228,7 +228,7 @@ export async function createOrder(s: Session, raw: unknown) {
 async function missingAmazonIdentities(s: Session, id: string) {
   const { order } = await accessibleOrder(s, id)
   const missing = order.data.items.filter((item) => !item.asin || !item.fnsku)
-  if (!missing.length || order.data.destination !== "awd_us") {
+  if (!missing.length || !amazonDestinations.includes(order.data.destination)) {
     return null
   }
   const amazon = await amazonAccount(s.org.id)
@@ -263,8 +263,8 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     ) {
       throw new Error("This PO has changed. Refresh before submitting")
     }
-    if (order.data.destination !== "awd_us" && order.data.destination !== "warehouse") {
-      throw new Error("POs can go to AWD USA or your own locations for now. Save other destinations as drafts")
+    if (!amazonDestinations.includes(order.data.destination) && order.data.destination !== "warehouse") {
+      throw new Error("POs can go to Amazon or your own locations for now. Save other destinations as drafts")
     }
     if (supplier.removedAt) {
       throw new Error("This supplier was removed. Choose another supplier or add them again")

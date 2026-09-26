@@ -258,6 +258,7 @@ export class Shopify {
                 }),
                 media: z.object({ nodes: z.array(stockMedia).max(1) }),
                 amazonTarget: field.optional(),
+                supplierSku: field.optional(),
                 requiresComponents: z.boolean(),
                 inventoryQuantity: z.number().int().safe().nullable(),
                 productVariantComponents: bundleComponents,
@@ -275,7 +276,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain} productVariants(first:50,after:$after){nodes{id sku title amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -322,6 +323,8 @@ export class Shopify {
       // Existing Shopify merchant metafield: 0 means this item is intentionally not stocked at Amazon.
       amazonStockTarget?: number | null
       caseQuantity?: number | null
+      // Shopify's custom.supplier_sku: the product's SKU in its supplier's catalog.
+      supplierSku?: string | null
       unitCostMinor?: number | null
       costCurrency?: string | null
       // A bundle holds no stock of its own; Shopify reports how many can be sold from its components' stock instead.
@@ -394,6 +397,7 @@ export class Shopify {
                 ? null
                 : Number(variant.amazonTarget.value)
           }),
+          ...(variant.supplierSku !== undefined && { supplierSku: variant.supplierSku?.value.trim() || null }),
           ...(variant.product.caseQuantity !== undefined && {
             caseQuantity:
               variant.product.caseQuantity === null

@@ -42,3 +42,19 @@ globalStyle(`${placeholder} svg`, { width: "1rem", height: "1rem" })
 globalStyle(`${number}`, { "@media": { [media.md]: { minWidth: "6rem" } } })
 // Day counts are short numbers.
 export const days = style({ selectors: { "&&": { width: "9rem" } } })
+export const quantity = style({ selectors: { "&&": { width: "6.5rem", marginLeft: "auto", textAlign: "right" } } })
+export const explain = style([
+  summary,
+  { display: "flex", flexDirection: "column", gap: space(1), paddingLeft: space(4), listStyle: "decimal" }
+])
+export const search = style({ selectors: { "&&": { width: "auto", minWidth: "14rem", flex: "1 1 14rem" } } })
+export const searchBox = style({ position: "relative", display: "flex", alignItems: "center" })
+globalStyle(`${searchBox} > svg`, {
+  position: "absolute",
+  left: space(2.5),
+  width: "1rem",
+  height: "1rem",
+  color: vars.color.mutedForeground,
+  pointerEvents: "none"
+})
+globalStyle(`${searchBox} input`, { paddingLeft: space(8) })

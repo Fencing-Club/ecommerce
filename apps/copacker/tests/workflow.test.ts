@@ -102,6 +102,7 @@ import { runNextJob } from "../src/server/queue"
 import { readSalesDemand } from "../src/server/sales"
 import { listSalesOrders, requestSalesSync, storedDemand, syncChunks } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
+import { saveSupplierLeadTimes } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
 
@@ -2746,5 +2747,19 @@ describe("stored sales orders", () => {
     const [sync] = await database.select().from(tables.salesSyncs)
     expect(sync).toMatchObject({ status: "failed", errorCode: "refresh_failed", coveredTo: null })
     await expect(requestSalesSync(supplier, "amazon")).rejects.toThrow("buyer workspace")
+  })
+})
+
+describe("supplier lead times", () => {
+  it("saves lead times only for the buyer's own current suppliers", async () => {
+    await saveSupplierLeadTimes(buyerId, { id: supplierLinkId, leadTimeDays: 45, amazonLeadTimeDays: 60 })
+    const [link] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
+    expect(link).toMatchObject({ leadTimeDays: 45, amazonLeadTimeDays: 60 })
+    await expect(
+      saveSupplierLeadTimes(otherId, { id: supplierLinkId, leadTimeDays: 1, amazonLeadTimeDays: null })
+    ).rejects.toThrow("removed")
+    await expect(
+      saveSupplierLeadTimes(buyerId, { id: supplierLinkId, leadTimeDays: 0, amazonLeadTimeDays: null })
+    ).rejects.toThrow("expected number to be >=1")
   })
 })

@@ -153,6 +153,7 @@ export function EmptyState({
 }
 
 const destinationNames: Record<string, string> = {
+  amazon: "Amazon",
   awd_us: "AWD USA",
   awd_china: "AWD China",
   fba: "FBA",

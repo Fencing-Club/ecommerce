@@ -28,11 +28,15 @@ const stockApi = api.injectEndpoints({
     })
   })
 })
+// Amazon is one source to the buyer: its sync refreshes FBA and AWD together.
 const sources = [
-  { title: "Shopify", provider: "shopify", selection: { source: "shopify" } },
-  { title: "Amazon FBA", provider: "amazon", selection: { source: "fba", marketplaceId: "ATVPDKIKX0DER" } },
-  { title: "Amazon AWD", provider: "amazon", selection: { source: "awd" } }
-] as const satisfies { title: string; provider: string; selection: Selection }[]
+  { title: "Shopify", provider: "shopify", selections: [{ source: "shopify" }] },
+  {
+    title: "Amazon",
+    provider: "amazon",
+    selections: [{ source: "fba", marketplaceId: "ATVPDKIKX0DER" }, { source: "awd" }]
+  }
+] as const satisfies { title: string; provider: string; selections: Selection[] }[]
 type Source = (typeof sources)[number]
 
 const failureMessages: Record<string, (title: string) => string> = {
@@ -45,40 +49,40 @@ function failureMessage(title: string, errorCode: string | null) {
   return message ? message(title) : "Last sync failed. Try again or check your connection in Settings."
 }
 
-// Polls a source's saved sync status. Provider calls happen only through the Sync button.
-function useSource({ selection }: Source, connected: boolean) {
-  const status = stockApi.useInventoryStatusQuery(selection, {
+// Polls a selection's saved sync status. Provider calls happen only through the Sync button.
+function useSelection(selection: Selection, connected: boolean) {
+  return stockApi.useInventoryStatusQuery(selection, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true,
     skip: !connected
   })
-  return status
 }
+type Status = ReturnType<typeof useSelection>
 
-function SourceRow({
-  source,
-  status,
-  refetch
-}: {
-  source: Source
-  status: ReturnType<typeof useSource>
-  refetch: () => void
-}) {
+function SourceRow({ source, statuses }: { source: Source; statuses: Status[] }) {
   const [sync, mutation] = stockApi.useSyncInventoryMutation()
-  const data = status.currentData
-  const active = mutation.isLoading || data?.refresh.status === "queued" || data?.refresh.status === "running"
+  const data = statuses.map((status) => status.currentData)
+  const active =
+    mutation.isLoading || data.some((item) => item?.refresh.status === "queued" || item?.refresh.status === "running")
+  const failed = data.find((item) => item?.refresh.status === "failed")
+  // The source is as fresh as its oldest part; it counts as synced once every part has been.
+  const observed = data.map((item) => item?.observedAt ?? null)
+  const observedAt = observed.every((value) => value !== null) ? observed.toSorted()[0]! : null
+  const externalAccountId = data.find((item) => item?.externalAccountId)?.externalAccountId ?? null
   async function startSync() {
     try {
-      await sync(source.selection).unwrap()
-      refetch()
+      await Promise.all(source.selections.map((selection) => sync(selection).unwrap()))
+      for (const status of statuses) {
+        void status.refetch()
+      }
     } catch {
       // RTK Query retains the failure for the inline message.
     }
   }
   let state = "Not synced yet"
-  if (status.isLoading) {
+  if (statuses.some((status) => status.isLoading)) {
     state = "Loading sync status…"
-  } else if (status.isError) {
+  } else if (statuses.some((status) => status.isError)) {
     state = "Sync status is unavailable."
   } else if (active) {
     state = "Syncing. You can leave this page."
@@ -88,19 +92,19 @@ function SourceRow({
       <span className={styles.sourceName}>
         <span className={styles.title}>{source.title}</span>
         <span className={styles.detail} aria-live="polite">
-          {data?.observedAt && !active ? (
+          {observedAt && !active ? (
             <>
               Synced{" "}
-              <time dateTime={data.observedAt}>
-                {new Date(data.observedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+              <time dateTime={observedAt}>
+                {new Date(observedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
               </time>
             </>
           ) : (
             state
           )}
         </span>
-        {data?.refresh.status === "failed" && !active && (
-          <span className={styles.problem}>{failureMessage(source.title, data.refresh.errorCode)}</span>
+        {failed && !active && (
+          <span className={styles.problem}>{failureMessage(source.title, failed.refresh.errorCode)}</span>
         )}
         {mutation.isError && (
           <span role="alert" className={styles.problem}>
@@ -109,9 +113,9 @@ function SourceRow({
         )}
       </span>
       <span className={styles.sourceActions}>
-        {source.selection.source === "shopify" && data?.refresh.status === "failed" && (
+        {source.provider === "shopify" && failed && (
           <form action="/api/connections/shopify">
-            <input type="hidden" name="shop" value={data.externalAccountId ?? ""} />
+            <input type="hidden" name="shop" value={externalAccountId ?? ""} />
             <Button type="submit" variant="outline" size="sm">
               Reconnect Shopify
             </Button>
@@ -121,7 +125,7 @@ function SourceRow({
           variant="outline"
           size="sm"
           onClick={startSync}
-          disabled={active || status.isLoading || !data?.externalAccountId}
+          disabled={active || statuses.some((status) => status.isLoading) || !externalAccountId}
           aria-label={`Sync ${source.title}`}
         >
           <RefreshCw data-icon="inline-start" />
@@ -134,10 +138,9 @@ function SourceRow({
 
 // One view of stock across Shopify and Amazon: each source's sync, then the combined product list.
 export function InventorySync({ providers }: { providers: string[] }) {
-  const shopify = useSource(sources[0], providers.includes("shopify"))
-  const fba = useSource(sources[1], providers.includes("amazon"))
-  const awd = useSource(sources[2], providers.includes("amazon"))
-  const statuses = [shopify, fba, awd]
+  const shopify = useSelection(sources[0].selections[0], providers.includes("shopify"))
+  const fba = useSelection(sources[1].selections[0], providers.includes("amazon"))
+  const awd = useSelection(sources[1].selections[1], providers.includes("amazon"))
   if (providers.length === 0) {
     return (
       <p>
@@ -145,12 +148,14 @@ export function InventorySync({ providers }: { providers: string[] }) {
       </p>
     )
   }
-  const connected = sources.flatMap((source, index) =>
-    providers.includes(source.provider) ? [{ source, status: statuses[index]! }] : []
-  )
-  // A finished sync of any source changes this, which reloads the product list.
-  const syncKey = connected.map(({ status }) => status.currentData?.observedAt ?? "").join("|")
-  const anySynced = connected.some(({ status }) => status.currentData?.observedAt)
+  const connected = [
+    { source: sources[0], statuses: [shopify] },
+    { source: sources[1], statuses: [fba, awd] }
+  ].filter(({ source }) => providers.includes(source.provider))
+  const all = connected.flatMap(({ statuses }) => statuses)
+  // A finished sync of any part changes this, which reloads the product list.
+  const syncKey = all.map((status) => status.currentData?.observedAt ?? "").join("|")
+  const anySynced = all.some((status) => status.currentData?.observedAt)
   return (
     <Card>
       <CardHeader>
@@ -159,8 +164,8 @@ export function InventorySync({ providers }: { providers: string[] }) {
       </CardHeader>
       <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
         <ul className={styles.sources} aria-label="Sources">
-          {connected.map(({ source, status }) => (
-            <SourceRow key={source.title} source={source} status={status} refetch={() => void status.refetch()} />
+          {connected.map(({ source, statuses }) => (
+            <SourceRow key={source.title} source={source} statuses={statuses} />
           ))}
         </ul>
         {anySynced ? (

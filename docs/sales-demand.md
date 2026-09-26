@@ -4,6 +4,10 @@
 
 Restock reads orders copied into `sales_orders`, not the providers. The Sales page (`/sales`) queues a `sales` worker job per source. The first sync copies the last 180 days (60 for Shopify without read_all_orders) in 14-day periods; later syncs copy from 30 days before the stored end, so late fulfillments and cancellations are picked up. Each period replaces the stored orders created in it, in one transaction, so orders the source drops (cancelled or test) disappear. `sales_syncs` records the unbroken stored period; restock's sales period ends at that period's end and is refused if it would reach further back than the stored orders. Changing the connected account starts over. A background schedule will replace the manual Sync button.
 
+## Restock
+
+The Restock page (`POST /api/restock/plan`) works per channel: Amazon as a whole, or one Shopify location counted in inventory. Amazon combines FBA fulfillable and AWD distributable stock, FBA and AWD inbound, open POs to Amazon destinations (the larger of Amazon's inbound and the POs, since a shipped PO appears in both), FBA and FBM sales, and Shopify's Amazon stock target (0 means not stocked there). Which Amazon warehouse stock goes to is decided when shipping; POs can use the "amazon" destination, which ships to AWD USA until FBA inbound is supported. Each variation's supplier is the one it was last ordered from, else the one linked supplier whose active catalog holds its Shopify `custom.supplier_sku`. The supplier's lead time (to the buyer's locations, or to Amazon) replaces the page default. Quantities cover the lead time at the sales period's rate plus the stock target, minus available and incoming stock, then rise to the minimum order and round up to whole cases. Suggestions are grouped by supplier; each group opens a new PO with the ticked lines and edited quantities. Restock never suggests moving the buyer's own stock to Amazon.
+
 ## Manual API
 
 POST `/api/inventory/demand` requires a buyer session and same-origin Origin header. The server chooses the connected account; clients cannot supply an organization, seller or shop ID.

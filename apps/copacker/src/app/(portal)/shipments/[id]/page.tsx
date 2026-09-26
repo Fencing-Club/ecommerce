@@ -75,7 +75,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       />
       <PageHeader
         title={shipment.amazonShipmentId ?? "Prepare your shipment"}
-        description={`${order.data.reference} to ${formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
+        description={`${order.data.reference} to ${order.data.destination === "amazon" ? "Amazon AWD USA" : formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
       >
         <Status status={shipment.status} />
       </PageHeader>

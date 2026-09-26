@@ -5,8 +5,10 @@ import { db } from "@/db"
 import { connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
 import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
+import { ReconnectRequiredError } from "./errors"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
+import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { describeError, stockErrorCode } from "./stock"
 
 export const salesSources = ["shopify", "amazon"] as const
@@ -349,4 +351,48 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
     orders: rows.map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data)),
     total: total?.total ?? 0
   }
+}
+
+type SourceSales = { rows: DemandRow[]; gaps: DemandGap[] }
+
+// Demand from every connected source for restock, with what went wrong for any source that couldn't be read.
+export async function restockDemand(orgId: string, providers: string[], days: number) {
+  let shopifySales: SourceSales | null = null
+  let amazonSales: SourceSales | null = null
+  const sources = []
+  for (const source of salesSources) {
+    if (!providers.includes(source)) {
+      continue
+    }
+    try {
+      const result = await storedDemand(orgId, source, days)
+      if (source === "shopify") {
+        shopifySales = result
+      } else {
+        amazonSales = result
+      }
+      sources.push({
+        source,
+        error: null,
+        window: result.window,
+        // Units the source reported but couldn't place, such as unfulfilled orders or unmapped sales channels.
+        gapUnits: result.gaps.reduce((total, gap) => total + (gap.units ?? 0), 0),
+        gapReasons: summarizeDemandGaps(result.gaps)
+      })
+    } catch (error) {
+      console.error(JSON.stringify({ event: "sales_read_failed", source, orgId, error: describeError(error) }))
+      sources.push({
+        source,
+        // Setup problems say what to do; anything else is logged and summarized.
+        error:
+          error instanceof SalesSyncError || error instanceof ReconnectRequiredError
+            ? error.message
+            : "Sales couldn't be read. Try again.",
+        window: null,
+        gapUnits: 0,
+        gapReasons: {}
+      })
+    }
+  }
+  return { shopifySales, amazonSales, sources }
 }

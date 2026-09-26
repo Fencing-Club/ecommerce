@@ -12,9 +12,10 @@ export const prepCategories = [
 ] as const
 export type PrepCategory = (typeof prepCategories)[number]
 // "warehouse" is one of the buyer's own locations (a saved delivery address); the others ship toward Amazon.
-export const destinationSchema = z.enum(["awd_us", "awd_china", "fba", "forwarder", "warehouse"])
+// "amazon" leaves the warehouse to be chosen when shipping; AWD USA is the only one Copacker can book today.
+export const destinationSchema = z.enum(["amazon", "awd_us", "awd_china", "fba", "forwarder", "warehouse"])
 // Destinations that create an Amazon shipment and follow Amazon's carton and labeling rules.
-export const amazonDestinations: readonly z.infer<typeof destinationSchema>[] = ["awd_us"]
+export const amazonDestinations: readonly z.infer<typeof destinationSchema>[] = ["amazon", "awd_us"]
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),

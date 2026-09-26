@@ -77,6 +77,8 @@ const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 // Where a PO's stock will appear: Amazon's AWD or FBA pool for Amazon shipments, or the Shopify location a delivery
 // address is linked to. Other destinations (AWD China, forwarders) count only toward "All locations".
 const destinationPools: Partial<Record<OrderInput["destination"], string>> = {
+  // Amazon POs ship to AWD until FBA inbound shipments are supported.
+  amazon: "amazon:awd",
   awd_us: "amazon:awd",
   fba: "amazon:fba"
 }

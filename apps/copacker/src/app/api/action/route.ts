@@ -37,7 +37,7 @@ import {
 } from "@/server/orders"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
-import { removeSupplier } from "@/server/suppliers"
+import { removeSupplier, saveSupplierLeadTimes } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 export async function POST(request: Request) {
@@ -191,6 +191,11 @@ export async function POST(request: Request) {
       requireBuyer(s)
       requireOwner(s)
       await removeSupplier(s.org.id, id())
+      return Response.json({ ok: true })
+    }
+    if (action === "supplier.leadTimes") {
+      requireBuyer(s)
+      await saveSupplierLeadTimes(s.org.id, data)
       return Response.json({ ok: true })
     }
     if (action === "supplier.accept") {

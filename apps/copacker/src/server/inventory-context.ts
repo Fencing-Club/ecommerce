@@ -93,6 +93,9 @@ export async function inventoryContext(orgId: string) {
     // Shopify rows with Amazon's pools added, counted alongside the store's own locations.
     inventoryRows: pooled.rows,
     inventoryClassifications: withPools,
-    amazonOnly: pooled.amazonOnly
+    amazonOnly: pooled.amazonOnly,
+    // Amazon's own rows, for restocking Amazon; null until that pool has synced.
+    fbaRows: amazonSnapshots.some((row) => row.data?.source === "fba") ? fba : null,
+    awdRows: amazonSnapshots.some((row) => row.data?.source === "awd") ? awd : null
   }
 }

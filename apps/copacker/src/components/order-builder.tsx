@@ -21,6 +21,7 @@ import * as styles from "./order-builder.css"
 import { sx } from "@/styles/sprinkles.css"
 
 const destinations = [
+  { value: "amazon", label: "Amazon (warehouse chosen when shipping)" },
   { value: "awd_us", label: "Amazon AWD USA" },
   { value: "warehouse", label: "Your location" },
   { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
@@ -53,16 +54,19 @@ export function OrderBuilder({
   suppliers,
   deliveries = [],
   initialItems = [],
-  initialDestination = "awd_us",
-  initialDeliveryId
+  initialDestination = "amazon",
+  initialDeliveryId,
+  initialSupplierId
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
   deliveries?: Array<{ id: string; name: string }>
   // Lines added before the builder opens, such as a reorder from Inventory.
   initialItems?: ReturnType<typeof orderLine>[]
-  initialDestination?: "awd_us" | "fba" | "warehouse"
+  initialDestination?: "amazon" | "awd_us" | "fba" | "warehouse"
   initialDeliveryId?: string
+  // The supplier restock grouped these lines under.
+  initialSupplierId?: string
 }) {
   const [query, setQuery] = useState("")
   const [showResults, setShowResults] = useState(false)
@@ -72,7 +76,7 @@ export function OrderBuilder({
     action: "order.create",
     defaultValues: {
       reference: "",
-      supplierId: "",
+      supplierId: initialSupplierId ?? "",
       destination: initialDestination,
       deliveryId: initialDeliveryId,
       dueDate: "",

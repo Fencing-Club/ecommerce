@@ -44,6 +44,10 @@ export const suppliers = pgTable(
     expiresAt: timestamp({ withTimezone: true }),
     // Set when the buyer removes the supplier. The row stays so earlier POs keep their supplier.
     removedAt: timestamp({ withTimezone: true }),
+    // Days from ordering to stock arriving at the buyer's own locations, and at Amazon. Restock orders enough to last
+    // this long; unset uses the restock page's lead time.
+    leadTimeDays: integer(),
+    amazonLeadTimeDays: integer(),
     createdAt: createdAt()
   },
   // One buyer may work with several supplier workspaces owned by the same email.

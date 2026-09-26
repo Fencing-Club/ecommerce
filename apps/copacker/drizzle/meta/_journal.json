@@ -64,6 +64,13 @@
       "when": 1790394771031,
       "tag": "0008_sales_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790395397912,
+      "tag": "0009_supplier_lead_times",
+      "breakpoints": true
     }
   ]
 }
