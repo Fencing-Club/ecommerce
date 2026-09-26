@@ -1,7 +1,6 @@
 import { createHmac, randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { ShopifyRequestError } from "@repo/aisle/shopify"
-import { sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
@@ -280,32 +279,10 @@ describe("Shopify privacy webhooks", () => {
     expect(sent.text).not.toContain("#1002")
   })
 
-  it("removes an erased customer's ID from their stored orders, keeping only IDs from the request", async () => {
-    await storeOrder(buyerId, 1001, "CORD-2")
-    await storeOrder(buyerId, 1002, "CORD-2")
-    await storeOrder(buyerId, 1003, "CORD-2")
-    await database.execute(
-      sql`update sales_orders set data = data || jsonb_build_object('customerId', case "orderId"
-        when 'gid://shopify/Order/1003' then 'gid://shopify/Customer/8' else 'gid://shopify/Customer/7' end)`
-    )
-    const body = JSON.stringify({
-      shop_domain: shop,
-      customer: { id: 7, email: "customer@example.com", phone: "555-0100" },
-      orders_to_redact: [1001]
-    })
+  it("acknowledges customer erasure requests, since no customer details are stored", async () => {
+    const body = JSON.stringify({ shop_domain: shop, customer: { id: 7 }, orders_to_redact: [1001] })
     expect((await webhook(delivery("customers/redact", body))).status).toBe(200)
-    const [job] = await queued("shopify-compliance")
-    expect(JSON.stringify(job!.payload)).not.toContain("customer@example.com")
-    await shopifyComplianceJob(job!.payload)
-    const stored = await database.select().from(tables.salesOrders)
-    expect(
-      Object.fromEntries(stored.map((row) => [row.orderId, "lines" in row.data ? (row.data.customerId ?? null) : null]))
-    ).toEqual({
-      "gid://shopify/Order/1001": null,
-      "gid://shopify/Order/1002": null,
-      // Another customer's order keeps its ID.
-      "gid://shopify/Order/1003": "gid://shopify/Customer/8"
-    })
+    expect(await database.select().from(tables.jobs)).toEqual([])
   })
 
   it("rejects a signed privacy request it can't read", async () => {
