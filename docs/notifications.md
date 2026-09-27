@@ -31,10 +31,14 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   history copied from that store.
 - Cut over from HTTPS webhooks on 2026-09-27. Tag changes on order #9103 were traced through EventBridge, the queue
   and the worker to the stored order, and the HTTPS subscriptions and `/api/webhooks/shopify` route were then removed.
-- As of 2026-09-27 the `shopify.app.toml` release is pending: the Shopify CLI (4.8.0) is refused with "You are not a
-  member of the requested organization" for andrew@fencing.club, although that account manages the app in the Dev
-  Dashboard. Until it's released, the active app version (copacker-5) has no privacy topics and lacks the
-  `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes.
+- Releasing `shopify.app.toml`: the Shopify CLI signed in with an account is refused for this app ("You are not a
+  member of the requested organization"), because the app belongs to the store's organization. Deploy with the app's
+  automation token instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
+  `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
+  `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
+  Dashboard before releasing it. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
+  `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes, which a store
+  approves by reconnecting.
 
 ## Amazon notifications
 
