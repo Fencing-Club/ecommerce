@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import * as styles from "./overview.css"
+import { srOnly } from "@/styles/utilities.css"
 
 // Chooses the channel every card on the Overview shows: all of them, Amazon, or one Shopify location.
 export function ChannelFilter({ channels, value }: { channels: { key: string; label: string }[]; value: string }) {
@@ -13,9 +14,12 @@ export function ChannelFilter({ channels, value }: { channels: { key: string; la
   const shopifyLocations = channels.filter((channel) => channel.key !== "amazon").length
   return (
     <Field orientation="horizontal" className={styles.channelFilter}>
-      <FieldLabel htmlFor="overview-channel">Channel</FieldLabel>
+      <FieldLabel htmlFor="overview-channel" className={srOnly}>
+        Channel
+      </FieldLabel>
       <NativeSelect
         id="overview-channel"
+        size="sm"
         value={value}
         onChange={(event) => {
           // The period stays as chosen.

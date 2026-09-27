@@ -205,11 +205,11 @@ export function summarizeRestock(
       sold: number
       available: number
       daysRemaining: number | null
-      status: "stockout" | "reorder" | "stocked"
+      status: "stockout" | "reorder" | "stocked" | "out"
       channels: { key: string; label: string; sold: number }[]
     }
   >()
-  const urgency = { stockout: 2, reorder: 1, stocked: 0 } as const
+  const urgency = { stockout: 2, reorder: 1, stocked: 0, out: 0 } as const
   for (const channel of channels) {
     for (const line of channel.lines) {
       if (!line.sold) {
@@ -277,7 +277,11 @@ export function summarizeRestock(
         .toSorted((a, b) => (b.value?.minor ?? -1) - (a.value?.minor ?? -1) || b.available - a.available)
         .slice(0, 6)
     },
+    // An item restock can't plan (such as a bundle held as its own item) isn't "stocked" when none is on hand.
     bestSellers: [...sellers.values()]
+      .map((seller) =>
+        seller.status === "stocked" && seller.available === 0 ? { ...seller, status: "out" as const } : seller
+      )
       .toSorted((a, b) => b.sold - a.sold)
       .slice(0, 8)
       .map((seller) => ({

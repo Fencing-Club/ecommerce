@@ -5,15 +5,20 @@ import { vars } from "@/styles/theme.css"
 export const page = style({ display: "flex", flexDirection: "column", gap: space(6) })
 
 // Grids: four KPI tiles, a wide chart beside a narrow card, and two even halves.
+// Two tiles a row on phones (an odd last tile spans the row), three on tablets, five on wide screens.
 export const kpis = style({
   display: "grid",
-  gap: space(4),
-  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: space(3),
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   "@media": {
-    [media.sm]: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" },
+    [media.sm]: { gap: space(4) },
     [media.lg]: { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" },
     [media.xl]: { gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }
   }
+})
+globalStyle(`${kpis} > :last-child:nth-child(odd)`, {
+  gridColumn: "1 / -1",
+  "@media": { [media.lg]: { gridColumn: "auto" } }
 })
 export const wide = style({
   display: "grid",
@@ -136,7 +141,14 @@ export const kpiBody = style({
   justifyContent: "space-between",
   gap: space(3)
 })
-export const sparkline = style({ width: "6.5rem", height: space(10), flexShrink: 0 })
+// Hidden on phones, where two tiles share a row and the number needs the width.
+export const sparkline = style({
+  display: "none",
+  width: "6.5rem",
+  height: space(10),
+  flexShrink: 0,
+  "@media": { [media.sm]: { display: "block" } }
+})
 
 const deltaBase = style({
   display: "inline-flex",
@@ -157,7 +169,10 @@ export const delta = styleVariants({
 })
 
 // Chart cards.
-export const chart = style({ width: "100%", height: "16rem" })
+// A chart that grows to fill its card, so it matches the height of the card beside it.
+export const chartGrow = style({ width: "100%", flex: 1, minHeight: "16rem" })
+export const fillCard = style({ display: "flex", flexDirection: "column" })
+export const fill = style({ display: "flex", flexDirection: "column", gap: space(4), flex: 1, minWidth: 0 })
 export const chartShort = style({ width: "100%", height: "13rem" })
 export const legend = style({ display: "flex", flexWrap: "wrap", gap: space(5), ...fontSize.xs })
 export const legendItem = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
@@ -298,17 +313,24 @@ export const stageCount = style({ fontWeight: 600, fontVariantNumeric: "tabular-
 export const stageDot = style({ width: space(2), height: space(2), borderRadius: vars.radius.full, flexShrink: 0 })
 
 // Best sellers.
-export const product = style({ display: "flex", alignItems: "center", gap: space(3), minWidth: "12rem" })
-export const productText = style({ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 })
-export const productTitle = style({
-  ...fontSize.sm,
-  fontWeight: 500,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  maxWidth: "22rem"
+// Product names and details wrap to two lines at most, so a table fits its card instead of scrolling sideways.
+export const product = style({
+  display: "flex",
+  alignItems: "center",
+  gap: space(3),
+  minWidth: "10rem",
+  whiteSpace: "normal"
 })
-export const productDetail = style({ ...fontSize.xs, color: vars.color.mutedForeground })
+export const productText = style({ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 })
+const twoLines = {
+  display: "-webkit-box",
+  WebkitBoxOrient: "vertical",
+  WebkitLineClamp: 2,
+  overflow: "hidden",
+  overflowWrap: "anywhere"
+} as const
+export const productTitle = style({ ...fontSize.sm, fontWeight: 500, maxWidth: "22rem", ...twoLines })
+export const productDetail = style({ ...fontSize.xs, color: vars.color.mutedForeground, ...twoLines })
 export const thumb = style({
   width: space(9),
   height: space(9),
@@ -357,23 +379,40 @@ export const kpiNote = style({ flexBasis: "100%", color: vars.color.mutedForegro
 export const figureNote = style({ ...fontSize.xs, color: vars.color.mutedForeground })
 
 // Links under the days-of-cover chart, one per group, opening those items in Restock.
-export const coverLinks = style({ display: "flex", flexWrap: "wrap", gap: space(2), listStyle: "none" })
-export const coverLink = style({
-  display: "inline-flex",
+// Days of cover: one row per group, each a link to its items.
+export const coverRows = style({ display: "flex", flexDirection: "column", gap: space(0.5), listStyle: "none" })
+export const coverRow = style({
+  display: "grid",
+  gridTemplateColumns: "7rem minmax(0, 1fr) 3rem",
   alignItems: "center",
-  gap: space(1.5),
-  height: space(7),
-  paddingInline: space(2.5),
-  borderRadius: vars.radius.full,
-  boxShadow: `inset 0 0 0 1px ${vars.color.border}`,
-  ...fontSize.xs,
-  fontWeight: 500,
+  gap: space(3),
+  padding: `${space(1.5)} ${space(2)}`,
+  borderRadius: vars.radius.md,
+  ...fontSize.sm,
   color: vars.color.foreground,
   textDecoration: "none",
   transition: "background-color 150ms ease",
-  selectors: { "&:hover": { backgroundColor: vars.color.muted }, "&:focus-visible": focusRing }
+  selectors: {
+    "a&:hover": { backgroundColor: vars.color.muted },
+    "a&:focus-visible": focusRing,
+    "span&": { color: vars.color.mutedForeground }
+  }
 })
-export const coverCount = style({ color: vars.color.mutedForeground, fontVariantNumeric: "tabular-nums" })
+export const coverLabel = style({ whiteSpace: "nowrap" })
+export const coverTrack = style({
+  height: space(2.5),
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.muted,
+  overflow: "hidden"
+})
+export const coverFill = style({
+  display: "block",
+  height: "100%",
+  minWidth: space(0.5),
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.chart1
+})
+export const coverCount = style({ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 500 })
 
 // Freshness line and channel filter above the cards.
 export const toolbar = style({

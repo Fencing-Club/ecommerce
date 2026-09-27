@@ -1,5 +1,9 @@
 import {
   AlertTriangle,
+  Bell,
+  CalendarClock,
+  ChartColumn,
+  ListChecks,
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
@@ -69,7 +73,10 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Finish setting up</CardTitle>
+        <CardTitle className={styles.sectionTitle}>
+          <ListChecks aria-hidden />
+          Finish setting up
+        </CardTitle>
         <CardDescription>
           {done} of {steps.length} done. Each step fills in more of this page.
         </CardDescription>
@@ -114,7 +121,10 @@ export function Attention({ items }: { items: AttentionItem[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Needs attention</CardTitle>
+        <CardTitle className={styles.sectionTitle}>
+          <Bell aria-hidden />
+          Needs attention
+        </CardTitle>
         <CardDescription>
           {items.length
             ? "The things that need you, most urgent first."
@@ -272,7 +282,10 @@ export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Days of cover</CardTitle>
+        <CardTitle className={styles.sectionTitle}>
+          <CalendarClock aria-hidden />
+          Days of cover
+        </CardTitle>
         <CardDescription>
           How long each item’s stock lasts in each channel at the last {weeks} weeks’ sales rate. Select a group to see
           its items.
@@ -324,14 +337,18 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
       value: upcoming.reorders,
       href: restockHref({ status: "order", channel })
     },
-    ...upcoming.purchaseOrders.map((bucket) => ({
-      key: bucket.key,
-      label: bucket.label,
-      detail: bucket.orders ? plural(bucket.orders, "purchase order", "purchase orders") : "No purchase orders",
-      value: bucket.value,
-      href: "/orders"
-    }))
+    // Only the due dates that have purchase orders.
+    ...upcoming.purchaseOrders
+      .filter((bucket) => bucket.orders > 0)
+      .map((bucket) => ({
+        key: bucket.key,
+        label: bucket.label,
+        detail: plural(bucket.orders, "purchase order", "purchase orders"),
+        value: bucket.value,
+        href: "/orders"
+      }))
   ]
+  const noneSent = upcoming.purchaseOrders.every((bucket) => bucket.orders === 0)
   return (
     <Card>
       <CardHeader>
@@ -358,6 +375,7 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
             </Link>
           ))}
         </div>
+        {noneSent && <p className={styles.note}>No sent purchase orders are due.</p>}
       </CardContent>
     </Card>
   )
@@ -529,7 +547,8 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
 const sellerStatus = {
   stockout: { label: "Reorder now", variant: "destructive" },
   reorder: { label: "Reorder soon", variant: "secondary" },
-  stocked: { label: "Stocked", variant: "outline" }
+  stocked: { label: "In stock", variant: "outline" },
+  out: { label: "Out of stock", variant: "destructive" }
 } as const
 
 export function BestSellers({ restock }: { restock: Overview["restock"] }) {
@@ -710,7 +729,10 @@ export function Purchasing({ purchasing }: { purchasing: Overview["purchasing"] 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Purchasing</CardTitle>
+        <CardTitle className={styles.sectionTitle}>
+          <ChartColumn aria-hidden />
+          Purchasing
+        </CardTitle>
         <CardDescription>
           {purchasing.spend.currency
             ? `Purchase orders sent each month, in ${purchasing.spend.currency}.`

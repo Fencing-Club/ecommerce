@@ -1,5 +1,6 @@
 import {
   ArrowDownRight,
+  ChartLine,
   ArrowUpRight,
   Minus,
   Package,
@@ -18,7 +19,8 @@ import {
   formatChange,
   formatMoney,
   formatNumber,
-  formatPercent
+  formatPercent,
+  wholeMoney
 } from "@/lib/format"
 import type { Overview } from "@/server/overview"
 import { SalesTrend, Sparkline } from "./overview-charts"
@@ -142,8 +144,9 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
   const versus = period.comparison === "previousYear" ? "vs previous year" : "vs previous period"
   const hasSales = trend(sales, (cell) => cell.orders).some((value) => value !== null)
   const { currency, profit, fees } = sales
-  // Sales compare only when neither period has orders without prices.
-  const salesComparable = previous !== null && previous.unpriced === 0 && totals.unpriced === 0
+  // Sales compare the priced orders of both periods; a few orders Amazon hasn't priced yet are noted, not a reason to
+  // hide the change.
+  const salesComparable = previous !== null
   const notes: string[] = []
   if (fees.estimatedOrders) {
     notes.push(`Fees for ${formatNumber(fees.estimatedOrders)} recent orders are estimated`)
@@ -166,7 +169,7 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
       <Kpi
         label="Sales"
         icon={Receipt}
-        value={currency ? compactMoney(totals.revenueMinor, currency) : unavailable}
+        value={currency ? wholeMoney(totals.revenueMinor, currency) : unavailable}
         trend={trend(sales, (cell) => cell.revenueMinor)}
       >
         {currency ? (
@@ -177,7 +180,9 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
               <span>{period.label}, before tax and shipping</span>
             )}
             {totals.unpriced > 0 && (
-              <span className={styles.kpiNote}>{formatNumber(totals.unpriced)} orders without prices left out</span>
+              <span className={styles.kpiNote}>
+                {formatNumber(totals.unpriced)} {totals.unpriced === 1 ? "order isn’t" : "orders aren’t"} priced yet
+              </span>
             )}
           </>
         ) : (
@@ -188,7 +193,7 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
         label="Gross profit"
         icon={PiggyBank}
         value={
-          profit.currency && profit.costedRevenueMinor ? compactMoney(profit.profitMinor, profit.currency) : unavailable
+          profit.currency && profit.costedRevenueMinor ? wholeMoney(profit.profitMinor, profit.currency) : unavailable
         }
       >
         {profit.margin === null ? (
@@ -261,9 +266,12 @@ export function OverviewDashboard({ data }: { data: Overview }) {
       <SalesKpis sales={sales} period={data.period} />
 
       <div className={styles.wide}>
-        <Card>
+        <Card className={styles.fillCard}>
           <CardHeader>
-            <CardTitle>Sales by channel</CardTitle>
+            <CardTitle className={styles.sectionTitle}>
+              <ChartLine aria-hidden />
+              Sales by channel
+            </CardTitle>
             <CardDescription>
               {data.channel && data.channel.key !== "amazon"
                 ? `Shopify orders shipped from ${data.channel.label}. Orders not yet fulfilled aren’t counted.`
@@ -274,9 +282,9 @@ export function OverviewDashboard({ data }: { data: Overview }) {
               <CardLink href="/sales">Orders</CardLink>
             </CardAction>
           </CardHeader>
-          <CardContent>
+          <CardContent className={styles.fill}>
             {sales.daily.some((row) => sales.sources.some((source) => row[source] !== null)) ? (
-              <div className={styles.stack}>
+              <div className={styles.fill}>
                 <SalesTrend
                   daily={sales.daily}
                   previous={sales.previousDaily}
@@ -309,19 +317,25 @@ export function OverviewDashboard({ data }: { data: Overview }) {
         <DaysOfCover restock={restock} channel={channel} />
       </div>
 
+      {/* Spending beside the stock it's tied up in; the two short purchasing cards share a column. */}
       <div className={styles.halves}>
-        <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+        <div className={styles.stack}>
+          <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+          <OpenOrders purchasing={purchasing} />
+        </div>
         <SlowStock restock={restock} />
       </div>
 
       <div className={styles.halves}>
         <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
-        <div className={styles.stack}>
-          {sales.customers && <Customers customers={sales.customers} period={data.period} />}
+        {sales.customers ? (
+          <Customers customers={sales.customers} period={data.period} />
+        ) : (
           <Shipments stages={data.shipments} />
-          <OpenOrders purchasing={purchasing} />
-        </div>
+        )}
       </div>
+
+      {sales.customers && <Shipments stages={data.shipments} />}
 
       <BestSellers restock={restock} />
 

@@ -22,6 +22,17 @@ export function compactMoney(minor: number, currency: string) {
   }).format(major)
 }
 
+// A headline amount in whole units, such as $16,997, shortened only from a million ($1.2M).
+export function wholeMoney(minor: number, currency: string) {
+  const major = minor / 100
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    notation: Math.abs(major) < 1000000 ? "standard" : "compact",
+    maximumFractionDigits: Math.abs(major) < 1000000 ? 0 : 1
+  }).format(major)
+}
+
 // The change from `previous` to `current` as a fraction, or null when there's nothing to compare against.
 export function change(current: number, previous: number | null | undefined) {
   if (previous === null || previous === undefined || previous === 0) {

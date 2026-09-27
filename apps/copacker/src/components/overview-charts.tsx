@@ -3,7 +3,6 @@
 import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
   Area,
@@ -11,7 +10,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  LabelList,
   Line,
   LineChart,
   type TooltipContentProps,
@@ -75,8 +73,9 @@ function ChartTooltip({
   )
 }
 
-type Point = { key: string; label: string; title: string; previous?: number | null } & Partial<
-  Record<SalesSource, number | null>
+// Each source's value, and its value in the compared period under "previous:<source>".
+type Point = { key: string; label: string; title: string } & Partial<
+  Record<SalesSource | `previous:${SalesSource}`, number | null>
 >
 type Metric = "orders" | "units" | "sales"
 // What each measure counts, named wherever a number appears so units aren't read as orders.
@@ -147,7 +146,9 @@ function points(
     }
     if (previous) {
       const before = previous.slice(start, end)
-      point.previous = before.length ? sum(before.flatMap((row) => sources.map((source) => row[source]))) : null
+      for (const source of sources) {
+        point[`previous:${source}`] = before.length ? sum(before.map((row) => row[source])) : null
+      }
     }
     return point
   })
@@ -206,7 +207,9 @@ export function SalesTrend({
   const step = stepFor(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
   const data = points(daily, previous, shown, metric, step)
-  const compared = data.some((point) => point.previous !== null && point.previous !== undefined)
+  const compared = data.some((point) =>
+    shown.some((source) => point[`previous:${source}`] !== null && point[`previous:${source}`] !== undefined)
+  )
   const format = (value: number) => (metric === "sales" ? compactMoney(value, currency ?? "USD") : formatNumber(value))
   // "12 orders", "1 unit", "$4.2K".
   const describe = (value: number) =>
@@ -218,7 +221,7 @@ export function SalesTrend({
   }))
 
   return (
-    <div className={styles.stack}>
+    <div className={styles.fill}>
       <div className={styles.chartControls}>
         <div className={styles.legend}>
           {totals.map((total) => (
@@ -239,7 +242,7 @@ export function SalesTrend({
             <div className={styles.legendItem}>
               <span className={styles.legendLabel}>
                 <span className={styles.swatchDashed} />
-                {previousLabel}, total
+                {previousLabel}
               </span>
             </div>
           )}
@@ -257,7 +260,7 @@ export function SalesTrend({
           />
         </div>
       </div>
-      <div className={styles.chart}>
+      <div className={styles.chartGrow}>
         <AreaChart
           data={data}
           responsive
@@ -285,20 +288,23 @@ export function SalesTrend({
             cursor={cursor}
             content={<ChartTooltip titleOf={(point: Point) => point.title} format={describe} />}
           />
-          {compared && (
-            <Area
-              type="monotone"
-              dataKey="previous"
-              name={previousLabel}
-              stroke={vars.color.mutedForeground}
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-              fill="none"
-              activeDot={false}
-              connectNulls={false}
-              isAnimationActive={false}
-            />
-          )}
+          {compared &&
+            shown.map((source) => (
+              <Area
+                key={`previous:${source}`}
+                type="monotone"
+                dataKey={`previous:${source}`}
+                name={`${sourceSeries[source].label}, ${previousLabel.toLowerCase()}`}
+                stroke={sourceSeries[source].color}
+                strokeOpacity={0.45}
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+                fill="none"
+                activeDot={false}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            ))}
           {shown.map((source) => (
             <Area
               key={source}
@@ -327,7 +333,12 @@ export function SalesTrend({
                 {sourceSeries[source].label}
               </th>
             ))}
-            {compared && <th scope="col">{previousLabel}</th>}
+            {compared &&
+              shown.map((source) => (
+                <th key={`previous:${source}`} scope="col">
+                  {sourceSeries[source].label}, {previousLabel.toLowerCase()}
+                </th>
+              ))}
           </tr>
         </thead>
         <tbody>
@@ -338,9 +349,15 @@ export function SalesTrend({
                 const value = point[source]
                 return <td key={source}>{value === null || value === undefined ? "No data" : format(value)}</td>
               })}
-              {compared && (
-                <td>{point.previous === null || point.previous === undefined ? "No data" : format(point.previous)}</td>
-              )}
+              {compared &&
+                shown.map((source) => {
+                  const value = point[`previous:${source}`]
+                  return (
+                    <td key={`previous:${source}`}>
+                      {value === null || value === undefined ? "No data" : format(value)}
+                    </td>
+                  )
+                })}
             </tr>
           ))}
         </tbody>
@@ -377,74 +394,43 @@ export function Sparkline({ values }: { values: (number | null)[] }) {
   )
 }
 
-// Items by how long their stock lasts, as horizontal bars so every label reads at any width. Each bar opens those
-// items in Restock; the links under the chart do the same for keyboard and screen reader users.
+// Items by how long their stock lasts, one row per group: its name, a bar for how many items it holds (against the
+// largest group) and the count. Each row with items opens them in Restock, so the list works by pointer, keyboard and
+// screen reader alike.
 export function CoverChart({
   buckets
 }: {
   buckets: { key: string; label: string; items: number; href: string | null }[]
 }) {
-  const router = useRouter()
+  const largest = Math.max(1, ...buckets.map((bucket) => bucket.items))
   return (
-    <>
-      <div className={styles.chartShort} aria-hidden>
-        <BarChart
-          data={buckets}
-          layout="vertical"
-          responsive
-          style={{ width: "100%", height: "100%" }}
-          margin={{ top: 0, right: 32, bottom: 0, left: 0 }}
-          barCategoryGap={4}
-        >
-          <XAxis type="number" hide allowDecimals={false} />
-          <YAxis type="category" dataKey="label" {...axis} width={116} />
-          <Tooltip
-            cursor={barCursor}
-            content={
-              <ChartTooltip
-                titleOf={(bucket: { label: string }) => bucket.label}
-                format={(value) => `${formatNumber(value)} ${value === 1 ? "item" : "items"}`}
-              />
-            }
-          />
-          <Bar
-            dataKey="items"
-            name="Items"
-            fill={vars.color.chart1}
-            radius={[0, 4, 4, 0]}
-            maxBarSize={20}
-            isAnimationActive={false}
-            cursor="pointer"
-            onClick={(entry) => {
-              const href = (entry.payload as { href?: string | null } | undefined)?.href
-              if (href) {
-                router.push(href)
-              }
-            }}
-          >
-            <LabelList
-              dataKey="items"
-              position="right"
-              fill={vars.color.mutedForeground}
-              fontSize={12}
-              formatter={(value) => formatNumber(Number(value))}
-            />
-          </Bar>
-        </BarChart>
-      </div>
-      <ul className={styles.coverLinks}>
-        {buckets
-          .filter((bucket) => bucket.href && bucket.items > 0)
-          .map((bucket) => (
-            <li key={bucket.key}>
-              <Link href={bucket.href!} className={styles.coverLink}>
-                {bucket.label}
-                <span className={styles.coverCount}>{formatNumber(bucket.items)}</span>
+    <ul className={styles.coverRows}>
+      {buckets.map((bucket) => {
+        const content = (
+          <>
+            <span className={styles.coverLabel}>{bucket.label}</span>
+            <span className={styles.coverTrack} aria-hidden>
+              <span className={styles.coverFill} style={{ width: `${(bucket.items / largest) * 100}%` }} />
+            </span>
+            <span className={styles.coverCount}>
+              {formatNumber(bucket.items)}
+              <span className={srOnly}>{bucket.items === 1 ? " item" : " items"}</span>
+            </span>
+          </>
+        )
+        return (
+          <li key={bucket.key}>
+            {bucket.href ? (
+              <Link href={bucket.href} className={styles.coverRow}>
+                {content}
               </Link>
-            </li>
-          ))}
-      </ul>
-    </>
+            ) : (
+              <span className={styles.coverRow}>{content}</span>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
