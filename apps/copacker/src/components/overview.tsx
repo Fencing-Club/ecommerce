@@ -13,16 +13,7 @@ import {
 import Link from "next/link"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  change,
-  compactMoney,
-  compactNumber,
-  formatChange,
-  formatMoney,
-  formatNumber,
-  formatPercent,
-  wholeMoney
-} from "@/lib/format"
+import { change, compactMoney, compactNumber, formatChange, formatMoney, formatPercent, wholeMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
 import { SalesTrend, Sparkline } from "./overview-charts"
@@ -241,15 +232,8 @@ function SalesKpis({
         value={expectedLoss}
         tone={restock.expectedLostItems > 0 ? "loss" : undefined}
       >
-        <span>
-          {restock.expectedLostItems > 0
-            ? `Expected before reorders placed today arrive, ${formatNumber(restock.expectedLostItems)} ${restock.expectedLostItems === 1 ? "item" : "items"}`
-            : "Nothing runs out before its reorder arrives"}
-        </span>
         {restock.lostValue.length > 0 && (
-          <span className={styles.kpiNote}>
-            {formatMoney(restock.lostValue, { compact: true })} lost to stockouts in this period
-          </span>
+          <span>{formatMoney(restock.lostValue, { compact: true })} lost in this period</span>
         )}
       </Kpi>
     </section>
