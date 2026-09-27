@@ -3,6 +3,7 @@ import { db } from "@/db"
 import { type DayRange, rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { freightDescriptions, freightPerSku } from "./amazon-shipments"
+import { amazonReplacement, countedOrder } from "./counted-orders"
 import type { SalesSource } from "./sales-orders"
 import { taggedWith } from "./shopify-tags"
 
@@ -28,18 +29,15 @@ const itemRevenue = sql.raw(`(select coalesce(sum(case b->>'type'
         from jsonb_array_elements(coalesce(b->'detailedBreakdowns', '[]'::jsonb)) d where d->>'subtype' = 'SHIPPING'), 0)
     else 0 end), 0)
   from jsonb_array_elements(coalesce(item->'proceeds'->'breakdowns', '[]'::jsonb)) b)`)
-// An Amazon replacement for another order (Amazon links it with REPLACEMENT_ORIGINAL_ID): sent free, so its sales are
-// zero from the start.
-const amazonReplacement = `(coalesce(o.data->'associatedOrders', '[]'::jsonb) @> '[{"associationType": "REPLACEMENT_ORIGINAL_ID"}]')`
 // An Amazon item has its price once Amazon adds its proceeds. A line with nothing ordered has none to add, and an order
 // Amazon paid nothing for (a replacement, or any order whose payments all post at zero) is priced at zero.
-const amazonFreeOrder = `(${amazonReplacement} or (exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
+const amazonFreeOrder = sql`(${amazonReplacement(sql`o.data`)} or (exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
     and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment')
   and not exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
     and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment'
     and t."totalMinor" <> 0)))`
-const itemPriced = sql.raw(`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
-  or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`)
+const itemPriced = sql`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
+  or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`
 
 const orderUnits = sql.raw(`case when o.source = 'amazon' then
   (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(o.data->'orderItems') item)
@@ -98,13 +96,6 @@ function shippedFrom(locationId: string | null | undefined) {
     : sql``
 }
 
-// Orders the Overview counts. Cancelled orders sold nothing, and an Amazon order still pending (payment not confirmed)
-// has no price or fees yet, so it counts once Amazon confirms it.
-const counted = sql.raw(`(coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') <> 'CANCELLED'
-  and o.data->>'cancelledAt' is null
-  and not (coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') = 'PENDING' and not ${amazonReplacement}
-    and not exists (select 1 from jsonb_array_elements(o.data->'orderItems') i where i->'proceeds'->'breakdowns' is not null)))`)
-
 function accountFilter(accounts: Account[]) {
   return sql`(${sql.join(
     accounts.map(
@@ -112,7 +103,7 @@ function accountFilter(accounts: Account[]) {
         sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.excludedTags?.length ? sql` and not ${taggedWith(sql.raw("o.data"), account.excludedTags)}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
     ),
     sql` or `
-  )}) and ${counted}`
+  )}) and ${countedOrder(sql`o.data`)}`
 }
 
 function rows(result: unknown) {
@@ -218,13 +209,13 @@ export async function salesByItem(
         coalesce(line->'lineItemGroup'->>'id', line->>'id') as grp,
         case when jsonb_typeof(line->'lineItemGroup') = 'object' then (line->'lineItemGroup'->>'quantity')::int
           else (line->>'currentQuantity')::int end as units,
-        ${lineRevenue} as revenue, ${linePriced} as priced,
+        ${lineRevenue} as revenue, ${orderPriced} as priced,
         line->'originalUnitPriceSet'->'shopMoney'->>'currencyCode' as currency
       from sales_orders o, jsonb_array_elements(o.data->'lines') line
       where o.source = 'shopify' and ${scope}
       union all
       select o."orderId", o.source, ${period}, o."orderedAt", item->'product'->>'sellerSku', item->>'orderItemId',
-        (item->>'quantityOrdered')::int, ${itemRevenue}, ${itemPriced},
+        (item->>'quantityOrdered')::int, ${itemRevenue}, ${orderPriced},
         jsonb_path_query_first(item, '$.proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}'
       from sales_orders o, jsonb_array_elements(o.data->'orderItems') item
       where o.source = 'amazon' and ${scope}
@@ -382,11 +373,10 @@ export function dailySales(
   for (let index = 0; index < rangeDays(range); index++) {
     const date = addDays(range.from, index)
     const start = zonedStart(date, timeZone).getTime()
-    const end = zonedStart(addDays(date, 1), timeZone).getTime()
     const cell = (source: SalesSource): SourceDay | null => {
       const covered = coverage[source]
-      const through = end > now.getTime() ? start + 1 : end
-      if (!covered || covered.from.getTime() > start || covered.to.getTime() < through || start > now.getTime()) {
+      // A day counts up to the last sync, so a sync that stops minutes before midnight doesn't leave that day out.
+      if (!covered || covered.from.getTime() > start || covered.to.getTime() <= start || start > now.getTime()) {
         return null
       }
       const row = byKey.get(`${source}:${date}`)

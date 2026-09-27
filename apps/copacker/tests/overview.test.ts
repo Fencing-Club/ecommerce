@@ -123,6 +123,12 @@ describe("dailySales", () => {
     expect(series.map((row) => row.amazon !== null)).toEqual([true, false])
   })
 
+  it("counts a day the last sync reached into, even when it stopped before midnight", () => {
+    const coverage = { amazon: { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-09-24T23:57:00Z") } }
+    const series = dailySales([], coverage, { from: "2026-09-24", to: "2026-09-25" }, "UTC", now)
+    expect(series.map((row) => row.amazon !== null)).toEqual([true, false])
+  })
+
   it("compares with the previous period only when both are fully covered", () => {
     const covered = { from: new Date("2026-01-01T00:00:00Z"), to: new Date("2026-09-25T00:00:00Z") }
     const rows = [
@@ -700,6 +706,24 @@ describe("sales queries", () => {
           orderItems: [{ orderItemId: "i7", quantityOrdered: 2, product: { sellerSku: "A" } }]
         }
       },
+      // Pending with one item priced and one not: left out until Amazon prices every item.
+      {
+        ...amazonOrder("a7", "2026-09-23T07:30:00Z", []),
+        data: {
+          orderId: "a7",
+          createdTime: "2026-09-23T07:30:00Z",
+          fulfillment: { fulfillmentStatus: "PENDING" },
+          orderItems: [
+            {
+              orderItemId: "i9",
+              quantityOrdered: 1,
+              product: { sellerSku: "A" },
+              proceeds: { breakdowns: [{ type: "ITEM", subtotal: { amount: "59.95", currencyCode: "USD" } }] }
+            },
+            { orderItemId: "i10", quantityOrdered: 1, product: { sellerSku: "B" } }
+          ]
+        }
+      },
       // A replacement Amazon links to the order it replaces: $0 of sales from the start, before any payment posts.
       {
         ...amazonOrder("a6", "2026-09-20T05:00:00Z", []),
@@ -790,7 +814,7 @@ describe("sales queries", () => {
       "USD"
     )
     expect(rows.toSorted((a, b) => a.source.localeCompare(b.source))).toEqual([
-      // a1, and a4 at zero; the cancelled a3 and the pending, unpriced a5 aren't counted.
+      // a1, and a4 at zero; the cancelled a3 and the pending a5 and a7 aren't counted.
       { source: "amazon", date: "2026-09-19", orders: 1, units: 1, priced: 1, revenueMinor: 0, currency: "USD" },
       { source: "amazon", date: "2026-09-22", orders: 2, units: 6, priced: 2, revenueMinor: 2700, currency: "USD" },
       // $20 less 2/3 of $3, plus the $20 bundle; the unpriced order counts its unit but no sales.
@@ -835,6 +859,20 @@ describe("sales queries", () => {
     expect(byKey["amazon:current:B"]).toMatchObject({ units: 1, pricedUnits: 1, revenueMinor: 0 })
     expect(byKey["amazon:previous:A"]).toMatchObject({ units: 2, pricedUnits: 0, revenueMinor: 0 })
     expect(byKey["shopify:current:vb"]).toBeUndefined()
+  })
+
+  it("prices items only as part of a priced order, so item and order totals always match", async () => {
+    const current = { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-09-26T00:00:00Z") }
+    const accounts = [shopifyAccount, amazonAccount]
+    const items = await salesByItem(orgId, accounts, { current, previous: null }, "USD")
+    const days = (await salesByDay(orgId, accounts, current.from, "UTC", "USD")).filter(
+      (row) => row.date < "2026-09-26"
+    )
+    const itemSales = items.reduce((sum, item) => sum + item.revenueMinor, 0)
+    expect(itemSales).toBe(days.reduce((sum, row) => sum + row.revenueMinor, 0))
+    expect(items.reduce((sum, item) => sum + item.pricedUnits, 0)).toBeLessThanOrEqual(
+      days.reduce((sum, row) => sum + row.units, 0)
+    )
   })
 
   it("joins Amazon orders to the fees posted for them", async () => {

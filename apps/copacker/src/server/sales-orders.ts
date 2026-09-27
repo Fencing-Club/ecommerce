@@ -12,10 +12,13 @@ import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
+import { presetRange } from "@/lib/date-range"
+import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncInboundShipments } from "./amazon-shipments"
 import type { Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
+import { countedOrder } from "./counted-orders"
 import { ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
@@ -433,9 +436,13 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
 }
 
 // Each connected source's sync state and the orders stored for it, without Shopify orders that have an excluded tag.
-export async function salesSyncStatus(orgId: string) {
-  const since = new Date(Date.now() - 30 * day)
-  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))}`
+export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new Date()) {
+  // The Overview's "Last 30 days": the 30 days before today in the store's time zone.
+  const recentRange = presetRange("last30", zonedDay(now, timeZone))
+  const since = zonedStart(recentRange.from, timeZone)
+  const until = zonedStart(addDays(recentRange.to, 1), timeZone)
+  // The orders the Overview counts: see counted-orders.
+  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))} and ${countedOrder(sql`${salesOrders.data}`)}`
   const [accounts, syncs, stored, recent] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
@@ -459,7 +466,9 @@ export async function salesSyncStatus(orgId: string) {
         data: salesOrders.data
       })
       .from(salesOrders)
-      .where(and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since), included))
+      .where(
+        and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since), lt(salesOrders.orderedAt, until), included)
+      )
   ])
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
@@ -703,6 +712,8 @@ export function summarizeSalesOrder(
     }
   }
   if (source === "amazon" && "orderItems" in data) {
+    const replacementOf =
+      data.associatedOrders?.find((order) => order.associationType === "REPLACEMENT_ORIGINAL_ID")?.orderId ?? null
     const fulfilledBy = data.fulfillment?.fulfilledBy
     let channel = "Amazon"
     if (fulfilledBy === "AMAZON") {
@@ -716,12 +727,12 @@ export function summarizeSalesOrder(
       number: data.orderId,
       orderedAt: orderedAt.toISOString(),
       units: data.orderItems.reduce((sum, item) => sum + item.quantityOrdered, 0),
-      replacementOf:
-        data.associatedOrders?.find((order) => order.associationType === "REPLACEMENT_ORIGINAL_ID")?.orderId ?? null,
+      replacementOf,
       items: data.orderItems.map((item) => ({ sku: item.product.sellerSku ?? null, quantity: item.quantityOrdered })),
       channel,
       status: words(data.fulfillment?.fulfillmentStatus ?? "Unknown"),
-      sales: orderSales(data),
+      // A replacement is sent free, as the Overview counts it.
+      sales: replacementOf ? { minor: 0, currency: "USD" } : orderSales(data),
       // Posted with Amazon's transactions; the Orders page adds them.
       fees: null,
       url: `https://sellercentral.amazon.com/orders-v3/order/${encodeURIComponent(data.orderId)}`
