@@ -9,14 +9,13 @@ import {
   orders,
   productDefaults,
   salesSyncs,
-  type ShipmentState,
   shipments,
   stockSnapshots,
   suppliers
 } from "@/db/schema"
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { comparisons, rangeLabel, readPeriod } from "@/lib/date-range"
-import { addDays, addMonths, zonedDay, zonedStart } from "@/lib/time-zone"
+import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import { receivingLocations } from "./inventory-products"
 import { landedMarkupsFor } from "./landed-costs"
@@ -320,24 +319,6 @@ export function summarizeRestock(
   }
 }
 
-// Shipments grouped by where they are, for the pipeline. Finished and cancelled shipments are left out.
-export const shipmentStages = [
-  { key: "you", label: "Waiting on you", states: ["approval", "waiting_labels"] },
-  { key: "packing", label: "Supplier packing", states: ["packing", "correction"] },
-  { key: "booking", label: "Booking with Amazon", states: ["queued", "creating"] },
-  { key: "ready", label: "Ready for pickup", states: ["ready"] },
-  { key: "transit", label: "On the way", states: ["collected"] },
-  { key: "problem", label: "Needs attention", states: ["needs_attention"] }
-] as const satisfies readonly { key: string; label: string; states: readonly ShipmentState[] }[]
-
-export function shipmentPipeline(states: ShipmentState[]) {
-  return shipmentStages.map((stage) => ({
-    key: stage.key,
-    label: stage.label,
-    shipments: states.filter((state) => (stage.states as readonly ShipmentState[]).includes(state)).length
-  }))
-}
-
 type PurchaseOrder = {
   status: "draft" | "submitted" | "closed"
   supplier: string
@@ -346,9 +327,8 @@ type PurchaseOrder = {
   sentAt: Date | null
 }
 
-// Open and draft PO value, open value by supplier, and what was sent each month over the last year, by the month in
-// the store's time zone.
-export function purchasing(list: PurchaseOrder[], now: Date, timeZone: string) {
+// Open and draft PO value, and open value by supplier.
+export function purchasing(list: PurchaseOrder[]) {
   const open = new Map<string, number>()
   const drafts = new Map<string, number>()
   const bySupplier = new Map<string, { orders: number; value: Map<string, number> }>()
@@ -368,20 +348,6 @@ export function purchasing(list: PurchaseOrder[], now: Date, timeZone: string) {
       addMoney(drafts, order.data.currency, total)
     }
   }
-  // Months are counted in the currency most of the spend is in; spend in other currencies is reported apart.
-  const sent = list.filter((order) => order.sentAt)
-  const spendByCurrency = new Map<string, number>()
-  for (const order of sent) {
-    addMoney(spendByCurrency, order.data.currency, orderTotal(order.data))
-  }
-  const currency = moneyList(spendByCurrency)[0]?.currency ?? null
-  const thisMonth = zonedDay(now, timeZone).slice(0, 7)
-  const months = Array.from({ length: 12 }, (_, index) => addMonths(thisMonth, index - 11)).map((month) => ({
-    month,
-    minor: sent
-      .filter((order) => order.data.currency === currency && zonedDay(order.sentAt!, timeZone).slice(0, 7) === month)
-      .reduce((sum, order) => sum + orderTotal(order.data), 0)
-  }))
   return {
     openCount,
     open: moneyList(open),
@@ -389,8 +355,7 @@ export function purchasing(list: PurchaseOrder[], now: Date, timeZone: string) {
     drafts: moneyList(drafts),
     bySupplier: [...bySupplier]
       .map(([name, supplier]) => ({ name, orders: supplier.orders, value: moneyList(supplier.value) }))
-      .toSorted((a, b) => (b.value[0]?.minor ?? 0) - (a.value[0]?.minor ?? 0)),
-    spend: { currency, months, otherCurrencies: spendByCurrency.size > 1 }
+      .toSorted((a, b) => (b.value[0]?.minor ?? 0) - (a.value[0]?.minor ?? 0))
   }
 }
 
@@ -994,7 +959,7 @@ export async function overview(
     // A PO sent before submissions were recorded counts from its creation.
     sentAt: order.status === "draft" ? null : (sentAt.get(order.id) ?? order.createdAt)
   }))
-  const buying = purchasing(poList, now, timeZone)
+  const buying = purchasing(poList)
   const states = shipmentRows.filter((row) => orderIds.has(row.orderId)).map((row) => row.status)
   const shopify = connected.find((row) => row.provider === "shopify")
   // Customer figures need the customer IDs, which a Shopify sync copies once the store grants read_customers.
@@ -1069,7 +1034,6 @@ export async function overview(
     },
     purchasing: buying,
     upcoming: upcomingSpend(poList, summary.reorderCost, today),
-    shipments: shipmentPipeline(states),
     attention: attentionItems({
       now,
       restock: {

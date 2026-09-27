@@ -1,7 +1,6 @@
 import {
   ArrowDownRight,
   ChartLine,
-  Info,
   ArrowUpRight,
   Minus,
   Package,
@@ -12,9 +11,8 @@ import {
   TrendingDown
 } from "lucide-react"
 import Link from "next/link"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { change, compactMoney, compactNumber, formatChange, formatMoney, formatPercent, wholeMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
@@ -23,13 +21,12 @@ import {
   Attention,
   BestSellers,
   CardLink,
+  InfoTip,
   Customers,
   DaysOfCover,
   OpenOrders,
   ProfitBreakdown,
-  Purchasing,
   SetupChecklist,
-  Shipments,
   SlowStock,
   StockByChannel,
   Trending,
@@ -86,17 +83,7 @@ function Kpi({
         <div className={styles.kpiHead}>
           <span className="flex items-center gap-1.5">
             <span className={styles.kpiLabel}>{label}</span>
-            {info && (
-              <Tooltip>
-                <TooltipTrigger
-                  aria-label={`About ${label.toLowerCase()}`}
-                  className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
-                >
-                  <Info className="size-3.5" aria-hidden />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-60">{info}</TooltipContent>
-              </Tooltip>
-            )}
+            {info && <InfoTip label={`About ${label.toLowerCase()}`}>{info}</InfoTip>}
           </span>
           <span className={styles.kpiIcon} aria-hidden>
             <Icon />
@@ -289,7 +276,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
 
       <SalesKpis sales={sales} period={data.period} restock={restock} />
 
-      {/* Cards grouped by what they're about: sales, then stock, then purchasing. */}
+      {/* Cards grouped by what they're about: sales, purchasing, products and customers, then stock. */}
       <Section id="overview-sales" title="Sales">
         <div className={styles.wide}>
           <Card className={styles.fillCard}>
@@ -297,13 +284,12 @@ export function OverviewDashboard({ data }: { data: Overview }) {
               <CardTitle className={styles.sectionTitle}>
                 <ChartLine aria-hidden />
                 Sales by channel
+                <InfoTip label="About sales">
+                  {data.channel && data.channel.key !== "amazon"
+                    ? `Shopify orders shipped from ${data.channel.label}. Sales are after discounts, before tax and shipping.`
+                    : "Sales are after discounts, before tax and shipping."}
+                </InfoTip>
               </CardTitle>
-              <CardDescription>
-                {data.channel && data.channel.key !== "amazon"
-                  ? `Shopify orders shipped from ${data.channel.label}. Orders not yet fulfilled aren’t counted.`
-                  : "From the orders copied from Shopify and Amazon."}{" "}
-                Sales are after discounts, before tax and shipping.
-              </CardDescription>
               <CardAction>
                 <CardLink href="/sales">Orders</CardLink>
               </CardAction>
@@ -337,10 +323,20 @@ export function OverviewDashboard({ data }: { data: Overview }) {
           </Card>
           <ProfitBreakdown sales={sales} />
         </div>
+      </Section>
+
+      <Section id="overview-purchasing" title="Purchasing">
+        <div className={styles.halves}>
+          <OpenOrders purchasing={purchasing} />
+          <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+        </div>
+      </Section>
+
+      <Section id="overview-products" title="Products and customers">
         {sales.customers ? (
           <div className={styles.halves}>
             <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
-            <Customers customers={sales.customers} period={data.period} />
+            <Customers customers={sales.customers} />
           </div>
         ) : (
           <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
@@ -354,17 +350,6 @@ export function OverviewDashboard({ data }: { data: Overview }) {
           <DaysOfCover restock={restock} channel={channel} />
         </div>
         <SlowStock restock={restock} />
-      </Section>
-
-      <Section id="overview-purchasing" title="Purchasing">
-        <div className={styles.halves}>
-          <div className={styles.stack}>
-            <OpenOrders purchasing={purchasing} />
-            <UpcomingSpend upcoming={data.upcoming} channel={channel} />
-          </div>
-          <Shipments stages={data.shipments} />
-        </div>
-        <Purchasing purchasing={purchasing} />
       </Section>
     </div>
   )

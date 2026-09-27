@@ -7,8 +7,6 @@ import { useState } from "react"
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -39,7 +37,6 @@ const axis = {
 } as const
 const grid = { vertical: false, stroke: vars.color.border } as const
 const cursor = { stroke: vars.color.border, strokeWidth: 1 }
-const barCursor = { fill: vars.color.muted, opacity: 0.6 }
 
 type Entry = { name?: unknown; value?: unknown; color?: string; dataKey?: unknown }
 
@@ -431,54 +428,5 @@ export function CoverChart({
         )
       })}
     </ul>
-  )
-}
-
-// Purchase order value sent each month.
-export function SpendChart({ months, currency }: { months: { month: string; minor: number }[]; currency: string }) {
-  const data = months.map((row) => ({ ...row, label: monthName(row.month) }))
-  return (
-    <>
-      <div className={styles.chartShort} aria-hidden>
-        <BarChart
-          data={data}
-          responsive
-          style={{ width: "100%", height: "100%" }}
-          margin={{ top: 8, right: 4, bottom: 0, left: 0 }}
-        >
-          <CartesianGrid {...grid} />
-          <XAxis dataKey="label" {...axis} interval="preserveStartEnd" minTickGap={8} />
-          <YAxis {...axis} width={52} tickFormatter={(value: number) => compactMoney(value, currency)} />
-          <Tooltip
-            cursor={barCursor}
-            content={
-              <ChartTooltip
-                titleOf={(row: { month: string }) => monthName(row.month, true)}
-                format={(value) => compactMoney(value, currency)}
-              />
-            }
-          />
-          <Bar
-            dataKey="minor"
-            name="Sent"
-            fill={vars.color.chart1}
-            radius={[4, 4, 0, 0]}
-            maxBarSize={24}
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </div>
-      <table className={srOnly}>
-        <caption>Purchase order value sent by month</caption>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.month}>
-              <th scope="row">{monthName(row.month, true)}</th>
-              <td>{compactMoney(row.minor, currency)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
   )
 }

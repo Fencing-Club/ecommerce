@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Bell,
   CalendarClock,
-  ChartColumn,
   ListChecks,
   ArrowDownRight,
   ArrowRight,
@@ -16,7 +15,6 @@ import {
   Package,
   ShoppingBag,
   TrendingUp,
-  Truck,
   Users,
   Wallet,
   Warehouse
@@ -24,12 +22,13 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { AttentionItem, Overview, SetupStep } from "@/server/overview"
-import { CoverChart, SpendChart } from "./overview-charts"
+import { CoverChart } from "./overview-charts"
 import * as styles from "./overview.css"
 import { vars } from "@/styles/theme.css"
 import { srOnly } from "@/styles/utilities.css"
@@ -52,6 +51,21 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
       {children}
       <ArrowRight aria-hidden />
     </Link>
+  )
+}
+
+// A short explanation behind an info icon, for the few things a card can't show on its face.
+export function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        aria-label={label}
+        className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <Info className="size-3.5" aria-hidden />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">{children}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -78,9 +92,6 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
           <ListChecks aria-hidden />
           Finish setting up
         </CardTitle>
-        <CardDescription>
-          {done} of {steps.length} done. Each step fills in more of this page.
-        </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         {/* The description above says how many steps are done; the bar only shows it. */}
@@ -126,11 +137,6 @@ export function Attention({ items }: { items: AttentionItem[] }) {
           <Bell aria-hidden />
           Needs attention
         </CardTitle>
-        <CardDescription>
-          {items.length
-            ? "The things that need you, most urgent first."
-            : "Stock, shipments and syncs are all on track."}
-        </CardDescription>
         {items.length > 0 && (
           <CardAction>
             <Badge variant={items.some((item) => item.tone === "critical") ? "destructive" : "secondary"}>
@@ -206,8 +212,11 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
         <CardTitle className={styles.sectionTitle}>
           <Warehouse aria-hidden />
           Inventory
+          <InfoTip label="About inventory values">
+            Retail value uses what each unit recently sold for, or its Shopify price. Costs include landed costs from
+            purchase orders.
+          </InfoTip>
         </CardTitle>
-        <CardDescription>Sellable units on hand and on the way, by channel.</CardDescription>
         <CardAction>
           <CardLink href="/products">Products</CardLink>
         </CardAction>
@@ -263,35 +272,20 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
           />
           <Figure label="Potential gross profit" value={profit ? formatMoney(profit) : notAvailable} />
         </div>
-        <p className={styles.note}>
-          Retail value prices each unit at what it sold for in that channel over the last 60 days, or its Shopify price.
-          {restock.landedProducts > 0
-            ? ` Costs include freight and duty for ${plural(restock.landedProducts, "product", "products")}, from the landed costs on ${restock.landedProducts === 1 ? "its latest purchase order" : "their latest purchase orders"}.`
-            : " Costs are Shopify unit costs; add landed costs to a purchase order to include freight and duty."}
-          {restock.uncosted > 0 &&
-            ` ${plural(restock.uncosted, "item in stock has", "items in stock have")} no unit cost in Shopify.`}
-          {restock.unpriced > 0 && ` ${plural(restock.unpriced, "item has", "items have")} no price.`}
-          {(restock.uncosted > 0 || restock.unpriced > 0) && " Values leave them out."}
-        </p>
       </CardContent>
     </Card>
   )
 }
 
 export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]; channel: string | null }) {
-  // "8 weeks", or "60 days" when the period isn't whole weeks.
-  const period = restock.days % 7 === 0 ? `${restock.days / 7} weeks` : `${restock.days} days`
   return (
     <Card>
       <CardHeader>
         <CardTitle className={styles.sectionTitle}>
           <CalendarClock aria-hidden />
           Days of cover
+          <InfoTip label="About days of cover">How long each item’s stock lasts at its recent sales rate.</InfoTip>
         </CardTitle>
-        <CardDescription>
-          How long each item’s stock lasts in each channel at the last {period}’ sales rate. Select a group to see its
-          items.
-        </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         <CoverChart
@@ -334,8 +328,10 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
         <CardTitle className={styles.sectionTitle}>
           <Wallet aria-hidden />
           Upcoming spend
+          <InfoTip label="About upcoming spend">
+            Reorders that are due, and sent purchase orders by their due date.
+          </InfoTip>
         </CardTitle>
-        <CardDescription>Reorders that are due, and sent purchase orders by their due date.</CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         <div className={styles.hero}>
@@ -399,11 +395,6 @@ export function Trending({
           <TrendingUp aria-hidden />
           Trending products
         </CardTitle>
-        <CardDescription>
-          {period.previousLabel
-            ? `Units sold ${period.rangeLabel} against ${period.previousLabel}.`
-            : "Units sold in the period against the one before it."}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         {!comparable && (
@@ -457,11 +448,8 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
         <CardTitle className={styles.sectionTitle}>
           <Hourglass aria-hidden />
           Slow-moving stock
+          <InfoTip label="About slow-moving stock">Stock that lasts over 3 months, or hasn’t sold recently.</InfoTip>
         </CardTitle>
-        <CardDescription>
-          Stock that lasts over 3 months at the current rate, or didn’t sell in the last{" "}
-          {restock.days % 7 === 0 ? `${restock.days / 7} weeks` : `${restock.days} days`}.
-        </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         {slow.items ? (
@@ -539,7 +527,6 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
           <ShoppingBag aria-hidden />
           Best sellers
         </CardTitle>
-        <CardDescription>Units sold in the last {restock.days / 7} weeks, across the channels shown.</CardDescription>
         <CardAction>
           <CardLink href="/restock">Restock</CardLink>
         </CardAction>
@@ -598,62 +585,6 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
   )
 }
 
-const stageColors = {
-  you: vars.color.warning,
-  problem: vars.color.destructive,
-  packing: vars.color.chart1,
-  booking: vars.color.chart1,
-  ready: vars.color.chart1,
-  transit: vars.color.success
-} as const
-
-export function Shipments({ stages }: { stages: Overview["shipments"] }) {
-  const total = stages.reduce((sum, stage) => sum + stage.shipments, 0)
-  const active = stages.filter((stage) => stage.shipments > 0)
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <Truck aria-hidden />
-          Shipments in progress
-        </CardTitle>
-        <CardDescription>
-          {total
-            ? `${plural(total, "shipment", "shipments")} between supplier and destination.`
-            : "No shipments are in progress."}
-        </CardDescription>
-        <CardAction>
-          <CardLink href="/shipments">Shipments</CardLink>
-        </CardAction>
-      </CardHeader>
-      {total > 0 && (
-        <CardContent className={styles.stack}>
-          <div className={styles.meterTrack} aria-hidden>
-            {active.map((stage) => (
-              <span
-                key={stage.key}
-                className={styles.meterFill}
-                style={{ width: `${(stage.shipments / total) * 100}%`, backgroundColor: stageColors[stage.key] }}
-              />
-            ))}
-          </div>
-          <div className={styles.stages}>
-            {active.map((stage) => (
-              <div key={stage.key} className={styles.stage}>
-                <span className={styles.stageName}>
-                  <span className={styles.stageDot} style={{ backgroundColor: stageColors[stage.key] }} aria-hidden />
-                  {stage.label}
-                </span>
-                <span className={styles.stageCount}>{stage.shipments}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      )}
-    </Card>
-  )
-}
-
 export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] }) {
   const largest = Math.max(1, ...purchasing.bySupplier.map((supplier) => supplier.value[0]?.minor ?? 0))
   return (
@@ -663,12 +594,11 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
           <ClipboardList aria-hidden />
           Open purchase orders
         </CardTitle>
-        <CardDescription>Value sent to each supplier and not yet closed.</CardDescription>
         <CardAction>
           <CardLink href="/orders">Purchase orders</CardLink>
         </CardAction>
       </CardHeader>
-      <CardContent className={styles.stack}>
+      <CardContent className={cn(styles.stack, "flex-1")}>
         {purchasing.bySupplier.length ? (
           <div className={styles.meters}>
             {purchasing.bySupplier.slice(0, 5).map((supplier) => (
@@ -696,7 +626,8 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
         ) : (
           <p className={styles.note}>No purchase orders are with suppliers.</p>
         )}
-        <div className={styles.figures}>
+        {/* The totals sit at the bottom, level with the card beside this one. */}
+        <div className={cn(styles.figures, "mt-auto")}>
           <Figure label="Open" value={formatMoney(purchasing.open)} />
           <Figure label={plural(purchasing.draftCount, "draft", "drafts")} value={formatMoney(purchasing.drafts)} />
         </div>
@@ -705,38 +636,6 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
   )
 }
 
-export function Purchasing({ purchasing }: { purchasing: Overview["purchasing"] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className={styles.sectionTitle}>
-          <ChartColumn aria-hidden />
-          Purchasing
-        </CardTitle>
-        <CardDescription>
-          {purchasing.spend.currency
-            ? `Purchase orders sent each month, in ${purchasing.spend.currency}.`
-            : "Purchase orders sent each month."}
-        </CardDescription>
-        <CardAction>
-          <CardLink href="/orders">Purchase orders</CardLink>
-        </CardAction>
-      </CardHeader>
-      <CardContent className={styles.stack}>
-        {purchasing.spend.currency ? (
-          <SpendChart months={purchasing.spend.months} currency={purchasing.spend.currency} />
-        ) : (
-          <p className={styles.note}>Send a purchase order to see spending by month.</p>
-        )}
-        {purchasing.spend.otherCurrencies && (
-          <p className={styles.note}>Purchase orders in other currencies aren’t included in the chart.</p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Gross profit line by line: sales with a unit cost, then everything taken off them over the period.
 // Deductions from sales, grouped so the card reads at a glance; each group's parts show on hover.
 const profitGroups: { label: string; keys: (key: string) => boolean }[] = [
   { label: "Refunds and disputes", keys: (key) => key === "amazon-refunds" || key === "shopify-disputes" },
@@ -839,28 +738,20 @@ function formatPercentShort(value: number) {
 }
 
 // Shopify customers: who ordered in the period and how many came back, and what a customer is worth over a year.
-export function Customers({
-  customers,
-  period
-}: {
-  customers: NonNullable<Overview["sales"]["customers"]>
-  period: Overview["period"]
-}) {
+export function Customers({ customers }: { customers: NonNullable<Overview["sales"]["customers"]> }) {
   const notAvailable = "Not available"
   const percent = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : notAvailable)
-  // Orders synced a year back start a few days short of it; a week's slack keeps that from reading as a short year.
-  const partialYear =
-    customers.historyFrom && Date.parse(customers.historyFrom) > Date.parse(period.range.to) - 358 * 86400000
   return (
     <Card>
       <CardHeader>
         <CardTitle className={styles.sectionTitle}>
           <Users aria-hidden />
           Shopify customers
+          <InfoTip label="About customer figures">
+            Lifetime value, repeat customers and orders per customer cover the last 12 months. Guest and Amazon orders
+            aren’t counted.
+          </InfoTip>
         </CardTitle>
-        <CardDescription>
-          Customers who ordered {period.rangeLabel}, and what a customer spends over the year to its end.
-        </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
         {customers.status === "reconnect" && (
@@ -887,18 +778,13 @@ export function Customers({
                       ])
                     : notAvailable
                 }
-                note="Sales per customer over 12 months"
               />
               <Figure
                 label="Returning customers"
                 value={percent(customers.returning, customers.customers)}
                 note={`${formatNumber(customers.returning)} of ${formatNumber(customers.customers)} in this period`}
               />
-              <Figure
-                label="Repeat customers"
-                value={percent(customers.repeatCustomers, customers.yearCustomers)}
-                note="Ordered more than once in 12 months"
-              />
+              <Figure label="Repeat customers" value={percent(customers.repeatCustomers, customers.yearCustomers)} />
               <Figure
                 label="Orders per customer"
                 value={
@@ -908,15 +794,8 @@ export function Customers({
                       })
                     : notAvailable
                 }
-                note="Over 12 months"
               />
             </div>
-            <p className={styles.note}>
-              Sales are before tax and shipping. Guest orders and Amazon orders have no Shopify customer, so they aren’t
-              counted.
-              {partialYear &&
-                ` Orders go back to ${new Date(customers.historyFrom!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, so the year is shorter.`}
-            </p>
           </>
         )}
       </CardContent>

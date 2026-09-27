@@ -14,14 +14,7 @@ vi.mock("../src/server/connections", () => ({
   shopifyFor: vi.fn<() => void>(),
   connection: vi.fn<() => void>()
 }))
-import {
-  attentionItems,
-  purchasing,
-  setupSteps,
-  shipmentPipeline,
-  summarizeRestock,
-  upcomingSpend
-} from "../src/server/overview"
+import { attentionItems, purchasing, setupSteps, summarizeRestock, upcomingSpend } from "../src/server/overview"
 import {
   catalogIndex,
   dailySales,
@@ -284,7 +277,7 @@ describe("purchasing and upcoming spend", () => {
   ]
 
   it("totals open and draft POs and groups sent value by the store's month", () => {
-    const result = purchasing(list, new Date("2026-09-25T12:00:00Z"), "America/Los_Angeles")
+    const result = purchasing(list)
     expect(result.openCount).toBe(3)
     expect(result.open).toEqual([
       { currency: "USD", minor: 12000 },
@@ -292,12 +285,6 @@ describe("purchasing and upcoming spend", () => {
     ])
     expect(result.draftCount).toBe(1)
     expect(result.bySupplier.map((supplier) => supplier.name)).toEqual(["Ok Fencing", "Blade Co"])
-    expect(result.spend.currency).toBe("USD")
-    expect(result.spend.otherCurrencies).toBe(true)
-    expect(result.spend.months).toHaveLength(12)
-    expect(result.spend.months.at(-1)).toEqual({ month: "2026-09", minor: 12000 })
-    expect(result.spend.months.find((month) => month.month === "2026-07")?.minor).toBe(500)
-    expect(result.spend.months[0]?.month).toBe("2025-10")
   })
 
   it("adds reorders to sent POs due within 60 days", () => {
@@ -386,20 +373,6 @@ describe("setupSteps", () => {
       stock: true,
       costs: false,
       supplier: true
-    })
-  })
-})
-
-describe("shipmentPipeline", () => {
-  it("groups states by stage and leaves out finished shipments", () => {
-    const stages = shipmentPipeline(["approval", "waiting_labels", "packing", "received", "cancelled", "collected"])
-    expect(Object.fromEntries(stages.map((stage) => [stage.key, stage.shipments]))).toEqual({
-      you: 2,
-      packing: 1,
-      booking: 0,
-      ready: 0,
-      transit: 1,
-      problem: 0
     })
   })
 })

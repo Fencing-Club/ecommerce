@@ -174,7 +174,6 @@ export const delta = styleVariants({
 export const chartGrow = style({ width: "100%", flex: 1, minHeight: "16rem" })
 export const fillCard = style({ display: "flex", flexDirection: "column" })
 export const fill = style({ display: "flex", flexDirection: "column", gap: space(4), flex: 1, minWidth: 0 })
-export const chartShort = style({ width: "100%", height: "13rem" })
 export const legend = style({ display: "flex", flexWrap: "wrap", gap: space(5), ...fontSize.xs })
 export const legendItem = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
 export const legendLabel = style({
@@ -311,8 +310,6 @@ export const stageName = style({
   color: vars.color.mutedForeground
 })
 export const stageCount = style({ fontWeight: 600, fontVariantNumeric: "tabular-nums" })
-export const stageDot = style({ width: space(2), height: space(2), borderRadius: vars.radius.full, flexShrink: 0 })
-
 // Best sellers.
 // Product names and details wrap to two lines at most, so a table fits its card instead of scrolling sideways.
 export const product = style({
