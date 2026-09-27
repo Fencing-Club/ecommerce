@@ -21,7 +21,7 @@ import * as styles from "./order-builder.css"
 import { sx } from "@/styles/sprinkles.css"
 
 const destinations = [
-  { value: "amazon", label: "Amazon (warehouse chosen when shipping)" },
+  { value: "amazon", label: "Amazon" },
   { value: "awd_us", label: "Amazon AWD USA" },
   { value: "warehouse", label: "Your location" },
   { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
@@ -216,24 +216,32 @@ export function OrderBuilder({
           </CardHeader>
           <CardContent>
             <FieldGroup className={styles.detailsGrid}>
-              <FormInput name="reference" label="PO reference" placeholder="PO-037" />
+              <FormInput name="reference" required label="PO reference" placeholder="PO-037" />
               <FormSelect
                 name="supplierId"
+                required
                 label="Supplier"
                 placeholder="Select supplier"
                 options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
               />
-              <FormSelect name="destination" label="Destination" options={destinations} />
+              <FormSelect
+                name="destination"
+                required
+                label="Destination"
+                options={destinations}
+                description={destination === "amazon" ? "The Amazon warehouse is chosen when you ship." : undefined}
+              />
               {destination === "warehouse" && (
                 <FormSelect
                   name="deliveryId"
+                  required
                   label="Delivery address"
                   placeholder={deliveries.length ? "Select delivery address" : "Add a delivery address in Settings"}
                   options={deliveries.map((delivery) => ({ value: delivery.id, label: delivery.name }))}
                 />
               )}
-              <FormInput name="dueDate" label="Required date" type="date" />
-              <FormSelect name="currency" label="Currency" options={currencies} />
+              <FormInput name="dueDate" required label="Required date" type="date" />
+              <FormSelect name="currency" required label="Currency" options={currencies} />
             </FieldGroup>
           </CardContent>
         </Card>
@@ -347,6 +355,7 @@ export function OrderBuilder({
                       <FieldGroup className={styles.lineGrid}>
                         <FormNumber
                           name={`items.${index}.pieces`}
+                          required
                           label="Quantity (pieces)"
                           min={line.piecesPerSet}
                           step={line.piecesPerSet}
@@ -370,6 +379,7 @@ export function OrderBuilder({
                         )}
                         <FormNumber
                           name={`items.${index}.unitPrice`}
+                          required
                           label={`Unit price per piece (${currency})`}
                           min={0}
                           step={0.01}
@@ -389,7 +399,12 @@ export function OrderBuilder({
                               : supplierMatchMessage(match.status)}
                           </p>
                         )}
-                        <FormSelect name={`items.${index}.prepCategory`} label="Preparation" options={prepOptions} />
+                        <FormSelect
+                          name={`items.${index}.prepCategory`}
+                          required
+                          label="Preparation"
+                          options={prepOptions}
+                        />
                         <dl className={styles.identifiers}>
                           <dt className={sx({ fontWeight: "medium" })}>Amazon identifiers</dt>
                           <dd className={sx({ color: "muted" })}>
@@ -436,11 +451,13 @@ export function OrderBuilder({
               <FieldGroup key={charge.id} className={styles.lineGrid}>
                 <FormInput
                   name={`adjustments.${index}.description`}
+                  required
                   label={`Charge ${index + 1} description`}
                   placeholder="Packing"
                 />
                 <FormNumber
                   name={`adjustments.${index}.amount`}
+                  required
                   label={`Charge ${index + 1} amount (${currency})`}
                   scale={100}
                   step={0.01}
@@ -461,9 +478,15 @@ export function OrderBuilder({
             <FormError
               message={form.formState.errors.adjustments?.message ?? form.formState.errors.adjustments?.root?.message}
             />
-            <output>
-              Products: {money(subtotal, currency)} / Charges and discounts: {money(adjustmentTotal, currency)} / PO
-              total: {money(amount, currency)}
+            <output className={styles.totals}>
+              <dl>
+                <dt>Products</dt>
+                <dd>{money(subtotal, currency)}</dd>
+                <dt>Charges and discounts</dt>
+                <dd>{money(adjustmentTotal, currency)}</dd>
+                <dt className={styles.grandTotal}>PO total</dt>
+                <dd className={styles.grandTotal}>{money(amount, currency)}</dd>
+              </dl>
             </output>
           </CardContent>
         </Card>

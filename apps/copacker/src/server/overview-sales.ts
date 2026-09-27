@@ -64,7 +64,22 @@ const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSe
 // A connected account, optionally narrowed to the Shopify orders shipped from one location. `withoutAmazon` leaves out
 // the Shopify copies of Amazon orders (from Shopify's Amazon sales channel), counted from Amazon itself when it's
 // connected.
-type Account = { provider: SalesSource; externalId: string; locationId?: string | null; withoutAmazon?: boolean }
+// `marketplaceId` narrows Amazon to one marketplace's orders and charges.
+type Account = {
+  provider: SalesSource
+  externalId: string
+  locationId?: string | null
+  withoutAmazon?: boolean
+  marketplaceId?: string | null
+}
+
+// The Amazon marketplaces Copacker reads, as the channel filter and breakdown name them.
+export const amazonMarketplaces = [
+  { code: "us", id: "ATVPDKIKX0DER", label: "Amazon US" },
+  { code: "ca", id: "A2EUQ1WTGCTBG2", label: "Amazon Canada" },
+  { code: "mx", id: "A1AM78C64UM0Y8", label: "Amazon Mexico" },
+  { code: "br", id: "A2Q3Y263D00KWC", label: "Amazon Brazil" }
+] as const
 
 // Shopify's Amazon sales channel copies each marketplace's orders into Shopify under a source such as "amazon-us".
 export const amazonImport = sql.raw(`(coalesce(o.data->>'sourceName', '') like 'amazon%')`)
@@ -86,7 +101,7 @@ function accountFilter(accounts: Account[]) {
   return sql`(${sql.join(
     accounts.map(
       (account) =>
-        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``})`
+        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
     ),
     sql` or `
   )}) and ${notCancelled}`
@@ -272,6 +287,43 @@ export async function shopifyCustomers(orgId: string, account: Account, period: 
     yearRevenueMinor: count(row.yearRevenue),
     currency
   }
+}
+
+// The Amazon marketplaces with orders stored since `since`, in the order they're listed above.
+export async function storedMarketplaces(orgId: string, account: string, since: Date) {
+  const result = await db().execute(sql`
+    select distinct o.data->'salesChannel'->>'marketplaceId' as id from sales_orders o
+    where o."orgId" = ${orgId} and o.source = 'amazon' and o."externalAccountId" = ${account} and o."orderedAt" >= ${since}`)
+  const ids = new Set(rows(result).map((row) => String(row.id)))
+  return amazonMarketplaces.filter((marketplace) => ids.has(marketplace.id))
+}
+
+// Amazon's orders, units and sales in a period by marketplace, with sales in `currency`.
+export async function salesByMarketplace(orgId: string, account: Account, period: Bounds, currency: string) {
+  const sales = converted(currency)
+  const result = await db().execute(sql`
+    select o.data->'salesChannel'->>'marketplaceId' as id, count(*) as orders, sum(${orderUnits}) as units,
+      round(coalesce(sum(${sales.revenue}) filter (where ${sales.priced}), 0) * 100) as revenue
+    from sales_orders o
+    where o."orgId" = ${orgId} and (${accountFilter([account])})
+      and o."orderedAt" >= ${period.from} and o."orderedAt" < ${period.to}
+    group by 1`)
+  const byId = new Map(rows(result).map((row) => [String(row.id), row]))
+  return amazonMarketplaces.flatMap((marketplace) => {
+    const row = byId.get(marketplace.id)
+    return row
+      ? [
+          {
+            code: marketplace.code,
+            label: marketplace.label,
+            orders: count(row.orders),
+            units: count(row.units),
+            revenueMinor: count(row.revenue),
+            currency
+          }
+        ]
+      : []
+  })
 }
 
 export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
@@ -664,6 +716,7 @@ export async function platformCharges(
         from amazon_transactions
         where "orgId" = ${orgId} and "externalAccountId" = ${account.externalId}
           and "postedAt" >= ${from} and "postedAt" < ${to}
+          ${account.marketplaceId ? sql`and data->'marketplaceDetails'->>'marketplaceId' = ${account.marketplaceId}` : sql``}
           -- Amazon's fee for fulfilling a Shopify order (multi-channel fulfillment) comes as a shipment described as a
           -- fulfillment fee, such as FBAShipmentInjectionFulfillmentFee, rather than an order payment.
           and (type = 'Refund' or (type = 'Shipment' and coalesce(data->>'description', '') like '%FulfillmentFee')

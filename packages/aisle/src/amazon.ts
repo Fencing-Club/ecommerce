@@ -477,24 +477,30 @@ export class Amazon {
         )
       )
   }
-  /** The North American marketplaces the seller sells in that orders are read from, the US first. */
-  async salesMarketplaces() {
+  /**
+   * The seller's store name and the North American marketplaces it sells in that orders are read from, the US first.
+   */
+  async sellerAccount() {
     const participations = z
       .object({
         payload: z.array(
           z.object({
             marketplace: z.object({ id: z.string() }),
-            participation: z.object({ isParticipating: z.boolean() }).optional()
+            participation: z.object({ isParticipating: z.boolean() }).optional(),
+            storeName: z.string().optional()
           })
         )
       })
       .parse(await this.request("GET", "/sellers/v1/marketplaceParticipations"))
-    const active = new Set(
-      participations.payload
-        .filter((entry) => entry.participation?.isParticipating !== false)
-        .map((entry) => entry.marketplace.id)
-    )
-    return salesMarketplaceIds.filter((id) => active.has(id))
+    const active = participations.payload.filter((entry) => entry.participation?.isParticipating !== false)
+    const ids = new Set(active.map((entry) => entry.marketplace.id))
+    const marketplaceIds = salesMarketplaceIds.filter((id) => ids.has(id))
+    const home = active.find((entry) => entry.marketplace.id === marketplaceIds[0]) ?? active[0]
+    return { storeName: home?.storeName || null, marketplaceIds }
+  }
+  /** The North American marketplaces the seller sells in that orders are read from, the US first. */
+  async salesMarketplaces() {
+    return (await this.sellerAccount()).marketplaceIds
   }
   /**
    * The units of each seller SKU shipped in an FBA inbound shipment, by its shipment ID (such as FBA15ABC12). Null when

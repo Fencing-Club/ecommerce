@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { and, eq, isNull } from "drizzle-orm"
+import type { Metadata } from "next"
 import { z } from "zod"
 import { PageBreadcrumb, PageHeader } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
@@ -10,6 +11,8 @@ import { requireBuyer, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
+
+export const metadata: Metadata = { title: "New purchase order" }
 
 const variantIds = z
   .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+(@[1-9]\d{0,5})?$/))

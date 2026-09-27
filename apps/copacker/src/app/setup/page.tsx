@@ -1,4 +1,5 @@
 import { ArrowUpRight, Box, Info } from "lucide-react"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -6,6 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from "@/lib/utils"
 import { brandTile, centeredPage, mutedBackground } from "../shell.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Set up" }
 
 export default function Setup() {
   return (

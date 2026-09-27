@@ -37,10 +37,11 @@ export function AmazonSelfAuthorize() {
             Token.
           </DialogDescription>
         </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label="Connect Amazon">
-          <FormInput name="sellerId" label="Merchant token" placeholder="A2CIYIV0E1FHU3" autoComplete="off" />
+        <ActionForm form={form} onSubmit={submit} label="Connect Amazon" dialog>
+          <FormInput name="sellerId" required label="Merchant token" placeholder="A2CIYIV0E1FHU3" autoComplete="off" />
           <FormInput
             name="refreshToken"
+            required
             label="Refresh token"
             type="password"
             placeholder="Atzr|…"

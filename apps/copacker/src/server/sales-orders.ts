@@ -11,7 +11,7 @@ import {
 import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { amazonTransactions, connections, jobs, salesOrders, salesSyncs } from "@/db/schema"
+import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncInboundShipments } from "./amazon-shipments"
 import type { Session } from "./auth"
@@ -73,6 +73,18 @@ export async function amazonSalesMarketplaces(
   const ids = await amazon.salesMarketplaces()
   marketplaceCache.set(sellerId, { ids, at: now })
   return ids
+}
+
+// The seller's store name and marketplaces, for Settings, kept for a few hours for the same reason.
+const accountCache = new Map<string, { account: Awaited<ReturnType<Amazon["sellerAccount"]>>; at: number }>()
+export async function amazonSellerAccount(sellerId: string, amazon: Pick<Amazon, "sellerAccount">, now = Date.now()) {
+  const cached = accountCache.get(sellerId)
+  if (cached && now - cached.at < 6 * 3600000) {
+    return cached.account
+  }
+  const account = await amazon.sellerAccount()
+  accountCache.set(sellerId, { account, at: now })
+  return account
 }
 
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
@@ -415,6 +427,12 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
   }
 }
 
+// Shopify's Amazon sales channel copies Amazon's orders into Shopify, under a source such as "amazon-us". Once Amazon
+// is connected they're counted from Amazon itself, so Shopify's copies are left out, as on the Overview.
+const amazonCopy = sql`coalesce(${salesOrders.data}->>'sourceName', '') like 'amazon%'`
+const isAmazonCopy = (data: ShopifySale | AmazonSale) =>
+  "sourceName" in data && Boolean(data.sourceName?.startsWith("amazon"))
+
 // Each connected source's sync state and the orders stored for it.
 export async function salesSyncStatus(orgId: string) {
   const since = new Date(Date.now() - 30 * day)
@@ -428,7 +446,8 @@ export async function salesSyncStatus(orgId: string) {
       .select({
         source: salesOrders.source,
         externalAccountId: salesOrders.externalAccountId,
-        orders: count()
+        orders: count(),
+        amazonCopies: sql<number>`count(*) filter (where ${amazonCopy})`.mapWith(Number)
       })
       .from(salesOrders)
       .where(eq(salesOrders.orgId, orgId))
@@ -443,6 +462,7 @@ export async function salesSyncStatus(orgId: string) {
       .from(salesOrders)
       .where(and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since)))
   ])
+  const amazonConnected = accounts.some((row) => row.provider === "amazon")
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
     if (!account) {
@@ -450,8 +470,10 @@ export async function salesSyncStatus(orgId: string) {
     }
     const sync = syncs.find((row) => row.source === source && row.externalAccountId === account.externalId)
     const orders = stored.find((row) => row.source === source && row.externalAccountId === account.externalId)
+    const amazonCopies = source === "shopify" && amazonConnected ? (orders?.amazonCopies ?? 0) : 0
     const last30 = recent
       .filter((row) => row.source === source && row.externalAccountId === account.externalId)
+      .filter((row) => !amazonCopies || !isAmazonCopy(row.data))
       .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId))
     return [
       {
@@ -462,7 +484,7 @@ export async function salesSyncStatus(orgId: string) {
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
         coveredTo: sync?.coveredTo?.toISOString() ?? null,
         finishedAt: sync?.finishedAt?.toISOString() ?? null,
-        orders: orders?.orders ?? 0,
+        orders: (orders?.orders ?? 0) - amazonCopies,
         // Orders and units in the last 30 days.
         recent: { orders: last30.length, units: last30.reduce((sum, order) => sum + order.units, 0) }
       }
@@ -549,8 +571,9 @@ export type SalesOrderSummary = {
   number: string
   orderedAt: string
   units: number
-  // What was bought: SKUs and quantities, a bundle once under its own SKU.
-  items: { sku: string | null; quantity: number }[]
+  // What was bought: SKUs and quantities, a bundle once under its own SKU. `name` is the product (and variation) from
+  // the synced Shopify catalog, when it has it.
+  items: { sku: string | null; variantId?: string | null; name?: string | null; quantity: number }[]
   channel: string
   status: string
   // The order in Shopify admin or Seller Central.
@@ -642,10 +665,10 @@ export function summarizeSalesOrder(
       if (line.lineItemGroup) {
         if (!groups.has(line.lineItemGroup.id)) {
           groups.add(line.lineItemGroup.id)
-          items.push({ sku: null, quantity: line.lineItemGroup.quantity })
+          items.push({ sku: null, variantId: line.lineItemGroup.variantId, quantity: line.lineItemGroup.quantity })
         }
       } else if (line.currentQuantity > 0) {
-        items.push({ sku: line.sku, quantity: line.currentQuantity })
+        items.push({ sku: line.sku, variantId: line.variant?.id ?? null, quantity: line.currentQuantity })
       }
     }
     let status = "Unfulfilled"
@@ -707,27 +730,113 @@ export function summarizeSalesOrder(
 
 export const salesOrdersPageSize = 50
 
-// Stored orders, newest first, for the connected accounts. The search matches order numbers and SKUs.
+// Stored orders, newest first, for the connected accounts, without Shopify's copies of Amazon orders once Amazon is
+// connected. The search matches order numbers, SKUs and product titles.
+// Drizzle writes an array as a parenthesized list of values; an empty one would be invalid SQL.
+const listed = (values: string[]) => (values.length ? values : [""])
+
+// The listed items' product names from the synced Shopify catalog, by variant and by SKU (Amazon items only have a
+// SKU). Read from the snapshot in the database, so only the listed items' rows are returned.
+async function productNames(orgId: string, domain: string, orders: SalesOrderSummary[]) {
+  const variantIds = [...new Set(orders.flatMap((order) => order.items.flatMap((item) => item.variantId ?? [])))]
+  const skus = [...new Set(orders.flatMap((order) => order.items.flatMap((item) => item.sku ?? [])))]
+  const byVariant = new Map<string, string>()
+  const bySku = new Map<string, string>()
+  if (variantIds.length === 0 && skus.length === 0) {
+    return { byVariant, bySku }
+  }
+  const result = await db().execute(sql`
+    select r->>'variantId' as "variantId", r->>'buyerSku' as sku, r->>'productTitle' as product,
+      r->>'variantTitle' as variant
+    from ${stockSnapshots} s, jsonb_array_elements(s.data->'rows') r
+    where s."orgId" = ${orgId} and s.source = 'shopify' and s."externalAccountId" = ${domain} and s."scopeKey" = 'store'
+      and (r->>'variantId' in ${listed(variantIds)} or r->>'buyerSku' in ${listed(skus)})`)
+  for (const row of (result as unknown as { rows: Record<string, unknown>[] }).rows) {
+    if (typeof row.product !== "string") {
+      continue
+    }
+    const name =
+      typeof row.variant === "string" && row.variant !== "Default Title"
+        ? `${row.product}, ${row.variant}`
+        : row.product
+    if (typeof row.variantId === "string") {
+      byVariant.set(row.variantId, name)
+    }
+    // A SKU several variations share can't name one.
+    if (typeof row.sku === "string") {
+      bySku.set(row.sku, bySku.has(row.sku) && bySku.get(row.sku) !== name ? "" : name)
+    }
+  }
+  for (const [sku, name] of bySku) {
+    if (!name) {
+      bySku.delete(sku)
+    }
+  }
+  return { byVariant, bySku }
+}
+
+// A pattern that finds the text anywhere. ILIKE treats %, _ and \ as special; escape them so they match literally.
+const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (match) => `\\${match}`)}%`
+
+// The variants and SKUs whose product and variation title contain every word of the search, from the synced Shopify
+// catalog, so orders can be found by product name.
+async function matchingProducts(orgId: string, domain: string, q: string) {
+  const words = q.split(/ +/).map(likePattern)
+  const result = await db().execute(sql`
+    select distinct r->>'variantId' as "variantId", r->>'buyerSku' as sku
+    from ${stockSnapshots} s, jsonb_array_elements(s.data->'rows') r
+    where s."orgId" = ${orgId} and s.source = 'shopify' and s."externalAccountId" = ${domain} and s."scopeKey" = 'store'
+      and ${sql.join(
+        words.map((word) => sql`concat_ws(' ', r->>'productTitle', r->>'variantTitle') ilike ${word}`),
+        sql` and `
+      )}
+    limit 1000`)
+  const rows = (result as unknown as { rows: Record<string, unknown>[] }).rows
+  return {
+    variantIds: rows.flatMap((row) => (typeof row.variantId === "string" ? [row.variantId] : [])),
+    skus: rows.flatMap((row) => (typeof row.sku === "string" && row.sku ? [row.sku] : []))
+  }
+}
+
 export async function listSalesOrders(orgId: string, filter: { source?: SalesSource; page: number; q?: string }) {
   const accounts = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
     .from(connections)
     .where(eq(connections.orgId, orgId))
+  const amazonConnected = accounts.some((account) => account.provider === "amazon")
   const scopes = accounts.flatMap((account) =>
     !filter.source || filter.source === account.provider
-      ? [and(eq(salesOrders.source, account.provider), eq(salesOrders.externalAccountId, account.externalId))]
+      ? [
+          and(
+            eq(salesOrders.source, account.provider),
+            eq(salesOrders.externalAccountId, account.externalId),
+            account.provider === "shopify" && amazonConnected ? sql`not ${amazonCopy}` : undefined
+          )
+        ]
       : []
   )
   if (scopes.length === 0) {
     return { orders: [], total: 0 }
   }
   const q = filter.q?.trim()
-  // ILIKE treats %, _ and \ as special; escape them so they match literally.
-  const pattern = q ? `%${q.replace(/[\\%_]/g, (match) => `\\${match}`)}%` : null
+  const pattern = q ? likePattern(q) : null
+  const shopifyAccount = accounts.find((account) => account.provider === "shopify")
+  const titled = q && shopifyAccount ? await matchingProducts(orgId, shopifyAccount.externalId, q) : null
   const where = and(
     eq(salesOrders.orgId, orgId),
     or(...scopes),
-    pattern ? sql`${salesOrders.data}::text ilike ${pattern}` : undefined
+    pattern
+      ? or(
+          sql`${salesOrders.data}::text ilike ${pattern}`,
+          titled && (titled.variantIds.length || titled.skus.length)
+            ? sql`exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems')) l
+                where l->'variant'->>'id' in ${listed(titled.variantIds)}
+                  or l->'lineItemGroup'->>'variantId' in ${listed(titled.variantIds)}
+                  or l->>'sku' in ${listed(titled.skus)}
+                  or l->'product'->>'sellerSku' in ${listed(titled.skus)})`
+            : undefined
+        )
+      : undefined
   )
   const [rows, [total]] = await Promise.all([
     db()
@@ -767,17 +876,28 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
         )
         .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)
     : []
+  const orders = rows.map((row) => {
+    const order = summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)
+    if (row.source !== "amazon") {
+      return order
+    }
+    const fee = posted.find(
+      (entry) => entry.orderId === order.orderId && entry.externalAccountId === row.externalAccountId
+    )
+    return fee ? { ...order, fees: { minor: fee.fees, currency: fee.currency } } : order
+  })
+  const names = shopifyAccount ? await productNames(orgId, shopifyAccount.externalId, orders) : null
   return {
-    orders: rows.map((row) => {
-      const order = summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)
-      if (row.source !== "amazon") {
-        return order
-      }
-      const fee = posted.find(
-        (entry) => entry.orderId === order.orderId && entry.externalAccountId === row.externalAccountId
-      )
-      return fee ? { ...order, fees: { minor: fee.fees, currency: fee.currency } } : order
-    }),
+    orders: names
+      ? orders.map((order) => ({
+          ...order,
+          items: order.items.map((item) => ({
+            ...item,
+            name:
+              (item.variantId && names.byVariant.get(item.variantId)) ?? (item.sku && names.bySku.get(item.sku)) ?? null
+          }))
+        }))
+      : orders,
     total: total?.total ?? 0
   }
 }

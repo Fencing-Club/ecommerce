@@ -116,6 +116,7 @@ import { readSalesDemand } from "../src/server/sales"
 import {
   listSalesOrders,
   requestSalesSync,
+  salesSyncStatus,
   amazonDataVersion,
   storedDemand,
   syncChunks
@@ -2867,6 +2868,100 @@ describe("stored sales orders", () => {
     expect((await storedDemand(buyerId, "amazon", 120)).rows[0]?.fulfilledUnits).toBe(5)
     await expect(storedDemand(buyerId, "amazon", 400)).rejects.toThrow("go back 365 days")
     expect(provider.api.request.mock.calls.length).toBe(calls)
+  })
+  it("leaves Shopify's copies of Amazon orders out once Amazon is connected", async () => {
+    amazonOrders([amazonOrder("111-1", daysAgo(10), 2)])
+    await requestSalesSync(buyer.org, "amazon")
+    await runNextJob()
+    const shop = "test.myshopify.com"
+    await database
+      .insert(tables.connections)
+      .values({ orgId: buyerId, provider: "shopify", externalId: shop, encryptedToken: "test-only", scopes: "" })
+    const shopifyOrder = (id: string, name: string, sourceName: string) => ({
+      orgId: buyerId,
+      source: "shopify" as const,
+      externalAccountId: shop,
+      orderId: id,
+      orderedAt: new Date(daysAgo(9)),
+      data: {
+        id,
+        name,
+        createdAt: daysAgo(9),
+        cancelledAt: null,
+        test: false,
+        sourceName,
+        lines: [],
+        fulfillments: [],
+        transactions: []
+      }
+    })
+    await database
+      .insert(tables.salesOrders)
+      .values([
+        shopifyOrder("gid://shopify/Order/1", "#1001", "web"),
+        shopifyOrder("gid://shopify/Order/2", "#1002", "amazon-us")
+      ])
+    const shopifyStatus = async () => (await salesSyncStatus(buyerId)).find((state) => state.source === "shopify")
+    expect(await shopifyStatus()).toMatchObject({ orders: 1, recent: { orders: 1 } })
+    const listed = await listSalesOrders(buyerId, { page: 0 })
+    expect(listed.total).toBe(2)
+    expect(listed.orders.map((order) => order.number).toSorted()).toEqual(["#1001", "111-1"])
+    expect((await listSalesOrders(buyerId, { page: 0, source: "shopify" })).total).toBe(1)
+    // Orders are found by their products' titles: Amazon's by SKU, Shopify's by variant.
+    const catalogRow = {
+      inventoryItemId: "gid://shopify/InventoryItem/77",
+      tracked: true,
+      unit: "shopify_inventory_unit" as const,
+      levels: [],
+      productTitle: "Foil Wire",
+      variantTitle: "Red / Left"
+    }
+    await database.insert(tables.stockSnapshots).values({
+      orgId: buyerId,
+      source: "shopify",
+      externalAccountId: shop,
+      scopeKey: "store",
+      data: {
+        source: "shopify",
+        scopeKey: "store",
+        shopifyDomain: shop,
+        startedAt: daysAgo(1),
+        observedAt: daysAgo(1),
+        rows: [
+          { ...catalogRow, variantId: "gid://shopify/ProductVariant/77", buyerSku: "foil-2" },
+          {
+            ...catalogRow,
+            variantId: "gid://shopify/ProductVariant/78",
+            buyerSku: null,
+            productTitle: "Mask Cord",
+            variantTitle: "Default Title"
+          }
+        ]
+      }
+    })
+    const line = {
+      id: "gid://shopify/LineItem/1",
+      quantity: 1,
+      currentQuantity: 1,
+      sku: null,
+      variant: { id: "gid://shopify/ProductVariant/78" },
+      lineItemGroup: null,
+      originalUnitPriceSet: { shopMoney: { amount: "10.00", currencyCode: "USD" } },
+      discountAllocations: []
+    }
+    await database
+      .update(tables.salesOrders)
+      .set({ data: { ...shopifyOrder("gid://shopify/Order/1", "#1001", "web").data, lines: [line] } })
+      .where(eq(tables.salesOrders.orderId, "gid://shopify/Order/1"))
+    const found = async (q: string) =>
+      (await listSalesOrders(buyerId, { page: 0, q })).orders.map((order) => order.number).toSorted()
+    expect(await found("wire left")).toEqual(["111-1"])
+    expect(await found("mask CORD")).toEqual(["#1001"])
+    expect(await found("wire mask")).toEqual([])
+    // Without Amazon connected, the copies are the only record of those orders.
+    await database.delete(tables.connections).where(eq(tables.connections.provider, "amazon"))
+    expect(await shopifyStatus()).toMatchObject({ orders: 2, recent: { orders: 2 } })
+    expect((await listSalesOrders(buyerId, { page: 0 })).total).toBe(2)
   })
   it("drops orders that disappear from the source when the period is synced again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])

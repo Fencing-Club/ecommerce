@@ -1,7 +1,10 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { SalesOrders } from "@/components/sales-orders"
 import { session } from "@/server/auth"
+
+export const metadata: Metadata = { title: "Orders" }
 
 export default async function SalesPage() {
   const s = await session()
@@ -10,10 +13,7 @@ export default async function SalesPage() {
   }
   return (
     <>
-      <PageHeader
-        title="Orders"
-        description="Customer orders copied from Shopify and Amazon. They sync every day, and Shopify orders as soon as they change. Restock and the Overview use them."
-      />
+      <PageHeader title="Orders" />
       <SalesOrders />
     </>
   )

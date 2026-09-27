@@ -92,3 +92,36 @@ export const groupTitle = style({ display: "flex", alignItems: "center", gap: sp
 export const groupContent = style({ display: "flex", flexDirection: "column", gap: space(3) })
 // Filters a link opened Restock with, each clearable.
 export const filters = style({ display: "flex", flexWrap: "wrap", gap: space(2) })
+
+// The Sold, Days out, Available and Incoming columns show once the table is wide; the Why panel covers them otherwise.
+const wide = "(min-width: 56rem)"
+export const tableWrap = style({ containerType: "inline-size" })
+export const wideOnly = style({
+  selectors: { "&&": { display: "none" } },
+  "@container": { [wide]: { selectors: { "&&": { display: "table-cell" } } } }
+})
+
+export const narrowCell = style({
+  selectors: { "&&": { display: "table-cell", whiteSpace: "normal" } },
+  "@container": { [wide]: { selectors: { "&&": { display: "none" } } } }
+})
+export const narrowOnly = style({
+  ...fontSize.xs,
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: space(2),
+  marginTop: space(1),
+  paddingLeft: space(11),
+  color: vars.color.mutedForeground,
+  "@container": { [wide]: { display: "none" } }
+})
+
+// The counts, and how quantities are worked out behind a link-style toggle.
+export const method = style({ display: "flex", flexDirection: "column", gap: space(2) })
+export const methodTrigger = style({
+  color: vars.color.foreground,
+  textDecoration: "underline",
+  textUnderlineOffset: 2,
+  cursor: "pointer"
+})

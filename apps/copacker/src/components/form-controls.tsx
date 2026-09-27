@@ -10,6 +10,27 @@ import { Textarea } from "@/components/ui/textarea"
 import * as styles from "./form-controls.css"
 
 type Common = { name: string; label: string; description?: React.ReactNode; className?: string }
+
+// A required field's label ends in a red star; fields without one are optional.
+export function RequiredMark() {
+  return (
+    <span aria-hidden className={styles.required}>
+      *
+    </span>
+  )
+}
+
+function Label({ htmlFor, label, required }: { htmlFor: string; label: string; required?: boolean }) {
+  return (
+    <FieldLabel htmlFor={htmlFor}>
+      {/* One span, so the star sits by the text rather than a label gap away. */}
+      <span>
+        {label}
+        {required && <RequiredMark />}
+      </span>
+    </FieldLabel>
+  )
+}
 type Option = { value: string; label: string; disabled?: boolean }
 
 // Fields bound to the surrounding React Hook Form by `name`, with shadcn Field layout and per-field errors.
@@ -28,7 +49,7 @@ export function FormInput({
   } = useController({ name })
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Label htmlFor={id} label={label} required={props.required} />
       <Input
         {...props}
         id={id}
@@ -66,7 +87,7 @@ export function FormNumber({
   const value = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue / scale : ""
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Label htmlFor={id} label={label} required={props.required} />
       <Input
         {...props}
         id={id}
@@ -96,8 +117,9 @@ export function FormSelect({
   description,
   className,
   options,
-  placeholder
-}: Common & { options: Option[]; placeholder?: string }) {
+  placeholder,
+  required
+}: Common & { options: Option[]; placeholder?: string; required?: boolean }) {
   const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
@@ -105,9 +127,10 @@ export function FormSelect({
   } = useController({ name })
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Label htmlFor={id} label={label} required={required} />
       <NativeSelect
         id={id}
+        required={required}
         className={styles.fullWidth}
         name={fieldName}
         ref={ref}
@@ -143,7 +166,7 @@ export function FormTextarea({
   } = useController({ name })
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Label htmlFor={id} label={label} required={props.required} />
       <Textarea
         {...props}
         id={id}

@@ -22,7 +22,10 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   transactions and fulfillments start the order sync. Products, inventory items, inventory levels (updated, connected,
   disconnected) and locations start the stock refresh. App uninstalled disconnects the store. Fulfillment topics need
   `read_fulfillments`, so a store connected before Copacker asked for it subscribes to them after reconnecting; its
-  shipments still arrive as order updates until then. Without `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development)
+  shipments still arrive as order updates until then. Editing only a variant metafield (supplier SKU, ASIN, Amazon
+  stock target, case quantity) in Shopify sends no event (tested 2026-09-27), so those edits reach Copacker with the
+  next stock refresh, at the latest the daily reconciliation. Supplier SKUs edited in Copacker update its copy
+  directly. Without `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development)
   nothing is subscribed, and syncs still copy orders.
 - Each event carries the webhook's headers as metadata and its body as the payload. Events are gathered into
   five-minute periods; each period starts the existing order sync or stock refresh three minutes after it ends, so a
@@ -40,8 +43,8 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   automation token instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
   `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
   `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
-  Dashboard before releasing it. The `read_fulfillments` scope, which the connect route requests, still needs a
-  release. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
+  Dashboard before releasing it. Version copacker-8 (2026-09-27) added the `read_fulfillments` scope, which a
+  store approves by reconnecting. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
   `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes, which a store
   approves by reconnecting.
 

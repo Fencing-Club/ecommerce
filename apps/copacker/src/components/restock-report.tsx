@@ -3,11 +3,12 @@
 import { useDebouncedValue, useLocalStorage } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { money } from "@repo/aisle"
-import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, Search, X } from "lucide-react"
+import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, RefreshCw, Search, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { WarningNote } from "@/components/common"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +20,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage, type SupplierOption, useSuppliersQuery } from "@/lib/api"
 import { type CoverBucket, coverBucket, coverBuckets, isCoverBucket } from "@/lib/cover"
+import { cn } from "@/lib/utils"
 import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
 import { dayRange, restockDefaults } from "@/server/restock-report"
 import * as styles from "./restock-report.css"
@@ -192,7 +194,7 @@ function Notes({ report }: { report: Report }) {
   const notes = report.sources.flatMap(({ source, error, gapUnits, gapReasons, window }) => [
     error ? `${sourceNames[source]}: ${error}` : null,
     window
-      ? `${sourceNames[source]} sales from ${new Date(window.from).toLocaleDateString()} to ${new Date(window.to).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Sync on the Orders page for newer ones.`
+      ? `${sourceNames[source]} sales from ${new Date(window.from).toLocaleDateString(undefined, { dateStyle: "medium" })} to ${new Date(window.to).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`
       : null,
     gapUnits > 0 || Object.values(gapReasons).some((gap) => gap.unknownCount > 0)
       ? `${sourceNames[source]}: not counted, ${Object.entries(gapReasons)
@@ -349,20 +351,25 @@ function LineRows({
         </TableCell>
         <TableCell>
           <Name line={line} />
+          {/* In a narrow table the status and stock left columns are hidden, so they show under the name. */}
+          <span className={styles.narrowOnly}>
+            <Badge variant={statusVariants[line.status]}>{statusLabels[line.status]}</Badge>
+            {line.daysRemaining !== null ? `${line.daysRemaining} days left` : <StockLeft line={line} />}
+          </span>
         </TableCell>
-        <TableCell>
+        <TableCell className={styles.wideOnly}>
           <Badge variant={statusVariants[line.status]}>{statusLabels[line.status]}</Badge>
         </TableCell>
-        <TableCell className={styles.number}>
+        <TableCell className={cn(styles.number, styles.wideOnly)}>
           <StockLeft line={line} />
         </TableCell>
-        <TableCell className={styles.number}>{line.sold ?? "Unknown"}</TableCell>
-        <TableCell className={line.stockoutDays > 0 ? styles.stockoutCell : styles.number}>
+        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.sold ?? "Unknown"}</TableCell>
+        <TableCell className={cn(line.stockoutDays > 0 ? styles.stockoutCell : styles.number, styles.wideOnly)}>
           {line.stockoutDays}
           <span className={srOnly}> of {line.salesDays} days</span>
         </TableCell>
-        <TableCell className={styles.number}>{line.available ?? "Unknown"}</TableCell>
-        <TableCell className={styles.number}>{line.incoming ?? "Unknown"}</TableCell>
+        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.available ?? "Unknown"}</TableCell>
+        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.incoming ?? "Unknown"}</TableCell>
         <TableCell className={styles.number}>
           {orderable ? (
             <Input
@@ -398,16 +405,26 @@ function LineRows({
       {expanded && (
         <TableRow>
           <TableCell />
-          <TableCell colSpan={10}>
-            <ol className={styles.explain}>
-              {explain(line).map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
+          {/* Spans the columns the table shows: all ten when wide, four when narrow. */}
+          <TableCell colSpan={10} className={styles.wideOnly}>
+            <Explanation line={line} />
+          </TableCell>
+          <TableCell colSpan={4} className={styles.narrowCell}>
+            <Explanation line={line} />
           </TableCell>
         </TableRow>
       )}
     </>
+  )
+}
+
+function Explanation({ line }: { line: RestockLine }) {
+  return (
+    <ol className={styles.explain}>
+      {explain(line).map((step) => (
+        <li key={step}>{step}</li>
+      ))}
+    </ol>
   )
 }
 
@@ -482,7 +499,7 @@ function SupplierGroup({
             ))}
         </span>
       </div>
-      <CollapsibleContent className={styles.groupContent}>
+      <CollapsibleContent className={cn(styles.groupContent, styles.tableWrap)}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -490,16 +507,16 @@ function SupplierGroup({
                 <span className={srOnly}>Order</span>
               </TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className={styles.number}>Stock left</TableHead>
-              <TableHead className={styles.number}>Sold</TableHead>
-              <TableHead className={styles.number}>
+              <TableHead className={styles.wideOnly}>Status</TableHead>
+              <TableHead className={cn(styles.number, styles.wideOnly)}>Stock left</TableHead>
+              <TableHead className={cn(styles.number, styles.wideOnly)}>Sold</TableHead>
+              <TableHead className={cn(styles.number, styles.wideOnly)}>
                 <abbr title="Days of the sales period it was out of stock. The sales rate leaves them out.">
                   Days out
                 </abbr>
               </TableHead>
-              <TableHead className={styles.number}>Available</TableHead>
-              <TableHead className={styles.number}>Incoming</TableHead>
+              <TableHead className={cn(styles.number, styles.wideOnly)}>Available</TableHead>
+              <TableHead className={cn(styles.number, styles.wideOnly)}>Incoming</TableHead>
               <TableHead className={styles.number}>Order</TableHead>
               <TableHead className={styles.number}>Cost</TableHead>
               <TableHead>
@@ -530,7 +547,9 @@ function SupplierGroup({
           <TableFooter>
             <TableRow>
               <TableCell />
-              <TableCell colSpan={7}>Total selected</TableCell>
+              <TableCell>Total selected</TableCell>
+              {/* Under the columns hidden in a narrow table: status, stock left, sold, days out, available, incoming. */}
+              <TableCell colSpan={6} className={styles.wideOnly} />
               <TableCell className={styles.number}>{totals.units.toLocaleString()}</TableCell>
               <TableCell className={styles.number}>{costText(totals)}</TableCell>
               <TableCell />
@@ -688,20 +707,26 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
       {salesError ? (
         <p className={styles.summary}>Restock needs this channel’s sales. Fix the issue above and try again.</p>
       ) : (
-        <p className={styles.summary}>
-          {counts.order} to reorder, {counts.blocked} can’t be calculated, {counts.fine} have enough stock. Quantities
-          cover each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock and open
-          POs, then round up to the minimum order and whole cases. Costs use Shopify’s unit cost and exclude freight,
-          duties and fees.
-        </p>
+        <Collapsible className={styles.method}>
+          <p className={styles.summary}>
+            {counts.order} to reorder
+            {counts.blocked > 0 && `, ${counts.blocked} can’t be calculated`}, {counts.fine} have enough stock.{" "}
+            <CollapsibleTrigger className={styles.methodTrigger}>How are quantities worked out?</CollapsibleTrigger>
+          </p>
+          <CollapsibleContent className={styles.summary}>
+            Quantities cover each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock
+            and open POs, then round up to the minimum order and whole cases. Each supplier’s own lead time, set on the{" "}
+            <Link href="/suppliers">Suppliers</Link> page, replaces the default. Costs use Shopify’s unit cost and
+            exclude freight, duties and fees.
+          </CollapsibleContent>
+        </Collapsible>
       )}
       {report.needsSupplier > 0 && (
-        <p className={styles.summary}>
+        <WarningNote>
           {report.needsSupplier} more {report.needsSupplier === 1 ? "product needs" : "products need"} reordering but{" "}
-          {report.needsSupplier === 1 ? "has" : "have"} no supplier in Shopify, so{" "}
-          {report.needsSupplier === 1 ? "it isn’t" : "they aren’t"} listed. Set the Supplier field in Shopify, or choose
-          a supplier on the <Link href="/products">Products</Link> page.
-        </p>
+          {report.needsSupplier === 1 ? "has" : "have"} no supplier. Choose one on the{" "}
+          <Link href="/products">Products</Link> page.
+        </WarningNote>
       )}
       {(cover || onlyOrders) && (
         <div className={styles.filters}>
@@ -723,22 +748,22 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
       )}
       <div className={styles.controls}>
         <Field className={styles.search}>
-          <FieldLabel htmlFor="restock-search">Search</FieldLabel>
           <span className={styles.searchBox}>
             <Search aria-hidden="true" />
             <Input
               id="restock-search"
               type="search"
-              placeholder="Product or SKU"
+              aria-label="Search products"
+              placeholder="Search products or SKUs"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
           </span>
         </Field>
         <Field className={styles.control}>
-          <FieldLabel htmlFor="restock-sort">Sort by</FieldLabel>
           <NativeSelect
             id="restock-sort"
+            aria-label="Sort by"
             value={sort}
             onChange={(event) => {
               const value = event.target.value
@@ -842,21 +867,19 @@ export function RestockReport() {
   const channel = channels.find((item) => item.key === (linkedChannel ?? channelKey)) ?? channels[0]
   // A remembered choice that no longer exists, such as a removed supplier, falls back to all suppliers.
   const supplierChoice = supplier === "all" || suppliers.some((row) => row.id === supplier)
-  const [submitted, setSubmitted] = useState<Request | null>(null)
-  const result = restockApi.useRestockPlanQuery(submitted ?? skipToken)
-  const requestKey = submitted ? JSON.stringify(submitted) : ""
-  const request =
+  const request: Request | null =
     channel && days !== null && leadTimeDays !== null
       ? { days, leadTimeDays, channel: channel.channel, supplier: supplierChoice ? supplier : "all" }
       : null
-  const current = request && JSON.stringify(request) === requestKey
-  const linked = Boolean(filters.channel || filters.q || filters.cover || filters.onlyOrders)
-  const [autoRan, setAutoRan] = useState(false)
-  // Opened from a link: calculate once the channels have loaded, without waiting for Suggest reorders.
-  if (linked && !autoRan && request && channels.length) {
-    setAutoRan(true)
-    setSubmitted(request)
+  // Suggestions load as soon as the settings are known, and again once typing in them pauses.
+  const requestKey = request ? JSON.stringify(request) : ""
+  const [settledKey] = useDebouncedValue(requestKey, 500)
+  const settled = settledKey && settledKey === requestKey ? request : null
+  const [shownKey, setShownKey] = useState("")
+  if (settled && shownKey !== settledKey) {
+    setShownKey(settledKey)
   }
+  const result = restockApi.useRestockPlanQuery(shownKey ? (JSON.parse(shownKey) as Request) : skipToken)
   return (
     <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
       <div className={styles.controls}>
@@ -909,7 +932,9 @@ export function RestockReport() {
           />
         </Field>
         <Field className={styles.days} data-invalid={leadTimeDays === null}>
-          <FieldLabel htmlFor="restock-lead-time">Default lead time (days)</FieldLabel>
+          <FieldLabel htmlFor="restock-lead-time" title="Used for suppliers without their own lead time">
+            Lead time (days)
+          </FieldLabel>
           <Input
             id="restock-lead-time"
             type="number"
@@ -922,32 +947,20 @@ export function RestockReport() {
           />
         </Field>
         <Button
-          disabled={result.isFetching || !request}
-          onClick={() => {
-            if (!request) {
-              return
-            }
-            // The same settings again recalculate; new settings load their own result.
-            if (JSON.stringify(request) === requestKey) {
-              void result.refetch()
-            } else {
-              setSubmitted(request)
-            }
-          }}
+          variant="outline"
+          disabled={result.isFetching || !shownKey}
+          onClick={() => void result.refetch()}
+          aria-label="Recalculate suggestions"
         >
-          {result.isFetching ? "Calculating…" : "Suggest reorders"}
+          <RefreshCw data-icon="inline-start" />
+          {result.isFetching ? "Calculating…" : "Recalculate"}
         </Button>
       </div>
-      <p className={styles.summary}>
-        Uses orders copied on the <Link href="/sales">Orders</Link> page and stock from the{" "}
-        <Link href="/products">Products</Link> page. Suppliers’ own lead times replace the default; set them on the{" "}
-        <Link href="/suppliers">Suppliers</Link> page.
-      </p>
       {result.isError && <p role="alert">{errorMessage(result.error, "Restock couldn’t be calculated. Try again.")}</p>}
-      {result.currentData && current && <Results key={requestKey} report={result.currentData} filters={filters} />}
-      {result.currentData && !current && (
-        <p className={styles.summary}>Settings changed. Select Suggest reorders to update.</p>
+      {!result.currentData && (result.isFetching || (request && !result.isError)) && (
+        <p className={styles.summary}>Calculating suggestions…</p>
       )}
+      {result.currentData && <Results key={shownKey} report={result.currentData} filters={filters} />}
     </div>
   )
 }

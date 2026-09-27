@@ -161,7 +161,9 @@ export function InventorySync({ providers }: { providers: string[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Stock</CardTitle>
-        <CardDescription>Totals across your Shopify locations and Amazon. Sync a source to refresh it.</CardDescription>
+        <CardDescription>
+          Totals add Amazon FBA and AWD to the Shopify locations you count in <Link href="/settings">Settings</Link>.
+        </CardDescription>
       </CardHeader>
       <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
         <ul className={styles.sources} aria-label="Sources">

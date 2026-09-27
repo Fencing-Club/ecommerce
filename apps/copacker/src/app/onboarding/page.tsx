@@ -1,10 +1,13 @@
 import { Box } from "lucide-react"
+import type { Metadata } from "next"
 import { WorkspaceForm } from "@/components/settings-forms"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { identity } from "@/server/auth"
 import { brandTile, centeredPage, mutedBackground } from "../shell.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Get started" }
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"

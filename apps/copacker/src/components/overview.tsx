@@ -41,6 +41,7 @@ import {
   UpcomingSpend
 } from "./overview-sections"
 import * as styles from "./overview.css"
+import { srOnly } from "@/styles/utilities.css"
 
 const unavailable = "Not available"
 
@@ -250,7 +251,8 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
 
 export function OverviewDashboard({ data }: { data: Overview }) {
   const { sales, restock, purchasing } = data
-  const channel = data.channel?.key ?? null
+  // Restock and stock links use the restock channel: Amazon for any Amazon marketplace.
+  const channel = data.channel?.key.startsWith("amazon") ? "amazon" : (data.channel?.key ?? null)
   // Restock links open on the chosen channel.
   const attention = data.attention.map((item) =>
     channel && item.href.startsWith("/restock")
@@ -292,6 +294,29 @@ export function OverviewDashboard({ data }: { data: Overview }) {
                   sources={sales.sources}
                   currency={sales.currency}
                 />
+                {sales.marketplaces.length > 0 && (
+                  <table className={styles.marketplaces}>
+                    <caption className={srOnly}>Amazon sales by marketplace</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Marketplace</th>
+                        <th scope="col">Orders</th>
+                        <th scope="col">Units</th>
+                        <th scope="col">Sales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sales.marketplaces.map((marketplace) => (
+                        <tr key={marketplace.code}>
+                          <th scope="row">{marketplace.label}</th>
+                          <td>{formatNumber(marketplace.orders)}</td>
+                          <td>{formatNumber(marketplace.units)}</td>
+                          <td>{formatMoney([{ minor: marketplace.revenueMinor, currency: marketplace.currency }])}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
                 {sales.otherMarketplaceOrders > 0 && (
                   <p className={styles.note}>
                     Amazon orders that Shopify’s Amazon channel copies into Shopify are counted once, from Amazon.{" "}

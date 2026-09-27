@@ -121,12 +121,12 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
       {packs.fields.map((field, index) => (
         <fieldset key={field.id} className={styles.casePack}>
           <legend className={styles.srOnlyLegend}>Case pack {index + 1}</legend>
-          <FormInput name={`casePacks.${index}.name`} label="Name" className={styles.casePackName} />
-          <FormNumber name={`casePacks.${index}.units`} label="Units per case" min={1} step={1} />
-          <FormNumber name={`casePacks.${index}.lengthCm`} label="Length (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.widthCm`} label="Width (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.heightCm`} label="Height (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.weightKg`} label="Weight (kg, optional)" min={0} step={0.01} />
+          <FormInput name={`casePacks.${index}.name`} required label="Name" className={styles.casePackName} />
+          <FormNumber name={`casePacks.${index}.units`} required label="Units per case" min={1} step={1} />
+          <FormNumber name={`casePacks.${index}.lengthCm`} required label="Length (cm)" min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.widthCm`} required label="Width (cm)" min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.heightCm`} required label="Height (cm)" min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.weightKg`} label="Weight (kg)" min={0} step={0.01} />
           <Button
             type="button"
             variant="ghost"
@@ -232,7 +232,7 @@ export function ProductDetails({
               />
               <FormNumber
                 name="minimumOrder"
-                label="Minimum order quantity (optional)"
+                label="Minimum order quantity"
                 description="The fewest units worth ordering. Restock never suggests less."
                 min={1}
                 step={1}
@@ -240,6 +240,7 @@ export function ProductDetails({
               <CasePacks suggestedUnits={shopifyCaseQuantity} />
               <FormSelect
                 name="productLabel"
+                required
                 label="Product label"
                 description="Standard prints Amazon’s FNSKU barcode, or the Shopify SKU without Amazon, with the Shopify title. Choose Uploaded for labels that show more, such as size measurements on uniforms."
                 options={[

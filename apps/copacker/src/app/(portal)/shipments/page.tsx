@@ -1,4 +1,5 @@
 import { desc, inArray } from "drizzle-orm"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status } from "@/components/common"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +10,8 @@ import { visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
 import { rowLink } from "../portal.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Shipments" }
 
 export default async function ShipmentsPage() {
   const s = await session()
@@ -22,23 +25,26 @@ export default async function ShipmentsPage() {
     <>
       <PageHeader title="Shipments" description="Track carton preparation, approvals, and labels in one place." />
 
-      <StatGrid>
-        <StatCard
-          label="In preparation"
-          value={list.filter((x) => x.status === "packing").length}
-          caption="Supplier is preparing cartons"
-        />
-        <StatCard
-          label="Waiting on buyer"
-          value={list.filter((x) => ["approval", "waiting_labels"].includes(x.status)).length}
-          caption="Approvals or shipping labels needed"
-        />
-        <StatCard
-          label="Ready for pickup"
-          value={list.filter((x) => x.status === "ready").length}
-          caption="Documents released to supplier"
-        />
-      </StatGrid>
+      {/* Counts only help once there is something to count. */}
+      {list.length > 0 && (
+        <StatGrid>
+          <StatCard
+            label="In preparation"
+            value={list.filter((x) => x.status === "packing").length}
+            caption="Supplier is preparing cartons"
+          />
+          <StatCard
+            label="Waiting on buyer"
+            value={list.filter((x) => ["approval", "waiting_labels"].includes(x.status)).length}
+            caption="Approvals or shipping labels needed"
+          />
+          <StatCard
+            label="Ready for pickup"
+            value={list.filter((x) => x.status === "ready").length}
+            caption="Documents released to supplier"
+          />
+        </StatGrid>
+      )}
 
       <Card>
         <CardHeader>

@@ -1,8 +1,29 @@
 import { globalStyle, style } from "@vanilla-extract/css"
-import { alpha, focusRing, fontSize, media, space } from "@/styles/tokens"
+import { alpha, focusRing, fontSize, space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
-export const toolbar = style({ display: "flex", flexDirection: "column", gap: space(3) })
+export const toolbar = style({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: space(3)
+})
+
+// The search box takes the toolbar's spare width, and at least enough to read what's typed.
+export const search = style({ position: "relative", flex: "1 1 16rem", minWidth: 0 })
+export const searchIcon = style({
+  position: "absolute",
+  left: space(2.5),
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: "1rem",
+  height: "1rem",
+  color: vars.color.mutedForeground,
+  pointerEvents: "none"
+})
+export const searchInput = style({ selectors: { "&&": { paddingLeft: space(8) } } })
+export const warningIcon = style({ color: vars.color.warning })
 
 export const listHeader = style({
   display: "flex",
@@ -26,7 +47,11 @@ export const pagerButtons = style({ display: "flex", alignItems: "center", gap: 
 
 export const summary = style({ ...fontSize.sm, color: vars.color.mutedForeground })
 
+// Stock columns show once the list itself is wide enough, whatever the sidebar leaves it.
+const wide = "(min-width: 44rem)"
+
 export const list = style({
+  containerType: "inline-size",
   display: "flex",
   flexDirection: "column",
   border: `1px solid ${vars.color.border}`,
@@ -51,7 +76,7 @@ export const productRow = style({
     "&:is(button):hover": { backgroundColor: alpha(vars.color.muted, 60) },
     "&:focus-visible": { ...focusRing, borderColor: "transparent" }
   },
-  "@media": { [media.md]: { gridTemplateColumns: "auto auto minmax(0, 1fr) repeat(4, 6rem)" } }
+  "@container": { [wide]: { gridTemplateColumns: "auto auto minmax(0, 1fr) repeat(4, 5.5rem)" } }
 })
 
 export const chevron = style({
@@ -100,8 +125,8 @@ export const quantityLabel = style({ ...fontSize.xs, fontWeight: 400, color: var
 export const negative = style({ color: vars.color.destructive })
 export const unknown = style({ color: vars.color.mutedForeground, fontWeight: 400 })
 
-// On phones only Available shows; On hand and Incoming appear from md.
-export const secondary = style({ display: "none", "@media": { [media.md]: { display: "flex" } } })
+// In a narrow list only Available shows; On hand, Incoming and On order appear once it's wide.
+export const secondary = style({ display: "none", "@container": { [wide]: { display: "flex" } } })
 
 export const variants = style({
   display: "flex",

@@ -7,6 +7,7 @@ import { useState } from "react"
 import { api, errorMessage } from "@/lib/api"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { FormError } from "./actions"
+import { RequiredMark } from "./form-controls"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
@@ -144,6 +145,7 @@ export function ImportReview({
             ))}
             <label htmlFor="import-reference">
               PO reference
+              <RequiredMark />
               <Input
                 id="import-reference"
                 required
@@ -157,6 +159,7 @@ export function ImportReview({
             </label>
             <label>
               Supplier
+              <RequiredMark />
               <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
                 <option value="">Choose supplier</option>
                 {suppliers.map((s) => (
@@ -168,6 +171,7 @@ export function ImportReview({
             </label>
             <label htmlFor="import-due-date">
               Required date
+              <RequiredMark />
               <Input
                 id="import-due-date"
                 required
@@ -178,6 +182,7 @@ export function ImportReview({
             </label>
             <label>
               Currency
+              <RequiredMark />
               <select
                 required
                 value={proposal.currency ?? ""}
@@ -218,6 +223,7 @@ export function ImportReview({
               </p>
               <label htmlFor={`import-description-${index}`}>
                 Item description
+                <RequiredMark />
                 <Input
                   id={`import-description-${index}`}
                   required
@@ -231,7 +237,7 @@ export function ImportReview({
                 />
               </label>
               <label htmlFor={`import-source-page-${index}`}>
-                Document page (optional)
+                Document page
                 <Input
                   id={`import-source-page-${index}`}
                   type="number"
@@ -322,6 +328,7 @@ export function ImportReview({
               )}
               <label htmlFor={`import-pieces-${index}`}>
                 Pieces
+                <RequiredMark />
                 <Input
                   id={`import-pieces-${index}`}
                   required
@@ -338,6 +345,7 @@ export function ImportReview({
               </label>
               <label htmlFor={`import-pack-${index}`}>
                 Pieces per sellable set
+                <RequiredMark />
                 <Input
                   id={`import-pack-${index}`}
                   required
@@ -354,6 +362,7 @@ export function ImportReview({
               </label>
               <label htmlFor={`import-price-${index}`}>
                 Price per piece
+                <RequiredMark />
                 <Input
                   id={`import-price-${index}`}
                   required
@@ -432,6 +441,7 @@ export function ImportReview({
               <div key={index}>
                 <label htmlFor={`import-charge-description-${index}`}>
                   Charge description
+                  <RequiredMark />
                   <Input
                     id={`import-charge-description-${index}`}
                     required
@@ -445,6 +455,7 @@ export function ImportReview({
                 </label>
                 <label htmlFor={`import-charge-amount-${index}`}>
                   Amount (negative for discounts)
+                  <RequiredMark />
                   <Input
                     id={`import-charge-amount-${index}`}
                     required

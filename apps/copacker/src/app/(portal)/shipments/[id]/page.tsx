@@ -1,6 +1,7 @@
 import { money } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
 import { AlertTriangle, ArrowRight, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
@@ -25,6 +26,8 @@ import { finishedStates, releasedStates } from "@/server/readiness"
 import { orderWorkflow } from "@/server/workflow"
 import { issueList, packetAction, readyAlert, spinning } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Shipment" }
 
 export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

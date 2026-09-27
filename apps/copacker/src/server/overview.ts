@@ -36,6 +36,8 @@ import {
   rangeBounds,
   reportingCurrency,
   salesByDay,
+  salesByMarketplace,
+  storedMarketplaces,
   shopifyCustomers,
   salesByItem,
   sellingPrices
@@ -726,12 +728,31 @@ export async function overview(
       ? [{ provider: row.provider as SalesSource, externalId: row.externalId }]
       : []
   )
-  const [restock, currency] = await Promise.all([cachedRestock(orgId, now.getTime()), reportingCurrency(orgId)])
-  const channelOptions = restock.channels.map((channel) => ({ key: channel.key, label: channel.label }))
+  const amazonLinked = accounts.find((account) => account.provider === "amazon")
+  const [restock, currency, marketplaces] = await Promise.all([
+    cachedRestock(orgId, now.getTime()),
+    reportingCurrency(orgId),
+    amazonLinked
+      ? storedMarketplaces(orgId, amazonLinked.externalId, zonedStart(addDays(today, -365), timeZone))
+      : Promise.resolve([])
+  ])
+  // Amazon can also be narrowed to one marketplace ("amazon:ca"), when it sells in more than one. Its stock is shared,
+  // so stock and POs stay Amazon's; sales, fees and charges are the marketplace's.
+  const channelOptions = restock.channels.flatMap((channel) => [
+    { key: channel.key, label: channel.label },
+    ...(channel.key === "amazon" && marketplaces.length > 1
+      ? marketplaces.map((marketplace) => ({ key: `amazon:${marketplace.code}`, label: marketplace.label }))
+      : [])
+  ])
   const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
+  // The restock channel the choice belongs to: Amazon for any Amazon marketplace.
+  const restockKey = selected?.key.startsWith("amazon") ? "amazon" : (selected?.key ?? null)
+  const marketplaceId = selected?.key.startsWith("amazon:")
+    ? (marketplaces.find((marketplace) => `amazon:${marketplace.code}` === selected.key)?.id ?? null)
+    : null
   let channelSource: SalesSource | null = null
-  if (selected) {
-    channelSource = selected.key === "amazon" ? "amazon" : "shopify"
+  if (restockKey) {
+    channelSource = restockKey === "amazon" ? "amazon" : "shopify"
   }
   // A Shopify location shows the Shopify orders shipped from it.
   const locationId = selected?.key.startsWith("shopify:") ? selected.key.slice("shopify:".length) : null
@@ -742,10 +763,12 @@ export async function overview(
     .map((account) => ({
       ...account,
       locationId: account.provider === "shopify" ? locationId : null,
-      withoutAmazon: account.provider === "shopify" && amazonConnected
+      withoutAmazon: account.provider === "shopify" && amazonConnected,
+      marketplaceId: account.provider === "amazon" ? marketplaceId : null
     }))
   const shopifyWithoutAmazon = scopedAccounts.find((account) => account.provider === "shopify" && account.withoutAmazon)
   const shopifyAccount = scopedAccounts.find((account) => account.provider === "shopify")
+  const scopedAmazon = scopedAccounts.find((account) => account.provider === "amazon")
   const period = readPeriod(options.period ?? {}, today)
   const window = {
     current: rangeBounds(period.range, timeZone),
@@ -779,7 +802,8 @@ export async function overview(
     costs,
     linkedFreight,
     priceRows,
-    customerRows
+    customerRows,
+    marketplaceRows
   ] = await Promise.all([
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
     salesByDay(orgId, scopedAccounts, earliest, timeZone, currency),
@@ -837,7 +861,8 @@ export async function overview(
     listMonthlyCosts(orgId),
     amazonFreightByOrder(orgId),
     salesByItem(orgId, scopedAccounts, priceWindow, currency),
-    shopifyAccount ? shopifyCustomers(orgId, shopifyAccount, window.current, currency) : Promise.resolve(null)
+    shopifyAccount ? shopifyCustomers(orgId, shopifyAccount, window.current, currency) : Promise.resolve(null),
+    scopedAmazon ? salesByMarketplace(orgId, scopedAmazon, window.current, currency) : Promise.resolve([])
   ])
   // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
   const monthly: ChargeLine[] = monthlyCostShares(
@@ -902,7 +927,7 @@ export async function overview(
   const trending = movers(itemRows, index, comparable)
   const priceOf = sellingPrices(priceRows, index)
 
-  const scopedChannels = restock.channels.filter((channel) => !selected || channel.key === selected.key)
+  const scopedChannels = restock.channels.filter((channel) => !restockKey || channel.key === restockKey)
   const landedCost = (line: RestockLine) => index.unitCost(index.byVariant.get(line.variantId) ?? null)
   const summary = summarizeRestock(
     scopedChannels,
@@ -926,7 +951,7 @@ export async function overview(
     if (!selected) {
       return true
     }
-    if (selected.key === "amazon") {
+    if (restockKey === "amazon") {
       return amazonDestinations.has(order.data.destination)
     }
     return receivingLocations(order.data, deliveryLocations).includes(locationId!)
@@ -997,6 +1022,8 @@ export async function overview(
         estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
       },
       movers: trending,
+      // Amazon's sales by marketplace, when it sells in more than one.
+      marketplaces: marketplaceRows.length > 1 ? marketplaceRows : [],
       // Shopify customers, when a Shopify channel is shown.
       customers: customerRows && {
         ...customerRows,

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css"
+import { globalStyle, style } from "@vanilla-extract/css"
 import { alpha, fontSize, media, space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
@@ -41,4 +41,27 @@ export const identifiers = style({
   gap: space(1),
   ...fontSize.sm,
   "@media": { [media.sm]: { gridColumn: "span 2 / span 2" } }
+})
+
+// The PO's totals, right-aligned under its charges, the PO total set apart.
+export const totals = style({ display: "flex", justifyContent: "flex-end" })
+globalStyle(`${totals} dl`, {
+  display: "grid",
+  gridTemplateColumns: "auto auto",
+  columnGap: space(6),
+  rowGap: space(1),
+  ...fontSize.sm
+})
+globalStyle(`${totals} dt`, { color: vars.color.mutedForeground })
+globalStyle(`${totals} dd`, { textAlign: "right", fontVariantNumeric: "tabular-nums" })
+export const grandTotal = style({
+  selectors: {
+    "&&": {
+      paddingTop: space(2),
+      marginTop: space(1),
+      borderTop: `1px solid ${vars.color.border}`,
+      color: vars.color.foreground,
+      fontWeight: 600
+    }
+  }
 })

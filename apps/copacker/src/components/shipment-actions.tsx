@@ -43,6 +43,7 @@ export function ReleaseLabels({ id, revision }: { id: string; revision: number }
     <ActionForm form={form} onSubmit={submit} label="Release labels to supplier">
       <FormInput
         name="bookingReference"
+        required
         label="Amazon transport booking reference"
         description="Every carton needs a shipping label, and every product needs a unit label before release."
       />
@@ -72,6 +73,7 @@ export function CorrectionForm({ id }: { id: string }) {
           <ActionForm form={form} onSubmit={submit} label="Request correction">
             <FormTextarea
               name="reason"
+              required
               label="What needs to change?"
               description="Existing shipment documents will be marked outdated. Confirmed Amazon shipments need buyer resolution before a replacement can be created."
             />
@@ -101,6 +103,7 @@ export function ReconcileShipment({ id }: { id: string }) {
     <ActionForm form={form} onSubmit={submit} label="Verify and resume">
       <FormInput
         name="amazonOrderId"
+        required
         label="Existing Amazon AWD order ID"
         placeholder="STAR-"
         description="Copacker verifies that the order belongs to this shipment before continuing."

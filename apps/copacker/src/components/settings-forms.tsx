@@ -25,8 +25,8 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
     onSuccess
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Add supplier">
-      <FormInput name="name" label="Supplier company" placeholder="Ok Fencing" autoComplete="organization" />
+    <ActionForm form={form} onSubmit={submit} label="Add supplier" dialog>
+      <FormInput name="name" required label="Supplier company" placeholder="Ok Fencing" autoComplete="organization" />
       <FormInput
         name="email"
         label="Email"
@@ -56,10 +56,10 @@ export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchem
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Save profile">
-      <FormInput name="contactName" label="Contact name (optional)" autoComplete="name" />
-      <FormInput name="contactEmail" label="Contact email (optional)" type="email" autoComplete="email" />
-      <FormInput name="phoneNumber" label="Phone (optional)" type="tel" autoComplete="tel" />
-      <FormInput name="website" label="Website (optional)" type="url" placeholder="https://supplier.example" />
+      <FormInput name="contactName" label="Contact name" autoComplete="name" />
+      <FormInput name="contactEmail" label="Contact email" type="email" autoComplete="email" />
+      <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
+      <FormInput name="website" label="Website" type="url" placeholder="https://supplier.example" />
     </ActionForm>
   )
 }
@@ -71,9 +71,12 @@ const timeZoneSchema = z.object({ timeZone: z.string() })
 // The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.
 export function TimeZoneForm({
   timeZone,
+  computerZone,
   zones
 }: {
   timeZone: string | null
+  // The computer's zone as last reported to the server, shown until the browser's own is read.
+  computerZone: string
   zones: { value: string; label: string }[]
 }) {
   const { form, submit } = useActionForm({
@@ -82,24 +85,21 @@ export function TimeZoneForm({
     defaultValues: { timeZone: timeZone ?? "" },
     keepSaved: true
   })
-  // The computer's zone, named in the default choice. The server doesn't know it, so it's read after hydration.
+  // The computer's zone, named in the default choice.
   const browserZone = useSyncExternalStore(
     noSubscription,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    () => null
+    () => computerZone
   )
   return (
     <ActionForm form={form} onSubmit={submit} label="Save time zone">
       <FormSelect
         name="timeZone"
         label="Store time zone"
-        description="Sales days and months start at midnight in this time zone."
         options={[
           {
             value: "",
-            label: browserZone
-              ? `Your computer’s time zone: ${timeZoneLabel(browserZone)}`
-              : "Your computer’s time zone"
+            label: timeZoneLabel(browserZone)
           },
           ...zones
         ]}
@@ -119,9 +119,10 @@ export function WorkspaceForm({ next }: { next?: string } = {}) {
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Create workspace">
-      <FormInput name="name" label="Company name" autoComplete="organization" />
+      <FormInput name="name" required label="Company name" autoComplete="organization" />
       <FormSelect
         name="kind"
+        required
         label="Workspace type"
         options={[
           { value: "buyer", label: "Buyer: I place purchase orders" },
@@ -179,12 +180,13 @@ export function ContactForm({
   })
   const kind = useWatch({ control: form.control, name: "kind" })
   return (
-    <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"}>
+    <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"} dialog>
       <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
-        <FormInput name="name" label="Address name" placeholder="Shenzhen warehouse" />
+        <FormInput name="name" required label="Address name" placeholder="Shenzhen warehouse" />
         {!supplier && (
           <FormSelect
             name="kind"
+            required
             label="Address type"
             options={contactKindsFor("buyer").map((kind) => ({ value: kind, label: contactKindLabels[kind] }))}
           />
@@ -223,6 +225,7 @@ export function AcceptSupplierInvitation({
     <ActionForm form={form} onSubmit={submit} label="Accept invitation">
       <FormSelect
         name="orgId"
+        required
         label="Supplier workspace"
         placeholder="Choose a workspace"
         options={workspaces.map((w) => ({ value: w.id, label: w.name }))}

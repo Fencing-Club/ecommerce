@@ -26,6 +26,7 @@ export function LandedCostForm({ orderId, currency }: { orderId: string; currenc
       <div className={sx({ display: "grid", gap: 3, gridTemplateColumns: { sm: "2" } })}>
         <FormSelect
           name="kind"
+          required
           label="Type"
           options={[
             { value: "freight", label: "Freight" },
@@ -33,11 +34,11 @@ export function LandedCostForm({ orderId, currency }: { orderId: string; currenc
             { value: "other", label: "Other" }
           ]}
         />
-        <FormNumber name="amount" label={`Amount (${currency})`} scale={100} min={0} step="0.01" />
+        <FormNumber name="amount" required label={`Amount (${currency})`} scale={100} min={0} step="0.01" />
       </div>
       <FormInput
         name="description"
-        label="Description (optional)"
+        label="Description"
         placeholder="Forwarder invoice, customs entry…"
         description={`Enter it in ${currency}, the PO’s currency. Convert a bill in another currency at the rate you paid.`}
       />

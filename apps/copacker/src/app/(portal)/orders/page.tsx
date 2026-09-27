@@ -1,6 +1,7 @@
 import { money, orderTotal } from "@repo/aisle"
 import { and, eq, isNull } from "drizzle-orm"
 import { Plus } from "lucide-react"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status, formatDestination } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,8 @@ import { visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
 import { rowLink } from "../portal.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Purchase orders" }
 
 export default async function OrdersPage() {
   const s = await session()
@@ -66,23 +69,26 @@ export default async function OrdersPage() {
         )}
       </PageHeader>
 
-      <StatGrid>
-        <StatCard
-          label="Open orders"
-          value={rows.filter((r) => r.order.status !== "closed").length}
-          caption="Across your suppliers"
-        />
-        <StatCard
-          label="With suppliers"
-          value={rows.filter((r) => r.order.status === "submitted").length}
-          caption="Submitted and in progress"
-        />
-        <StatCard
-          label="Drafts"
-          value={rows.filter((r) => r.order.status === "draft").length}
-          caption="Ready when you are"
-        />
-      </StatGrid>
+      {/* Counts only help once there is something to count. */}
+      {rows.length > 0 && (
+        <StatGrid>
+          <StatCard
+            label="Open orders"
+            value={rows.filter((r) => r.order.status !== "closed").length}
+            caption="Across your suppliers"
+          />
+          <StatCard
+            label="With suppliers"
+            value={rows.filter((r) => r.order.status === "submitted").length}
+            caption="Submitted and in progress"
+          />
+          <StatCard
+            label="Drafts"
+            value={rows.filter((r) => r.order.status === "draft").length}
+            caption="Ready when you are"
+          />
+        </StatGrid>
+      )}
 
       <Card>
         <CardHeader>

@@ -1,6 +1,7 @@
 import { money, orderTotal } from "@repo/aisle"
 import { and, desc, eq } from "drizzle-orm"
 import { ChevronDown, ChevronRight, Download, Info as InfoIcon } from "lucide-react"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
@@ -34,6 +35,8 @@ import { orderWorkflow } from "@/server/workflow"
 import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
 import { srOnly } from "@/styles/utilities.css"
+
+export const metadata: Metadata = { title: "Purchase order" }
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

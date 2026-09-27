@@ -1,4 +1,5 @@
 import { ClipboardList } from "lucide-react"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
@@ -13,6 +14,8 @@ import { type Session, session } from "@/server/auth"
 import { overview } from "@/server/overview"
 import { storeTimeZone } from "@/server/store-time-zone"
 import * as styles from "@/components/overview.css"
+
+export const metadata: Metadata = { title: "Overview" }
 
 type Query = Record<string, string | string[] | undefined>
 

@@ -38,7 +38,8 @@ export function AddressFields({ path, requirePhone = false }: { path: string; re
           <FormInput
             key={field.key}
             name={`${path}.${field.key}`}
-            label={optional ? `${field.label} (optional)` : field.label}
+            label={field.label}
+            required={!optional}
             type={field.type ?? "text"}
             placeholder={field.placeholder}
             autoComplete={field.autoComplete}

@@ -1,9 +1,12 @@
 import { asc, desc, eq } from "drizzle-orm"
+import type { Metadata } from "next"
 import { PageHeader } from "@/components/common"
 import { SupplierCatalogManager } from "@/components/supplier-catalog-manager"
 import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
 import { session } from "@/server/auth"
+
+export const metadata: Metadata = { title: "Catalog" }
 
 export default async function CatalogPage() {
   const s = await session()

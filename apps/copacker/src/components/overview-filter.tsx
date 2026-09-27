@@ -11,7 +11,7 @@ export function ChannelFilter({ channels, value }: { channels: { key: string; la
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const shopifyLocations = channels.filter((channel) => channel.key !== "amazon").length
+  const shopifyLocations = channels.filter((channel) => !channel.key.startsWith("amazon")).length
   return (
     <Field orientation="horizontal" className={styles.channelFilter}>
       <FieldLabel htmlFor="overview-channel" className={srOnly}>
@@ -46,7 +46,7 @@ export function ChannelFilter({ channels, value }: { channels: { key: string; la
 
 // "Shopify" for a store with one location of its own; with several, each is named.
 function channelName(channel: { key: string; label: string }, shopifyLocations: number) {
-  if (channel.key === "amazon") {
+  if (channel.key.startsWith("amazon")) {
     return channel.label
   }
   return shopifyLocations > 1 ? `Shopify: ${channel.label}` : "Shopify"

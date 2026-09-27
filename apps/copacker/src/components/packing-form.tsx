@@ -178,6 +178,7 @@ export function PackingForm({
                 <FieldGroup>
                   <FormSelect
                     name="invoiceDocumentId"
+                    required
                     label="Uploaded commercial invoice"
                     placeholder="Choose uploaded invoice"
                     options={invoices.map((d) => ({ value: d.id, label: d.name }))}
@@ -217,6 +218,7 @@ export function PackingForm({
                         )}
                         <FormNumber
                           name={`changes.${index}.unitPrice`}
+                          required
                           label={`Price per piece (${order.currency})`}
                           min={0}
                           step={0.01}
@@ -240,7 +242,7 @@ export function PackingForm({
               <CardContent>
                 <FieldGroup>
                   <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
-                    <FormInput name="readyDate" label="Ready for pickup" type="date" />
+                    <FormInput name="readyDate" required label="Ready for pickup" type="date" />
                     {addresses.length > 0 && (
                       <SelectField
                         label="Use a saved address"
@@ -320,12 +322,13 @@ export function PackingForm({
                     <CardContent>
                       <FieldGroup>
                         <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2", lg: "5" } })}>
-                          <FormInput name={`cartons.${index}.cartonId`} label="Supplier carton number" />
+                          <FormInput name={`cartons.${index}.cartonId`} required label="Supplier carton number" />
                           {cartonDimensions.map((field) => (
                             <FormNumber
                               key={field.key}
                               name={`cartons.${index}.${field.key}`}
                               label={field.label}
+                              required
                               min={0}
                               step="any"
                             />
@@ -336,6 +339,7 @@ export function PackingForm({
                         >
                           <FormSelect
                             name={`cartons.${index}.items.0.itemId`}
+                            required
                             label="Product (one SKU per AWD carton)"
                             options={order.items.map((item) => ({
                               value: item.id,
@@ -344,6 +348,7 @@ export function PackingForm({
                           />
                           <FormNumber
                             name={`cartons.${index}.items.0.pieces`}
+                            required
                             label="Pieces in carton"
                             min={1}
                             step={1}

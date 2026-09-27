@@ -1,7 +1,7 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { ChevronLeft, ChevronRight, ImageOff, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ImageOff, Search, TriangleAlert, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { createContext, use, useState } from "react"
@@ -11,7 +11,6 @@ import { ProductDetails } from "@/components/product-details"
 import { ProductLabelBulk } from "@/components/product-label-bulk"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -454,6 +453,33 @@ function Pager({ data, onPage }: { data: ProductsPage; onPage: (page: number) =>
   )
 }
 
+// A filter for variations missing something, showing how many do. Pressed, the list shows only those.
+function FilterToggle({
+  pressed,
+  onPressedChange,
+  label,
+  description
+}: {
+  pressed: boolean
+  onPressedChange: (pressed: boolean) => void
+  label: string
+  description: string
+}) {
+  return (
+    <Button
+      variant={pressed ? "secondary" : "outline"}
+      size="sm"
+      aria-pressed={pressed}
+      title={description}
+      onClick={() => onPressedChange(!pressed)}
+    >
+      <TriangleAlert data-icon="inline-start" className={styles.warningIcon} />
+      {label}
+      {pressed && <X data-icon="inline-end" aria-hidden />}
+    </Button>
+  )
+}
+
 export function InventoryProducts({ syncKey }: { syncKey: string }) {
   const [search, setSearch] = useState("")
   const [q] = useDebouncedValue(search.trim(), 300)
@@ -495,91 +521,48 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
             Sync Shopify again to load the latest product details, such as country of origin.
           </p>
         )}
+        {/* Search, the filters for what's missing, and the bulk label actions in one toolbar. */}
         <div className={styles.toolbar}>
-          <Field>
-            <FieldLabel htmlFor="inventory-search">Search products</FieldLabel>
-            <div className={sx({ display: "flex", alignItems: "center", gap: 2 })}>
-              <Search className={sx({ size: 4, color: "muted" })} aria-hidden="true" />
-              <Input
-                id="inventory-search"
-                type="search"
-                placeholder="Product, variation, or SKU"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value)
+          <div className={styles.search}>
+            <Search className={styles.searchIcon} aria-hidden="true" />
+            <Input
+              id="inventory-search"
+              type="search"
+              aria-label="Search products"
+              placeholder="Search products, variations or SKUs"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
+              className={styles.searchInput}
+            />
+          </div>
+          <div className={styles.listActions}>
+            {(data.missingBarcodes > 0 || missingBarcode) && (
+              <FilterToggle
+                pressed={missingBarcode}
+                onPressedChange={(pressed) => {
+                  setMissingBarcode(pressed)
                   setPage(1)
                 }}
+                label={`${data.missingBarcodes} need a label`}
+                description="Variations whose label has to be uploaded, such as ones with size measurements"
               />
-            </div>
-          </Field>
-          <p className={styles.summary}>
-            Totals add your Shopify locations and Amazon FBA and AWD. Choose which Shopify locations count in{" "}
-            <Link href="/settings">Settings</Link>.
-          </p>
-        </div>
-        {data.missingBarcodes > 0 && (
-          <WarningNote>
-            {data.missingBarcodes === 1
-              ? "1 variation needs its label uploaded, such as one with size measurements. Add it with Upload barcodes or from the product’s Edit panel."
-              : `${data.missingBarcodes} variations need their labels uploaded, such as ones with size measurements. Add them with Upload barcodes or from each product’s Edit panel.`}
-          </WarningNote>
-        )}
-        {data.missingCountries > 0 && (
-          <WarningNote>
-            {data.missingCountries === 1
-              ? "1 variation has no country of origin in Shopify, so its label leaves out “Made in”. Add it to the item in Shopify, then sync."
-              : `${data.missingCountries} variations have no country of origin in Shopify, so their labels leave out “Made in”. Add it to each item in Shopify, then sync.`}
-          </WarningNote>
-        )}
-        <div className={styles.listHeader}>
-          <p className={styles.summary} aria-live="polite">
-            {q || missingBarcode || missingCountry
-              ? `${data.totalProducts} products match`
-              : `${data.totalProducts} products, ${data.totalVariants} variations`}
-          </p>
-          <div className={styles.listActions}>
+            )}
+            {(data.missingCountries > 0 || missingCountry) && (
+              <FilterToggle
+                pressed={missingCountry}
+                onPressedChange={(pressed) => {
+                  setMissingCountry(pressed)
+                  setPage(1)
+                }}
+                label={`${data.missingCountries} without a country`}
+                description="Variations with no country of origin in Shopify, whose labels leave out “Made in”"
+              />
+            )}
             <BulkBarcodeUpload onChanged={() => void refetch()} />
             <ProductLabelBulk onChanged={() => void refetch()} />
-            <Field orientation="horizontal" className={styles.pageSize}>
-              <Checkbox
-                id="inventory-missing-barcode"
-                checked={missingBarcode}
-                onCheckedChange={(checked) => {
-                  setMissingBarcode(checked)
-                  setPage(1)
-                }}
-              />
-              <FieldLabel htmlFor="inventory-missing-barcode">Needs a label only</FieldLabel>
-            </Field>
-            <Field orientation="horizontal" className={styles.pageSize}>
-              <Checkbox
-                id="inventory-missing-country"
-                checked={missingCountry}
-                onCheckedChange={(checked) => {
-                  setMissingCountry(checked)
-                  setPage(1)
-                }}
-              />
-              <FieldLabel htmlFor="inventory-missing-country">No country only</FieldLabel>
-            </Field>
-            <Field orientation="horizontal" className={styles.pageSize}>
-              <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
-              <NativeSelect
-                id="inventory-page-size"
-                size="sm"
-                value={String(pageSize)}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value))
-                  setPage(1)
-                }}
-              >
-                {pageSizes.map((size) => (
-                  <NativeSelectOption key={size} value={String(size)}>
-                    {size}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-            </Field>
           </div>
         </div>
         {data.products.length === 0 ? (
@@ -595,6 +578,31 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
             ))}
           </ul>
         )}
+        <div className={styles.listHeader}>
+          <p className={styles.summary} aria-live="polite">
+            {q || missingBarcode || missingCountry
+              ? `${data.totalProducts} products match`
+              : `${data.totalProducts} products, ${data.totalVariants} variations`}
+          </p>
+          <Field orientation="horizontal" className={styles.pageSize}>
+            <FieldLabel htmlFor="inventory-page-size">Per page</FieldLabel>
+            <NativeSelect
+              id="inventory-page-size"
+              size="sm"
+              value={String(pageSize)}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value))
+                setPage(1)
+              }}
+            >
+              {pageSizes.map((size) => (
+                <NativeSelectOption key={size} value={String(size)}>
+                  {size}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+        </div>
         {data.totalPages > 1 && <Pager data={data} onPage={setPage} />}
         <DuplicateSkus duplicates={data.duplicateSkus} />
         <AmazonOnly stock={data.amazonOnly} />

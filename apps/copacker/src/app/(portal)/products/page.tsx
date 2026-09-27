@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm"
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { InventorySync } from "@/components/inventory-sync"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { session } from "@/server/auth"
+
+export const metadata: Metadata = { title: "Products" }
 
 export default async function ProductsPage() {
   const s = await session()

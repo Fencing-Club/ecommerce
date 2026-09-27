@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm"
 import { Box } from "lucide-react"
+import type { Metadata } from "next"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
 import { AcceptSupplierInvitation, WorkspaceForm } from "@/components/settings-forms"
@@ -10,6 +11,8 @@ import { cn } from "@/lib/utils"
 import { identity } from "@/server/auth"
 import { brandTile, centeredPage, mutedBackground } from "../shell.css"
 import { sx } from "@/styles/sprinkles.css"
+
+export const metadata: Metadata = { title: "Invitation" }
 
 export default async function Invitation({
   searchParams

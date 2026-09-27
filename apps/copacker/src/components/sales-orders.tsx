@@ -8,11 +8,12 @@ import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
 import * as styles from "./sales-orders.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -52,9 +53,9 @@ const titles: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazo
 const pageSize = 50
 
 const failureMessages: Record<string, (title: string) => string> = {
-  shopify_permissions: () => "Shopify needs more permissions. Reconnect Shopify, then sync again.",
-  reconnect: (title) => `${title} needs you to sign in again. Reconnect in Settings, then sync again.`,
-  provider_unavailable: (title) => `${title} is busy or unavailable. Try again in a few minutes.`
+  shopify_permissions: () => "Reconnect Shopify in Settings.",
+  reconnect: (title) => `Reconnect ${title} in Settings.`,
+  provider_unavailable: (title) => `${title} is unavailable. Try again later.`
 }
 
 // Finished orders read quietly; open and cancelled ones stand out.
@@ -81,14 +82,9 @@ function SourceCard({ state, refetch }: { state: SyncState; refetch: () => void 
       // RTK Query retains the failure for the inline message.
     }
   }
-  let detail = "No orders copied yet."
-  if (state.coveredFrom && state.coveredTo) {
-    detail = `${state.orders.toLocaleString()} orders from ${day(state.coveredFrom)} to ${day(state.coveredTo)}.`
-  }
-  if (active) {
-    detail = state.coveredTo
-      ? `Syncing, copied through ${day(state.coveredTo)} so far. You can leave this page.`
-      : "Copying order history. This can take a while, and you can leave this page."
+  let detail = state.coveredTo ? "Last 30 days" : "Not synced yet"
+  if (active && state.coveredTo) {
+    detail = `Synced through ${day(state.coveredTo)}`
   }
   const failure = state.errorCode ? failureMessages[state.errorCode] : undefined
   return (
@@ -106,16 +102,14 @@ function SourceCard({ state, refetch }: { state: SyncState; refetch: () => void 
       <CardContent className={styles.stats}>
         <span className={styles.stat}>
           <span className={styles.statValue}>{state.recent.orders.toLocaleString()}</span>
-          <span className={styles.statLabel}>Orders, last 30 days</span>
+          <span className={styles.statLabel}>Orders</span>
         </span>
         <span className={styles.stat}>
           <span className={styles.statValue}>{state.recent.units.toLocaleString()}</span>
-          <span className={styles.statLabel}>Units, last 30 days</span>
+          <span className={styles.statLabel}>Units</span>
         </span>
         {state.status === "failed" && !active && (
-          <p className={styles.problem}>
-            {failure ? failure(title) : "Last sync failed. Try again or check your connection in Settings."}
-          </p>
+          <p className={styles.problem}>{failure ? failure(title) : "Last sync failed."}</p>
         )}
         {mutation.isError && (
           <p role="alert" className={styles.problem}>
@@ -132,8 +126,11 @@ function Items({ items }: { items: SalesOrderSummary["items"] }) {
   return (
     <ul className={styles.items}>
       {shown.map((item, index) => (
-        <li key={`${item.sku}:${index}`}>
-          <span className={styles.sku}>{item.sku ?? "Bundle"}</span> × {item.quantity}
+        <li key={`${item.sku}:${index}`} className={styles.item}>
+          <span>
+            {item.name ?? item.sku ?? "Bundle"} <span className={styles.quantity}>× {item.quantity}</span>
+          </span>
+          {item.name && item.sku && <span className={styles.sku}>{item.sku}</span>}
         </li>
       ))}
       {items.length > shown.length && <li className={styles.more}>{items.length - shown.length} more</li>}
@@ -157,22 +154,18 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Orders</CardTitle>
-        <CardDescription>
-          Newest first. Sales are after discounts, before tax and shipping. Fees are Amazon’s fees, or Shopify Payments’
-          processing fees. Open an order in Shopify or Seller Central to compare.
-        </CardDescription>
+        <CardTitle>All orders</CardTitle>
       </CardHeader>
       <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
         <div className={styles.filters}>
           <Field className={styles.search}>
-            <FieldLabel htmlFor="orders-search">Search</FieldLabel>
             <span className={styles.searchBox}>
               <Search aria-hidden="true" />
               <Input
                 id="orders-search"
                 type="search"
-                placeholder="Order number or SKU"
+                aria-label="Search orders"
+                placeholder="Search orders, products or SKUs"
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value)
@@ -183,9 +176,9 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
           </Field>
           {sources.length > 1 && (
             <Field className={styles.filter}>
-              <FieldLabel htmlFor="orders-source">Source</FieldLabel>
               <NativeSelect
                 id="orders-source"
+                aria-label="Source"
                 value={source}
                 onChange={(event) => {
                   const value = event.target.value
@@ -205,76 +198,87 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
         </div>
         {isError && <p role="alert">{errorMessage(error, "Orders couldn't be loaded.")}</p>}
         {!currentData && isFetching && <p className={styles.summary}>Loading orders…</p>}
-        {currentData && total === 0 && (
-          <p className={styles.summary}>{q ? "No orders match." : "No orders copied yet. Sync a source above."}</p>
-        )}
+        {currentData && total === 0 && <p className={styles.summary}>{q ? "No orders match." : "No orders yet."}</p>}
         {currentData && total > 0 && (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Channel</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className={styles.numberCell}>Units</TableHead>
-                  <TableHead className={styles.numberCell}>Sales</TableHead>
-                  <TableHead className={styles.numberCell}>Fees</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentData.orders.map((order) => (
-                  <TableRow key={`${order.source}:${order.orderId}`}>
-                    <TableCell>
-                      <span className={styles.order}>
-                        <a href={order.url} target="_blank" rel="noreferrer" className={styles.orderLink}>
-                          {order.number}
-                          <ExternalLink aria-hidden="true" />
-                          <span className={srOnly}> (opens in {titles[order.source]})</span>
-                        </a>
-                        <time dateTime={order.orderedAt} className={styles.date}>
-                          {new Date(order.orderedAt).toLocaleString(undefined, {
-                            dateStyle: "medium",
-                            timeStyle: "short"
-                          })}
-                        </time>
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Items items={order.items} />
-                    </TableCell>
-                    <TableCell>{order.channel}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
-                    </TableCell>
-                    <TableCell className={styles.numberCell}>{order.units}</TableCell>
-                    <TableCell className={styles.numberCell}>
-                      {order.sales ? money(order.sales.minor, order.sales.currency) : <Muted>Not priced yet</Muted>}
-                    </TableCell>
-                    <TableCell className={styles.numberCell}>
-                      {order.fees ? (
-                        money(order.fees.minor, order.fees.currency)
-                      ) : (
-                        <Muted>{order.source === "amazon" ? "Not posted yet" : "Not copied yet"}</Muted>
-                      )}
-                    </TableCell>
+            <div className={styles.tableWrap}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead className={styles.wideOnly}>Channel</TableHead>
+                    <TableHead className={styles.wideOnly}>Status</TableHead>
+                    <TableHead className={cn(styles.numberCell, styles.wideOnly)}>Units</TableHead>
+                    <TableHead className={styles.numberCell} title="After discounts, before tax and shipping">
+                      Sales
+                    </TableHead>
+                    <TableHead className={cn(styles.numberCell, styles.wideOnly)}>Fees</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentData.orders.map((order) => (
+                    <TableRow key={`${order.source}:${order.orderId}`}>
+                      <TableCell>
+                        <span className={styles.order}>
+                          <a href={order.url} target="_blank" rel="noreferrer" className={styles.orderLink}>
+                            {order.number}
+                            <ExternalLink aria-hidden="true" />
+                            <span className={srOnly}> (opens in {titles[order.source]})</span>
+                          </a>
+                          <time dateTime={order.orderedAt} className={styles.date}>
+                            {new Date(order.orderedAt).toLocaleString(undefined, {
+                              dateStyle: "medium",
+                              timeStyle: "short"
+                            })}
+                          </time>
+                          {/* In a narrow list the channel and status columns are hidden, so they show here. */}
+                          <span className={styles.narrowOnly}>
+                            {order.channel}
+                            <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                          </span>
+                        </span>
+                      </TableCell>
+                      <TableCell className={styles.itemsCell}>
+                        <Items items={order.items} />
+                      </TableCell>
+                      <TableCell className={styles.wideOnly}>{order.channel}</TableCell>
+                      <TableCell className={styles.wideOnly}>
+                        <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                      </TableCell>
+                      <TableCell className={cn(styles.numberCell, styles.wideOnly)}>{order.units}</TableCell>
+                      <TableCell className={styles.numberCell}>
+                        {order.sales ? (
+                          money(order.sales.minor, order.sales.currency)
+                        ) : (
+                          <Muted title="Amazon hasn’t priced this order yet">Pending</Muted>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn(styles.numberCell, styles.wideOnly)}>
+                        {order.fees ? (
+                          money(order.fees.minor, order.fees.currency)
+                        ) : (
+                          <Muted
+                            title={order.source === "amazon" ? "Amazon hasn’t posted its fees yet" : "Not copied yet"}
+                          >
+                            Pending
+                          </Muted>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             <nav aria-label="Order pages" className={styles.pager}>
               <p className={styles.summary}>
-                Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total.toLocaleString()}{" "}
-                orders
+                {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total.toLocaleString()}
               </p>
               <div className={styles.pagerButtons}>
                 <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
                   <ChevronLeft data-icon="inline-start" />
                   Previous
                 </Button>
-                <span className={styles.summary}>
-                  Page {page + 1} of {totalPages}
-                </span>
                 <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>
                   Next
                   <ChevronRight data-icon="inline-end" />
@@ -304,7 +308,7 @@ export function SalesOrders() {
   if (currentData.sources.length === 0) {
     return (
       <p>
-        Connect Shopify or Amazon in <Link href="/settings">Settings</Link> to copy your orders.
+        Connect Shopify or Amazon in <Link href="/settings">Settings</Link>.
       </p>
     )
   }
@@ -317,16 +321,16 @@ export function SalesOrders() {
           <SourceCard key={state.source} state={state} refetch={() => void refetch()} />
         ))}
       </div>
-      <p className={styles.summary}>
-        The first sync copies the last 365 days. Later syncs add new orders and recheck the last 30 days, which picks up
-        shipments and cancellations.
-      </p>
       <OrderList sources={currentData.sources} syncKey={syncKey} />
     </div>
   )
 }
 
 // A value that isn't known yet, quieter than the figures around it.
-function Muted({ children }: { children: React.ReactNode }) {
-  return <span className={sx({ color: "muted", whiteSpace: "nowrap" })}>{children}</span>
+function Muted({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <span title={title} className={sx({ color: "muted", whiteSpace: "nowrap" })}>
+      {children}
+    </span>
+  )
 }

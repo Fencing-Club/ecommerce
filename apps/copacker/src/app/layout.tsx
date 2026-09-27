@@ -12,7 +12,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Copacker | Purchase orders to pickup",
+  // Each page names itself, such as "Products | Copacker".
+  title: { template: "%s | Copacker", default: "Copacker" },
   description: "A shared workspace for buyers and suppliers to prepare Amazon shipments."
 }
 
