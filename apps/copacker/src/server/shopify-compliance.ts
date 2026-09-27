@@ -1,14 +1,15 @@
 import { shopDomainSchema } from "@repo/aisle/shopify"
-import { and, eq, inArray, notInArray } from "drizzle-orm"
+import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, memberships, salesOrders, salesSyncs, stockDays, stockSnapshots } from "@/db/schema"
 import { summarizeSalesOrder } from "./sales-orders"
 
-// Shopify's mandatory privacy webhooks. Copacker copies orders for restock planning: order numbers, dates, SKUs,
-// quantities, prices and fulfillment status. It never stores a customer's name, email address, phone number or
-// address, so there is nothing personal to erase when a customer asks, and a data request is answered with the stored
-// order details. Customer contact details in the webhooks are never kept.
+// Shopify's mandatory privacy webhooks. Copacker copies orders for restock planning and sales figures: order numbers,
+// dates, SKUs, quantities, prices, fulfillment status and, when the store allows it, the customer's Shopify ID (to count
+// repeat customers). It never stores a customer's name, email address, phone number or address. A data request is
+// answered with the stored order details; a redaction removes the customer's ID from their orders. Customer contact
+// details in the webhooks are never kept.
 export const shopifyComplianceTopics = ["customers/data_request", "customers/redact", "shop/redact"] as const
 const orderIds = z.array(z.number().int().positive().safe()).max(1000)
 const dataRequest = z.object({
@@ -17,6 +18,11 @@ const dataRequest = z.object({
   data_request: z.object({ id: z.number().int().positive().safe() })
 })
 const shopRedact = z.object({ shop_domain: shopDomainSchema })
+const customerRedact = z.object({
+  shop_domain: shopDomainSchema,
+  customer: z.object({ id: z.number().int().positive().safe() }),
+  orders_to_redact: orderIds
+})
 
 // Queues the work a verified compliance webhook calls for. Returns false for a body that isn't what Shopify sends.
 export async function receiveShopifyCompliance(topic: string, body: string, deliveryId: string) {
@@ -45,8 +51,17 @@ export async function receiveShopifyCompliance(topic: string, body: string, deli
     }
     payload = { topic, shop: input.data.shop_domain }
   } else {
-    // customers/redact: the stored orders hold nothing that identifies the customer (see above).
-    return true
+    const input = customerRedact.safeParse(json)
+    if (!input.success) {
+      return false
+    }
+    // Only the IDs are kept: the customer's contact details in the webhook are dropped here.
+    payload = {
+      topic,
+      shop: input.data.shop_domain,
+      customer: input.data.customer.id,
+      orders: input.data.orders_to_redact
+    }
   }
   await db()
     .insert(jobs)
@@ -62,7 +77,13 @@ const compliancePayload = z.discriminatedUnion("topic", [
     orders: orderIds,
     requestId: z.number().int().positive().safe()
   }),
-  z.object({ topic: z.literal("shop/redact"), shop: shopDomainSchema })
+  z.object({ topic: z.literal("shop/redact"), shop: shopDomainSchema }),
+  z.object({
+    topic: z.literal("customers/redact"),
+    shop: shopDomainSchema,
+    customer: z.number().int().positive().safe(),
+    orders: orderIds
+  })
 ])
 
 // Worker job: answers a customer data request, or erases a store's data once Shopify says the store is gone.
@@ -70,6 +91,8 @@ export async function shopifyComplianceJob(payload: Record<string, unknown>) {
   const input = compliancePayload.parse(payload)
   if (input.topic === "shop/redact") {
     await redactShop(input.shop)
+  } else if (input.topic === "customers/redact") {
+    await redactCustomer(input.shop, input.customer, input.orders)
   } else {
     await reportCustomerData(input.shop, input.orders, input.requestId)
   }
@@ -124,6 +147,24 @@ async function reportCustomerData(shop: string, orders: number[], requestId: num
 function describeOrder(order: ReturnType<typeof summarizeSalesOrder>) {
   const items = order.items.map((item) => `${item.quantity} × ${item.sku ?? "item without a SKU"}`).join(", ")
   return `Order ${order.number}, placed ${order.orderedAt.slice(0, 10)}, status ${order.status}: ${items || "no items"}`
+}
+
+// Removes a customer's Shopify ID from the store's copied orders: theirs by customer, and the ones Shopify names.
+async function redactCustomer(shop: string, customer: number, orders: number[]) {
+  const ids = orders.map((id) => `gid://shopify/Order/${id}`)
+  await db()
+    .update(salesOrders)
+    .set({ data: sql`${salesOrders.data} - 'customerId'` })
+    .where(
+      and(
+        eq(salesOrders.source, "shopify"),
+        eq(salesOrders.externalAccountId, shop),
+        or(
+          sql`${salesOrders.data}->>'customerId' = ${`gid://shopify/Customer/${customer}`}`,
+          ids.length ? inArray(salesOrders.orderId, ids) : sql`false`
+        )
+      )
+    )
 }
 
 // Erases what Copacker copied from the store, 48 hours after it uninstalled the app. A workspace that connected the

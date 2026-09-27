@@ -1,8 +1,6 @@
 import {
   ArrowDownRight,
   ArrowUpRight,
-  Clock,
-  Globe,
   Minus,
   Package,
   PiggyBank,
@@ -20,16 +18,15 @@ import {
   formatChange,
   formatMoney,
   formatNumber,
-  formatPercent,
-  timeAgo
+  formatPercent
 } from "@/lib/format"
-import { timeZoneLabel } from "@/lib/time-zone"
 import type { Overview } from "@/server/overview"
 import { SalesTrend, Sparkline } from "./overview-charts"
 import {
   Attention,
   BestSellers,
   CardLink,
+  Customers,
   DaysOfCover,
   OpenOrders,
   ProfitBreakdown,
@@ -246,33 +243,6 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
   )
 }
 
-// When orders and stock were last copied, and the time zone days follow.
-export function Freshness({ data }: { data: Overview }) {
-  const now = new Date(data.generatedAt)
-  return (
-    <ul className={styles.freshness} aria-label="Data freshness">
-      {data.freshness.map((entry) => (
-        <li key={entry.key} className={styles.freshnessItem}>
-          <Clock aria-hidden />
-          <span>
-            {entry.label} {entry.at ? `synced ${timeAgo(entry.at, now)}` : "not synced yet"}
-          </span>
-        </li>
-      ))}
-      <li className={styles.freshnessItem}>
-        <Globe aria-hidden />
-        {data.timeZoneSet ? (
-          <span>Days in {timeZoneLabel(data.timeZone)}</span>
-        ) : (
-          <Link href="/settings" className={styles.freshnessLink}>
-            Days in UTC until you set your store’s time zone
-          </Link>
-        )}
-      </li>
-    </ul>
-  )
-}
-
 export function OverviewDashboard({ data }: { data: Overview }) {
   const { sales, restock, purchasing } = data
   const channel = data.channel?.key ?? null
@@ -347,6 +317,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
       <div className={styles.halves}>
         <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
         <div className={styles.stack}>
+          {sales.customers && <Customers customers={sales.customers} period={data.period} />}
           <Shipments stages={data.shipments} />
           <OpenOrders purchasing={purchasing} />
         </div>

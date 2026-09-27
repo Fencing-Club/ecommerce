@@ -7,7 +7,9 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 
 ## Days, channels and freshness
 
-- **Time zone.** Days and months follow the store's time zone (Settings, `organizations.timeZone`; UTC until set).
+- **Time zone.** Days and months follow the store's time zone: the one chosen in Settings (`organizations.timeZone`),
+  or else the viewer's computer's, which the browser reports in the `tz` cookie (`components/system-time-zone.tsx`,
+  `server/store-time-zone.ts`; UTC until it has).
   `lib/time-zone.ts` finds the instant each day starts, so days around daylight saving changes are 23 or 25 hours.
 - **Channel filter.** `?channel=amazon` or `?channel=shopify:<location>` narrows every card: restock figures to that
   channel, sales to that source (a Shopify location shows the Shopify orders with a successful fulfillment from it, so
@@ -20,7 +22,6 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
   The sales chart draws the period by day (up to about 3 months), week (up to a year) or month, with the previous
   period's total dotted. Stock, cover, upcoming spend, slow stock, shipments and purchasing are as of now; retail value
   uses the last 60 days' prices and inbound freight the year up to the period's end, whatever the period.
-- **Freshness.** The line under the header says when each source's orders and stock last synced.
 - **Currency.** Money is reported in the Shopify store's currency (US dollars without Shopify sales). Sales, fees and
   charges in other currencies (Amazon Canada, Mexico and Brazil) are converted at the European Central Bank's rate on
   the day each was placed or posted: `exchange_rates`, copied through Frankfurter after each Amazon sync, and the
@@ -28,7 +29,7 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 
 ## What it shows
 
-- **Setup checklist** until Shopify, Amazon, order copies, stock, unit costs, a supplier and the time zone are in place.
+- **Setup checklist** until Shopify, Amazon, order copies, stock, unit costs and a supplier are in place.
 - **Needs attention:** items running out, shipments waiting or failing, reorders due, unreadable restock sources, failed
   or stale syncs, Amazon fees that couldn't be copied, orders still without prices, Shopify's 60-day order limit and
   unsent drafts. Critical first.

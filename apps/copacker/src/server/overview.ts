@@ -36,13 +36,14 @@ import {
   rangeBounds,
   reportingCurrency,
   salesByDay,
+  shopifyCustomers,
   salesByItem,
   sellingPrices
 } from "./overview-sales"
 import { restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockDefaults } from "./restock-report"
-import { salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
+import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
@@ -609,7 +610,6 @@ export function setupSteps(input: {
   inStock: number
   uncosted: number
   suppliers: number
-  timeZone: string | null
 }): SetupStep[] {
   const allCopied = input.connected.length > 0 && input.connected.every((source) => input.ordersCopied.includes(source))
   return [
@@ -654,13 +654,6 @@ export function setupSteps(input: {
       detail: "Send purchase orders and track shipments together.",
       href: "/suppliers",
       done: input.suppliers > 0
-    },
-    {
-      key: "time-zone",
-      title: "Set your store's time zone",
-      detail: "Days and months on this page follow it.",
-      href: "/settings",
-      done: input.timeZone !== null
     }
   ]
 }
@@ -711,13 +704,14 @@ async function cachedRestock(orgId: string, now: number) {
 // Everything the Overview shows for a buyer, for every channel or one of them (a restock channel key: "amazon" or
 // "shopify:<location>").
 export async function overview(
-  org: { id: string; timeZone: string | null },
+  // `timeZone` is the store's: the one set in Settings, or else the viewer's computer's (see storeTimeZone).
+  org: { id: string; timeZone: string },
   // `period` is the page's query: `period`, or `from` and `to`, and `compare` (see readPeriod).
   options: { channel?: string | null; period?: Record<string, string | string[] | undefined>; now?: Date } = {}
 ) {
   const now = options.now ?? new Date()
   const orgId = org.id
-  const timeZone = org.timeZone ?? "UTC"
+  const { timeZone } = org
   const today = zonedDay(now, timeZone)
   const connected = await db()
     .select({ provider: connections.provider, externalId: connections.externalId, scopes: connections.scopes })
@@ -747,6 +741,7 @@ export async function overview(
       withoutAmazon: account.provider === "shopify" && amazonConnected
     }))
   const shopifyWithoutAmazon = scopedAccounts.find((account) => account.provider === "shopify" && account.withoutAmazon)
+  const shopifyAccount = scopedAccounts.find((account) => account.provider === "shopify")
   const period = readPeriod(options.period ?? {}, today)
   const window = {
     current: rangeBounds(period.range, timeZone),
@@ -779,7 +774,8 @@ export async function overview(
     platformLines,
     costs,
     linkedFreight,
-    priceRows
+    priceRows,
+    customerRows
   ] = await Promise.all([
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
     salesByDay(orgId, scopedAccounts, earliest, timeZone, currency),
@@ -836,7 +832,8 @@ export async function overview(
     platformCharges(orgId, scopedAccounts, window.current.from, window.current.to, currency),
     listMonthlyCosts(orgId),
     amazonFreightByOrder(orgId),
-    salesByItem(orgId, scopedAccounts, priceWindow, currency)
+    salesByItem(orgId, scopedAccounts, priceWindow, currency),
+    shopifyAccount ? shopifyCustomers(orgId, shopifyAccount, window.current, currency) : Promise.resolve(null)
   ])
   // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
   const monthly: ChargeLine[] = monthlyCostShares(
@@ -942,12 +939,15 @@ export async function overview(
   const buying = purchasing(poList, now, timeZone)
   const states = shipmentRows.filter((row) => orderIds.has(row.orderId)).map((row) => row.status)
   const shopify = connected.find((row) => row.provider === "shopify")
+  // Customer figures need the customer IDs, which a Shopify sync copies once the store grants read_customers.
+  const shopifySync = current.find((sync) => sync.source === "shopify")
+  let customerStatus: "ready" | "reconnect" | "syncing" = "ready"
+  if (!shopify || !hasCustomerScope(shopify.scopes)) {
+    customerStatus = "reconnect"
+  } else if (!shopifySync || shopifySync.dataVersion < customerDataVersion) {
+    customerStatus = "syncing"
+  }
   const unpricedBySource = (source: SalesSource) => series.reduce((sum, row) => sum + (row[source]?.unpriced ?? 0), 0)
-  const finishedStock = (source: "shopify" | "fba") =>
-    stock
-      .filter((row) => row.source === source && row.finishedAt)
-      .map((row) => row.finishedAt!)
-      .toSorted((a, b) => b.getTime() - a.getTime())[0] ?? null
   const stockSources = [
     ...(connected.some((row) => row.provider === "shopify") ? (["shopify"] as const) : []),
     ...(connected.some((row) => row.provider === "amazon") ? (["fba"] as const) : [])
@@ -956,7 +956,6 @@ export async function overview(
   return {
     generatedAt: now.toISOString(),
     timeZone,
-    timeZoneSet: org.timeZone !== null,
     connected: accounts.map((account) => account.provider),
     channels: channelOptions,
     channel: selected,
@@ -971,19 +970,6 @@ export async function overview(
       previousLabel: period.previous ? rangeLabel(period.previous) : null,
       today
     },
-    // When each kind of data was last copied, for the header.
-    freshness: [
-      ...accounts.map((account) => ({
-        key: `${account.provider}-orders`,
-        label: `${sourceNames[account.provider]} orders`,
-        at: current.find((row) => row.source === account.provider)?.finishedAt?.toISOString() ?? null
-      })),
-      ...stockSources.map((source) => ({
-        key: `${source}-stock`,
-        label: source === "shopify" ? "Shopify stock" : "Amazon stock",
-        at: finishedStock(source)?.toISOString() ?? null
-      }))
-    ],
     setup: setupSteps({
       connected: accounts.map((account) => account.provider),
       ordersCopied: current.filter((sync) => sync.coveredTo).map((sync) => sync.source),
@@ -992,8 +978,7 @@ export async function overview(
         stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
       inStock: everyChannel.unitsOnHand,
       uncosted: everyChannel.uncosted,
-      suppliers: supplierRows.filter((row) => !row.removedAt).length,
-      timeZone: org.timeZone
+      suppliers: supplierRows.filter((row) => !row.removedAt).length
     }),
     sales: {
       sources,
@@ -1008,6 +993,13 @@ export async function overview(
         estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
       },
       movers: trending,
+      // Shopify customers, when a Shopify channel is shown.
+      customers: customerRows && {
+        ...customerRows,
+        status: customerStatus,
+        // Orders reach back to here, so the year's figures cover less than a year before it.
+        historyFrom: shopifySync?.coveredFrom?.toISOString() ?? null
+      },
       // Shopify copies of orders from Amazon marketplaces Copacker doesn't read, left out over the period.
       otherMarketplaceOrders: otherMarketplaces,
       moversComparable: comparable.length > 0

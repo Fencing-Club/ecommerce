@@ -2,7 +2,9 @@ import { type Amazon, ProviderError } from "@repo/aisle/amazon"
 import {
   type AmazonSale,
   collectAmazonSales,
+  collectAmazonSalesReport,
   collectShopifySales,
+  collectShopifySalesBulk,
   type ShopifySale,
   shopifyPaymentFees
 } from "@repo/aisle/sales"
@@ -18,6 +20,7 @@ import { ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
+import { logLine } from "./log"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { syncShopifyBalance } from "./shopify-balance"
@@ -35,6 +38,20 @@ export const salesHistoryDays = 365
 // 2: Shopify payments, with Shopify Payments' processing fees.
 // 3: Amazon orders from Canada, Mexico and Brazil as well as the US.
 export const salesDataVersion = 3
+// Shopify orders with each order's customer ID, once the store grants read_customers.
+export const customerDataVersion = 4
+// Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
+export const amazonDataVersion = 4
+
+export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
+
+// The shape a source's orders are copied in: Shopify's include customer IDs when the store allows it.
+export function dataVersionFor(source: SalesSource, scopes: string) {
+  if (source === "amazon") {
+    return amazonDataVersion
+  }
+  return hasCustomerScope(scopes) ? customerDataVersion : salesDataVersion
+}
 const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
@@ -125,7 +142,8 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
 export function syncChunks(
   now: number,
   coverage: { coveredFrom: Date | null; coveredTo: Date | null; dataVersion?: number },
-  historyDays = salesHistoryDays
+  historyDays = salesHistoryDays,
+  version = salesDataVersion
 ) {
   // Orders need a couple of minutes to settle.
   const end = Math.floor((now - 180000) / 60000) * 60000
@@ -139,7 +157,7 @@ export function syncChunks(
     coverage.coveredFrom &&
     coverage.coveredTo &&
     coverage.coveredTo.getTime() >= end - refreshDays * day &&
-    (coverage.dataVersion ?? salesDataVersion) >= salesDataVersion
+    (coverage.dataVersion ?? version) >= version
   if (!usable) {
     for (let to = end; to > historyStart; to -= size) {
       chunks.push({ from: new Date(Math.max(historyStart, to - size)), to: new Date(to) })
@@ -185,6 +203,12 @@ const payloadSchema = z.object({
   resume: z.object({ remaining: z.array(period), covered: period.nullable() }).optional()
 })
 
+// A Shopify sync reading more periods than this uses one bulk export.
+const bulkThreshold = 3
+const within = (at: string, window: { from: string; to: string }) =>
+  Date.parse(at) >= Date.parse(window.from) && Date.parse(at) < Date.parse(window.to)
+// How long Amazon's order report can take to include a new order.
+const reportLagMs = 2 * day
 // Amazon's order search allows about one request every three minutes once its burst of 20 is spent.
 const amazonSearchInterval = 180000
 
@@ -205,7 +229,8 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     // Without read_all_orders Shopify shares only the last 60 days.
     const historyDays =
       source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
-    const planned = resume ? null : syncChunks(Date.now(), sync, historyDays)
+    const version = dataVersionFor(source, scopes)
+    const planned = resume ? null : syncChunks(Date.now(), sync, historyDays, version)
     const chunks =
       resume?.remaining.map((chunk) => ({ from: new Date(chunk.from), to: new Date(chunk.to) })) ?? planned!.chunks
     type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
@@ -217,8 +242,28 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       afterOrders = () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
       // Shopify access tokens last about an hour and a year of orders can take longer, so each period gets a current
       // token (renewed when it's about to expire) instead of one from the start of the sync.
+      const customers = hasCustomerScope(scopes)
+      // Reading many periods (a first sync, or one reading everything again) uses one bulk export of the whole stretch;
+      // a sync of recent orders reads each period directly. If the export fails, each period is read directly.
+      let exported: ShopifySale[] | null = null
+      if (chunks.length > bulkThreshold) {
+        const from = chunks.reduce((min, chunk) => (chunk.from < min ? chunk.from : min), chunks[0]!.from)
+        const to = chunks.reduce((max, chunk) => (chunk.to > max ? chunk.to : max), chunks[0]!.to)
+        exported = await collectShopifySalesBulk(
+          await shopifyFor(orgId, account),
+          { from: from.toISOString(), to: to.toISOString() },
+          assertOwned,
+          { customers }
+        ).catch((error: unknown) => {
+          console.error(JSON.stringify({ event: "shopify_bulk_export_failed", orgId, error: describeError(error) }))
+          return null
+        })
+      }
       read = async (window) =>
-        (await collectShopifySales(await shopifyFor(orgId, account), account, window, assertOwned)).map((order) => ({
+        (
+          exported?.filter((order) => within(order.createdAt, window)) ??
+          (await collectShopifySales(await shopifyFor(orgId, account), account, window, assertOwned, { customers }))
+        ).map((order) => ({
           orderId: order.id,
           orderedAt: new Date(order.createdAt),
           data: order
@@ -245,12 +290,32 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         )
       }
       const marketplaces = await amazonSalesMarketplaces(account, client)
+      // Older periods come from Amazon's order report, one report per period, which is much faster than the order
+      // search's pace. Recent ones use the order search, since the report can lag behind new orders; so does a period
+      // whose report Amazon couldn't build.
+      const fromReport = async (window: { from: string; to: string }) => {
+        if (Date.parse(window.to) >= Date.now() - reportLagMs) {
+          return null
+        }
+        try {
+          return await collectAmazonSalesReport(client, window, marketplaces, assertOwned)
+        } catch (error) {
+          // Throttled: pause like the order search does. Anything else: read the period with the order search.
+          if (error instanceof ProviderError && [429, 503].includes(error.status)) {
+            throw error
+          }
+          console.error(JSON.stringify({ event: "amazon_order_report_failed", orgId, error: describeError(error) }))
+          return null
+        }
+      }
       read = async (window) =>
-        (await collectAmazonSales(amazon, window, assertOwned, marketplaces)).map((order) => ({
-          orderId: order.orderId,
-          orderedAt: new Date(order.createdTime),
-          data: order
-        }))
+        ((await fromReport(window)) ?? (await collectAmazonSales(amazon, window, assertOwned, marketplaces))).map(
+          (order) => ({
+            orderId: order.orderId,
+            orderedAt: new Date(order.createdTime),
+            data: order
+          })
+        )
     }
     let covered: { from: Date; to: Date } | null = null
     if (resume) {
@@ -290,6 +355,9 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         orders = await throttled(() => read(window), assertOwned)
       }
       await assertOwned()
+      logLine(
+        `Copied ${orders.length} ${source === "shopify" ? "Shopify" : "Amazon"} orders, ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)} (period ${index + 1} of ${chunks.length})`
+      )
       covered = covered
         ? {
             from: chunk.from < covered.from ? chunk.from : covered.from,
@@ -326,14 +394,14 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         // partway continues from here next time instead of reading everything again.
         await tx
           .update(salesSyncs)
-          .set({ coveredFrom: range.from, coveredTo: range.to, dataVersion: salesDataVersion })
+          .set({ coveredFrom: range.from, coveredTo: range.to, dataVersion: version })
           .where(scope)
       })
     }
     await afterOrders?.()
     await db()
       .update(salesSyncs)
-      .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: salesDataVersion })
+      .set({ status: "idle", finishedAt: new Date(), errorCode: null, dataVersion: version })
       .where(scope)
   } catch (error) {
     // A paused sync stays running; the queue runs it again.
@@ -524,6 +592,10 @@ export function orderSales(data: ShopifySale | AmazonSale): { minor: number; cur
   } else {
     for (const item of data.orderItems) {
       const breakdowns = item.proceeds?.breakdowns
+      // A line with nothing ordered has no price to add.
+      if (!breakdowns && item.quantityOrdered === 0) {
+        continue
+      }
       if (!breakdowns) {
         return null
       }
@@ -532,7 +604,11 @@ export function orderSales(data: ShopifySale | AmazonSale): { minor: number; cur
         if (entry.type === "ITEM") {
           total += Number(entry.subtotal.amount)
         } else if (entry.type === "DISCOUNT") {
-          total -= Math.abs(Number(entry.subtotal.amount))
+          // Free shipping isn't taken off product sales.
+          const shipping = (entry.detailedBreakdowns ?? [])
+            .filter((part) => part.subtype === "SHIPPING")
+            .reduce((sum, part) => sum + Math.abs(Number(part.value.amount)), 0)
+          total -= Math.abs(Number(entry.subtotal.amount)) - shipping
         }
       }
     }

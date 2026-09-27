@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   TrendingUp,
   Truck,
+  Users,
   Wallet,
   Warehouse
 } from "lucide-react"
@@ -800,4 +801,90 @@ export function ProfitBreakdown({ sales, period }: { sales: Overview["sales"]; p
 
 function formatPercentShort(value: number) {
   return `${Math.round(value * 100)}%`
+}
+
+// Shopify customers: who ordered in the period and how many came back, and what a customer is worth over a year.
+export function Customers({
+  customers,
+  period
+}: {
+  customers: NonNullable<Overview["sales"]["customers"]>
+  period: Overview["period"]
+}) {
+  const notAvailable = "Not available"
+  const percent = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : notAvailable)
+  // Orders synced a year back start a few days short of it; a week's slack keeps that from reading as a short year.
+  const partialYear =
+    customers.historyFrom && Date.parse(customers.historyFrom) > Date.parse(period.range.to) - 358 * 86400000
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className={styles.sectionTitle}>
+          <Users aria-hidden />
+          Shopify customers
+        </CardTitle>
+        <CardDescription>
+          Customers who ordered {period.rangeLabel}, and what a customer spends over the year to its end.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className={styles.stack}>
+        {customers.status === "reconnect" && (
+          <p className={styles.note}>
+            Reconnect Shopify in <Link href="/settings">Settings</Link> to allow customer IDs, which count repeat
+            customers.
+          </p>
+        )}
+        {customers.status === "syncing" && (
+          <p className={styles.note}>Customer figures appear after the next Shopify order sync copies customer IDs.</p>
+        )}
+        {customers.status === "ready" && (
+          <>
+            <div className={styles.figuresOnly}>
+              <Figure
+                label="Customer lifetime value"
+                value={
+                  customers.yearCustomers
+                    ? formatMoney([
+                        {
+                          minor: Math.round(customers.yearRevenueMinor / customers.yearCustomers),
+                          currency: customers.currency
+                        }
+                      ])
+                    : notAvailable
+                }
+                note="Sales per customer over 12 months"
+              />
+              <Figure
+                label="Returning customers"
+                value={percent(customers.returning, customers.customers)}
+                note={`${formatNumber(customers.returning)} of ${formatNumber(customers.customers)} in this period`}
+              />
+              <Figure
+                label="Repeat customers"
+                value={percent(customers.repeatCustomers, customers.yearCustomers)}
+                note="Ordered more than once in 12 months"
+              />
+              <Figure
+                label="Orders per customer"
+                value={
+                  customers.yearCustomers
+                    ? (customers.yearOrders / customers.yearCustomers).toLocaleString("en-US", {
+                        maximumFractionDigits: 2
+                      })
+                    : notAvailable
+                }
+                note="Over 12 months"
+              />
+            </div>
+            <p className={styles.note}>
+              Sales are before tax and shipping. Guest orders and Amazon orders have no Shopify customer, so they aren’t
+              counted.
+              {partialYear &&
+                ` Orders go back to ${new Date(customers.historyFrom!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, so the year is shorter.`}
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
 }

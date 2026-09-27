@@ -3,7 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { EmptyState, PageHeader } from "@/components/common"
-import { Freshness, OverviewDashboard, OverviewSkeleton } from "@/components/overview"
+import { OverviewDashboard, OverviewSkeleton } from "@/components/overview"
 import { ChannelFilter } from "@/components/overview-filter"
 import { SetupChecklist } from "@/components/overview-sections"
 import { PeriodPicker } from "@/components/period-picker"
@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { type Session, session } from "@/server/auth"
 import { overview } from "@/server/overview"
+import { storeTimeZone } from "@/server/store-time-zone"
 import * as styles from "@/components/overview.css"
 
 type Query = Record<string, string | string[] | undefined>
 
 async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) {
   const channel = typeof query.channel === "string" ? query.channel : null
-  const data = await overview(org, { channel, period: query })
+  const data = await overview({ id: org.id, timeZone: await storeTimeZone(org) }, { channel, period: query })
   if (!data.connected.length) {
     return (
       <div className={styles.page}>
@@ -44,7 +45,6 @@ async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) 
           <PeriodPicker period={data.period} />
           {data.channels.length > 1 && <ChannelFilter channels={data.channels} value={data.channel?.key ?? ""} />}
         </div>
-        <Freshness data={data} />
       </div>
       <OverviewDashboard data={data} />
     </div>

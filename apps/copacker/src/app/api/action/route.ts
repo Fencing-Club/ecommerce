@@ -241,8 +241,14 @@ export async function POST(request: Request) {
     }
     if (action === "workspace.timeZone") {
       requireOwner(s)
-      const input = z.object({ timeZone: z.string().refine(isTimeZone, "Choose a time zone") }).parse(data)
-      await db().update(organizations).set({ timeZone: input.timeZone }).where(eq(organizations.id, s.org.id))
+      // An empty choice goes back to each viewer's computer's time zone.
+      const input = z
+        .object({ timeZone: z.union([z.literal(""), z.string().refine(isTimeZone, "Choose a time zone")]) })
+        .parse(data)
+      await db()
+        .update(organizations)
+        .set({ timeZone: input.timeZone || null })
+        .where(eq(organizations.id, s.org.id))
       return Response.json({ ok: true })
     }
     if (action === "supplier.profile") {

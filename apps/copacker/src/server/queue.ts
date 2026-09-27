@@ -4,6 +4,7 @@ import { jobs, shipments } from "../db/schema"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
+import { logLine } from "./log"
 import { reconcileJob } from "./reconcile"
 import { salesJob } from "./sales-orders"
 import { shopifyComplianceJob } from "./shopify-compliance"
@@ -37,6 +38,10 @@ export async function runNextJob() {
     return false
   }
 
+  // One line when a job starts and one when it ends, so the worker's output shows what it's doing.
+  const started = Date.now()
+  logLine(`Started ${job.kind} job ${job.key} (attempt ${job.attempts})`)
+  const took = () => Math.round((Date.now() - started) / 1000)
   // Attempt numbers prevent a worker with an expired lease from changing a newer attempt.
   const owned = and(eq(jobs.id, job.id), eq(jobs.attempts, job.attempts), eq(jobs.status, "running"))
   const assertOwned = async () => {
@@ -90,12 +95,15 @@ export async function runNextJob() {
       throw new Error("Unknown job type")
     }
     await db().update(jobs).set({ status: "complete", error: null }).where(owned)
+    logLine(`Finished ${job.kind} job ${job.key} in ${took()}s`)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Job failed"
     const poll = error instanceof PollAgain ? error.options : null
     const polling = error instanceof PollAgain && job.attempts < 60
     // The error is also stored on the job; logging it shows failures in the service logs without a database read.
-    if (!polling) {
+    if (polling) {
+      logLine(`Paused ${job.kind} job ${job.key} after ${took()}s: ${message}`)
+    } else {
       console.error(
         JSON.stringify({
           event: "job_failed",

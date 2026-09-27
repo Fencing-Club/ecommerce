@@ -4,7 +4,10 @@ import {
   collectShopifyBalanceTransactions,
   shopifyPaymentFees,
   collectShopifySales,
+  collectShopifySalesBulk,
   collectAmazonSales,
+  collectAmazonSalesReport,
+  shopifyOrderWithCustomerQuery,
   shopifySalesQueries,
   transactionFees
 } from "../src/sales"
@@ -66,6 +69,31 @@ describe("complete sales readers", () => {
     })
     expect(active).toHaveBeenCalledTimes(6)
     expect(Object.values(shopifySalesQueries).join(" ")).not.toMatch(/email|address|customer/i)
+    expect(result[0]).not.toHaveProperty("customerId")
+  })
+  it("copies each order's customer ID when asked, and nothing else about the customer", async () => {
+    const api = shopify()
+    const result = await collectShopifySales(
+      {
+        graphql: async (query, variables) => {
+          const response = (await api.graphql(query, variables)) as { order?: Record<string, unknown> }
+          return response.order
+            ? { order: { ...response.order, customer: { id: "gid://shopify/Customer/1" } } }
+            : response
+        }
+      },
+      "test.myshopify.com",
+      window,
+      undefined,
+      { customers: true }
+    )
+    expect(result[0]?.customerId).toBe("gid://shopify/Customer/1")
+    expect(api.graphql.mock.calls[1]?.[0]).toBe(shopifyOrderWithCustomerQuery)
+    // Only the customer's ID is added to the order query.
+    expect(
+      shopifyOrderWithCustomerQuery.replace(shopifySalesQueries.order.split("{order(id:$id){")[0]!, "")
+    ).not.toMatch(/email|address|phone|firstName|lastName|displayName/i)
+    expect(shopifyOrderWithCustomerQuery).toContain("customer{id}")
   })
   it("follows nested line and fulfillment line pagination", async () => {
     const api = shopify()
@@ -376,5 +404,195 @@ describe("Shopify Payments balance transactions", () => {
       .fn<(_query: string, _variables?: Record<string, unknown>) => Promise<unknown>>()
       .mockResolvedValue({ shopifyPaymentsAccount: null })
     expect(await collectShopifyBalanceTransactions({ graphql }, window)).toEqual([])
+  })
+})
+
+describe("backfill readers", () => {
+  const range = { from: "2026-09-01T00:00:00.000Z", to: "2026-09-15T00:00:00.000Z" }
+
+  it("reads Amazon's order report into the order search's shape, without shipping addresses", async () => {
+    const columns = [
+      "amazon-order-id",
+      "purchase-date",
+      "order-status",
+      "fulfillment-channel",
+      "sales-channel",
+      "order-item-id",
+      "sku",
+      "asin",
+      "item-status",
+      "quantity",
+      "currency",
+      "item-price",
+      "item-tax",
+      "shipping-price",
+      "item-promotion-discount",
+      "ship-promotion-discount",
+      "ship-city",
+      "ship-postal-code"
+    ]
+    const row = (values: Record<string, string>) => columns.map((name) => values[name] ?? "").join("\t")
+    const report = [
+      columns.join("\t"),
+      row({
+        "amazon-order-id": "111-1",
+        "purchase-date": "2026-09-02T10:00:00+00:00",
+        "order-status": "Shipped",
+        "fulfillment-channel": "Amazon",
+        "sales-channel": "Amazon.com",
+        "order-item-id": "i1",
+        sku: "A",
+        asin: "B01",
+        "item-status": "Shipped",
+        quantity: "2",
+        currency: "USD",
+        "item-price": "40.00",
+        "item-tax": "3.20",
+        "shipping-price": "5.00",
+        "item-promotion-discount": "-4.00",
+        "ship-promotion-discount": "-5.00",
+        "ship-city": "Seattle",
+        "ship-postal-code": "98101"
+      }),
+      // Pending: no price yet.
+      row({
+        "amazon-order-id": "702-2",
+        "purchase-date": "2026-09-03T10:00:00+00:00",
+        "order-status": "Pending",
+        "fulfillment-channel": "Merchant",
+        "sales-channel": "Amazon.ca",
+        "order-item-id": "i2",
+        sku: "B",
+        "item-status": "Unshipped",
+        quantity: "1",
+        currency: "CAD"
+      }),
+      // Multi-channel fulfillment for another store, and an order outside the window: left out.
+      row({
+        "amazon-order-id": "S01-3",
+        "purchase-date": "2026-09-03T10:00:00+00:00",
+        "sales-channel": "Non-Amazon US"
+      }),
+      row({ "amazon-order-id": "111-4", "purchase-date": "2026-09-15T00:00:00+00:00", "sales-channel": "Amazon.com" })
+    ].join("\n")
+    const report$ = vi.fn<(...args: unknown[]) => Promise<string | null>>().mockResolvedValue(report)
+    const orders = await collectAmazonSalesReport({ report: report$ as never }, range, [
+      "ATVPDKIKX0DER",
+      "A2EUQ1WTGCTBG2"
+    ])
+    expect(orders).toEqual([
+      {
+        orderId: "111-1",
+        createdTime: "2026-09-02T10:00:00.000Z",
+        salesChannel: { channelName: "AMAZON", marketplaceId: "ATVPDKIKX0DER" },
+        fulfillment: { fulfillmentStatus: "SHIPPED", fulfilledBy: "AMAZON" },
+        orderItems: [
+          {
+            orderItemId: "i1",
+            quantityOrdered: 2,
+            product: { sellerSku: "A", asin: "B01" },
+            fulfillment: { quantityFulfilled: 2, quantityUnfulfilled: 0 },
+            proceeds: {
+              breakdowns: [
+                { type: "ITEM", subtotal: { amount: "40", currencyCode: "USD" } },
+                {
+                  type: "DISCOUNT",
+                  subtotal: { amount: "9", currencyCode: "USD" },
+                  detailedBreakdowns: [
+                    { subtype: "ITEM", value: { amount: "4", currencyCode: "USD" } },
+                    { subtype: "SHIPPING", value: { amount: "5", currencyCode: "USD" } }
+                  ]
+                },
+                { type: "SHIPPING", subtotal: { amount: "5", currencyCode: "USD" } },
+                { type: "TAX", subtotal: { amount: "3.2", currencyCode: "USD" } }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        orderId: "702-2",
+        createdTime: "2026-09-03T10:00:00.000Z",
+        salesChannel: { channelName: "AMAZON", marketplaceId: "A2EUQ1WTGCTBG2" },
+        fulfillment: { fulfillmentStatus: "PENDING", fulfilledBy: "MERCHANT" },
+        orderItems: [
+          {
+            orderItemId: "i2",
+            quantityOrdered: 1,
+            product: { sellerSku: "B", asin: undefined },
+            fulfillment: { quantityFulfilled: 0, quantityUnfulfilled: 1 }
+          }
+        ]
+      }
+    ])
+    expect(JSON.stringify(orders)).not.toMatch(/Seattle|98101/)
+    expect(report$.mock.calls[0]?.[0]).toMatchObject({
+      reportType: "GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL",
+      dataStartTime: range.from,
+      dataEndTime: range.to
+    })
+    report$.mockResolvedValue(null)
+    expect(await collectAmazonSalesReport({ report: report$ as never }, range, ["ATVPDKIKX0DER"])).toBeNull()
+  })
+
+  it("reads Shopify's bulk export, then what each fulfillment shipped", async () => {
+    const order = {
+      ...header,
+      id: "gid://shopify/Order/1",
+      customer: { id: "gid://shopify/Customer/9" },
+      fulfillments: [{ id: "f1", status: "SUCCESS", location: { id: "loc1" } }],
+      transactions: []
+    }
+    const exported = [
+      order,
+      { ...line, __parentId: order.id },
+      {
+        ...header,
+        id: "gid://shopify/Order/2",
+        cancelledAt: "2026-09-02T00:00:00Z",
+        fulfillments: [],
+        transactions: []
+      }
+    ]
+      .map((row) => JSON.stringify(row))
+      .join("\n")
+    const graphql = vi
+      .fn<(query: string, variables?: Record<string, unknown>) => Promise<unknown>>()
+      .mockResolvedValueOnce({ bulkOperationRunQuery: { bulkOperation: { id: "bulk1" }, userErrors: [] } })
+      .mockResolvedValueOnce({ bulkOperation: { status: "RUNNING" } })
+      .mockResolvedValueOnce({ bulkOperation: { status: "COMPLETED", url: "https://storage.example/orders.jsonl" } })
+      .mockResolvedValueOnce({
+        fulfillment: {
+          id: "f1",
+          fulfillmentLineItems: { nodes: [{ id: "fl1", quantity: 2, lineItem: { id: "line1" } }], pageInfo }
+        }
+      })
+    const download = vi.fn<typeof fetch>(async () => new Response(exported))
+    const orders = await collectShopifySalesBulk({ graphql }, window, undefined, {
+      customers: true,
+      download,
+      sleep: async () => undefined
+    })
+    expect(orders).toHaveLength(1)
+    expect(orders[0]).toMatchObject({
+      id: "gid://shopify/Order/1",
+      customerId: "gid://shopify/Customer/9",
+      lines: [line],
+      fulfillments: [{ id: "f1", lines: [{ id: "fl1", quantity: 2, lineItem: { id: "line1" } }] }]
+    })
+    expect(String(graphql.mock.calls[0]?.[1]?.query)).toContain("customer{id}")
+    expect(download).toHaveBeenCalledWith("https://storage.example/orders.jsonl", expect.anything())
+  })
+
+  it("fails when Shopify won't start the export or it fails", async () => {
+    const refused = vi
+      .fn<(query: string) => Promise<unknown>>()
+      .mockResolvedValue({ bulkOperationRunQuery: { bulkOperation: null, userErrors: [{ message: "Busy" }] } })
+    await expect(collectShopifySalesBulk({ graphql: refused }, window)).rejects.toThrow("Busy")
+    const failed = vi
+      .fn<(query: string) => Promise<unknown>>()
+      .mockResolvedValueOnce({ bulkOperationRunQuery: { bulkOperation: { id: "bulk1" }, userErrors: [] } })
+      .mockResolvedValueOnce({ bulkOperation: { status: "FAILED", errorCode: "TIMEOUT" } })
+    await expect(collectShopifySalesBulk({ graphql: failed }, window)).rejects.toThrow("TIMEOUT")
   })
 })

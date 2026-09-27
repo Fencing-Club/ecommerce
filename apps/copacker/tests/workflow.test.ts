@@ -115,7 +115,7 @@ import { readSalesDemand } from "../src/server/sales"
 import {
   listSalesOrders,
   requestSalesSync,
-  salesDataVersion,
+  amazonDataVersion,
   storedDemand,
   syncChunks
 } from "../src/server/sales-orders"
@@ -2847,9 +2847,10 @@ describe("stored sales orders", () => {
       .from(tables.salesSyncs)
       .where(and(eq(tables.salesSyncs.orgId, buyerId), eq(tables.salesSyncs.source, "shopify")))
     expect(sync?.status).toBe("idle")
-    // 60 days of history (no read_all_orders) is five 14-day periods, each with its own client.
-    expect(graphql).toHaveBeenCalledTimes(5)
-    expect(provider.shopifyFor).toHaveBeenCalledTimes(5)
+    // 60 days of history (no read_all_orders) is five 14-day periods. The bulk export gets no answer here, so each
+    // period is read directly, each with its own client.
+    expect(graphql).toHaveBeenCalledTimes(6)
+    expect(provider.shopifyFor).toHaveBeenCalledTimes(6)
     // Without the payouts permission, labels and Shopify charges wait for the store to reconnect.
     expect(sync?.feesErrorCode).toBe("reconnect")
   })
@@ -2896,7 +2897,7 @@ describe("stored sales orders", () => {
     const [waiting] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
     expect(waiting?.status).toBe("running")
     // What's stored so far was read in the current shape, so a sync that stops here won't start over.
-    expect(waiting?.dataVersion).toBe(salesDataVersion)
+    expect(waiting?.dataVersion).toBe(amazonDataVersion)
 
     await database.update(tables.jobs).set({ runAt: new Date() }).where(eq(tables.jobs.id, paused!.id))
     await runNextJob()
@@ -2943,7 +2944,7 @@ describe("stored sales orders", () => {
     await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
     const [sync] = await database.select().from(tables.salesSyncs).where(eq(tables.salesSyncs.orgId, buyerId))
-    expect(sync).toMatchObject({ status: "idle", dataVersion: salesDataVersion, feesErrorCode: null })
+    expect(sync).toMatchObject({ status: "idle", dataVersion: amazonDataVersion, feesErrorCode: null })
     expect(sync?.feesCoveredTo).not.toBeNull()
     expect(
       await database

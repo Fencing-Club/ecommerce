@@ -363,8 +363,7 @@ describe("setupSteps", () => {
       stockSynced: true,
       inStock: 10,
       uncosted: 2,
-      suppliers: 1,
-      timeZone: null
+      suppliers: 1
     })
     expect(Object.fromEntries(steps.map((step) => [step.key, step.done]))).toEqual({
       shopify: true,
@@ -372,8 +371,7 @@ describe("setupSteps", () => {
       orders: true,
       stock: true,
       costs: false,
-      supplier: true,
-      "time-zone": false
+      supplier: true
     })
   })
 })

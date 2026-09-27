@@ -1,6 +1,7 @@
 import { setTimeout as wait } from "node:timers/promises"
 import { SQSClient } from "@aws-sdk/client-sqs"
 import { pollAmazonNotifications } from "./amazon-notifications"
+import { logLine } from "./log"
 import { runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
 import { pollShopifyEvents } from "./shopify-webhooks"
@@ -67,6 +68,13 @@ async function scheduleReconciliation() {
     await wait(10 * 60000, undefined, { ref: false })
   }
 }
+logLine(
+  `Worker started with ${jobLoops} job loops${
+    amazonQueueUrl || shopifyQueueUrl
+      ? `, reading the ${[amazonQueueUrl && "amazon", shopifyQueueUrl && "shopify"].filter(Boolean).join(" and ")} queues`
+      : ""
+  }`
+)
 void scheduleReconciliation()
 await Promise.all(Array.from({ length: jobLoops }, () => runJobs()))
 // A message being handled when the worker stops is received again later, since it is only removed once handled.

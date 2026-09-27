@@ -28,7 +28,7 @@ import {
 } from "../src/server/amazon-notifications"
 import { PollAgain } from "../src/server/job-handlers"
 import { runNextJob } from "../src/server/queue"
-import { salesDataVersion } from "../src/server/sales-orders"
+import { amazonDataVersion } from "../src/server/sales-orders"
 import { queueArn } from "../src/server/sqs"
 import { applyMigrations } from "./migrations"
 
@@ -170,7 +170,7 @@ describe("Amazon order updates", () => {
       revision: 1,
       coveredFrom,
       coveredTo,
-      dataVersion: salesDataVersion,
+      dataVersion: amazonDataVersion,
       ...values
     })
   }
@@ -222,7 +222,7 @@ describe("Amazon order updates", () => {
   })
 
   it("reads everything again when the stored orders are old or in an older shape", async () => {
-    await storedSync({ dataVersion: salesDataVersion - 1 })
+    await storedSync({ dataVersion: amazonDataVersion - 1 })
     await amazonEventJob({ orgId: buyerId, sellerId, target: "sales" }, owned, now)
     expect((await database.select().from(tables.salesSyncs))[0]).toMatchObject({ status: "queued", revision: 2 })
     expect(amazon.request).not.toHaveBeenCalled()

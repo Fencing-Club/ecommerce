@@ -57,7 +57,10 @@ export const preset = style({
   }
 })
 
-export const presetHeading = style([preset, { fontWeight: 500, color: vars.color.mutedForeground }])
+export const presetHeading = style([
+  preset,
+  { justifyContent: "flex-start", fontWeight: 500, color: vars.color.mutedForeground }
+])
 
 export const panel = style({ display: "flex", flexDirection: "column", gap: space(3), padding: space(3) })
 

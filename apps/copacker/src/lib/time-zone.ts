@@ -3,6 +3,9 @@
 
 const dayMs = 86400000
 
+// The cookie the browser reports the computer's time zone in.
+export const timeZoneCookie = "tz"
+
 export function isTimeZone(value: string) {
   try {
     return new Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions().timeZone.length > 0

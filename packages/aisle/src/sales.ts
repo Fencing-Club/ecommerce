@@ -61,15 +61,37 @@ export const shopifySalesQueries = {
   order: `query SalesOrder($id:ID!,$after:String){order(id:$id){${headers} lineItems(first:250,after:$after){${linePage}} fulfillmentsCount{count precision} fulfillments(first:250){id status location{id}} transactions(first:100){id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}`,
   fulfillment: `query SalesFulfillment($id:ID!,$after:String){fulfillment(id:$id){id fulfillmentLineItems(first:250,after:$after){${fulfillmentPage}}}}`
 }
+// The order query with the order's customer, by ID only: never a name, email or address. Used only when the store
+// granted read_customers, so repeat customers and lifetime value can be counted.
+export const shopifyOrderWithCustomerQuery = shopifySalesQueries.order.replace(
+  "{order(id:$id){",
+  "{order(id:$id){customer{id} "
+)
+// Orders whose details are read at once. Shopify's rate limit (handled by the client) still paces them.
+const detailConcurrency = 6
+
+// Runs `work` on each item, at most `limit` at a time, keeping the items' order in the results.
+async function mapLimit<T, R>(items: readonly T[], limit: number, work: (item: T) => Promise<R>) {
+  const results = Array.from<R>({ length: items.length })
+  let next = 0
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await work(items[index]!)
+    }
+  })
+  await Promise.all(runners)
+  return results
+}
 
 // One budget spans every nested connection. Incomplete collections are never returned as zero sales.
-function collection(assertActive?: () => Promise<void>) {
-  const deadline = Date.now() + 300000
+function collection(assertActive?: () => Promise<void>, limits = { requests: 2000, ms: 300000 }) {
+  const deadline = Date.now() + limits.ms
   let requests = 0,
     bytes = 0
   return async (fetchPage: () => Promise<unknown>) => {
     await assertActive?.()
-    if (++requests > 2000 || Date.now() >= deadline) {
+    if (++requests > limits.requests || Date.now() >= deadline) {
       throw new Error("Sales collection limit reached; use a shorter window")
     }
     const response = await fetchPage()
@@ -105,6 +127,8 @@ export type ShopifySale = z.infer<typeof header> & {
   fulfillments: (z.infer<typeof fulfillment> & { lines: z.infer<typeof fulfillmentLine>[] })[]
   // Optional because orders stored before payments were copied lack them.
   transactions?: z.infer<typeof payment>[]
+  // The Shopify customer's ID, null for an order without one. Absent when customers weren't read.
+  customerId?: string | null
 }
 
 // Shopify Payments' processing fees on an order, with the tax on them, in minor units: null when the order was copied
@@ -130,13 +154,85 @@ export async function collectShopifySales(
   client: Pick<Shopify, "graphql">,
   domain: string,
   input: SalesWindow,
-  assertActive?: () => Promise<void>
+  assertActive?: () => Promise<void>,
+  // Also copy each order's customer ID (needs read_customers).
+  options: { customers?: boolean } = {}
 ) {
   const window = salesWindowSchema.parse(input),
     read = collection(assertActive)
   const result: ShopifySale[] = [],
     orderIds = new Set<string>(),
     orderCursors = new Set<string>()
+  const detailQuery = options.customers ? shopifyOrderWithCustomerQuery : shopifySalesQueries.order
+  // One order's lines, fulfillments with their lines, payments and (when asked) customer.
+  const orderDetails = async (summary: z.infer<typeof header>) => {
+    const sale: ShopifySale = { ...summary, lines: [], fulfillments: [] }
+    const lineIds = new Set<string>(),
+      cursors = new Set<string>()
+    let lineAfter: string | null = null
+    do {
+      const detail = z
+        .object({
+          order: header.extend({
+            lineItems: lines,
+            fulfillmentsCount: z.object({ count: quantity, precision: z.literal("EXACT") }),
+            fulfillments: z.array(fulfillment).max(250),
+            transactions: z.array(payment).max(100),
+            customer: z.object({ id }).nullable().optional()
+          })
+        })
+        .parse(await read(() => client.graphql(detailQuery, { id: summary.id, after: lineAfter }))).order
+      if (
+        JSON.stringify({
+          id: detail.id,
+          name: detail.name,
+          createdAt: detail.createdAt,
+          cancelledAt: detail.cancelledAt,
+          test: detail.test,
+          sourceName: detail.sourceName
+        }) !== JSON.stringify(summary)
+      ) {
+        throw new Error("Shopify order changed during sales collection")
+      }
+      if (detail.fulfillmentsCount.count !== detail.fulfillments.length) {
+        throw new Error("Shopify fulfillments are incomplete")
+      }
+      if (lineAfter === null) {
+        sale.fulfillments = detail.fulfillments.map((f) => ({ ...f, lines: [] }))
+        sale.transactions = detail.transactions
+        if (options.customers) {
+          sale.customerId = detail.customer?.id ?? null
+        }
+      }
+      for (const item of detail.lineItems.nodes) {
+        unique(item.id, lineIds)
+        sale.lines.push(item)
+      }
+      lineAfter = nextCursor(detail.lineItems.pageInfo, cursors)
+    } while (lineAfter !== null)
+    const fulfillmentIds = new Set<string>()
+    for (const f of sale.fulfillments) {
+      unique(f.id, fulfillmentIds)
+      if (f.status !== "SUCCESS") {
+        continue
+      }
+      const ids = new Set<string>(),
+        cursors = new Set<string>()
+      let after: string | null = null
+      do {
+        const data = z
+          .object({ fulfillment: z.object({ id: z.literal(f.id), fulfillmentLineItems: fulfillmentLines }) })
+          .parse(await read(() => client.graphql(shopifySalesQueries.fulfillment, { id: f.id, after })))
+          .fulfillment.fulfillmentLineItems
+        for (const item of data.nodes) {
+          unique(item.id, ids)
+          f.lines.push(item)
+        }
+        after = nextCursor(data.pageInfo, cursors)
+      } while (after !== null)
+    }
+    return sale
+  }
   let after: string | null = null
   do {
     const response = z
@@ -153,6 +249,7 @@ export async function collectShopifySales(
           })
         )
       )
+    const wanted: typeof response.orders.nodes = []
     for (const summary of response.orders.nodes) {
       unique(summary.id, orderIds)
       if (!within(summary.createdAt, window)) {
@@ -161,77 +258,154 @@ export async function collectShopifySales(
       if (orderIds.size > 10000) {
         throw new Error("Sales order limit reached")
       }
-      if (summary.cancelledAt || summary.test) {
-        continue
+      if (!summary.cancelledAt && !summary.test) {
+        wanted.push(summary)
       }
-      const sale: ShopifySale = { ...summary, lines: [], fulfillments: [] }
-      const lineIds = new Set<string>(),
-        cursors = new Set<string>()
-      let lineAfter: string | null = null
-      do {
-        const detail = z
-          .object({
-            order: header.extend({
-              lineItems: lines,
-              fulfillmentsCount: z.object({ count: quantity, precision: z.literal("EXACT") }),
-              fulfillments: z.array(fulfillment).max(250),
-              transactions: z.array(payment).max(100)
-            })
-          })
-          .parse(
-            await read(() => client.graphql(shopifySalesQueries.order, { id: summary.id, after: lineAfter }))
-          ).order
-        if (
-          JSON.stringify({
-            id: detail.id,
-            name: detail.name,
-            createdAt: detail.createdAt,
-            cancelledAt: detail.cancelledAt,
-            test: detail.test,
-            sourceName: detail.sourceName
-          }) !== JSON.stringify(summary)
-        ) {
-          throw new Error("Shopify order changed during sales collection")
-        }
-        if (detail.fulfillmentsCount.count !== detail.fulfillments.length) {
-          throw new Error("Shopify fulfillments are incomplete")
-        }
-        if (lineAfter === null) {
-          sale.fulfillments = detail.fulfillments.map((f) => ({ ...f, lines: [] }))
-          sale.transactions = detail.transactions
-        }
-        for (const item of detail.lineItems.nodes) {
-          unique(item.id, lineIds)
-          sale.lines.push(item)
-        }
-        lineAfter = nextCursor(detail.lineItems.pageInfo, cursors)
-      } while (lineAfter !== null)
-      const fulfillmentIds = new Set<string>()
-      for (const f of sale.fulfillments) {
-        unique(f.id, fulfillmentIds)
-        if (f.status !== "SUCCESS") {
-          continue
-        }
-        const ids = new Set<string>(),
-          cursors = new Set<string>()
-        let after: string | null = null
-        do {
-          const data = z
-            .object({ fulfillment: z.object({ id: z.literal(f.id), fulfillmentLineItems: fulfillmentLines }) })
-            .parse(await read(() => client.graphql(shopifySalesQueries.fulfillment, { id: f.id, after })))
-            .fulfillment.fulfillmentLineItems
-          for (const item of data.nodes) {
-            unique(item.id, ids)
-            f.lines.push(item)
-          }
-          after = nextCursor(data.pageInfo, cursors)
-        } while (after !== null)
-      }
-      result.push(sale)
     }
+    result.push(...(await mapLimit(wanted, detailConcurrency, (summary) => orderDetails(summary))))
     after = nextCursor(response.orders.pageInfo, orderCursors)
   } while (after !== null)
   return result
+}
+
+// Shopify's bulk export of every order in a window (with lines, fulfillments, payments and, when asked, the customer's
+// ID), for backfilling a year of orders in one export instead of several requests per order. Shopify builds a JSON
+// Lines file, one object per line; a line item names its order in `__parentId`. The export can't include what each
+// fulfillment shipped (a connection inside a list), so that's read afterwards, a few fulfillments at a time.
+const bulkPollMs = 5000
+const bulkDeadlineMs = 30 * 60000
+function bulkOrdersQuery(window: SalesWindow, customers: boolean) {
+  const search = `created_at:>='${window.from}' created_at:<'${window.to}'`
+  return `{orders(query:${JSON.stringify(search)}){edges{node{${headers}${customers ? " customer{id}" : ""} lineItems{edges{node{${lineFields}}}} fulfillments{id status location{id}} transactions{id kind status fees{amount{amount currencyCode} taxAmount{amount currencyCode}}}}}}}`
+}
+export const shopifyBulkQueries = {
+  run: `mutation SalesBulk($query:String!){bulkOperationRunQuery(query:$query){bulkOperation{id status} userErrors{field message}}}`,
+  status: `query SalesBulkStatus($id:ID!){bulkOperation(id:$id){... on BulkOperation{id status errorCode url objectCount}}}`
+}
+export async function collectShopifySalesBulk(
+  client: Pick<Shopify, "graphql">,
+  input: SalesWindow,
+  assertActive?: () => Promise<void>,
+  options: { customers?: boolean; download?: typeof fetch; sleep?: (ms: number) => Promise<void> } = {}
+): Promise<ShopifySale[]> {
+  const window = salesWindowSchema.parse(input)
+  const sleep = options.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)))
+  const started = z
+    .object({
+      bulkOperationRunQuery: z.object({
+        bulkOperation: z.object({ id }).nullable(),
+        userErrors: z.array(z.object({ message: z.string() })).max(20)
+      })
+    })
+    .parse(
+      await client.graphql(shopifyBulkQueries.run, { query: bulkOrdersQuery(window, Boolean(options.customers)) })
+    ).bulkOperationRunQuery
+  if (!started.bulkOperation || started.userErrors.length) {
+    throw new Error(
+      `Shopify didn't start the order export: ${started.userErrors.map((error) => error.message).join("; ")}`
+    )
+  }
+  const deadline = Date.now() + bulkDeadlineMs
+  let url: string | null = null
+  for (;;) {
+    await assertActive?.()
+    const operation = z
+      .object({
+        bulkOperation: z.object({
+          status: z.string(),
+          errorCode: z.string().nullable().optional(),
+          url: z.string().nullable().optional()
+        })
+      })
+      .parse(await client.graphql(shopifyBulkQueries.status, { id: started.bulkOperation.id })).bulkOperation
+    if (operation.status === "COMPLETED") {
+      url = operation.url ?? null
+      break
+    }
+    if (!["CREATED", "RUNNING"].includes(operation.status)) {
+      throw new Error(
+        `Shopify's order export ended ${operation.status.toLowerCase()} (${operation.errorCode ?? "no code"})`
+      )
+    }
+    if (Date.now() + bulkPollMs > deadline) {
+      throw new Error("Shopify's order export is taking too long")
+    }
+    await sleep(bulkPollMs)
+  }
+  // No file means no orders in the window.
+  if (!url) {
+    return []
+  }
+  const response = await (options.download ?? fetch)(url, { signal: AbortSignal.timeout(300000) })
+  if (!response.ok) {
+    throw new Error(`Shopify's order export download failed (${response.status})`)
+  }
+  const exported = header.extend({
+    customer: z.object({ id }).nullable().optional(),
+    fulfillments: z.array(fulfillment).max(250),
+    transactions: z.array(payment).max(100)
+  })
+  const orders = new Map<string, ShopifySale>()
+  const lineIds = new Set<string>()
+  for (const row of (await response.text()).split("\n")) {
+    if (!row.trim()) {
+      continue
+    }
+    const value = JSON.parse(row) as Record<string, unknown>
+    const parent = typeof value.__parentId === "string" ? value.__parentId : null
+    if (!parent) {
+      const order = exported.parse(value)
+      if (orders.has(order.id)) {
+        throw new Error("Duplicate sales identity; restart the collection")
+      }
+      if (!within(order.createdAt, window)) {
+        throw new Error("Shopify returned an order outside the sales window")
+      }
+      const sale: ShopifySale = {
+        id: order.id,
+        name: order.name,
+        createdAt: order.createdAt,
+        cancelledAt: order.cancelledAt,
+        test: order.test,
+        sourceName: order.sourceName,
+        lines: [],
+        fulfillments: order.fulfillments.map((entry) => ({ ...entry, lines: [] })),
+        transactions: order.transactions,
+        ...(options.customers && { customerId: order.customer?.id ?? null })
+      }
+      orders.set(order.id, sale)
+    } else if (orders.has(parent)) {
+      const item = line.parse(value)
+      unique(item.id, lineIds)
+      orders.get(parent)!.lines.push(item)
+    } else {
+      throw new Error("Shopify's order export named a parent it didn't include")
+    }
+  }
+  if (orders.size > 20000) {
+    throw new Error("Sales order limit reached")
+  }
+  const kept = [...orders.values()].filter((sale) => !sale.cancelledAt && !sale.test)
+  // A year's fulfillments: more requests and time than one period's reader allows.
+  const read = collection(assertActive, { requests: 40000, ms: 60 * 60000 })
+  const shipped = kept.flatMap((sale) => sale.fulfillments.filter((entry) => entry.status === "SUCCESS"))
+  await mapLimit(shipped, detailConcurrency, async (entry) => {
+    const ids = new Set<string>(),
+      cursors = new Set<string>()
+    let after: string | null = null
+    do {
+      const data = z
+        .object({ fulfillment: z.object({ id: z.literal(entry.id), fulfillmentLineItems: fulfillmentLines }) })
+        .parse(await read(() => client.graphql(shopifySalesQueries.fulfillment, { id: entry.id, after })))
+        .fulfillment.fulfillmentLineItems
+      for (const item of data.nodes) {
+        unique(item.id, ids)
+        entry.lines.push(item)
+      }
+      after = nextCursor(data.pageInfo, cursors)
+    } while (after !== null)
+  })
+  return kept
 }
 
 const usMarketplace = "ATVPDKIKX0DER"
@@ -248,8 +422,19 @@ const amazonItem = z.object({
   proceeds: z
     .object({
       proceedsTotal: amazonMoney.optional(),
+      // A DISCOUNT names what it was for (ITEM or SHIPPING, say) in its detailed breakdowns, so free shipping isn't
+      // taken off product sales.
       breakdowns: z
-        .array(z.object({ type: z.string(), subtotal: amazonMoney }))
+        .array(
+          z.object({
+            type: z.string(),
+            subtotal: amazonMoney,
+            detailedBreakdowns: z
+              .array(z.object({ subtype: z.string(), value: amazonMoney }))
+              .max(20)
+              .optional()
+          })
+        )
         .max(50)
         .optional()
     })
@@ -340,6 +525,137 @@ async function searchAmazonSales(
     query.set("paginationToken", token)
   }
   return result
+}
+
+// Amazon's order report (every order line placed in a period), read into the same shape as the order search, for
+// backfilling history faster than the order search allows: one report per period instead of a request every few
+// minutes. Only what the order search gives is kept; the report's shipping city, state and postcode are dropped.
+// Orders from other channels (multi-channel fulfillment) and marketplaces not asked for are left out.
+const marketplaceNames: Record<string, string> = {
+  "Amazon.com": "ATVPDKIKX0DER",
+  "Amazon.ca": "A2EUQ1WTGCTBG2",
+  "Amazon.com.mx": "A1AM78C64UM0Y8",
+  "Amazon.com.br": "A2Q3Y263D00KWC"
+}
+const reportStatuses: Record<string, string> = {
+  Pending: "PENDING",
+  Unshipped: "UNSHIPPED",
+  "Partially Shipped": "PARTIALLY_SHIPPED",
+  Shipping: "PARTIALLY_SHIPPED",
+  Shipped: "SHIPPED",
+  Cancelled: "CANCELLED"
+}
+export async function collectAmazonSalesReport(
+  client: Pick<Amazon, "report">,
+  input: SalesWindow,
+  marketplaceIds: readonly string[],
+  assertActive?: () => Promise<void>
+): Promise<AmazonSale[] | null> {
+  const window = salesWindowSchema.parse(input)
+  const text = await client.report(
+    {
+      reportType: "GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL",
+      marketplaceIds: [...marketplaceIds],
+      dataStartTime: window.from,
+      dataEndTime: window.to
+    },
+    { deadline: Date.now() + 15 * 60000, pollMs: 10000, assertActive }
+  )
+  if (text === null) {
+    return null
+  }
+  const [head, ...body] = text.split(/\r?\n/).filter((row) => row.length > 0)
+  const columns = (head ?? "").split("\t")
+  const column = (name: string) => {
+    const index = columns.indexOf(name)
+    if (index < 0) {
+      throw new Error(`Amazon's order report has no ${name} column`)
+    }
+    return index
+  }
+  const at = {
+    order: column("amazon-order-id"),
+    purchased: column("purchase-date"),
+    status: column("order-status"),
+    channel: column("fulfillment-channel"),
+    marketplace: column("sales-channel"),
+    item: column("order-item-id"),
+    sku: column("sku"),
+    asin: column("asin"),
+    itemStatus: column("item-status"),
+    quantity: column("quantity"),
+    currency: column("currency"),
+    price: column("item-price"),
+    tax: column("item-tax"),
+    shipping: column("shipping-price"),
+    discount: column("item-promotion-discount"),
+    shippingDiscount: column("ship-promotion-discount")
+  }
+  const orders = new Map<string, AmazonSale>()
+  for (const row of body) {
+    const cells = row.split("\t")
+    const cell = (index: number) => cells[index]?.trim() ?? ""
+    const marketplaceId = marketplaceNames[cell(at.marketplace)]
+    const purchased = cell(at.purchased)
+    // A half-open window, like the order search.
+    if (!marketplaceId || !marketplaceIds.includes(marketplaceId) || !within(purchased, window)) {
+      continue
+    }
+    const orderId = cell(at.order)
+    const status = reportStatuses[cell(at.status)] ?? cell(at.status).toUpperCase()
+    const sale = orders.get(orderId) ?? {
+      orderId,
+      createdTime: new Date(purchased).toISOString(),
+      salesChannel: { channelName: "AMAZON", marketplaceId },
+      fulfillment: {
+        fulfillmentStatus: status,
+        fulfilledBy: cell(at.channel) === "Amazon" ? "AMAZON" : "MERCHANT"
+      },
+      orderItems: []
+    }
+    const quantityOrdered = quantity.parse(Number(cell(at.quantity) || 0))
+    const currencyCode = cell(at.currency)
+    const money = (value: string) => ({ amount: String(Math.abs(Number(value))), currencyCode })
+    // The item's and the shipping's promotions, as the order search reports them: one DISCOUNT, split by subtype.
+    const discounts = [
+      { subtype: "ITEM", value: cell(at.discount) },
+      { subtype: "SHIPPING", value: cell(at.shippingDiscount) }
+    ].filter((part) => part.value !== "" && Number(part.value) !== 0)
+    // Amazon prices a line once the order is paid; until then it has no price, as in the order search.
+    const priced = cell(at.price) !== "" && currencyCode.length === 3
+    const breakdowns = priced
+      ? [
+          { type: "ITEM", subtotal: money(cell(at.price)) },
+          ...(discounts.length
+            ? [
+                {
+                  type: "DISCOUNT",
+                  subtotal: money(String(discounts.reduce((sum, part) => sum + Math.abs(Number(part.value)), 0))),
+                  detailedBreakdowns: discounts.map((part) => ({ subtype: part.subtype, value: money(part.value) }))
+                }
+              ]
+            : []),
+          ...(cell(at.shipping) ? [{ type: "SHIPPING", subtotal: money(cell(at.shipping)) }] : []),
+          ...(cell(at.tax) ? [{ type: "TAX", subtotal: money(cell(at.tax)) }] : [])
+        ]
+      : null
+    const shipped = cell(at.itemStatus) === "Shipped"
+    sale.orderItems.push({
+      orderItemId: cell(at.item) || `${orderId}:${sale.orderItems.length + 1}`,
+      quantityOrdered,
+      product: { sellerSku: cell(at.sku) || undefined, asin: cell(at.asin) || undefined },
+      fulfillment: {
+        quantityFulfilled: shipped ? quantityOrdered : 0,
+        quantityUnfulfilled: shipped ? 0 : quantityOrdered
+      },
+      ...(breakdowns && { proceeds: { breakdowns } })
+    })
+    orders.set(orderId, sale)
+  }
+  if (orders.size > 10000) {
+    throw new Error("Sales order limit reached")
+  }
+  return [...orders.values()]
 }
 
 // Money in Amazon's finance reports: a decimal number or string.

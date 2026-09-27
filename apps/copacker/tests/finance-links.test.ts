@@ -17,7 +17,13 @@ import {
   removeMonthlyCost,
   type MonthlyCost
 } from "../src/server/monthly-costs"
-import { amazonFreight, platformCharges, reportingCurrency, salesByDay } from "../src/server/overview-sales"
+import {
+  amazonFreight,
+  platformCharges,
+  reportingCurrency,
+  salesByDay,
+  shopifyCustomers
+} from "../src/server/overview-sales"
 import { applyMigrations } from "./migrations"
 
 describe("freight by shipment", () => {
@@ -207,6 +213,62 @@ describe("finance links", () => {
     await expect(removeMonthlyCost(session(other, "buyer"), id)).rejects.toThrow("not found")
     await removeMonthlyCost(buyer, id)
     expect(await listMonthlyCosts(orgId)).toEqual([])
+  })
+
+  it("counts Shopify customers in the period, returning ones, and a year's sales per customer", async () => {
+    const order = (id: string, at: string, customerId: string | null, amount: string) => ({
+      orgId,
+      source: "shopify" as const,
+      externalAccountId: "club.myshopify.com",
+      orderId: id,
+      orderedAt: new Date(at),
+      data: {
+        id,
+        name: "#1",
+        createdAt: at,
+        cancelledAt: null,
+        test: false,
+        sourceName: "web",
+        fulfillments: [],
+        ...(customerId && { customerId }),
+        lines: [
+          {
+            id: `${id}-l`,
+            quantity: 1,
+            currentQuantity: 1,
+            sku: "A",
+            variant: { id: "va" },
+            originalUnitPriceSet: { shopMoney: { amount, currencyCode: "USD" } }
+          }
+        ]
+      }
+    })
+    await database.insert(tables.salesOrders).values([
+      // Returning: ordered in August, and again in the period.
+      order("s1", "2026-08-10T12:00:00Z", "gid://shopify/Customer/1", "40.00"),
+      order("s2", "2026-09-10T12:00:00Z", "gid://shopify/Customer/1", "60.00"),
+      // New in the period.
+      order("s3", "2026-09-12T12:00:00Z", "gid://shopify/Customer/2", "30.00"),
+      // A guest: no customer.
+      order("s4", "2026-09-12T12:00:00Z", null, "99.00"),
+      // After the period: not counted.
+      order("s5", "2026-10-02T12:00:00Z", "gid://shopify/Customer/3", "10.00")
+    ] as (typeof tables.salesOrders.$inferInsert)[])
+    const result = await shopifyCustomers(
+      orgId,
+      { provider: "shopify", externalId: "club.myshopify.com" },
+      { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-10-01T00:00:00Z") },
+      "USD"
+    )
+    expect(result).toEqual({
+      customers: 2,
+      returning: 1,
+      yearCustomers: 2,
+      repeatCustomers: 1,
+      yearOrders: 3,
+      yearRevenueMinor: 13000,
+      currency: "USD"
+    })
   })
 
   it("reports in the Shopify store's currency, or US dollars", async () => {

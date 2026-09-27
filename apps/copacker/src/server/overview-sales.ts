@@ -18,10 +18,13 @@ const lineRevenue =
       * (line->>'currentQuantity')::int / (line->>'quantity')::int
     else 0 end)`)
 const linePriced = sql.raw(`(line ? 'originalUnitPriceSet')`)
-// One Amazon order item's sales.
+// One Amazon order item's sales: its ITEM proceeds less discounts, except the part of a discount that was for shipping
+// (free shipping isn't taken off product sales). A discount copied without its breakdown counts in full.
 const itemRevenue = sql.raw(`(select coalesce(sum(case b->>'type'
     when 'ITEM' then (b->'subtotal'->>'amount')::numeric
     when 'DISCOUNT' then -abs((b->'subtotal'->>'amount')::numeric)
+      + coalesce((select sum(abs((d->'value'->>'amount')::numeric))
+        from jsonb_array_elements(coalesce(b->'detailedBreakdowns', '[]'::jsonb)) d where d->>'subtype' = 'SHIPPING'), 0)
     else 0 end), 0)
   from jsonb_array_elements(coalesce(item->'proceeds'->'breakdowns', '[]'::jsonb)) b)`)
 // An Amazon item has its price once Amazon adds its proceeds. A line with nothing ordered has none to add, and an order
@@ -228,6 +231,47 @@ export async function salesByItem(
       currency: count(row.pricedUnits) > 0 ? currency : null
     })
   )
+}
+
+// Shopify customers, from the orders copied with a customer ID (guest orders have none), in `currency`:
+// - in the period: the customers who ordered, and how many of them had ordered before it;
+// - over the year up to the period's end: customers, their orders and sales (for sales per customer, orders per
+//   customer and the share who ordered more than once).
+export async function shopifyCustomers(orgId: string, account: Account, period: Bounds, currency: string) {
+  const yearStart = new Date(period.to.getTime() - 365 * 86400000)
+  const sales = converted(currency)
+  const result = await db().execute(sql`
+    with orders as (
+      select o.data->>'customerId' as customer, o."orderedAt" as at,
+        case when ${sales.priced} then ${sales.revenue} end as revenue
+      from sales_orders o
+      where o."orgId" = ${orgId} and (${accountFilter([account])}) and o."orderedAt" < ${period.to}
+        and o.data->>'customerId' is not null
+    ), people as (
+      select customer,
+        count(*) filter (where at >= ${yearStart}) as "yearOrders",
+        sum(revenue) filter (where at >= ${yearStart}) as "yearRevenue",
+        bool_or(at >= ${period.from}) as "inPeriod",
+        bool_or(at < ${period.from}) as "orderedBefore"
+      from orders group by customer
+    )
+    select count(*) filter (where "inPeriod") as customers,
+      count(*) filter (where "inPeriod" and "orderedBefore") as returning,
+      count(*) filter (where "yearOrders" > 0) as "yearCustomers",
+      count(*) filter (where "yearOrders" > 1) as "repeatCustomers",
+      coalesce(sum("yearOrders"), 0) as "yearOrders",
+      round(coalesce(sum("yearRevenue"), 0) * 100) as "yearRevenue"
+    from people`)
+  const row = rows(result)[0] ?? {}
+  return {
+    customers: count(row.customers),
+    returning: count(row.returning),
+    yearCustomers: count(row.yearCustomers),
+    repeatCustomers: count(row.repeatCustomers),
+    yearOrders: count(row.yearOrders),
+    yearRevenueMinor: count(row.yearRevenue),
+    currency
+  }
 }
 
 export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }

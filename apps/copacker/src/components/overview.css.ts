@@ -271,6 +271,8 @@ export const figures = style({
   paddingTop: space(4),
   borderTop: `1px solid ${vars.color.border}`
 })
+// Figures that open a card, without the rule above them.
+export const figuresOnly = style({ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: space(4) })
 export const figure = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
 export const figureLabel = style({ ...fontSize.xs, color: vars.color.mutedForeground })
 export const figureValue = style({ ...fontSize.base, fontWeight: 600, fontVariantNumeric: "tabular-nums" })
@@ -382,24 +384,6 @@ export const toolbar = style({
   gap: space(3)
 })
 export const filters = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space(2) })
-export const freshness = style({
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  columnGap: space(4),
-  rowGap: space(1.5),
-  listStyle: "none",
-  ...fontSize.xs,
-  color: vars.color.mutedForeground
-})
-export const freshnessItem = style({ display: "inline-flex", alignItems: "center", gap: space(1.5) })
-globalStyle(`${freshnessItem} svg`, { width: "0.875rem", height: "0.875rem", flexShrink: 0 })
-export const freshnessLink = style({
-  color: "inherit",
-  textDecoration: "underline",
-  textUnderlineOffset: "2px",
-  selectors: { "&:hover": { color: vars.color.foreground }, "&:focus-visible": focusRing }
-})
 export const channelFilter = style({ selectors: { "&&": { width: "auto", alignItems: "center" } } })
 
 // Setup checklist.

@@ -58,9 +58,9 @@ export function SupplierProfileForm({ website, phoneNumber }: { website: string;
 
 // The browser's time zone doesn't change while the page is open, so there's nothing to subscribe to.
 const noSubscription = () => () => undefined
-const timeZoneSchema = z.object({ timeZone: z.string().min(1, "Choose a time zone") })
+const timeZoneSchema = z.object({ timeZone: z.string() })
 
-// The store's time zone: the Overview counts days and months in it.
+// The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.
 export function TimeZoneForm({
   timeZone,
   zones
@@ -74,25 +74,27 @@ export function TimeZoneForm({
     defaultValues: { timeZone: timeZone ?? "" },
     keepSaved: true
   })
-  // Suggests the browser's own zone until one is saved. The server doesn't know it, so it's read after hydration.
+  // The computer's zone, named in the default choice. The server doesn't know it, so it's read after hydration.
   const browserZone = useSyncExternalStore(
     noSubscription,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     () => null
   )
-  const suggested = timeZone ? null : browserZone
   return (
     <ActionForm form={form} onSubmit={submit} label="Save time zone">
       <FormSelect
         name="timeZone"
         label="Store time zone"
-        placeholder="Choose a time zone"
-        description={
-          suggested && zones.some((zone) => zone.value === suggested)
-            ? `Your computer is set to ${timeZoneLabel(suggested)}.`
-            : "Sales days and months start at midnight in this time zone."
-        }
-        options={zones}
+        description="Sales days and months start at midnight in this time zone."
+        options={[
+          {
+            value: "",
+            label: browserZone
+              ? `Your computer’s time zone: ${timeZoneLabel(browserZone)}`
+              : "Your computer’s time zone"
+          },
+          ...zones
+        ]}
       />
     </ActionForm>
   )

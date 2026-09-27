@@ -133,8 +133,8 @@ export default async function Settings() {
           <CardHeader>
             <CardTitle>Store time zone</CardTitle>
             <CardDescription>
-              The Overview counts sales days and months from midnight in this time zone. Until you choose one, it uses
-              UTC.
+              The Overview counts sales days and months from midnight in this time zone. Unless you choose one, it uses
+              your computer’s.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -144,7 +144,7 @@ export default async function Settings() {
                 zones={timeZones().map((zone) => ({ value: zone, label: timeZoneLabel(zone) }))}
               />
             ) : (
-              <p>{s.org.timeZone ? timeZoneLabel(s.org.timeZone) : "UTC (not set)"}</p>
+              <p>{s.org.timeZone ? timeZoneLabel(s.org.timeZone) : "Your computer’s time zone"}</p>
             )}
           </CardContent>
         </Card>

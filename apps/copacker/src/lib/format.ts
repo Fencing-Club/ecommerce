@@ -77,21 +77,3 @@ export function otherCurrencies(value: MoneyList) {
 export function formatPercent(value: number) {
   return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value)
 }
-
-const relative = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" })
-
-// "5 minutes ago", "yesterday", "3 days ago".
-export function timeAgo(at: string | Date, now: Date = new Date()) {
-  const seconds = Math.round((new Date(at).getTime() - now.getTime()) / 1000)
-  const steps: [Intl.RelativeTimeFormatUnit, number][] = [
-    ["day", 86400],
-    ["hour", 3600],
-    ["minute", 60]
-  ]
-  for (const [unit, size] of steps) {
-    if (Math.abs(seconds) >= size) {
-      return relative.format(Math.round(seconds / size), unit)
-    }
-  }
-  return "just now"
-}

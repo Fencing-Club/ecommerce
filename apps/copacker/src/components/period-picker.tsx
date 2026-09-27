@@ -155,9 +155,8 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 ) : (
                   <>
                     <button type="button" className={styles.presetHeading} onClick={() => setGroup("main")}>
-                      <span>
-                        <ArrowLeft aria-hidden size={16} /> {group === "last" ? "Last" : "Period to date"}
-                      </span>
+                      <ArrowLeft aria-hidden size={16} />
+                      {group === "last" ? "Last" : "Period to date"}
                     </button>
                     {presetGroups[group].map(presetButton)}
                   </>
