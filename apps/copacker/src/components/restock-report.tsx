@@ -3,7 +3,20 @@
 import { useDebouncedValue, useLocalStorage } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { money } from "@repo/aisle"
-import { AlertTriangle, ChevronDown, ChevronRight, ImageOff, RefreshCw, Search, X } from "lucide-react"
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  CircleHelp,
+  CircleMinus,
+  Clock,
+  ImageOff,
+  RefreshCw,
+  Search,
+  X
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -90,14 +103,6 @@ const statusLabels: Record<RestockStatus, string> = {
   not_stocked: "Not stocked at Amazon",
   no_listing: "No Amazon listing"
 }
-const statusVariants: Record<RestockStatus, "destructive" | "default" | "secondary" | "outline"> = {
-  stockout: "destructive",
-  reorder: "default",
-  stocked: "secondary",
-  blocked: "outline",
-  not_stocked: "outline",
-  no_listing: "outline"
-}
 const blockNames: Record<BlockReason, string> = {
   stock_unknown: "the stock count is unknown",
   demand_unknown: "its sales couldn’t be counted",
@@ -117,29 +122,58 @@ const poLineLimit = 100
 
 function Thumbnail({ url }: { url: string | null }) {
   return url ? (
-    <Image src={url} alt="" width={32} height={32} unoptimized className={styles.thumb} />
+    <Image
+      src={url}
+      alt=""
+      width={36}
+      height={36}
+      unoptimized
+      className="size-9 shrink-0 rounded-md border bg-muted object-cover"
+    />
   ) : (
-    <span className={styles.placeholder} aria-hidden="true">
-      <ImageOff />
+    <span
+      className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground"
+      aria-hidden="true"
+    >
+      <ImageOff className="size-4" />
     </span>
   )
 }
 
 function Name({ line }: { line: RestockLine }) {
   return (
-    <span className={styles.name}>
+    <span className="flex min-w-0 items-center gap-3">
       <Thumbnail url={line.imageUrl} />
-      <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
-        <span className={styles.title}>
+      <span className="flex min-w-0 flex-col">
+        <span className="font-medium whitespace-normal">
           {line.product}
-          {line.variant && `, ${line.variant}`}
+          {line.variant && <span className="text-muted-foreground">, {line.variant}</span>}
         </span>
-        <span className={styles.detail}>
+        <span className="text-xs text-muted-foreground">
           {line.sku ?? "No SKU"}
           {line.packOf && `, pack of ${line.packOf}`}
         </span>
       </span>
     </span>
+  )
+}
+
+// A line's status as an outline badge with an icon, as in shadcn's data table, so urgency reads without shouting.
+const statusIcons: Record<RestockStatus, React.ReactNode> = {
+  stockout: <CircleAlert className="text-destructive" />,
+  reorder: <Clock className="text-primary" />,
+  stocked: <CircleCheck className="text-success" />,
+  blocked: <CircleHelp />,
+  not_stocked: <CircleMinus />,
+  no_listing: <CircleMinus />
+}
+
+function StatusBadge({ status }: { status: RestockStatus }) {
+  return (
+    <Badge variant="outline" className="gap-1 px-1.5 text-muted-foreground">
+      {statusIcons[status]}
+      {statusLabels[status]}
+    </Badge>
   )
 }
 
@@ -339,8 +373,8 @@ function LineRows({
   const invalid = current.selected && !(Number.isInteger(Number(current.units)) && Number(current.units) > 0)
   return (
     <>
-      <TableRow data-state={current.selected ? "selected" : undefined}>
-        <TableCell>
+      <TableRow className="@max-md:flex @max-md:flex-wrap @max-md:items-center @max-md:gap-x-2 @max-md:px-3 @max-md:py-3">
+        <TableCell className="w-8 pl-3 @max-md:w-auto @max-md:p-0">
           {orderable && (
             <Checkbox
               checked={current.selected}
@@ -349,67 +383,84 @@ function LineRows({
             />
           )}
         </TableCell>
-        <TableCell>
+        <TableCell className="@max-md:min-w-0 @max-md:flex-1 @max-md:basis-[calc(100%-2rem)] @max-md:p-0">
           <Name line={line} />
           {/* In a narrow table the status and stock left columns are hidden, so they show under the name. */}
-          <span className={styles.narrowOnly}>
-            <Badge variant={statusVariants[line.status]}>{statusLabels[line.status]}</Badge>
+          <span className="mt-1.5 flex flex-wrap items-center gap-2 pl-12 text-xs text-muted-foreground @4xl:hidden">
+            <StatusBadge status={line.status} />
             {line.daysRemaining !== null ? `${line.daysRemaining} days left` : <StockLeft line={line} />}
           </span>
         </TableCell>
-        <TableCell className={styles.wideOnly}>
-          <Badge variant={statusVariants[line.status]}>{statusLabels[line.status]}</Badge>
+        <TableCell className="hidden @4xl:table-cell">
+          <StatusBadge status={line.status} />
         </TableCell>
-        <TableCell className={cn(styles.number, styles.wideOnly)}>
+        <TableCell className="hidden text-right tabular-nums @4xl:table-cell">
           <StockLeft line={line} />
         </TableCell>
-        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.sold ?? "Unknown"}</TableCell>
-        <TableCell className={cn(line.stockoutDays > 0 ? styles.stockoutCell : styles.number, styles.wideOnly)}>
+        <TableCell className="hidden text-right tabular-nums @4xl:table-cell">{line.sold ?? "Unknown"}</TableCell>
+        <TableCell
+          className={cn(
+            "hidden text-right tabular-nums @4xl:table-cell",
+            line.stockoutDays > 0 && "font-medium text-destructive"
+          )}
+        >
           {line.stockoutDays}
-          <span className={srOnly}> of {line.salesDays} days</span>
+          <span className="sr-only"> of {line.salesDays} days</span>
         </TableCell>
-        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.available ?? "Unknown"}</TableCell>
-        <TableCell className={cn(styles.number, styles.wideOnly)}>{line.incoming ?? "Unknown"}</TableCell>
-        <TableCell className={styles.number}>
+        <TableCell className="hidden text-right tabular-nums @4xl:table-cell">{line.available ?? "Unknown"}</TableCell>
+        <TableCell className="hidden text-right tabular-nums @4xl:table-cell">{line.incoming ?? "Unknown"}</TableCell>
+        <TableCell className="text-right @max-md:ml-auto @max-md:p-0">
           {orderable ? (
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={line.caseQuantity ?? 1}
-              value={current.units}
-              aria-label={`Units of ${label} to order`}
-              aria-invalid={invalid}
-              className={styles.quantity}
-              onChange={(event) => onEdit({ selected: true, units: event.target.value })}
-            />
+            <div className="flex flex-col items-end">
+              {/* Borderless until hovered or focused, so the column reads as figures rather than a form. */}
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={line.caseQuantity ?? 1}
+                value={current.units}
+                aria-label={`Units of ${label} to order`}
+                aria-invalid={invalid}
+                className="h-8 w-20 border-transparent bg-transparent text-right tabular-nums shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
+                onChange={(event) => onEdit({ selected: true, units: event.target.value })}
+              />
+              {Number(current.units) !== suggested && (
+                <span className="pr-2.5 text-xs text-muted-foreground">Suggested {suggested}</span>
+              )}
+            </div>
           ) : (
-            "None"
-          )}
-          {orderable && Number(current.units) !== suggested && (
-            <span className={styles.detail}>Suggested {suggested}</span>
+            <span className="text-muted-foreground">None</span>
           )}
         </TableCell>
-        <TableCell className={styles.number}>
-          {line.estimatedCostMinor !== null && line.costCurrency && line.unitCostMinor !== null
-            ? money(Number(current.units || 0) * line.unitCostMinor, line.costCurrency)
-            : "Unknown"}
+        <TableCell className="text-right tabular-nums @max-md:p-0">
+          {line.estimatedCostMinor !== null && line.costCurrency && line.unitCostMinor !== null ? (
+            money(Number(current.units || 0) * line.unitCostMinor, line.costCurrency)
+          ) : (
+            <span className="text-muted-foreground">Unknown</span>
+          )}
         </TableCell>
-        <TableCell>
-          <Button variant="ghost" size="xs" onClick={onToggle} aria-expanded={expanded} aria-label={`Why ${label}`}>
-            {expanded ? <ChevronDown data-icon="inline-start" /> : <ChevronRight data-icon="inline-start" />}
-            Why
+        <TableCell className="w-10 pr-3 @max-md:w-auto @max-md:p-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-label={`Why ${label}`}
+            title="How this was worked out"
+          >
+            {expanded ? <ChevronDown /> : <ChevronRight />}
           </Button>
         </TableCell>
       </TableRow>
       {expanded && (
-        <TableRow>
-          <TableCell />
+        <TableRow className="bg-muted/30 hover:bg-muted/30 @max-md:block @max-md:px-3 @max-md:py-2">
+          <TableCell className="@max-md:hidden" />
           {/* Spans the columns the table shows: all ten when wide, four when narrow. */}
-          <TableCell colSpan={10} className={styles.wideOnly}>
+          <TableCell colSpan={10} className="hidden whitespace-normal @4xl:table-cell">
             <Explanation line={line} />
           </TableCell>
-          <TableCell colSpan={4} className={styles.narrowCell}>
+          <TableCell colSpan={4} className="whitespace-normal @4xl:hidden @max-md:block @max-md:p-0">
             <Explanation line={line} />
           </TableCell>
         </TableRow>
@@ -499,64 +550,73 @@ function SupplierGroup({
             ))}
         </span>
       </div>
-      <CollapsibleContent className={cn(styles.groupContent, styles.tableWrap)}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <span className={srOnly}>Order</span>
-              </TableHead>
-              <TableHead>Product</TableHead>
-              <TableHead className={styles.wideOnly}>Status</TableHead>
-              <TableHead className={cn(styles.number, styles.wideOnly)}>Stock left</TableHead>
-              <TableHead className={cn(styles.number, styles.wideOnly)}>Sold</TableHead>
-              <TableHead className={cn(styles.number, styles.wideOnly)}>
-                <abbr title="Days of the sales period it was out of stock. The sales rate leaves them out.">
-                  Days out
-                </abbr>
-              </TableHead>
-              <TableHead className={cn(styles.number, styles.wideOnly)}>Available</TableHead>
-              <TableHead className={cn(styles.number, styles.wideOnly)}>Incoming</TableHead>
-              <TableHead className={styles.number}>Order</TableHead>
-              <TableHead className={styles.number}>Cost</TableHead>
-              <TableHead>
-                <span className={srOnly}>Explanation</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lines.map((line) => (
-              <LineRows
-                key={line.variantId}
-                line={line}
-                edit={edits.get(line.variantId)}
-                onEdit={(edit) => setEdit(line.variantId, edit)}
-                expanded={expanded.has(line.variantId)}
-                onToggle={() =>
-                  setExpanded((current) => {
-                    const next = new Set(current)
-                    if (!next.delete(line.variantId)) {
-                      next.add(line.variantId)
-                    }
-                    return next
-                  })
-                }
-              />
-            ))}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell />
-              <TableCell>Total selected</TableCell>
-              {/* Under the columns hidden in a narrow table: status, stock left, sold, days out, available, incoming. */}
-              <TableCell colSpan={6} className={styles.wideOnly} />
-              <TableCell className={styles.number}>{totals.units.toLocaleString()}</TableCell>
-              <TableCell className={styles.number}>{costText(totals)}</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableFooter>
-        </Table>
-        {po.count === poLineLimit && <p className={styles.detail}>A PO holds 100 lines; the first 100 are included.</p>}
+      <CollapsibleContent className="@container flex flex-col gap-3">
+        <div>
+          <Table className="@max-md:block">
+            <TableHeader className="@max-md:hidden">
+              <TableRow>
+                <TableHead className="w-8 pl-3">
+                  <span className="sr-only">Order</span>
+                </TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead className="hidden @4xl:table-cell">Status</TableHead>
+                <TableHead className="hidden text-right @4xl:table-cell">Stock left</TableHead>
+                <TableHead className="hidden text-right @4xl:table-cell">Sold</TableHead>
+                <TableHead className="hidden text-right @4xl:table-cell">
+                  <abbr
+                    title="Days of the sales period it was out of stock. The sales rate leaves them out."
+                    className="no-underline"
+                  >
+                    Days out
+                  </abbr>
+                </TableHead>
+                <TableHead className="hidden text-right @4xl:table-cell">Available</TableHead>
+                <TableHead className="hidden text-right @4xl:table-cell">Incoming</TableHead>
+                <TableHead className="pr-5 text-right">Order</TableHead>
+                <TableHead className="text-right">Cost</TableHead>
+                <TableHead className="w-10 pr-3">
+                  <span className="sr-only">Explanation</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="@max-md:block">
+              {lines.map((line) => (
+                <LineRows
+                  key={line.variantId}
+                  line={line}
+                  edit={edits.get(line.variantId)}
+                  onEdit={(edit) => setEdit(line.variantId, edit)}
+                  expanded={expanded.has(line.variantId)}
+                  onToggle={() =>
+                    setExpanded((current) => {
+                      const next = new Set(current)
+                      if (!next.delete(line.variantId)) {
+                        next.add(line.variantId)
+                      }
+                      return next
+                    })
+                  }
+                />
+              ))}
+            </TableBody>
+            <TableFooter className="@max-md:block">
+              <TableRow className="hover:bg-transparent @max-md:flex @max-md:items-center @max-md:gap-4 @max-md:px-3 @max-md:py-3">
+                <TableCell className="@max-md:hidden" />
+                <TableCell className="@max-md:flex-1 @max-md:p-0">Total selected</TableCell>
+                {/* Under the columns hidden in a narrow table: status, stock left, sold, days out, available, incoming. */}
+                <TableCell colSpan={6} className="hidden @4xl:table-cell" />
+                <TableCell className="pr-5 text-right tabular-nums @max-md:p-0">
+                  {totals.units.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right tabular-nums @max-md:p-0">{costText(totals)}</TableCell>
+                <TableCell className="@max-md:hidden" />
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </div>
+        {po.count === poLineLimit && (
+          <p className="text-xs text-muted-foreground">A PO holds 100 lines; the first 100 are included.</p>
+        )}
       </CollapsibleContent>
     </Collapsible>
   )

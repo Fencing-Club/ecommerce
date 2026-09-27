@@ -175,22 +175,6 @@ export const fillCard = style({ display: "flex", flexDirection: "column" })
 export const fill = style({ display: "flex", flexDirection: "column", gap: space(4), flex: 1, minWidth: 0 })
 export const chartShort = style({ width: "100%", height: "13rem" })
 export const legend = style({ display: "flex", flexWrap: "wrap", gap: space(5), ...fontSize.xs })
-// Amazon's sales by marketplace, under the sales chart.
-export const marketplaces = style({
-  width: "100%",
-  borderCollapse: "collapse",
-  ...fontSize.xs,
-  fontVariantNumeric: "tabular-nums"
-})
-globalStyle(`${marketplaces} th, ${marketplaces} td`, {
-  padding: `${space(1.5)} 0`,
-  borderTop: `1px solid ${vars.color.border}`,
-  textAlign: "right",
-  fontWeight: 400
-})
-globalStyle(`${marketplaces} thead th`, { borderTop: "none", color: vars.color.mutedForeground })
-globalStyle(`${marketplaces} th:first-child`, { textAlign: "left" })
-globalStyle(`${marketplaces} tbody th`, { fontWeight: 500 })
 export const legendItem = style({ display: "flex", flexDirection: "column", gap: space(0.5) })
 export const legendLabel = style({
   display: "flex",

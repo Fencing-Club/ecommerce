@@ -12,6 +12,7 @@ import {
 import Link from "next/link"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   change,
   compactMoney,
@@ -41,7 +42,6 @@ import {
   UpcomingSpend
 } from "./overview-sections"
 import * as styles from "./overview.css"
-import { srOnly } from "@/styles/utilities.css"
 
 const unavailable = "Not available"
 
@@ -295,27 +295,31 @@ export function OverviewDashboard({ data }: { data: Overview }) {
                   currency={sales.currency}
                 />
                 {sales.marketplaces.length > 0 && (
-                  <table className={styles.marketplaces}>
-                    <caption className={srOnly}>Amazon sales by marketplace</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Marketplace</th>
-                        <th scope="col">Orders</th>
-                        <th scope="col">Units</th>
-                        <th scope="col">Sales</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <caption className="sr-only">Amazon sales by marketplace</caption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Marketplace</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                        <TableHead className="text-right">Units</TableHead>
+                        <TableHead className="text-right">Sales</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {sales.marketplaces.map((marketplace) => (
-                        <tr key={marketplace.code}>
-                          <th scope="row">{marketplace.label}</th>
-                          <td>{formatNumber(marketplace.orders)}</td>
-                          <td>{formatNumber(marketplace.units)}</td>
-                          <td>{formatMoney([{ minor: marketplace.revenueMinor, currency: marketplace.currency }])}</td>
-                        </tr>
+                        <TableRow key={marketplace.code}>
+                          <TableHead scope="row" className="font-normal">
+                            {marketplace.label}
+                          </TableHead>
+                          <TableCell className="text-right tabular-nums">{formatNumber(marketplace.orders)}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatNumber(marketplace.units)}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney([{ minor: marketplace.revenueMinor, currency: marketplace.currency }])}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 )}
                 {sales.otherMarketplaceOrders > 0 && (
                   <p className={styles.note}>

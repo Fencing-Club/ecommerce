@@ -278,7 +278,8 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
 }
 
 export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]; channel: string | null }) {
-  const weeks = restock.days / 7
+  // "8 weeks", or "60 days" when the period isn't whole weeks.
+  const period = restock.days % 7 === 0 ? `${restock.days / 7} weeks` : `${restock.days} days`
   return (
     <Card>
       <CardHeader>
@@ -287,8 +288,8 @@ export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]
           Days of cover
         </CardTitle>
         <CardDescription>
-          How long each item’s stock lasts in each channel at the last {weeks} weeks’ sales rate. Select a group to see
-          its items.
+          How long each item’s stock lasts in each channel at the last {period}’ sales rate. Select a group to see its
+          items.
         </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>
@@ -310,14 +311,14 @@ export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]
                     About {plural(restock.lostUnits, "unit", "units")}
                     {restock.lostValue.length > 0 && ` (${formatMoney(restock.lostValue, { compact: true })})`}
                   </strong>{" "}
-                  of sales were lost to stockouts in the last {weeks} weeks:{" "}
+                  of sales were lost to stockouts in the last {period}:{" "}
                   {plural(restock.itemsOut, "item was", "items were")} out of stock for{" "}
                   {plural(restock.lostDays, "day", "days")} in all.
                 </>
               ) : (
                 <>
                   {plural(restock.itemsOut, "item was", "items were")} out of stock for{" "}
-                  {plural(restock.lostDays, "day", "days")} in all in the last {weeks} weeks.
+                  {plural(restock.lostDays, "day", "days")} in all in the last {period}.
                 </>
               )}
             </p>
@@ -480,7 +481,8 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
           Slow-moving stock
         </CardTitle>
         <CardDescription>
-          Stock that lasts over 3 months at the current rate, or didn’t sell in the last {restock.days / 7} weeks.
+          Stock that lasts over 3 months at the current rate, or didn’t sell in the last{" "}
+          {restock.days % 7 === 0 ? `${restock.days / 7} weeks` : `${restock.days} days`}.
         </CardDescription>
       </CardHeader>
       <CardContent className={styles.stack}>

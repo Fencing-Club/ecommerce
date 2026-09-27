@@ -8,7 +8,7 @@
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
-- [Styling with vanilla-extract](vanilla-extract.md)
+- [Styling](styling.md)
 - [Preferred stack](tech-stack.md)
 
 Agency's top-level tools are retained: pnpm, Turborepo, oxlint/oxfmt, Knip, Vitest, Lefthook, Beachball, and Dependabot. Configurations name only the applications and packages present here.

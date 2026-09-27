@@ -6,6 +6,7 @@ import { Providers } from "@/components/providers"
 import { themeScript } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 import "@/styles/global.css"
+import "./globals.css"
 import { skipLink } from "./layout.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })

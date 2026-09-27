@@ -21,8 +21,6 @@ export const heading = style({
 })
 export const sectionTitle = style({ ...fontSize.lg, fontWeight: 600 })
 export const number = style({ textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" })
-export const name = style({ display: "flex", alignItems: "center", gap: space(3), minWidth: 0 })
-export const title = style({ ...fontSize.sm, fontWeight: 500, whiteSpace: "normal", overflowWrap: "anywhere" })
 export const detail = style({ ...fontSize.xs, color: vars.color.mutedForeground })
 export const thumb = style({
   width: space(8),
@@ -42,7 +40,6 @@ globalStyle(`${placeholder} svg`, { width: "1rem", height: "1rem" })
 globalStyle(`${number}`, { "@media": { [media.md]: { minWidth: "6rem" } } })
 // Day counts are short numbers.
 export const days = style({ selectors: { "&&": { width: "9rem" } } })
-export const quantity = style({ selectors: { "&&": { width: "6.5rem", marginLeft: "auto", textAlign: "right" } } })
 export const explain = style([
   summary,
   { display: "flex", flexDirection: "column", gap: space(1), paddingLeft: space(4), listStyle: "decimal" }
@@ -58,7 +55,6 @@ globalStyle(`${searchBox} > svg`, {
   pointerEvents: "none"
 })
 globalStyle(`${searchBox} input`, { paddingLeft: space(8) })
-export const stockoutCell = style([number, { color: vars.color.destructive, fontWeight: 500 }])
 export const groupActions = style({ display: "flex", alignItems: "center", gap: space(4) })
 export const groupCost = style({ display: "flex", flexDirection: "column", alignItems: "flex-end", ...fontSize.sm })
 export const grandTotal = style({
@@ -89,33 +85,8 @@ export const chevron = style({
   selectors: { "[data-panel-open] &": { transform: "rotate(90deg)" } }
 })
 export const groupTitle = style({ display: "flex", alignItems: "center", gap: space(2) })
-export const groupContent = style({ display: "flex", flexDirection: "column", gap: space(3) })
 // Filters a link opened Restock with, each clearable.
 export const filters = style({ display: "flex", flexWrap: "wrap", gap: space(2) })
-
-// The Sold, Days out, Available and Incoming columns show once the table is wide; the Why panel covers them otherwise.
-const wide = "(min-width: 56rem)"
-export const tableWrap = style({ containerType: "inline-size" })
-export const wideOnly = style({
-  selectors: { "&&": { display: "none" } },
-  "@container": { [wide]: { selectors: { "&&": { display: "table-cell" } } } }
-})
-
-export const narrowCell = style({
-  selectors: { "&&": { display: "table-cell", whiteSpace: "normal" } },
-  "@container": { [wide]: { selectors: { "&&": { display: "none" } } } }
-})
-export const narrowOnly = style({
-  ...fontSize.xs,
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: space(2),
-  marginTop: space(1),
-  paddingLeft: space(11),
-  color: vars.color.mutedForeground,
-  "@container": { [wide]: { display: "none" } }
-})
 
 // The counts, and how quantities are worked out behind a link-style toggle.
 export const method = style({ display: "flex", flexDirection: "column", gap: space(2) })

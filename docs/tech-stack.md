@@ -76,11 +76,10 @@ For building command-line tools.
   surfaces.
 - ✅ **recharts** — charts / data visualization (Copacker's Overview; colors come from the `chart1`/`chart2` theme
   tokens). ◻️ **@fluentui/react-charting** for Fluent surfaces.
-- ✅ **shadcn/ui** — component patterns for apps and product surfaces that select the shadcn architecture. Copacker
-  keeps shadcn component structure on Base UI but styles it with vanilla-extract instead of Tailwind, so components are
-  maintained in the repo rather than regenerated with the shadcn CLI.
-- ✅ **@vanilla-extract/css** + **recipes** + **sprinkles** — typed, zero-runtime styling for shadcn-architecture
-  surfaces. See [Styling with vanilla-extract](vanilla-extract.md).
+- ✅ **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
+  architecture. Copacker uses shadcn's own components on Base UI, added with the shadcn CLI. See [Styling](styling.md).
+- ✅ **@vanilla-extract/css** + **sprinkles** — Copacker's page styles from before Tailwind, which keep working next
+  to it.
 
 Select Fluent UI or shadcn/ui at the app or product-surface boundary. Neither is a monorepo-wide requirement, and an
 existing surface should keep its established system unless its architecture is deliberately changed.

@@ -2,7 +2,16 @@
 
 import { useDebouncedValue } from "@mantine/hooks"
 import { money } from "@repo/aisle"
-import { ChevronLeft, ChevronRight, ExternalLink, RefreshCw, Search } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  ExternalLink,
+  RefreshCw,
+  Search
+} from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -13,11 +22,9 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
-import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
 import * as styles from "./sales-orders.css"
 import { sx } from "@/styles/sprinkles.css"
-import { srOnly } from "@/styles/utilities.css"
 
 type SyncState = {
   source: SalesSource
@@ -58,12 +65,21 @@ const failureMessages: Record<string, (title: string) => string> = {
   provider_unavailable: (title) => `${title} is unavailable. Try again later.`
 }
 
-// Finished orders read quietly; open and cancelled ones stand out.
-function statusVariant(status: string): "secondary" | "outline" | "destructive" {
+// An order's status as an outline badge with an icon: done orders get a check, cancelled ones a warning, the rest a
+// clock while they're still open.
+function OrderStatus({ status }: { status: string }) {
+  let icon = <Clock />
   if (status === "Cancelled" || status === "Unfulfillable") {
-    return "destructive"
+    icon = <CircleAlert className="text-destructive" />
+  } else if (status === "Fulfilled" || status === "Shipped") {
+    icon = <CircleCheck className="text-success" />
   }
-  return status === "Fulfilled" || status === "Shipped" ? "secondary" : "outline"
+  return (
+    <Badge variant="outline" className="gap-1 px-1.5 text-muted-foreground">
+      {icon}
+      {status}
+    </Badge>
+  )
 }
 
 function day(value: string) {
@@ -126,11 +142,12 @@ function Items({ items }: { items: SalesOrderSummary["items"] }) {
   return (
     <ul className={styles.items}>
       {shown.map((item, index) => (
-        <li key={`${item.sku}:${index}`} className={styles.item}>
+        <li key={`${item.sku}:${index}`} className="flex flex-col">
           <span>
-            {item.name ?? item.sku ?? "Bundle"} <span className={styles.quantity}>× {item.quantity}</span>
+            {item.name ?? item.sku ?? "Bundle"}{" "}
+            <span className="whitespace-nowrap text-muted-foreground">× {item.quantity}</span>
           </span>
-          {item.name && item.sku && <span className={styles.sku}>{item.sku}</span>}
+          {item.name && item.sku && <span className="text-xs break-all text-muted-foreground">{item.sku}</span>}
         </li>
       ))}
       {items.length > shown.length && <li className={styles.more}>{items.length - shown.length} more</li>}
@@ -201,60 +218,73 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
         {currentData && total === 0 && <p className={styles.summary}>{q ? "No orders match." : "No orders yet."}</p>}
         {currentData && total > 0 && (
           <>
-            <div className={styles.tableWrap}>
-              <Table>
-                <TableHeader>
+            {/* Framed like shadcn's data table. Narrower, channel and status move under the order; on a phone each
+                order stacks. */}
+            <div className="@container">
+              <Table className="@max-md:block">
+                <TableHeader className="@max-md:hidden">
                   <TableRow>
-                    <TableHead>Order</TableHead>
+                    <TableHead className="pl-4">Order</TableHead>
                     <TableHead>Items</TableHead>
-                    <TableHead className={styles.wideOnly}>Channel</TableHead>
-                    <TableHead className={styles.wideOnly}>Status</TableHead>
-                    <TableHead className={cn(styles.numberCell, styles.wideOnly)}>Units</TableHead>
-                    <TableHead className={styles.numberCell} title="After discounts, before tax and shipping">
+                    <TableHead className="hidden @2xl:table-cell">Channel</TableHead>
+                    <TableHead className="hidden @2xl:table-cell">Status</TableHead>
+                    <TableHead className="hidden text-right @2xl:table-cell">Units</TableHead>
+                    <TableHead className="text-right" title="After discounts, before tax and shipping">
                       Sales
                     </TableHead>
-                    <TableHead className={cn(styles.numberCell, styles.wideOnly)}>Fees</TableHead>
+                    <TableHead className="hidden pr-4 text-right @2xl:table-cell">Fees</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="@max-md:block">
                   {currentData.orders.map((order) => (
-                    <TableRow key={`${order.source}:${order.orderId}`}>
-                      <TableCell>
-                        <span className={styles.order}>
-                          <a href={order.url} target="_blank" rel="noreferrer" className={styles.orderLink}>
+                    <TableRow
+                      key={`${order.source}:${order.orderId}`}
+                      className="@max-md:flex @max-md:flex-col @max-md:gap-2 @max-md:px-4 @max-md:py-3"
+                    >
+                      <TableCell className="pl-4 align-top @max-md:p-0">
+                        <span className="flex flex-col gap-0.5">
+                          <a
+                            href={order.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-medium whitespace-nowrap hover:underline"
+                          >
                             {order.number}
-                            <ExternalLink aria-hidden="true" />
-                            <span className={srOnly}> (opens in {titles[order.source]})</span>
+                            <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
+                            <span className="sr-only"> (opens in {titles[order.source]})</span>
                           </a>
-                          <time dateTime={order.orderedAt} className={styles.date}>
+                          <time dateTime={order.orderedAt} className="text-xs text-muted-foreground">
                             {new Date(order.orderedAt).toLocaleString(undefined, {
                               dateStyle: "medium",
                               timeStyle: "short"
                             })}
                           </time>
-                          {/* In a narrow list the channel and status columns are hidden, so they show here. */}
-                          <span className={styles.narrowOnly}>
+                          <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground @2xl:hidden">
                             {order.channel}
-                            <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                            <OrderStatus status={order.status} />
                           </span>
                         </span>
                       </TableCell>
-                      <TableCell className={styles.itemsCell}>
+                      <TableCell className="min-w-40 align-top whitespace-normal @max-md:min-w-0 @max-md:p-0">
                         <Items items={order.items} />
                       </TableCell>
-                      <TableCell className={styles.wideOnly}>{order.channel}</TableCell>
-                      <TableCell className={styles.wideOnly}>
-                        <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                      <TableCell className="hidden align-top text-muted-foreground @2xl:table-cell">
+                        {order.channel}
                       </TableCell>
-                      <TableCell className={cn(styles.numberCell, styles.wideOnly)}>{order.units}</TableCell>
-                      <TableCell className={styles.numberCell}>
+                      <TableCell className="hidden align-top @2xl:table-cell">
+                        <OrderStatus status={order.status} />
+                      </TableCell>
+                      <TableCell className="hidden text-right align-top tabular-nums @2xl:table-cell">
+                        {order.units}
+                      </TableCell>
+                      <TableCell className="text-right align-top tabular-nums @max-md:p-0 @max-md:text-left">
                         {order.sales ? (
                           money(order.sales.minor, order.sales.currency)
                         ) : (
                           <Muted title="Amazon hasn’t priced this order yet">Pending</Muted>
                         )}
                       </TableCell>
-                      <TableCell className={cn(styles.numberCell, styles.wideOnly)}>
+                      <TableCell className="hidden pr-4 text-right align-top tabular-nums @2xl:table-cell">
                         {order.fees ? (
                           money(order.fees.minor, order.fees.currency)
                         ) : (
