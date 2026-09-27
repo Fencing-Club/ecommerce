@@ -43,7 +43,7 @@ import {
 import { refreshProductLabels } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
-import { removeSupplier, updateSupplier } from "@/server/suppliers"
+import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 export async function POST(request: Request) {
@@ -130,11 +130,20 @@ export async function POST(request: Request) {
     if (action === "supplier.create") {
       requireBuyer(s)
       requireOwner(s)
+      // The email is optional: a supplier can get POs without joining Copacker, and is invited once it has one.
       const input = z
-          .object({ name: z.string().trim().min(2).max(120), email: z.email().transform((v) => v.toLowerCase()) })
-          .parse(data),
-        invitation = token()
-      const invite = { invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) }
+        .object({
+          name: z.string().trim().min(2).max(120),
+          email: z
+            .union([z.email(), z.literal("")])
+            .optional()
+            .transform((v) => v?.toLowerCase() || null)
+        })
+        .parse(data)
+      const invitation = input.email ? token() : null
+      const invite = invitation
+        ? { invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) }
+        : { invitationHash: null, expiresAt: null }
       const [existing] = await db()
         .select()
         .from(suppliers)
@@ -153,24 +162,36 @@ export async function POST(request: Request) {
             .insert(suppliers)
             .values({ buyerOrgId: s.org.id, ...input, ...invite })
             .returning()
-      await db()
-        .insert(jobs)
-        .values({
-          key: `invite:${supplier!.id}:${randomUUID()}`,
-          kind: "email",
-          payload: { type: "invite", to: input.email, name: s.org.name, invitation }
-        })
+      if (invitation && input.email) {
+        await db()
+          .insert(jobs)
+          .values({
+            key: `invite:${supplier!.id}:${randomUUID()}`,
+            kind: "email",
+            payload: { type: "invite", to: input.email, name: s.org.name, invitation }
+          })
+      }
       return Response.json({ id: supplier!.id })
     }
-    if (action === "supplier.resend") {
+    // Invites a supplier that hasn't joined, or sends its invitation again; an email given here replaces the saved one.
+    if (action === "supplier.invite" || action === "supplier.resend") {
       requireBuyer(s)
       requireOwner(s)
+      const email = z
+        .union([z.email(), z.literal("")])
+        .optional()
+        .transform((v) => v?.toLowerCase() || null)
+        .parse(data.email)
       // A fresh token replaces the old one, so earlier invitation links stop working.
       const invitation = token()
       await db().transaction(async (tx) => {
         const [supplier] = await tx
           .update(suppliers)
-          .set({ invitationHash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) })
+          .set({
+            invitationHash: hash(invitation),
+            expiresAt: new Date(Date.now() + 7 * 86400000),
+            ...(email && { email })
+          })
           .where(
             and(
               eq(suppliers.id, id()),
@@ -182,6 +203,9 @@ export async function POST(request: Request) {
           .returning()
         if (!supplier) {
           throw new Error("This supplier has already joined or was removed")
+        }
+        if (!supplier.email) {
+          throw new Error("Enter the supplier's email to invite them")
         }
         // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
         // reused key carrying a different invitation.
@@ -256,27 +280,18 @@ export async function POST(request: Request) {
         throw new Error("A supplier workspace is required")
       }
       requireOwner(s)
-      const input = z
-        .object({
-          website: z.union([z.url({ protocol: /^https?$/ }).max(500), z.literal("")]),
-          phoneNumber: z.string().trim().max(50)
-        })
-        .parse(data)
+      // The supplier's own contact details, which their buyers see.
+      const parsed = supplierContactSchema.parse(data)
+      const profile = {
+        website: parsed.website ?? null,
+        phoneNumber: parsed.phoneNumber ?? null,
+        contactName: parsed.contactName ?? null,
+        contactEmail: parsed.contactEmail ?? null
+      }
       await db()
         .insert(supplierProfiles)
-        .values({
-          orgId: s.org.id,
-          website: input.website || null,
-          phoneNumber: input.phoneNumber || null
-        })
-        .onConflictDoUpdate({
-          target: supplierProfiles.orgId,
-          set: {
-            website: input.website || null,
-            phoneNumber: input.phoneNumber || null,
-            updatedAt: new Date()
-          }
-        })
+        .values({ orgId: s.org.id, ...profile })
+        .onConflictDoUpdate({ target: supplierProfiles.orgId, set: { ...profile, updatedAt: new Date() } })
       return Response.json({ ok: true })
     }
     if (action === "contact.update") {

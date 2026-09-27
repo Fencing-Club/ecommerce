@@ -8,7 +8,9 @@ import { connections, jobs, stockSnapshots } from "@/db/schema"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
+import { isCollective } from "./inventory-products"
 import { recordStockDays } from "./stock-days"
+import { syncShopifySuppliers } from "./suppliers"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
 export const stockScopes = {
@@ -201,6 +203,20 @@ export async function stockJob(
       await recordStockDays(claimed.orgId, claimed.externalAccountId, data)
     } catch (error) {
       console.error(JSON.stringify({ event: "stock_days_failed", orgId: claimed.orgId, error: describeError(error) }))
+    }
+    // Suppliers named in Shopify's product Supplier field join the buyer's suppliers.
+    if (data.source === "shopify") {
+      try {
+        await syncShopifySuppliers(
+          claimed.orgId,
+          // Shopify Collective items are a partner's, not something the buyer orders.
+          data.rows.filter((row) => !isCollective(row)).map((row) => row.supplierName)
+        )
+      } catch (error) {
+        console.error(
+          JSON.stringify({ event: "shopify_suppliers_failed", orgId: claimed.orgId, error: describeError(error) })
+        )
+      }
     }
   } catch (error) {
     const errorCode = stockErrorCode(error)

@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { memberships, organizations, suppliers } from "@/db/schema"
+import { memberships, organizations, supplierProfiles, suppliers } from "@/db/schema"
 import { hash } from "./security"
 
 export async function acceptSupplierInvitation(
@@ -37,5 +37,25 @@ export async function acceptSupplierInvitation(
       .update(suppliers)
       .set({ supplierOrgId: orgId, invitationHash: null, expiresAt: null })
       .where(eq(suppliers.id, supplier.id))
+    // The contact details the buyer kept become the supplier's own, where the supplier hasn't set them; from now on
+    // the supplier keeps them.
+    const seeded = {
+      website: supplier.website,
+      phoneNumber: supplier.phoneNumber,
+      contactName: supplier.contactName,
+      contactEmail: supplier.contactEmail
+    }
+    await tx
+      .insert(supplierProfiles)
+      .values({ orgId, ...seeded })
+      .onConflictDoUpdate({
+        target: supplierProfiles.orgId,
+        set: {
+          website: sql`coalesce(${supplierProfiles.website}, excluded.website)`,
+          phoneNumber: sql`coalesce(${supplierProfiles.phoneNumber}, excluded."phoneNumber")`,
+          contactName: sql`coalesce(${supplierProfiles.contactName}, excluded."contactName")`,
+          contactEmail: sql`coalesce(${supplierProfiles.contactEmail}, excluded."contactEmail")`
+        }
+      })
   })
 }

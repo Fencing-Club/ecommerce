@@ -196,13 +196,24 @@ export default async function Settings() {
         <Card>
           <CardHeader>
             <CardTitle>Supplier profile</CardTitle>
-            <CardDescription>Your website and contact phone for buyers working with you.</CardDescription>
+            <CardDescription>
+              Your contact details, which buyers working with you see. Only you can change them.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {s.role === "owner" ? (
-              <SupplierProfileForm website={profile?.website ?? ""} phoneNumber={profile?.phoneNumber ?? ""} />
+              <SupplierProfileForm
+                contactName={profile?.contactName ?? ""}
+                contactEmail={profile?.contactEmail ?? ""}
+                phoneNumber={profile?.phoneNumber ?? ""}
+                website={profile?.website ?? ""}
+              />
             ) : (
-              <p>{profile?.website ?? "No website saved"}</p>
+              <p>
+                {[profile?.contactName, profile?.contactEmail, profile?.phoneNumber, profile?.website]
+                  .filter(Boolean)
+                  .join(", ") || "No contact details saved"}
+              </p>
             )}
           </CardContent>
         </Card>

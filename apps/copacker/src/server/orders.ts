@@ -295,19 +295,27 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       .update(orders)
       .set({ status: "submitted", data: order.data, amazonSellerId: order.amazonSellerId, updatedAt: new Date() })
       .where(eq(orders.id, id))
-    await tx
-      .insert(jobs)
-      .values({
-        key: `po:${id}:${order.revision}`,
-        kind: "email",
-        payload: { type: "po", orderId: id, revision: order.revision, to: supplier.email, orgName: s.org.name }
-      })
-      .onConflictDoNothing()
+    // A supplier that joined Copacker is emailed the PO and provides its documents there. For one that hasn't, the
+    // buyer downloads the documents and shares them, and enters the supplier's side itself.
+    if (supplier.supplierOrgId && supplier.email) {
+      await tx
+        .insert(jobs)
+        .values({
+          key: `po:${id}:${order.revision}`,
+          kind: "email",
+          payload: { type: "po", orderId: id, revision: order.revision, to: supplier.email, orgName: s.org.name }
+        })
+        .onConflictDoNothing()
+    }
     const [shipment] = await tx
       .insert(shipments)
       .values({ orderId: id, orderRevision: order.revision, snapshot: order.data })
       .returning()
-    await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "PO submitted to supplier" })
+    await tx.insert(events).values({
+      orderId: id,
+      actor: s.user.id,
+      message: supplier.supplierOrgId ? "PO submitted to supplier" : "PO sent; share its documents with the supplier"
+    })
     return { shipmentId: shipment!.id }
   })
   // Lines still without a label get one now: barcodes saved since the PO was created, and standard labels for the
@@ -465,11 +473,16 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
           }
         },
         ...amazonJobs,
-        {
-          key: `po:${order.id}:${revision}`,
-          kind: "email",
-          payload: { type: "po", orderId: order.id, revision, to: supplier.email }
-        }
+        // Only a supplier that joined Copacker is emailed the revised PO.
+        ...(supplier.supplierOrgId && supplier.email
+          ? [
+              {
+                key: `po:${order.id}:${revision}`,
+                kind: "email" as const,
+                payload: { type: "po", orderId: order.id, revision, to: supplier.email }
+              }
+            ]
+          : [])
       ])
       .onConflictDoNothing()
     await tx.insert(events).values({

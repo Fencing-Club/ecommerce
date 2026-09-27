@@ -30,6 +30,18 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
   })
 }
 
+const optional = (field: z.ZodType<string>) =>
+  z
+    .union([field, z.literal("")])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value || null))
+export const supplierContactSchema = z.object({
+  website: optional(z.url({ protocol: /^https?$/ }).max(500)),
+  contactName: optional(z.string().trim().max(120)),
+  contactEmail: optional(z.email().max(254)),
+  phoneNumber: optional(z.string().trim().max(50))
+})
+
 export const supplierUpdateSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().trim().min(1).max(120),
@@ -43,7 +55,9 @@ export const supplierUpdateSchema = z.strictObject({
     // Left out keeps the saved name; empty clears it.
     .transform((value) => (value === undefined ? undefined : value || null)),
   leadTimeDays: z.number().int().min(1).max(730).nullable(),
-  amazonLeadTimeDays: z.number().int().min(1).max(730).nullable()
+  amazonLeadTimeDays: z.number().int().min(1).max(730).nullable(),
+  // The supplier's contact details, all optional. Left out keeps what's saved; empty clears it.
+  ...supplierContactSchema.shape
 })
 
 // A supplier's name, and how long they take to deliver to the buyer's locations and to Amazon (used by restock).
@@ -56,17 +70,74 @@ export async function updateSupplier(buyerOrgId: string, raw: unknown) {
   if (taken) {
     throw new Error("Another supplier already has this name")
   }
+  const [current] = await db()
+    .select({ supplierOrgId: suppliers.supplierOrgId })
+    .from(suppliers)
+    .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId)))
+  // Once the supplier joins, their contact details are theirs to keep in their own workspace.
+  const contact = current?.supplierOrgId
+    ? {}
+    : Object.fromEntries(
+        (["website", "contactName", "contactEmail", "phoneNumber"] as const).flatMap((field) =>
+          input[field] === undefined ? [] : [[field, input[field]]]
+        )
+      )
   const updated = await db()
     .update(suppliers)
     .set({
       name: input.name,
       leadTimeDays: input.leadTimeDays,
       amazonLeadTimeDays: input.amazonLeadTimeDays,
-      ...(input.shopifySupplierName !== undefined && { shopifySupplierName: input.shopifySupplierName })
+      ...(input.shopifySupplierName !== undefined && { shopifySupplierName: input.shopifySupplierName }),
+      ...contact
     })
     .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
     .returning({ id: suppliers.id })
   if (!updated.length) {
     throw new Error("This supplier was removed")
   }
+}
+
+// The suppliers Shopify names in its product Supplier field become the buyer's suppliers, so every one can get POs.
+// A Shopify name matching a supplier's name or its name in Shopify is already there; an existing supplier whose name
+// is part of the Shopify name, such as "Guanda" in "Wuxi Guanda Sport Goods Co. Ltd.", is linked to it instead of
+// duplicated; the rest are added without an email, to invite later. A supplier the buyer removed stays removed.
+export async function syncShopifySuppliers(buyerOrgId: string, names: Iterable<string | null | undefined>) {
+  const wanted = [...new Set([...names].map((name) => name?.trim()).filter((name): name is string => Boolean(name)))]
+  if (!wanted.length) {
+    return { added: 0, linked: 0 }
+  }
+  const existing = await db().select().from(suppliers).where(eq(suppliers.buyerOrgId, buyerOrgId))
+  const key = (value: string) => value.trim().toLowerCase()
+  let added = 0
+  let linked = 0
+  for (const name of wanted) {
+    const known = existing.some(
+      (supplier) =>
+        key(supplier.name) === key(name) ||
+        (supplier.shopifySupplierName && key(supplier.shopifySupplierName) === key(name))
+    )
+    if (known) {
+      continue
+    }
+    const partOf = existing.find(
+      (supplier) => !supplier.removedAt && !supplier.shopifySupplierName && key(name).includes(key(supplier.name))
+    )
+    if (partOf) {
+      await db().update(suppliers).set({ shopifySupplierName: name }).where(eq(suppliers.id, partOf.id))
+      partOf.shopifySupplierName = name
+      linked++
+      continue
+    }
+    const [row] = await db()
+      .insert(suppliers)
+      .values({ buyerOrgId, name, shopifySupplierName: name })
+      .onConflictDoNothing()
+      .returning()
+    if (row) {
+      existing.push(row)
+      added++
+    }
+  }
+  return { added, linked }
 }

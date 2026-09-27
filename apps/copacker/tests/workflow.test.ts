@@ -122,7 +122,7 @@ import {
 } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
-import { updateSupplier } from "../src/server/suppliers"
+import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
 
@@ -1493,13 +1493,26 @@ describe("Postgres workflow and authorization", () => {
         supplierOrgId: null,
         email: buyer.user.email,
         invitationHash: hash(invitation),
-        expiresAt: new Date(Date.now() + 60000)
+        expiresAt: new Date(Date.now() + 60000),
+        contactName: "Wei Chen",
+        contactEmail: "wei@supplier.example",
+        website: "https://buyer-typed.example"
       })
       .where(eq(tables.suppliers.id, supplierLinkId))
+    // The supplier already set its own website; the buyer's doesn't replace it.
+    await database.insert(tables.supplierProfiles).values({ orgId: supplierId, website: "https://supplier.example" })
     await acceptSupplierInvitation(buyer.user, supplierId, invitation)
     const [saved] = await database.select().from(tables.suppliers)
     expect(saved?.supplierOrgId).toBe(supplierId)
     expect(saved?.invitationHash).toBeNull()
+    // The buyer's contact details become the supplier's own where the supplier hadn't set them.
+    const [profile] = await database.select().from(tables.supplierProfiles)
+    expect(profile).toMatchObject({
+      website: "https://supplier.example",
+      contactName: "Wei Chen",
+      contactEmail: "wei@supplier.example",
+      phoneNumber: null
+    })
     await expect(acceptSupplierInvitation(buyer.user, supplierId, invitation)).rejects.toThrow("Invitation expired")
   })
 
@@ -2332,6 +2345,18 @@ describe("fluid packing handoff", () => {
     expect(await database.select().from(tables.shipments)).toHaveLength(1)
     await expect(submitOrder(buyer, orderId, 1)).rejects.toThrow("changed")
   })
+  it("emails the PO only to a supplier that has joined", async () => {
+    await database.update(tables.orders).set({ status: "draft" })
+    await submitOrder(buyer, orderId, 1)
+    const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    expect(emailed.map((job) => job.payload)).toEqual([expect.objectContaining({ type: "po", orderId })])
+
+    await pg.exec("TRUNCATE jobs, shipments CASCADE")
+    await database.update(tables.orders).set({ status: "draft", revision: 1 })
+    await database.update(tables.suppliers).set({ supplierOrgId: null }).where(eq(tables.suppliers.id, supplierLinkId))
+    await submitOrder(buyer, orderId, 1)
+    expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))).toHaveLength(0)
+  })
   it("saves incomplete packing without reserving stock or queueing Amazon work", async () => {
     const prepared = await preparation()
     const draft = {
@@ -3067,6 +3092,29 @@ describe("supplier lead times", () => {
     await database.insert(tables.suppliers).values({ buyerOrgId: buyerId, name: "Taken", email: "taken@example.com" })
     await expect(updateSupplier(buyerId, { ...edit, name: "Taken" })).rejects.toThrow("already has this name")
   })
+
+  it("keeps a supplier's contact details until the supplier joins, then leaves them to the supplier", async () => {
+    const edit = { id: supplierLinkId, name: "Supplier", leadTimeDays: null, amazonLeadTimeDays: null }
+    const contact = { contactName: "Wei Chen", contactEmail: "wei@supplier.example", phoneNumber: "", website: "" }
+    const saved = async () =>
+      (await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId)))[0]
+    await database.update(tables.suppliers).set({ supplierOrgId: null }).where(eq(tables.suppliers.id, supplierLinkId))
+    await updateSupplier(buyerId, { ...edit, ...contact })
+    expect(await saved()).toMatchObject({
+      contactName: "Wei Chen",
+      contactEmail: "wei@supplier.example",
+      phoneNumber: null,
+      website: null
+    })
+    await expect(updateSupplier(buyerId, { ...edit, contactEmail: "not an email" })).rejects.toThrow("Invalid email")
+    // Joined: the buyer's changes to them are ignored.
+    await database
+      .update(tables.suppliers)
+      .set({ supplierOrgId: supplierId })
+      .where(eq(tables.suppliers.id, supplierLinkId))
+    await updateSupplier(buyerId, { ...edit, contactName: "Someone else" })
+    expect((await saved())?.contactName).toBe("Wei Chen")
+  })
 })
 
 describe("product suppliers", () => {
@@ -3168,5 +3216,63 @@ describe("landed costs", () => {
     context.actor = buyer
     expect((await send("landedCost.delete", { id })).status).toBe(200)
     expect(await orderLandedCosts(orderId)).toEqual([])
+  })
+})
+
+describe("suppliers from Shopify and invitations", () => {
+  const post = (body: unknown) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify(body)
+      })
+    )
+  const buyerSuppliers = () => database.select().from(tables.suppliers).where(eq(tables.suppliers.buyerOrgId, buyerId))
+
+  it("adds Shopify's suppliers once, links a supplier named within one and keeps removed ones removed", async () => {
+    await database.insert(tables.suppliers).values([
+      { buyerOrgId: buyerId, name: "Guanda" },
+      { buyerOrgId: buyerId, name: "Gone Co", removedAt: new Date() }
+    ])
+    const names = ["Wuxi Guanda Sport Goods Co. Ltd.", "Unic", " unic ", "Gone Co", "supplier", null, ""]
+    expect(await syncShopifySuppliers(buyerId, names)).toEqual({ added: 1, linked: 1 })
+    expect(await syncShopifySuppliers(buyerId, names)).toEqual({ added: 0, linked: 0 })
+    const rows = await buyerSuppliers()
+    expect(rows.find((row) => row.name === "Guanda")?.shopifySupplierName).toBe("Wuxi Guanda Sport Goods Co. Ltd.")
+    expect(rows.find((row) => row.name === "Unic")).toMatchObject({ email: null, invitationHash: null })
+    expect(rows.find((row) => row.name === "Gone Co")?.removedAt).not.toBeNull()
+    expect(rows).toHaveLength(4)
+  })
+
+  it("adds a supplier without an email, then invites it by email", async () => {
+    const created = await post({ action: "supplier.create", data: { name: "Unic", email: "" } })
+    expect(created.status).toBe(200)
+    const { id } = (await created.json()) as { id: string }
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
+    const [added] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, id))
+    expect(added).toMatchObject({ email: null, invitationHash: null })
+
+    const noEmail = await post({ action: "supplier.invite", data: { id } })
+    expect(noEmail.status).toBeGreaterThanOrEqual(400)
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
+
+    expect((await post({ action: "supplier.invite", data: { id, email: "Sales@Unic.example" } })).status).toBe(200)
+    const [invited] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, id))
+    expect(invited?.email).toBe("sales@unic.example")
+    expect(invited?.invitationHash).not.toBeNull()
+    const jobs = await database.select().from(tables.jobs)
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.payload).toMatchObject({ type: "invite", to: "sales@unic.example" })
+
+    // Resending uses the saved email.
+    expect((await post({ action: "supplier.resend", data: { id } })).status).toBe(200)
+    expect(await database.select().from(tables.jobs)).toHaveLength(2)
+  })
+
+  it("refuses to invite a supplier that has already joined", async () => {
+    const response = await post({ action: "supplier.invite", data: { id: supplierLinkId, email: "x@example.com" } })
+    expect(response.status).toBeGreaterThanOrEqual(400)
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
   })
 })

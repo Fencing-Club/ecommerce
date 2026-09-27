@@ -1,6 +1,6 @@
 import { money, orderTotal } from "@repo/aisle"
 import { and, desc, eq } from "drizzle-orm"
-import { ChevronDown, ChevronRight, Download } from "lucide-react"
+import { ChevronDown, ChevronRight, Download, Info as InfoIcon } from "lucide-react"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
@@ -15,6 +15,7 @@ import {
 } from "@/components/common"
 import { LandedCostForm } from "@/components/landed-costs"
 import { ClosePurchaseOrder, DeleteDraftOrder } from "@/components/order-actions"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -86,10 +87,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <>
             <DeleteDraftOrder id={id} reference={order.data.reference} />
             <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-              Submit to supplier
+              {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
             </ActionButton>
           </>
         )}
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<a href={`/api/orders/${id}/po`} download aria-label={`Download ${order.data.reference}`} />}
+        >
+          <Download data-icon="inline-start" />
+          Download PO
+        </Button>
         {order.status === "submitted" && (editable || remaining) && (
           <ActionButton action="shipment.create" data={{ id }}>
             {editable ? "Continue packing" : "Prepare next shipment"}
@@ -99,6 +108,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <ClosePurchaseOrder id={id} reference={order.data.reference} />
         )}
       </PageHeader>
+
+      {s.org.kind === "buyer" && !supplier.supplierOrgId && (
+        <Alert>
+          <InfoIcon />
+          <AlertTitle>{supplier.name} hasn’t joined Copacker</AlertTitle>
+          <AlertDescription>
+            Copacker doesn’t email them. Download the PO and labels and send them yourself, then enter their cartons,
+            invoice and ready date on the shipment when they reply. Invite them on the Suppliers page to have them do it
+            here.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { base: "1", xl: "mainAside" } })}>
         <div className={sx({ display: "flex", minWidth: 0, flexDirection: "column", gap: 6 })}>

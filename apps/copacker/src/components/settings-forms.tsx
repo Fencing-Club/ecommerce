@@ -12,7 +12,10 @@ import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput, FormSelect } from "./form-controls"
 import { sx } from "@/styles/sprinkles.css"
 
-const supplierSchema = z.object({ name: z.string().trim().min(2).max(120), email: z.email().max(254) })
+const supplierSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.union([z.email().max(254), z.literal("")])
+})
 
 export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
   const { form, submit } = useActionForm({
@@ -22,36 +25,41 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
     onSuccess
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Invite supplier">
+    <ActionForm form={form} onSubmit={submit} label="Add supplier">
       <FormInput name="name" label="Supplier company" placeholder="Ok Fencing" autoComplete="organization" />
       <FormInput
         name="email"
-        label="Supplier email"
+        label="Supplier email (optional)"
         type="email"
         placeholder="supplier@example.com"
         autoComplete="email"
-        description="The supplier gets an invitation to their own workspace. They see only the orders you share with them."
+        description="With an email, the supplier is invited to their own workspace, where they see only the orders you share. Without one, you can still send them POs and share the documents yourself."
       />
     </ActionForm>
   )
 }
 
 const supplierProfileSchema = z.object({
-  website: z.union([z.url({ protocol: /^https?$/ }), z.literal("")]),
-  phoneNumber: z.string().max(50)
+  contactName: z.string().trim().max(120),
+  contactEmail: z.union([z.email({ error: "Enter a valid email" }).max(254), z.literal("")]),
+  phoneNumber: z.string().trim().max(50),
+  website: z.union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
 })
 
-export function SupplierProfileForm({ website, phoneNumber }: { website: string; phoneNumber: string }) {
+// The supplier's contact details, which their buyers see. All optional.
+export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchema>) {
   const { form, submit } = useActionForm({
     schema: supplierProfileSchema,
     action: "supplier.profile",
-    defaultValues: { website, phoneNumber },
+    defaultValues: profile,
     keepSaved: true
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Save profile">
-      <FormInput name="website" label="Website" type="url" placeholder="https://supplier.example" />
-      <FormInput name="phoneNumber" label="Phone number (optional)" type="tel" autoComplete="tel" />
+      <FormInput name="contactName" label="Contact name (optional)" autoComplete="name" />
+      <FormInput name="contactEmail" label="Contact email (optional)" type="email" autoComplete="email" />
+      <FormInput name="phoneNumber" label="Phone (optional)" type="tel" autoComplete="tel" />
+      <FormInput name="website" label="Website (optional)" type="url" placeholder="https://supplier.example" />
     </ActionForm>
   )
 }

@@ -66,6 +66,11 @@ export const suppliers = pgTable(
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
     shopifySupplierName: text(),
+    // Contact details the buyer keeps until the supplier joins; after that the supplier's own profile is shown.
+    website: text(),
+    contactName: text(),
+    contactEmail: text(),
+    phoneNumber: text(),
     createdAt: createdAt()
   },
   // One buyer may work with several supplier workspaces owned by the same email.
@@ -77,6 +82,8 @@ export const supplierProfiles = pgTable("supplier_profiles", {
     .references(() => organizations.id),
   website: text(),
   phoneNumber: text(),
+  contactName: text(),
+  contactEmail: text(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
 export const supplierProducts = pgTable(
