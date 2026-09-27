@@ -66,18 +66,25 @@ export type AppSidebarProps = {
   preview?: boolean
 }
 
+// The store's own pages, then purchasing from suppliers, then settings on their own.
+const groups = [
+  { key: "store", label: "Store" },
+  { key: "purchasing", label: "Purchasing" },
+  { key: "workspace", label: null }
+] as const
+
 const navigation = [
-  { view: "overview", label: "Overview", icon: LayoutDashboard, buyerOnly: true },
-  { view: "orders", label: "Purchase orders", icon: ClipboardList },
-  { view: "sales", label: "Orders", icon: Receipt, buyerOnly: true },
-  { view: "products", label: "Products", icon: Box, buyerOnly: true },
-  { view: "restock", label: "Restock", icon: PackagePlus, buyerOnly: true },
-  { view: "shipments", label: "Shipments", icon: Truck },
-  { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
-  { view: "forwarders", label: "Forwarders", icon: Ship, buyerOnly: true },
-  { view: "catalog", label: "Catalog", icon: BookOpen, supplierOnly: true },
-  { view: "settings", label: "Settings", icon: Settings }
-]
+  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "store", buyerOnly: true },
+  { view: "sales", label: "Orders", icon: Receipt, group: "store", buyerOnly: true },
+  { view: "products", label: "Products", icon: Box, group: "store", buyerOnly: true },
+  { view: "restock", label: "Restock", icon: PackagePlus, group: "store", buyerOnly: true },
+  { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing" },
+  { view: "shipments", label: "Shipments", icon: Truck, group: "purchasing" },
+  { view: "suppliers", label: "Suppliers", icon: Users, group: "purchasing", buyerOnly: true },
+  { view: "forwarders", label: "Forwarders", icon: Ship, group: "purchasing", buyerOnly: true },
+  { view: "catalog", label: "Catalog", icon: BookOpen, group: "purchasing", supplierOnly: true },
+  { view: "settings", label: "Settings", icon: Settings, group: "workspace" }
+] satisfies Array<{ view: string; group: (typeof groups)[number]["key"] } & Record<string, unknown>>
 
 // A forwarder's workspace sees the POs coming through it, and keeps its addresses and profile in Settings.
 function navigationFor(kind: string) {
@@ -141,25 +148,33 @@ export function AppSidebar({
         <WorkspaceSwitcher kind={kind} active={active} workspaces={workspaces} fallbackName={name} preview={preview} />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationFor(kind).map((item) => (
-                <SidebarMenuItem key={item.view}>
-                  <SidebarMenuButton
-                    isActive={isActive(item.view)}
-                    tooltip={item.label}
-                    render={<Link href={hrefFor(item.view, preview)} onClick={() => setOpenMobile(false)} />}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {groups.map((group) => {
+          const items = navigationFor(kind).filter((item) => item.group === group.key)
+          if (!items.length) {
+            return null
+          }
+          return (
+            <SidebarGroup key={group.key} className={group.label ? undefined : "mt-auto"}>
+              {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => (
+                    <SidebarMenuItem key={item.view}>
+                      <SidebarMenuButton
+                        isActive={isActive(item.view)}
+                        tooltip={item.label}
+                        render={<Link href={hrefFor(item.view, preview)} onClick={() => setOpenMobile(false)} />}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )
+        })}
       </SidebarContent>
       <SidebarFooter>
         <UserMenu name={name} email={email} preview={preview} />

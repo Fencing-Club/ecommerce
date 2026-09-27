@@ -4512,64 +4512,22 @@ describe("suppliers from Shopify and invitations", () => {
   })
 })
 
-describe("business details on POs", () => {
-  const post = (body: unknown) =>
-    action(
-      new Request("http://localhost:3000/api/action", {
-        method: "POST",
-        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-        body: JSON.stringify(body)
-      })
-    )
-  const details = {
-    contactName: "Test Buyer",
-    contactEmail: "orders@example.com",
-    phoneNumber: "",
-    website: "",
-    addressLine1: "10 Sample Road",
-    addressLine2: "",
-    city: "Sampletown",
-    stateOrRegion: "WA",
-    postalCode: "98001",
-    countryCode: "us"
-  }
-
-  it("saves the buyer's business details, with an address only when it's complete", async () => {
-    expect((await post({ action: "business.profile", data: { ...details, city: "" } })).status).toBeGreaterThanOrEqual(
-      400
-    )
-    expect((await post({ action: "business.profile", data: details })).status).toBe(200)
-    const [profile] = await database
+describe("the workspace website on POs", () => {
+  it("lets the buyer's owner set the website with their profile, and prints it on the PO", async () => {
+    const profile = { firstName: "Tess", lastName: "Tester", position: "Owner", company: "Buyer" }
+    await expect(saveProfile(buyer, { ...profile, website: "buyer.example" })).rejects.toThrow("full address")
+    await saveProfile(buyer, { ...profile, website: "https://buyer.example" })
+    const [saved] = await database
       .select()
       .from(tables.supplierProfiles)
       .where(eq(tables.supplierProfiles.orgId, buyerId))
-    expect(profile).toMatchObject({ contactName: "Test Buyer", website: null })
-    expect(profile?.address).toMatchObject({ addressLine1: "10 Sample Road", city: "Sampletown", countryCode: "US" })
-
-    expect(
-      (
-        await post({
-          action: "business.profile",
-          data: { ...details, addressLine1: "", city: "", stateOrRegion: "", postalCode: "", countryCode: "" }
-        })
-      ).status
-    ).toBe(200)
-    const [cleared] = await database
-      .select()
-      .from(tables.supplierProfiles)
-      .where(eq(tables.supplierProfiles.orgId, buyerId))
-    expect(cleared?.address).toBeNull()
-  })
-
-  it("is for buyers only", async () => {
-    context.actor = supplier
-    expect((await post({ action: "business.profile", data: details })).status).toBeGreaterThanOrEqual(400)
-  })
-
-  it("prints a PO with the buyer's details", async () => {
-    await post({ action: "business.profile", data: details })
+    expect(saved).toMatchObject({ website: "https://buyer.example" })
     const { bytes } = await generatePo(orderId)
     expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-")
+
+    await expect(saveProfile(supplier, { ...profile, website: "https://supplier.example" })).rejects.toThrow(
+      "Only the workspace owner"
+    )
   })
 })
 

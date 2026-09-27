@@ -123,8 +123,6 @@ export const supplierProfiles = pgTable("supplier_profiles", {
   phoneNumber: text(),
   contactName: text(),
   contactEmail: text(),
-  // The business address printed on POs.
-  address: jsonb().$type<Address>(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
 export const supplierProducts = pgTable(

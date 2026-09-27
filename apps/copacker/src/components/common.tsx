@@ -122,7 +122,8 @@ export function StatCard({ label, value, caption }: { label: string; value: stri
         <CardDescription>{label}</CardDescription>
         <CardTitle className={styles.statValue}>{value}</CardTitle>
       </CardHeader>
-      <CardFooter className={sx({ text: "xs", color: "muted" })}>{caption}</CardFooter>
+      {/* Grows with the tallest card in its row, so every footer reaches the bottom. */}
+      <CardFooter className="flex-1 items-start text-xs text-muted-foreground">{caption}</CardFooter>
     </Card>
   )
 }

@@ -308,7 +308,11 @@ export function OrderBuilder({
                 Discard
               </Button>
             )}
-            <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>
+            <SubmitButton
+              type="submit"
+              pending={form.formState.isSubmitting}
+              disabled={!lineItems.fields.length || (!!draft && !form.formState.isDirty)}
+            >
               Save
             </SubmitButton>
           </div>

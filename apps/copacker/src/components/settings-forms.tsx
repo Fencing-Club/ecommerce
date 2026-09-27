@@ -5,7 +5,6 @@ import { useSyncExternalStore } from "react"
 import { useWatch } from "react-hook-form"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
-import { businessProfileSchema } from "@/lib/business-profile"
 import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
@@ -62,32 +61,6 @@ export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchem
       <FormInput name="contactEmail" label="Contact email" type="email" autoComplete="email" />
       <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
       <FormInput name="website" label="Website" type="url" placeholder="https://supplier.example" />
-    </ActionForm>
-  )
-}
-
-// The buyer's business details, printed at the top of its POs.
-export function BusinessProfileForm(profile: z.input<typeof businessProfileSchema>) {
-  const { form, submit } = useActionForm({
-    schema: businessProfileSchema,
-    action: "business.profile",
-    defaultValues: profile,
-    keepSaved: true
-  })
-  return (
-    <ActionForm form={form} onSubmit={submit} label="Save details">
-      <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
-        <FormInput name="contactName" label="Contact name" autoComplete="name" />
-        <FormInput name="contactEmail" label="Email" type="email" autoComplete="email" />
-        <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
-        <FormInput name="website" label="Website" type="url" placeholder="https://example.com" />
-        <FormInput name="addressLine1" label="Street address" autoComplete="address-line1" />
-        <FormInput name="addressLine2" label="Address line 2" autoComplete="address-line2" />
-        <FormInput name="city" label="City" autoComplete="address-level2" />
-        <FormInput name="stateOrRegion" label="State or province" autoComplete="address-level1" />
-        <FormInput name="postalCode" label="Postal code" autoComplete="postal-code" />
-        <FormInput name="countryCode" label="Country code" placeholder="US" autoComplete="country" />
-      </div>
     </ActionForm>
   )
 }

@@ -17,7 +17,6 @@ import {
   teamInvitations,
   supplierProfiles
 } from "@/db/schema"
-import { businessProfileSchema } from "@/lib/business-profile"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
@@ -362,36 +361,6 @@ export async function POST(request: Request) {
         phoneNumber: parsed.phoneNumber ?? null,
         contactName: parsed.contactName ?? null,
         contactEmail: parsed.contactEmail ?? null
-      }
-      await db()
-        .insert(supplierProfiles)
-        .values({ orgId: s.org.id, ...profile })
-        .onConflictDoUpdate({ target: supplierProfiles.orgId, set: { ...profile, updatedAt: new Date() } })
-      return Response.json({ ok: true })
-    }
-    if (action === "business.profile") {
-      requireBuyer(s)
-      requireOwner(s)
-      // The buyer's business details, printed at the top of its POs.
-      const input = businessProfileSchema.parse(data)
-      const profile = {
-        website: input.website || null,
-        phoneNumber: input.phoneNumber || null,
-        contactName: input.contactName || null,
-        contactEmail: input.contactEmail || null,
-        address: input.addressLine1
-          ? {
-              name: input.contactName,
-              addressLine1: input.addressLine1,
-              addressLine2: input.addressLine2,
-              city: input.city,
-              stateOrRegion: input.stateOrRegion,
-              postalCode: input.postalCode,
-              countryCode: input.countryCode,
-              phoneNumber: input.phoneNumber,
-              email: input.contactEmail
-            }
-          : null
       }
       await db()
         .insert(supplierProfiles)

@@ -100,7 +100,7 @@ export function ActionForm<Values extends FieldValues>({
   children: React.ReactNode
 }) {
   const submit = (
-    <SubmitButton type="submit" pending={form.formState.isSubmitting}>
+    <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!dialog && !form.formState.isDirty}>
       {label}
     </SubmitButton>
   )

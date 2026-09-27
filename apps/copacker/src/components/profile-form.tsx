@@ -12,7 +12,11 @@ const schema = z.object({
   firstName: z.string().trim().min(1, "Enter your first name").max(60),
   lastName: z.string().trim().min(1, "Enter your last name").max(60),
   position: z.string().trim().min(1, "Choose your position").max(100),
-  company: z.string().trim().min(1, "Enter your company").max(120)
+  company: z.string().trim().min(1, "Enter your company").max(120),
+  // The workspace's website, printed on its POs. Only its owner sees and changes it.
+  website: z
+    .union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
+    .optional()
 })
 
 type Profile = z.input<typeof schema>
@@ -63,9 +67,17 @@ export function ProfileForm({ profile, then }: { profile: Profile; then?: string
           <FormInput name="lastName" required label="Last name" autoComplete="family-name" />
           <FormChoice name="position" required label="Position" placeholder="Choose" options={options} />
           <FormInput name="company" required label="Company" autoComplete="organization" />
+          {profile.website !== undefined && (
+            <FormInput name="website" label="Website" type="url" placeholder="https://example.com" autoComplete="url" />
+          )}
         </FieldGroup>
         <FormError message={form.formState.errors.root?.server?.message} />
-        <SubmitButton type="submit" className="self-start" pending={form.formState.isSubmitting}>
+        <SubmitButton
+          type="submit"
+          className="self-start"
+          pending={form.formState.isSubmitting}
+          disabled={!then && !form.formState.isDirty}
+        >
           {then ? "Continue" : "Save"}
         </SubmitButton>
       </form>

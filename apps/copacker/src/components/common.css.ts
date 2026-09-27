@@ -4,7 +4,7 @@ import { vars } from "@/styles/theme.css"
 
 // Large stat value. `&&` outranks CardTitle's base size and weight.
 export const statValue = style({
-  selectors: { "&&": { ...fontSize["2xl"], fontWeight: 600, fontVariantNumeric: "tabular-nums" } }
+  selectors: { "&&": { ...fontSize["2xl"], fontWeight: 600 } }
 })
 
 // Tighter spacing than ItemGroup's default.

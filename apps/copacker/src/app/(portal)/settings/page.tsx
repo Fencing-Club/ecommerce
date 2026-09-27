@@ -13,12 +13,7 @@ import { InventoryLocations } from "@/components/inventory-locations"
 import { AddMonthlyCost } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
 import { SavedAddresses } from "@/components/saved-addresses"
-import {
-  BusinessProfileForm,
-  RestockSettingsForm,
-  SupplierProfileForm,
-  TimeZoneForm
-} from "@/components/settings-forms"
+import { RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -109,7 +104,8 @@ export default async function Settings() {
               firstName: person?.firstName ?? "",
               lastName: person?.lastName ?? "",
               position: person?.position ?? "",
-              company: person?.company || s.org.name
+              company: person?.company || s.org.name,
+              ...(buyer && s.role === "owner" && { website: profile?.website ?? "" })
             }}
           />
         </CardContent>
@@ -290,37 +286,6 @@ export default async function Settings() {
               </ul>
             ) : (
               <p className={sx({ text: "sm", color: "muted" })}>No monthly costs yet.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {buyer && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Business details</CardTitle>
-            <CardDescription>Printed at the top of your POs.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {s.role === "owner" ? (
-              <BusinessProfileForm
-                contactName={profile?.contactName ?? ""}
-                contactEmail={profile?.contactEmail ?? ""}
-                phoneNumber={profile?.phoneNumber ?? ""}
-                website={profile?.website ?? ""}
-                addressLine1={profile?.address?.addressLine1 ?? ""}
-                addressLine2={profile?.address?.addressLine2 ?? ""}
-                city={profile?.address?.city ?? ""}
-                stateOrRegion={profile?.address?.stateOrRegion ?? ""}
-                postalCode={profile?.address?.postalCode ?? ""}
-                countryCode={profile?.address?.countryCode ?? ""}
-              />
-            ) : (
-              <p>
-                {[profile?.contactName, profile?.contactEmail, profile?.phoneNumber, profile?.website]
-                  .filter(Boolean)
-                  .join(", ") || "No business details saved"}
-              </p>
             )}
           </CardContent>
         </Card>

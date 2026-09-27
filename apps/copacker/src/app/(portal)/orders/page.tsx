@@ -5,7 +5,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status, formatDestination } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
@@ -89,65 +88,56 @@ export default async function OrdersPage() {
         </StatGrid>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All purchase orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {rows.length ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Purchase order</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead>Status</TableHead>
-                  {showValue && <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map(({ order, supplier }) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <Link className={rowLink} href={`/orders/${order.id}`}>
-                        {order.data.reference}
-                      </Link>
-                      <p className={sx({ text: "xs", color: "muted" })}>{order.data.items.length} products</p>
-                    </TableCell>
-                    <TableCell>{supplier.name}</TableCell>
-                    <TableCell className={sx({ color: "muted" })}>
-                      {formatDestination(order.data.destination)}
-                    </TableCell>
-                    <TableCell>
-                      <Status status={order.status} />
-                    </TableCell>
-                    {showValue && (
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {money(orderTotal(order.data), order.data.currency)}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <EmptyState
-              title="Your next shipment starts here"
-              description={
-                isBuyer
-                  ? nextStep.description
-                  : "Accept a buyer invitation to see the purchase orders shared with your workspace."
-              }
-            >
-              {isBuyer && (
-                <Button nativeButton={false} render={<Link href={nextStep.href} />}>
-                  {nextStep.action}
-                </Button>
-              )}
-            </EmptyState>
+      {rows.length ? (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Purchase order</TableHead>
+              <TableHead>Supplier</TableHead>
+              <TableHead>Destination</TableHead>
+              <TableHead>Status</TableHead>
+              {showValue && <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(({ order, supplier }) => (
+              <TableRow key={order.id}>
+                <TableCell>
+                  <Link className={rowLink} href={`/orders/${order.id}`}>
+                    {order.data.reference}
+                  </Link>
+                  <p className={sx({ text: "xs", color: "muted" })}>{order.data.items.length} products</p>
+                </TableCell>
+                <TableCell>{supplier.name}</TableCell>
+                <TableCell className={sx({ color: "muted" })}>{formatDestination(order.data.destination)}</TableCell>
+                <TableCell>
+                  <Status status={order.status} />
+                </TableCell>
+                {showValue && (
+                  <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                    {money(orderTotal(order.data), order.data.currency)}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <EmptyState
+          title="Your next shipment starts here"
+          description={
+            isBuyer
+              ? nextStep.description
+              : "Accept a buyer invitation to see the purchase orders shared with your workspace."
+          }
+        >
+          {isBuyer && (
+            <Button nativeButton={false} render={<Link href={nextStep.href} />}>
+              {nextStep.action}
+            </Button>
           )}
-        </CardContent>
-      </Card>
+        </EmptyState>
+      )}
     </>
   )
 }

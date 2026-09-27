@@ -131,11 +131,8 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   return {
     buyer: {
       name: row.buyer.name,
-      lines: [
-        ...(buyerProfile?.address ? addressLines(buyerProfile.address) : []),
-        contactLine(buyerProfile?.contactName, buyerProfile?.phoneNumber)
-      ].filter(Boolean),
-      email: buyerProfile?.contactEmail,
+      // Where the goods go is the PO's ship-to address; the buyer is its name and website.
+      lines: [],
       website: buyerProfile?.website
     },
     supplier: {
