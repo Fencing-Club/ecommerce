@@ -1,3 +1,4 @@
+import type { CatalogVariant } from "@repo/aisle/shopify"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
@@ -6,6 +7,7 @@ import { catalogMatches } from "./catalog-matches"
 import { shopifyFor, amazonFor } from "./connections"
 import { runImportAgent, type ImportTool, type ImportUsage } from "./import-agent"
 import { traceImport, type ImportObservation } from "./import-trace"
+import { withVariantFields } from "./product-fields"
 import { getFile } from "./storage"
 
 export async function importJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
@@ -61,7 +63,7 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
     await db().update(poImports).set({ promptVersion: prompt.version }).where(active)
     const shop = await shopifyFor(record.orgId, record.shopifyDomain)
     const knownVariants = new Set<string>()
-    const catalog = new Map<string, Awaited<ReturnType<typeof shop.catalogPage>>["nodes"][number]>()
+    const catalog = new Map<string, CatalogVariant>()
     let cursor: string | null = null,
       complete = false,
       pages = 0
@@ -90,8 +92,10 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
             }
             const page = await shop.catalogPage(cursor)
             pages++
-            for (const item of page.nodes) {
-              catalog.set(item.id, item)
+            for (const item of await withVariantFields(record.orgId, shop.domain, page.nodes)) {
+              if (item) {
+                catalog.set(item.id, item)
+              }
             }
             complete = !page.pageInfo.hasNextPage
             if (!complete && (!page.pageInfo.endCursor || page.pageInfo.endCursor === cursor)) {
@@ -114,7 +118,7 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
           if (ids.some((id) => !knownVariants.has(id))) {
             throw new Error("Discover variants with catalog search first")
           }
-          return shop.variants(ids)
+          return withVariantFields(record.orgId, shop.domain, await shop.variants(ids))
         }
       },
       {

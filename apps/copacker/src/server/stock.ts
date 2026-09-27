@@ -9,8 +9,8 @@ import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
+import { copyShopifyFields, fillStockRows } from "./product-fields"
 import { recordStockDays } from "./stock-days"
-import { syncShopifySuppliers } from "./suppliers"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
 export const stockScopes = {
@@ -157,7 +157,15 @@ export async function stockJob(
   try {
     const collect = async () => {
       if (claimed.source === "shopify") {
-        return (await shopifyFor(claimed.orgId, claimed.externalAccountId)).stock(assertOwned)
+        const shopify = await shopifyFor(claimed.orgId, claimed.externalAccountId)
+        const stock = await shopify.stock(assertOwned)
+        // The supplier SKUs, stock targets, case quantities and suppliers Copacker keeps start as the store's
+        // metafields, copied once. Shopify Collective items are a partner's, so their Supplier isn't one of the buyer's.
+        await copyShopifyFields(claimed.orgId, claimed.externalAccountId, shopify, {
+          assertActive: assertOwned,
+          partnerVariants: new Set(stock.rows.filter(isCollective).map((row) => row.variantId))
+        })
+        return { ...stock, rows: await fillStockRows(claimed.orgId, claimed.externalAccountId, stock.rows) }
       }
       const amazon = await amazonFor(claimed.orgId, claimed.externalAccountId)
       return claimed.source === "fba" ? amazon.fbaStock(claimed.scopeKey, assertOwned) : amazon.awdStock(assertOwned)
@@ -203,20 +211,6 @@ export async function stockJob(
       await recordStockDays(claimed.orgId, claimed.externalAccountId, data)
     } catch (error) {
       console.error(JSON.stringify({ event: "stock_days_failed", orgId: claimed.orgId, error: describeError(error) }))
-    }
-    // Suppliers named in Shopify's product Supplier field join the buyer's suppliers.
-    if (data.source === "shopify") {
-      try {
-        await syncShopifySuppliers(
-          claimed.orgId,
-          // Shopify Collective items are a partner's, not something the buyer orders.
-          data.rows.filter((row) => !isCollective(row)).map((row) => row.supplierName)
-        )
-      } catch (error) {
-        console.error(
-          JSON.stringify({ event: "shopify_suppliers_failed", orgId: claimed.orgId, error: describeError(error) })
-        )
-      }
     }
   } catch (error) {
     const errorCode = stockErrorCode(error)

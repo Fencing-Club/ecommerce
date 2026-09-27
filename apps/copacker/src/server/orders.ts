@@ -30,6 +30,7 @@ import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { forwarderAddress } from "./forwarders"
 import { attachProductBarcodes, discardFile } from "./product-barcodes"
+import { withVariantFields } from "./product-fields"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
@@ -56,7 +57,11 @@ export async function prepareOrder(s: Session, raw: unknown) {
   }
   const shop = await connection(s.org.id, "shopify"),
     amazon = await amazonAccount(s.org.id)
-  const catalog = await (await shopifyFor(s.org.id, shop.externalId)).variants(input.items.map((i) => i.variantId))
+  const catalog = await withVariantFields(
+    s.org.id,
+    shop.externalId,
+    await (await shopifyFor(s.org.id, shop.externalId)).variants(input.items.map((i) => i.variantId))
+  )
   const identities = amazon
     ? await amazonIdentities(
         s.org.id,

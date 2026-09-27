@@ -30,7 +30,7 @@ export type InventoryVariant = Quantities & {
   imageUrl: string | null
   stock: StockKind
   onOrder: OnOrder
-  // Shopify's custom.amazon_fulfillment_stock_target: stock to keep at Amazon; 0 means not stocked there.
+  // The least to keep at Amazon, kept in Copacker; 0 means not stocked there.
   amazonStockTarget: number | null
   levels: (Quantities & { locationId: string; locationName: string; classification: LocationClassification })[]
 }
@@ -44,8 +44,6 @@ export type InventoryProduct = Quantities & {
   // A kind shared by every variation; "tracked" when they differ.
   stock: StockKind
   onOrder: OnOrder
-  // Shopify's product custom.case_quantity, units per case.
-  shopifyCaseQuantity: number | null
   variants: InventoryVariant[]
 }
 
@@ -316,7 +314,6 @@ export function groupInventory(
       imageUrl: null,
       stock: "tracked" as StockKind,
       onOrder: nothingOnOrder,
-      shopifyCaseQuantity: row.caseQuantity ?? null,
       variants: [],
       available: null,
       onHand: null,

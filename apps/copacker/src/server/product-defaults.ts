@@ -7,13 +7,15 @@ import { connections, productDefaults, stockSnapshots, suppliers } from "@/db/sc
 import { type CasePack, casePackSchema } from "@/lib/case-packs"
 import { type ProductLabel, productLabels } from "@/lib/product-label"
 import type { Session } from "./auth"
-import { shopifyFor } from "./connections"
+import { refreshStoredStockFields } from "./product-fields"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
 export type ProductDefaults = {
   description: string
   prepCategory: (typeof prepCategories)[number] | null
   casePacks: CasePack[]
+  // Units per case, for restock's rounding when no case pack is set.
+  caseQuantity: number | null
   minimumOrder: number | null
   supplierId: string | null
   // Uploaded barcode, or else Amazon's FNSKU label ("standard") unless the product needs its own ("uploaded").
@@ -24,6 +26,7 @@ export const noDefaults: ProductDefaults = {
   description: "",
   prepCategory: null,
   casePacks: [],
+  caseQuantity: null,
   minimumOrder: null,
   supplierId: null,
   productLabel: "standard",
@@ -35,6 +38,8 @@ export const productDefaultsInputSchema = z.strictObject({
   description: z.string().trim().max(2000),
   prepCategory: z.enum(prepCategories).nullable(),
   casePacks: z.array(casePackSchema).max(10),
+  // Left out keeps the saved case quantity.
+  caseQuantity: z.number().int().min(1).max(100000).nullable().optional(),
   minimumOrder: z.number().int().min(1).max(1000000).nullable(),
   // Left out keeps the saved supplier.
   supplierId: z.uuid().nullable().optional(),
@@ -71,6 +76,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
         description: row.description,
         prepCategory: row.prepCategory,
         casePacks: row.casePacks,
+        caseQuantity: row.caseQuantity,
         minimumOrder: row.minimumOrder,
         supplierId: row.supplierId,
         productLabel: row.productLabel,
@@ -85,8 +91,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     throw new ProductDefaultsError("A buyer workspace is required", 403)
   }
   const input = productDefaultsInputSchema.parse(raw)
-  const shopify = input.supplierId ? await shopifyWriter(s.org.id) : null
-  return db().transaction(async (tx) => {
+  let domain = ""
+  const saved = await db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })
       .from(connections)
@@ -110,6 +116,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     if (!known) {
       throw new ProductDefaultsError("This product isn't in your synced Shopify inventory", 404)
     }
+    domain = account.domain
     const scope = and(
       eq(productDefaults.orgId, s.org.id),
       eq(productDefaults.shopifyDomain, account.domain),
@@ -121,13 +128,13 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     }
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
     if (supplierId && supplierId !== previous?.supplierId) {
-      const supplier = await requireCurrentSupplier(tx, s.org.id, supplierId)
-      await writeShopifySupplier(shopify, account.domain, [input.productId], supplier)
+      await requireCurrentSupplier(tx, s.org.id, supplierId)
     }
     const value = {
       description: input.description,
       prepCategory: input.prepCategory,
       casePacks: input.casePacks,
+      caseQuantity: input.caseQuantity === undefined ? (previous?.caseQuantity ?? null) : input.caseQuantity,
       minimumOrder: input.minimumOrder,
       supplierId,
       productLabel: input.productLabel,
@@ -145,12 +152,16 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       description: value.description,
       prepCategory: value.prepCategory,
       casePacks: value.casePacks,
+      caseQuantity: value.caseQuantity,
       minimumOrder: value.minimumOrder,
       supplierId: value.supplierId,
       productLabel: value.productLabel,
       revision: value.revision
     }
   })
+  // Stored stock carries the product's supplier and case quantity for restock.
+  await refreshStoredStockFields(s.org.id, domain)
+  return saved
 }
 
 type Transaction = Parameters<Parameters<ReturnType<typeof db>["transaction"]>[0]>[0]
@@ -166,40 +177,6 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
   return supplier
 }
 
-type ShopifyWriter = { domain: string; client: Awaited<ReturnType<typeof shopifyFor>> }
-
-// Loaded before a transaction that locks the Shopify connection: renewing the token locks that row for update, so
-// loading it inside the transaction would wait on the transaction's own lock forever.
-async function shopifyWriter(orgId: string): Promise<ShopifyWriter | null> {
-  const [account] = await db()
-    .select({ domain: connections.externalId })
-    .from(connections)
-    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
-  return account ? { domain: account.domain, client: await shopifyFor(orgId, account.domain) } : null
-}
-
-// Shopify's product Supplier field is where suppliers are kept, so choosing one in Copacker writes it there, using
-// the supplier's name as Shopify knows it.
-async function writeShopifySupplier(
-  shopify: ShopifyWriter | null,
-  domain: string,
-  productIds: string[],
-  supplier: { name: string; shopifySupplierName: string | null }
-) {
-  if (!supplier.shopifySupplierName?.trim()) {
-    throw new ProductDefaultsError(
-      `Add ${supplier.name}'s name as it appears in Shopify's Supplier field, on the Suppliers page, first`,
-      409
-    )
-  }
-  if (shopify?.domain !== domain) {
-    throw new ProductDefaultsError("Shopify was reconnected while saving. Try again", 409)
-  }
-  for (const productId of productIds) {
-    await shopify.client.productSupplier(productId, supplier.shopifySupplierName.trim())
-  }
-}
-
 // Sets the supplier for several products at once, such as from restock's "No supplier yet" group. Other product
 // details are kept.
 export async function assignProductSupplier(s: Session, raw: unknown) {
@@ -207,8 +184,8 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
     throw new ProductDefaultsError("A buyer workspace is required", 403)
   }
   const input = assignSupplierInputSchema.parse(raw)
-  const shopify = input.supplierId ? await shopifyWriter(s.org.id) : null
-  return db().transaction(async (tx) => {
+  let domain = ""
+  const result = await db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })
       .from(connections)
@@ -217,10 +194,10 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
     if (!account) {
       throw new ProductDefaultsError("Connect Shopify before editing products", 409)
     }
+    domain = account.domain
     const productIds = [...new Set(input.productIds)]
     if (input.supplierId) {
-      const supplier = await requireCurrentSupplier(tx, s.org.id, input.supplierId)
-      await writeShopifySupplier(shopify, account.domain, productIds, supplier)
+      await requireCurrentSupplier(tx, s.org.id, input.supplierId)
     }
     await tx
       .insert(productDefaults)
@@ -242,6 +219,8 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
       })
     return { updated: productIds.length }
   })
+  await refreshStoredStockFields(s.org.id, domain)
+  return result
 }
 
 export const assignProductLabelInputSchema = z.strictObject({

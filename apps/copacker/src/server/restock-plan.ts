@@ -38,7 +38,7 @@ export type RestockLine = {
   // Pieces in one sellable unit when the variation is a multipack bundle.
   packOf: number | null
   supplier: { id: string; name: string } | null
-  // Shopify's Supplier when it isn't a Copacker supplier: the product is ordered outside Copacker, so it gets no PO.
+  // A supplier name that isn't one of the buyer's suppliers: the product is ordered outside Copacker, so it gets no PO.
   externalSupplier: string | null
   status: RestockStatus
   blocked: BlockReason[]

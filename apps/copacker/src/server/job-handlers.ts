@@ -7,6 +7,7 @@ import { db } from "../db/index"
 import { shipments, orders, orderRevisions } from "../db/schema"
 import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
+import { saveSupplierSkus } from "./product-fields"
 import { appUrl } from "./security"
 
 // A job that isn't finished and should run again: after `delayMs` (30 seconds unless given), with `payload` replacing
@@ -254,11 +255,19 @@ export async function shopifyJob(payload: Record<string, unknown>, assertOwned: 
       throw new Error("Shopify unit cost currency differs from the PO. No currency conversion is applied")
     }
   }
-  for (const change of input.changes) {
-    const item = record.data.items.find((i) => i.id === change.itemId)!
-    await assertOwned()
-    await api.supplierSku(item.variantId, change.supplierSku)
-    if (input.updateCost) {
+  // Supplier SKUs are kept in Copacker; unit costs in Shopify.
+  await assertOwned()
+  await saveSupplierSkus(
+    input.orgId,
+    currentOrder.shopifyDomain,
+    input.changes.map((change) => ({
+      variantId: record.data.items.find((i) => i.id === change.itemId)!.variantId,
+      supplierSku: change.supplierSku
+    }))
+  )
+  if (input.updateCost) {
+    for (const change of input.changes) {
+      const item = record.data.items.find((i) => i.id === change.itemId)!
       await assertOwned()
       await api.unitCost(item.inventoryItemId, change.unitPrice * item.piecesPerSet)
     }

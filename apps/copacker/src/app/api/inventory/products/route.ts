@@ -4,6 +4,7 @@ import { inventoryContext } from "@/server/inventory-context"
 import { type AmazonOnlyStock, groupInventory, isCollective, pageSizes } from "@/server/inventory-products"
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
+import { readVariantFields } from "@/server/product-fields"
 
 const querySchema = z.strictObject({
   q: z.string().trim().max(100).optional(),
@@ -70,9 +71,13 @@ export async function GET(request: Request) {
     classifications: inventoryClassifications,
     onOrder
   })
-  const [defaults, barcodes] = domain
-    ? await Promise.all([readProductDefaults(s.org.id, domain), readProductBarcodes(s.org.id, domain)])
-    : [new Map(), new Map<string, ProductBarcode>()]
+  const [defaults, barcodes, fields] = domain
+    ? await Promise.all([
+        readProductDefaults(s.org.id, domain),
+        readProductBarcodes(s.org.id, domain),
+        readVariantFields(s.org.id, domain)
+      ])
+    : [new Map(), new Map<string, ProductBarcode>(), new Map()]
   // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one.
   // Others get the standard FNSKU label.
   const unlabelled = (product: (typeof grouped)[number]) =>
@@ -141,8 +146,10 @@ export async function GET(request: Request) {
           barcode: barcodes.get(variant.variantId) ?? null,
           // For the standard label; null until Amazon's FBA sync reports exactly one for the SKU.
           fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null,
-          // Shopify's custom.supplier_sku, edited from the product's Edit panel.
+          // Kept in Copacker and edited from the product's Edit panel.
           supplierSku: supplierSkus.get(variant.variantId) ?? null,
+          asin: fields.get(variant.variantId)?.asin ?? null,
+          storeStockTarget: fields.get(variant.variantId)?.storeStockTarget ?? null,
           // ISO codes from Shopify (a bundle's come from its components), null when none is recorded, or left out
           // before a sync collects it.
           countryOfOrigin: countries.get(variant.variantId)

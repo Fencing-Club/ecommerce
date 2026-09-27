@@ -11,7 +11,7 @@ const inputSchema = z.strictObject({
   currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"])
 })
 
-// A Shopify supplier SKU identifies a product, not a supplier. Restock may suggest a
+// A supplier SKU identifies a product, not a supplier. Restock may suggest a
 // linked supplier only when exactly one active catalog contains that exact SKU.
 export function resolveRestockSupplier(raw: unknown, rawLinks: Iterable<unknown>, rawProducts: Iterable<unknown>) {
   const input = inputSchema.parse(raw)

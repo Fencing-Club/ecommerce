@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { prepCategories } from "@repo/aisle"
 import { Pencil, Plus, Trash2 } from "lucide-react"
-import { Fragment, useState } from "react"
+import { useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError } from "./actions"
 import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
-import { type SupplierSkuVariation, SupplierSkus } from "./supplier-skus"
+import { type DetailsVariation, VariationDetails } from "./variation-details"
 import * as styles from "./inventory-products.css"
 
 const detailsApi = api.injectEndpoints({
@@ -46,47 +46,14 @@ const schema = z.object({
   // Empty means no default; new PO lines then start with a sealed polybag.
   prepCategory: z.enum(prepCategories).or(z.literal("")),
   minimumOrder: z.number().int().min(1).max(1000000).optional(),
+  caseQuantity: z.number().int().min(1).max(100000).optional(),
   // Empty means not chosen; restock then uses the last PO or the supplier's catalog.
   supplierId: z.string(),
   productLabel: z.enum(productLabels),
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
-type Variation = BarcodeVariation & SupplierSkuVariation & { amazonStockTarget: number | null }
-
-// What Shopify holds for this product, shown for reference because it's edited in Shopify.
-function FromShopify({ caseQuantity, variants }: { caseQuantity: number | null; variants: Variation[] }) {
-  const target = (value: number | null) => {
-    if (value === null) {
-      return "Not set"
-    }
-    return value === 0 ? "0, not stocked at Amazon" : `${value} units`
-  }
-  return (
-    <section className={styles.fromShopify} aria-labelledby="from-shopify">
-      <h3 id="from-shopify" className={styles.title}>
-        From Shopify
-      </h3>
-      <dl className={styles.facts}>
-        <dt>Case quantity</dt>
-        <dd>{caseQuantity === null ? "Not set" : `${caseQuantity} units per case`}</dd>
-        {variants.length === 1 ? (
-          <>
-            <dt>Minimum stock at Amazon</dt>
-            <dd>{target(variants[0]?.amazonStockTarget ?? null)}</dd>
-          </>
-        ) : (
-          variants.map((variant) => (
-            <Fragment key={variant.variantId}>
-              <dt>Minimum stock at Amazon, {variant.title}</dt>
-              <dd>{target(variant.amazonStockTarget)}</dd>
-            </Fragment>
-          ))
-        )}
-      </dl>
-    </section>
-  )
-}
+type Variation = BarcodeVariation & DetailsVariation
 
 function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
   const packs = useFieldArray<z.input<typeof schema>, "casePacks">({ name: "casePacks" })
@@ -144,20 +111,18 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
   )
 }
 
-// Edits the product details Copacker keeps itself, and its variations' supplier SKUs (saved to Shopify) and barcodes.
-// Titles, SKUs, photos, costs and Amazon identifiers come from Shopify and Amazon, so they are edited there.
+// Edits the product details Copacker keeps, and its variations' supplier SKUs, ASINs, minimum stock and barcodes.
+// Titles, SKUs, photos and costs come from Shopify, so they are edited there.
 export function ProductDetails({
   productId,
   title,
   defaults,
-  shopifyCaseQuantity,
   variants,
   onSaved
 }: {
   productId: string
   title: string
   defaults: ProductDefaults
-  shopifyCaseQuantity: number | null
   variants: Variation[]
   onSaved: () => void
 }) {
@@ -170,6 +135,7 @@ export function ProductDetails({
       description: defaults.description,
       prepCategory: defaults.prepCategory ?? "",
       minimumOrder: defaults.minimumOrder ?? undefined,
+      caseQuantity: defaults.caseQuantity ?? undefined,
       supplierId: defaults.supplierId ?? "",
       productLabel: defaults.productLabel,
       casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined }))
@@ -183,6 +149,7 @@ export function ProductDetails({
         description: values.description,
         prepCategory: values.prepCategory || null,
         minimumOrder: values.minimumOrder ?? null,
+        caseQuantity: values.caseQuantity ?? null,
         supplierId: values.supplierId || null,
         productLabel: values.productLabel,
         casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
@@ -226,7 +193,7 @@ export function ProductDetails({
               <FormSelect
                 name="supplierId"
                 label="Supplier"
-                description="Saved to the product’s Supplier field in Shopify. Restock groups this product under this supplier and uses their lead time."
+                description="Restock groups this product under this supplier and uses their lead time."
                 placeholder="Not set"
                 options={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))}
               />
@@ -237,7 +204,14 @@ export function ProductDetails({
                 min={1}
                 step={1}
               />
-              <CasePacks suggestedUnits={shopifyCaseQuantity} />
+              <FormNumber
+                name="caseQuantity"
+                label="Case quantity"
+                description="Units per case. Restock rounds up to it when there’s no case pack."
+                min={1}
+                step={1}
+              />
+              <CasePacks suggestedUnits={defaults.caseQuantity} />
               <FormSelect
                 name="productLabel"
                 required
@@ -249,14 +223,13 @@ export function ProductDetails({
                   { value: "none", label: "No label" }
                 ]}
               />
-              <SupplierSkus productTitle={title} variations={variants} onChanged={onSaved} />
+              <VariationDetails productTitle={title} variations={variants} onChanged={onSaved} />
               <ProductBarcodes
                 productTitle={title}
                 productLabel={productLabel}
                 variations={variants}
                 onChanged={onSaved}
               />
-              <FromShopify caseQuantity={shopifyCaseQuantity} variants={variants} />
               <FormError message={form.formState.errors.root?.server?.message} />
             </div>
             <SheetFooter>

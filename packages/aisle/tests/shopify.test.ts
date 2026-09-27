@@ -131,15 +131,13 @@ describe("Shopify complete stock collection", () => {
     expect(request.query).toContain("title price")
   })
 
-  it("records the existing Amazon stock target and rejects malformed values", async () => {
+  it("records cost and country, and leaves the details Copacker keeps to Copacker", async () => {
     const { api, transport } = sequence([
       {
         productVariants: {
           nodes: [
             {
               ...node(1),
-              amazonTarget: { value: "1" },
-              product: { ...productDetails.product, caseQuantity: { value: "160" } },
               inventoryItem: {
                 ...node(1).inventoryItem,
                 unitCost: { amount: "21.43", currencyCode: "USD" },
@@ -151,44 +149,84 @@ describe("Shopify complete stock collection", () => {
         }
       }
     ])
-    expect((await api.stock()).rows[0]).toMatchObject({
-      amazonStockTarget: 1,
-      caseQuantity: 160,
-      unitCostMinor: 2143,
-      costCurrency: "USD",
-      countryOfOrigin: "CN"
-    })
+    const [row] = (await api.stock()).rows
+    expect(row).toMatchObject({ unitCostMinor: 2143, costCurrency: "USD", countryOfOrigin: "CN" })
+    expect(row).not.toHaveProperty("supplierSku")
+    expect(row).not.toHaveProperty("amazonStockTarget")
     const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
-    expect(request.query).toContain('amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target")')
-    const invalid = sequence([
-      {
-        productVariants: { nodes: [{ ...node(1), amazonTarget: { value: "invalid" } }], pageInfo }
-      }
-    ])
-    await expect(invalid.api.stock()).rejects.toThrow("Amazon stock target")
+    expect(request.query).not.toContain("metafield")
   })
 
-  it("records the product's supplier and the store's stock target, treating 'None' as no supplier", async () => {
-    const withSupplier = (value: string | null, target: string | null) => ({
-      ...node(1),
-      storeTarget: target === null ? null : { value: target },
-      product: { ...productDetails.product, supplier: value === null ? null : { value } }
-    })
-    for (const [supplier, target, expected] of [
-      [
-        " Wuxi Guanda Sport Goods Co. Ltd. ",
-        "12",
-        { supplierName: "Wuxi Guanda Sport Goods Co. Ltd.", storeStockTarget: 12 }
-      ],
-      ["None", "abc", { supplierName: null, storeStockTarget: null }],
-      [null, null, { supplierName: null, storeStockTarget: null }]
-    ] as const) {
-      const { api, transport } = sequence([{ productVariants: { nodes: [withSupplier(supplier, target)], pageInfo } }])
-      expect((await api.stock()).rows[0]).toMatchObject(expected)
-      const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
-      expect(request.query).toContain('supplier:metafield(namespace:"custom",key:"supplier")')
-      expect(request.query).toContain('storeTarget:metafield(namespace:"custom",key:"fencing_club_stock_target")')
+  it("reads the metafields Copacker copies once, treating unusable values as unset", async () => {
+    const variant = (id: number, values: Record<string, string | null>) => {
+      const metafield = (key: string) =>
+        values[key] === null || values[key] === undefined ? null : { value: values[key] }
+      return {
+        id: `gid://shopify/ProductVariant/${id}`,
+        supplierSku: metafield("supplierSku"),
+        asin: metafield("asin"),
+        amazonTarget: metafield("amazonTarget"),
+        storeTarget: metafield("storeTarget"),
+        product: {
+          id: `gid://shopify/Product/${id}`,
+          caseQuantity: metafield("caseQuantity"),
+          supplier: metafield("supplier")
+        }
+      }
     }
+    const { api, transport } = sequence([
+      {
+        productVariants: {
+          nodes: [
+            variant(1, {
+              supplierSku: " UF-1504 ",
+              asin: "B000000001",
+              amazonTarget: "0",
+              storeTarget: "12",
+              caseQuantity: "160",
+              supplier: " Wuxi Guanda Sport Goods Co. Ltd. "
+            }),
+            variant(2, { amazonTarget: "abc", caseQuantity: "0", supplier: "None" })
+          ],
+          pageInfo: { hasNextPage: true, endCursor: "next" }
+        }
+      },
+      { productVariants: { nodes: [variant(3, {})], pageInfo } }
+    ])
+    expect(await api.metafieldValues()).toEqual([
+      {
+        variantId: "gid://shopify/ProductVariant/1",
+        productId: "gid://shopify/Product/1",
+        supplierSku: "UF-1504",
+        asin: "B000000001",
+        amazonStockTarget: 0,
+        storeStockTarget: 12,
+        caseQuantity: 160,
+        supplierName: "Wuxi Guanda Sport Goods Co. Ltd."
+      },
+      {
+        variantId: "gid://shopify/ProductVariant/2",
+        productId: "gid://shopify/Product/2",
+        supplierSku: null,
+        asin: null,
+        amazonStockTarget: null,
+        storeStockTarget: null,
+        caseQuantity: null,
+        supplierName: null
+      },
+      {
+        variantId: "gid://shopify/ProductVariant/3",
+        productId: "gid://shopify/Product/3",
+        supplierSku: null,
+        asin: null,
+        amazonStockTarget: null,
+        storeStockTarget: null,
+        caseQuantity: null,
+        supplierName: null
+      }
+    ])
+    const second = JSON.parse(String(transport.mock.calls[1]?.[1]?.body)) as { variables: { after: string } }
+    expect(second.variables.after).toBe("next")
   })
 
   it("collects both connections and retains variants without inventory levels", async () => {
@@ -548,7 +586,7 @@ describe("piecesPerUnit", () => {
 })
 
 describe("bundle supplier components", () => {
-  it("requests and parses component supplier SKUs when searching the catalog", async () => {
+  it("reads bundle components without supplier SKUs, which Copacker adds", async () => {
     const transport = vi.fn<typeof fetch>(async () =>
       Response.json({
         data: {
@@ -560,8 +598,6 @@ describe("bundle supplier components", () => {
                 sku: "BUNDLE",
                 product: { id: "gid://shopify/Product/10", title: "Cord bundle" },
                 inventoryItem: { id: "gid://shopify/InventoryItem/10", unitCost: null },
-                supplierSku: null,
-                asin: null,
                 requiresComponents: true,
                 productVariantComponents: {
                   nodes: [
@@ -569,8 +605,7 @@ describe("bundle supplier components", () => {
                       quantity: 2,
                       productVariant: {
                         id: "gid://shopify/ProductVariant/1",
-                        sku: "CORD",
-                        supplierSku: { value: "SUP-CORD" }
+                        sku: "CORD"
                       }
                     }
                   ],
@@ -583,11 +618,10 @@ describe("bundle supplier components", () => {
       })
     )
     const [bundle] = await new Shopify(domain, "test", transport).search("BUNDLE")
-    expect(bundleSupplierComponents(bundle!)).toEqual([
-      { variantId: "gid://shopify/ProductVariant/1", quantity: 2, buyerSku: "CORD", supplierSku: "SUP-CORD" }
-    ])
+    // Until Copacker adds the components' supplier SKUs, a bundle can't be ordered.
+    expect(() => bundleSupplierComponents(bundle!)).toThrow("supplier SKUs")
     const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
-    expect(request.query).toContain('supplierSku:metafield(namespace:"custom",key:"supplier_sku")')
+    expect(request.query).not.toContain("metafield")
   })
 
   it("keeps each physical component's buyer and supplier SKU", () => {

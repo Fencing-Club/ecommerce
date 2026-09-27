@@ -12,6 +12,7 @@ import { shopifyFor } from "@/server/connections"
 import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
+import { withVariantFields } from "@/server/product-fields"
 
 export const metadata: Metadata = { title: "New purchase order" }
 
@@ -32,8 +33,9 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
   if (!units.size) {
     return []
   }
+  const shopify = await shopifyFor(orgId)
   const [variants, defaultsFor] = await Promise.all([
-    (await shopifyFor(orgId)).variants([...units.keys()]),
+    shopify.variants([...units.keys()]).then((found) => withVariantFields(orgId, shopify.domain, found)),
     lineDefaultsFor(orgId)
   ])
   return variants.flatMap((variant) => {

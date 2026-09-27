@@ -59,7 +59,7 @@ const bundleComponents = z.object({
   pageInfo: z.object({ hasNextPage: z.boolean() })
 })
 const bundleComponentFields = "nodes{quantity productVariant{id}} pageInfo{hasNextPage}"
-const catalogBundleComponentFields = `nodes{quantity productVariant{id sku supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value}}} pageInfo{hasNextPage}`
+const catalogBundleComponentFields = "nodes{quantity productVariant{id sku}} pageInfo{hasNextPage}"
 function bundleComponentList(components: z.infer<typeof bundleComponents>): BundleComponent[] | null {
   return components.pageInfo.hasNextPage
     ? null
@@ -124,12 +124,6 @@ function supplierName(field: { value: string } | null) {
   return value && value.toLowerCase() !== "none" ? value : null
 }
 
-function positiveIntegerField(value: string, name: string) {
-  if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) {
-    throw new Error(`Shopify ${name} must be a positive integer`)
-  }
-  return Number(value)
-}
 function costMinor(amount: string, name = "unit cost") {
   // Shopify returns prices such as "12.5" or "12.50".
   const match = amount.match(/^(\d+)(?:\.(\d{1,2})0*)?$/)
@@ -153,12 +147,14 @@ const variant = z.object({
     // ISO 3166 code of the country the item is made in, as recorded in Shopify; printed on product labels.
     countryCodeOfOrigin: z.string().nullable().optional()
   }),
-  supplierSku: field,
-  asin: field,
   requiresComponents: z.boolean(),
   productVariantComponents: bundleComponents
 })
-export type CatalogVariant = z.infer<typeof variant>
+// A variant as Shopify returns it.
+export type ShopifyVariant = z.infer<typeof variant>
+// With the details Copacker keeps for it (they were Shopify metafields): its supplier SKU and ASIN, and each bundle
+// component's supplier SKU.
+export type CatalogVariant = ShopifyVariant & { supplierSku: { value: string } | null; asin: { value: string } | null }
 // What one unit costs in Shopify, in minor units, when it's recorded in the given currency; otherwise null.
 export function variantUnitCostMinor(catalog: Pick<CatalogVariant, "inventoryItem">, currency: string) {
   const cost = catalog.inventoryItem.unitCost
@@ -191,7 +187,7 @@ export class ShopifyRequestError extends Error {
 }
 export class Shopify {
   constructor(
-    private domain: string,
+    readonly domain: string,
     private token: string,
     private transport: typeof fetch = fetch,
     private delay: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -305,14 +301,9 @@ export class Shopify {
                 product: z.object({
                   id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
                   title: z.string(),
-                  caseQuantity: field.optional(),
-                  supplier: field.optional(),
                   featuredMedia: stockMedia.nullable()
                 }),
                 media: z.object({ nodes: z.array(stockMedia).max(1) }),
-                amazonTarget: field.optional(),
-                storeTarget: field.optional(),
-                supplierSku: field.optional(),
                 requiresComponents: z.boolean(),
                 inventoryQuantity: z.number().int().safe().nullable(),
                 productVariantComponents: bundleComponents,
@@ -331,7 +322,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} storeTarget:metafield(namespace:"custom",key:"fencing_club_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} supplier:metafield(namespace:"custom",key:"supplier"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} countryCodeOfOrigin inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price product{id title featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} countryCodeOfOrigin inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -375,15 +366,14 @@ export class Shopify {
       productTitle?: string
       variantTitle?: string
       imageUrl?: string | null
-      // Existing Shopify merchant metafield: 0 means this item is intentionally not stocked at Amazon.
+      // Details the buyer keeps in Copacker, filled in by Copacker when it saves the stock (Shopify doesn't return them).
+      // The least to keep at Amazon (0 means intentionally not stocked there) and at the store's own locations.
       amazonStockTarget?: number | null
-      // Shopify's custom.fencing_club_stock_target: the least to keep at the store's own location.
       storeStockTarget?: number | null
-      // Shopify's product custom.supplier: the company the product is bought from, by its legal name. Null when unset
-      // (including the "None" some products hold).
+      // The supplier the product is bought from, by its name as Shopify's Supplier field held it.
       supplierName?: string | null
       caseQuantity?: number | null
-      // Shopify's custom.supplier_sku: the product's SKU in its supplier's catalog.
+      // The product's SKU in its supplier's catalog.
       supplierSku?: string | null
       unitCostMinor?: number | null
       costCurrency?: string | null
@@ -456,21 +446,6 @@ export class Shopify {
           // Prefer the variant's own photo, then the product's.
           imageUrl:
             variant.media.nodes[0]?.preview?.image?.url ?? variant.product.featuredMedia?.preview?.image?.url ?? null,
-          ...(variant.amazonTarget !== undefined && {
-            amazonStockTarget:
-              variant.amazonTarget === null || !/^\d+$/.test(variant.amazonTarget.value)
-                ? null
-                : Number(variant.amazonTarget.value)
-          }),
-          ...(variant.storeTarget !== undefined && { storeStockTarget: stockTarget(variant.storeTarget) }),
-          ...(variant.product.supplier !== undefined && { supplierName: supplierName(variant.product.supplier) }),
-          ...(variant.supplierSku !== undefined && { supplierSku: variant.supplierSku?.value.trim() || null }),
-          ...(variant.product.caseQuantity !== undefined && {
-            caseQuantity:
-              variant.product.caseQuantity === null
-                ? null
-                : positiveIntegerField(variant.product.caseQuantity.value, "case quantity")
-          }),
           ...(item.unitCost !== undefined && {
             unitCostMinor: item.unitCost === null ? null : costMinor(item.unitCost.amount),
             costCurrency: item.unitCost?.currencyCode ?? null
@@ -489,16 +464,6 @@ export class Shopify {
           tracked: item.tracked,
           unit: "shopify_inventory_unit",
           levels: []
-        }
-        if (variant.amazonTarget?.value !== undefined && !/^\d+$/.test(variant.amazonTarget.value)) {
-          throw new Error("Shopify Amazon stock target must be a nonnegative integer")
-        }
-        if (
-          row.amazonStockTarget !== undefined &&
-          row.amazonStockTarget !== null &&
-          (!Number.isSafeInteger(row.amazonStockTarget) || row.amazonStockTarget < 0)
-        ) {
-          throw new Error("Shopify Amazon stock target must be a nonnegative integer")
         }
         const locations = new Set<string>(),
           levelIds = new Set<string>(),
@@ -565,58 +530,55 @@ export class Shopify {
         await this.graphql(`query Variants($ids:[ID!]!){nodes(ids:$ids){... on ProductVariant{${fields}}}}`, { ids })
       ).nodes
   }
-  // Sets a product's Supplier (custom.supplier) to a supplier's legal name.
-  async productSupplier(productId: string, value: string) {
-    z.string()
-      .regex(/^gid:\/\/shopify\/Product\/\d+$/)
-      .parse(productId)
-    z.string().trim().min(1).max(255).parse(value)
-    const response = z
-      .object({ metafieldsSet: z.object({ userErrors: z.array(z.object({ message: z.string() })) }) })
-      .parse(
+  // The details Copacker now keeps, as Shopify's metafields hold them, for copying them into Copacker once: each
+  // variant's supplier SKU, ASIN and stock targets, and its product's case quantity and supplier. Values that aren't
+  // usable (a stock target that isn't a whole number, a supplier of "None") come back as null.
+  async metafieldValues(assertActive?: () => Promise<void>) {
+    const node = z.object({
+      id: z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/),
+      supplierSku: field,
+      asin: field,
+      amazonTarget: field,
+      storeTarget: field,
+      product: z.object({
+        id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
+        caseQuantity: field,
+        supplier: field
+      })
+    })
+    const pageSchema = z.object({
+      productVariants: z.object({ nodes: z.array(node).max(100), pageInfo: stockPageInfo })
+    })
+    const text = (value: { value: string } | null) => value?.value.trim() || null
+    const values = []
+    let after: string | null = null
+    for (let page = 0; page < 500; page++) {
+      await assertActive?.()
+      const data: z.infer<typeof pageSchema>["productVariants"] = pageSchema.parse(
         await this.graphql(
-          `mutation ProductSupplier($fields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$fields){userErrors{message}}}`,
-          {
-            fields: [
-              { ownerId: productId, namespace: "custom", key: "supplier", type: "single_line_text_field", value }
-            ]
-          }
+          `query MetafieldValues($after:String){productVariants(first:100,after:$after){nodes{id supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} storeTarget:metafield(namespace:"custom",key:"fencing_club_stock_target"){value} product{id caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} supplier:metafield(namespace:"custom",key:"supplier"){value}}} pageInfo{hasNextPage endCursor}}}`,
+          { after }
         )
-      )
-    if (response.metafieldsSet.userErrors.length) {
-      throw new Error("Shopify rejected the product's supplier")
-    }
-  }
-  async supplierSku(variantId: string, value: string) {
-    if (!value) {
-      const result = z
-        .object({ metafieldsDelete: z.object({ userErrors: z.array(z.object({ message: z.string() })) }) })
-        .parse(
-          await this.graphql(
-            `mutation ClearSupplierSku($fields:[MetafieldIdentifierInput!]!){metafieldsDelete(metafields:$fields){userErrors{message}}}`,
-            { fields: [{ ownerId: variantId, namespace: "custom", key: "supplier_sku" }] }
-          )
-        )
-      if (result.metafieldsDelete.userErrors.length) {
-        throw new Error("Shopify rejected supplier SKU removal")
+      ).productVariants
+      for (const variant of data.nodes) {
+        const caseQuantity = text(variant.product.caseQuantity)
+        values.push({
+          variantId: variant.id,
+          productId: variant.product.id,
+          supplierSku: text(variant.supplierSku),
+          asin: text(variant.asin),
+          amazonStockTarget: stockTarget(variant.amazonTarget),
+          storeStockTarget: stockTarget(variant.storeTarget),
+          caseQuantity: caseQuantity && /^[1-9]\d{0,5}$/.test(caseQuantity) ? Number(caseQuantity) : null,
+          supplierName: supplierName(variant.product.supplier)
+        })
       }
-      return
+      if (!data.pageInfo.hasNextPage || !data.pageInfo.endCursor) {
+        return values
+      }
+      after = data.pageInfo.endCursor
     }
-    const response = z
-      .object({ metafieldsSet: z.object({ userErrors: z.array(z.object({ message: z.string() })) }) })
-      .parse(
-        await this.graphql(
-          `mutation SupplierSku($fields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$fields){userErrors{message}}}`,
-          {
-            fields: [
-              { ownerId: variantId, namespace: "custom", key: "supplier_sku", type: "single_line_text_field", value }
-            ]
-          }
-        )
-      )
-    if (response.metafieldsSet.userErrors.length) {
-      throw new Error("Shopify rejected supplier SKU update")
-    }
+    throw new Error("Shopify metafields exceed the variant page limit")
   }
   async unitCost(inventoryItemId: string, cost: number) {
     const response = z
@@ -661,4 +623,4 @@ export class Shopify {
     return missing
   }
 }
-const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode} countryCodeOfOrigin} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`
+const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode} countryCodeOfOrigin} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`

@@ -1,8 +1,8 @@
 import { session } from "@/server/auth"
+import { saveVariantFields, VariantFieldsError } from "@/server/product-fields"
 import { appUrl } from "@/server/security"
-import { SupplierSkuError, saveSupplierSku } from "@/server/supplier-skus"
 
-// Saves a variation's supplier SKU to Shopify.
+// Saves a variation's supplier SKU, ASIN or stock targets, which Copacker keeps.
 export async function PATCH(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (request.headers.get("origin") !== appUrl()) {
@@ -10,14 +10,14 @@ export async function PATCH(request: Request) {
   }
   const s = await session()
   try {
-    return Response.json(await saveSupplierSku(s, await request.json()), { headers })
+    return Response.json(await saveVariantFields(s, await request.json()), { headers })
   } catch (error) {
-    if (error instanceof SupplierSkuError) {
+    if (error instanceof VariantFieldsError) {
       return Response.json({ error: error.message }, { status: error.status, headers })
     }
     if (error instanceof SyntaxError) {
-      return Response.json({ error: "Check the supplier SKU and try again" }, { status: 400, headers })
+      return Response.json({ error: "Check the values and try again" }, { status: 400, headers })
     }
-    return Response.json({ error: "The supplier SKU couldn't be saved. Try again." }, { status: 500, headers })
+    return Response.json({ error: "The product details couldn't be saved. Try again." }, { status: 500, headers })
   }
 }

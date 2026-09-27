@@ -55,10 +55,10 @@ function channelsIn(context: InventoryContext) {
   return channels
 }
 
-// The buyer's suppliers with their lead times, and each variation's supplier. Shopify's Supplier comes first: a
-// Copacker supplier whose name or Shopify name matches it, or else a supplier ordered outside Copacker. Without one in
-// Shopify: the supplier chosen in Copacker, the one it was last ordered from, or the one linked supplier whose active
-// catalog holds its Shopify supplier SKU.
+// The buyer's suppliers with their lead times, and each variation's supplier. The product's supplier comes first (the
+// stored stock names it, matched to a supplier by name or Shopify name, else ordered outside Copacker); then the
+// supplier chosen in Copacker, the one it was last ordered from, or the one linked supplier whose active catalog holds
+// its supplier SKU.
 export async function supplierLookup(
   orgId: string,
   catalog: { variantId: string; productId?: string; supplierSku?: string | null; supplierName?: string | null }[],

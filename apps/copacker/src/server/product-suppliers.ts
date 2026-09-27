@@ -11,7 +11,7 @@ export type ProductWithoutSupplier = {
 }
 
 // Products restock can't order because no supplier is known: none chosen on the product, never on a PO, and no
-// supplier catalog holds their Shopify supplier SKU. Untracked items, such as gift cards, aren't ordered, and Shopify
+// supplier catalog holds their supplier SKU. Untracked items, such as gift cards, aren't ordered, and Shopify
 // Collective items are stocked and shipped by partners, so both are left out, as on the Products page. Bundles are
 // left out too: their components are what's ordered, and are listed themselves when they have no supplier.
 export async function productsWithoutSupplier(orgId: string): Promise<ProductWithoutSupplier[]> {

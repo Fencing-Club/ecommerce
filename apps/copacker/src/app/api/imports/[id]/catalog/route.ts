@@ -5,6 +5,7 @@ import { poImports } from "@/db/schema"
 import { session, requireBuyer } from "@/server/auth"
 import { catalogMatches } from "@/server/catalog-matches"
 import { shopifyFor } from "@/server/connections"
+import { withVariantFields } from "@/server/product-fields"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -32,7 +33,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
     return Response.json(
       {
-        results: catalogMatches(page.nodes, input.data.query),
+        results: catalogMatches(
+          (await withVariantFields(s.org.id, shop.domain, page.nodes)).flatMap((variant) => (variant ? [variant] : [])),
+          input.data.query
+        ),
         nextCursor: page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null,
         complete: !page.pageInfo.hasNextPage
       },

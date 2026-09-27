@@ -613,7 +613,7 @@ export function attentionItems(input: {
       key: "shopify-history",
       tone: "info",
       title: "Shopify shares only the last 60 days of orders",
-      detail: "Reconnect Shopify with access to all orders to see a full year.",
+      detail: "Reconnect Shopify with access to all orders to see two years.",
       href: "/settings",
       action: "Open settings"
     })

@@ -67,6 +67,8 @@ export const suppliers = pgTable(
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
     amazonLeadTimeDays: integer(),
+    // The payment terms new POs to this supplier start with.
+    paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
     shopifySupplierName: text(),
@@ -417,6 +419,9 @@ export const productDefaults = pgTable(
     prepCategory: text({ enum: prepCategories }),
     // Carton setups the supplier packs this product in; the first is the default.
     casePacks: jsonb().$type<CasePack[]>().notNull().default([]),
+    // Units in the supplier's case, for restock's rounding when no case pack is set. Copied from Shopify's product
+    // custom.case_quantity once, then kept here.
+    caseQuantity: integer(),
     // The smallest quantity worth ordering, in sellable units. Restock never suggests less.
     minimumOrder: integer(),
     // The supplier this product is ordered from, chosen by the buyer. Restock groups it under this supplier.
@@ -434,6 +439,38 @@ export const productDefaults = pgTable(
 )
 // A product variation's barcode label, a one-page PDF the buyer uploads once. New POs copy it as the line's product
 // label, so the supplier prints it without the buyer uploading it again.
+// Details Copacker keeps for each Shopify variation. They were Shopify metafields (custom.supplier_sku, custom.asin,
+// custom.amazon_fulfillment_stock_target, custom.fencing_club_stock_target), copied here once per store.
+export const variantFields = pgTable(
+  "variant_fields",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    shopifyDomain: text().notNull(),
+    variantId: text().notNull(),
+    // The product's SKU in its supplier's catalog; supplier catalogs and PO lines match on it.
+    supplierSku: text(),
+    asin: text(),
+    // The least to keep at Amazon (0: not stocked there) and at the store's own locations, in sellable units.
+    amazonStockTarget: integer(),
+    storeStockTarget: integer(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.variantId] })]
+)
+// When each store's Shopify metafields were copied into Copacker. Until then, stock syncs copy them first.
+export const shopifyFieldImports = pgTable(
+  "shopify_field_imports",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    shopifyDomain: text().notNull(),
+    importedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain] })]
+)
 export const productBarcodes = pgTable(
   "product_barcodes",
   {

@@ -24,7 +24,6 @@ describe("restock review ordering", () => {
       imageUrl: null,
       stock: "tracked",
       onOrder: { units: 0, orders: [] },
-      shopifyCaseQuantity: null,
       available: 0,
       onHand: 0,
       incoming: 0,

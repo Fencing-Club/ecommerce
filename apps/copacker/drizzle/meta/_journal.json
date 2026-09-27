@@ -169,6 +169,20 @@
       "when": 1790492756036,
       "tag": "0023_excluded_shopify_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790497492086,
+      "tag": "0024_supplier_payment_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790497607705,
+      "tag": "0025_variant_fields",
+      "breakpoints": true
     }
   ]
 }

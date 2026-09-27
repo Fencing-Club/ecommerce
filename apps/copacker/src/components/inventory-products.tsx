@@ -49,6 +49,8 @@ type ListedVariant = InventoryVariant & {
   barcode: ProductBarcode | null
   fnsku: string | null
   supplierSku: string | null
+  asin: string | null
+  storeStockTarget: number | null
   // ISO code from Shopify; null when none is recorded, left out before a sync collects it.
   countryOfOrigin?: string | null
 }
@@ -321,12 +323,13 @@ function Actions({ product, className }: { product: ListedProduct; className: st
         title={product.title}
         defaults={product.defaults}
         onSaved={refresh}
-        shopifyCaseQuantity={product.shopifyCaseQuantity}
         variants={product.variants.map((variant) => ({
           variantId: variant.variantId,
           title: variant.title,
           amazonStockTarget: variant.amazonStockTarget,
+          storeStockTarget: variant.storeStockTarget,
           supplierSku: variant.supplierSku,
+          asin: variant.asin,
           barcode: variant.barcode,
           fnsku: variant.fnsku
         }))}

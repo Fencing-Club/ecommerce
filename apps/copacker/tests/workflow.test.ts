@@ -24,7 +24,7 @@ const provider = vi.hoisted(() => ({
     labels: vi.fn<(...args: never[]) => Promise<unknown>>(),
     listings: vi.fn<(...args: never[]) => Promise<unknown>>(),
     stock: vi.fn<(...args: never[]) => Promise<unknown>>(),
-    productSupplier: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    metafieldValues: vi.fn<(...args: never[]) => Promise<unknown>>(),
     fbaStock: vi.fn<(...args: never[]) => Promise<unknown>>(),
     awdStock: vi.fn<(...args: never[]) => Promise<unknown>>(),
     salesMarketplaces: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -36,6 +36,12 @@ vi.mock("../src/server/connections", () => ({
   amazonFor: provider.amazonFor,
   shopifyFor: provider.shopifyFor,
   connection: provider.connection
+}))
+// These tests give Shopify's variants their supplier SKUs and ASINs directly; product-fields.test.ts covers Copacker
+// keeping them.
+vi.mock("../src/server/product-fields", async (original) => ({
+  ...(await original<typeof import("../src/server/product-fields")>()),
+  withVariantFields: async (_orgId: string, _domain: string, variants: unknown[]) => variants
 }))
 const storage = vi.hoisted(() => ({
   putFile: vi.fn<(...args: never[]) => Promise<void>>(),
@@ -201,6 +207,7 @@ beforeEach(async () => {
   vi.resetAllMocks()
   context.actor = buyer
   provider.amazonFor.mockResolvedValue(provider.api)
+  provider.api.metafieldValues.mockResolvedValue([])
   provider.api.salesMarketplaces.mockResolvedValue(["ATVPDKIKX0DER"])
   provider.api.fbaShipmentUnits.mockResolvedValue(null)
   provider.api.awdShipmentUnits.mockResolvedValue(null)
@@ -917,8 +924,8 @@ describe("Postgres workflow and authorization", () => {
         tracked(2, "gid://shopify/Product/10", "Glove"),
         tracked(3, "gid://shopify/Product/11", "Cord"),
         tracked(5, "gid://shopify/Product/13", "Mask"),
-        { ...tracked(7, "gid://shopify/Product/15", "Guard"), supplierName: "Fence With Fun" },
-        { ...tracked(8, "gid://shopify/Product/16", "Cord 2-pack"), supplierName: "Test Supplier Legal Name" },
+        tracked(7, "gid://shopify/Product/15", "Guard"),
+        tracked(8, "gid://shopify/Product/16", "Cord 2-pack"),
         // A bundle's supplier is on its components, so a bundle without one isn't listed.
         {
           ...tracked(9, "gid://shopify/Product/17", "Glove 2-pack"),
@@ -943,21 +950,30 @@ describe("Postgres workflow and authorization", () => {
         }
       ]
     })
+    // Products whose Supplier field in Shopify names one get that supplier when the metafields are copied, a new one if
+    // it isn't one of the buyer's yet.
+    const copied = (id: number, productId: string, supplierName: string) => ({
+      variantId: `gid://shopify/ProductVariant/${id}`,
+      productId,
+      supplierSku: null,
+      asin: null,
+      amazonStockTarget: null,
+      storeStockTarget: null,
+      caseQuantity: null,
+      supplierName
+    })
+    provider.api.metafieldValues.mockResolvedValue([
+      copied(7, "gid://shopify/Product/15", "Fence With Fun"),
+      copied(8, "gid://shopify/Product/16", "Test Supplier Legal Name")
+    ])
     await refreshShopify()
     await runNextJob()
-    // The glove's first variant is on a PO to the test supplier, so the glove has a supplier. Products with a supplier
-    // in Shopify have one too: a Copacker supplier's Shopify name, or a supplier ordered outside Copacker.
+    // The glove's first variant is on a PO to the test supplier, so the glove has a supplier.
     expect(await productsWithoutSupplier(buyerId)).toEqual([
       { productId: "gid://shopify/Product/11", title: "Cord", imageUrl: null, skus: ["sku-3"] },
       { productId: "gid://shopify/Product/13", title: "Mask", imageUrl: null, skus: ["sku-5"] }
     ])
-    provider.shopifyFor.mockResolvedValue(provider.api)
-    await database
-      .update(tables.suppliers)
-      .set({ shopifySupplierName: "Test Supplier Legal Name" })
-      .where(eq(tables.suppliers.id, supplierLinkId))
     await assignProductSupplier(buyer, { productIds: ["gid://shopify/Product/13"], supplierId: supplierLinkId })
-    expect(provider.api.productSupplier).toHaveBeenCalledWith("gid://shopify/Product/13", "Test Supplier Legal Name")
     expect((await productsWithoutSupplier(buyerId)).map((product) => product.title)).toEqual(["Cord"])
   })
   it("saves product defaults for synced products with revision checks", async () => {
@@ -979,6 +995,7 @@ describe("Postgres workflow and authorization", () => {
       description: "Cotton, size label inside",
       prepCategory: "TAPING",
       casePacks: [{ name: "Standard case", units: 24, lengthCm: 40, widthCm: 30, heightCm: 20, weightKg: null }],
+      caseQuantity: null,
       minimumOrder: 48,
       supplierId: null,
       productLabel: "uploaded",
@@ -3307,25 +3324,14 @@ describe("supplier lead times", () => {
 
 describe("product suppliers", () => {
   beforeEach(orderConnections)
-  it("assigns a current supplier to several products, saving it to Shopify, and keeps their other details", async () => {
+  it("assigns a current supplier to several products in Copacker, and keeps their other details", async () => {
     const products = ["gid://shopify/Product/1", "gid://shopify/Product/2"]
     provider.shopifyFor.mockResolvedValue(provider.api)
-    // Shopify's Supplier field holds the supplier's legal name, so Copacker needs it before it can write there.
-    await expect(assignProductSupplier(buyer, { productIds: products, supplierId: supplierLinkId })).rejects.toThrow(
-      "as it appears in Shopify"
-    )
-    expect(provider.api.productSupplier).not.toHaveBeenCalled()
-    await database
-      .update(tables.suppliers)
-      .set({ shopifySupplierName: "SUZHOU BOPAC Teco CO., LTD" })
-      .where(eq(tables.suppliers.id, supplierLinkId))
     expect(await assignProductSupplier(buyer, { productIds: products, supplierId: supplierLinkId })).toEqual({
       updated: 2
     })
-    expect(provider.api.productSupplier.mock.calls).toEqual([
-      [products[0], "SUZHOU BOPAC Teco CO., LTD"],
-      [products[1], "SUZHOU BOPAC Teco CO., LTD"]
-    ])
+    // Nothing is written to Shopify.
+    expect(provider.api.graphql).not.toHaveBeenCalled()
     const saved = await readProductDefaults(buyerId, "test.myshopify.com")
     expect(saved.get(products[0]!)).toMatchObject({ supplierId: supplierLinkId, revision: 1, description: "" })
     await assignProductSupplier(buyer, { productIds: [products[0]!], supplierId: null })

@@ -232,11 +232,13 @@ New POs get their labels when the PO is created or imported, and again after it 
 - `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, for anyone who can see the PO; 404 when it has none.
 - Action `order.delete` (buyer only) deletes a draft PO with its documents, history and landed costs, and returns `{redirect: "/orders"}`. A PO import saved as that draft goes back to review. Sent POs are closed instead.
 
-### Supplier SKUs
+### Variation and product details
 
-A variation's supplier SKU is Shopify's `custom.supplier_sku` variant metafield; supplier catalog matching and PO lines use it. `GET /api/inventory/products` returns it on each variant as `supplierSku` (or null), from the latest Shopify stock sync.
+Copacker keeps each variation's supplier SKU, ASIN, Amazon stock target and warehouse (Fencing Club) stock target in `variant_fields`, and each product's case quantity and supplier in `product_defaults`. They were Shopify metafields (`custom.supplier_sku`, `custom.asin`, `custom.amazon_fulfillment_stock_target`, `custom.fencing_club_stock_target`, and the product's `custom.case_quantity` and `custom.supplier`). The first Shopify stock sync after the cutover copies them once per store (`shopify_field_imports` records it), keeping any value Copacker already has; each Supplier name joins the buyer's suppliers, as before, and becomes the product's supplier. Copacker no longer reads or writes those metafields, so they can be deleted in Shopify.
 
-Buyer-only `PATCH /api/inventory/supplier-sku` (same origin) accepts `{ "variantId": "gid://shopify/ProductVariant/1", "supplierSku": "AB-100" }`. The SKU is trimmed, one line and up to 255 characters; an empty string removes it. The variation must be in the synced Shopify stock snapshot (404 otherwise). It's written to Shopify, then to that variation's row in the stored snapshot, and returns `{supplierSku}` (null when removed). Invalid input returns 400, supplier workspaces 403, no Shopify connection 409, and a Shopify failure 502 (logged as `supplier_sku_failed`).
+Stock syncs fill these into the stored Shopify stock rows (`supplierSku`, `amazonStockTarget`, `storeStockTarget`, `caseQuantity`, and `supplierName`, the supplier's Shopify name or else its name), and catalog reads (PO lines, imports, catalog search) add each variant's `supplierSku` and `asin` and its bundle components' supplier SKUs. `GET /api/inventory/products` returns `supplierSku`, `asin`, `amazonStockTarget` and `storeStockTarget` on each variant, and `caseQuantity` in each product's `defaults`.
+
+Buyer-only `PATCH /api/inventory/variant-fields` (same origin) accepts `{ "variantId": "gid://shopify/ProductVariant/1", "supplierSku": "AB-100", "asin": "B000000001", "amazonStockTarget": 0, "storeStockTarget": 12 }`; fields left out are kept. Text is trimmed, one line and up to 255 characters, and empty removes it; targets are whole numbers of units or null. The variation must be in the synced Shopify stock snapshot (404 otherwise). It saves to Copacker, refreshes the stored stock rows, and returns all four values. Invalid input returns 400, supplier workspaces 403, and no Shopify connection 409. Supplier SKUs a supplier changes on a PO save the same way when the buyer approves the PO.
 
 ### Inventory location settings
 
