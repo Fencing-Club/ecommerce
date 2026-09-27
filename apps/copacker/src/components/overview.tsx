@@ -259,6 +259,18 @@ function SalesKpis({
   )
 }
 
+// A group of cards about one thing, under a short heading.
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-4">
+      <h2 id={id} className="text-base font-semibold">
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 export function OverviewDashboard({ data }: { data: Overview }) {
   const { sales, restock, purchasing } = data
   // Restock and stock links use the restock channel: Amazon for any Amazon marketplace.
@@ -277,81 +289,83 @@ export function OverviewDashboard({ data }: { data: Overview }) {
 
       <SalesKpis sales={sales} period={data.period} restock={restock} />
 
-      <div className={styles.wide}>
-        <Card className={styles.fillCard}>
-          <CardHeader>
-            <CardTitle className={styles.sectionTitle}>
-              <ChartLine aria-hidden />
-              Sales by channel
-            </CardTitle>
-            <CardDescription>
-              {data.channel && data.channel.key !== "amazon"
-                ? `Shopify orders shipped from ${data.channel.label}. Orders not yet fulfilled aren’t counted.`
-                : "From the orders copied from Shopify and Amazon."}{" "}
-              Sales are after discounts, before tax and shipping.
-            </CardDescription>
-            <CardAction>
-              <CardLink href="/sales">Orders</CardLink>
-            </CardAction>
-          </CardHeader>
-          <CardContent className={styles.fill}>
-            {sales.daily.some((row) => sales.sources.some((source) => row[source] !== null)) ? (
-              <div className={styles.fill}>
-                <SalesTrend
-                  daily={sales.daily}
-                  previous={sales.previousDaily}
-                  previousLabel={data.period.comparisonLabel}
-                  sources={sales.sources}
-                  currency={sales.currency}
-                />
-                {sales.otherMarketplaceOrders > 0 && (
-                  <p className={styles.note}>
-                    Amazon orders that Shopify’s Amazon channel copies into Shopify are counted once, from Amazon.{" "}
-                    {sales.otherMarketplaceOrders} {sales.otherMarketplaceOrders === 1 ? "order" : "orders"} from Amazon
-                    marketplaces outside North America in this period{" "}
-                    {sales.otherMarketplaceOrders === 1 ? "isn’t" : "aren’t"} counted, since Copacker reads Amazon US,
-                    Canada, Mexico and Brazil only.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className={styles.note}>
-                Sales appear here once orders are copied. Sync them on the <Link href="/sales">Orders</Link> page.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <ProfitBreakdown sales={sales} />
-      </div>
+      {/* Cards grouped by what they're about: sales, then stock, then purchasing. */}
+      <Section id="overview-sales" title="Sales">
+        <div className={styles.wide}>
+          <Card className={styles.fillCard}>
+            <CardHeader>
+              <CardTitle className={styles.sectionTitle}>
+                <ChartLine aria-hidden />
+                Sales by channel
+              </CardTitle>
+              <CardDescription>
+                {data.channel && data.channel.key !== "amazon"
+                  ? `Shopify orders shipped from ${data.channel.label}. Orders not yet fulfilled aren’t counted.`
+                  : "From the orders copied from Shopify and Amazon."}{" "}
+                Sales are after discounts, before tax and shipping.
+              </CardDescription>
+              <CardAction>
+                <CardLink href="/sales">Orders</CardLink>
+              </CardAction>
+            </CardHeader>
+            <CardContent className={styles.fill}>
+              {sales.daily.some((row) => sales.sources.some((source) => row[source] !== null)) ? (
+                <div className={styles.fill}>
+                  <SalesTrend
+                    daily={sales.daily}
+                    previous={sales.previousDaily}
+                    previousLabel={data.period.comparisonLabel}
+                    sources={sales.sources}
+                    currency={sales.currency}
+                  />
+                  {sales.otherMarketplaceOrders > 0 && (
+                    <p className={styles.note}>
+                      Amazon orders that Shopify’s Amazon channel copies into Shopify are counted once, from Amazon.{" "}
+                      {sales.otherMarketplaceOrders} {sales.otherMarketplaceOrders === 1 ? "order" : "orders"} from
+                      Amazon marketplaces outside North America in this period{" "}
+                      {sales.otherMarketplaceOrders === 1 ? "isn’t" : "aren’t"} counted, since Copacker reads Amazon US,
+                      Canada, Mexico and Brazil only.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className={styles.note}>
+                  Sales appear here once orders are copied. Sync them on the <Link href="/sales">Orders</Link> page.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          <ProfitBreakdown sales={sales} />
+        </div>
+        {sales.customers ? (
+          <div className={styles.halves}>
+            <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
+            <Customers customers={sales.customers} period={data.period} />
+          </div>
+        ) : (
+          <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
+        )}
+        <BestSellers restock={restock} />
+      </Section>
 
-      <div className={styles.halves}>
-        <StockByChannel restock={restock} />
-        <DaysOfCover restock={restock} channel={channel} />
-      </div>
-
-      {/* Spending beside the stock it's tied up in; the two short purchasing cards share a column. */}
-      <div className={styles.halves}>
-        <div className={styles.stack}>
-          <UpcomingSpend upcoming={data.upcoming} channel={channel} />
-          <OpenOrders purchasing={purchasing} />
+      <Section id="overview-stock" title="Stock">
+        <div className={styles.halves}>
+          <StockByChannel restock={restock} />
+          <DaysOfCover restock={restock} channel={channel} />
         </div>
         <SlowStock restock={restock} />
-      </div>
+      </Section>
 
-      <div className={styles.halves}>
-        <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
-        {sales.customers ? (
-          <Customers customers={sales.customers} period={data.period} />
-        ) : (
+      <Section id="overview-purchasing" title="Purchasing">
+        <div className={styles.halves}>
+          <div className={styles.stack}>
+            <OpenOrders purchasing={purchasing} />
+            <UpcomingSpend upcoming={data.upcoming} channel={channel} />
+          </div>
           <Shipments stages={data.shipments} />
-        )}
-      </div>
-
-      {sales.customers && <Shipments stages={data.shipments} />}
-
-      <BestSellers restock={restock} />
-
-      <Purchasing purchasing={purchasing} />
+        </div>
+        <Purchasing purchasing={purchasing} />
+      </Section>
     </div>
   )
 }
