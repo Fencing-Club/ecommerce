@@ -79,10 +79,10 @@ const navigation = [
   { view: "settings", label: "Settings", icon: Settings }
 ]
 
-// A forwarder's workspace keeps its addresses and profile in Settings, for now its only page.
+// A forwarder's workspace sees the POs coming through it, and keeps its addresses and profile in Settings.
 function navigationFor(kind: string) {
   if (kind === "forwarder") {
-    return navigation.filter((item) => item.view === "settings")
+    return navigation.filter((item) => item.view === "orders" || item.view === "settings")
   }
   return navigation.filter(
     (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")

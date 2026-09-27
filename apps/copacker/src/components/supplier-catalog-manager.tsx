@@ -29,6 +29,9 @@ type Product = {
   piecesPerSellablePack: number
   sellablePacksPerCase: number | null
   notes: string | null
+  trackInventory: boolean
+  onHand: number
+  continueSelling: boolean
 }
 type Preview = {
   rows: Array<Pick<Product, "supplierSku" | "title" | "currency" | "priceMinor" | "priceBasis">>
@@ -98,6 +101,101 @@ function CatalogField({ name, product }: { name: (typeof fields)[number][0]; pro
       min={min}
       step={name === "price" ? "0.01" : 1}
     />
+  )
+}
+
+// Whether the product counts stock. New products are made to order, so buyers can order any quantity.
+function InventoryFields({ product }: { product: Product | null }) {
+  const [tracking, setTracking] = useState(product?.trackInventory ?? false)
+  return (
+    <>
+      <label>
+        <input
+          name="trackInventory"
+          type="checkbox"
+          checked={tracking}
+          onChange={(event) => setTracking(event.target.checked)}
+        />{" "}
+        Track inventory
+      </label>
+      {tracking && (
+        <>
+          <div className={sx({ display: "grid", gap: 1 })}>
+            <label htmlFor="catalog-on-hand">On hand</label>
+            <Input
+              id="catalog-on-hand"
+              name="onHand"
+              type="number"
+              step={1}
+              required
+              defaultValue={product?.onHand ?? 0}
+            />
+          </div>
+          <label>
+            <input name="continueSelling" type="checkbox" defaultChecked={product?.continueSelling ?? false} /> Continue
+            selling when out of stock
+          </label>
+        </>
+      )}
+    </>
+  )
+}
+
+// A tracked product's on hand count, saved when it loses focus.
+function StockInput({ product }: { product: Product }) {
+  const router = useRouter()
+  const [value, setValue] = useState(String(product.onHand))
+  const [error, setError] = useState("")
+  const [pending, setPending] = useState(false)
+
+  async function save() {
+    const onHand = Number(value)
+    if (!value.trim() || !Number.isSafeInteger(onHand)) {
+      setValue(String(product.onHand))
+      return
+    }
+    if (onHand === product.onHand) {
+      return
+    }
+    setPending(true)
+    setError("")
+    try {
+      const response = await fetch("/api/supplier-catalog/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: product.id, onHand })
+      })
+      if (!response.ok) {
+        throw new Error((await response.json()).error ?? "Could not save stock")
+      }
+      router.refresh()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save stock")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <div className={sx({ display: "grid", gap: 1 })}>
+      <Input
+        type="number"
+        step={1}
+        value={value}
+        disabled={pending}
+        aria-label={`On hand for ${product.supplierSku}`}
+        aria-invalid={!!error}
+        className="w-24"
+        onChange={(event) => setValue(event.target.value)}
+        onBlur={save}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur()
+          }
+        }}
+      />
+      {error && <output className="text-xs text-destructive">{error}</output>}
+    </div>
   )
 }
 
@@ -171,7 +269,11 @@ export function SupplierCatalogManager({ products }: { products: Product[] }) {
       piecesPerSellablePack: Number(data.get("piecesPerSellablePack")),
       sellablePacksPerCase: data.get("sellablePacksPerCase") ? Number(data.get("sellablePacksPerCase")) : null,
       notes: String(data.get("notes") ?? "") || null,
-      active: data.get("active") === "on"
+      active: data.get("active") === "on",
+      trackInventory: data.get("trackInventory") === "on",
+      // A product that stops tracking keeps its last settings, for when it tracks again.
+      onHand: data.has("onHand") ? Number(data.get("onHand")) : (editing?.onHand ?? 0),
+      continueSelling: data.has("onHand") ? data.get("continueSelling") === "on" : (editing?.continueSelling ?? false)
     }
     try {
       const response = await fetch("/api/supplier-catalog/products", {
@@ -315,6 +417,7 @@ export function SupplierCatalogManager({ products }: { products: Product[] }) {
                     <CatalogField name={name} product={editing} />
                   </label>
                 ))}
+                <InventoryFields product={editing} />
                 <label>
                   <input name="active" type="checkbox" defaultChecked={editing?.active ?? true} /> Active product
                 </label>
@@ -337,6 +440,7 @@ export function SupplierCatalogManager({ products }: { products: Product[] }) {
                 <TableHead>Product</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Pack</TableHead>
+                <TableHead>On hand</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -359,6 +463,13 @@ export function SupplierCatalogManager({ products }: { products: Product[] }) {
                     {product.sellablePacksPerCase === null
                       ? "case count unknown"
                       : `${product.sellablePacksPerCase} packs per case (${product.piecesPerSellablePack * product.sellablePacksPerCase} pieces)`}
+                  </TableCell>
+                  <TableCell>
+                    {product.trackInventory ? (
+                      <StockInput key={`${product.id}:${product.revision}`} product={product} />
+                    ) : (
+                      <span className={sx({ color: "muted" })}>Not tracked</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Button

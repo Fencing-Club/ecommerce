@@ -84,10 +84,10 @@ Checked tasks have local implementation and the evidence stated here. They do no
 ### End-to-end shipment acceptance
 
 - [ ] Complete design-owned UI wiring against [api-contract.md](api-contract.md) and exercise browser flows.
-- [ ] Authorize a merchant account, check AWD eligibility, create and confirm an approved test shipment, retrieve labels, and verify SSCC/carton assignments.
+- [x] Authorize a merchant account, check AWD eligibility, create and confirm an approved test shipment, retrieve labels, and verify SSCC/carton assignments. Done live on 2026-09-27 for AWD and FBA; see [amazon-inbound.md](amazon-inbound.md).
 - [ ] Upload buyer-booked carrier labels, reject missing/duplicate assignments, and release the complete supplier packet. A database test with mocked Amazon covers the whole path, from sending the PO through AWD create, confirm and carton labels to shipping labels, release and the packet; a live shipment remains open.
 - [ ] Review generated packing list/checklist and all label page sizes; ensure actual supplier carton numbers are printed.
-- [ ] Exercise correction, cancellation verification, and replacement without duplicate Amazon shipments or reused labels.
+- [ ] Exercise correction, cancellation verification, and replacement without duplicate Amazon shipments or reused labels. Correction and Cancel in Amazon passed live for AWD and FBA on 2026-09-27; replacement remains.
 - [x] Verify live Railway private bucket upload/download using the app storage functions; anonymous access returned denial and the temporary PDF was removed.
 - [ ] Verify cross-organization document download denial with deployed WorkOS sessions. Browser attempts on 2026-09-25 returned Edge ERR_BLOCKED_BY_CLIENT for both authorized and unauthorized document links, with no document HTTP response captured; this is a browser-level blocker, not proof of server denial or successful delivery.
 - [x] Build the Next.js production app successfully after correcting source imports in the shared Aisle package.
@@ -554,6 +554,15 @@ Requested 2026-09-25. Suppliers need to upload and maintain their product catalo
 - [ ] SCAT-10: Verify supplier/buyer tenant isolation, exact-SKU collisions across suppliers, duplicate imports, price currency/conversion, archived/unmatched products, concurrent revisions and preservation of existing PO snapshots. API tests now cover tenant-scoped uploads, same-SKU catalogs for two suppliers, exact buyer lookup, stale-preview rejection, repeated-file idempotency, archived status and optimistic manual edits. Signed-in supplier template and active-catalog downloads, CSV preview and unchanged re-import pass; the live Ok Fencing round trip reported 0 added, 0 updated and 166 unchanged. Buyer reorder review at mobile size and the clipped supplier catalog table remain open.
 
 Supplier catalog storage, CSV upload and manual editing are implemented. The optional pricing/template choices, buyer reorder UI, PO-line snapshots and restock integration remain open.
+
+### Supplier stock
+
+Requested 2026-09-27. Suppliers can count stock for their catalog products. New products don't track inventory: they're made to order, so a PO can order any quantity. A supplier such as Unic Arrow that tracks a product limits its POs to what's available, unless the product continues selling when out of stock. An accepted commercial invoice takes its pieces from stock.
+
+- [x] STOCK-01: Catalog products gain Track inventory (off by default), On hand (pieces) and Continue selling when out of stock. They're set in the product dialog, in the catalog list's On hand field for tracked products, and in the CSV's `track_inventory`, `on_hand` and `continue_selling` columns (yes or no; a blank `on_hand` keeps the current count, so an older file doesn't undo stock taken since).
+- [x] STOCK-02: Available is on hand less what the supplier's sent POs, from every buyer, have ordered and their shipments haven't yet taken. Drafts don't hold stock. A bundle needs each component's quantity per unit. Saving, editing, importing and sending a PO refuses more than is available, naming each short supplier SKU; the new-PO form shows each limited line's available pieces.
+- [x] STOCK-03: A shipment takes its packed pieces from stock when its commercial invoice is accepted: at submission without changes, or when the buyer approves changes. Amazon network splits take their own pieces. The shipment records what it took (`stockTaken`), and a correction puts it back. Stock may go below zero when an invoice ships more than the supplier counted.
+- [x] STOCK-04: Prices were already supported: a matched catalog price fills the PO line, the buyer can set or clear their own, and the supplier sets or changes prices on the commercial invoice, which the buyer approves.
 
 - [x] RESTOCK-AVAILABILITY: Verified provider definitions and added a deterministic source adapter selecting Shopify available, FBA fulfillableQuantity and AWD availableDistributable without subtracting committed orders twice. Null does not fall back to total/on-hand; Shopify oversold quantities remain negative. Six focused tests pass, including formula-level double-deduction regressions. Integration into the restock report is owned by the other agent.
 - [ ] RESTOCK-AVAILABILITY-REPORT: Use restockAvailability when composing the report, retaining allocations for explanation only. Verify 100 physical / 20 committed / 80 available and 112 lead-time demand yields 32 to buy. Do not deduct unfulfilled demand again.

@@ -78,8 +78,6 @@ export type RestockLine = {
   lostProfitMinor: number | null
 }
 
-const amazonDestinations = new Set<string>(["fba", "awd_us", "awd_china", "amazon"])
-
 function sum(values: (number | null | undefined)[]) {
   return values.every((value) => value === null || value === undefined)
     ? null
@@ -173,9 +171,7 @@ export function restockPlan(input: {
       const supplier = input.supplierFor(variant.variantId)
       const leadTimeDays = supplierLeadTime(supplier, channel, input.leadTimeDays)
       const pending = (input.onOrder.get(variant.variantId) ?? []).filter((order) =>
-        channel.kind === "amazon"
-          ? amazonDestinations.has(order.destination)
-          : order.locationIds.includes(channel.locationId)
+        channel.kind === "amazon" ? order.destination === "amazon" : order.locationIds.includes(channel.locationId)
       )
       const pendingUnits = pending.reduce((total, order) => total + order.units, 0)
       const blocked: BlockReason[] = []

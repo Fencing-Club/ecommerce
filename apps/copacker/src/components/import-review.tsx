@@ -33,7 +33,7 @@ const reviewApi = api.injectEndpoints({
       query: ({ id, ...body }) => ({
         url: `imports/${id}/save`,
         method: "POST",
-        body: { ...body, reviewed: true, destination: "awd_us" }
+        body: { ...body, reviewed: true, destination: "amazon" }
       })
     })
   })

@@ -464,3 +464,65 @@ describe("inbound shipment contents", () => {
     expect(await api.salesMarketplaces()).toEqual(["ATVPDKIKX0DER", "A1AM78C64UM0Y8"])
   })
 })
+
+describe("AWD inbound eligibility", () => {
+  const carton = {
+    count: 1,
+    distributionPackage: {
+      type: "CASE",
+      contents: {
+        products: [{ sku: "foil-2", quantity: 40, prepDetails: { prepCategory: "NO_PREP", labelOwner: "SELF" } }]
+      },
+      measurements: {
+        dimensions: { length: 40, width: 30, height: 20, unitOfMeasurement: "CENTIMETERS" },
+        weight: { weight: 5, unitOfMeasurement: "KILOGRAMS" }
+      }
+    }
+  }
+  // Amazon's reply as observed live on 2026-09-27: the same cartons with empty lists and prep instructions added.
+  const echoed = (quantity: number) => ({
+    count: 1,
+    distributionPackage: {
+      contents: {
+        packages: [],
+        products: [
+          {
+            attributes: [],
+            prepDetails: { labelOwner: "SELF", prepCategory: "NO_PREP", prepInstructions: [] },
+            quantity,
+            sku: "foil-2"
+          }
+        ]
+      },
+      measurements: {
+        dimensions: { height: 20, length: 40, unitOfMeasurement: "CENTIMETERS", width: 30 },
+        weight: { unitOfMeasurement: "KILOGRAMS", weight: 5 }
+      },
+      type: "CASE"
+    }
+  })
+  const reply = (quantity: number) => ({
+    ineligibilityReasons: [],
+    packagesToInbound: [{ ineligibilityReasons: [], packageQuantity: echoed(quantity), status: "ELIGIBLE" }],
+    status: "ELIGIBLE"
+  })
+
+  it("accepts Amazon's echo of the same cartons and rejects different contents", async () => {
+    await expect(client([reply(40)]).api.eligibility([carton])).resolves.toMatchObject({ status: "ELIGIBLE" })
+    await expect(client([reply(41)]).api.eligibility([carton])).rejects.toThrow("did not match")
+  })
+
+  it("asks for Amazon's prep details as one comma-separated SKU list", async () => {
+    const { api, calls } = client([
+      {
+        mskuPrepDetails: [
+          { msku: "a", prepCategory: "NONE", prepOwnerConstraint: "NONE_ONLY", prepTypes: [] },
+          { msku: "b", prepCategory: "TEXTILE", prepTypes: ["ITEM_POLYBAGGING"] }
+        ]
+      }
+    ])
+    const details = await api.prepDetails(["a", "b", "a"])
+    expect(calls[0]?.searchParams.getAll("mskus")).toEqual(["a,b"])
+    expect(details.get("b")).toEqual({ prepCategory: "TEXTILE" })
+  })
+})

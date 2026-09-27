@@ -1,7 +1,6 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { commonPaymentTerms } from "@repo/aisle"
 import { Pencil, Plus, Send } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -50,7 +49,6 @@ const supplierSchema = z.object({
   shopifySupplierName: z.string(),
   leadTimeDays: z.number().int().min(1).max(730).optional(),
   amazonLeadTimeDays: z.number().int().min(1).max(730).optional(),
-  paymentTerms: z.string().trim().min(1).max(200),
   contactName: z.string().trim().max(120),
   contactEmail: z.union([z.email({ error: "Enter a valid email" }).max(254), z.literal("")]),
   phoneNumber: z.string().trim().max(50),
@@ -72,7 +70,6 @@ export function EditSupplier({
   leadTimeDays,
   defaultLeadTimeDays,
   amazonLeadTimeDays,
-  paymentTerms,
   contact,
   joined
 }: {
@@ -83,7 +80,6 @@ export function EditSupplier({
   // The workspace lead time an empty field falls back to.
   defaultLeadTimeDays: number
   amazonLeadTimeDays: number | null
-  paymentTerms: string
   contact: SupplierContact
   // A supplier that joined keeps its own contact details.
   joined: boolean
@@ -98,7 +94,6 @@ export function EditSupplier({
       shopifySupplierName: shopifySupplierName ?? "",
       leadTimeDays: leadTimeDays ?? undefined,
       amazonLeadTimeDays: amazonLeadTimeDays ?? undefined,
-      paymentTerms,
       contactName: contact.contactName ?? "",
       contactEmail: contact.contactEmail ?? "",
       phoneNumber: contact.phoneNumber ?? "",
@@ -114,7 +109,6 @@ export function EditSupplier({
           name: values.name,
           leadTimeDays: values.leadTimeDays ?? null,
           amazonLeadTimeDays: values.amazonLeadTimeDays ?? null,
-          paymentTerms: values.paymentTerms,
           ...(!joined && {
             contactName: values.contactName,
             contactEmail: values.contactEmail,
@@ -177,19 +171,6 @@ export function EditSupplier({
               max={730}
               step={1}
             />
-            <FormInput
-              name="paymentTerms"
-              required
-              label="Payment terms"
-              list="supplier-payment-terms"
-              autoComplete="off"
-              description="New POs start with these."
-            />
-            <datalist id="supplier-payment-terms">
-              {commonPaymentTerms.map((terms) => (
-                <option key={terms} value={terms} aria-label={terms} />
-              ))}
-            </datalist>
             <FormError message={form.formState.errors.root?.server?.message} />
             <DialogFooter>
               <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>

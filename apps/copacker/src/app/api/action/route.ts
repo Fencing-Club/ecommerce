@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto"
 import { addressSchema } from "@repo/aisle"
-import { buildAwdRequest } from "@repo/aisle"
 import { WorkOS } from "@workos-inc/node"
 import { and, eq, isNull } from "drizzle-orm"
 import { cookies } from "next/headers"
@@ -24,7 +23,9 @@ import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
+import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
+import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
 import {
   acceptForwarderInvitation,
   createForwarder,
@@ -51,9 +52,11 @@ import {
   receiveShipment
 } from "@/server/orders"
 import { linesMissingLabels } from "@/server/product-barcodes"
+import { saveProfile } from "@/server/profile"
 import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { appUrl, token, hash } from "@/server/security"
+import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
@@ -527,20 +530,19 @@ export async function POST(request: Request) {
         throw new Error("Shipment is not awaiting reconciliation")
       }
       const { order } = await accessibleOrder(s, shipment.orderId)
+      const fba = shipment.amazonNetwork === "fba"
       const amazonOrderId = z
         .string()
-        .regex(/^STAR-[A-Z0-9]+$/)
+        .trim()
+        .regex(fba ? /^wf[0-9a-f-]{36}$/ : /^STAR-[A-Z0-9]+$/)
         .parse(data.amazonOrderId)
       if (shipment.amazonOrderId && shipment.amazonOrderId !== amazonOrderId) {
         throw new Error("This shipment is already linked to a different Amazon order")
       }
-      const remote = await (await amazonFor(s.org.id, order.amazonSellerId)).order(amazonOrderId)
-      const expected = buildAwdRequest(
-        shipment.snapshot,
-        shipment.packing,
-        `copacker-${shipment.id}-${shipment.revision}`
-      )
-      if (remote.externalReferenceId !== expected.externalReferenceId) {
+      const api = await amazonFor(s.org.id, order.amazonSellerId)
+      const reference = (fba ? fbaPlanName : amazonReference)(shipment.id, shipment.revision)
+      const found = fba ? (await api.fbaPlan(amazonOrderId)).name : (await api.order(amazonOrderId)).externalReferenceId
+      if (found !== reference) {
         throw new Error("Amazon order does not belong to this shipment revision")
       }
       if (order.buyerOrgId !== s.org.id) {
@@ -569,22 +571,20 @@ export async function POST(request: Request) {
       })
       return Response.json({ ok: true })
     }
-    if (action === "shipment.cancelled") {
+    if (action === "shipment.cancelAmazon") {
       requireBuyer(s)
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
       if (!shipment?.amazonOrderId || shipment.status !== "correction") {
         throw new Error("An existing Amazon shipment must be in correction before replacement")
       }
       const { order } = await accessibleOrder(s, shipment.orderId)
-      const remote = await (await amazonFor(s.org.id, order.amazonSellerId)).order(shipment.amazonOrderId)
-      if (remote.orderStatus !== "CANCELLED") {
-        throw new Error(
-          "Cancel the shipment in Amazon first. Copacker will verify cancellation before releasing quantities"
-        )
+      // Amazon cancels an AWD order at once and an FBA inbound plan in the background, so a plan may need a moment.
+      if (!(await cancelAmazonShipment(await amazonFor(s.org.id, order.amazonSellerId), shipment))) {
+        throw new Error("Amazon is still cancelling this shipment. Try again in a minute")
       }
       await db()
         .update(shipments)
-        .set({ status: "cancelled" })
+        .set({ status: "cancelled", issue: null })
         .where(
           and(
             eq(shipments.id, shipment.id),
@@ -592,6 +592,9 @@ export async function POST(request: Request) {
             eq(shipments.status, "correction")
           )
         )
+      await db()
+        .insert(events)
+        .values({ orderId: shipment.orderId, actor: s.user.id, message: "Amazon shipment cancelled" })
       return Response.json({ ok: true })
     }
     if (action === "shipment.received") {
@@ -616,25 +619,22 @@ export async function POST(request: Request) {
       await deleteDraftOrder(s, id())
       return Response.json({ redirect: "/orders" })
     }
+    if (action === "profile.update") {
+      return Response.json(await saveProfile(s, data))
+    }
+    if (action === "order.comment") {
+      return Response.json(await addComment(s, data))
+    }
     if (action === "order.close") {
       await closeOrder(s, id())
       return Response.json({ ok: true })
     }
-    if (action === "shipment.collected") {
-      await db().transaction(async (tx) => {
-        const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id()))
-        if (!shipment) {
-          throw new Error("Shipment not found")
-        }
-        await accessibleOrder(s, shipment.orderId, tx, true)
-        if (shipment.status !== "ready") {
-          throw new Error("Only released shipments can be marked collected")
-        }
-        await tx.update(shipments).set({ status: "collected" }).where(eq(shipments.id, shipment.id))
-        await tx
-          .insert(events)
-          .values({ orderId: shipment.orderId, actor: s.user.id, message: "Supplier reported shipment collected" })
-      })
+    if (action === "shipment.ship") {
+      await shipShipment(s, id())
+      return Response.json({ ok: true })
+    }
+    if (action === "shipment.forward") {
+      await forwardShipment(s, data)
       return Response.json({ ok: true })
     }
     if (action === "job.retry") {

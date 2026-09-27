@@ -49,7 +49,6 @@ import { excludedShopifyTags } from "./shopify-tags"
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
 const staleAfter = 2 * day
-const amazonDestinations = new Set<string>(["fba", "awd_us", "awd_china", "amazon"])
 
 export type Money = { currency: string; minor: number }[]
 type Price = { minor: number; currency: string }
@@ -359,7 +358,18 @@ export function purchasing(list: PurchaseOrder[]) {
   }
 }
 
-// The money coming due: reorders that are due now, and sent POs by their due date.
+// When a sent PO's payment falls due: its Net days after it was sent, or else the date it asked for the goods by, or
+// else when it was sent (payment in advance, on receipt, or no terms).
+export function paymentDue(order: Pick<PurchaseOrder, "data" | "sentAt">) {
+  const sent = (order.sentAt ?? new Date()).toISOString().slice(0, 10)
+  const net = /^Net (\d+)$/.exec(order.data.paymentTerms ?? "")
+  if (net) {
+    return addDays(sent, Number(net[1]))
+  }
+  return order.data.dueDate ?? sent
+}
+
+// The money coming due: reorders that are due now, and sent POs by when their payment falls due.
 export function upcomingSpend(list: PurchaseOrder[], reorderCost: Money, today: string) {
   const buckets = [
     { key: "overdue", label: "Past due", totals: new Map<string, number>(), orders: 0 },
@@ -371,7 +381,7 @@ export function upcomingSpend(list: PurchaseOrder[], reorderCost: Money, today: 
     if (order.status !== "submitted") {
       continue
     }
-    const due = order.data.dueDate
+    const due = paymentDue(order)
     let bucket = buckets[3]!
     if (due < today) {
       bucket = buckets[0]!
@@ -949,7 +959,7 @@ export async function overview(
       return true
     }
     if (restockKey === "amazon") {
-      return amazonDestinations.has(order.data.destination)
+      return order.data.destination === "amazon"
     }
     return receivingLocations(order.data, deliveryLocations).includes(locationId!)
   })

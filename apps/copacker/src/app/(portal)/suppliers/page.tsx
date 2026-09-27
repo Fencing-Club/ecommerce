@@ -147,7 +147,6 @@ function SupplierRow({
           leadTimeDays={row.leadTimeDays}
           defaultLeadTimeDays={defaultLeadTimeDays}
           amazonLeadTimeDays={row.amazonLeadTimeDays}
-          paymentTerms={row.paymentTerms}
           contact={row.contact}
           joined={row.supplierOrgId !== null}
         />

@@ -9,7 +9,10 @@ export const catalogHeaders = [
   "price_basis",
   "pieces_per_sellable_pack",
   "sellable_packs_per_case",
-  "notes"
+  "notes",
+  "track_inventory",
+  "on_hand",
+  "continue_selling"
 ] as const
 export const catalogTemplate = `${catalogHeaders.join(",")}\r\n`
 
@@ -22,7 +25,11 @@ type CatalogRow = {
   piecesPerSellablePack: number
   sellablePacksPerCase: number | null
   notes: string | null
+  trackInventory: boolean
+  continueSelling: boolean
 }
+// An import's on hand count; null keeps the product's current count, so a file doesn't undo stock taken since.
+type CatalogImportRow = CatalogRow & { onHand: number | null }
 
 function csvCell(value: string | number | null) {
   const text = value === null ? "" : String(value)
@@ -39,7 +46,7 @@ function safeCsvSku(value: string) {
   return /^0\d+$/.test(value) || /^\d{12,}$/.test(value) ? `\t${value}` : safeCsvText(value)
 }
 
-export function exportSupplierCatalogCsv(rows: Iterable<CatalogRow>) {
+export function exportSupplierCatalogCsv(rows: Iterable<CatalogRow & { onHand: number }>) {
   const lines = [catalogHeaders.join(",")]
   for (const row of rows) {
     lines.push(
@@ -51,7 +58,10 @@ export function exportSupplierCatalogCsv(rows: Iterable<CatalogRow>) {
         row.priceBasis,
         row.piecesPerSellablePack,
         row.sellablePacksPerCase,
-        safeCsvText(row.notes)
+        safeCsvText(row.notes),
+        row.trackInventory ? "yes" : "no",
+        row.onHand,
+        row.continueSelling ? "yes" : "no"
       ]
         .map(csvCell)
         .join(",")
@@ -60,7 +70,10 @@ export function exportSupplierCatalogCsv(rows: Iterable<CatalogRow>) {
   return `${lines.join("\r\n")}\r\n`
 }
 
-export function sameSupplierCatalogFields(current: CatalogRow & { active: number }, incoming: CatalogRow) {
+export function sameSupplierCatalogFields(
+  current: CatalogRow & { active: number; onHand: number },
+  incoming: CatalogImportRow
+) {
   return (
     current.active === 1 &&
     current.title === incoming.title &&
@@ -69,7 +82,10 @@ export function sameSupplierCatalogFields(current: CatalogRow & { active: number
     current.priceBasis === incoming.priceBasis &&
     current.piecesPerSellablePack === incoming.piecesPerSellablePack &&
     current.sellablePacksPerCase === incoming.sellablePacksPerCase &&
-    current.notes === incoming.notes
+    current.notes === incoming.notes &&
+    current.trackInventory === incoming.trackInventory &&
+    current.continueSelling === incoming.continueSelling &&
+    (incoming.onHand === null || current.onHand === incoming.onHand)
   )
 }
 
@@ -85,6 +101,12 @@ export function catalogRevisionHash(rows: Array<{ supplierSku: string; id: strin
 }
 
 const positive = z.coerce.number<number>().int().positive().max(2147483647)
+const yesNo = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.enum(["yes", "no", ""], { error: "must be yes or no" }))
+  .transform((value) => value === "yes")
 const rowSchema = z.object({
   supplier_sku: z.string().trim().min(1).max(255),
   title: z.string().trim().min(1).max(500),
@@ -92,7 +114,15 @@ const rowSchema = z.object({
   price_basis: z.enum(["piece", "sellable_pack", "case"]),
   pieces_per_sellable_pack: positive,
   sellable_packs_per_case: z.union([positive, z.literal("").transform(() => null)]),
-  notes: z.string().max(2000)
+  notes: z.string().max(2000),
+  track_inventory: yesNo,
+  on_hand: z
+    .string()
+    .trim()
+    .pipe(
+      z.union([z.literal("").transform(() => null), z.coerce.number<string>().int().min(-2147483648).max(2147483647)])
+    ),
+  continue_selling: yesNo
 })
 
 function rowsOf(text: string) {
@@ -180,8 +210,18 @@ export function parseSupplierCatalogCsv(text: string) {
     }
     seen.add(parsed.data.supplier_sku)
     const priceMinor = minorUnits(cells[3]!, line)
-    const { supplier_sku, title, currency, price_basis, pieces_per_sellable_pack, sellable_packs_per_case, notes } =
-      parsed.data
+    const {
+      supplier_sku,
+      title,
+      currency,
+      price_basis,
+      pieces_per_sellable_pack,
+      sellable_packs_per_case,
+      notes,
+      track_inventory,
+      on_hand,
+      continue_selling
+    } = parsed.data
     if (sellable_packs_per_case !== null && !Number.isSafeInteger(pieces_per_sellable_pack * sellable_packs_per_case)) {
       throw new Error(`Row ${line}: pack quantity exceeds the supported range`)
     }
@@ -193,7 +233,10 @@ export function parseSupplierCatalogCsv(text: string) {
       priceBasis: price_basis,
       piecesPerSellablePack: pieces_per_sellable_pack,
       sellablePacksPerCase: sellable_packs_per_case,
-      notes: notes.trim() || null
-    }
+      notes: notes.trim() || null,
+      trackInventory: track_inventory,
+      onHand: on_hand,
+      continueSelling: continue_selling
+    } satisfies CatalogImportRow
   })
 }

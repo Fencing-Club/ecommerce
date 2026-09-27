@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, Download, Ellipsis } from "lucide-react"
+import { AlertTriangle, Download, Ellipsis, Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
@@ -168,57 +168,78 @@ export function OrderMenu({
   )
 }
 
-// A PO line's product label, made from its product when downloaded, or why it has none. Labels are uploaded and
+// A PO line's menu, as in the PO editor: its product label, made from its product when downloaded, its suffocation
+// warning labels, and editing a draft. A label that can't be made yet shows why beside it. Labels are uploaded and
 // removed on the Products page.
-export function LineLabel({
+export function LineMenu({
   orderId,
   itemId,
   name,
-  label
+  label,
+  warning,
+  editable
 }: {
   orderId: string
   itemId: string
   name: string
   label?: { state: "uploaded" | "standard" | "none" } | { state: "missing"; problem: string }
+  warning: boolean
+  editable: boolean
 }) {
-  if (label?.state === "uploaded" || label?.state === "standard") {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              nativeButton={false}
-              render={
-                <a
-                  href={`/api/orders/${orderId}/labels/${itemId}`}
-                  download
-                  aria-label={`Download the label for ${name}`}
-                />
-              }
-            />
-          }
-        >
-          <Download />
-        </TooltipTrigger>
-        <TooltipContent>{label.state === "uploaded" ? "Download uploaded label" : "Download label"}</TooltipContent>
-      </Tooltip>
-    )
-  }
-  if (label?.state !== "missing") {
-    return null
-  }
+  const router = useRouter()
+  const labeled = label?.state === "uploaded" || label?.state === "standard"
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span className="inline-flex p-1.5 text-amber-600" aria-label={`No label for ${name}: ${label.problem}`} />
-        }
-      >
-        <AlertTriangle className="size-4" />
-      </TooltipTrigger>
-      <TooltipContent>{label.problem}</TooltipContent>
-    </Tooltip>
+    <span className="inline-flex items-center">
+      {label?.state === "missing" && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className="inline-flex p-1.5 text-amber-600"
+                aria-label={`No label for ${name}: ${label.problem}`}
+              />
+            }
+          >
+            <AlertTriangle className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>{label.problem}</TooltipContent>
+        </Tooltip>
+      )}
+      {(labeled || warning || editable) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${name}`} />}
+          >
+            <Ellipsis />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {labeled && (
+              <DropdownMenuItem
+                render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label="Download label" />}
+              >
+                <Download />
+                Download label
+              </DropdownMenuItem>
+            )}
+            {warning && (
+              <DropdownMenuItem
+                render={
+                  <a href={`/api/orders/${orderId}/labels/warning`} download aria-label="Download hazard label" />
+                }
+              >
+                <Download />
+                Download hazard label
+              </DropdownMenuItem>
+            )}
+            {editable && (
+              <DropdownMenuItem onClick={() => router.push(`/orders/${orderId}/edit`)}>
+                <Pencil />
+                Edit
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </span>
   )
 }

@@ -7,6 +7,7 @@ import { db } from "../db/index"
 import { shipments, orders, orderRevisions } from "../db/schema"
 import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
+import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
 import { saveSupplierSkus } from "./product-fields"
 import { appUrl } from "./security"
 
@@ -23,7 +24,10 @@ export class PollAgain extends Error {
 }
 export async function amazonJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   await assertOwned()
-  const { shipmentId, revision } = z.object({ shipmentId: z.uuid(), revision: z.number() }).parse(payload)
+  const input = z
+    .object({ shipmentId: z.uuid(), revision: z.number(), operationId: z.string().optional() })
+    .parse(payload)
+  const { shipmentId, revision } = input
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
   if (!shipment || shipment.revision !== revision || !["queued", "creating"].includes(shipment.status)) {
     return
@@ -49,8 +53,18 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
   if (!order) {
     throw new Error("PO is missing")
   }
-  const api = await amazonFor(order.buyerOrgId, order.amazonSellerId),
-    request = buildAwdRequest(shipment.snapshot, shipment.packing, `copacker-${shipment.id}-${revision}`)
+  const api = await amazonFor(order.buyerOrgId, order.amazonSellerId)
+  const packing = await amazonPacking(order.buyerOrgId, shipment.snapshot, shipment.packing)
+  if (shipment.amazonNetwork === "fba") {
+    await fbaShipmentJob(api, { ...shipment, packing, snapshot: shipment.snapshot }, input, assertOwned)
+    return
+  }
+  const request = buildAwdRequest(
+    shipment.snapshot,
+    packing,
+    amazonReference(shipment.id, revision),
+    await api.prepDetails(shipment.snapshot.items.map((item) => item.buyerSku))
+  )
   let orderId = shipment.amazonOrderId
   if (!orderId) {
     if (shipment.operation === "sending") {
@@ -74,7 +88,7 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
     if (dispatch.length !== 1) {
       throw new Error("Amazon creation is already in progress. Reconcile before retrying")
     }
-    const result = await api.create(request)
+    const result = await createOnce(shipmentId, () => api.create(request))
     orderId = result.orderId
     await db()
       .update(shipments)
@@ -138,7 +152,7 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
           shipmentId,
           kind: "carton_label",
           cartonId: label.cartonId,
-          name: `Carton ${label.cartonId} - ${label.sscc}.pdf`,
+          name: `Carton ${label.cartonId} - ${label.labelNumber}.pdf`,
           orderRevision: shipment.orderRevision,
           shipmentRevision: revision,
           uploadedBy: "amazon"
@@ -149,7 +163,17 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
   }
   await db()
     .update(shipments)
-    .set({ labels, operation: "complete", issue: null, updatedAt: new Date() })
+    .set({
+      labels: labels.map(({ cartonId, labelNumber, destinationCode }) => ({
+        cartonId,
+        labelNumber,
+        destinationCode,
+        amazonShipmentId
+      })),
+      operation: "complete",
+      issue: null,
+      updatedAt: new Date()
+    })
     .where(eq(shipments.id, shipmentId))
   await assertOwned()
   await generateShipmentDocuments(shipmentId)

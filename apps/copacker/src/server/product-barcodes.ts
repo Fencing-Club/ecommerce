@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { amazonDestinations, type OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
 import { combinePdfs } from "@repo/aisle/documents"
 import { splitPdfPages } from "@repo/aisle/labels"
 import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/aisle/product-labels"
@@ -71,10 +71,7 @@ const labelFree = (
   defaults: ReadonlyMap<string, ProductDefaults>,
   productId: string | undefined,
   destination: OrderInput["destination"]
-) =>
-  productId !== undefined &&
-  defaults.get(productId)?.productLabel === "none" &&
-  !amazonDestinations.includes(destination)
+) => productId !== undefined && defaults.get(productId)?.productLabel === "none" && destination !== "amazon"
 
 // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
 export async function variantsNeedingBarcode(orgId: string) {
@@ -458,14 +455,17 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
   ])
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
-  const forAmazon = amazonDestinations.includes(order.data.destination)
+  const forAmazon = order.data.destination === "amazon"
   return order.data.items.map((item): LineLabel => {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
     const productId = rows.find((row) => row.variantId === item.variantId)?.productId
     if (barcode) {
       return { itemId: item.id, state: "uploaded", name: barcode.name, objectKey: barcode.objectKey }
     }
-    if (labelFree(defaults, productId, order.data.destination)) {
+    // A line set to go without its label skips it, except to Amazon, which needs every unit labeled.
+    const unlabeled =
+      item.skuLabel === undefined ? labelFree(defaults, productId, order.data.destination) : !item.skuLabel
+    if (unlabeled && !forAmazon) {
       return { itemId: item.id, state: "none" }
     }
     if (needsUpload(defaults, productId)) {

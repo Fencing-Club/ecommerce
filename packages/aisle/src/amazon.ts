@@ -1,5 +1,6 @@
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
+import type { AmazonPrep } from "./index"
 
 export type AmazonCredentials =
   | { clientId: string; clientSecret: string; refreshToken: string }
@@ -125,6 +126,89 @@ export const amazonOrderSchema = z.object({
     .object({ shipmentId: z.string().optional(), destinationAddress: z.record(z.string(), z.unknown()).optional() })
     .optional()
 })
+
+const fbaInbound = "/inbound/fba/2024-03-20"
+const operationStarted = z.object({ operationId: z.string() })
+const fbaMoney = z.object({ amount: z.number(), code: z.string() })
+const fbaIncentive = z.object({ type: z.string(), value: fbaMoney }).passthrough()
+export const fbaPlanSchema = z
+  .object({
+    inboundPlanId: z.string(),
+    name: z.string(),
+    status: z.string(),
+    packingOptions: z.array(z.object({ packingOptionId: z.string(), status: z.string() })).optional(),
+    placementOptions: z.array(z.object({ placementOptionId: z.string(), status: z.string() })).optional(),
+    shipments: z.array(z.object({ shipmentId: z.string(), status: z.string() })).optional()
+  })
+  .passthrough()
+const fbaPackingOptionSchema = z
+  .object({
+    packingOptionId: z.string(),
+    status: z.string(),
+    packingGroups: z.array(z.string()),
+    fees: z.array(fbaIncentive),
+    discounts: z.array(fbaIncentive),
+    supportedShippingConfigurations: z
+      .array(z.object({ shippingMode: z.string().optional(), shippingSolution: z.string().optional() }))
+      .optional()
+  })
+  .passthrough()
+const fbaItemSchema = z.object({ msku: z.string(), quantity: z.number().int() }).passthrough()
+const fbaPlacementOptionSchema = z
+  .object({
+    placementOptionId: z.string(),
+    status: z.string(),
+    shipmentIds: z.array(z.string()),
+    fees: z.array(fbaIncentive),
+    discounts: z.array(fbaIncentive)
+  })
+  .passthrough()
+const fbaShipmentSchema = z
+  .object({
+    shipmentId: z.string(),
+    placementOptionId: z.string(),
+    shipmentConfirmationId: z.string().optional(),
+    status: z.string().optional(),
+    selectedTransportationOptionId: z.string().optional(),
+    selectedDeliveryWindow: z.object({ deliveryWindowOptionId: z.string().optional() }).passthrough().optional(),
+    destination: z.object({ destinationType: z.string(), warehouseId: z.string().optional() }).passthrough()
+  })
+  .passthrough()
+const fbaBoxSchema = z
+  .object({
+    packageId: z.string(),
+    boxId: z.string().optional(),
+    items: z.array(fbaItemSchema).optional(),
+    dimensions: z
+      .object({ length: z.number(), width: z.number(), height: z.number(), unitOfMeasurement: z.string() })
+      .optional(),
+    weight: z.object({ value: z.number(), unit: z.string() }).optional()
+  })
+  .passthrough()
+const fbaTransportationOptionSchema = z
+  .object({
+    transportationOptionId: z.string(),
+    shipmentId: z.string(),
+    shippingMode: z.string(),
+    shippingSolution: z.string(),
+    preconditions: z.array(z.string()),
+    carrier: z.object({ name: z.string().optional(), alphaCode: z.string().optional() }).passthrough()
+  })
+  .passthrough()
+const fbaDeliveryWindowSchema = z
+  .object({
+    deliveryWindowOptionId: z.string(),
+    startDate: z.string(),
+    endDate: z.string(),
+    availabilityType: z.string(),
+    validUntil: z.string()
+  })
+  .passthrough()
+export type FbaPackingOption = z.infer<typeof fbaPackingOptionSchema>
+export type FbaPlacementOption = z.infer<typeof fbaPlacementOptionSchema>
+export type FbaTransportationOption = z.infer<typeof fbaTransportationOptionSchema>
+export type FbaBox = z.infer<typeof fbaBoxSchema>
+export type FbaDeliveryWindow = z.infer<typeof fbaDeliveryWindowSchema>
 
 // The North American marketplaces orders are read from: the US, Canada, Mexico and Brazil. They share one seller
 // account and one endpoint; orders from the others are fulfilled from US stock (FBA remote fulfillment) or shipped by
@@ -437,7 +521,19 @@ export class Amazon {
         packagesToInbound: z.array(z.object({ status: z.string(), packageQuantity: packageSchema }))
       })
       .parse(await this.request("POST", "/awd/2024-05-09/inboundEligibility", { packagesToInbound }))
-    const signature = (value: unknown) => JSON.stringify(packageSchema.parse(value))
+    // Amazon echoes the cartons with empty lists and prep instructions added, so only what identifies a carton is
+    // compared: how many, the SKUs and quantities in it, and its size and weight.
+    const signature = (value: unknown) => {
+      const { count, distributionPackage: carton } = packageSchema.parse(value)
+      const { dimensions, weight } = carton.measurements
+      return JSON.stringify([
+        count,
+        carton.type,
+        carton.contents.products.map((product) => [product.sku, product.quantity]).toSorted(),
+        [dimensions.length, dimensions.width, dimensions.height, dimensions.unitOfMeasurement],
+        [weight.weight, weight.unitOfMeasurement]
+      ])
+    }
     const expected = packagesToInbound.map(signature).sort(),
       returned = body.packagesToInbound.map((p) => signature(p.packageQuantity)).sort()
     if (JSON.stringify(expected) !== JSON.stringify(returned)) {
@@ -476,6 +572,187 @@ export class Amazon {
           `/awd/2024-05-09/inboundShipments/${encodeURIComponent(id)}/labels?pageType=PLAIN_PAPER&formatType=PDF`
         )
       )
+  }
+  // How Amazon has each SKU prepared and labeled, by SKU. SKUs Amazon doesn't list for FBA are left out.
+  async prepDetails(mskus: string[]) {
+    const details = new Map<string, AmazonPrep>()
+    const unique = [...new Set(mskus)]
+    for (let start = 0; start < unique.length; start += 100) {
+      // Amazon reads only the first of repeated mskus parameters, so they're sent as one comma-separated list.
+      const query = new URLSearchParams({
+        marketplaceId: "ATVPDKIKX0DER",
+        mskus: unique.slice(start, start + 100).join(",")
+      })
+      const body = z
+        .object({
+          mskuPrepDetails: z.array(
+            z.object({
+              msku: z.string(),
+              prepCategory: z.string(),
+              prepOwnerConstraint: z.string().optional(),
+              labelOwnerConstraint: z.string().optional(),
+              allOwnersConstraint: z.string().optional()
+            })
+          )
+        })
+        .parse(await this.request("GET", `${fbaInbound}/items/prepDetails?${query}`))
+      for (const { msku, ...detail } of body.mskuPrepDetails) {
+        details.set(msku, detail)
+      }
+    }
+    return details
+  }
+  // Cancels an AWD inbound order and its shipment.
+  async cancel(id: string) {
+    await this.request("POST", `/awd/2024-05-09/inboundOrders/${encodeURIComponent(id)}/cancellation`)
+  }
+
+  // FBA inbound plans (Fulfillment Inbound 2024-03-20). Amazon works on most steps in the background: each returns an
+  // operation to wait for with fbaOperation.
+  private fbaPath(planId: string, rest = "") {
+    return `${fbaInbound}/inboundPlans/${encodeURIComponent(planId)}${rest}`
+  }
+  private async fbaStart(method: string, path: string, body?: unknown) {
+    return operationStarted.parse(await this.request(method, path, body)).operationId
+  }
+  // Every page of a list, following Amazon's pagination token.
+  private async fbaList<T>(path: string, key: string, item: z.ZodType<T>) {
+    const results: T[] = []
+    let token: string | undefined
+    for (let page = 0; page < 50; page++) {
+      const query = new URLSearchParams({ pageSize: "20", ...(token ? { paginationToken: token } : {}) })
+      const body = z
+        .object({ [key]: z.array(item), pagination: z.object({ nextToken: z.string().optional() }).optional() })
+        .parse(await this.request("GET", `${path}${path.includes("?") ? "&" : "?"}${query}`))
+      results.push(...(body[key] as T[]))
+      token = (body.pagination as { nextToken?: string } | undefined)?.nextToken
+      if (!token) {
+        return results
+      }
+    }
+    throw new Error("Amazon inbound plan pagination exceeds the supported page limit")
+  }
+  async fbaCreatePlan(body: unknown) {
+    return z
+      .object({ inboundPlanId: z.string(), operationId: z.string() })
+      .parse(await this.request("POST", `${fbaInbound}/inboundPlans`, body))
+  }
+  async fbaOperation(operationId: string) {
+    return z
+      .object({
+        operationStatus: z.enum(["SUCCESS", "FAILED", "IN_PROGRESS"]),
+        operationProblems: z.array(z.object({ code: z.string(), message: z.string(), severity: z.string() }))
+      })
+      .parse(await this.request("GET", `${fbaInbound}/operations/${encodeURIComponent(operationId)}`))
+  }
+  async fbaPlan(planId: string) {
+    return fbaPlanSchema.parse(await this.request("GET", this.fbaPath(planId)))
+  }
+  async fbaGeneratePackingOptions(planId: string) {
+    return this.fbaStart("POST", this.fbaPath(planId, "/packingOptions"))
+  }
+  async fbaPackingOptions(planId: string) {
+    return this.fbaList(this.fbaPath(planId, "/packingOptions"), "packingOptions", fbaPackingOptionSchema)
+  }
+  async fbaPackingGroupItems(planId: string, packingGroupId: string) {
+    return this.fbaList(
+      this.fbaPath(planId, `/packingGroups/${encodeURIComponent(packingGroupId)}/items`),
+      "items",
+      fbaItemSchema
+    )
+  }
+  async fbaConfirmPackingOption(planId: string, packingOptionId: string) {
+    return this.fbaStart(
+      "POST",
+      this.fbaPath(planId, `/packingOptions/${encodeURIComponent(packingOptionId)}/confirmation`)
+    )
+  }
+  async fbaSetPacking(planId: string, body: unknown) {
+    return this.fbaStart("POST", this.fbaPath(planId, "/packingInformation"), body)
+  }
+  // The boxes given for a plan with fbaSetPacking; none until its packing information is set.
+  async fbaPlanBoxes(planId: string) {
+    return this.fbaList(this.fbaPath(planId, "/boxes"), "boxes", fbaBoxSchema)
+  }
+  async fbaGeneratePlacementOptions(planId: string) {
+    return this.fbaStart("POST", this.fbaPath(planId, "/placementOptions"), {})
+  }
+  async fbaPlacementOptions(planId: string) {
+    return this.fbaList(this.fbaPath(planId, "/placementOptions"), "placementOptions", fbaPlacementOptionSchema)
+  }
+  async fbaConfirmPlacementOption(planId: string, placementOptionId: string) {
+    return this.fbaStart(
+      "POST",
+      this.fbaPath(planId, `/placementOptions/${encodeURIComponent(placementOptionId)}/confirmation`)
+    )
+  }
+  async fbaShipment(planId: string, shipmentId: string) {
+    return fbaShipmentSchema.parse(
+      await this.request("GET", this.fbaPath(planId, `/shipments/${encodeURIComponent(shipmentId)}`))
+    )
+  }
+  async fbaShipmentBoxes(planId: string, shipmentId: string) {
+    return this.fbaList(
+      this.fbaPath(planId, `/shipments/${encodeURIComponent(shipmentId)}/boxes`),
+      "boxes",
+      fbaBoxSchema
+    )
+  }
+  async fbaGenerateTransportationOptions(planId: string, body: unknown) {
+    return this.fbaStart("POST", this.fbaPath(planId, "/transportationOptions"), body)
+  }
+  async fbaTransportationOptions(planId: string, placementOptionId: string, shipmentId: string) {
+    return this.fbaList(
+      this.fbaPath(planId, `/transportationOptions?${new URLSearchParams({ placementOptionId, shipmentId })}`),
+      "transportationOptions",
+      fbaTransportationOptionSchema
+    )
+  }
+  async fbaGenerateDeliveryWindowOptions(planId: string, shipmentId: string) {
+    return this.fbaStart(
+      "POST",
+      this.fbaPath(planId, `/shipments/${encodeURIComponent(shipmentId)}/deliveryWindowOptions`)
+    )
+  }
+  async fbaDeliveryWindowOptions(planId: string, shipmentId: string) {
+    return this.fbaList(
+      this.fbaPath(planId, `/shipments/${encodeURIComponent(shipmentId)}/deliveryWindowOptions`),
+      "deliveryWindowOptions",
+      fbaDeliveryWindowSchema
+    )
+  }
+  async fbaConfirmDeliveryWindow(planId: string, shipmentId: string, deliveryWindowOptionId: string) {
+    return this.fbaStart(
+      "POST",
+      this.fbaPath(
+        planId,
+        `/shipments/${encodeURIComponent(shipmentId)}/deliveryWindowOptions/${encodeURIComponent(deliveryWindowOptionId)}/confirmation`
+      )
+    )
+  }
+  async fbaConfirmTransportation(planId: string, transportationSelections: unknown[]) {
+    return this.fbaStart("POST", this.fbaPath(planId, "/transportationOptions/confirmation"), {
+      transportationSelections
+    })
+  }
+  async fbaCancelPlan(planId: string) {
+    return this.fbaStart("PUT", this.fbaPath(planId, "/cancellation"))
+  }
+  // The address of one box's label PDF, on plain paper, for a confirmed FBA shipment.
+  async fbaBoxLabel(shipmentConfirmationId: string, boxId: string) {
+    const query = new URLSearchParams({
+      PageType: "PackageLabel_Plain_Paper",
+      LabelType: "UNIQUE",
+      PackageLabelsToPrint: boxId
+    })
+    return z
+      .object({ payload: z.object({ DownloadURL: z.url() }) })
+      .parse(
+        await this.request(
+          "GET",
+          `/fba/inbound/v0/shipments/${encodeURIComponent(shipmentConfirmationId)}/labels?${query}`
+        )
+      ).payload.DownloadURL
   }
   /**
    * The seller's store name and the North American marketplaces it sells in that orders are read from, the US first.

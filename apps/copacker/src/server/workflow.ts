@@ -13,9 +13,9 @@ import {
   reservedPieces,
   type ReadinessIssue
 } from "./readiness"
+import { forwarderLeg } from "./shipment-legs"
 
 const finishedMessages: Partial<Record<ShipmentState, string>> = {
-  collected: "Collection has been reported",
   received: "The goods have arrived",
   cancelled: "Shipment cancellation has been verified"
 }
@@ -25,6 +25,8 @@ export async function orderWorkflow(s: Session, orderId: string) {
   const missingLabels = await linesMissingLabels(s, orderId)
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx)
+    // Whether the goods pass through a forwarder, whose leg comes after the supplier's.
+    const leg = forwarderLeg(order.data) !== null
     const rows = await tx.select().from(shipments).where(eq(shipments.orderId, orderId)).orderBy(shipments.createdAt)
     const docs = await tx.select().from(documents).where(eq(documents.orderId, orderId))
     return {
@@ -51,7 +53,12 @@ export async function orderWorkflow(s: Session, orderId: string) {
           order.revision
         )
         const release = releaseIssues(shipment, docs, missingLabels)
-        let next: { owner: "buyer" | "supplier" | "system" | null; step: string; action?: string; message: string }
+        let next: {
+          owner: "buyer" | "supplier" | "forwarder" | "system" | null
+          step: string
+          action?: string
+          message: string
+        }
         if (editable) {
           next = {
             owner: "supplier",
@@ -73,7 +80,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
             ? {
                 owner: "buyer",
                 step: "labels",
-                message: "Book shipping in Amazon and complete the missing documents below"
+                message: "Book shipping and add the missing documents below"
               }
             : {
                 owner: "buyer",
@@ -82,7 +89,26 @@ export async function orderWorkflow(s: Session, orderId: string) {
                 message: "Enter the booking reference and release the supplier packet"
               }
         } else if (shipment.status === "ready") {
-          next = { owner: "supplier", step: "print", message: "Print the packet and prepare the cartons for pickup" }
+          next = {
+            owner: "supplier",
+            step: "ship",
+            action: "shipment.ship",
+            message: "Print the packet, pack the cartons and mark them shipped"
+          }
+        } else if (shipment.status === "shipped" && leg) {
+          next = {
+            owner: "forwarder",
+            step: "forward",
+            action: "shipment.forward",
+            message: "The forwarder ships the goods on with its freight cost, carrier and tracking"
+          }
+        } else if (["shipped", "forwarded"].includes(shipment.status)) {
+          next = {
+            owner: "buyer",
+            step: "receive",
+            action: "shipment.received",
+            message: "Mark the goods received when they arrive"
+          }
         } else if (finishedStates.includes(shipment.status)) {
           next = {
             owner: null,
@@ -93,8 +119,8 @@ export async function orderWorkflow(s: Session, orderId: string) {
           next = {
             owner: "buyer",
             step: "cancellation",
-            action: "shipment.cancelled",
-            message: "Resolve the existing shipment in Amazon before creating a replacement"
+            action: "shipment.cancelAmazon",
+            message: "Cancel the existing Amazon shipment before creating a replacement"
           }
         } else {
           next =

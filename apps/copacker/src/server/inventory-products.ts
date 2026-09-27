@@ -1,4 +1,4 @@
-import type { OrderInput } from "@repo/aisle"
+import type { AmazonNetwork, OrderInput } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { Shopify } from "@repo/aisle/shopify"
 import type { LocationClassification } from "./inventory-locations"
@@ -73,21 +73,15 @@ function totals(items: Quantities[]): Quantities {
 
 const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 
-// Where a PO's stock will appear: Amazon's AWD or FBA pool for Amazon shipments, or the Shopify location a delivery
-// address is linked to. Other destinations (AWD China, forwarders) count only toward "All locations".
-const destinationPools: Partial<Record<OrderInput["destination"], string>> = {
-  // Amazon POs ship to AWD until FBA inbound shipments are supported.
-  amazon: "amazon:awd",
-  awd_us: "amazon:awd",
-  fba: "amazon:fba"
-}
+// Where a PO's stock will appear: for a PO to Amazon, the FBA or AWD pool of each line's network, or the Shopify
+// location a delivery address is linked to. Forwarders count only toward "All locations".
+const networkPools: Record<AmazonNetwork, string> = { fba: "amazon:fba", awd_us: "amazon:awd" }
 export function receivingLocations(
-  order: Pick<OrderInput, "destination" | "deliveryId">,
+  order: Pick<OrderInput, "destination" | "deliveryId"> & { items: Pick<OrderItem, "amazonNetwork">[] },
   deliveryLocations: ReadonlyMap<string, string | null> = new Map()
 ) {
-  const pool = destinationPools[order.destination]
-  if (pool) {
-    return [pool]
+  if (order.destination === "amazon") {
+    return [...new Set(order.items.map((item) => networkPools[item.amazonNetwork]))]
   }
   const linked = order.destination === "warehouse" && order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
   return linked ? [linked] : []
@@ -99,7 +93,7 @@ export function onOrderByVariant(
   orders: {
     id: string
     data: Pick<OrderInput, "reference" | "destination" | "deliveryId"> & {
-      items: Pick<OrderItem, "id" | "variantId" | "pieces" | "piecesPerSet">[]
+      items: Pick<OrderItem, "id" | "variantId" | "pieces" | "piecesPerSet" | "amazonNetwork">[]
     }
     received?: Record<string, number>
   }[],
@@ -107,8 +101,9 @@ export function onOrderByVariant(
 ) {
   const byVariant = new Map<string, PendingOrder[]>()
   for (const order of orders) {
-    const locationIds = receivingLocations(order.data, deliveryLocations)
     for (const item of order.data.items) {
+      // Each line to Amazon stocks its own network's pool.
+      const locationIds = receivingLocations({ ...order.data, items: [item] }, deliveryLocations)
       const pending = byVariant.get(item.variantId) ?? []
       const units = Math.floor(Math.max(0, item.pieces - (order.received?.[item.id] ?? 0)) / item.piecesPerSet)
       const existing = pending.find((entry) => entry.id === order.id)

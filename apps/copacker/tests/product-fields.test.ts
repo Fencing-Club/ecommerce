@@ -31,7 +31,7 @@ const product = (id: number) => `gid://shopify/Product/${id}`
 
 function actor(id: string, kind: "buyer" | "supplier"): Session {
   return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
+    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
     org: {
       id,
       kind,

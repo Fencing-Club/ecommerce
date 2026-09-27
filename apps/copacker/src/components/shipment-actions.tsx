@@ -84,17 +84,25 @@ export function CorrectionForm({ id }: { id: string }) {
   )
 }
 
-const reconcileSchema = z.object({
+const awdReconcileSchema = z.object({
   amazonOrderId: z
     .string()
     .trim()
     .toUpperCase()
     .regex(/^STAR-[A-Z0-9]+$/, "Enter the Amazon order ID, which starts with STAR-")
 })
+const fbaReconcileSchema = z.object({
+  amazonOrderId: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^wf[0-9a-f-]{36}$/, "Enter the inbound plan ID, which starts with wf")
+})
 
-export function ReconcileShipment({ id }: { id: string }) {
+// Links a shipment to the AWD order or FBA inbound plan Amazon made when Copacker lost its reply.
+export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {
   const { form, submit } = useActionForm({
-    schema: reconcileSchema,
+    schema: fba ? fbaReconcileSchema : awdReconcileSchema,
     action: "shipment.reconcile",
     defaultValues: { amazonOrderId: "" },
     toPayload: (values) => ({ id, ...values })
@@ -104,8 +112,8 @@ export function ReconcileShipment({ id }: { id: string }) {
       <FormInput
         name="amazonOrderId"
         required
-        label="Existing Amazon AWD order ID"
-        placeholder="STAR-"
+        label={fba ? "Existing FBA inbound plan ID" : "Existing Amazon AWD order ID"}
+        placeholder={fba ? "wf" : "STAR-"}
         description="Copacker verifies that the order belongs to this shipment before continuing."
       />
     </ActionForm>

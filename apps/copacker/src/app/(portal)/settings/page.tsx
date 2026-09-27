@@ -11,6 +11,7 @@ import { TextField } from "@/components/form-fields"
 import { InfoTip } from "@/components/info-tip"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { AddMonthlyCost } from "@/components/monthly-costs"
+import { ProfileForm } from "@/components/profile-form"
 import { SavedAddresses } from "@/components/saved-addresses"
 import {
   BusinessProfileForm,
@@ -23,7 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup } from "@/components/ui/field"
 import { db } from "@/db"
-import { connections, contacts, supplierProfiles } from "@/db/schema"
+import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
 import { session } from "@/server/auth"
@@ -92,9 +93,27 @@ export default async function Settings() {
           .map((location) => ({ id: location.locationId, name: location.name }))
       : []
 
+  const [person] = await db().select().from(profiles).where(eq(profiles.userId, s.user.id))
   return (
     <>
       <PageHeader title="Workspace settings" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your profile</CardTitle>
+          <CardDescription>{s.user.email}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileForm
+            profile={{
+              firstName: person?.firstName ?? "",
+              lastName: person?.lastName ?? "",
+              position: person?.position ?? "",
+              company: person?.company || s.org.name
+            }}
+          />
+        </CardContent>
+      </Card>
 
       {s.org.kind === "buyer" && (
         <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { md: "2" } })}>

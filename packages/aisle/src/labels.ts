@@ -3,6 +3,17 @@ import { readAwdLabelPdf } from "./awd-label-pdf"
 import type { OrderInput, Packing } from "./index"
 import { inspectShipmentZip } from "./shipment-artifacts"
 
+// Amazon's label for one supplier carton, as a shipment keeps it: the label's number (an AWD SSCC, or an FBA box ID
+// such as FBA15ABCD1234U000001), the Amazon warehouse it goes to, and the Amazon shipment it travels in.
+export type CartonLabel = {
+  cartonId: string
+  labelNumber: string
+  destinationCode: string
+  amazonShipmentId: string
+}
+
+// Matches each supplier carton to one page of Amazon's AWD carton labels by SKU, FNSKU and units, and returns the file
+// and page of each carton's label.
 export async function matchLabels(
   files: Array<{ name: string; data: Uint8Array }>,
   order: OrderInput,
@@ -34,11 +45,16 @@ export async function matchLabels(
       throw new Error(`No matching Amazon label for carton ${carton.cartonId}`)
     }
     const label = remaining.splice(index, 1)[0]!
-    return { cartonId: carton.cartonId, ...label }
+    return {
+      cartonId: carton.cartonId,
+      labelNumber: label.sscc,
+      destinationCode: label.destinationCode,
+      file: label.file,
+      page: label.page
+    }
   })
   return mapped
 }
-export type CartonLabel = Awaited<ReturnType<typeof matchLabels>>[number]
 export async function splitPdfPages(data: Uint8Array) {
   const source = await PDFDocument.load(data)
   if (source.getPageCount() > 1000) {

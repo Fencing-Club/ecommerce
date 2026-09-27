@@ -1,4 +1,4 @@
-import { money } from "@repo/aisle"
+import { amazonNetworkNames, money } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
 import { AlertTriangle, ArrowRight, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
 import type { Metadata } from "next"
@@ -66,6 +66,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
   })
   const origin = shipment.packing?.origin
+  const fba = shipment.amazonNetwork === "fba"
   // A supplier that isn't on Copacker sends its details by email, and the buyer enters them here.
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
 
@@ -80,7 +81,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       />
       <PageHeader
         title={shipment.amazonShipmentId ?? (enteringFor ? "Shipment" : "Prepare your shipment")}
-        description={`${order.data.reference} to ${order.data.destination === "amazon" ? "Amazon AWD USA" : formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
+        description={`${order.data.reference} to ${shipment.amazonNetwork ? `Amazon ${amazonNetworkNames[shipment.amazonNetwork]}` : formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
       >
         <Status status={shipment.status} />
       </PageHeader>
@@ -163,8 +164,10 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
               <CardHeader>
                 <CardTitle>Waiting for the buyer’s shipping labels</CardTitle>
                 <CardDescription>
-                  Ready for pickup on {shipment.packing?.readyDate}. The buyer books AGL transportation in Amazon, then
-                  uploads and assigns the shipping labels here.
+                  Ready for pickup on {shipment.packing?.readyDate}.{" "}
+                  {fba
+                    ? "The buyer books its carrier or forwarder to the Amazon warehouses, then uploads and assigns the shipping labels here."
+                    : "The buyer books AGL transportation in Amazon, then uploads and assigns the shipping labels here."}
                 </CardDescription>
               </CardHeader>
               {isBuyer && (
@@ -175,7 +178,11 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                       nativeButton={false}
                       render={
                         <a
-                          href="https://sellercentral.amazon.com/awd"
+                          href={
+                            fba
+                              ? "https://sellercentral.amazon.com/fba/sendtoamazon"
+                              : "https://sellercentral.amazon.com/awd"
+                          }
                           target="_blank"
                           rel="noreferrer"
                           aria-label="Open Amazon Seller Central in a new tab"
@@ -269,7 +276,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                         {c.weight}
                       </TableCell>
                       <TableCell className={sx({ fontFamily: "mono", text: "xs" })}>
-                        {shipment.labels.find((l) => l.cartonId === c.cartonId)?.sscc ?? "Pending"}
+                        {shipment.labels.find((l) => l.cartonId === c.cartonId)?.labelNumber ?? "Pending"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -324,25 +331,25 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </Card>
           </div>
 
-          {shipment.status === "ready" && (
-            <ActionButton action="shipment.collected" data={{ id }}>
-              Mark collected
+          {step.next.step === "ship" && (!isBuyer || enteringFor) && (
+            <ActionButton action="shipment.ship" data={{ id }}>
+              Mark shipped
             </ActionButton>
           )}
-          {isBuyer && ["ready", "collected"].includes(shipment.status) && (
+          {isBuyer && step.next.step === "receive" && (
             <ActionButton action="shipment.received" data={{ id }} variant="outline">
               Mark received
             </ActionButton>
           )}
-          {isBuyer && step.next.step === "reconcile" && <ReconcileShipment id={id} />}
+          {isBuyer && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
           {isBuyer && step.next.step === "retry" && (
             <ActionButton action="shipment.retry" data={{ id, revision: shipment.revision }}>
               Retry shipment
             </ActionButton>
           )}
           {isBuyer && step.next.step === "cancellation" && (
-            <ActionButton action="shipment.cancelled" data={{ id }}>
-              Verify Amazon cancellation
+            <ActionButton action="shipment.cancelAmazon" data={{ id }}>
+              Cancel in Amazon
             </ActionButton>
           )}
           {!finishedStates.includes(shipment.status) &&

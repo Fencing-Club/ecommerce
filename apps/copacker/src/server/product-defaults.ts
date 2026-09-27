@@ -1,4 +1,4 @@
-import { prepCategories } from "@repo/aisle"
+import { type AmazonNetwork, amazonNetworks, prepCategories } from "@repo/aisle"
 import { type CatalogVariant, piecesPerUnit } from "@repo/aisle/shopify"
 import { and, eq, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -20,6 +20,10 @@ export type ProductDefaults = {
   supplierId: string | null
   // Uploaded barcode, or else Amazon's FNSKU label ("standard") unless the product needs its own ("uploaded").
   productLabel: ProductLabel
+  // Polybags get a suffocation warning label; new PO lines for the product start with it.
+  suffocationWarning: boolean
+  // The Amazon network new PO lines to Amazon for the product go to.
+  amazonNetwork: AmazonNetwork
   revision: number
 }
 export const noDefaults: ProductDefaults = {
@@ -30,6 +34,8 @@ export const noDefaults: ProductDefaults = {
   minimumOrder: null,
   supplierId: null,
   productLabel: "standard",
+  suffocationWarning: false,
+  amazonNetwork: "fba",
   revision: 0
 }
 
@@ -44,6 +50,10 @@ export const productDefaultsInputSchema = z.strictObject({
   // Left out keeps the saved supplier.
   supplierId: z.uuid().nullable().optional(),
   productLabel: z.enum(productLabels),
+  // Left out keeps the saved setting.
+  suffocationWarning: z.boolean().optional(),
+  // Left out keeps the saved network.
+  amazonNetwork: z.enum(amazonNetworks).optional(),
   expectedRevision: z.number().int().nonnegative()
 })
 
@@ -80,6 +90,8 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
         minimumOrder: row.minimumOrder,
         supplierId: row.supplierId,
         productLabel: row.productLabel,
+        suffocationWarning: row.suffocationWarning,
+        amazonNetwork: row.amazonNetwork,
         revision: row.revision
       }
     ])
@@ -138,6 +150,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       minimumOrder: input.minimumOrder,
       supplierId,
       productLabel: input.productLabel,
+      suffocationWarning: input.suffocationWarning ?? previous?.suffocationWarning ?? false,
+      amazonNetwork: input.amazonNetwork ?? previous?.amazonNetwork ?? "fba",
       revision: input.expectedRevision + 1,
       updatedAt: new Date()
     }
@@ -156,6 +170,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       minimumOrder: value.minimumOrder,
       supplierId: value.supplierId,
       productLabel: value.productLabel,
+      suffocationWarning: value.suffocationWarning,
+      amazonNetwork: value.amazonNetwork,
       revision: value.revision
     }
   })
@@ -270,8 +286,8 @@ export async function assignProductLabel(s: Session, raw: unknown) {
   })
 }
 
-// What a new PO line for a Shopify variant starts with: pieces per unit from Shopify, description and preparation from
-// the product's saved defaults.
+// What a new PO line for a Shopify variant starts with: pieces per unit from Shopify, description, preparation and the
+// suffocation warning from the product's saved defaults.
 export async function lineDefaultsFor(orgId: string) {
   const [account] = await db()
     .select({ domain: connections.externalId })
@@ -286,6 +302,13 @@ export async function lineDefaultsFor(orgId: string) {
       // A bundle whose components Shopify didn't return starts at 1; saving the PO asks to check it in Shopify.
     }
     const defaults = saved.get(variant.product.id)
-    return { piecesPerSet, description: defaults?.description ?? "", prepCategory: defaults?.prepCategory ?? null }
+    return {
+      piecesPerSet,
+      description: defaults?.description ?? "",
+      prepCategory: defaults?.prepCategory ?? null,
+      suffocationWarning: defaults?.suffocationWarning ?? false,
+      amazonNetwork: defaults?.amazonNetwork ?? "fba",
+      skuLabel: defaults?.productLabel !== "none"
+    }
   }
 }

@@ -1,55 +1,106 @@
 "use client"
 
-import { commonPaymentTerms, money, type OrderInput, orderInputSchema } from "@repo/aisle"
-import { Plus, Search, Trash2 } from "lucide-react"
+import {
+  amazonNetworkNames,
+  adjustmentTypes,
+  amazonNetworks,
+  commonPaymentTerms,
+  money,
+  type OrderInput,
+  orderInputSchema
+} from "@repo/aisle"
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Download,
+  Ellipsis,
+  MapPin,
+  Package,
+  Pencil,
+  Plus,
+  Warehouse,
+  X
+} from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { FormProvider, useFieldArray, useWatch } from "react-hook-form"
+import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { FieldGroup } from "@/components/ui/field"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import { useActionForm } from "@/hooks/useActionForm"
-import { type CatalogProduct, errorMessage, useLazyCatalogQuery } from "@/lib/api"
+import type { CatalogProduct } from "@/lib/api"
 import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
 import { orderLine } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
+import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
-import { EmptyState, WarningNote } from "./common"
-import { FormCheckbox, FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
-import * as styles from "./order-builder.css"
-import { sx } from "@/styles/sprinkles.css"
+import { AddProductsDialog, type StockAt } from "./add-products-dialog"
+import { FormCheckbox, FormChoice, FormInput, FormTextarea } from "./form-controls"
 
 const destinations = [
   { value: "amazon", label: "Amazon" },
-  { value: "awd_us", label: "Amazon AWD USA" },
   { value: "warehouse", label: "Your location" },
-  { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
-  { value: "fba", label: "Amazon FBA (draft only)" },
   { value: "forwarder", label: "Freight forwarder" }
 ]
-const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"].map((value) => ({
-  value,
-  label: value
-}))
+// Which of Amazon's networks a line goes to, when the PO ships to Amazon.
+const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
+const currencies = [
+  { value: "USD", label: "US Dollar (USD $)" },
+  { value: "CNY", label: "Chinese Yuan (CNY ¥)" },
+  { value: "EUR", label: "Euro (EUR €)" },
+  { value: "GBP", label: "British Pound (GBP £)" },
+  { value: "CAD", label: "Canadian Dollar (CAD $)" },
+  { value: "AUD", label: "Australian Dollar (AUD $)" }
+]
 
-function supplierMatchMessage(status: string) {
+// Why a line's price isn't the supplier's quote, in a few words. A supplier without a catalog has nothing to say.
+function matchNote(status: string) {
   switch (status) {
+    case "matched":
+    case "supplier_catalog_unavailable":
+      return null
     case "not_in_supplier_catalog":
-      return "Not in this supplier’s catalog. You can still order it; confirm the price and SKU."
+      return "Not in the supplier’s catalog"
     case "supplier_sku_missing":
-      return "No supplier SKU. You can still order it; confirm the supplier’s code."
+      return "No supplier SKU"
     case "currency_review":
-      return "Supplier quote uses a different currency. Enter the agreed price."
+      return "Quote is in another currency"
     case "price_missing":
-      return "Supplier price is unknown. Enter the agreed price."
-    case "price_conversion_review":
-      return "Supplier pack price cannot be converted exactly per piece. Enter the agreed price."
+      return "No supplier price"
     default:
-      return "Supplier catalog needs review. Confirm the SKU and price."
+      return "Check the price"
   }
 }
 
+type Match = {
+  sku: string
+  status: BundleQuoteStatus
+  unitPriceMinor: number | null
+  product: { title?: string } | null
+  // Pieces the supplier can still sell, or null when there's no limit.
+  available: number | null
+}
+
+// A PO's editor, laid out like Shopify's: the route from the supplier to where the goods go, a table of products
+// edited in place, with more per line in its menu, and the PO's details and totals beside it.
 export function OrderBuilder({
   suppliers,
   deliveries = [],
@@ -59,41 +110,40 @@ export function OrderBuilder({
   initialDeliveryId,
   initialSupplierId,
   needsBarcodeVariantIds = [],
-  draft
+  draft,
+  title
 }: {
-  // Each supplier's payment terms, which a new PO to it starts with.
-  suppliers: Array<{ id: string; name: string; paymentTerms?: string }>
-  // The buyer's delivery addresses, for POs sent to its own locations.
-  deliveries?: Array<{ id: string; name: string }>
-  // Where POs to freight forwarders can ship: each forwarder's addresses.
-  forwarderAddresses?: Array<{ addressId: string; forwarderId: string; label: string }>
-  // Lines added before the builder opens, such as a reorder from Products.
+  suppliers: Array<{ id: string; name: string }>
+  // The buyer's delivery addresses, for POs sent to its own locations, with the Shopify location stock arrives at.
+  deliveries?: Array<{ id: string; name: string; shopifyLocationId?: string | null }>
+  // Where POs to freight forwarders can ship: each forwarder's addresses, and whether Amazon could pick up there.
+  forwarderAddresses?: Array<{ addressId: string; forwarderId: string; label: string; hasPhone?: boolean }>
+  // Lines added before the builder opens, such as a reorder from Restock.
   initialItems?: ReturnType<typeof orderLine>[]
-  initialDestination?: "amazon" | "awd_us" | "fba" | "warehouse"
+  initialDestination?: "amazon" | "warehouse"
   initialDeliveryId?: string
-  // The supplier restock grouped these lines under.
+  // The supplier Restock grouped these lines under.
   initialSupplierId?: string
-  // Variations whose product needs an uploaded label, such as one with size measurements, that don't have one yet.
-  // Other lines get their saved barcode or the standard FNSKU label.
+  // Variations whose product needs an uploaded label that it doesn't have yet.
   needsBarcodeVariantIds?: string[]
   // A draft PO being edited, saved as its next revision.
   draft?: { id: string; revision: number; data: OrderInput }
+  title: string
 }) {
   const needsBarcode = new Set(needsBarcodeVariantIds)
-  const [query, setQuery] = useState("")
-  const [showResults, setShowResults] = useState(false)
-  const [searchCatalog, catalog] = useLazyCatalogQuery()
+  const router = useRouter()
   const { form, submit } = useActionForm({
     schema: orderInputSchema,
     action: draft ? "order.update" : "order.create",
     toPayload: draft ? (order) => ({ id: draft.id, revision: draft.revision, order }) : undefined,
+    // Saving an edit goes back to the PO.
+    onSuccess: draft ? () => router.push(`/orders/${draft.id}`) : undefined,
     defaultValues: draft?.data ?? {
       reference: "",
       supplierId: initialSupplierId ?? "",
       destination: initialDestination,
       deliveryId: initialDeliveryId,
-      dueDate: "",
-      paymentTerms: suppliers.find((row) => row.id === initialSupplierId)?.paymentTerms ?? "",
+      paymentTerms: "Payment in advance",
       currency: "USD",
       notes: "",
       adjustments: [],
@@ -101,34 +151,17 @@ export function OrderBuilder({
     }
   })
   // Line items carry their own `id`, so the field array keys rows separately.
-  const lineItems = useFieldArray({
-    control: form.control,
-    name: "items",
-    keyName: "key"
-  })
+  const lineItems = useFieldArray({ control: form.control, name: "items", keyName: "key" })
   const charges = useFieldArray({ control: form.control, name: "adjustments" })
   const adjustments = useWatch({ control: form.control, name: "adjustments" }) ?? []
   const items = useWatch({ control: form.control, name: "items" }) ?? []
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
   const destination = useWatch({ control: form.control, name: "destination" })
   const deliveryId = useWatch({ control: form.control, name: "deliveryId" })
-  const chosenSupplier = useWatch({ control: form.control, name: "supplierId" })
-  // Choosing another supplier brings its payment terms, unless the buyer typed their own.
-  const lastSupplier = useRef(chosenSupplier)
-  useEffect(() => {
-    if (lastSupplier.current === chosenSupplier) {
-      return
-    }
-    const previous = suppliers.find((row) => row.id === lastSupplier.current)?.paymentTerms ?? ""
-    lastSupplier.current = chosenSupplier
-    const terms = form.getValues("paymentTerms") ?? ""
-    const next = suppliers.find((row) => row.id === chosenSupplier)?.paymentTerms
-    if (next && (!terms || terms === previous)) {
-      form.setValue("paymentTerms", next)
-    }
-  }, [chosenSupplier, suppliers, form])
+  const via = useWatch({ control: form.control, name: "via" })
+  const [addingStop, setAddingStop] = useState(false)
   // The address list depends on the destination, and a forwarder address names its forwarder, so both follow the
-  // chosen destination and address.
+  // chosen destination and address. A stop on the way only suits a destination further on, such as Amazon.
   useEffect(() => {
     let choices: string[] = []
     if (destination === "forwarder") {
@@ -146,6 +179,9 @@ export function OrderBuilder({
     if (form.getValues("forwarderId") !== forwarderId) {
       form.setValue("forwarderId", forwarderId)
     }
+    if ((destination === "forwarder" || destination === "warehouse") && form.getValues("via")) {
+      form.setValue("via", undefined)
+    }
   }, [destination, deliveryId, deliveries, forwarderAddresses, form])
   const supplierId = useWatch({ control: form.control, name: "supplierId" }) ?? ""
   const itemsError = form.formState.errors.items
@@ -156,14 +192,7 @@ export function OrderBuilder({
   )
   const supplierSkus = lookupGroups.flat()
   const skuKey = items.map((item, index) => `${item?.id ?? ""}\0${lookupGroups[index]?.join(",") ?? ""}`).join("\n")
-  const [matches, setMatches] = useState<
-    Array<{
-      sku: string
-      status: BundleQuoteStatus
-      unitPriceMinor: number | null
-      product: { title?: string } | null
-    }>
-  >([])
+  const [matches, setMatches] = useState<Match[]>([])
   const [matchError, setMatchError] = useState("")
   // Prices filled in for the buyer, from Shopify's unit cost or a supplier quote, which a newer quote may replace.
   const lastDefaultedPrice = useRef<Record<string, number>>(
@@ -190,7 +219,7 @@ export function OrderBuilder({
         if (!response.ok) {
           throw new Error("Supplier catalog lookup failed")
         }
-        return response.json() as Promise<typeof matches>
+        return response.json() as Promise<Match[]>
       })
       .then((results) => {
         if (controller.signal.aborted) {
@@ -205,7 +234,13 @@ export function OrderBuilder({
             return componentMatches[0]!
           }
           const quote = bundleQuote(components, componentMatches)
-          return { sku: "", ...quote, product: null }
+          // A bundle can have as many units as its scarcest component allows.
+          const units = components.flatMap((component, position) => {
+            const available = componentMatches[position]?.available
+            return available === null || available === undefined ? [] : [Math.floor(available / component.quantity)]
+          })
+          const available = units.length ? Math.min(...units) * (items[index]?.piecesPerSet ?? 1) : null
+          return { sku: "", ...quote, product: null, available }
         })
         setMatches(perLine)
         perLine.forEach((result, index) => {
@@ -217,9 +252,7 @@ export function OrderBuilder({
           if (buyerEditedPrices.current.has(line.id) || (line.unitPrice !== 0 && line.unitPrice !== prior)) {
             return
           }
-          form.setValue(`items.${index}.unitPrice`, result.unitPriceMinor, {
-            shouldValidate: true
-          })
+          form.setValue(`items.${index}.unitPrice`, result.unitPriceMinor, { shouldValidate: true })
           lastDefaultedPrice.current[line.id] = result.unitPriceMinor
         })
       })
@@ -233,366 +266,714 @@ export function OrderBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId, currency, skuKey, form])
 
-  function search() {
-    setShowResults(true)
-    void searchCatalog(query)
+  function add(products: CatalogProduct[]) {
+    for (const product of products) {
+      if (form.getValues("items").some((item) => item.variantId === product.id)) {
+        continue
+      }
+      const line = orderLine(
+        product,
+        crypto.randomUUID(),
+        { asin: product.amazonAsin, fnsku: product.fnsku, ...product.lineDefaults },
+        form.getValues("currency")
+      )
+      lastDefaultedPrice.current[line.id] = line.unitPrice
+      lineItems.append(line)
+    }
   }
 
-  function add(product: CatalogProduct) {
-    const line = orderLine(
-      product,
-      crypto.randomUUID(),
-      { asin: product.amazonAsin, fnsku: product.fnsku, ...product.lineDefaults },
-      form.getValues("currency")
-    )
-    lastDefaultedPrice.current[line.id] = line.unitPrice
-    lineItems.append(line)
-    setShowResults(false)
-  }
+  const stockAt = stockAtDestination(destination, deliveries.find((row) => row.id === deliveryId)?.shopifyLocationId)
 
-  const pieces = items.reduce((n, i) => n + (i?.pieces || 0), 0)
+  const paymentTerms = form.getValues("paymentTerms")
+  // Shopify's terms, and a draft's own when it has other terms.
+  const termOptions = [
+    { value: "", label: "None" },
+    ...[
+      ...(paymentTerms && !commonPaymentTerms.some((terms) => terms === paymentTerms) ? [paymentTerms] : []),
+      ...commonPaymentTerms
+    ].map((terms) => ({ value: terms, label: terms }))
+  ]
+  const units = items.reduce((n, i) => n + (i?.pieces || 0), 0)
   const subtotal = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
-  const adjustmentTotal = adjustments.reduce((sum, charge) => sum + (charge?.amount || 0), 0)
-  const amount = subtotal + adjustmentTotal
-  const results = showResults ? (catalog.data ?? []) : []
+  const amount = subtotal + adjustments.reduce((sum, charge) => sum + (charge?.amount || 0), 0)
 
   return (
     <FormProvider {...form}>
-      <form className={sx({ display: "flex", flexDirection: "column", gap: 6 })} onSubmit={submit} noValidate>
-        <Card>
-          <CardHeader>
-            <CardTitle>Order details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FieldGroup className={styles.detailsGrid}>
-              <FormInput name="reference" required label="PO reference" placeholder="PO-037" />
-              <FormSelect
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+          <div className="flex gap-2">
+            {draft && (
+              <Button variant="outline" render={<Link href={`/orders/${draft.id}`} />} nativeButton={false}>
+                Discard
+              </Button>
+            )}
+            <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>
+              Save
+            </SubmitButton>
+          </div>
+        </div>
+        <FormError message={form.formState.errors.root?.server?.message} />
+
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="flex flex-wrap items-center gap-1.5 p-3">
+              <RoutePicker
                 name="supplierId"
-                required
                 label="Supplier"
-                placeholder="Select supplier"
-                options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+                icon={<Building2 />}
+                placeholder="Choose supplier"
+                options={suppliers.map((row) => ({ value: row.id, label: row.name }))}
               />
-              <FormSelect
-                name="destination"
-                required
-                label="Destination"
-                options={destinations}
-                description={destination === "amazon" ? "The Amazon warehouse is chosen when you ship." : undefined}
-              />
-              {destination === "forwarder" && (
-                <FormSelect
+              <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+              {(via || addingStop) && (
+                <>
+                  <Stop
+                    forwarderAddresses={forwarderAddresses}
+                    onRemove={() => {
+                      form.setValue("via", undefined, { shouldDirty: true })
+                      setAddingStop(false)
+                    }}
+                  />
+                  <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+                </>
+              )}
+              <RoutePicker name="destination" label="Destination" icon={<MapPin />} options={destinations} />
+              {destination === "warehouse" && (
+                <RoutePicker
                   name="deliveryId"
-                  required
+                  label="Delivery address"
+                  placeholder={deliveries.length ? "Choose address" : "Add an address in Settings"}
+                  options={deliveries.map((row) => ({ value: row.id, label: row.name }))}
+                />
+              )}
+              {destination === "forwarder" && (
+                <RoutePicker
+                  name="deliveryId"
                   label="Forwarder address"
-                  placeholder={forwarderAddresses.length ? "Select an address" : "Add a forwarder address first"}
+                  placeholder={forwarderAddresses.length ? "Choose address" : "Add a forwarder first"}
                   options={forwarderAddresses.map((row) => ({ value: row.addressId, label: row.label }))}
                 />
               )}
-              {destination === "warehouse" && (
-                <FormSelect
-                  name="deliveryId"
-                  required
-                  label="Delivery address"
-                  placeholder={deliveries.length ? "Select delivery address" : "Add a delivery address in Settings"}
-                  options={deliveries.map((delivery) => ({ value: delivery.id, label: delivery.name }))}
-                />
-              )}
-              <FormInput name="dueDate" required label="Required date" type="date" />
-              <FormSelect name="currency" required label="Currency" options={currencies} />
-              <FormInput
-                name="paymentTerms"
-                label="Payment terms"
-                list="payment-terms"
-                placeholder="Choose or type terms"
-                autoComplete="off"
-              />
-              <datalist id="payment-terms">
-                {commonPaymentTerms.map((terms) => (
-                  <option key={terms} value={terms} aria-label={terms} />
-                ))}
-              </datalist>
-            </FieldGroup>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Products</CardTitle>
-            <CardDescription>
-              Search Shopify. Enter quantities and prices per individual piece. Amazon ASINs and FNSKUs are looked up
-              from each product’s SKU. If Amazon isn’t connected yet, that happens when you send the PO.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-            <div className={sx({ display: "flex", gap: 2 })}>
-              <Input
-                aria-label="Search Shopify catalog"
-                placeholder="Search by product name or SKU"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    search()
-                  }
-                }}
-              />
-              <SubmitButton type="button" variant="outline" pending={catalog.isFetching} onClick={search}>
-                {!catalog.isFetching && <Search data-icon="inline-start" />}
-                Search
-              </SubmitButton>
-            </div>
-
-            {showResults && catalog.isError && (
-              <FormError
-                message={errorMessage(
-                  catalog.error,
-                  "Couldn't search your Shopify catalog. Check the Shopify connection in Settings and try again."
-                )}
-              />
-            )}
-            {showResults && catalog.isSuccess && !catalog.isFetching && results.length === 0 && (
-              <p className={sx({ text: "sm", color: "muted" })}>No products match “{query}”.</p>
-            )}
-
-            {results.length > 0 && !catalog.isFetching && (
-              <ItemGroup className={styles.results}>
-                {results.map((product) => (
-                  <Item
-                    key={product.id}
-                    size="sm"
-                    render={
-                      <button
-                        type="button"
-                        aria-label={`Add ${product.product.title} / ${product.title}`}
-                        disabled={items.some((i) => i?.variantId === product.id)}
-                        onClick={() => add(product)}
-                      />
-                    }
-                    className={styles.result}
-                  >
-                    <ItemContent>
-                      <ItemTitle>
-                        {product.product.title} / {product.title}
-                      </ItemTitle>
-                      <ItemDescription>{product.sku}</ItemDescription>
-                    </ItemContent>
-                    <ItemActions>
-                      <Plus className={sx({ size: 4 })} />
-                    </ItemActions>
-                  </Item>
-                ))}
-              </ItemGroup>
-            )}
-
-            {lineItems.fields.length === 0 ? (
-              <EmptyState
-                title="No products yet"
-                description="Search your Shopify catalog above to add products to this purchase order."
-              />
-            ) : (
-              lineItems.fields.map((line, index) => {
-                const item = items[index]
-                const lineError = form.formState.errors.items?.[index]
-                const match = matches[index]
-                return (
-                  <Card key={line.key} size="sm" className={styles.lineCard}>
-                    <CardHeader>
-                      <CardTitle>{line.name}</CardTitle>
-                      <CardDescription>
-                        {line.variant} / {line.buyerSku}
-                      </CardDescription>
-                      <CardAction>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={`Remove ${line.name}`}
-                          onClick={() => lineItems.remove(index)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                      {needsBarcode.has(line.variantId) && (
-                        <WarningNote className={sx({ marginBottom: 3 })}>
-                          This product needs an uploaded label, such as one with its size measurements. Add it on the
-                          Products page, or upload it on the PO after you save it.
-                        </WarningNote>
-                      )}
-                      <FieldGroup className={styles.lineGrid}>
-                        <FormNumber
-                          name={`items.${index}.pieces`}
-                          required
-                          label="Quantity (pieces)"
-                          min={line.piecesPerSet}
-                          step={line.piecesPerSet}
-                        />
-                        <dl className={styles.identifiers}>
-                          <dt className={sx({ fontWeight: "medium" })}>Sellable unit</dt>
-                          <dd className={sx({ color: "muted" })}>
-                            {line.piecesPerSet > 1 ? `Bundle of ${line.piecesPerSet} pieces in Shopify` : "1 piece"}
-                          </dd>
-                        </dl>
-                        {!!item?.components?.length && (
-                          <dl className={styles.identifiers}>
-                            <dt className={sx({ fontWeight: "medium" })}>Supplier components</dt>
-                            {item.components.map((component) => (
-                              <dd key={component.variantId} className={sx({ color: "muted" })}>
-                                {component.quantity} × {component.buyerSku || "Shopify component"} · Supplier SKU{" "}
-                                {component.supplierSku || "missing"}
-                              </dd>
-                            ))}
-                          </dl>
-                        )}
-                        <FormNumber
-                          name={`items.${index}.unitPrice`}
-                          required
-                          label={`Unit price per piece (${currency})`}
-                          min={0}
-                          step={0.01}
-                          scale={100}
-                          onValueChange={() => buyerEditedPrices.current.add(line.id)}
-                        />
-                        {match?.status === "matched" && match.unitPriceMinor !== null && (
-                          <p className={sx({ text: "sm", color: "muted" })}>
-                            Supplier quote: {money(match.unitPriceMinor, currency)} per piece
-                            {match.product?.title ? ` for ${match.product.title}` : ""}. Your PO price is editable.
-                          </p>
-                        )}
-                        {match && match.status !== "matched" && (
-                          <p className={sx({ text: "sm", color: "muted" })}>
-                            {item?.components?.length
-                              ? `Check the component SKUs and enter the agreed price per piece. ${supplierMatchMessage(match.status)}`
-                              : supplierMatchMessage(match.status)}
-                          </p>
-                        )}
-                        <FormSelect
-                          name={`items.${index}.prepCategory`}
-                          required
-                          label="Preparation"
-                          options={prepOptions}
-                        />
-                        <dl className={styles.identifiers}>
-                          <dt className={sx({ fontWeight: "medium" })}>Amazon identifiers</dt>
-                          <dd className={sx({ color: "muted" })}>
-                            {line.asin ? `ASIN ${line.asin}` : "ASIN looked up from Amazon"}
-                            {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up from Amazon"}
-                          </dd>
-                        </dl>
-                        <FormCheckbox
-                          name={`items.${index}.suffocationWarning`}
-                          label="Suffocation warning label"
-                          className={sx({ gridColumn: { sm: "span3" } })}
-                        />
-                        <FormTextarea
-                          name={`items.${index}.instructions`}
-                          label="Product instructions"
-                          placeholder="Add handling, labeling, or preparation exceptions"
-                          className={sx({ gridColumn: { sm: "span3" } })}
-                        />
-                      </FieldGroup>
-                      <FormError message={lineError?.message ?? lineError?.root?.message} />
-                    </CardContent>
-                    <CardFooter
-                      className={sx({
-                        justifyContent: "flex-end",
-                        text: "sm",
-                        color: "muted"
-                      })}
-                    >
-                      {item?.pieces && item?.piecesPerSet ? item.pieces / item.piecesPerSet : 0} sellable units
-                    </CardFooter>
-                  </Card>
-                )
-              })
-            )}
-            <FormError message={itemsError?.message ?? itemsError?.root?.message} />
-            {matchError && <FormError message={matchError} />}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Charges and discounts</CardTitle>
-            <CardDescription>
-              Add packing, freight, duties or other charges. Enter discounts as negative amounts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-            {charges.fields.map((charge, index) => (
-              <FieldGroup key={charge.id} className={styles.lineGrid}>
-                <FormInput
-                  name={`adjustments.${index}.description`}
-                  required
-                  label={`Charge ${index + 1} description`}
-                  placeholder="Packing"
-                />
-                <FormNumber
-                  name={`adjustments.${index}.amount`}
-                  required
-                  label={`Charge ${index + 1} amount (${currency})`}
-                  scale={100}
-                  step={0.01}
-                />
-                <Button type="button" variant="outline" onClick={() => charges.remove(index)}>
-                  Remove charge {index + 1}
+              {!via && !addingStop && destination !== "forwarder" && destination !== "warehouse" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto text-muted-foreground"
+                  disabled={!forwarderAddresses.length}
+                  onClick={() => setAddingStop(true)}
+                >
+                  <Plus data-icon="inline-start" />
+                  Add stop
                 </Button>
-              </FieldGroup>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={charges.fields.length >= 50}
-              onClick={() => charges.append({ description: "", amount: 0 })}
-            >
-              Add charge or discount
-            </Button>
-            <FormError
-              message={form.formState.errors.adjustments?.message ?? form.formState.errors.adjustments?.root?.message}
-            />
-            <output className={styles.totals}>
-              <dl>
-                <dt>Products</dt>
-                <dd>{money(subtotal, currency)}</dd>
-                <dt>Charges and discounts</dt>
-                <dd>{money(adjustmentTotal, currency)}</dd>
-                <dt className={styles.grandTotal}>PO total</dt>
-                <dd className={styles.grandTotal}>{money(amount, currency)}</dd>
-              </dl>
-            </output>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <FormTextarea
-              name="notes"
-              label="Notes to supplier"
-              placeholder="Payment terms, delivery requirements, or additional instructions"
-            />
-          </CardContent>
-        </Card>
+              )}
+            </div>
+            {via && forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
+              <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
+                <AlertTriangle className="size-3.5" />
+                Amazon needs a phone number at this stop for pickup.
+                <Link href="/forwarders" className="underline underline-offset-2">
+                  Add one
+                </Link>
+              </p>
+            )}
 
-        <FormError message={form.formState.errors.root?.server?.message} />
-        <div
-          className={sx({
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 4
-          })}
-        >
-          <p className={sx({ text: "sm", color: "muted" })}>
-            {lineItems.fields.length} products, {pieces} pieces, {money(amount, currency)}
-          </p>
-          <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>
-            {draft ? "Save changes" : "Save purchase order"}
-          </SubmitButton>
+            {lineItems.fields.length > 0 && (
+              <div className="overflow-x-auto border-t">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Products</th>
+                      <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
+                      <th className="w-24 px-2 py-2 text-left font-medium">Qty</th>
+                      <th className="w-32 px-2 py-2 text-left font-medium">Cost</th>
+                      <th className="w-24 px-2 py-2 text-right font-medium">Total</th>
+                      <th className="w-18">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.fields.map((line, index) => {
+                      const item = items[index]
+                      const note = matches[index] && matchNote(matches[index].status)
+                      const available = matches[index]?.available ?? null
+                      const lineError = form.formState.errors.items?.[index]
+                      return (
+                        <tr key={line.key} className="border-t align-top">
+                          <td className="px-3 py-2.5">
+                            <p className="leading-snug font-medium">{line.name}</p>
+                            {line.variant && line.variant !== "Default Title" && (
+                              <Badge variant="secondary" className="mt-1">
+                                {line.variant}
+                              </Badge>
+                            )}
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {line.buyerSku}
+                              {line.piecesPerSet > 1 && `, ${line.piecesPerSet} per unit`}
+                            </p>
+                            {needsBarcode.has(line.variantId) && (
+                              <p className="mt-1 flex items-center gap-1 text-xs text-warning">
+                                <AlertTriangle className="size-3.5" />
+                                Needs an uploaded label
+                              </p>
+                            )}
+                            <FormError message={lineError?.message ?? lineError?.root?.message} />
+                          </td>
+                          <td className="px-2 py-2">
+                            {item?.components?.length ? (
+                              <p className="py-1.5 text-xs text-muted-foreground">
+                                {item.components
+                                  .map((component) => `${component.quantity} × ${component.supplierSku || "?"}`)
+                                  .join(", ")}
+                              </p>
+                            ) : (
+                              <CellInput name={`items.${index}.supplierSku`} label={`Supplier SKU for ${line.name}`} />
+                            )}
+                          </td>
+                          <td className="px-2 py-2">
+                            <CellNumber
+                              name={`items.${index}.pieces`}
+                              label={`Quantity of ${line.name}`}
+                              min={line.piecesPerSet}
+                              step={line.piecesPerSet}
+                            />
+                            {available !== null && (
+                              <p
+                                className={cn(
+                                  "mt-1 text-xs",
+                                  (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
+                                )}
+                              >
+                                {available} available
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-2 py-2">
+                            <CellNumber
+                              name={`items.${index}.unitPrice`}
+                              label={`Cost of ${line.name}`}
+                              prefix="$"
+                              scale={100}
+                              step={0.01}
+                              min={0}
+                              onValueChange={() => buyerEditedPrices.current.add(line.id)}
+                            />
+                            {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
+                          </td>
+                          <td className="px-2 py-3.5 text-right tabular-nums">
+                            {money((item?.unitPrice || 0) * (item?.pieces || 0), currency)}
+                          </td>
+                          <td className="py-2 pr-2">
+                            <div className="flex justify-end">
+                              <LineMenu
+                                index={index}
+                                name={line.name}
+                                orderId={draft?.id}
+                                itemId={line.id}
+                                toAmazon={destination === "amazon"}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Remove ${line.name}`}
+                                onClick={() => lineItems.remove(index)}
+                              >
+                                <X />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="border-t p-3">
+              <AddProductsDialog added={new Set(items.map((item) => item?.variantId))} stockAt={stockAt} onAdd={add} />
+              <FormError message={itemsError?.message ?? itemsError?.root?.message} />
+              {matchError && <FormError message={matchError} />}
+            </div>
+          </Card>
+
+          <div className="flex flex-col gap-4">
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Cost summary</CardTitle>
+                <CardAction>
+                  <CostSummaryDialog
+                    currency={currency}
+                    adjustments={adjustments}
+                    onSave={(rows) => charges.replace(rows)}
+                  />
+                </CardAction>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <p className="font-medium">Order details</p>
+                <div className="flex justify-between gap-3">
+                  <span>
+                    {lineItems.fields.length} {lineItems.fields.length === 1 ? "variant" : "variants"} ({units}{" "}
+                    {units === 1 ? "item" : "items"})
+                  </span>
+                  <span className="tabular-nums">{money(subtotal, currency)}</span>
+                </div>
+                {adjustments.map((adjustment, index) => (
+                  <div key={index} className="flex justify-between gap-3">
+                    <span>{adjustment.description}</span>
+                    <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span className="tabular-nums">{money(amount, currency)}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Purchase order details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup className="gap-4">
+                  <FormInput name="reference" required label="Reference number" placeholder="PO-038" />
+                  <FormTextarea name="notes" label="Note to supplier" />
+                  <Separator />
+                  <p className="font-medium">Purchasing information</p>
+                  <FormChoice name="paymentTerms" label="Payment terms" options={termOptions} />
+                  <FormChoice name="currency" required label="Supplier currency" options={currencies} />
+                </FieldGroup>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </form>
     </FormProvider>
+  )
+}
+
+// Where the PO's stock is counted for the product picker: FBA and AWD together, or the address's Shopify location.
+function stockAtDestination(destination: OrderInput["destination"], shopifyLocationId?: string | null): StockAt {
+  switch (destination) {
+    case "amazon":
+      return { locationIds: ["amazon:fba", "amazon:awd"], label: "At Amazon" }
+    case "warehouse":
+      return { locationIds: shopifyLocationId ? [shopifyLocationId] : null, label: "At location" }
+    default:
+      return { locationIds: null, label: "At destination" }
+  }
+}
+
+type Option = { value: string; label: string; disabled?: boolean }
+
+// A pill in the route from the supplier to the destination, which opens a menu of choices.
+function PillSelect({
+  label,
+  icon,
+  options,
+  placeholder,
+  value,
+  onChange,
+  invalid
+}: {
+  label: string
+  icon?: React.ReactNode
+  options: Option[]
+  placeholder?: string
+  value: string | null
+  onChange: (value: string | null) => void
+  invalid?: boolean
+}) {
+  return (
+    <Select items={options} value={value} onValueChange={onChange}>
+      <SelectTrigger
+        aria-label={label}
+        aria-invalid={invalid}
+        size="sm"
+        className="max-w-md min-w-0 rounded-full border-transparent bg-muted font-medium hover:bg-muted/70 dark:bg-muted *:data-[slot=select-value]:block *:data-[slot=select-value]:truncate"
+      >
+        {icon}
+        <SelectValue>
+          {(chosen: string | null) => options.find((option) => option.value === chosen)?.label ?? placeholder}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-48">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function RoutePicker({
+  name,
+  ...props
+}: {
+  name: string
+  label: string
+  icon?: React.ReactNode
+  options: Option[]
+  placeholder?: string
+}) {
+  const {
+    field: { value, onChange },
+    fieldState
+  } = useController({ name })
+  return (
+    <PillSelect
+      {...props}
+      value={typeof value === "string" && value ? value : null}
+      onChange={(next) => onChange(next ?? undefined)}
+      invalid={fieldState.invalid}
+    />
+  )
+}
+
+// A freight forwarder the goods stop at on the way to the destination.
+function Stop({
+  forwarderAddresses,
+  onRemove
+}: {
+  forwarderAddresses: Array<{ addressId: string; forwarderId: string; label: string }>
+  onRemove: () => void
+}) {
+  const { setValue, control } = useFormContext<OrderInput>()
+  const via = useWatch({ control, name: "via" })
+  return (
+    <span className="flex items-center">
+      <PillSelect
+        label="Stop on the way"
+        icon={<Warehouse />}
+        placeholder="Choose forwarder"
+        options={forwarderAddresses.map((row) => ({ value: row.addressId, label: row.label }))}
+        value={via?.addressId ?? null}
+        onChange={(addressId) => {
+          const row = forwarderAddresses.find((address) => address.addressId === addressId)
+          setValue("via", row ? { forwarderId: row.forwarderId, addressId: row.addressId } : undefined, {
+            shouldDirty: true
+          })
+        }}
+      />
+      <Button type="button" variant="ghost" size="icon-xs" aria-label="Remove the stop" onClick={onRemove}>
+        <X />
+      </Button>
+    </span>
+  )
+}
+
+function CellInput({ name, label, placeholder }: { name: string; label: string; placeholder?: string }) {
+  const {
+    field: { value, onChange, onBlur, ref },
+    fieldState
+  } = useController({ name })
+  return (
+    <Input
+      ref={ref}
+      aria-label={label}
+      placeholder={placeholder}
+      value={(value as string | undefined) ?? ""}
+      onChange={onChange}
+      onBlur={onBlur}
+      aria-invalid={fieldState.invalid}
+    />
+  )
+}
+
+// A number cell, scaled like prices kept in cents, with an optional prefix such as "$".
+function CellNumber({
+  name,
+  label,
+  prefix,
+  scale = 1,
+  onValueChange,
+  ...props
+}: {
+  name: string
+  label: string
+  prefix?: string
+  scale?: number
+  onValueChange?: () => void
+  min?: number
+  step?: number
+}) {
+  const {
+    field: { value, onChange, onBlur, ref },
+    fieldState
+  } = useController({ name })
+  // Money reads with its cents, like $78.50, except while being typed.
+  const [typing, setTyping] = useState(false)
+  const shown = typeof value === "number" && Number.isFinite(value) ? value / scale : ""
+  const input = (
+    <InputGroupInput
+      {...props}
+      ref={ref}
+      type="number"
+      inputMode="decimal"
+      aria-label={label}
+      value={!typing && scale === 100 && shown !== "" ? shown.toFixed(2) : shown}
+      onFocus={() => setTyping(true)}
+      onChange={(event) => {
+        onChange(event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * scale * 1000) / 1000)
+        onValueChange?.()
+      }}
+      onBlur={() => {
+        setTyping(false)
+        onBlur()
+      }}
+      aria-invalid={fieldState.invalid}
+      className="tabular-nums"
+    />
+  )
+  return (
+    <InputGroup>
+      {prefix && (
+        <InputGroupAddon>
+          <InputGroupText>{prefix}</InputGroupText>
+        </InputGroupAddon>
+      )}
+      {input}
+    </InputGroup>
+  )
+}
+
+// A line's menu: its labels once the PO is saved, and its packing details.
+function LineMenu({
+  index,
+  name,
+  orderId,
+  itemId,
+  toAmazon
+}: {
+  index: number
+  name: string
+  orderId?: string
+  itemId: string
+  toAmazon: boolean
+}) {
+  const [packing, setPacking] = useState(false)
+  const { getValues, setValue } = useFormContext()
+  const warning = useWatch({ name: `items.${index}.suffocationWarning` }) as boolean | undefined
+  function editPacking() {
+    // Lines saved before each chose its Amazon network go to FBA, as the schema defaults them.
+    if (toAmazon && !getValues(`items.${index}.amazonNetwork`)) {
+      setValue(`items.${index}.amazonNetwork`, "fba")
+    }
+    setPacking(true)
+  }
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${name}`} />}
+        >
+          <Ellipsis />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {orderId && (
+            <DropdownMenuItem
+              render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label="Download label" />}
+            >
+              <Download />
+              Download label
+            </DropdownMenuItem>
+          )}
+          {orderId && warning && (
+            <DropdownMenuItem
+              render={<a href={`/api/orders/${orderId}/labels/warning`} download aria-label="Download hazard label" />}
+            >
+              <Download />
+              Download hazard label
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={editPacking}>
+            <Package />
+            Edit packing details
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog open={packing} onOpenChange={setPacking}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Packing details</DialogTitle>
+            <DialogDescription>{name}</DialogDescription>
+          </DialogHeader>
+          <FieldGroup className="gap-4">
+            {toAmazon && (
+              <FormChoice
+                name={`items.${index}.amazonNetwork`}
+                required
+                label="Amazon warehouse"
+                options={networkOptions}
+              />
+            )}
+            <FormChoice name={`items.${index}.prepCategory`} required label="Preparation" options={prepOptions} />
+            <SkuLabel index={index} toAmazon={toAmazon} />
+            <FormCheckbox name={`items.${index}.suffocationWarning`} label="Suffocation warning label" />
+            <FormTextarea
+              name={`items.${index}.instructions`}
+              label="Instructions"
+              placeholder="Handling or labeling exceptions"
+            />
+          </FieldGroup>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" />}>Done</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+type Adjustment = { description: string; amount: number }
+type AdjustmentRow = { key: string; type: string; amount: string }
+
+// Shopify's "Manage cost summary": each row a kind of cost and its amount, saved together. A discount is entered as a
+// positive amount and taken off.
+function CostSummaryDialog({
+  currency,
+  adjustments,
+  onSave
+}: {
+  currency: string
+  adjustments: Adjustment[]
+  onSave: (rows: Adjustment[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [rows, setRows] = useState<AdjustmentRow[]>([])
+  const types = [
+    ...adjustmentTypes,
+    ...adjustments.map((row) => row.description).filter((type) => !adjustmentTypes.some((known) => known === type))
+  ].map((type) => ({ value: type, label: type }))
+  const complete = rows.every((row) => row.type && row.amount !== "" && Number.isFinite(Number(row.amount)))
+  function start() {
+    setRows(
+      adjustments.map((row) => ({
+        key: crypto.randomUUID(),
+        type: row.description,
+        amount: String(Math.abs(row.amount) / 100)
+      }))
+    )
+    setOpen(true)
+  }
+  function save() {
+    onSave(
+      rows.map((row) => {
+        const cents = Math.round(Math.abs(Number(row.amount)) * 100)
+        return { description: row.type, amount: row.type === "Discount" ? -cents : cents }
+      })
+    )
+    setOpen(false)
+  }
+  const update = (key: string, change: Partial<AdjustmentRow>) =>
+    setRows((current) => current.map((row) => (row.key === key ? { ...row, ...change } : row)))
+  return (
+    <>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Manage cost summary" onClick={start}>
+        <Pencil />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage cost summary</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            {rows.length > 0 && (
+              <div className="grid grid-cols-[minmax(0,1fr)_8rem_1.75rem] gap-2 text-muted-foreground">
+                <span>Adjustment</span>
+                <span>Amount</span>
+              </div>
+            )}
+            {rows.map((row) => (
+              <div key={row.key} className="grid grid-cols-[minmax(0,1fr)_8rem_1.75rem] items-center gap-2">
+                <Select
+                  items={types}
+                  value={row.type || null}
+                  onValueChange={(type) => update(row.key, { type: type ?? "" })}
+                >
+                  <SelectTrigger aria-label="Adjustment" className="w-full">
+                    <SelectValue>{(type: string | null) => type ?? "Select"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <InputGroup>
+                  <InputGroupAddon>
+                    <InputGroupText>{currency === "USD" ? "$" : currency}</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={0.01}
+                    aria-label="Amount"
+                    value={row.amount}
+                    onChange={(event) => update(row.key, { amount: event.target.value })}
+                    className="tabular-nums"
+                  />
+                </InputGroup>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remove adjustment"
+                  onClick={() => setRows((current) => current.filter((candidate) => candidate.key !== row.key))}
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              disabled={rows.length >= 50}
+              onClick={() => setRows((current) => [...current, { key: crypto.randomUUID(), type: "", amount: "" }])}
+            >
+              <Plus data-icon="inline-start" />
+              Add adjustment
+            </Button>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <Button type="button" disabled={!complete} onClick={save}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+// Whether each unit gets its SKU label. Amazon needs every unit labeled, so POs to Amazon keep it on.
+function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
+  const { field } = useController({ name: `items.${index}.skuLabel` })
+  const id = `sku-label-${index}`
+  return (
+    <Field orientation="horizontal" data-disabled={toAmazon || undefined}>
+      <Checkbox
+        id={id}
+        checked={toAmazon || field.value !== false}
+        disabled={toAmazon}
+        onCheckedChange={(checked) => field.onChange(checked)}
+      />
+      <FieldContent>
+        <FieldLabel htmlFor={id}>SKU label</FieldLabel>
+        {toAmazon && <FieldDescription>Amazon requires it</FieldDescription>}
+      </FieldContent>
+    </Field>
   )
 }

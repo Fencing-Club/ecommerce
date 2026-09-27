@@ -42,18 +42,24 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     } else if (input.orderRevision !== order.revision) {
       outdated = 1
     }
-    await tx
-      .update(documents)
-      .set({ outdated: 1 })
-      .where(
-        and(
-          eq(documents.orderId, input.orderId),
-          eq(documents.kind, input.kind),
-          eq(documents.orderRevision, input.orderRevision),
-          input.shipmentId ? eq(documents.shipmentId, input.shipmentId) : isNull(documents.shipmentId),
-          input.cartonId ? eq(documents.cartonId, input.cartonId) : isNull(documents.cartonId)
+    // A late copy for an older revision leaves the current one in place.
+    if (input.shipmentId || !outdated) {
+      await tx
+        .update(documents)
+        .set({ outdated: 1 })
+        .where(
+          and(
+            eq(documents.orderId, input.orderId),
+            eq(documents.kind, input.kind),
+            // A PO's own document replaces every earlier revision's; a shipment's replaces those of its revision.
+            input.shipmentId
+              ? and(eq(documents.shipmentId, input.shipmentId), eq(documents.orderRevision, input.orderRevision))
+              : isNull(documents.shipmentId),
+            input.cartonId ? eq(documents.cartonId, input.cartonId) : isNull(documents.cartonId),
+            input.itemId ? eq(documents.itemId, input.itemId) : isNull(documents.itemId)
+          )
         )
-      )
+    }
     const [doc] = await tx
       .insert(documents)
       .values({ ...input, outdated, id, objectKey, bytes: bytes.length })
@@ -76,6 +82,14 @@ function contactLine(...parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ")
 }
 
+// Where a PO with a stop on the way ends up.
+const finalDestinations: Record<string, string> = {
+  amazon: "Amazon AWD, USA",
+  awd_us: "Amazon AWD, USA",
+  awd_china: "Amazon AWD, China",
+  fba: "Amazon FBA"
+}
+
 // Who a PO or shipment document is from and to: the buyer with its business details, the supplier with its contact
 // details, and the delivery or forwarder address it ships to.
 async function documentParties(order: { buyerOrgId: string; supplierId: string }, data: OrderInput) {
@@ -87,10 +101,13 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   if (!row) {
     throw new Error("PO is unavailable")
   }
-  const { destination, deliveryId, forwarderId } = data
+  const { destination } = data
+  // With a stop on the way, the supplier ships to the forwarder there, which sends the goods on.
+  const forwarderId = data.via?.forwarderId ?? data.forwarderId
+  const deliveryId = data.via?.addressId ?? data.deliveryId
   // A forwarder's address is the buyer's until the forwarder joins, then the forwarder's own.
   const [forwarder] =
-    destination === "forwarder" && forwarderId
+    (destination === "forwarder" || data.via) && forwarderId
       ? await db()
           .select()
           .from(forwarders)
@@ -138,6 +155,7 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
       ? {
           name: forwarder ? `${forwarder.name}, ${delivery.name}` : delivery.name,
           lines: [
+            ...(data.via ? [`Then to ${finalDestinations[destination] ?? destination}`] : []),
             ...addressLines(delivery.address),
             contactLine(delivery.address.name, delivery.address.email, delivery.address.phoneNumber)
           ].filter(Boolean)
@@ -191,7 +209,14 @@ export async function generateShipmentDocuments(shipmentId: string) {
     uploadedBy: "system"
   }
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
-  const { buyer, shipTo } = await documentParties(order!, shipment.snapshot)
+  const parties = await documentParties(order!, shipment.snapshot)
+  const { buyer } = parties
+  // An Amazon shipment goes to the warehouses Amazon chose, named by their codes, such as HGR6.
+  const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
+  const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
+  const shipTo = warehouses.length
+    ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
+    : parties.shipTo
   await storeDocument(
     { ...input, kind: "packing_list", name: "Packing list.pdf" },
     await packingListPdf({

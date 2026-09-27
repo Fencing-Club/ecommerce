@@ -1,4 +1,11 @@
-import { type Address, type OrderInput, type Packing, type PackingDraft, prepCategories } from "@repo/aisle"
+import {
+  type Address,
+  amazonNetworks,
+  type OrderInput,
+  type Packing,
+  type PackingDraft,
+  prepCategories
+} from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
@@ -14,7 +21,8 @@ import {
   index,
   primaryKey,
   date,
-  numeric
+  numeric,
+  boolean
 } from "drizzle-orm/pg-core"
 import type { CasePack } from "../lib/case-packs"
 import { contactKinds } from "../lib/contacts"
@@ -70,7 +78,7 @@ export const suppliers = pgTable(
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
     amazonLeadTimeDays: integer(),
-    // The payment terms new POs to this supplier start with.
+    // Unused: payment terms are set on each PO, which starts due immediately. To drop in a later migration.
     paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
     // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
@@ -136,6 +144,12 @@ export const supplierProducts = pgTable(
     piecesPerSellablePack: integer().notNull().default(1),
     sellablePacksPerCase: integer(),
     notes: text(),
+    // Whether the supplier counts this product's stock. Untracked products are made to order, so any quantity can be
+    // ordered. A tracked product's POs can't order more than is on hand, less what open POs have ordered, unless it
+    // continues selling when out of stock. Pieces leave stock when a shipment's commercial invoice is accepted.
+    trackInventory: boolean().notNull().default(false),
+    onHand: integer().notNull().default(0),
+    continueSelling: boolean().notNull().default(false),
     createdAt: createdAt(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -246,7 +260,10 @@ export type ShipmentState =
   | "creating"
   | "waiting_labels"
   | "ready"
-  | "collected"
+  // The supplier shipped the goods, to the forwarder on the way or straight to the destination.
+  | "shipped"
+  // A forwarder on the way shipped them on, with its freight cost, carrier and tracking.
+  | "forwarded"
   | "received"
   | "correction"
   | "needs_attention"
@@ -264,11 +281,20 @@ export const shipments = pgTable(
     packing: jsonb().$type<Packing>(),
     packingDraft: jsonb("packing_draft").$type<PackingDraft>(),
     snapshot: jsonb().$type<OrderInput>(),
+    // The Amazon network this shipment's cartons go to, for a PO to Amazon: FBA or AWD US. Set when the shipment is
+    // queued; a submission with cartons for several networks becomes one shipment each.
+    amazonNetwork: text({ enum: amazonNetworks }),
     amazonOrderId: text(),
     amazonShipmentId: text(),
     operation: text().notNull().default("none"),
     labels: jsonb().$type<CartonLabel[]>().notNull().default([]),
+    // Pieces this shipment took from the supplier's stock, by supplier product, once its commercial invoice was
+    // accepted. A correction puts them back.
+    stockTaken: jsonb().$type<Record<string, number>>(),
     bookingReference: text(),
+    // The carrier and tracking or booking number the forwarder shipped on with.
+    forwarderCarrier: text(),
+    forwarderReference: text(),
     issue: text(),
     createdAt: createdAt(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
@@ -307,6 +333,15 @@ export const documents = pgTable(
   },
   (t) => [index("documents_order").on(t.orderId)]
 )
+// Each person's name, position and company, which their comments show. Signing in asks for them until they're set.
+export const profiles = pgTable("profiles", {
+  userId: text().primaryKey(),
+  firstName: text().notNull(),
+  lastName: text().notNull(),
+  position: text().notNull().default(""),
+  company: text().notNull().default(""),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+})
 export const events = pgTable("events", {
   id: uuid().defaultRandom().primaryKey(),
   orderId: uuid()
@@ -314,6 +349,13 @@ export const events = pgTable("events", {
     .references(() => orders.id),
   actor: text().notNull(),
   message: text().notNull(),
+  // What the PO did, or a comment someone left on its timeline.
+  kind: text({ enum: ["event", "comment"] })
+    .notNull()
+    .default("event"),
+  // Who left a comment and their workspace, as named when they wrote it.
+  author: text(),
+  authorOrg: text(),
   createdAt: createdAt()
 })
 export const jobs = pgTable(
@@ -435,6 +477,10 @@ export const productDefaults = pgTable(
     productLabel: text({ enum: ["standard", "uploaded", "none"] })
       .notNull()
       .default("standard"),
+    // Each unit's polybag gets a suffocation warning label. New PO lines for the product start with it.
+    suffocationWarning: boolean().notNull().default(false),
+    // The Amazon network new PO lines to Amazon for the product go to: FBA, or AWD US for bulk stock.
+    amazonNetwork: text({ enum: amazonNetworks }).notNull().default("fba"),
     revision: integer().notNull().default(1),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },

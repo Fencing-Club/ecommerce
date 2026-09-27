@@ -84,6 +84,11 @@ For building command-line tools.
 Select Fluent UI or shadcn/ui at the app or product-surface boundary. Neither is a monorepo-wide requirement, and an
 existing surface should keep its established system unless its architecture is deliberately changed.
 
+## Video
+
+- ✅ **remotion** — video as React components, rendered to stills and MP4 (the Copacker ad in `apps/video`; see
+  [Video](video.md)).
+
 ## Markdown & rich text
 
 Built on the **unified** (remark + rehype) ecosystem — the standard for parsing and transforming Markdown/HTML.

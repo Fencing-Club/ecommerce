@@ -7,6 +7,12 @@
       "runtimeArgs": ["--filter", "copacker", "dev"],
       "port": 3000,
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "video",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "video", "dev", "--no-open"],
+      "port": 3100
     }
   ]
 }

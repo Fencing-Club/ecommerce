@@ -92,14 +92,15 @@ export async function syncInboundShipments(
 }
 
 // Amazon's freight for the shipments sent from each of the buyer's POs, by PO, shipment and currency. The charges name
-// the Amazon shipment (or its inbound order), which Copacker records when it creates the shipment.
+// the Amazon shipment (or its inbound order), which Copacker records when it creates the shipment. An FBA inbound plan
+// can split into several Amazon shipments, recorded comma-separated.
 export async function amazonFreightByOrder(orgId: string) {
   const result = await db().execute(sql`
     select s."orderId" as "orderId", t."orderId" as reference, t.currency, -sum(t."totalMinor") as freight
     from shipments s
     join orders o on o.id = s."orderId"
     join amazon_transactions t on t."orgId" = o."buyerOrgId"
-      and (t."orderId" = s."amazonShipmentId" or t."orderId" = s."amazonOrderId")
+      and (t."orderId" = any(string_to_array(s."amazonShipmentId", ', ')) or t."orderId" = s."amazonOrderId")
     where o."buyerOrgId" = ${orgId} and t.data->>'description' in (${freightDescriptions})
     group by 1, 2, 3`)
   return (result as unknown as { rows: Record<string, unknown>[] }).rows.map((row) => ({

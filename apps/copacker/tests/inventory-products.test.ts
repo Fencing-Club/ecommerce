@@ -160,13 +160,14 @@ describe("on order", () => {
     id: `item-${variant}-${pieces}`,
     variantId: `gid://shopify/ProductVariant/${variant}`,
     pieces,
-    piecesPerSet
+    piecesPerSet,
+    amazonNetwork: "awd_us" as const
   })
   const order = (
     id: string,
     reference: string,
     items: ReturnType<typeof item>[],
-    destination: "awd_us" | "forwarder" = "awd_us"
+    destination: "amazon" | "forwarder" = "amazon"
   ) => ({ id, data: { reference, destination, items } })
 
   it("counts sellable units per variant and totals them per product with each PO once", () => {
@@ -175,8 +176,8 @@ describe("on order", () => {
       order("b", "PO-2", [item(1, 7, 2)])
     ])
     expect(onOrder.get("gid://shopify/ProductVariant/1")).toEqual([
-      { id: "a", reference: "PO-1", units: 12, locationIds: ["amazon:awd"], destination: "awd_us" },
-      { id: "b", reference: "PO-2", units: 3, locationIds: ["amazon:awd"], destination: "awd_us" }
+      { id: "a", reference: "PO-1", units: 12, locationIds: ["amazon:awd"], destination: "amazon" },
+      { id: "b", reference: "PO-2", units: 3, locationIds: ["amazon:awd"], destination: "amazon" }
     ])
     const glove = groupInventory(rows, { onOrder }).find((product) => product.title === "Pro-grip glove")
     expect(glove?.onOrder).toEqual({

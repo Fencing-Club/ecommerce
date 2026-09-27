@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { cn } from "@/lib/utils"
 import * as styles from "./common.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -29,7 +29,8 @@ const statuses: Record<string, { label: string; tone: Tone }> = {
   creating: { label: "Creating shipment", tone: "progress" },
   waiting_labels: { label: "Waiting for buyer labels", tone: "action" },
   ready: { label: "Ready for pickup", tone: "done" },
-  collected: { label: "Collected", tone: "done" },
+  shipped: { label: "Shipped", tone: "progress" },
+  forwarded: { label: "Shipped by forwarder", tone: "progress" },
   received: { label: "Received", tone: "done" },
   cancelled: { label: "Cancelled", tone: "neutral" },
   needs_attention: { label: "Needs attention", tone: "problem" },
@@ -155,9 +156,6 @@ export function EmptyState({
 
 const destinationNames: Record<string, string> = {
   amazon: "Amazon",
-  awd_us: "AWD USA",
-  awd_china: "AWD China",
-  fba: "FBA",
   forwarder: "your freight forwarder",
   warehouse: "your location"
 }
@@ -176,7 +174,22 @@ export function formatDestination(destination: string) {
   return destinationNames[destination] ?? destination
 }
 
-export function DocumentList({ documents }: { documents: Array<{ id: string; name: string }> }) {
+const documentKinds: Record<string, string> = {
+  purchase_order: "Purchase order",
+  invoice: "Commercial invoice",
+  packing_list: "Packing list",
+  checklist: "Packing checklist",
+  carton_label: "Carton label",
+  shipping_label: "Shipping label",
+  product_label: "Product label"
+}
+
+// Each document by its type, such as Packing list, with its file name beneath.
+export function DocumentList({
+  documents
+}: {
+  documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null }>
+}) {
   return (
     <ItemGroup className={styles.documentList}>
       {documents.map((d) => (
@@ -190,7 +203,11 @@ export function DocumentList({ documents }: { documents: Array<{ id: string; nam
             <FileText />
           </ItemMedia>
           <ItemContent>
-            <ItemTitle>{d.name}</ItemTitle>
+            <ItemTitle>
+              {(d.kind && documentKinds[d.kind]) ?? d.name}
+              {d.cartonId && ` ${d.cartonId}`}
+            </ItemTitle>
+            {d.kind && documentKinds[d.kind] && <ItemDescription>{d.name}</ItemDescription>}
           </ItemContent>
           <ItemActions>
             <Download className={sx({ size: 4, color: "muted" })} />

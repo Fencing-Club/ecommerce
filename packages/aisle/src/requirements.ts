@@ -1,4 +1,11 @@
-import type { OrderInput, OrderItem, PrepCategory } from "./index"
+import {
+  type AmazonNetwork,
+  amazonNetworkNames,
+  amazonNetworks,
+  type OrderInput,
+  type OrderItem,
+  type PrepCategory
+} from "./index"
 
 // How the supplier prepares each unit, as agreed on the PO line.
 export const prepInstructions: Record<PrepCategory, string> = {
@@ -11,29 +18,47 @@ export const prepInstructions: Record<PrepCategory, string> = {
   LABELING: "Label each unit"
 }
 
-// Rules a whole shipment follows because of where it goes. Amazon AWD and FBA check cartons and unit labels on
-// arrival and charge for, or refuse, what doesn't comply; the buyer's own location and forwarders have none of their own.
-export function destinationRequirements(destination: OrderInput["destination"]): string[] {
-  const units = [
+// The Amazon networks the given lines go to, in network order, or none for a PO that doesn't go to Amazon.
+export function orderNetworks(order: Pick<OrderInput, "destination" | "items">): AmazonNetwork[] {
+  if (order.destination !== "amazon") {
+    return []
+  }
+  const used = new Set(order.items.map((item) => item.amazonNetwork))
+  return amazonNetworks.filter((network) => used.has(network))
+}
+
+const cartonRules: Record<AmazonNetwork, string> = {
+  fba: "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
+  awd_us:
+    "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb)."
+}
+
+// Rules the cartons and units follow because of where they go: for a PO to Amazon, each network's carton rules and
+// Amazon's unit labeling. Amazon checks them on arrival and charges for, or refuses, what doesn't comply; the buyer's own
+// location and forwarders have none of their own.
+export function destinationRequirements(order: Pick<OrderInput, "destination" | "items">): string[] {
+  const networks = orderNetworks(order)
+  if (!networks.length) {
+    return []
+  }
+  return [
+    ...networks.map((network) => cartonRules[network]),
+    ...(networks.length > 1
+      ? [`Pack ${networks.map((network) => amazonNetworkNames[network]).join(" and ")} products in separate cartons.`]
+      : []),
     "Label every unit with its FNSKU barcode, covering any other barcode.",
     "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider.",
     "Keep multi-packs together as one unit with a single label."
   ]
-  if (destination === "amazon" || destination === "awd_us" || destination === "awd_china") {
-    return [
-      "Cartons at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb).",
-      "One SKU per carton, at most 150 units, packed the same way for each SKU.",
-      ...units
-    ]
+}
+
+// Where a PO or shipment goes, as documents name it, such as "Amazon FBA and AWD US".
+export function destinationName(order: Pick<OrderInput, "destination" | "items">) {
+  const networks = orderNetworks(order)
+  if (networks.length) {
+    return `Amazon ${networks.map((network) => amazonNetworkNames[network]).join(" and ")}`
   }
-  if (destination === "fba") {
-    return [
-      "Cartons at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
-      "Mixed-SKU cartons are allowed. List each carton's contents on the packing list.",
-      ...units
-    ]
-  }
-  return []
+  return order.destination === "forwarder" ? "Freight forwarder" : "Buyer's location"
 }
 
 // The preparation every line of a PO shares, stated once for the whole PO instead of on each line.
@@ -42,15 +67,16 @@ export function sharedPrep(order: Pick<OrderInput, "items">) {
   return first && rest.every((item) => item.prepCategory === first.prepCategory) ? first.prepCategory : null
 }
 
-// What the supplier does for one line: its preparation (unless the whole PO shares it), multi-pack assembly, Amazon
-// label and the product's own instructions, one per line.
+// What the supplier does for one line: which Amazon network it's packed for, its preparation (unless the whole PO
+// shares it), multi-pack assembly, Amazon label and the product's own instructions, one per line.
 export function itemRequirements(
   item: OrderItem,
   destination: OrderInput["destination"],
   shared: OrderItem["prepCategory"] | null = null
 ): string[] {
-  const amazon = ["amazon", "awd_us", "awd_china", "fba"].includes(destination)
+  const amazon = destination === "amazon"
   return [
+    ...(amazon ? [`Pack for ${amazonNetworkNames[item.amazonNetwork]}`] : []),
     ...(item.prepCategory === shared ? [] : [prepInstructions[item.prepCategory]]),
     ...(item.piecesPerSet > 1 ? [`Pack ${item.piecesPerSet} pieces together as one unit`] : []),
     ...(amazon && item.fnsku ? [`Label with FNSKU ${item.fnsku}`] : []),

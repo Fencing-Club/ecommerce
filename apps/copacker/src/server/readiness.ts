@@ -4,8 +4,9 @@ import type { documents, shipments, ShipmentState } from "../db/schema"
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
 // The supplier packet is released from "ready" on; "received" means the goods arrived where the PO sent them.
-export const releasedStates: readonly ShipmentState[] = ["ready", "collected", "received"]
-export const finishedStates: readonly ShipmentState[] = ["collected", "received", "cancelled"]
+export const releasedStates: readonly ShipmentState[] = ["ready", "shipped", "forwarded", "received"]
+// Once the supplier ships, a shipment's cartons and documents can't change any more.
+export const finishedStates: readonly ShipmentState[] = ["shipped", "forwarded", "received", "cancelled"]
 
 // Pieces per PO item in shipments that arrived.
 export function receivedPieces(rows: Shipment[]) {
@@ -132,7 +133,7 @@ export function releaseIssues(
   if (
     shipment.labels.length !== shipment.packing.cartons.length ||
     new Set(shipment.labels.map((label) => label.cartonId)).size !== shipment.labels.length ||
-    new Set(shipment.labels.map((label) => label.sscc)).size !== shipment.labels.length
+    new Set(shipment.labels.map((label) => label.labelNumber)).size !== shipment.labels.length
   ) {
     issues.push({ code: "unmatched_cartons", message: "Amazon carton labels are not fully matched" })
   }

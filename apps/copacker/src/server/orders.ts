@@ -1,9 +1,12 @@
 import {
-  amazonDestinations,
+  amazonNetworkNames,
   approveChanges,
   commercialChanges,
+  type OrderInput,
   orderInputSchema,
-  packingDraftSchema
+  type Packing,
+  packingDraftSchema,
+  splitByNetwork
 } from "@repo/aisle"
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
@@ -33,8 +36,10 @@ import { forwarderAddress } from "./forwarders"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
+import { forwarderLeg } from "./shipment-legs"
 import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
+import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
 async function amazonAccount(orgId: string) {
@@ -190,13 +195,14 @@ async function checkOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnT
     throw new Error("The connected merchant account changed. Refresh before saving this PO")
   }
   const [supplier] = await tx
-    .select({ id: suppliers.id })
+    .select({ id: suppliers.id, supplierOrgId: suppliers.supplierOrgId })
     .from(suppliers)
     .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     .for("share")
   if (!supplier) {
     throw new Error("Select a supplier in this workspace")
   }
+  await checkSupplierStock(tx, supplier.supplierOrgId, input)
   if (input.destination === "warehouse") {
     const [delivery] = await tx
       .select({ id: contacts.id })
@@ -212,6 +218,9 @@ async function checkOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnT
     !(await forwarderAddress(s.org.id, input.forwarderId!, input.deliveryId!, tx))
   ) {
     throw new Error("Choose one of your forwarders' addresses")
+  }
+  if (input.via && !(await forwarderAddress(s.org.id, input.via.forwarderId, input.via.addressId, tx))) {
+    throw new Error("Choose one of your forwarders' addresses for the stop on the way")
   }
 }
 export async function persistOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
@@ -274,7 +283,7 @@ export async function createOrder(s: Session, raw: unknown) {
 async function missingAmazonIdentities(s: Session, id: string) {
   const { order } = await accessibleOrder(s, id)
   const missing = order.data.items.filter((item) => !item.asin || !item.fnsku)
-  if (!missing.length || !amazonDestinations.includes(order.data.destination)) {
+  if (!missing.length || order.data.destination !== "amazon") {
     return null
   }
   const amazon = await amazonAccount(s.org.id)
@@ -309,12 +318,13 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     ) {
       throw new Error("This PO has changed. Refresh before submitting")
     }
-    if (!amazonDestinations.includes(order.data.destination) && order.data.destination !== "warehouse") {
+    if (order.data.destination !== "amazon" && order.data.destination !== "warehouse") {
       throw new Error("POs can go to Amazon or your own locations for now. Save other destinations as drafts")
     }
     if (supplier.removedAt) {
       throw new Error("This supplier was removed. Choose another supplier or add them again")
     }
+    await checkSupplierStock(tx, supplier.supplierOrgId, order.data, id)
     if (completed) {
       if (order.amazonSellerId && order.amazonSellerId !== completed.sellerId) {
         throw new Error("The connected Amazon account changed. Refresh before submitting")
@@ -402,7 +412,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     if (!initial) {
       throw new Error("Shipment not found")
     }
-    const { order } = await accessibleOrder(s, initial.orderId, tx, true)
+    const { order, supplier } = await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || !["packing", "correction"].includes(shipment.status) || shipment.revision !== expectedRevision) {
       throw new Error("This shipment has changed. Refresh before submitting")
@@ -427,7 +437,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     }
     const packing = assessed.packing
     const approval = commercialChanges(order.data, packing).length > 0
-    const amazon = amazonDestinations.includes(order.data.destination)
+    const amazon = order.data.destination === "amazon"
     let status: ShipmentState = "ready"
     let message = "Packing submitted; ready to ship"
     if (approval) {
@@ -451,17 +461,12 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId))
-    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, message })
     if (!approval && amazon) {
-      await tx
-        .insert(jobs)
-        .values({
-          key: `amazon:${shipmentId}:${shipment.revision}`,
-          kind: "amazon",
-          payload: { shipmentId, revision: shipment.revision }
-        })
-        .onConflictDoNothing()
+      message = await queueAmazon(tx, shipment, packing, order.data, order.revision, supplier.supplierOrgId)
+    } else if (!approval) {
+      await takeSupplierStock(tx, shipmentId, supplier.supplierOrgId, order.data, packing)
     }
+    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, message })
     return { approval, revision: shipment.revision }
   })
   // The buyer entering a supplier's invoice itself, for a supplier that isn't on Copacker, doesn't approve its own
@@ -472,6 +477,62 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
   }
   return { approval: submitted.approval }
 }
+// Queues a shipment's cartons for Amazon, one shipment per Amazon network they go to: the shipment keeps the first
+// network's cartons, and each other network's become a new shipment. Each gets its own Amazon job and takes its own
+// pieces from the supplier's stock. Returns the event message.
+async function queueAmazon(
+  tx: Transaction,
+  shipment: { id: string; orderId: string; revision: number },
+  packing: Packing,
+  data: OrderInput,
+  orderRevision: number,
+  supplierOrgId: string | null
+) {
+  const [first, ...rest] = splitByNetwork(data, packing)
+  await tx
+    .update(shipments)
+    .set({
+      packing: first!.packing,
+      amazonNetwork: first!.network,
+      snapshot: data,
+      orderRevision,
+      status: "queued",
+      updatedAt: new Date()
+    })
+    .where(eq(shipments.id, shipment.id))
+  await takeSupplierStock(tx, shipment.id, supplierOrgId, data, first!.packing)
+  const queued = [{ shipmentId: shipment.id, revision: shipment.revision }]
+  for (const part of rest) {
+    const [added] = await tx
+      .insert(shipments)
+      .values({
+        orderId: shipment.orderId,
+        orderRevision,
+        snapshot: data,
+        packing: part.packing,
+        amazonNetwork: part.network,
+        status: "queued"
+      })
+      .returning({ id: shipments.id, revision: shipments.revision })
+    await takeSupplierStock(tx, added!.id, supplierOrgId, data, part.packing)
+    queued.push({ shipmentId: added!.id, revision: added!.revision })
+  }
+  await tx
+    .insert(jobs)
+    .values(
+      queued.map((payload) => ({
+        key: `amazon:${payload.shipmentId}:${payload.revision}`,
+        kind: "amazon" as const,
+        payload
+      }))
+    )
+    .onConflictDoNothing()
+  const names = [first!, ...rest].map((part) => amazonNetworkNames[part.network]).join(" and ")
+  return rest.length
+    ? `Packing submitted; split into ${names} shipments and queued for Amazon`
+    : `Packing submitted; Amazon ${names} creation queued`
+}
+
 export async function approveInvoice(s: Session, shipmentId: string, expectedRevision: number, updateCost: boolean) {
   requireBuyer(s)
   return db().transaction(async (tx) => {
@@ -495,20 +556,15 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       .insert(orderRevisions)
       .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "Approved supplier commercial changes" })
     await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, order.id))
-    const amazon = amazonDestinations.includes(order.data.destination)
-    const amazonJobs: (typeof jobs.$inferInsert)[] = amazon
-      ? [
-          {
-            key: `amazon:${shipmentId}:${shipment.revision}`,
-            kind: "amazon",
-            payload: { shipmentId, revision: shipment.revision }
-          }
-        ]
-      : []
-    await tx
-      .update(shipments)
-      .set({ snapshot: data, orderRevision: revision, status: amazon ? "queued" : "ready", updatedAt: new Date() })
-      .where(eq(shipments.id, shipmentId))
+    if (order.data.destination === "amazon") {
+      await queueAmazon(tx, shipment, shipment.packing, data, revision, supplier.supplierOrgId)
+    } else {
+      await tx
+        .update(shipments)
+        .set({ snapshot: data, orderRevision: revision, status: "ready", updatedAt: new Date() })
+        .where(eq(shipments.id, shipmentId))
+      await takeSupplierStock(tx, shipmentId, supplier.supplierOrgId, data, shipment.packing)
+    }
     await tx
       .update(documents)
       .set({ outdated: 1 })
@@ -527,7 +583,6 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
             updateCost
           }
         },
-        ...amazonJobs,
         // Only a supplier that joined Copacker is emailed the revised PO.
         ...(supplier.supplierOrgId && supplier.email
           ? [
@@ -562,6 +617,7 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
     if (shipment.operation === "sending" && !shipment.amazonOrderId) {
       throw new Error("Reconcile the uncertain Amazon creation before requesting a correction")
     }
+    await returnSupplierStock(tx, shipment)
     await tx
       .update(shipments)
       .set({
@@ -660,19 +716,21 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
   })
 }
 
-// A shipment in any of these states is still being prepared, created or collected, so its PO stays open.
+// A shipment in any of these states is still being prepared, created or on its way, so its PO stays open.
 const inProgress = new Set<ShipmentState>([
   "approval",
   "queued",
   "creating",
   "waiting_labels",
   "ready",
+  "shipped",
+  "forwarded",
   "correction",
   "needs_attention"
 ])
 
 // Closes a sent PO: nothing more will ship, so it drops out of On order. Shipments the supplier hasn't packed are
-// cancelled; shipments still being created or collected keep the PO open.
+// cancelled; shipments still being created or on their way keep the PO open.
 // Deletes a draft PO, which the supplier has never seen, with its documents, history and landed costs. A PO import
 // saved as this draft goes back to review, so it can be saved again.
 export async function deleteDraftOrder(s: Session, id: string) {
@@ -735,9 +793,16 @@ export async function receiveShipment(s: Session, shipmentId: string) {
     if (!shipment) {
       throw new Error("Shipment not found")
     }
-    await accessibleOrder(s, shipment.orderId, tx, true)
-    if (!["ready", "collected"].includes(shipment.status)) {
-      throw new Error("Only released or collected shipments can be marked received")
+    const { order } = await accessibleOrder(s, shipment.orderId, tx, true)
+    // Goods arrive once the last leg holder has shipped them: the forwarder when they pass through one, or else the
+    // supplier.
+    const arriving = forwarderLeg(order.data) ? "forwarded" : "shipped"
+    if (shipment.status !== arriving) {
+      throw new Error(
+        arriving === "forwarded"
+          ? "The forwarder hasn't shipped these goods on yet"
+          : "The supplier hasn't shipped these goods yet"
+      )
     }
     await tx.update(shipments).set({ status: "received", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
     await tx.insert(events).values({ orderId: shipment.orderId, actor: s.user.id, message: "Shipment received" })

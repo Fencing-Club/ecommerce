@@ -298,6 +298,8 @@ function Actions({ product, className }: { product: ListedProduct; className: st
   return (
     <span className={className}>
       {prep && <span>Preparation: {prep.label}</span>}
+      {product.defaults.amazonNetwork === "awd_us" && <span>Amazon: AWD US</span>}
+      {product.defaults.suffocationWarning && <span>Suffocation warning label</span>}
       {orders.length > 0 && (
         <span>
           {units} on order in{" "}

@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { prepCategories } from "@repo/aisle"
+import { amazonNetworkNames, amazonNetworks, prepCategories } from "@repo/aisle"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
@@ -23,7 +23,7 @@ import { prepOptions } from "@/lib/prep"
 import { productLabels } from "@/lib/product-label"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError } from "./actions"
-import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
+import { FormCheckbox, FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
 import { type DetailsVariation, VariationDetails } from "./variation-details"
 import * as styles from "./inventory-products.css"
@@ -50,6 +50,8 @@ const schema = z.object({
   // Empty means not chosen; restock then uses the last PO or the supplier's catalog.
   supplierId: z.string(),
   productLabel: z.enum(productLabels),
+  suffocationWarning: z.boolean(),
+  amazonNetwork: z.enum(amazonNetworks),
   casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
 })
 
@@ -138,6 +140,8 @@ export function ProductDetails({
       caseQuantity: defaults.caseQuantity ?? undefined,
       supplierId: defaults.supplierId ?? "",
       productLabel: defaults.productLabel,
+      suffocationWarning: defaults.suffocationWarning,
+      amazonNetwork: defaults.amazonNetwork,
       casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined }))
     }
   })
@@ -152,6 +156,8 @@ export function ProductDetails({
         caseQuantity: values.caseQuantity ?? null,
         supplierId: values.supplierId || null,
         productLabel: values.productLabel,
+        suffocationWarning: values.suffocationWarning,
+        amazonNetwork: values.amazonNetwork,
         casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
         expectedRevision: defaults.revision
       }).unwrap()
@@ -189,6 +195,18 @@ export function ProductDetails({
                 label="Default preparation"
                 placeholder="Not set (sealed polybag)"
                 options={prepOptions}
+              />
+              <FormSelect
+                name="amazonNetwork"
+                required
+                label="Amazon warehouse"
+                description="Where this product's cartons go on POs to Amazon. AWD US cartons hold one SKU each."
+                options={amazonNetworks.map((network) => ({ value: network, label: amazonNetworkNames[network] }))}
+              />
+              <FormCheckbox
+                name="suffocationWarning"
+                label="Suffocation warning label"
+                description="New PO lines ask the supplier to put one on each polybag."
               />
               <FormSelect
                 name="supplierId"

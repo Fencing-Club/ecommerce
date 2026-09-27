@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
-import { visibleOrders } from "@/server/access"
+import { forwarderOrders, visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
 import { rowLink } from "../portal.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -18,7 +18,9 @@ export const metadata: Metadata = { title: "Purchase orders" }
 
 export default async function OrdersPage() {
   const s = await session()
-  const rows = (await visibleOrders(s)).reverse()
+  // A forwarder sees the POs whose goods pass through it, without their prices.
+  const rows = (s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)).reverse()
+  const showValue = s.org.kind !== "forwarder"
   const isBuyer = s.org.kind === "buyer"
   // With no POs yet, a buyer is pointed at whichever step comes next: connecting Shopify, inviting a supplier, or the
   // first PO.
@@ -100,7 +102,7 @@ export default async function OrdersPage() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>
+                  {showValue && <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,9 +121,11 @@ export default async function OrdersPage() {
                     <TableCell>
                       <Status status={order.status} />
                     </TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(orderTotal(order.data), order.data.currency)}
-                    </TableCell>
+                    {showValue && (
+                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                        {money(orderTotal(order.data), order.data.currency)}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

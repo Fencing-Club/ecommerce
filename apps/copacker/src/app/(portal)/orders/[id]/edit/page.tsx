@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { z } from "zod"
-import { PageBreadcrumb, PageHeader } from "@/components/common"
+import { PageBreadcrumb } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
@@ -28,7 +28,7 @@ export default async function EditOrder({ params }: { params: Promise<{ id: stri
       .from(suppliers)
       .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt))),
     db()
-      .select({ id: contacts.id, name: contacts.name })
+      .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
       .from(contacts)
       .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery"))),
     variantsNeedingBarcode(s.org.id),
@@ -44,14 +44,15 @@ export default async function EditOrder({ params }: { params: Promise<{ id: stri
         ]}
         current="Edit"
       />
-      <PageHeader title={`Edit ${order.data.reference}`} />
       <OrderBuilder
-        suppliers={rows.map((row) => ({ id: row.id, name: row.name, paymentTerms: row.paymentTerms }))}
+        title={order.data.reference}
+        suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
         deliveries={deliveries}
         forwarderAddresses={forwarding.map((row) => ({
           addressId: row.addressId,
           forwarderId: row.forwarderId,
-          label: `${row.forwarderName}, ${row.addressName}`
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
         }))}
         needsBarcodeVariantIds={needsBarcode}
         draft={{ id, revision: order.revision, data: order.data }}

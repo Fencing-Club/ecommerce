@@ -1,7 +1,13 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
-import { amazonDestinations, money, orderTotal, type OrderInput, type Packing } from "./index"
+import { money, orderTotal, type OrderInput, type Packing } from "./index"
 import type { CartonLabel } from "./labels"
-import { destinationRequirements, itemRequirements, prepInstructions, sharedPrep } from "./requirements"
+import {
+  destinationName,
+  destinationRequirements,
+  itemRequirements,
+  prepInstructions,
+  sharedPrep
+} from "./requirements"
 
 // "2026-12-01" as "December 1, 2026".
 function longDate(date: string) {
@@ -17,15 +23,6 @@ function longDate(date: string) {
 export type PoParty = { name: string; lines: string[] }
 // The buyer heading its documents, with how to reach it for the footer.
 export type DocumentBuyer = PoParty & { email?: string | null; website?: string | null }
-
-const destinations: Record<string, string> = {
-  amazon: "Amazon AWD, USA",
-  awd_us: "Amazon AWD, USA",
-  awd_china: "Amazon AWD, China",
-  fba: "Amazon FBA",
-  forwarder: "Freight forwarder",
-  warehouse: "Buyer's location"
-}
 
 // A line's name without Shopify's "Default Title" for a product with no options.
 const lineName = (item: OrderInput["items"][number]) =>
@@ -262,7 +259,7 @@ export async function purchaseOrderPdf(input: {
     [
       ["PO number", revision > 1 ? `${order.reference} (rev. ${revision})` : order.reference],
       ["Date", longDate(input.issued)],
-      ["Required by", longDate(order.dueDate)],
+      ...(order.dueDate ? [["Required by", longDate(order.dueDate)] as [string, string]] : []),
       ["Total", price(orderTotal(order))]
     ],
     { emphasizeLast: true }
@@ -270,7 +267,7 @@ export async function purchaseOrderPdf(input: {
   kit.section("Parties")
   kit.parties([
     ["Supplier", supplier],
-    ["Ship to", input.shipTo ?? { name: destinations[order.destination] ?? order.destination, lines: [] }]
+    ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
   ])
   line(kit.left, right, at.y)
 
@@ -357,7 +354,7 @@ export async function purchaseOrderPdf(input: {
   // Payment terms, instructions for the whole shipment, and the buyer's notes.
   const blocks: Array<[string, string[]]> = [
     ["Payment terms", order.paymentTerms ? [order.paymentTerms] : []],
-    ["Instructions", [...(prep ? [`${prepInstructions[prep]}.`] : []), ...destinationRequirements(order.destination)]],
+    ["Instructions", [...(prep ? [`${prepInstructions[prep]}.`] : []), ...destinationRequirements(order)]],
     ["Notes", order.notes ? [order.notes] : []]
   ]
   for (const [name, entries] of blocks) {
@@ -395,21 +392,21 @@ export async function packingListPdf(input: {
   kit.section("Parties")
   kit.parties([
     ["From", { name: packing.origin.name, lines: originLines(packing.origin) }],
-    ["Ship to", input.shipTo ?? { name: destinations[order.destination] ?? order.destination, lines: [] }]
+    ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
   ])
   line(kit.left, right, at.y)
 
   const columns = { item: content, sku: right - 190, pieces: right - 70, units: right }
   const itemWidth = columns.sku - 12 - columns.item
   for (const carton of packing.cartons) {
-    const sscc = labels.find((row) => row.cartonId === carton.cartonId)?.sscc
+    const labelNumber = labels.find((row) => row.cartonId === carton.cartonId)?.labelNumber
     ensure(80)
     kit.section(`Carton ${carton.cartonId}`, 22)
     draw(
       [
         `${carton.length} x ${carton.width} x ${carton.height} cm`,
         `${carton.weight} kg`,
-        sscc ? `Amazon label ${sscc}` : ""
+        labelNumber ? `Amazon label ${labelNumber}` : ""
       ]
         .filter(Boolean)
         .join("    "),
@@ -459,34 +456,31 @@ export async function packingListPdf(input: {
 // and the final checks, each with a box to tick.
 export async function checklistPdf(input: { order: OrderInput; packing: Packing; buyer: DocumentBuyer }) {
   const { order, packing } = input
-  const amazon = amazonDestinations.includes(order.destination) || order.destination === "fba"
+  const amazon = order.destination === "amazon"
   const kit = await documentKit("Packing checklist", order.reference, input.buyer)
   const { at, right, line } = kit
   const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   const items = order.items.filter((item) => included.has(item.id))
   kit.facts([
     ["PO number", order.reference],
-    ["Destination", destinations[order.destination] ?? order.destination],
+    ["Destination", destinationName({ destination: order.destination, items })],
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", String(packing.cartons.length)]
   ])
   const prep = sharedPrep({ items })
-  const rules = destinationRequirements(order.destination)
+  const rules = destinationRequirements({ destination: order.destination, items })
   // Each block: its label in the rail, a heading for a product's own steps, and the steps to tick.
   const blocks: Array<{ rail: string; heading?: string; steps: string[] }> = [
     {
       rail: "Cartons",
       steps: [
-        ...rules.filter((rule) => rule.startsWith("Cartons") || rule.includes("per carton")),
+        ...rules.filter((rule) => /carton/i.test(rule)),
         "Match carton contents and quantities to the packing list."
       ]
     },
     {
       rail: "Units",
-      steps: [
-        ...(prep ? [`${prepInstructions[prep]}.`] : []),
-        ...rules.filter((rule) => !rule.startsWith("Cartons") && !rule.includes("per carton"))
-      ]
+      steps: [...(prep ? [`${prepInstructions[prep]}.`] : []), ...rules.filter((rule) => !/carton/i.test(rule))]
     },
     ...items.map((item) => ({
       rail: "Product",

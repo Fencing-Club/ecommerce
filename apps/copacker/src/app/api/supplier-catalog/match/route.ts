@@ -5,6 +5,7 @@ import { supplierProducts, suppliers } from "@/db/schema"
 import { requireBuyer, session } from "@/server/auth"
 import { appUrl } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
+import { availableStock } from "@/server/supplier-stock"
 
 const inputSchema = z.object({
   supplierId: z.uuid(),
@@ -42,9 +43,15 @@ export async function POST(request: Request) {
             )
         : []
     const products = catalog.map((product) => ({ ...product, active: product.active === 1 }))
+    const { supplierOrgId } = supplier
+    const available = supplierOrgId
+      ? await db().transaction((tx) => availableStock(tx, supplierOrgId, skus))
+      : new Map<string, number>()
     return Response.json(
       input.supplierSkus.map((sku) => ({
         sku,
+        // Pieces the supplier can still sell; null when the product has no stock limit.
+        available: available.get(sku) ?? null,
         ...matchSupplierCatalog(
           {
             supplierOrgId: supplier.supplierOrgId,

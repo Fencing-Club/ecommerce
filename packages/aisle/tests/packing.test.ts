@@ -5,14 +5,19 @@ import {
   packingSchema,
   validatePacking,
   buildAwdRequest,
+  buildFbaPlan,
+  cartonNetworks,
+  fbaBoxes,
+  splitByNetwork,
   commercialChanges,
   approveChanges
 } from "../src/index"
+import { destinationName, destinationRequirements, itemRequirements } from "../src/requirements"
 const itemId = randomUUID()
 const order = orderInputSchema.parse({
   supplierId: randomUUID(),
   reference: "PO-37",
-  destination: "awd_us",
+  destination: "amazon",
   currency: "USD",
   dueDate: "2026-10-10",
   items: [
@@ -28,7 +33,8 @@ const order = orderInputSchema.parse({
       fnsku: "X000000001",
       pieces: 320,
       piecesPerSet: 2,
-      unitPrice: 210
+      unitPrice: 210,
+      amazonNetwork: "awd_us"
     }
   ]
 })
@@ -88,6 +94,19 @@ describe("Supplier piece and carton contract", () => {
   it("requires a delivery address for the buyer's own location", () => {
     expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)
   })
+  it("stops at a forwarder on the way only to a destination further on", () => {
+    const via = { forwarderId: randomUUID(), addressId: randomUUID() }
+    expect(orderInputSchema.safeParse({ ...order, via }).success).toBe(true)
+    expect(
+      orderInputSchema.safeParse({
+        ...order,
+        destination: "forwarder",
+        forwarderId: via.forwarderId,
+        deliveryId: via.addressId,
+        via
+      }).success
+    ).toBe(false)
+  })
   it("uses the exact 50-pound boundary", () => {
     const p = structuredClone(packing)
     p.cartons.forEach((c) => {
@@ -106,9 +125,6 @@ describe("Supplier piece and carton contract", () => {
     expect(validatePacking(order, packing, { [itemId]: 2 }).issues.some((i) => i.message.includes("remaining"))).toBe(
       true
     )
-  })
-  it("does not substitute US AWD rules for a China destination", () => {
-    expect(validatePacking({ ...order, destination: "awd_china" }, packing).valid).toBe(false)
   })
   it("rejects products outside the PO and missing FNSKUs", () => {
     const p = structuredClone(packing)
@@ -152,5 +168,179 @@ describe("Supplier piece and carton contract", () => {
     expect(changed.items[0]?.supplierCatalog).toBeUndefined()
     expect(changed.items[0]?.supplierCatalogStatus).toBeUndefined()
     expect(quoted.items[0]?.supplierCatalog?.supplierSku).toBe("B02")
+  })
+})
+
+describe("FBA shipments", () => {
+  const gloveId = randomUUID()
+  const fbaOrder = orderInputSchema.parse({
+    ...order,
+    items: [
+      { ...order.items[0], amazonNetwork: "fba" },
+      {
+        ...order.items[0],
+        amazonNetwork: "fba",
+        id: gloveId,
+        variantId: "gid://shopify/ProductVariant/2",
+        buyerSku: "glove-6",
+        pieces: 12,
+        piecesPerSet: 1
+      }
+    ]
+  })
+  const cartons = (list: Array<{ length?: number; weight?: number; items: Array<[string, number]> }>) =>
+    packingSchema.parse({
+      ...packing,
+      cartons: list.map((carton, index) => ({
+        cartonId: `C${index + 1}`,
+        length: carton.length ?? 50,
+        width: 40,
+        height: 30,
+        weight: carton.weight ?? 15,
+        items: carton.items.map(([id, pieces]) => ({ itemId: id, pieces }))
+      }))
+    })
+  const prep = new Map([
+    ["foil-2", { prepCategory: "NONE", prepOwnerConstraint: "NONE_ONLY", labelOwnerConstraint: "SELLER_ONLY" }],
+    ["glove-6", { prepCategory: "FC_PROVIDED", prepOwnerConstraint: "SELLER_ONLY", allOwnersConstraint: "MUST_MATCH" }]
+  ])
+
+  it("allows mixed cartons and a large carton holding one unit, but not large cartons of several", () => {
+    const mixed = cartons([
+      {
+        items: [
+          [itemId, 320],
+          [gloveId, 11]
+        ]
+      },
+      { length: 80, weight: 30, items: [[gloveId, 1]] }
+    ])
+    expect(validatePacking(fbaOrder, mixed).issues).toEqual([])
+    const oversize = cartons([
+      {
+        length: 80,
+        items: [
+          [itemId, 320],
+          [gloveId, 12]
+        ]
+      }
+    ])
+    expect(validatePacking(fbaOrder, oversize).issues.map((issue) => issue.message)).toEqual([
+      "FBA cartons must not exceed 63.5 cm on any side"
+    ])
+    // AWD keeps its one-SKU cartons, and a carton goes to one network.
+    const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const })) }
+    expect(validatePacking(awd, mixed).issues.map((issue) => issue.message)).toContain(
+      "AWD requires one SKU per carton"
+    )
+    const both = { ...fbaOrder, items: [awd.items[0]!, fbaOrder.items[1]!] }
+    expect(validatePacking(both, mixed).issues.map((issue) => issue.message)).toContain(
+      "Pack FBA and AWD US products in separate cartons"
+    )
+  })
+
+  it("plans sellable units per SKU with owners from Amazon's record of each SKU", () => {
+    const mixed = cartons([
+      {
+        items: [
+          [itemId, 320],
+          [gloveId, 12]
+        ]
+      }
+    ])
+    expect(buildFbaPlan(fbaOrder, mixed, "cp-test", prep)).toMatchObject({
+      name: "cp-test",
+      destinationMarketplaces: ["ATVPDKIKX0DER"],
+      sourceAddress: { stateOrProvinceCode: "Jiangsu", phoneNumber: "+8618861613263" },
+      items: [
+        { msku: "foil-2", quantity: 160, labelOwner: "SELLER", prepOwner: "NONE" },
+        { msku: "glove-6", quantity: 12, labelOwner: "SELLER", prepOwner: "SELLER" }
+      ]
+    })
+    expect(fbaBoxes(fbaOrder, mixed, prep)).toEqual([
+      {
+        cartonId: "C1",
+        box: {
+          contentInformationSource: "BOX_CONTENT_PROVIDED",
+          quantity: 1,
+          dimensions: { length: 50, width: 40, height: 30, unitOfMeasurement: "CM" },
+          weight: { value: 15, unit: "KG" },
+          items: [
+            { msku: "foil-2", quantity: 160, labelOwner: "SELLER", prepOwner: "NONE" },
+            { msku: "glove-6", quantity: 12, labelOwner: "SELLER", prepOwner: "SELLER" }
+          ]
+        }
+      }
+    ])
+    expect(() => buildFbaPlan(fbaOrder, mixed, "cp-test", new Map([["foil-2", prep.get("foil-2")!]]))).toThrow(
+      "glove-6: choose its prep category in Seller Central"
+    )
+  })
+
+  it("sends AWD Amazon's prep category for the SKU, not the supplier's preparation", () => {
+    const products = (prepDetails: Map<string, { prepCategory: string }>) =>
+      buildAwdRequest(order, packing, "copacker-test", prepDetails).packagesToInbound[0]!.distributionPackage.contents
+        .products
+    expect(products(new Map([["foil-2", { prepCategory: "NONE" }]]))[0]!.prepDetails).toEqual({
+      prepCategory: "NO_PREP",
+      labelOwner: "SELF"
+    })
+    expect(products(new Map([["foil-2", { prepCategory: "TEXTILE" }]]))[0]!.prepDetails).toEqual({
+      prepCategory: "TEXTILE",
+      prepOwner: "SELF",
+      labelOwner: "SELF"
+    })
+    expect(products(new Map())[0]!.prepDetails).toEqual({ labelOwner: "SELF" })
+  })
+})
+
+describe("POs to Amazon with lines for several networks", () => {
+  const gloveId = randomUUID()
+  const both = orderInputSchema.parse({
+    ...order,
+    items: [
+      order.items[0],
+      {
+        ...order.items[0],
+        id: gloveId,
+        variantId: "gid://shopify/ProductVariant/2",
+        buyerSku: "glove-6",
+        pieces: 12,
+        piecesPerSet: 1,
+        amazonNetwork: "fba"
+      }
+    ]
+  })
+  const split = packingSchema.parse({
+    ...packing,
+    changes: [{ itemId, supplierSku: "B02-new", unitPrice: 230 }],
+    cartons: [
+      ...packing.cartons,
+      { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 12 }] }
+    ]
+  })
+
+  it("checks each carton by its own network and splits the cartons into one packing per network", () => {
+    expect(validatePacking(both, split).issues).toEqual([])
+    expect(cartonNetworks(both, split.cartons[2]!)).toEqual(["fba"])
+    const parts = splitByNetwork(both, split)
+    expect(parts.map((part) => [part.network, part.packing.cartons.map((carton) => carton.cartonId)])).toEqual([
+      ["fba", ["G1"]],
+      ["awd_us", ["A6", "A7"]]
+    ])
+    // Invoice changes stay with the first part, and the rest keep the shared details.
+    expect(parts.map((part) => part.packing.changes.length)).toEqual([1, 0])
+    expect(parts[1]!.packing.readyDate).toBe(split.readyDate)
+  })
+
+  it("gives each network its own carton rules and each line its network", () => {
+    const rules = destinationRequirements(both)
+    expect(rules.filter((rule) => rule.includes("cartons"))).toEqual([
+      expect.stringContaining("FBA cartons: mixed SKUs are allowed"),
+      expect.stringContaining("AWD US cartons: one SKU per carton"),
+      "Pack FBA and AWD US products in separate cartons."
+    ])
+    expect(destinationName(both)).toBe("Amazon FBA and AWD US")
+    expect(itemRequirements(both.items[0]!, "amazon")[0]).toBe("Pack for AWD US")
   })
 })

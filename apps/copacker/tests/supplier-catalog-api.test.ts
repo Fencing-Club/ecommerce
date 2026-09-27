@@ -21,6 +21,7 @@ import { GET as exportCatalog } from "../src/app/api/supplier-catalog/export/rou
 import { POST as importCatalog } from "../src/app/api/supplier-catalog/import/route"
 import { POST as matchCatalog } from "../src/app/api/supplier-catalog/match/route"
 import { POST as saveProduct } from "../src/app/api/supplier-catalog/products/route"
+import { POST as saveStock } from "../src/app/api/supplier-catalog/stock/route"
 import { GET as downloadTemplate } from "../src/app/api/supplier-catalog/template/route"
 import { appUrl } from "../src/server/security"
 import { applyMigrations } from "./migrations"
@@ -35,7 +36,7 @@ const linkB = randomUUID()
 
 function actor(id: string, kind: "buyer" | "supplier"): Session {
   return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
+    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
     org: {
       id,
       kind,
@@ -95,7 +96,10 @@ function save(id: string, revision: number, active: boolean) {
         piecesPerSellablePack: 1,
         sellablePacksPerCase: 160,
         notes: null,
-        active
+        active,
+        trackInventory: false,
+        onHand: 0,
+        continueSelling: false
       })
     })
   )
@@ -122,7 +126,7 @@ beforeEach(async () => {
 })
 
 describe("supplier catalog API", () => {
-  const csv = `${catalogTemplate}SAME,Foil cord,USD,1.90,piece,1,160,\r\n`
+  const csv = `${catalogTemplate}SAME,Foil cord,USD,1.90,piece,1,160,,,,\r\n`
 
   it("serves an Excel-compatible CSV template with an attachment filename", async () => {
     const response = await downloadTemplate()
@@ -138,7 +142,7 @@ describe("supplier catalog API", () => {
     expect((await upload(csv, "commit", stateA)).status).toBe(200)
 
     context.actor = actor(supplierB, "supplier")
-    const secondCsv = `${catalogTemplate}SAME,Foil cord,USD,2.50,piece,1,160,\r\n`
+    const secondCsv = `${catalogTemplate}SAME,Foil cord,USD,2.50,piece,1,160,,,,\r\n`
     const stateB = await (await upload(secondCsv, "preview")).json()
     expect((await upload(secondCsv, "commit", stateB)).status).toBe(200)
 
@@ -247,5 +251,60 @@ describe("supplier catalog API", () => {
     const changed = csv.replace("1.90", "2.00")
     expect((await upload(changed, "commit", preview)).status).toBe(400)
     expect(await database.select().from(tables.supplierProducts)).toHaveLength(0)
+  })
+
+  it("sets a tracked product's on hand count and tells buyers what's available", async () => {
+    const [product] = await database
+      .insert(tables.supplierProducts)
+      .values({ supplierOrgId: supplierA, supplierSku: "SAME", title: "Foil cord", currency: "USD", priceMinor: 190 })
+      .returning()
+    const stock = (onHand: number) =>
+      saveStock(
+        new Request(`${appUrl()}/api/supplier-catalog/stock`, {
+          method: "POST",
+          headers: { origin: appUrl(), "Content-Type": "application/json" },
+          body: JSON.stringify({ id: product!.id, onHand })
+        })
+      )
+    // An untracked product is made to order, so it has no count to set.
+    expect((await stock(12)).status).toBe(404)
+    await database
+      .update(tables.supplierProducts)
+      .set({ trackInventory: true })
+      .where(eq(tables.supplierProducts.id, product!.id))
+    context.actor = actor(supplierB, "supplier")
+    expect((await stock(12)).status).toBe(404)
+    context.actor = actor(supplierA, "supplier")
+    expect(await (await stock(12)).json()).toEqual({ revision: 2 })
+    context.actor = actor(buyerId, "buyer")
+    expect((await stock(12)).status).toBe(403)
+    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", available: 12 })
+    await database
+      .update(tables.supplierProducts)
+      .set({ continueSelling: true })
+      .where(eq(tables.supplierProducts.id, product!.id))
+    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ available: null })
+  })
+
+  it("keeps the on hand count when an import leaves it blank", async () => {
+    await database.insert(tables.supplierProducts).values({
+      supplierOrgId: supplierA,
+      supplierSku: "SAME",
+      title: "Foil cord",
+      currency: "USD",
+      priceMinor: 190,
+      sellablePacksPerCase: 160,
+      trackInventory: true,
+      onHand: 30
+    })
+    const counted = `${catalogTemplate}SAME,Foil cord,USD,1.90,piece,1,160,,yes,,yes
+
+`
+    const preview = await (await upload(counted, "preview")).json()
+    expect(await (await upload(counted, "commit", preview)).json()).toMatchObject({ updated: 1 })
+    expect((await database.select().from(tables.supplierProducts))[0]).toMatchObject({
+      onHand: 30,
+      continueSelling: true
+    })
   })
 })

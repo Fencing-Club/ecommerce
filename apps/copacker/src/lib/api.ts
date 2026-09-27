@@ -8,7 +8,10 @@ export type CatalogProduct = CatalogVariant & {
   fnsku: string
   amazonError: string | null
   // Pieces per unit from Shopify, and the product's saved description and preparation.
-  lineDefaults: Pick<LineDefaults, "piecesPerSet" | "description" | "prepCategory">
+  lineDefaults: Pick<
+    LineDefaults,
+    "piecesPerSet" | "description" | "prepCategory" | "suffocationWarning" | "amazonNetwork" | "skuLabel"
+  >
 }
 
 export type SupplierOption = {

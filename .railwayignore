@@ -21,3 +21,4 @@ packages/shopify-content/
 packages/shopify-emails/
 **/.cache/
 **/*.log
+apps/video/

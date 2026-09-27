@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
 import { z } from "zod"
-import { PageBreadcrumb, PageHeader } from "@/components/common"
+import { PageBreadcrumb } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
@@ -64,23 +64,22 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
     .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
     .from(contacts)
     .where(and(eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
-  const initialDestination =
-    params.destination === "warehouse" || params.destination === "fba" || params.destination === "awd_us"
-      ? params.destination
-      : "amazon"
+  // Restock links name the Amazon network; the PO goes to Amazon, and each line picks its network.
+  const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
 
   return (
     <>
       <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="New purchase order" />
-      <PageHeader title="Create purchase order" />
       <OrderBuilder
-        suppliers={rows.map((r) => ({ id: r.id, name: r.name, paymentTerms: r.paymentTerms }))}
+        title="Create purchase order"
+        suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
         deliveries={deliveries}
         forwarderAddresses={forwarding.map((row) => ({
           addressId: row.addressId,
           forwarderId: row.forwarderId,
-          label: `${row.forwarderName}, ${row.addressName}`
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
         }))}
         initialItems={initialItems}
         needsBarcodeVariantIds={needsBarcode}

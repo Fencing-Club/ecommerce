@@ -14,7 +14,14 @@ vi.mock("../src/server/connections", () => ({
   shopifyFor: vi.fn<() => void>(),
   connection: vi.fn<() => void>()
 }))
-import { attentionItems, purchasing, setupSteps, summarizeRestock, upcomingSpend } from "../src/server/overview"
+import {
+  attentionItems,
+  paymentDue,
+  purchasing,
+  setupSteps,
+  summarizeRestock,
+  upcomingSpend
+} from "../src/server/overview"
 import {
   catalogIndex,
   dailySales,
@@ -285,6 +292,15 @@ describe("purchasing and upcoming spend", () => {
     ])
     expect(result.draftCount).toBe(1)
     expect(result.bySupplier.map((supplier) => supplier.name)).toEqual(["Ok Fencing", "Blade Co"])
+  })
+
+  it("dates a PO's payment from its Net terms and when it was sent", () => {
+    const sentAt = new Date("2026-09-02T00:00:00Z")
+    const net = { ...order([]), paymentTerms: "Net 30" }
+    expect(paymentDue({ data: net, sentAt })).toBe("2026-10-02")
+    expect(paymentDue({ data: { ...net, paymentTerms: "Payment in advance", dueDate: undefined }, sentAt })).toBe(
+      "2026-09-02"
+    )
   })
 
   it("adds reorders to sent POs due within 60 days", () => {

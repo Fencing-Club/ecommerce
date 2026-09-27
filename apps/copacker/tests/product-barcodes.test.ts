@@ -92,7 +92,7 @@ const unknownVariant = "gid://shopify/ProductVariant/99"
 
 function actor(id: string, kind: "buyer" | "supplier"): Session {
   return {
-    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
+    user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true, name: "Olive Owner" },
     org: {
       id,
       kind,
@@ -161,7 +161,8 @@ function item(id: string, variantId: string): OrderInput["items"][number] {
     unitPrice: 100,
     instructions: "",
     prepCategory: "POLYBAGGING",
-    suffocationWarning: false
+    suffocationWarning: false,
+    amazonNetwork: "fba"
   }
 }
 
@@ -359,12 +360,12 @@ describe("standard product labels", () => {
     // No label: none on POs to the buyer's location, but Amazon still labels every unit.
     await setProductLabel("none")
     expect(await states(po)).toEqual({ [line]: "none" })
-    expect(await states(await order([{ ...item(line, variantA), fnsku }], "awd_us"))).toEqual({ [line]: "standard" })
+    expect(await states(await order([{ ...item(line, variantA), fnsku }], "amazon"))).toEqual({ [line]: "standard" })
     await setProductLabel("standard")
   })
   it("waits for the FNSKU on Amazon POs instead of printing the SKU", async () => {
     const line = randomUUID()
-    const amazonBound = await order([item(line, variantA)], "awd_us")
+    const amazonBound = await order([item(line, variantA)], "amazon")
     expect(await lineLabels(amazonBound)).toEqual([
       { itemId: line, state: "missing", problem: "Its FNSKU is looked up when the PO is sent" }
     ])
@@ -474,7 +475,7 @@ describe("labels in bulk", () => {
     expect(await pages(combined)).toBe(2)
     expect(await labels(po.id)).toEqual([])
 
-    const unlabelled = await order([item(randomUUID(), variantA)], "awd_us")
+    const unlabelled = await order([item(randomUUID(), variantA)], "amazon")
     const none = await orderLabels(new Request(`${appUrl()}/api/orders/${unlabelled.id}/labels`), {
       params: Promise.resolve({ id: unlabelled.id })
     })

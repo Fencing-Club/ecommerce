@@ -287,7 +287,7 @@ for (const org of buyers) {
         data: {
           supplierId,
           reference: "DEMO-1",
-          destination: "awd_us",
+          destination: "amazon",
           currency: "USD",
           dueDate: "2026-12-01",
           paymentTerms: "30% deposit, 70% before shipment",
@@ -309,7 +309,8 @@ for (const org of buyers) {
               unitPrice: 400,
               instructions: "",
               prepCategory: "POLYBAGGING",
-              suffocationWarning: false
+              suffocationWarning: false,
+              amazonNetwork: "awd_us"
             }
           ]
         }

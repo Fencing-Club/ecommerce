@@ -1,4 +1,4 @@
-import type { OrderInput, PrepCategory } from "@repo/aisle"
+import type { AmazonNetwork, OrderInput, PrepCategory } from "@repo/aisle"
 import { bundleSupplierComponents, type CatalogVariant, variantUnitCostMinor } from "@repo/aisle/shopify"
 
 export type LineDefaults = {
@@ -10,6 +10,9 @@ export type LineDefaults = {
   // The product's saved defaults from Products.
   description?: string
   prepCategory?: PrepCategory | null
+  suffocationWarning?: boolean
+  amazonNetwork?: AmazonNetwork
+  skuLabel?: boolean
 }
 
 // A new PO line for a Shopify variant, priced at its Shopify unit cost per piece until a supplier quote or the buyer
@@ -37,6 +40,8 @@ export function orderLine(
     unitPrice: Math.round((variantUnitCostMinor(variant, currency) ?? 0) / piecesPerSet),
     instructions: defaults.description ?? "",
     prepCategory: defaults.prepCategory ?? "POLYBAGGING",
-    suffocationWarning: false
+    suffocationWarning: defaults.suffocationWarning ?? false,
+    amazonNetwork: defaults.amazonNetwork ?? "fba",
+    skuLabel: defaults.skuLabel ?? true
   }
 }

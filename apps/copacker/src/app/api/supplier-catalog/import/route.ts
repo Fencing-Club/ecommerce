@@ -108,15 +108,22 @@ export async function POST(request: Request) {
             sql`${supplierProducts.supplierOrgId} = ${s.org.id} AND ${supplierProducts.supplierSku} = ${row.supplierSku}`
           )
           .for("update")
+        const { onHand, ...fields } = row
         if (!prior) {
-          await tx.insert(supplierProducts).values({ supplierOrgId: s.org.id, ...row })
+          await tx.insert(supplierProducts).values({ supplierOrgId: s.org.id, ...fields, onHand: onHand ?? 0 })
           created++
         } else if (sameSupplierCatalogFields(prior, row)) {
           unchanged++
         } else {
           await tx
             .update(supplierProducts)
-            .set({ ...row, active: 1, revision: prior.revision + 1, updatedAt: new Date() })
+            .set({
+              ...fields,
+              onHand: onHand ?? prior.onHand,
+              active: 1,
+              revision: prior.revision + 1,
+              updatedAt: new Date()
+            })
             .where(eq(supplierProducts.id, prior.id))
           updated++
         }

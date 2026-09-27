@@ -31,18 +31,20 @@ The UI should always send the last displayed numeric revision for a PO/shipment 
 | shipment.approve | id, revision, updateCost: boolean | Buyer; updates PO and queues supplier SKU writeback |
 | shipment.correct | id, reason | Buyer or assigned supplier; invalidates affected shipment documents |
 | shipment.reconcile | id, amazonOrderId | Buyer; reads Amazon order and verifies reference before worker resumes |
-| shipment.cancelled | id | Buyer; verifies CANCELLED in Amazon before releasing quantities |
+| shipment.cancelAmazon | id | Buyer; cancels the AWD order or FBA inbound plan in Amazon and verifies it's cancelled before releasing quantities |
 | shipment.release | id, revision, bookingReference | Buyer; requires all carton, product and carrier label assignments |
 | shipment.collected | id | Buyer or supplier; records reported collection, not carrier tracking proof |
 | job.retry | id | Buyer owner; failed email/Shopify job for an accessible PO |
 
 Canonical schemas are exported by `@repo/aisle`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema, cartonInputSchema, addressSchema. Prices are integer minor currency units **per individual piece**; weights kg; dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID, and product names are read-only to suppliers. They propose supplier SKU and unit-price changes in `packing.changes`.
 
-An order has one destination and one supplier. The first release permits submission only for `awd_us`; future destination values may appear as disabled/planned choices. Do not imply FBA/GWD support is live.
+An order has one destination and one supplier. A PO to Amazon sends each line to its own Amazon network (FBA or AWD US), so it can ship as several Amazon shipments.
 
 ## Catalog and connections
 
 - `GET /api/catalog?q=`: buyer-only Shopify search; returns variant id/title/SKU, product title, inventory item id/unitCost, supplierSku, asin, plus Amazon ASIN/FNSKU when the connected listing exposes them. An empty mapping is unknown, never an invented barcode.
+- `POST /api/supplier-catalog/match` `{ supplierId, currency, supplierSkus }`: buyer-only; each SKU's catalog match and `available`, the pieces the supplier can still sell (on hand less what its sent POs haven't yet taken), or null when the product doesn't track inventory or continues selling when out of stock.
+- `POST /api/supplier-catalog/stock` `{ id, onHand }`: supplier-only; sets a tracked catalog product's on hand count. 404 when the product isn't the supplier's or doesn't track inventory.
 - `GET /api/connections/shopify?shop=store.myshopify.com`: buyer owner authorization redirect. The same path receives the HMAC-verified OAuth callback.
 - `GET /api/connections/amazon`: buyer owner OAuth redirect and callback. Single-use state is tied to user, organization, and provider.
 
@@ -56,7 +58,7 @@ An order has one destination and one supplier. The first release permits submiss
 
 PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never supplied by the user. `GET /api/documents/:id` authorizes order access and returns a private attachment. Outdated documents cannot be downloaded. Suppliers cannot download carton/carrier labels before buyer release.
 
-`GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, one sheet of suffocation warning labels when a shipped line needs them, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and SSCC label number. It does not show PDF filenames/page numbers as carton identity.
+`GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, one sheet of suffocation warning labels when a shipped line needs them, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and the Amazon label number (an AWD SSCC or an FBA box ID), with the destination warehouse codes as its ship-to. It does not show PDF filenames/page numbers as carton identity.
 
 ## Shipment state and UI actions
 
@@ -64,13 +66,15 @@ PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never suppl
 | --- | --- | --- |
 | packing | Supplier is entering invoice, contacts, ready date, cartons | Upload invoice; submit packing |
 | approval | Commercial changes await buyer decision | Buyer approves or requests correction |
-| queued / creating | Worker checks eligibility, creates/confirms, retrieves labels | Refresh status; no manual repeat create |
-| waiting_labels | Amazon carton labels are available | Buyer books AGL externally, uploads carrier labels, releases packet |
+| queued / creating | Worker creates the AWD order or FBA inbound plan, confirms it and retrieves labels | Refresh status; no manual repeat create |
+| waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA), uploads carrier labels, releases packet |
 | ready | Label assignments complete and packet released | Supplier prints; mark collected after pickup |
 | collected | Collection reported by a participant | Read-only historical shipment |
-| correction | Existing documents outdated | Edit uncreated shipment, or resolve Amazon shipment before replacement |
+| correction | Existing documents outdated | Edit uncreated shipment, or cancel the Amazon shipment before replacement |
 | needs_attention | Provider request failed or write outcome uncertain | Show actionable error; buyer reconciliation |
 | cancelled | Amazon cancellation verified | Quantities available for a new shipment |
+
+See [Amazon inbound shipments](amazon-inbound.md) for how the worker creates AWD orders and FBA inbound plans.
 
 The ready date is the supplier's local calendar date, not a confirmed pickup appointment. Copacker does not book AGL. Avoid wording implying Amazon has agreed to the requested date.
 
@@ -129,7 +133,7 @@ Optional query parameters:
 | Parameter | Meaning |
 | --- | --- |
 | `supplierId` | Exact buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
-| `destination` | `awd_us`, `awd_china`, `fba`, or `forwarder`. |
+| `destination` | `amazon`, `warehouse`, or `forwarder`. |
 | `limit` | Orders per page, integer 1–50, default 20. |
 | `cursor` | Last order UUID returned as `nextCursor`; omit on the first page. |
 
@@ -231,9 +235,18 @@ New POs get their labels when the PO is created or imported, and again after it 
 - Action `order.labels` (buyer only, open POs) adds missing product labels and makes again the ones Copacker added, from current barcodes and Shopify and Amazon details. Labels uploaded on the PO and lines in released shipments are kept; replaced labels stay as outdated versions. It returns `{updated}`.
 - `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, then one sheet of suffocation warning labels when a line needs them, for anyone who can see the PO; 404 when it has neither.
 
+### Amazon networks
+
+`destination` is `amazon`, `warehouse` or `forwarder`. On a PO to Amazon each line has `amazonNetwork`, `fba` (default) or
+`awd_us`, defaulted from the product's `amazonNetwork` setting (`product_defaults.amazonNetwork`; `PATCH
+/api/inventory/product-defaults` keeps it when left out). Shipments carry `amazonNetwork` once queued; see
+[amazon-inbound.md](amazon-inbound.md) for packing rules and how a submission splits into one shipment per network.
+Migration `0028_amazon_networks` converted earlier POs: `amazon` and `awd_us` became `amazon` with AWD US lines, `fba`
+became `amazon` with FBA lines.
+
 ### Suffocation warning labels
 
-A PO line's `suffocationWarning` (default `false`), set next to its preparation, asks the supplier to put a suffocation warning label on each polybag. The PO, its checklist and the PO page list it with the line's other requirements. The labels are a US Letter sheet on the product label stock (30 labels, 2 5/8 × 1 in): a warning triangle, then "WARNING:" in bold and the standard polybag warning. The sheet comes with the PO's labels download and the supplier packet.
+A product's `suffocationWarning` setting (`product_defaults.suffocationWarning`, default `false`, in the Products Edit panel and `PATCH /api/inventory/product-defaults`, where leaving it out keeps the saved value) starts each new PO line for the product with the same value. A PO line's `suffocationWarning`, set with its preparation, asks the supplier to put a suffocation warning label on each polybag. The PO, its checklist and the PO page list it with the line's other requirements. The labels are a US Letter sheet on the product label stock (30 labels, 2 5/8 × 1 in): a warning triangle, then "WARNING:" in bold and the standard polybag warning. The sheet comes with the PO's labels download and the supplier packet.
 
 ### PO documents
 

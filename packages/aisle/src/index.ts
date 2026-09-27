@@ -11,11 +11,14 @@ export const prepCategories = [
   "HANG_GARMENT"
 ] as const
 export type PrepCategory = (typeof prepCategories)[number]
-// "warehouse" is one of the buyer's own locations (a saved delivery address); the others ship toward Amazon.
-// "amazon" leaves the warehouse to be chosen when shipping; AWD USA is the only one Copacker can book today.
-export const destinationSchema = z.enum(["amazon", "awd_us", "awd_china", "fba", "forwarder", "warehouse"])
-// Destinations that create an Amazon shipment and follow Amazon's carton and labeling rules.
-export const amazonDestinations: readonly z.infer<typeof destinationSchema>[] = ["amazon", "awd_us"]
+// Where a PO ships: Amazon, one of the buyer's own locations (a saved delivery address), or a freight forwarder. A PO to
+// Amazon sends each line to its own Amazon network, so one PO can become several Amazon shipments.
+export const destinationSchema = z.enum(["amazon", "forwarder", "warehouse"])
+// Amazon's inbound networks a PO line can go to: FBA, or AWD in the US. Each has its own carton rules, and each
+// network's cartons become their own shipment.
+export const amazonNetworks = ["fba", "awd_us"] as const
+export type AmazonNetwork = (typeof amazonNetworks)[number]
+export const amazonNetworkNames: Record<AmazonNetwork, string> = { fba: "FBA", awd_us: "AWD US" }
 export const addressSchema = z.object({
   name: z.string().trim().min(1).max(50),
   addressLine1: z.string().trim().min(1).max(180),
@@ -106,22 +109,40 @@ export const itemSchema = z
     instructions: z.string().max(4000).default(""),
     prepCategory: z.enum(prepCategories).default("POLYBAGGING"),
     // Each unit's polybag gets a suffocation warning label, printed from the PO's label sheets.
-    suffocationWarning: z.boolean().default(false)
+    suffocationWarning: z.boolean().default(false),
+    // Whether each unit gets its SKU label. Left out, the product's label setting decides; POs to Amazon always label.
+    skuLabel: z.boolean().optional(),
+    // On a PO to Amazon, the network this line's cartons go to, which decides how they're packed.
+    amazonNetwork: z.enum(amazonNetworks).default("fba")
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Pieces must be divisible by pieces per set")
 export type OrderItem = z.infer<typeof itemSchema>
-// Payment terms offered when creating a PO. Anything else can be typed in.
+// Payment terms a PO can have, as Shopify offers them. None is an empty string.
 export const commonPaymentTerms = [
-  "Due immediately",
-  "Payment in advance",
-  "30% deposit, 70% before shipment",
-  "50% deposit, 50% before shipment",
-  "30% deposit, 70% against bill of lading",
+  "Net 7",
   "Net 15",
   "Net 30",
+  "Net 45",
   "Net 60",
-  "Due on receipt of goods",
-  "Letter of credit at sight"
+  "Cash on delivery",
+  "Payment on receipt",
+  "Payment in advance"
+] as const
+// The kinds of cost a PO's summary can add or take off, Shopify's plus packing and labeling by the supplier. Each is
+// kept as the adjustment's description; a discount's amount is negative.
+export const adjustmentTypes = [
+  "Shipping amount",
+  "Customs duties",
+  "Discount",
+  "Foreign transaction fee",
+  "Freight fee",
+  "Insurance",
+  "Labeling",
+  "Packing",
+  "Rush fee",
+  "Surcharge",
+  "Tariffs",
+  "Other"
 ] as const
 export const orderInputSchema = z
   .object({
@@ -131,8 +152,12 @@ export const orderInputSchema = z
     // For a PO to a freight forwarder, the forwarder; deliveryId is then one of its addresses.
     forwarderId: z.uuid().optional(),
     deliveryId: z.uuid().optional(),
+    // A freight forwarder the goods pass through on the way to the destination, such as a consolidator in China
+    // before Amazon AWD: the forwarder and the address the supplier ships to.
+    via: z.object({ forwarderId: z.uuid(), addressId: z.uuid() }).optional(),
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
-    dueDate: z.iso.date(),
+    // When the goods were needed by. No longer asked for; older POs keep theirs.
+    dueDate: z.iso.date().optional(),
     // How and when the supplier is paid, such as "Net 30" or "30% deposit, 70% before shipment".
     paymentTerms: z.string().trim().max(200).default(""),
     notes: z.string().max(8000).default(""),
@@ -153,6 +178,9 @@ export const orderInputSchema = z
       (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
     if (!Number.isSafeInteger(total) || total < 0) {
       ctx.addIssue({ code: "custom", message: "PO total must be a nonnegative safe integer", path: ["adjustments"] })
+    }
+    if (order.via && (order.destination === "forwarder" || order.destination === "warehouse")) {
+      ctx.addIssue({ code: "custom", message: "Ship to the forwarder directly instead", path: ["via"] })
     }
     if (order.destination === "forwarder" && (!order.forwarderId || !order.deliveryId)) {
       ctx.addIssue({ code: "custom", message: "Choose a forwarder address", path: ["deliveryId"] })
@@ -264,10 +292,11 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   const totals: Record<string, number> = {}
   const configurations = new Map<string, string>()
   const cartonIds = new Set<string>()
-  // Amazon's carton and labeling rules apply only to Amazon shipments; the buyer's own locations accept any cartons.
-  const amazon = amazonDestinations.includes(order.destination)
+  // Amazon's carton and labeling rules apply only to Amazon shipments, by each carton's network; the buyer's own
+  // locations accept any cartons.
+  const amazon = order.destination === "amazon"
   if (!amazon && order.destination !== "warehouse") {
-    issues.push({ message: "Shipments currently go to AWD USA or your own locations" })
+    issues.push({ message: "Shipments currently go to Amazon or your own locations" })
   }
   for (const carton of packing.cartons) {
     const add = (message: string) => issues.push({ cartonId: carton.cartonId, message })
@@ -275,14 +304,28 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       add("Carton numbers must be unique")
     }
     cartonIds.add(carton.cartonId.toLowerCase())
-    if (amazon && Math.max(carton.length, carton.width, carton.height) > 63.5) {
-      add("AWD cartons must not exceed 63.5 cm on any side")
+    const networks = cartonNetworks(order, carton)
+    if (amazon && networks.length > 1) {
+      add(`Pack ${networks.map((name) => amazonNetworkNames[name]).join(" and ")} products in separate cartons`)
     }
-    if (amazon && carton.weight > 22.6796185) {
-      add("AWD carton weight must not exceed 50 lb (22.68 kg)")
+    const awd = amazon && networks.includes("awd_us")
+    const network = awd ? "AWD" : "FBA"
+    // FBA takes a larger carton when it holds one unit that doesn't fit a standard one.
+    const oneUnit =
+      carton.items.length === 1 &&
+      carton.items[0]!.pieces === order.items.find((i) => i.id === carton.items[0]!.itemId)?.piecesPerSet
+    const limited = awd || (amazon && !oneUnit)
+    if (limited && Math.max(carton.length, carton.width, carton.height) > 63.5) {
+      add(`${network} cartons must not exceed 63.5 cm on any side`)
     }
-    if (amazon && carton.items.length !== 1) {
+    if (limited && carton.weight > 22.6796185) {
+      add(`${network} carton weight must not exceed 50 lb (22.68 kg)`)
+    }
+    if (awd && carton.items.length !== 1) {
       add("AWD requires one SKU per carton")
+    }
+    if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
+      add("List each product once per carton")
     }
     for (const content of carton.items) {
       const item = order.items.find((i) => i.id === content.itemId)
@@ -295,14 +338,14 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       if (!Number.isInteger(units)) {
         add(`${item.buyerSku}: pieces must form complete sets of ${item.piecesPerSet}`)
       }
-      if (amazon && units > 150) {
+      if (awd && units > 150) {
         add(`${item.buyerSku}: maximum 150 sellable units per AWD carton`)
       }
       if (amazon && (!item.fnsku || !item.asin)) {
         add(`${item.buyerSku}: Amazon ASIN and FNSKU are required`)
       }
       const config = JSON.stringify([content.pieces, carton.length, carton.width, carton.height, carton.weight])
-      if (amazon && configurations.has(item.id) && configurations.get(item.id) !== config) {
+      if (awd && configurations.has(item.id) && configurations.get(item.id) !== config) {
         add(
           `${item.buyerSku}: all cartons for this SKU must have the same contents, dimensions, and weight; split into separate shipments if needed`
         )
@@ -323,6 +366,27 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
     changedIds.add(change.itemId)
   }
   return { issues, totals, valid: issues.length === 0 }
+}
+
+// The Amazon networks a carton's products go to, in network order. A carton to Amazon should have exactly one.
+export function cartonNetworks(order: Pick<OrderInput, "items">, carton: Pick<Packing["cartons"][number], "items">) {
+  const networks = new Set(
+    carton.items.flatMap((content) => {
+      const item = order.items.find((row) => row.id === content.itemId)
+      return item ? [item.amazonNetwork] : []
+    })
+  )
+  return amazonNetworks.filter((network) => networks.has(network))
+}
+
+// A packing's cartons for each Amazon network they go to, each a packing of its own, in network order. Every carton goes
+// to one network, as validatePacking requires; its invoice changes stay with the first.
+export function splitByNetwork(order: Pick<OrderInput, "items">, packing: Packing) {
+  const split = amazonNetworks.flatMap((network) => {
+    const cartons = packing.cartons.filter((carton) => cartonNetworks(order, carton)[0] === network)
+    return cartons.length ? [{ network, packing: { ...packing, cartons } }] : []
+  })
+  return split.map((part, index) => (index ? { ...part, packing: { ...part.packing, changes: [] } } : part))
 }
 
 export function commercialChanges(order: OrderInput, packing: Packing) {
@@ -349,7 +413,23 @@ export function approveChanges(order: OrderInput, packing: Packing) {
   })
 }
 
-export function buildAwdRequest(order: OrderInput, packing: Packing, reference: string) {
+// AWD's prep details for a SKU from Amazon's record of it, with the supplier labeling and preparing.
+function awdPrep(detail: AmazonPrep | undefined) {
+  if (!detail) {
+    return { labelOwner: "SELF" }
+  }
+  const category = detail.prepCategory === "NONE" ? "NO_PREP" : detail.prepCategory
+  return { prepCategory: category, ...(category === "NO_PREP" ? {} : { prepOwner: "SELF" }), labelOwner: "SELF" }
+}
+
+// An AWD inbound order for a shipment's cartons. Each product's prep category is Amazon's record of the SKU (AWD's
+// categories describe the product, such as TEXTILE, not what the supplier does); without one, Amazon uses no prep.
+export function buildAwdRequest(
+  order: OrderInput,
+  packing: Packing,
+  reference: string,
+  prep: ReadonlyMap<string, AmazonPrep> = new Map()
+) {
   const validation = validatePacking(order, packing)
   if (!validation.valid) {
     throw new Error(validation.issues.map((i) => i.message).join("; "))
@@ -365,11 +445,7 @@ export function buildAwdRequest(order: OrderInput, packing: Packing, reference: 
           {
             sku: item.buyerSku,
             quantity: content.pieces / item.piecesPerSet,
-            prepDetails: {
-              prepCategory: item.prepCategory,
-              ...(item.prepCategory === "NO_PREP" ? {} : { prepOwner: "SELF" }),
-              labelOwner: "SELF"
-            }
+            prepDetails: awdPrep(prep.get(item.buyerSku))
           }
         ]
       },
@@ -396,6 +472,98 @@ export function buildAwdRequest(order: OrderInput, packing: Packing, reference: 
   }
   const { email: _email, ...originAddress } = packing.origin
   return { originAddress, packagesToInbound: [...groups.values()], externalReferenceId: reference }
+}
+
+// How Amazon has a SKU prepared and labeled: its prep category (such as TEXTILE, or NONE), and who may prepare and
+// label it (SELLER_ONLY, AMAZON_ONLY or NONE_ONLY, and MUST_MATCH when one party does both), from Amazon's own record
+// of the SKU.
+export type AmazonPrep = {
+  prepCategory: string
+  prepOwnerConstraint?: string
+  labelOwnerConstraint?: string
+  allOwnersConstraint?: string
+}
+
+// The owner an Amazon constraint such as SELLER_ONLY requires, or the fallback when it leaves the choice open.
+const constrainedOwners: Record<string, "SELLER" | "AMAZON" | "NONE"> = {
+  NONE_ONLY: "NONE",
+  AMAZON_ONLY: "AMAZON",
+  SELLER_ONLY: "SELLER"
+}
+const owner = (constraint: string | undefined, fallback: "SELLER" | "NONE") =>
+  (constraint && constrainedOwners[constraint]) || fallback
+
+// Who labels and prepares a SKU's units in an FBA inbound plan: the supplier, as far as Amazon's record of the SKU
+// allows. A SKU Amazon has no prep category for has to be set up in Seller Central first.
+function fbaOwners(sku: string, prep: ReadonlyMap<string, AmazonPrep>) {
+  const detail = prep.get(sku)
+  if (!detail || detail.prepCategory === "UNKNOWN") {
+    throw new Error(`${sku}: choose its prep category in Seller Central before sending it to FBA`)
+  }
+  const prepOwner = owner(detail.prepOwnerConstraint, detail.prepCategory === "NONE" ? "NONE" : "SELLER")
+  const labelOwner = owner(detail.labelOwnerConstraint, "SELLER")
+  return {
+    labelOwner: detail.allOwnersConstraint === "MUST_MATCH" && prepOwner !== "NONE" ? prepOwner : labelOwner,
+    prepOwner
+  }
+}
+
+// An FBA inbound plan for a shipment's cartons, to the US marketplace, named so the plan can be found again.
+export function buildFbaPlan(order: OrderInput, packing: Packing, name: string, prep: ReadonlyMap<string, AmazonPrep>) {
+  const validation = validatePacking(order, packing)
+  if (!validation.valid) {
+    throw new Error(validation.issues.map((i) => i.message).join("; "))
+  }
+  const units = new Map<string, number>()
+  for (const carton of packing.cartons) {
+    for (const content of carton.items) {
+      units.set(content.itemId, (units.get(content.itemId) ?? 0) + content.pieces)
+    }
+  }
+  const { origin } = packing
+  return {
+    name,
+    destinationMarketplaces: ["ATVPDKIKX0DER"],
+    sourceAddress: {
+      name: origin.name,
+      addressLine1: origin.addressLine1,
+      ...(origin.addressLine2 ? { addressLine2: origin.addressLine2 } : {}),
+      city: origin.city,
+      stateOrProvinceCode: origin.stateOrRegion,
+      postalCode: origin.postalCode,
+      countryCode: origin.countryCode,
+      phoneNumber: origin.phoneNumber,
+      ...(origin.email ? { email: origin.email } : {})
+    },
+    items: order.items.flatMap((item) => {
+      const pieces = units.get(item.id)
+      return pieces
+        ? [{ msku: item.buyerSku, quantity: pieces / item.piecesPerSet, ...fbaOwners(item.buyerSku, prep) }]
+        : []
+    })
+  }
+}
+
+// Each carton as an FBA box with its contents, in sellable units, in the packing list's order.
+export function fbaBoxes(order: OrderInput, packing: Packing, prep: ReadonlyMap<string, AmazonPrep>) {
+  return packing.cartons.map((carton) => ({
+    cartonId: carton.cartonId,
+    box: {
+      contentInformationSource: "BOX_CONTENT_PROVIDED" as const,
+      quantity: 1,
+      dimensions: {
+        length: carton.length,
+        width: carton.width,
+        height: carton.height,
+        unitOfMeasurement: "CM" as const
+      },
+      weight: { value: carton.weight, unit: "KG" as const },
+      items: carton.items.map((content) => {
+        const item = order.items.find((i) => i.id === content.itemId)!
+        return { msku: item.buyerSku, quantity: content.pieces / item.piecesPerSet, ...fbaOwners(item.buyerSku, prep) }
+      })
+    }
+  }))
 }
 
 export function money(amount: number, currency = "USD") {

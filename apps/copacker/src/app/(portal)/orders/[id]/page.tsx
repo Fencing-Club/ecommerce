@@ -1,31 +1,33 @@
-import { money, type OrderItem, orderTotal } from "@repo/aisle"
+import { amazonNetworkNames, money, type OrderItem, orderTotal } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, prepInstructions, sharedPrep } from "@repo/aisle/requirements"
-import { desc, eq } from "drizzle-orm"
-import { ChevronDown, ChevronRight, Info as InfoIcon } from "lucide-react"
+import { desc, eq, inArray } from "drizzle-orm"
+import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import { DocumentList, PageBreadcrumb, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
+import { DocumentList, PageBreadcrumb, Status, WarningNote, formatDestination } from "@/components/common"
+import { ForwardShipment } from "@/components/forward-shipment"
 import { InfoTip } from "@/components/info-tip"
 import { LandedCostForm } from "@/components/landed-costs"
-import { LineLabel, OrderMenu } from "@/components/order-actions"
+import { LineMenu, OrderMenu } from "@/components/order-actions"
+import { PoTimeline } from "@/components/po-timeline"
+import { RoutePill } from "@/components/route-pill"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Separator } from "@/components/ui/separator"
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
-import { events, orderRevisions, shipments } from "@/db/schema"
-import { cn } from "@/lib/utils"
-import { accessibleOrder } from "@/server/access"
+import { contacts, events, forwarders, orderRevisions, shipments } from "@/db/schema"
+import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
 import { lineLabels } from "@/server/product-barcodes"
+import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
-import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
+import { ForwarderView } from "./forwarder-view"
 import { sx } from "@/styles/sprinkles.css"
 import { srOnly } from "@/styles/utilities.css"
 
@@ -34,6 +36,9 @@ export const metadata: Metadata = { title: "Purchase order" }
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   const id = z.uuid().parse((await params).id)
+  if (s.org.kind === "forwarder") {
+    return <ForwarderView row={await forwarderOrder(s, id)} />
+  }
   const { order, supplier } = await accessibleOrder(s, id)
   const [shipmentRows, history, revisions] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, id)),
@@ -64,11 +69,22 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const labelFor = (itemId: string) => labels.find((label) => label.itemId === itemId)
   // What happened to the PO, newest first: its events, and each revision, which opens to show its lines.
   const timeline = [
-    ...history.map((event) => ({ key: event.id, at: event.createdAt, message: event.message, revision: null })),
+    ...history.map((event) => ({
+      key: event.id,
+      at: event.createdAt,
+      message: event.message,
+      comment: event.kind === "comment",
+      author: event.author,
+      authorOrg: event.authorOrg,
+      revision: null
+    })),
     ...revisions.map((r) => ({
       key: r.id,
       at: r.createdAt,
       message: r.revision === 1 ? r.reason : `Revision ${r.revision}: ${r.reason}`,
+      comment: false,
+      author: null,
+      authorOrg: null,
       revision: r.data
     }))
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
@@ -93,39 +109,66 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     return documents.length ? [{ ...group, documents }] : []
   })
   const prep = sharedPrep(order.data)
-  const instructions = [
-    ...(prep ? [`${prepInstructions[prep]}.`] : []),
-    ...destinationRequirements(order.data.destination)
-  ]
+  // The forwarder the goods pass through, if any. The buyer ships its leg on for one that isn't on Copacker.
+  const legId = forwarderLeg(order.data)
+  const leg = legId
+    ? await db()
+        .select({ name: forwarders.name, forwarderOrgId: forwarders.forwarderOrgId })
+        .from(forwarders)
+        .where(eq(forwarders.id, legId))
+        .then((rows) => rows[0])
+    : undefined
+  const via = order.data.via && leg?.name
+  const instructions = [...(prep ? [`${prepInstructions[prep]}.`] : []), ...destinationRequirements(order.data)]
+
+  const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
+  const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
+  // The route's names: the forwarder stop and the delivery address, each with its forwarder when it has one.
+  const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
+  const places = addressIds.length
+    ? await db()
+        .select({ id: contacts.id, name: contacts.name, forwarder: forwarders.name })
+        .from(contacts)
+        .leftJoin(forwarders, eq(forwarders.id, contacts.forwarderId))
+        .where(inArray(contacts.id, addressIds))
+    : []
+  const place = (addressId: string | undefined) => {
+    const row = places.find((candidate) => candidate.id === addressId)
+    return row && [row.forwarder, row.name].filter(Boolean).join(", ")
+  }
+  const stop = order.data.via && (place(order.data.via.addressId) ?? via)
 
   return (
     <>
       <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current={order.data.reference} />
-      <PageHeader
-        title={order.data.reference}
-        description={`${supplier.name} to ${formatDestination(order.data.destination)}, revision ${order.revision}`}
-      >
-        {order.status === "draft" && buyer && (
-          <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-            {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
-          </ActionButton>
-        )}
-        {order.status === "submitted" && (editable || remaining) && (
-          <ActionButton action="shipment.create" data={{ id }}>
-            {editable ? "Continue packing" : "Prepare next shipment"}
-          </ActionButton>
-        )}
-        <OrderMenu
-          id={id}
-          reference={order.data.reference}
-          draft={order.status === "draft" && buyer}
-          closable={order.status === "submitted" && buyer}
-          labels={
-            labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
-            order.data.items.some((item) => item.suffocationWarning)
-          }
-        />
-      </PageHeader>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight">{order.data.reference}</h1>
+          <Status status={order.status} />
+        </div>
+        <div className="flex items-center gap-2">
+          {order.status === "draft" && buyer && (
+            <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
+              {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
+            </ActionButton>
+          )}
+          {order.status === "submitted" && (editable || remaining) && (
+            <ActionButton action="shipment.create" data={{ id }}>
+              {editable ? "Continue packing" : "Prepare next shipment"}
+            </ActionButton>
+          )}
+          <OrderMenu
+            id={id}
+            reference={order.data.reference}
+            draft={order.status === "draft" && buyer}
+            closable={order.status === "submitted" && buyer}
+            labels={
+              labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
+              order.data.items.some((item) => item.suffocationWarning)
+            }
+          />
+        </div>
+      </div>
 
       {s.org.kind === "buyer" && !supplier.supplierOrgId && (
         <Alert>
@@ -137,190 +180,212 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         </Alert>
       )}
 
-      <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { base: "1", xl: "mainAside" } })}>
-        <div className={sx({ display: "flex", minWidth: 0, flexDirection: "column", gap: 6 })}>
-          <section aria-labelledby="products" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
-            <h2 id="products" className={sx({ text: "lg", fontWeight: "semibold" })}>
-              Products
-            </h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Supplier SKU</TableHead>
-                  <TableHead className={sx({ textAlign: "right" })}>Units</TableHead>
-                  <TableHead className={sx({ textAlign: "right" })}>Price</TableHead>
-                  <TableHead className={sx({ textAlign: "right" })}>Total</TableHead>
-                  <TableHead>
-                    <span className={srOnly}>Label</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {order.data.items.map((item) => (
-                  <TableRow key={item.id} className={alignTop}>
-                    <TableCell className={sx({ whiteSpace: "normal" })}>
-                      <p className={sx({ fontWeight: "medium" })}>{item.name}</p>
-                      {item.variant !== "Default Title" && <p className={sx({ color: "muted" })}>{item.variant}</p>}
-                      <p className={sx({ marginTop: 1, text: "xs", color: "muted" })}>SKU {item.buyerSku}</p>
-                      {itemRequirements(item, order.data.destination, prep).map((line) => (
-                        <p key={line} className={sx({ text: "xs", color: "muted" })}>
-                          {line}
-                        </p>
-                      ))}
-                    </TableCell>
-                    <TableCell className={sx({ whiteSpace: "normal" })}>
-                      <SupplierSku item={item} />
-                    </TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {item.pieces}
-                      {item.piecesPerSet > 1 && (
-                        <p className={sx({ text: "xs", color: "muted" })}>{item.piecesPerSet} per pack</p>
-                      )}
-                      {remainingFor(item.id) !== item.pieces && (
-                        <p className={sx({ text: "xs", color: "muted" })}>{remainingFor(item.id)} to ship</p>
-                      )}
-                    </TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(item.unitPrice, currency)}
-                    </TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(item.pieces * item.unitPrice, currency)}
-                    </TableCell>
-                    <TableCell>
-                      <LineLabel
-                        orderId={id}
-                        itemId={item.id}
-                        name={[item.name, item.variant === "Default Title" ? "" : item.variant]
-                          .filter(Boolean)
-                          .join(" / ")}
-                        label={labelFor(item.id)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                {!!order.data.adjustments?.length && (
-                  <TableRow>
-                    <TableCell colSpan={4}>Subtotal</TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(
-                        order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
-                        currency
-                      )}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
-                )}
-                {order.data.adjustments?.map((adjustment, index) => (
-                  <TableRow key={index}>
-                    <TableCell colSpan={4}>{adjustment.description}</TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(adjustment.amount, currency)}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={4}>Total</TableCell>
-                  <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                    {money(orderTotal(order.data), currency)}
-                  </TableCell>
-                  <TableCell />
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </section>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="flex flex-wrap items-center gap-1.5 p-3">
+              <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
+              <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+              {stop && (
+                <>
+                  <RoutePill icon={<Warehouse />}>{stop}</RoutePill>
+                  <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+                </>
+              )}
+              <RoutePill icon={<MapPin />}>
+                {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
+              </RoutePill>
+              {order.status === "draft" && buyer && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto"
+                  render={<Link href={`/orders/${id}/edit`} />}
+                  nativeButton={false}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
+            <div className="overflow-x-auto border-t">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Products</th>
+                    <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
+                    <th className="w-24 px-2 py-2 text-right font-medium">Qty</th>
+                    <th className="w-28 px-2 py-2 text-right font-medium">Cost</th>
+                    <th className="w-28 px-2 py-2 text-right font-medium">Total</th>
+                    <th className="w-12">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.data.items.map((item) => (
+                    <tr key={item.id} className="border-t align-top">
+                      <td className="px-3 py-2.5">
+                        <p className="leading-snug font-medium">{item.name}</p>
+                        {item.variant && item.variant !== "Default Title" && (
+                          <Badge variant="secondary" className="mt-1">
+                            {item.variant}
+                          </Badge>
+                        )}
+                        <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
+                        {itemRequirements(item, order.data.destination, prep).map((line) => (
+                          <p key={line} className="text-xs text-muted-foreground">
+                            {line}
+                          </p>
+                        ))}
+                      </td>
+                      <td className="px-2 py-2.5">
+                        <SupplierSku item={item} />
+                      </td>
+                      <td className="px-2 py-2.5 text-right tabular-nums">
+                        {item.pieces}
+                        {item.piecesPerSet > 1 && (
+                          <p className="text-xs text-muted-foreground">{item.piecesPerSet} per pack</p>
+                        )}
+                        {remainingFor(item.id) !== item.pieces && (
+                          <p className="text-xs text-muted-foreground">{remainingFor(item.id)} to ship</p>
+                        )}
+                      </td>
+                      <td className="px-2 py-2.5 text-right tabular-nums">{money(item.unitPrice, currency)}</td>
+                      <td className="px-2 py-2.5 text-right tabular-nums">
+                        {money(item.pieces * item.unitPrice, currency)}
+                      </td>
+                      <td className="py-1.5 pr-2 text-right">
+                        <LineMenu
+                          orderId={id}
+                          itemId={item.id}
+                          name={[item.name, item.variant === "Default Title" ? "" : item.variant]
+                            .filter(Boolean)
+                            .join(" / ")}
+                          label={labelFor(item.id)}
+                          warning={item.suffocationWarning}
+                          editable={order.status === "draft" && buyer}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
-          {(instructions.length > 0 || order.data.notes) && (
-            <section
-              aria-labelledby="instructions"
-              className={sx({ display: "flex", flexDirection: "column", gap: 3 })}
-            >
-              <h2 id="instructions" className={sx({ text: "lg", fontWeight: "semibold" })}>
-                Instructions
-              </h2>
-              {instructions.length > 0 && (
-                <ul className={sx({ display: "flex", flexDirection: "column", gap: 1, text: "sm" })}>
+          {instructions.length > 0 && (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Instructions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="flex flex-col gap-1">
                   {instructions.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
                 </ul>
-              )}
-              {order.data.notes && (
-                <p className={sx({ text: "sm", whiteSpace: "pre-line", color: "muted" })}>{order.data.notes}</p>
-              )}
-            </section>
+              </CardContent>
+            </Card>
           )}
 
-          <section aria-labelledby="shipments" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
-            <h2 id="shipments" className={sx({ text: "lg", fontWeight: "semibold" })}>
-              Shipments
-            </h2>
+          <Card size="sm" className="gap-0 pb-0">
+            <CardHeader className="pb-3">
+              <CardTitle>Shipments</CardTitle>
+            </CardHeader>
             {shipmentRows.length ? (
-              <ItemGroup className={sx({ gap: 2 })}>
+              <ul>
                 {shipmentRows.map((shipment, index) => (
-                  <Item key={shipment.id} variant="outline" render={<Link href={`/shipments/${shipment.id}`} />}>
-                    <ItemContent>
-                      <ItemTitle>Shipment {index + 1}</ItemTitle>
-                      <ItemDescription>
-                        {shipment.amazonShipmentId ?? "Cartons in preparation"},{" "}
-                        {shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0} cartons
-                      </ItemDescription>
-                    </ItemContent>
-                    <ItemActions>
+                  <li key={shipment.id} className="flex items-center gap-3 border-t pr-4">
+                    <Link
+                      href={`/shipments/${shipment.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                    >
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-medium">
+                          Shipment {index + 1}
+                          {shipment.amazonNetwork && ` to Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {shipment.amazonShipmentId ?? "Cartons in preparation"},{" "}
+                          {shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0} cartons
+                        </span>
+                      </span>
                       <Status status={shipment.status} />
-                      <ChevronRight className={sx({ size: 4, color: "muted" })} />
-                    </ItemActions>
-                  </Item>
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </Link>
+                    {buyer && shipment.status === "shipped" && leg && !leg.forwarderOrgId && (
+                      <ForwardShipment shipmentId={shipment.id} currency={currency} />
+                    )}
+                  </li>
                 ))}
-              </ItemGroup>
+              </ul>
             ) : (
-              <p className={sx({ text: "sm", color: "muted" })}>
+              <p className="px-4 pb-4 text-muted-foreground">
                 {order.status === "draft" ? "Shipments start once the PO is sent." : "No shipments yet."}
               </p>
             )}
-          </section>
+          </Card>
+
           {documentGroups.length > 0 && (
-            <section aria-labelledby="documents" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
-              <h2 id="documents" className={sx({ text: "lg", fontWeight: "semibold" })}>
+            <section aria-labelledby="documents" className="flex flex-col gap-3">
+              <h2 id="documents" className="font-semibold">
                 Documents
               </h2>
               {documentGroups.map((group) => (
-                <div key={group.key} className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-                  {group.title && <h3 className={sx({ text: "sm", fontWeight: "medium" })}>{group.title}</h3>}
+                <div key={group.key} className="flex flex-col gap-2">
+                  {group.title && <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>}
                   <DocumentList documents={group.documents} />
                 </div>
               ))}
             </section>
           )}
+          <PoTimeline
+            orderId={id}
+            viewer={s.user.name ?? s.user.email}
+            viewerOrg={s.org.name}
+            timeZone={s.org.timeZone ?? undefined}
+            entries={timeline}
+          />
         </div>
 
-        <aside className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
-          <Card>
+        <aside className="flex flex-col gap-4">
+          <Card size="sm">
             <CardHeader>
-              <CardTitle>Order overview</CardTitle>
+              <CardTitle>Cost summary</CardTitle>
             </CardHeader>
-            <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-              <dl
-                className={sx({
-                  display: "grid",
-                  gridTemplateColumns: "labelValue",
-                  columnGap: 4,
-                  rowGap: 3,
-                  text: "sm"
-                })}
-              >
-                <dt className={sx({ color: "muted" })}>Status</dt>
-                <dd className={sx({ display: "flex", justifyContent: "flex-end" })}>
-                  <Status status={order.status} />
-                </dd>
-                <Info label="Supplier" value={supplier.name} />
-                <Info label="Required date" value={order.data.dueDate} />
-                <Info label="Payment terms" value={order.data.paymentTerms || "Not set"} />
-                <Info label="Currency" value={currency} />
-                <Info label="Units" value={String(order.data.items.reduce((n, i) => n + i.pieces, 0))} />
+            <CardContent className="flex flex-col gap-2">
+              <p className="font-medium">Order details</p>
+              <div className="flex justify-between gap-3">
+                <span>
+                  {order.data.items.length} {order.data.items.length === 1 ? "variant" : "variants"} ({units}{" "}
+                  {units === 1 ? "item" : "items"})
+                </span>
+                <span className="tabular-nums">{money(subtotal, currency)}</span>
+              </div>
+              {order.data.adjustments?.map((adjustment, index) => (
+                <div key={index} className="flex justify-between gap-3">
+                  <span>{adjustment.description}</span>
+                  <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
+                </div>
+              ))}
+              <Separator />
+              <div className="flex justify-between font-semibold">
+                <span>Total</span>
+                <span className="tabular-nums">{money(orderTotal(order.data), currency)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Purchase order details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="flex flex-col gap-3">
+                {order.data.dueDate && <Detail label="Required by" value={order.data.dueDate} />}
+                <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
+                <Detail label="Currency" value={currency} />
+                <Detail label="Note to supplier" value={order.data.notes || "None"} />
               </dl>
             </CardContent>
           </Card>
@@ -412,54 +477,6 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ol className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                {timeline.map((entry) => (
-                  <li key={entry.key} className={sx({ display: "flex", flexDirection: "column", gap: 0.5 })}>
-                    {entry.revision ? (
-                      <Collapsible>
-                        <CollapsibleTrigger className={revisionTrigger}>
-                          {entry.message}
-                          <ChevronDown
-                            className={cn(sx({ size: 4, flexShrink: 0, color: "muted" }), revisionChevron)}
-                          />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <ul
-                            className={sx({
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 1,
-                              paddingY: 2,
-                              text: "xs",
-                              color: "muted"
-                            })}
-                          >
-                            {entry.revision.items.map((i) => (
-                              <li key={i.id}>
-                                {i.buyerSku}: {i.pieces} units at {money(i.unitPrice, entry.revision.currency)}
-                                {i.supplierSku && `, supplier SKU ${i.supplierSku}`}
-                              </li>
-                            ))}
-                          </ul>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ) : (
-                      <p className={sx({ text: "sm" })}>{entry.message}</p>
-                    )}
-                    <time className={sx({ text: "xs", color: "muted" })} dateTime={entry.at.toISOString()}>
-                      {entry.at.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </time>
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
         </aside>
       </div>
     </>
@@ -476,6 +493,15 @@ function SupplierSku({ item }: { item: OrderItem }) {
     ))
   }
   return item.supplierSku || <WarningNote>Not set</WarningNote>
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="whitespace-pre-line">{value}</dd>
+    </div>
+  )
 }
 
 function Info({ label, value }: { label: string; value: string }) {

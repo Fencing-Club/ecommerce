@@ -21,7 +21,7 @@ const order = (items: ReturnType<typeof line>[]) =>
   orderInputSchema.parse({
     supplierId: "00000000-0000-4000-8000-000000000002",
     reference: "PO-1",
-    destination: "awd_us",
+    destination: "amazon",
     currency: "USD",
     dueDate: "2026-12-01",
     items
@@ -29,10 +29,11 @@ const order = (items: ReturnType<typeof line>[]) =>
 
 describe("PO instructions", () => {
   it("adds Amazon's carton and label rules for Amazon, and none for other destinations", () => {
-    expect(destinationRequirements("awd_us").join(" ")).toContain("One SKU per carton")
-    expect(destinationRequirements("fba").join(" ")).toContain("Mixed-SKU cartons are allowed")
-    expect(destinationRequirements("warehouse")).toEqual([])
-    expect(destinationRequirements("forwarder")).toEqual([])
+    const awd = order([line({ amazonNetwork: "awd_us" })])
+    expect(destinationRequirements(awd).join(" ")).toContain("one SKU per carton")
+    expect(destinationRequirements(order([line()])).join(" ")).toContain("mixed SKUs are allowed")
+    expect(destinationRequirements({ ...awd, destination: "warehouse" })).toEqual([])
+    expect(destinationRequirements({ ...awd, destination: "forwarder" })).toEqual([])
   })
 
   it("states shared preparation once, and each line's own steps on the line", () => {
@@ -50,6 +51,7 @@ describe("PO instructions", () => {
     const shared = sharedPrep(po)
     expect(shared).toBe("POLYBAGGING")
     expect(itemRequirements(po.items[1]!, po.destination, shared)).toEqual([
+      "Pack for FBA",
       "Pack 2 pieces together as one unit",
       "Label with FNSKU X004ABC123",
       "Fold the cuff.",

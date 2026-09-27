@@ -32,6 +32,10 @@
     "apps/copacker": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
+    "apps/video": {
+      "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
     "packages/aisle": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     }

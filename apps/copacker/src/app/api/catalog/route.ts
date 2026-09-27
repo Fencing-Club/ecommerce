@@ -8,10 +8,20 @@ import { withVariantFields } from "@/server/product-fields"
 export async function GET(request: Request) {
   const s = await session()
   requireBuyer(s)
-  const query = new URL(request.url).searchParams.get("q")?.slice(0, 200) ?? ""
+  const params = new URL(request.url).searchParams
+  const query = params.get("q")?.slice(0, 200) ?? ""
+  // Variations chosen in the add-products dialog come by ID; a search comes by text.
+  const ids = (params.get("ids") ?? "")
+    .split(",")
+    .filter((id) => /^gid:\/\/shopify\/ProductVariant\/\d+$/.test(id))
+    .slice(0, 250)
   const defaultsFor = await lineDefaultsFor(s.org.id)
   const shopify = await shopifyFor(s.org.id)
-  const found = await withVariantFields(s.org.id, shopify.domain, await shopify.search(query))
+  const found = await withVariantFields(
+    s.org.id,
+    shopify.domain,
+    ids.length ? await shopify.variants(ids) : await shopify.search(query)
+  )
   const variants = found
     .flatMap((item) => (item ? [item] : []))
     .map((item) => ({

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal } from "@repo/aisle"
+import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal, type Packing } from "@repo/aisle"
 import { ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
@@ -29,7 +29,31 @@ const provider = vi.hoisted(() => ({
     awdStock: vi.fn<(...args: never[]) => Promise<unknown>>(),
     salesMarketplaces: vi.fn<(...args: never[]) => Promise<unknown>>(),
     fbaShipmentUnits: vi.fn<(...args: never[]) => Promise<unknown>>(),
-    awdShipmentUnits: vi.fn<(...args: never[]) => Promise<unknown>>()
+    awdShipmentUnits: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    cancel: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    prepDetails: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaCreatePlan: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaOperation: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaPlan: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaGeneratePackingOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaPackingOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaPackingGroupItems: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaConfirmPackingOption: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaSetPacking: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaPlanBoxes: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaGeneratePlacementOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaPlacementOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaConfirmPlacementOption: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaShipment: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaShipmentBoxes: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaGenerateTransportationOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaTransportationOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaGenerateDeliveryWindowOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaDeliveryWindowOptions: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaConfirmDeliveryWindow: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaConfirmTransportation: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaCancelPlan: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    fbaBoxLabel: vi.fn<(...args: never[]) => Promise<unknown>>()
   }
 }))
 vi.mock("../src/server/connections", () => ({
@@ -90,7 +114,8 @@ import { GET as readInventory } from "../src/app/api/inventory/route"
 import { GET as downloadOrderLabels } from "../src/app/api/orders/[id]/labels/route"
 import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
-import { accessibleOrder } from "../src/server/access"
+import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
+import { profileFor } from "../src/server/auth"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
 import {
   acceptForwarderInvitation,
@@ -126,6 +151,7 @@ import {
   saveProductDefaults
 } from "../src/server/product-defaults"
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
+import { ownProfile, saveProfile } from "../src/server/profile"
 import { runNextJob } from "../src/server/queue"
 import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
@@ -156,7 +182,7 @@ const buyerId = randomUUID(),
 const orderData = orderInputSchema.parse({
   supplierId: supplierLinkId,
   reference: "PO-TEST",
-  destination: "awd_us",
+  destination: "amazon",
   currency: "USD",
   dueDate: "2026-10-20",
   items: [
@@ -172,13 +198,14 @@ const orderData = orderInputSchema.parse({
       fnsku: "X000000001",
       pieces: 160,
       piecesPerSet: 2,
-      unitPrice: 210
+      unitPrice: 210,
+      amazonNetwork: "awd_us"
     }
   ]
 })
 function actor(kind: "buyer" | "supplier", id: string): Session {
   return {
-    user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true },
+    user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true, name: "Tess Tester" },
     org: {
       id,
       kind,
@@ -215,7 +242,23 @@ beforeEach(async () => {
   provider.api.salesMarketplaces.mockResolvedValue(["ATVPDKIKX0DER"])
   provider.api.fbaShipmentUnits.mockResolvedValue(null)
   provider.api.awdShipmentUnits.mockResolvedValue(null)
-  await pg.exec("TRUNCATE organizations, jobs CASCADE")
+  // Amazon's record of how the test SKUs are prepared: cords need none, and gloves are bagged and labeled by the same
+  // party, the supplier.
+  provider.api.prepDetails.mockResolvedValue(
+    new Map([
+      ["foil-2", { prepCategory: "NONE", prepOwnerConstraint: "NONE_ONLY", labelOwnerConstraint: "SELLER_ONLY" }],
+      [
+        "glove-6",
+        {
+          prepCategory: "FC_PROVIDED",
+          prepOwnerConstraint: "SELLER_ONLY",
+          labelOwnerConstraint: "SELLER_ONLY",
+          allOwnersConstraint: "MUST_MATCH"
+        }
+      ]
+    ])
+  )
+  await pg.exec("TRUNCATE organizations, jobs, profiles CASCADE")
   await database.insert(tables.organizations).values([
     { id: buyerId, name: "Buyer", kind: "buyer" },
     { id: supplierId, name: "Supplier", kind: "supplier" },
@@ -347,7 +390,7 @@ async function reviewedImport() {
       revision: 1,
       reviewed: true,
       supplierId: supplierLinkId,
-      destination: "awd_us",
+      destination: "amazon",
       reference: "PO36",
       dueDate: "2026-10-20"
     }
@@ -410,6 +453,74 @@ describe("supplier catalog snapshots", () => {
       ]
     })
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
+  })
+})
+describe("supplier stock", () => {
+  beforeEach(orderConnections)
+  async function trackedProduct(onHand: number, continueSelling = false) {
+    const [product] = await database
+      .insert(tables.supplierProducts)
+      .values({
+        supplierOrgId: supplierId,
+        supplierSku: "B-2",
+        title: "Foil body cord",
+        currency: "USD",
+        priceMinor: 105,
+        trackInventory: true,
+        onHand,
+        continueSelling
+      })
+      .returning()
+    return product!
+  }
+  it("refuses POs for more than is left after other sent POs, unless the product keeps selling", async () => {
+    await reviewedImport()
+    // The sent PO already owes 160 pieces of B-2.
+    const product = await trackedProduct(200)
+    await expect(createOrder(buyer, orderData)).rejects.toThrow("B-2: 40 available, 160 ordered")
+    await database
+      .update(tables.supplierProducts)
+      .set({ continueSelling: true })
+      .where(eq(tables.supplierProducts.id, product.id))
+    await expect(createOrder(buyer, orderData)).resolves.toMatchObject({ status: "draft" })
+  })
+  it("doesn't limit products the supplier doesn't track", async () => {
+    await reviewedImport()
+    await database.insert(tables.supplierProducts).values({
+      supplierOrgId: supplierId,
+      supplierSku: "B-2",
+      title: "Foil body cord",
+      currency: "USD",
+      onHand: 0
+    })
+    await expect(createOrder(buyer, orderData)).resolves.toMatchObject({ status: "draft" })
+  })
+  it("takes accepted invoices' pieces from stock and puts them back on correction", async () => {
+    const product = await trackedProduct(200)
+    const shipment = await preparation(100)
+    await submitPacking(supplier, shipment.id, shipment.packing, 1)
+    const onHand = async () =>
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, product.id)))[0]
+        ?.onHand
+    expect(await onHand()).toBe(100)
+    const [taken] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
+    expect(taken?.stockTaken).toEqual({ [product.id]: 100 })
+    await correctShipment(supplier, shipment.id, "Incorrect weight")
+    expect(await onHand()).toBe(200)
+    const [corrected] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
+    expect(corrected?.stockTaken).toBeNull()
+  })
+  it("takes stock only once the buyer approves invoice changes", async () => {
+    const product = await trackedProduct(200)
+    const shipment = await preparation()
+    shipment.packing.changes = [{ itemId, supplierSku: "B-2", unitPrice: 230 }]
+    await submitPacking(supplier, shipment.id, shipment.packing, 1)
+    const stock = async () =>
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, product.id)))[0]
+        ?.onHand
+    expect(await stock()).toBe(200)
+    await approveInvoice(buyer, shipment.id, 1, false)
+    expect(await stock()).toBe(40)
   })
 })
 describe("reviewed import save", () => {
@@ -1003,12 +1114,23 @@ describe("Postgres workflow and authorization", () => {
       minimumOrder: 48,
       supplierId: null,
       productLabel: "uploaded",
+      suffocationWarning: false,
+      amazonNetwork: "fba",
       revision: 1
     })
     await expect(saveProductDefaults(buyer, input)).rejects.toThrow("Someone else changed")
-    expect(await saveProductDefaults(buyer, { ...input, prepCategory: null, expectedRevision: 1 })).toMatchObject({
-      prepCategory: null,
-      revision: 2
+    expect(
+      await saveProductDefaults(buyer, { ...input, prepCategory: null, suffocationWarning: true, expectedRevision: 1 })
+    ).toMatchObject({ prepCategory: null, suffocationWarning: true, revision: 2 })
+    expect(await saveProductDefaults(buyer, { ...input, amazonNetwork: "awd_us", expectedRevision: 2 })).toMatchObject({
+      amazonNetwork: "awd_us",
+      revision: 3
+    })
+    // Left out, the warning and network settings are kept.
+    expect(await saveProductDefaults(buyer, { ...input, prepCategory: null, expectedRevision: 3 })).toMatchObject({
+      suffocationWarning: true,
+      amazonNetwork: "awd_us",
+      revision: 4
     })
     await expect(saveProductDefaults(buyer, { ...input, productId: "gid://shopify/Product/99" })).rejects.toThrow(
       "isn't in your synced"
@@ -1028,7 +1150,14 @@ describe("Postgres workflow and authorization", () => {
         requiresComponents: false,
         productVariantComponents: { nodes: [], pageInfo: { hasNextPage: false } }
       })
-    ).toEqual({ piecesPerSet: 1, description: "Cotton, size label inside", prepCategory: null })
+    ).toEqual({
+      piecesPerSet: 1,
+      description: "Cotton, size label inside",
+      prepCategory: null,
+      suffocationWarning: true,
+      amazonNetwork: "awd_us",
+      skuLabel: true
+    })
   })
 
   it("filters all Shopify location rows before pagination and binds cursors to that filter", async () => {
@@ -1339,13 +1468,13 @@ describe("Postgres workflow and authorization", () => {
       shopifyDomain: "test.myshopify.com",
       amazonSellerId: "A123456789",
       status: "submitted",
-      data: { ...orderData, supplierId: otherSupplier, destination: "fba" }
+      data: { ...orderData, supplierId: otherSupplier, destination: "warehouse" }
     })
     const matching = await getCoverage(
-      new Request(`http://localhost/api/orders/summary?supplierId=${supplierLinkId}&destination=awd_us`)
+      new Request(`http://localhost/api/orders/summary?supplierId=${supplierLinkId}&destination=amazon`)
     )
     expect((await matching.json()).orders.map((order: { id: string }) => order.id)).toEqual([orderId])
-    for (const filter of [`supplierId=${supplierLinkId}&destination=fba`, `supplierId=${randomUUID()}`]) {
+    for (const filter of [`supplierId=${supplierLinkId}&destination=warehouse`, `supplierId=${randomUUID()}`]) {
       const response = await getCoverage(new Request(`http://localhost/api/orders/summary?${filter}`))
       expect(await response.json()).toEqual({ orders: [], nextCursor: null })
     }
@@ -1408,7 +1537,8 @@ describe("Postgres workflow and authorization", () => {
     { status: "creating", assigned: 40 },
     { status: "waiting_labels", assigned: 40 },
     { status: "ready", assigned: 40 },
-    { status: "collected", assigned: 40 },
+    { status: "shipped", assigned: 40 },
+    { status: "forwarded", assigned: 40 },
     { status: "correction", assigned: 40 },
     { status: "needs_attention", assigned: 40 }
   ] satisfies { status: tables.ShipmentState; assigned: number }[])(
@@ -1437,7 +1567,7 @@ describe("Postgres workflow and authorization", () => {
     const draft = await preparation(100)
     await database
       .update(tables.shipments)
-      .set({ status: "collected", packing: first.packing })
+      .set({ status: "shipped", packing: first.packing })
       .where(eq(tables.shipments.id, first.id))
     await database
       .update(tables.shipments)
@@ -1451,7 +1581,7 @@ describe("Postgres workflow and authorization", () => {
     expect(workflow.items[0]).toMatchObject({
       orderedPieces: 160,
       assignedPieces: 100,
-      assignedByStatus: { collected: 40, needs_attention: 60 },
+      assignedByStatus: { shipped: 40, needs_attention: 60 },
       remainingPieces: 60,
       overAssignedPieces: 0
     })
@@ -1872,6 +2002,129 @@ describe("durable shipment worker recovery", () => {
   })
 })
 
+describe("leg holders shipping the goods on", () => {
+  // A released shipment with its current invoice, as the supplier prints it.
+  async function released(data = orderData) {
+    const prepared = await preparation()
+    await database
+      .update(tables.shipments)
+      .set({ status: "ready", packing: prepared.packing, snapshot: data })
+      .where(eq(tables.shipments.id, prepared.id))
+    return prepared.id
+  }
+  const forwarderOrg = randomUUID()
+  const forwarderActor: Session = {
+    ...actor("buyer", forwarderOrg),
+    org: { ...actor("buyer", forwarderOrg).org, kind: "forwarder" }
+  }
+  const post = (name: string, data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: name, data })
+      })
+    )
+
+  it("lets the supplier mark its released goods shipped, and the buyer receive them", async () => {
+    const id = await released()
+    // The supplier is on Copacker, so the buyer can't ship for it, and receiving waits for the supplier.
+    expect(await (await post("shipment.ship", { id })).json()).toEqual({
+      error: "The supplier marks this shipment shipped"
+    })
+    await expect(receiveShipment(buyer, id)).rejects.toThrow("hasn't shipped")
+    context.actor = supplier
+    expect((await post("shipment.ship", { id })).status).toBe(200)
+    expect((await post("shipment.ship", { id })).status).toBe(400)
+    expect((await orderWorkflow(supplier, orderId)).shipments[0]?.next).toMatchObject({
+      owner: "buyer",
+      step: "receive"
+    })
+    context.actor = buyer
+    await receiveShipment(buyer, id)
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events.map((event) => event.message)).toContain("Supplier shipped the goods")
+  })
+
+  it("needs the current commercial invoice to ship", async () => {
+    const id = await released()
+    await database.update(tables.documents).set({ outdated: 1 }).where(eq(tables.documents.kind, "invoice"))
+    context.actor = supplier
+    expect(await (await post("shipment.ship", { id })).json()).toEqual({
+      error: "Upload the current commercial invoice before shipping"
+    })
+  })
+
+  it("has the forwarder on the way ship the goods on with its freight, carrier and tracking", async () => {
+    await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    const data = { ...orderData, via: { forwarderId: forwarder.id, addressId: randomUUID() } }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    const id = await released(data)
+    context.actor = supplier
+    expect((await post("shipment.ship", { id })).status).toBe(200)
+    expect((await orderWorkflow(buyer, orderId)).shipments[0]?.next).toMatchObject({
+      owner: "forwarder",
+      step: "forward",
+      action: "shipment.forward"
+    })
+    await expect(receiveShipment(buyer, id)).rejects.toThrow("forwarder hasn't shipped")
+    const forward = { id, freight: { amountMinor: 12500, currency: "USD" }, carrier: "DHL", reference: "1234567890" }
+    // Until the forwarder joins, the buyer records its leg; once it has, only the forwarder does.
+    context.actor = forwarderActor
+    expect(await (await post("shipment.forward", forward)).json()).toEqual({
+      error: "This shipment isn't yours to ship"
+    })
+    await database
+      .update(tables.forwarders)
+      .set({ forwarderOrgId: forwarderOrg })
+      .where(eq(tables.forwarders.id, forwarder.id))
+    context.actor = buyer
+    expect(await (await post("shipment.forward", forward)).json()).toEqual({
+      error: "Yiwu Logistics marks this shipment shipped"
+    })
+    context.actor = forwarderActor
+    expect(
+      await (await post("shipment.forward", { ...forward, freight: { amountMinor: 900, currency: "CNY" } })).json()
+    ).toEqual({ error: "Enter the freight in USD, the PO's currency" })
+    expect((await post("shipment.forward", forward)).status).toBe(200)
+    const [shipped] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, id))
+    expect(shipped).toMatchObject({ status: "forwarded", forwarderCarrier: "DHL", forwarderReference: "1234567890" })
+    expect(await orderLandedCosts(orderId)).toEqual([
+      expect.objectContaining({
+        kind: "freight",
+        description: "Yiwu Logistics freight, DHL 1234567890",
+        amountMinor: 12500
+      })
+    ])
+    context.actor = buyer
+    await receiveShipment(buyer, id)
+  })
+
+  it("shows a joined forwarder the POs passing through it, read-only, and nothing else", async () => {
+    await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    expect(await forwarderOrders(forwarderActor)).toEqual([])
+    await database
+      .update(tables.forwarders)
+      .set({ forwarderOrgId: forwarderOrg })
+      .where(eq(tables.forwarders.id, forwarder.id))
+    expect(await forwarderOrders(forwarderActor)).toEqual([])
+    const data = { ...orderData, via: { forwarderId: forwarder.id, addressId: randomUUID() } }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    expect((await forwarderOrders(forwarderActor)).map((row) => [row.order.id, row.forwarder.name])).toEqual([
+      [orderId, "Yiwu Logistics"]
+    ])
+    // Supplier actions stay closed to it.
+    await expect(accessibleOrder(forwarderActor, orderId)).rejects.toThrow("not found")
+    await database
+      .update(tables.forwarders)
+      .set({ removedAt: new Date() })
+      .where(eq(tables.forwarders.id, forwarder.id))
+    await expect(forwarderOrder(forwarderActor, orderId)).rejects.toThrow("not found")
+  })
+})
+
 describe("receiving and closing POs", () => {
   const shipment = async (status: string) => {
     const id = randomUUID()
@@ -1882,12 +2135,12 @@ describe("receiving and closing POs", () => {
   }
 
   it("keeps a PO open while a shipment is in progress and closes it once the goods arrive", async () => {
-    const ready = await shipment("ready")
+    const ready = await shipment("shipped")
     const unpacked = await shipment("packing")
     await expect(closeOrder(buyer, orderId)).rejects.toThrow("still in progress")
     await expect(receiveShipment(supplier, ready)).rejects.toThrow("buyer workspace")
     await receiveShipment(buyer, ready)
-    await expect(receiveShipment(buyer, ready)).rejects.toThrow("released or collected")
+    await expect(receiveShipment(buyer, ready)).rejects.toThrow("hasn't shipped")
     await closeOrder(buyer, orderId)
     const rows = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
     expect(Object.fromEntries(rows.map((row) => [row.id, row.status]))).toMatchObject({
@@ -2157,6 +2410,20 @@ describe("document upload and packet release", () => {
     )
     expect(doc.outdated).toBe(1)
   })
+  it("keeps one current PO document as the PO is revised", async () => {
+    const po = { orderId, kind: "purchase_order" as const, name: "PO.pdf", uploadedBy: "system" }
+    const first = await storeDocument({ ...po, orderRevision: 1 }, new Uint8Array([1]))
+    await database.update(tables.orders).set({ revision: 2 }).where(eq(tables.orders.id, orderId))
+    const second = await storeDocument({ ...po, orderRevision: 2 }, new Uint8Array([2]))
+    // A late copy of revision 1 doesn't replace revision 2's.
+    await storeDocument({ ...po, orderRevision: 1 }, new Uint8Array([3]))
+    const current = await database
+      .select()
+      .from(tables.documents)
+      .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, 0)))
+    expect(current.map((doc) => doc.id)).toEqual([second.id])
+    expect(first.id).not.toBe(second.id)
+  })
   it("rejects an invoice upload if packing changes during storage, preserving the current invoice", async () => {
     const prepared = await preparation()
     context.actor = supplier
@@ -2363,13 +2630,9 @@ describe("document upload and packet release", () => {
       labels: [
         {
           cartonId: "A6",
-          sku: "foil-2",
-          fnsku: "X000000001",
-          quantity: 80,
+          labelNumber: "201952611540373988",
           destinationCode: "IUSP",
-          sscc: "201952611540373988",
-          file: "Amazon.pdf",
-          page: 1
+          amazonShipmentId: "STAR-EXAMPLE"
         }
       ]
     })
@@ -2588,6 +2851,514 @@ describe("PO to a released Amazon shipment", () => {
     expect(labels.status).toBe(200)
     const sheets = await PDFDocument.load(await labels.arrayBuffer())
     expect(sheets.getPageCount()).toBe(2)
+  })
+})
+
+const gloveId = randomUUID()
+// A PO to FBA: the two-pack cords from the other tests, and single gloves.
+const fbaOrder = orderInputSchema.parse({
+  ...orderData,
+  items: [
+    { ...orderData.items[0], amazonNetwork: "fba" },
+    {
+      amazonNetwork: "fba",
+      id: gloveId,
+      variantId: "gid://shopify/ProductVariant/2",
+      inventoryItemId: "gid://shopify/InventoryItem/2",
+      name: "Glove",
+      variant: "6",
+      buyerSku: "glove-6",
+      supplierSku: "G-6",
+      asin: "B000000002",
+      fnsku: "X000000002",
+      pieces: 10,
+      piecesPerSet: 1,
+      unitPrice: 900,
+      prepCategory: "NO_PREP"
+    }
+  ]
+})
+const fbaPlanId = "wf00000000-0000-4000-8000-000000000001"
+
+// Amazon's FBA inbound plans, as far as the shipment job uses them. Every step finishes by the time the job checks its
+// operation. Amazon offers a packing option that splits cords from gloves and one that doesn't, and places the plan's
+// boxes in two shipments to two warehouses, each offering its partnered carrier and the seller's own carrier with a
+// delivery window.
+function fakeFba() {
+  const state = {
+    name: "",
+    status: "ACTIVE",
+    packingOptions: [] as Array<{ packingOptionId: string; status: string; packingGroups: string[] }>,
+    boxes: [] as Array<{ items: Array<{ msku: string; quantity: number }>; dimensions: unknown; weight: unknown }>,
+    placementOptions: [] as Array<{ placementOptionId: string; status: string; shipmentIds: string[]; fee: number }>,
+    transportation: false,
+    windows: new Set<string>(),
+    chosenWindows: new Map<string, string>(),
+    selected: new Map<string, string>(),
+    operations: 0
+  }
+  const api = provider.api
+  const started = async () => `op-${++state.operations}`
+  const groupItems: Record<string, string[]> = { cords: ["foil-2"], gloves: ["glove-6"], all: ["foil-2", "glove-6"] }
+  // Cords go to the first warehouse, gloves to the second.
+  const shipmentFor = (msku: string) => (msku === "foil-2" ? "sh-1" : "sh-2")
+  api.fbaCreatePlan.mockImplementation(async (body: { name: string }) => {
+    state.name = body.name
+    return { inboundPlanId: fbaPlanId, operationId: await started() }
+  })
+  api.fbaOperation.mockResolvedValue({ operationStatus: "SUCCESS", operationProblems: [] })
+  api.fbaPlan.mockImplementation(async () => ({
+    inboundPlanId: fbaPlanId,
+    name: state.name,
+    status: state.status,
+    packingOptions: state.packingOptions.map(({ packingOptionId, status }) => ({ packingOptionId, status })),
+    placementOptions: state.placementOptions.map(({ placementOptionId, status }) => ({ placementOptionId, status }))
+  }))
+  api.fbaGeneratePackingOptions.mockImplementation(async () => {
+    state.packingOptions = [
+      { packingOptionId: "po-split", status: "OFFERED", packingGroups: ["cords", "gloves"] },
+      { packingOptionId: "po-together", status: "OFFERED", packingGroups: ["all"] }
+    ]
+    return started()
+  })
+  api.fbaPackingOptions.mockImplementation(async () =>
+    state.packingOptions.map((option) => ({ ...option, fees: [], discounts: [] }))
+  )
+  api.fbaPackingGroupItems.mockImplementation(async (_plan: string, group: string) =>
+    groupItems[group]!.map((msku) => ({ msku, quantity: 1 }))
+  )
+  api.fbaConfirmPackingOption.mockImplementation(async (_plan: string, id: string) => {
+    state.packingOptions = state.packingOptions.map((option) => ({
+      ...option,
+      status: option.packingOptionId === id ? "ACCEPTED" : "EXPIRED"
+    }))
+    return started()
+  })
+  api.fbaSetPacking.mockImplementation(
+    async (_plan: string, body: { packageGroupings: Array<{ boxes: (typeof state.boxes)[number][] }> }) => {
+      state.boxes = body.packageGroupings.flatMap((group) => group.boxes)
+      return started()
+    }
+  )
+  api.fbaPlanBoxes.mockImplementation(async () => state.boxes.map((_, index) => ({ packageId: `pkg-${index}` })))
+  api.fbaGeneratePlacementOptions.mockImplementation(async () => {
+    state.placementOptions = [
+      { placementOptionId: "pl-one", status: "OFFERED", shipmentIds: ["sh-1"], fee: 5000 },
+      { placementOptionId: "pl-split", status: "OFFERED", shipmentIds: ["sh-1", "sh-2"], fee: 0 }
+    ]
+    return started()
+  })
+  api.fbaPlacementOptions.mockImplementation(async () =>
+    state.placementOptions.map(({ fee, ...option }) => ({
+      ...option,
+      fees: [{ type: "FEE", value: { amount: fee, code: "USD" } }],
+      discounts: []
+    }))
+  )
+  api.fbaConfirmPlacementOption.mockImplementation(async (_plan: string, id: string) => {
+    state.placementOptions = state.placementOptions.map((option) => ({
+      ...option,
+      status: option.placementOptionId === id ? "ACCEPTED" : "EXPIRED"
+    }))
+    return started()
+  })
+  api.fbaShipment.mockImplementation(async (_plan: string, shipmentId: string) => ({
+    shipmentId,
+    placementOptionId: "pl-split",
+    destination: { destinationType: "AMAZON_OPTIMIZED", warehouseId: shipmentId === "sh-1" ? "SMF3" : "ONT8" },
+    selectedTransportationOptionId: state.selected.get(shipmentId),
+    selectedDeliveryWindow: state.chosenWindows.has(shipmentId)
+      ? { deliveryWindowOptionId: state.chosenWindows.get(shipmentId) }
+      : undefined,
+    shipmentConfirmationId: state.selected.has(shipmentId)
+      ? `FBA15${shipmentId.toUpperCase().replace("-", "")}`
+      : undefined
+  }))
+  api.fbaGenerateTransportationOptions.mockImplementation(async () => {
+    state.transportation = true
+    return started()
+  })
+  api.fbaTransportationOptions.mockImplementation(async (_plan: string, _placement: string, shipmentId: string) =>
+    state.transportation
+      ? [
+          {
+            transportationOptionId: `${shipmentId}-partnered`,
+            shipmentId,
+            shippingMode: "GROUND_SMALL_PARCEL",
+            shippingSolution: "AMAZON_PARTNERED_CARRIER",
+            preconditions: [],
+            carrier: { name: "UPS" }
+          },
+          {
+            transportationOptionId: `${shipmentId}-own`,
+            shipmentId,
+            shippingMode: "GROUND_SMALL_PARCEL",
+            shippingSolution: "USE_YOUR_OWN_CARRIER",
+            preconditions: ["CONFIRMED_DELIVERY_WINDOW"],
+            carrier: { name: "Other" }
+          }
+        ]
+      : []
+  )
+  api.fbaGenerateDeliveryWindowOptions.mockImplementation(async (_plan: string, shipmentId: string) => {
+    state.windows.add(shipmentId)
+    return started()
+  })
+  api.fbaDeliveryWindowOptions.mockImplementation(async (_plan: string, shipmentId: string) =>
+    state.windows.has(shipmentId)
+      ? [
+          {
+            deliveryWindowOptionId: `${shipmentId}-window`,
+            startDate: "2099-01-01T00:00:00Z",
+            endDate: "2099-01-08T00:00:00Z",
+            availabilityType: "AVAILABLE",
+            validUntil: "2099-01-01T00:00:00Z"
+          }
+        ]
+      : []
+  )
+  api.fbaConfirmDeliveryWindow.mockImplementation(async (_plan: string, shipmentId: string, id: string) => {
+    state.chosenWindows.set(shipmentId, id)
+    return started()
+  })
+  api.fbaConfirmTransportation.mockImplementation(
+    async (_plan: string, selections: Array<{ shipmentId: string; transportationOptionId: string }>) => {
+      for (const selection of selections) {
+        if (!state.chosenWindows.has(selection.shipmentId)) {
+          throw new Error("Confirm a delivery window first")
+        }
+        state.selected.set(selection.shipmentId, selection.transportationOptionId)
+      }
+      return started()
+    }
+  )
+  api.fbaShipmentBoxes.mockImplementation(async (_plan: string, shipmentId: string) =>
+    state.boxes.flatMap((box, index) =>
+      shipmentFor(box.items[0]!.msku) === shipmentId
+        ? [
+            {
+              packageId: `pkg-${index}`,
+              boxId: `FBA15${shipmentId.toUpperCase().replace("-", "")}U00000${index + 1}`,
+              items: box.items,
+              dimensions: box.dimensions,
+              weight: box.weight
+            }
+          ]
+        : []
+    )
+  )
+  api.fbaBoxLabel.mockImplementation(
+    async (_confirmation: string, boxId: string) => `https://fba-labels.s3.amazonaws.com/${boxId}.pdf`
+  )
+  api.fbaCancelPlan.mockImplementation(async () => {
+    state.status = "VOIDED"
+    return started()
+  })
+  return state
+}
+
+describe("PO to a released FBA shipment", () => {
+  beforeEach(async () => {
+    await database.update(tables.orders).set({ status: "draft", data: fbaOrder }).where(eq(tables.orders.id, orderId))
+    await database
+      .update(tables.orderRevisions)
+      .set({ data: fbaOrder })
+      .where(eq(tables.orderRevisions.orderId, orderId))
+    const stored = new Map<string, Uint8Array>()
+    storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
+      stored.set(key, bytes)
+    })
+    storage.getFile.mockImplementation(async (key: string) => stored.get(key)!)
+    provider.shopifyFor.mockResolvedValue({ variants: async () => [] })
+    const label = await PDFDocument.create()
+    label.addPage([612, 792])
+    const bytes = await label.save()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response(Buffer.from(bytes)))
+    )
+  })
+
+  // Sends the PO, enters the invoice and cartons for the supplier and runs the Amazon job until it stops.
+  async function packed(cartons: Packing["cartons"]) {
+    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    const invoice = await uploadPdf("invoice", shipmentId)
+    const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
+    const packing = packingSchema.parse({
+      invoiceDocumentId: invoiceDocument!.id,
+      readyDate: "2026-10-15",
+      origin: {
+        name: "Supplier",
+        addressLine1: "Road 1",
+        city: "Shenzhen",
+        stateOrRegion: "Guangdong",
+        postalCode: "518000",
+        countryCode: "CN",
+        phoneNumber: "+86123456789",
+        email: "supplier@example.com"
+      },
+      cartons
+    })
+    expect(await submitPacking(buyer, shipmentId, packing, 1)).toEqual({ approval: false })
+    await database.delete(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    for (let run = 0; run < 30; run++) {
+      await retryDue()
+      if (!(await runNextJob())) {
+        break
+      }
+    }
+    return shipmentId
+  }
+
+  it("plans, packs, places, books the buyer's own carrier and fetches each carton's box label", async () => {
+    const amazon = fakeFba()
+    const shipmentId = await packed([
+      { cartonId: "C1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] },
+      // Mixed cartons are fine at FBA, and a 70 cm carton holding a single unit is too.
+      { cartonId: "C2", length: 50, width: 40, height: 30, weight: 12, items: [{ itemId, pieces: 80 }] },
+      { cartonId: "G1", length: 70, width: 20, height: 10, weight: 1, items: [{ itemId: gloveId, pieces: 1 }] },
+      { cartonId: "G2", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 9 }] }
+    ])
+    const [job] = await database.select().from(tables.jobs)
+    expect(job).toMatchObject({ status: "complete", error: null })
+    expect(provider.api.fbaCreatePlan).toHaveBeenCalledOnce()
+    expect(provider.api.fbaCreatePlan.mock.calls[0]![0]).toMatchObject({
+      name: `cp-${shipmentId.replaceAll("-", "")}-1`,
+      destinationMarketplaces: ["ATVPDKIKX0DER"],
+      sourceAddress: { stateOrProvinceCode: "Guangdong", countryCode: "CN" },
+      items: [
+        { msku: "foil-2", quantity: 80, labelOwner: "SELLER", prepOwner: "NONE" },
+        { msku: "glove-6", quantity: 10, labelOwner: "SELLER", prepOwner: "SELLER" }
+      ]
+    })
+    // The option with one packing group, the cheaper placement across two warehouses, and the buyer's own carrier.
+    expect(provider.api.fbaConfirmPackingOption).toHaveBeenCalledWith(fbaPlanId, "po-together")
+    expect(amazon.boxes.map((box) => box.items)).toEqual([
+      [{ msku: "foil-2", quantity: 40, labelOwner: "SELLER", prepOwner: "NONE" }],
+      [{ msku: "foil-2", quantity: 40, labelOwner: "SELLER", prepOwner: "NONE" }],
+      [{ msku: "glove-6", quantity: 1, labelOwner: "SELLER", prepOwner: "SELLER" }],
+      [{ msku: "glove-6", quantity: 9, labelOwner: "SELLER", prepOwner: "SELLER" }]
+    ])
+    expect(provider.api.fbaConfirmPlacementOption).toHaveBeenCalledWith(fbaPlanId, "pl-split")
+    expect([...amazon.selected.values()]).toEqual(["sh-1-own", "sh-2-own"])
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment).toMatchObject({
+      status: "waiting_labels",
+      amazonOrderId: fbaPlanId,
+      amazonShipmentId: "FBA15SH1, FBA15SH2",
+      issue: null
+    })
+    expect(shipment!.labels).toEqual([
+      { cartonId: "C1", labelNumber: "FBA15SH1U000001", destinationCode: "SMF3", amazonShipmentId: "FBA15SH1" },
+      { cartonId: "C2", labelNumber: "FBA15SH1U000002", destinationCode: "SMF3", amazonShipmentId: "FBA15SH1" },
+      { cartonId: "G1", labelNumber: "FBA15SH2U000003", destinationCode: "ONT8", amazonShipmentId: "FBA15SH2" },
+      { cartonId: "G2", labelNumber: "FBA15SH2U000004", destinationCode: "ONT8", amazonShipmentId: "FBA15SH2" }
+    ])
+    expect(provider.api.fbaBoxLabel).toHaveBeenCalledWith("FBA15SH2", "FBA15SH2U000004")
+
+    // From here it's the same handoff as AWD: shipping labels, release and the supplier's packet.
+    const waiting = (await orderWorkflow(buyer, orderId)).shipments[0]!
+    expect(waiting.issues.map((issue) => issue.code)).toEqual(Array(4).fill("missing_shipping_label"))
+    const shipping = await uploadPdf("shipping_label", shipmentId, 4, [
+      { cartonId: "C1", page: 1 },
+      { cartonId: "C2", page: 2 },
+      { cartonId: "G1", page: 3 },
+      { cartonId: "G2", page: 4 }
+    ])
+    expect(shipping.status).toBe(200)
+    expect((await release(shipmentId)).status).toBe(200)
+    await database
+      .insert(tables.memberships)
+      .values({ orgId: buyerId, userId: buyer.user.id, email: buyer.user.email, role: "owner" })
+    const packet = await downloadPacket(new Request("http://localhost"), {
+      params: Promise.resolve({ id: shipmentId })
+    })
+    expect(packet.status).toBe(200)
+    // Packing list, checklist, two product label sheets, four box labels and four shipping labels.
+    expect((await PDFDocument.load(await packet.arrayBuffer())).getPageCount()).toBe(12)
+  })
+
+  it("ships to Amazon from the forwarder's address when the PO stops at a forwarder on the way", async () => {
+    fakeFba()
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    const stop = {
+      name: "Yiwu warehouse",
+      addressLine1: "88 Futian Road",
+      addressLine2: "",
+      city: "Yiwu",
+      stateOrRegion: "Zhejiang",
+      postalCode: "322000",
+      countryCode: "CN",
+      phoneNumber: "",
+      email: ""
+    }
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address: stop })
+    const [saved] = await forwarderAddresses(buyerId)
+    const data = { ...fbaOrder, via: { forwarderId: forwarder.id, addressId: saved!.addressId } }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    const cartons = [
+      { cartonId: "C1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 160 }] },
+      { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+    ]
+    // Amazon needs a phone number to collect from the forwarder.
+    const shipmentId = await packed(cartons)
+    const [waiting] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(waiting).toMatchObject({ status: "needs_attention", amazonOrderId: null, operation: "none" })
+    expect(waiting!.issue).toContain("Add a phone number to Yiwu Logistics's Yiwu warehouse address")
+    await saveForwarderAddress(buyerId, {
+      forwarderId: forwarder.id,
+      id: saved!.addressId,
+      name: "Yiwu warehouse",
+      address: { ...stop, phoneNumber: "+8657985550100" }
+    })
+    const retried = await action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "shipment.retry", data: { id: shipmentId, revision: 1 } })
+      })
+    )
+    expect(retried.status).toBe(200)
+    for (let run = 0; run < 30 && (await runNextJob()); run++) {
+      await retryDue()
+    }
+    expect(provider.api.fbaCreatePlan.mock.calls[0]![0]).toMatchObject({
+      sourceAddress: {
+        name: "Yiwu warehouse",
+        addressLine1: "88 Futian Road",
+        city: "Yiwu",
+        stateOrProvinceCode: "Zhejiang",
+        phoneNumber: "+8657985550100"
+      }
+    })
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment?.status).toBe("waiting_labels")
+    // The supplier's own documents still show its pickup address.
+    expect(shipment!.packing!.origin.city).toBe("Shenzhen")
+  })
+
+  it("splits one PO's cartons into a shipment per Amazon network, each with its own Amazon job", async () => {
+    fakeFba()
+    // Cords go to AWD US in bulk; gloves go to FBA.
+    const data = {
+      ...fbaOrder,
+      items: [{ ...fbaOrder.items[0]!, amazonNetwork: "awd_us" as const }, fbaOrder.items[1]!]
+    }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    const invoice = await uploadPdf("invoice", shipmentId)
+    const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
+    const packing = packingSchema.parse({
+      invoiceDocumentId: invoiceDocument!.id,
+      readyDate: "2026-10-15",
+      origin: {
+        name: "Supplier",
+        addressLine1: "Road 1",
+        city: "Shenzhen",
+        stateOrRegion: "Guangdong",
+        postalCode: "518000",
+        countryCode: "CN",
+        phoneNumber: "+86123456789"
+      },
+      cartons: [
+        { cartonId: "A1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] },
+        { cartonId: "A2", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] },
+        { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+      ]
+    })
+    // A carton can't mix networks.
+    const mixed = {
+      ...packing,
+      cartons: [
+        {
+          ...packing.cartons[0]!,
+          items: [
+            { itemId, pieces: 160 },
+            { itemId: gloveId, pieces: 10 }
+          ]
+        }
+      ]
+    }
+    await expect(submitPacking(buyer, shipmentId, mixed, 1)).rejects.toThrow(
+      "Pack FBA and AWD US products in separate cartons"
+    )
+    await submitPacking(buyer, shipmentId, packing, 1)
+    const rows = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
+    expect(
+      rows
+        .map((row) => [row.amazonNetwork, row.status, row.packing!.cartons.map((carton) => carton.cartonId)])
+        .toSorted()
+    ).toEqual([
+      ["awd_us", "queued", ["A1", "A2"]],
+      ["fba", "queued", ["G1"]]
+    ])
+    expect(rows.find((row) => row.id === shipmentId)?.amazonNetwork).toBe("fba")
+    const queued = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "amazon"))
+    expect(queued.map((job) => job.payload.shipmentId).toSorted()).toEqual(rows.map((row) => row.id).toSorted())
+    const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
+    expect(events.map((event) => event.message)).toContain(
+      "Packing submitted; split into FBA and AWD US shipments and queued for Amazon"
+    )
+    // Every piece is reserved once across the two shipments.
+    expect((await orderWorkflow(buyer, orderId)).items.map((item) => item.remainingPieces)).toEqual([0, 0])
+    // The FBA shipment goes through Amazon's inbound plan on its own.
+    await database.delete(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    await database
+      .delete(tables.jobs)
+      .where(eq(tables.jobs.key, `amazon:${rows.find((row) => row.amazonNetwork === "awd_us")!.id}:1`))
+    for (let run = 0; run < 30 && (await runNextJob()); run++) {
+      await retryDue()
+    }
+    expect(provider.api.fbaCreatePlan.mock.calls[0]![0]).toMatchObject({ items: [{ msku: "glove-6", quantity: 10 }] })
+    const [fba] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(fba).toMatchObject({ status: "waiting_labels", amazonShipmentId: "FBA15SH2" })
+  })
+
+  it("keeps products Amazon packs separately out of the same carton", async () => {
+    fakeFba()
+    provider.api.fbaGeneratePackingOptions.mockImplementation(async () => "op-split-only")
+    provider.api.fbaPackingOptions.mockResolvedValue([
+      { packingOptionId: "po-split", status: "OFFERED", packingGroups: ["cords", "gloves"], fees: [], discounts: [] }
+    ])
+    const shipmentId = await packed([
+      {
+        cartonId: "M1",
+        length: 50,
+        width: 40,
+        height: 30,
+        weight: 15,
+        items: [
+          { itemId, pieces: 160 },
+          { itemId: gloveId, pieces: 10 }
+        ]
+      }
+    ])
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment).toMatchObject({ status: "needs_attention", amazonOrderId: fbaPlanId })
+    expect(shipment!.issue).toContain("Pack each product in its own cartons")
+  })
+
+  it("cancels the inbound plan in Amazon before a replacement shipment", async () => {
+    const amazon = fakeFba()
+    const shipmentId = await packed([
+      { cartonId: "C1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 160 }] },
+      { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+    ])
+    await correctShipment(buyer, shipmentId, "Change cartons")
+    const cancel = () =>
+      action(
+        new Request("http://localhost:3000/api/action", {
+          method: "POST",
+          headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+          body: JSON.stringify({ action: "shipment.cancelAmazon", data: { id: shipmentId } })
+        })
+      )
+    expect((await cancel()).status).toBe(200)
+    expect(amazon.status).toBe("VOIDED")
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment?.status).toBe("cancelled")
   })
 })
 
@@ -3629,6 +4400,60 @@ describe("landed costs", () => {
   })
 })
 
+describe("timeline comments", () => {
+  const send = (data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "order.comment", data })
+      })
+    )
+
+  it("keeps a comment on the PO's timeline with its author, only for those who can see the PO", async () => {
+    expect((await send({ orderId, message: "  Check the carton weights  " })).status).toBe(200)
+    const [comment] = await database.select().from(tables.events).where(eq(tables.events.kind, "comment"))
+    expect(comment).toMatchObject({
+      orderId,
+      message: "Check the carton weights",
+      actor: buyer.user.id,
+      author: buyer.user.name,
+      authorOrg: buyer.org.name
+    })
+    expect((await send({ orderId, message: " " })).status).toBe(400)
+
+    context.actor = actor("buyer", otherId)
+    expect((await send({ orderId, message: "Not mine" })).status).not.toBe(200)
+    context.actor = buyer
+  })
+})
+
+describe("profiles", () => {
+  it("keeps the name someone signed up with, and asks for one when there's none", async () => {
+    expect(await profileFor({ id: "user-a", firstName: " Ada ", lastName: "Lovelace" })).toMatchObject({
+      firstName: "Ada",
+      lastName: "Lovelace"
+    })
+    // Their saved name wins over a later sign-in's.
+    expect(await profileFor({ id: "user-a", firstName: "Other", lastName: "Name" })).toMatchObject({ firstName: "Ada" })
+    expect(await profileFor({ id: "user-b", firstName: "Grace", lastName: null })).toBeNull()
+    // A name from sign-in still needs a position and company.
+    expect((await ownProfile("user-a")).complete).toBe(false)
+  })
+
+  it("saves a person's own name, trimmed", async () => {
+    const profile = { firstName: " Tess ", lastName: "Tester ", position: "Buyer", company: "Fencing Club" }
+    expect((await ownProfile(buyer.user.id)).complete).toBe(false)
+    await saveProfile(buyer, profile)
+    await saveProfile(buyer, { ...profile, firstName: "Tessa" })
+    expect(await database.select().from(tables.profiles)).toMatchObject([
+      { userId: buyer.user.id, firstName: "Tessa", lastName: "Tester", position: "Buyer", company: "Fencing Club" }
+    ])
+    expect((await ownProfile(buyer.user.id)).complete).toBe(true)
+    await expect(saveProfile(buyer, { ...profile, position: " " })).rejects.toThrow("Choose your position")
+  })
+})
+
 describe("suppliers from Shopify and invitations", () => {
   const post = (body: unknown) =>
     action(
@@ -3745,18 +4570,6 @@ describe("business details on POs", () => {
     await post({ action: "business.profile", data: details })
     const { bytes } = await generatePo(orderId)
     expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-")
-  })
-})
-
-describe("supplier payment terms", () => {
-  it("start as due immediately and can be changed, keeping them when left out", async () => {
-    const [row] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
-    expect(row?.paymentTerms).toBe("Due immediately")
-    const update = { id: supplierLinkId, name: "Supplier", leadTimeDays: null, amazonLeadTimeDays: null }
-    await updateSupplier(buyerId, { ...update, paymentTerms: "Net 30" })
-    await updateSupplier(buyerId, update)
-    const [saved] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
-    expect(saved?.paymentTerms).toBe("Net 30")
   })
 })
 

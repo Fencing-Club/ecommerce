@@ -16,7 +16,10 @@ const productInput = z.strictObject({
   piecesPerSellablePack: z.number().int().positive().max(2147483647),
   sellablePacksPerCase: z.number().int().positive().max(2147483647).nullable(),
   notes: z.string().max(2000).nullable(),
-  active: z.boolean()
+  active: z.boolean(),
+  trackInventory: z.boolean(),
+  onHand: z.number().int().min(-2147483648).max(2147483647),
+  continueSelling: z.boolean()
 })
 
 export async function POST(request: Request) {
