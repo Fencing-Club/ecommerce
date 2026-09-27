@@ -106,6 +106,23 @@ describe("restock plan", () => {
       { sku: "SKU", status: "stockout", sold: 112, available: 80, need: 32, purchaseUnits: 32, daysRemaining: 40 }
     ])
   })
+  it("estimates the sales lost between running out and a reorder placed today arriving", () => {
+    // 2 a day: 80 units last 40 days of the 56-day lead time, so 16 days, 32 sales, go unsold.
+    const [line] = restockPlan({
+      ...base,
+      channel: shopify,
+      catalog: catalog.map((row) => ({
+        ...row,
+        priceMinor: 1500,
+        priceCurrency: "USD",
+        unitCostMinor: 500,
+        costCurrency: "USD"
+      }))
+    })
+    expect(line).toMatchObject({ lostDays: 16, lostUnits: 32, lostSalesMinor: 48000, lostProfitMinor: 32000 })
+    // Without a price, the units are still known.
+    expect(restockPlan({ ...base, channel: shopify })[0]).toMatchObject({ lostUnits: 32, lostSalesMinor: null })
+  })
   it("rounds to the case quantity, raises to the minimum order and estimates cost", () => {
     const [line] = restockPlan({
       ...base,

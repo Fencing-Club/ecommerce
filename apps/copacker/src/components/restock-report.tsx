@@ -86,15 +86,6 @@ const restockApi = api.injectEndpoints({
 })
 
 const sourceNames = { shopify: "Shopify", amazon: "Amazon" } as const
-// Why sold units couldn't be counted, as the sales reader reports them.
-const gapNames: Record<string, string> = {
-  channel_unmapped: "from other sales channels",
-  location_unmapped: "shipped from unclassified locations",
-  unfulfilled: "not shipped yet",
-  product_unmapped: "without a product",
-  quantity_unknown: "with an unknown quantity",
-  fulfillment_unmapped: "with an unknown fulfillment method"
-}
 const statusLabels: Record<RestockStatus, string> = {
   stockout: "Runs out before it arrives",
   reorder: "Reorder",
@@ -168,82 +159,92 @@ const statusIcons: Record<RestockStatus, React.ReactNode> = {
   no_listing: <CircleMinus />
 }
 
-function StatusBadge({ status }: { status: RestockStatus }) {
+const isOut = (line: RestockLine) => line.available !== null && line.available <= 0
+
+function StatusBadge({ line }: { line: RestockLine }) {
   return (
     <Badge variant="outline" className="gap-1 px-1.5 text-muted-foreground">
-      {statusIcons[status]}
-      {statusLabels[status]}
+      {statusIcons[line.status]}
+      {line.status === "stockout" && isOut(line) ? "Out of stock" : statusLabels[line.status]}
     </Badge>
   )
 }
 
-// How the suggested quantity was reached, step by step.
-function explain(line: RestockLine) {
-  if (line.status === "not_stocked") {
-    return ["The minimum stock at Amazon is 0 in Shopify, so this isn’t stocked at Amazon."]
+// Expected lost sales, per currency: "$1,240" or "Unknown" when a line's price isn't known.
+function lostText(lines: RestockLine[]) {
+  const byCurrency = new Map<string, number>()
+  for (const line of lines) {
+    if (line.lostSalesMinor && line.priceCurrency) {
+      byCurrency.set(line.priceCurrency, (byCurrency.get(line.priceCurrency) ?? 0) + line.lostSalesMinor)
+    }
   }
-  if (line.status === "blocked") {
-    return [
-      `Copacker can’t suggest a quantity because ${line.blocked.map((reason) => blockNames[reason]).join(" and ")}.`
-    ]
-  }
+  return [...byCurrency].map(([currency, minor]) => money(minor, currency)).join(" + ")
+}
+
+type Step = { label: string; value?: string; sign?: "+" | "−" | "="; tone?: "result" | "heading" | "loss" }
+
+// How the suggested quantity was reached, as a short breakdown: each figure on its own row, the order in bold.
+function breakdown(line: RestockLine): Step[] {
   const sold = line.sold ?? 0
   const perDay = sold / line.rateDays
-  const leadDemand = Math.ceil((sold * line.leadTimeDays) / line.rateDays)
-  const steps = [
-    `Sold ${sold} in the last ${line.salesDays} days${
-      line.soldInBundles ? ` (${line.soldAlone} alone and ${line.soldInBundles} in bundles)` : ""
-    }.`,
-    line.stockoutDays
-      ? `Out of stock ${line.stockoutDays} of those days, so the rate uses the ${line.rateDays} days it could sell: about ${perDay.toFixed(1)} a day.`
-      : `About ${perDay.toFixed(1)} a day.`,
-    `Over the ${line.leadTimeDays}-day lead time that’s about ${leadDemand}.`
+  const steps: Step[] = [
+    { label: `Sold in ${line.salesDays} days`, value: String(sold) },
+    ...(line.stockoutDays ? [{ label: "Out of stock during that time", value: `${line.stockoutDays} days` }] : []),
+    { label: "Sales rate", value: `${perDay.toFixed(1)} a day` },
+    {
+      label: `Needed for the ${line.leadTimeDays}-day lead time`,
+      value: String(Math.ceil((sold * line.leadTimeDays) / line.rateDays))
+    }
   ]
   if (line.targetStock) {
-    steps.push(
-      `Plus the minimum stock of ${line.targetStock} to keep at ${line.targetWhere ?? "this location"}, so it’s still there when the order arrives.`
-    )
+    steps.push({
+      label: `Minimum stock at ${line.targetWhere ?? "this location"}`,
+      value: String(line.targetStock),
+      sign: "+"
+    })
   }
   steps.push(
-    `Minus ${line.available ?? 0} available and ${line.incoming ?? 0} incoming or on order leaves ${line.need ?? 0} needed.`
+    { label: "Available", value: String(line.available ?? 0), sign: "−" },
+    { label: "Incoming and on order", value: String(line.incoming ?? 0), sign: "−" }
   )
-  if (line.need && line.minimumOrder && line.need < line.minimumOrder) {
-    steps.push(`Raised to the minimum order of ${line.minimumOrder}.`)
+  // Rounded up past what's needed: to whole cases, or to the minimum order.
+  let rounded = ""
+  if (line.purchaseUnits !== null && line.need !== null && line.purchaseUnits !== line.need) {
+    rounded =
+      line.caseCount && line.caseQuantity && line.caseQuantity > 1
+        ? ` (${line.caseCount} cases of ${line.caseQuantity})`
+        : " (minimum order)"
   }
-  // A case of 1 rounds nothing, so it isn't worth a step.
-  if (
-    line.caseQuantity &&
-    line.caseQuantity > 1 &&
-    line.purchaseUnits &&
-    line.purchaseUnits % line.caseQuantity === 0 &&
-    line.caseCount
-  ) {
-    steps.push(`Rounded up to ${line.caseCount} cases of ${line.caseQuantity}: ${line.purchaseUnits} units.`)
+  steps.push({
+    label: `To order${rounded}`,
+    value: String(line.purchaseUnits ?? line.need ?? 0),
+    sign: "=",
+    tone: "result"
+  })
+  if (line.lostUnits && line.lostDays) {
+    const units = `${line.lostUnits} ${line.lostUnits === 1 ? "unit" : "units"}`
+    steps.push(
+      { label: "Until an order placed today arrives", tone: "heading" },
+      { label: "Days out of stock", value: String(line.lostDays), tone: "loss" },
+      {
+        label: "Lost sales",
+        value:
+          line.lostSalesMinor !== null && line.priceCurrency
+            ? `${money(line.lostSalesMinor, line.priceCurrency)} (${units})`
+            : units,
+        tone: "loss"
+      }
+    )
   }
   return steps
 }
 
-// Explains sources that couldn't be read and sales that couldn't be matched to a product.
+// Sources that couldn't be read, which leave their sales out.
 function Notes({ report }: { report: Report }) {
-  const notes = report.sources.flatMap(({ source, error, gapUnits, gapReasons, window }) => [
-    error ? `${sourceNames[source]}: ${error}` : null,
-    window
-      ? `${sourceNames[source]} sales from ${new Date(window.from).toLocaleDateString(undefined, { dateStyle: "medium" })} to ${new Date(window.to).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`
-      : null,
-    gapUnits > 0 || Object.values(gapReasons).some((gap) => gap.unknownCount > 0)
-      ? `${sourceNames[source]}: not counted, ${Object.entries(gapReasons)
-          .filter(([, gap]) => gap.units > 0 || gap.unknownCount > 0)
-          .map(
-            ([reason, gap]) =>
-              `${gap.units} units ${gapNames[reason] ?? reason.replaceAll("_", " ")}${gap.unknownCount ? ` and ${gap.unknownCount} unknown quantities` : ""}`
-          )
-          .join(", ")}.`
-      : null
-  ])
-  const shown = notes.filter((note) => note !== null)
-  return shown.length ? (
+  const errors = report.sources.flatMap(({ source, error }) => (error ? [`${sourceNames[source]}: ${error}`] : []))
+  return errors.length ? (
     <ul className={styles.notes} aria-live="polite">
-      {shown.map((note) => (
+      {errors.map((note) => (
         <li key={note}>{note}</li>
       ))}
     </ul>
@@ -343,9 +344,27 @@ function createPoHref(
   return { href: `/orders/new?${params}`, count: chosen.length }
 }
 
+// How long the stock on hand lasts at the sales rate. Days are rounded down, so under a day says so rather than 0.
+function LostSales({ line }: { line: RestockLine }) {
+  if (line.lostUnits === null) {
+    return <span className="text-muted-foreground">Unknown</span>
+  }
+  if (line.lostUnits === 0) {
+    return <span className="text-muted-foreground">None</span>
+  }
+  return line.lostSalesMinor !== null && line.priceCurrency ? (
+    <span className="font-medium text-destructive">{money(line.lostSalesMinor, line.priceCurrency)}</span>
+  ) : (
+    <span className="text-muted-foreground">{line.lostUnits} units</span>
+  )
+}
+
 function StockLeft({ line }: { line: RestockLine }) {
+  if (isOut(line)) {
+    return "None"
+  }
   if (line.daysRemaining !== null) {
-    return `${line.daysRemaining} days`
+    return line.daysRemaining === 0 ? "Under a day" : `${line.daysRemaining} days left`
   }
   return line.sold === 0 ? "No sales" : "Unknown"
 }
@@ -387,15 +406,23 @@ function LineRows({
           <Name line={line} />
           {/* In a narrow table the status and stock left columns are hidden, so they show under the name. */}
           <span className="mt-1.5 flex flex-wrap items-center gap-2 pl-12 text-xs text-muted-foreground @4xl:hidden">
-            <StatusBadge status={line.status} />
-            {line.daysRemaining !== null ? `${line.daysRemaining} days left` : <StockLeft line={line} />}
+            <StatusBadge line={line} />
+            {!isOut(line) && <StockLeft line={line} />}
+            {line.lostSalesMinor !== null && line.lostSalesMinor > 0 && line.priceCurrency && (
+              <span className="text-destructive">
+                About {money(line.lostSalesMinor, line.priceCurrency)} in lost sales
+              </span>
+            )}
           </span>
         </TableCell>
         <TableCell className="hidden @4xl:table-cell">
-          <StatusBadge status={line.status} />
+          <StatusBadge line={line} />
         </TableCell>
         <TableCell className="hidden text-right tabular-nums @4xl:table-cell">
           <StockLeft line={line} />
+        </TableCell>
+        <TableCell className="hidden text-right tabular-nums @4xl:table-cell">
+          <LostSales line={line} />
         </TableCell>
         <TableCell className="hidden text-right tabular-nums @4xl:table-cell">{line.sold ?? "Unknown"}</TableCell>
         <TableCell
@@ -456,8 +483,8 @@ function LineRows({
       {expanded && (
         <TableRow className="bg-muted/30 hover:bg-muted/30 @max-md:block @max-md:px-3 @max-md:py-2">
           <TableCell className="@max-md:hidden" />
-          {/* Spans the columns the table shows: all ten when wide, four when narrow. */}
-          <TableCell colSpan={10} className="hidden whitespace-normal @4xl:table-cell">
+          {/* Spans the columns the table shows: all eleven when wide, four when narrow. */}
+          <TableCell colSpan={11} className="hidden whitespace-normal @4xl:table-cell">
             <Explanation line={line} />
           </TableCell>
           <TableCell colSpan={4} className="whitespace-normal @4xl:hidden @max-md:block @max-md:p-0">
@@ -470,12 +497,38 @@ function LineRows({
 }
 
 function Explanation({ line }: { line: RestockLine }) {
+  if (line.status === "not_stocked") {
+    return (
+      <p className="text-sm text-muted-foreground">Not stocked at Amazon: its minimum stock there is 0 in Shopify.</p>
+    )
+  }
+  if (line.status === "blocked") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Can’t suggest a quantity: {line.blocked.map((reason) => blockNames[reason]).join(" and ")}.
+      </p>
+    )
+  }
   return (
-    <ol className={styles.explain}>
-      {explain(line).map((step) => (
-        <li key={step}>{step}</li>
+    <dl className="grid max-w-md grid-cols-[1.25rem_1fr_auto] gap-x-2 gap-y-1 text-sm">
+      {breakdown(line).map((step) => (
+        <div
+          key={step.label}
+          className={cn(
+            "col-span-3 grid grid-cols-subgrid",
+            step.tone === "result" && "mt-1 border-t pt-1.5 font-medium",
+            step.tone === "heading" && "mt-3 text-xs font-medium text-muted-foreground",
+            step.tone === "loss" && "text-destructive"
+          )}
+        >
+          <span className="text-muted-foreground" aria-hidden="true">
+            {step.sign}
+          </span>
+          <dt className={cn(!step.tone && "text-muted-foreground")}>{step.label}</dt>
+          <dd className="text-right tabular-nums">{step.value}</dd>
+        </div>
       ))}
-    </ol>
+    </dl>
   )
 }
 
@@ -498,7 +551,7 @@ function SupplierGroup({
   channel: RestockChannel
   edits: ReadonlyMap<string, Edit>
   setEdit: (variantId: string, edit: Edit) => void
-  // Collapsed, the group shows only its totals and Create PO.
+  // Collapsed, the group shows only its totals and Reorder.
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -536,6 +589,12 @@ function SupplierGroup({
           <Totals totals={totals} />
         </span>
         <span className={styles.groupActions}>
+          {lostText(lines) && (
+            <span className={styles.groupCost}>
+              <span className={styles.detail}>Expected lost sales</span>
+              <strong className="text-destructive">{lostText(lines)}</strong>
+            </span>
+          )}
           <span className={styles.groupCost}>
             <span className={styles.detail}>Estimated cost</span>
             <strong>{costText(totals)}</strong>
@@ -543,10 +602,10 @@ function SupplierGroup({
           {supplierId &&
             (po.count > 0 ? (
               <Button nativeButton={false} render={<Link href={po.href} />}>
-                Create PO
+                Reorder
               </Button>
             ) : (
-              <Button disabled>Create PO</Button>
+              <Button disabled>Reorder</Button>
             ))}
         </span>
       </div>
@@ -561,6 +620,12 @@ function SupplierGroup({
                 <TableHead>Product</TableHead>
                 <TableHead className="hidden @4xl:table-cell">Status</TableHead>
                 <TableHead className="hidden text-right @4xl:table-cell">Stock left</TableHead>
+                <TableHead
+                  className="hidden text-right @4xl:table-cell"
+                  title="Sales expected to be lost before an order placed today arrives, at the Shopify price"
+                >
+                  Lost sales
+                </TableHead>
                 <TableHead className="hidden text-right @4xl:table-cell">Sold</TableHead>
                 <TableHead className="hidden text-right @4xl:table-cell">
                   <abbr
@@ -603,8 +668,9 @@ function SupplierGroup({
               <TableRow className="hover:bg-transparent @max-md:flex @max-md:items-center @max-md:gap-4 @max-md:px-3 @max-md:py-3">
                 <TableCell className="@max-md:hidden" />
                 <TableCell className="@max-md:flex-1 @max-md:p-0">Total selected</TableCell>
-                {/* Under the columns hidden in a narrow table: status, stock left, sold, days out, available, incoming. */}
-                <TableCell colSpan={6} className="hidden @4xl:table-cell" />
+                {/* Under the columns hidden in a narrow table: status, stock left, lost sales, sold, days out, available,
+                    incoming. */}
+                <TableCell colSpan={7} className="hidden @4xl:table-cell" />
                 <TableCell className="pr-5 text-right tabular-nums @max-md:p-0">
                   {totals.units.toLocaleString()}
                 </TableCell>
@@ -739,7 +805,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
         (b.purchaseUnits ?? 0) - (a.purchaseUnits ?? 0)
       )
     })
-  // Copacker suppliers first, with Create PO; then suppliers only in Shopify, which are ordered outside Copacker.
+  // Copacker suppliers first, with Reorder; then suppliers only in Shopify, which are ordered outside Copacker.
   const groups = new Map<string, { key: string; name: string; supplierId: string | null; lines: RestockLine[] }>()
   for (const line of visible) {
     const key = line.supplier?.id ?? `shopify:${line.externalSupplier ?? ""}`
@@ -847,6 +913,11 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
           <span>
             <strong>Total for all suppliers</strong>
             <Totals totals={selected} />
+            {lostText(visible) && (
+              <p className="text-sm text-destructive">
+                About {lostText(visible)} in sales expected to be lost before reorders placed today arrive
+              </p>
+            )}
           </span>
           <span className={styles.groupActions}>
             {ordered.length > 1 && (
@@ -958,7 +1029,7 @@ export function RestockReport() {
             )}
             {channels.map((item) => (
               <NativeSelectOption key={item.key} value={item.key}>
-                {item.channel.kind === "shopify" ? `Shopify: ${item.label}` : item.label}
+                {item.label}
               </NativeSelectOption>
             ))}
           </NativeSelect>

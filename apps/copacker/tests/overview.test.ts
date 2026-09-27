@@ -74,6 +74,12 @@ function line(overrides: Partial<RestockLine>): RestockLine {
     costCurrency: "USD",
     estimatedCostMinor: null,
     daysRemaining: 120,
+    priceMinor: null,
+    priceCurrency: null,
+    lostDays: 0,
+    lostUnits: 0,
+    lostSalesMinor: null,
+    lostProfitMinor: null,
     ...overrides
   }
 }
@@ -439,21 +445,14 @@ describe("margins and trends", () => {
     expect(index.unitCost(index.variantFor("shopify", "vx"))).toBeNull()
   })
 
-  it("estimates Amazon fees for orders not posted yet at the posted rate", () => {
+  it("estimates fees for orders not posted yet at the posted rate", () => {
     expect(
       platformFees([
         { orderId: "1", revenueMinor: 10000, feesMinor: 1500 },
         { orderId: "2", revenueMinor: 4000, feesMinor: null },
         { orderId: "3", revenueMinor: null, feesMinor: null }
       ])
-    ).toEqual({
-      feesMinor: 2100,
-      estimatedMinor: 600,
-      estimatedOrders: 1,
-      unknownOrders: 0,
-      revenueMinor: 14000,
-      rate: 0.15
-    })
+    ).toEqual({ feesMinor: 2100, estimatedOrders: 1, revenueMinor: 14000 })
   })
 
   it("takes unit costs and Amazon's fees off the costed sales", () => {
@@ -691,6 +690,16 @@ describe("sales queries", () => {
           orderItems: [{ orderItemId: "i4", quantityOrdered: 1, product: { sellerSku: "A" } }]
         }
       },
+      // Pending, with no price yet: counted once Amazon confirms it.
+      {
+        ...amazonOrder("a5", "2026-09-23T07:00:00Z", []),
+        data: {
+          orderId: "a5",
+          createdTime: "2026-09-23T07:00:00Z",
+          fulfillment: { fulfillmentStatus: "PENDING" },
+          orderItems: [{ orderItemId: "i7", quantityOrdered: 2, product: { sellerSku: "A" } }]
+        }
+      },
       // A free replacement: Amazon posts its payment at zero and never adds proceeds.
       amazonOrder("a4", "2026-09-23T06:30:00Z", [
         { orderItemId: "i5", quantityOrdered: 2, product: { sellerSku: "A" } },
@@ -770,7 +779,7 @@ describe("sales queries", () => {
       "USD"
     )
     expect(rows.toSorted((a, b) => a.source.localeCompare(b.source))).toEqual([
-      // a1, and a4 at zero; the cancelled a3 isn't counted.
+      // a1, and a4 at zero; the cancelled a3 and the pending, unpriced a5 aren't counted.
       { source: "amazon", date: "2026-09-22", orders: 2, units: 6, priced: 2, revenueMinor: 2700, currency: "USD" },
       // $20 less 2/3 of $3, plus the $20 bundle; the unpriced order counts its unit but no sales.
       { source: "shopify", date: "2026-09-24", orders: 2, units: 5, priced: 1, revenueMinor: 3800, currency: "USD" }

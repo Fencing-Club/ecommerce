@@ -5,7 +5,7 @@ import { vars } from "@/styles/theme.css"
 export const page = style({ display: "flex", flexDirection: "column", gap: space(6) })
 
 // Grids: four KPI tiles, a wide chart beside a narrow card, and two even halves.
-// Two tiles a row on phones (an odd last tile spans the row), three on tablets, five on wide screens.
+// Two tiles a row on phones (an odd last tile spans the row), three on tablets, six on wide screens.
 export const kpis = style({
   display: "grid",
   gap: space(3),
@@ -13,7 +13,7 @@ export const kpis = style({
   "@media": {
     [media.sm]: { gap: space(4) },
     [media.lg]: { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" },
-    [media.xl]: { gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }
+    [media.xl]: { gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }
   }
 })
 globalStyle(`${kpis} > :last-child:nth-child(odd)`, {
@@ -121,6 +121,7 @@ export const kpiValue = style({
   fontVariantNumeric: "tabular-nums"
 })
 // A figure that can't be worked out yet reads as a note, not a number.
+export const kpiLoss = style({ color: vars.color.destructive })
 export const kpiUnavailable = style({
   ...fontSize.lg,
   fontWeight: 500,
@@ -472,25 +473,6 @@ export const stepChevron = style({
   flexShrink: 0,
   color: vars.color.mutedForeground
 })
-
-// A highlighted sentence inside a card.
-export const callout = style({
-  display: "flex",
-  alignItems: "flex-start",
-  gap: space(2.5),
-  padding: space(3),
-  borderRadius: vars.radius.lg,
-  backgroundColor: alpha(vars.color.warning, 12),
-  ...fontSize.sm
-})
-globalStyle(`${callout} > svg`, {
-  width: "1rem",
-  height: "1rem",
-  marginTop: "0.125rem",
-  flexShrink: 0,
-  color: `color-mix(in oklch, ${vars.color.warning} 70%, ${vars.color.foreground})`
-})
-globalStyle(`${callout} strong`, { fontWeight: 600 })
 
 // A card's single large figure.
 export const hero = style({ display: "flex", flexDirection: "column", gap: space(0.5) })

@@ -93,9 +93,12 @@ function shippedFrom(locationId: string | null | undefined) {
     : sql``
 }
 
-// Cancelled orders sold nothing.
-const notCancelled = sql.raw(`(coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') <> 'CANCELLED'
-  and o.data->>'cancelledAt' is null)`)
+// Orders the Overview counts. Cancelled orders sold nothing, and an Amazon order still pending (payment not confirmed)
+// has no price or fees yet, so it counts once Amazon confirms it.
+const counted = sql.raw(`(coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') <> 'CANCELLED'
+  and o.data->>'cancelledAt' is null
+  and not (coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') = 'PENDING'
+    and not exists (select 1 from jsonb_array_elements(o.data->'orderItems') i where i->'proceeds'->'breakdowns' is not null)))`)
 
 function accountFilter(accounts: Account[]) {
   return sql`(${sql.join(
@@ -104,7 +107,7 @@ function accountFilter(accounts: Account[]) {
         sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
     ),
     sql` or `
-  )}) and ${notCancelled}`
+  )}) and ${counted}`
 }
 
 function rows(result: unknown) {
@@ -298,34 +301,6 @@ export async function storedMarketplaces(orgId: string, account: string, since: 
   return amazonMarketplaces.filter((marketplace) => ids.has(marketplace.id))
 }
 
-// Amazon's orders, units and sales in a period by marketplace, with sales in `currency`.
-export async function salesByMarketplace(orgId: string, account: Account, period: Bounds, currency: string) {
-  const sales = converted(currency)
-  const result = await db().execute(sql`
-    select o.data->'salesChannel'->>'marketplaceId' as id, count(*) as orders, sum(${orderUnits}) as units,
-      round(coalesce(sum(${sales.revenue}) filter (where ${sales.priced}), 0) * 100) as revenue
-    from sales_orders o
-    where o."orgId" = ${orgId} and (${accountFilter([account])})
-      and o."orderedAt" >= ${period.from} and o."orderedAt" < ${period.to}
-    group by 1`)
-  const byId = new Map(rows(result).map((row) => [String(row.id), row]))
-  return amazonMarketplaces.flatMap((marketplace) => {
-    const row = byId.get(marketplace.id)
-    return row
-      ? [
-          {
-            code: marketplace.code,
-            label: marketplace.label,
-            orders: count(row.orders),
-            units: count(row.units),
-            revenueMinor: count(row.revenue),
-            currency
-          }
-        ]
-      : []
-  })
-}
-
 export type OrderFees = { orderId: string; revenueMinor: number | null; feesMinor: number | null }
 
 // Amazon's posted fees on an order (null until Amazon posts its payment, usually within two days of shipping).
@@ -364,7 +339,7 @@ export async function orderFees(orgId: string, account: Account, from: Date, to:
 }
 
 // A platform's fees on a period's orders. Orders whose fees aren't known yet (Amazon posts them after shipping) are
-// estimated at the rate of the known ones; the estimate is reported so the page can say so.
+// estimated at the rate of the posted ones; the count is reported so the page can say some fees are estimated.
 export function platformFees(list: OrderFees[]) {
   const posted = list.filter((order) => order.feesMinor !== null && order.revenueMinor !== null)
   const postedRevenue = posted.reduce((sum, order) => sum + order.revenueMinor!, 0)
@@ -374,12 +349,8 @@ export function platformFees(list: OrderFees[]) {
   const estimated = rate === null ? 0 : Math.round(waiting.reduce((sum, order) => sum + order.revenueMinor!, 0) * rate)
   return {
     feesMinor: postedFees + estimated,
-    estimatedMinor: estimated,
     estimatedOrders: rate === null ? 0 : waiting.length,
-    // Orders with sales but no fees to go on: nothing known in the period to estimate from.
-    unknownOrders: rate === null ? waiting.length : 0,
-    revenueMinor: list.reduce((sum, order) => sum + (order.revenueMinor ?? 0), 0),
-    rate
+    revenueMinor: list.reduce((sum, order) => sum + (order.revenueMinor ?? 0), 0)
   }
 }
 

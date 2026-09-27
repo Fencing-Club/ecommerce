@@ -36,13 +36,12 @@ import {
   rangeBounds,
   reportingCurrency,
   salesByDay,
-  salesByMarketplace,
   storedMarketplaces,
   shopifyCustomers,
   salesByItem,
   sellingPrices
 } from "./overview-sales"
-import { restockAllChannels } from "./restock-page"
+import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockDefaults } from "./restock-report"
 import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
@@ -80,12 +79,19 @@ export function summarizeRestock(
   // What one unit cost to land, when known. Restock's own unit cost by default; the Overview's includes PO landed costs
   // and prices a bundle held as its own item (such as a 2-pack at Amazon) from its components, which restock doesn't.
   unitCostFor: (line: RestockLine) => Price | null = (line) =>
-    line.unitCostMinor !== null && line.costCurrency ? { minor: line.unitCostMinor, currency: line.costCurrency } : null
+    line.unitCostMinor !== null && line.costCurrency
+      ? { minor: line.unitCostMinor, currency: line.costCurrency }
+      : null,
+  // Days each line was out of stock over the period its lost sales are counted for. Restock's sales period by default;
+  // the Overview passes its own period's.
+  stockoutDaysFor: (line: RestockLine, channelKey: string) => number = (line) => line.stockoutDays
 ) {
   const reorderCost = new Map<string, number>()
   const stockValue = new Map<string, number>()
   const retailValue = new Map<string, number>()
   const lostValue = new Map<string, number>()
+  // Sales expected to be lost before a reorder placed today arrives, at each channel's selling price.
+  const expectedLost = new Map<string, number>()
   const slowValue = new Map<string, number>()
   const cover = new Map<CoverBucket, Map<string, number>>(coverBuckets.map((bucket) => [bucket.key, new Map()]))
   const slow: {
@@ -110,7 +116,10 @@ export function summarizeRestock(
     unitsOnHand = 0,
     uncosted = 0,
     unpriced = 0,
-    reorderUncosted = 0
+    reorderUncosted = 0,
+    expectedLostUnits = 0,
+    expectedLostItems = 0,
+    expectedLostUnpriced = 0
   const byChannel = channels.map((channel) => {
     const value = new Map<string, number>()
     const retail = new Map<string, number>()
@@ -134,12 +143,22 @@ export function summarizeRestock(
         addMoney(reorderCost, line.costCurrency, line.estimatedCostMinor)
       }
       const price = priceFor(line, channel.key)
-      if (line.stockoutDays > 0) {
-        lostDays += line.stockoutDays
+      if (line.lostUnits) {
+        expectedLostUnits += line.lostUnits
+        expectedLostItems++
+        if (price) {
+          addMoney(expectedLost, price.currency, line.lostUnits * price.minor)
+        } else {
+          expectedLostUnpriced++
+        }
+      }
+      const daysOut = stockoutDaysFor(line, channel.key)
+      if (daysOut > 0) {
+        lostDays += daysOut
         itemsOut++
         // Sales it would have made on the days it was out, at the rate it sold while in stock.
         if (line.sold) {
-          const units = (line.stockoutDays * line.sold) / line.rateDays
+          const units = (daysOut * line.sold) / line.rateDays
           lostUnits += units
           if (price) {
             addMoney(lostValue, price.currency, Math.round(units * price.minor))
@@ -254,6 +273,11 @@ export function summarizeRestock(
     lostDays,
     lostUnits: Math.round(lostUnits),
     lostValue: moneyList(lostValue),
+    expectedLost: moneyList(expectedLost),
+    expectedLostUnits,
+    expectedLostItems,
+    // Items expected to run out whose selling price isn't known, so they're missing from `expectedLost`.
+    expectedLostUnpriced,
     itemsOut,
     unitsOnHand,
     stockValue: moneyList(stockValue),
@@ -768,7 +792,6 @@ export async function overview(
     }))
   const shopifyWithoutAmazon = scopedAccounts.find((account) => account.provider === "shopify" && account.withoutAmazon)
   const shopifyAccount = scopedAccounts.find((account) => account.provider === "shopify")
-  const scopedAmazon = scopedAccounts.find((account) => account.provider === "amazon")
   const period = readPeriod(options.period ?? {}, today)
   const window = {
     current: rangeBounds(period.range, timeZone),
@@ -802,8 +825,7 @@ export async function overview(
     costs,
     linkedFreight,
     priceRows,
-    customerRows,
-    marketplaceRows
+    customerRows
   ] = await Promise.all([
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
     salesByDay(orgId, scopedAccounts, earliest, timeZone, currency),
@@ -861,8 +883,7 @@ export async function overview(
     listMonthlyCosts(orgId),
     amazonFreightByOrder(orgId),
     salesByItem(orgId, scopedAccounts, priceWindow, currency),
-    shopifyAccount ? shopifyCustomers(orgId, shopifyAccount, window.current, currency) : Promise.resolve(null),
-    scopedAmazon ? salesByMarketplace(orgId, scopedAmazon, window.current, currency) : Promise.resolve([])
+    shopifyAccount ? shopifyCustomers(orgId, shopifyAccount, window.current, currency) : Promise.resolve(null)
   ])
   // Monthly costs for the whole business count on every view; one for a channel counts when that channel is chosen.
   const monthly: ChargeLine[] = monthlyCostShares(
@@ -928,6 +949,8 @@ export async function overview(
   const priceOf = sellingPrices(priceRows, index)
 
   const scopedChannels = restock.channels.filter((channel) => !restockKey || channel.key === restockKey)
+  // Stockouts over the page's period, so the sales they cost match the other figures.
+  const periodOut = await periodStockouts(orgId, restock, window.current)
   const landedCost = (line: RestockLine) => index.unitCost(index.byVariant.get(line.variantId) ?? null)
   const summary = summarizeRestock(
     scopedChannels,
@@ -940,7 +963,10 @@ export async function overview(
       const row = index.byVariant.get(line.variantId)
       return row?.priceMinor && row.priceCurrency ? { minor: row.priceMinor, currency: row.priceCurrency } : null
     },
-    landedCost
+    landedCost,
+    // Amazon's stock history is by seller SKU, Shopify's by variant.
+    (line, channelKey) =>
+      periodOut.get(channelKey)?.get(channelKey === "amazon" ? (line.sku ?? "") : line.variantId) ?? 0
   )
   // The setup checklist looks at every channel, whichever is chosen.
   const everyChannel = selected ? summarizeRestock(restock.channels, undefined, landedCost) : summary
@@ -1017,13 +1043,9 @@ export async function overview(
       previousDaily: previousSeries,
       currency: salesCurrency,
       profit,
-      fees: {
-        feesMinor: Object.values(fees).reduce((sum, platform) => sum + platform.feesMinor, 0),
-        estimatedOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0)
-      },
+      // Orders whose fees are estimated because the platform hasn't posted them yet.
+      estimatedFeeOrders: Object.values(fees).reduce((sum, platform) => sum + platform.estimatedOrders, 0),
       movers: trending,
-      // Amazon's sales by marketplace, when it sells in more than one.
-      marketplaces: marketplaceRows.length > 1 ? marketplaceRows : [],
       // Shopify customers, when a Shopify channel is shown.
       customers: customerRows && {
         ...customerRows,

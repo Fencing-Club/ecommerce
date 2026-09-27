@@ -67,6 +67,15 @@ export type RestockLine = {
   costCurrency: string | null
   estimatedCostMinor: number | null
   daysRemaining: number | null
+  // The Shopify selling price, and what's expected to be lost while the item is out of stock before a reorder placed
+  // now arrives: stock and incoming units cover `lead time - lostDays` days, and the rest go unsold. Null when the
+  // sales rate or (for money) the price or cost isn't known.
+  priceMinor: number | null
+  priceCurrency: string | null
+  lostDays: number | null
+  lostUnits: number | null
+  lostSalesMinor: number | null
+  lostProfitMinor: number | null
 }
 
 const amazonDestinations = new Set<string>(["fba", "awd_us", "awd_china", "amazon"])
@@ -272,6 +281,18 @@ export function restockPlan(input: {
         )
       const result = recommend(caseQuantity, minimumOrder)
       const need = blocked.length ? null : recommend(null, null).purchaseUnits
+      // Stock and what's already on the way last `covered` days at the sales rate; the rest of the lead time is lost.
+      const perDay = sold !== null && rateDays > 0 ? sold / rateDays : null
+      const covered = perDay && available !== null ? (Math.max(0, available) + (incoming ?? 0)) / perDay : null
+      const lostDays = covered === null ? null : Math.max(0, leadTimeDays - covered)
+      const lostUnits = lostDays === null || perDay === null ? null : Math.round(lostDays * perDay)
+      const priceMinor = row?.priceMinor ?? null
+      const priceCurrency = row?.priceCurrency ?? null
+      const lostSalesMinor = lostUnits !== null && priceMinor !== null ? lostUnits * priceMinor : null
+      const lostProfitMinor =
+        lostSalesMinor !== null && lostUnits !== null && unitCostMinor !== null && row?.costCurrency === priceCurrency
+          ? lostSalesMinor - lostUnits * unitCostMinor
+          : null
       const packOf =
         bundle?.components?.length && channel.kind === "amazon"
           ? bundle.components.reduce((total, component) => total + component.quantity, 0)
@@ -307,7 +328,13 @@ export function restockPlan(input: {
         unitCostMinor,
         costCurrency: row?.costCurrency ?? null,
         estimatedCostMinor: result.estimatedCostMinor,
-        daysRemaining: result.daysRemaining === null ? null : Math.floor(result.daysRemaining)
+        daysRemaining: result.daysRemaining === null ? null : Math.floor(result.daysRemaining),
+        priceMinor,
+        priceCurrency,
+        lostDays: lostDays === null ? null : Math.ceil(lostDays),
+        lostUnits,
+        lostSalesMinor,
+        lostProfitMinor
       }
       if (notStocked) {
         lines.push({ ...line, status: "not_stocked" })

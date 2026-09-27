@@ -293,6 +293,24 @@ export async function restockReport(s: Session, raw: unknown) {
 }
 
 // Restock suggestions for every channel at once, for the Overview: each channel's lines and each source's read.
+// Days each item was out of stock in `period`, by restock channel key: Amazon's by seller SKU, Shopify's by variant.
+// The Overview values the sales these cost over its own period rather than restock's.
+export async function periodStockouts(
+  orgId: string,
+  restock: Awaited<ReturnType<typeof restockAllChannels>>,
+  period: { from: Date; to: Date }
+) {
+  const window = { from: period.from.toISOString(), to: period.to.toISOString() }
+  const sources = restock.saleDays.map((row) => ({ ...row, window }))
+  const entries = await Promise.all(
+    restock.channels.map(
+      async (channel) =>
+        [channel.key, await channelStockouts(orgId, channel.channel, restock.catalog, sources)] as const
+    )
+  )
+  return new Map(entries)
+}
+
 export async function restockAllChannels(orgId: string, days: number, leadTimeDays: number) {
   const inputs = await restockInputs(orgId, days)
   const channels = await Promise.all(
@@ -304,6 +322,8 @@ export async function restockAllChannels(orgId: string, days: number, leadTimeDa
   return {
     channels,
     sources: inputs.demand.sources.map(({ saleDays: _saleDays, ...source }) => source),
+    // The days each item sold, by source, for counting stockout days over another period (see periodStockouts).
+    saleDays: inputs.demand.sources.map(({ source, saleDays }) => ({ source, saleDays })),
     // The Shopify catalog behind the lines: costs, prices and bundle components by variant.
     catalog: inputs.context.rows
   }

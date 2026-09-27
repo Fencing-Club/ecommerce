@@ -7,12 +7,12 @@ import {
   PiggyBank,
   Receipt,
   ShoppingBag,
-  ShoppingCart
+  ShoppingCart,
+  TrendingDown
 } from "lucide-react"
 import Link from "next/link"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   change,
   compactMoney,
@@ -23,6 +23,7 @@ import {
   formatPercent,
   wholeMoney
 } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
 import { SalesTrend, Sparkline } from "./overview-charts"
 import {
@@ -72,13 +73,16 @@ function Kpi({
   icon: Icon,
   value,
   children,
-  trend
+  trend,
+  tone
 }: {
   label: string
   icon: typeof Package
   value: string
   children?: React.ReactNode
   trend?: (number | null)[]
+  // A loss reads in red.
+  tone?: "loss"
 }) {
   return (
     <Card className={styles.kpi}>
@@ -90,7 +94,13 @@ function Kpi({
           </span>
         </div>
         <div className={styles.kpiBody}>
-          <span className={value === unavailable ? styles.kpiUnavailable : styles.kpiValue}>{value}</span>
+          <span
+            className={
+              value === unavailable ? styles.kpiUnavailable : cn(styles.kpiValue, tone === "loss" && styles.kpiLoss)
+            }
+          >
+            {value}
+          </span>
           {trend && value !== unavailable && <Sparkline values={trend} />}
         </div>
         <div className={styles.kpiFoot}>{children}</div>
@@ -114,44 +124,30 @@ function trend(sales: Overview["sales"], pick: (cell: Cell) => number) {
   })
 }
 
-const sourceNames = { shopify: "Shopify", amazon: "Amazon" } as const
-
 // Sales per priced order: orders Amazon hasn't priced yet aren't counted either way. Null without priced orders.
 function orderValue(totals: { orders: number; unpriced: number; revenueMinor: number }) {
   const priced = totals.orders - totals.unpriced
   return priced > 0 ? Math.round(totals.revenueMinor / priced) : null
 }
 
-// Each shown source's average order value over the period.
-function channelOrderValues(sales: Overview["sales"]) {
-  return sales.sources.flatMap((source) => {
-    const totals = { orders: 0, unpriced: 0, revenueMinor: 0 }
-    for (const row of sales.daily) {
-      const cell = row[source]
-      if (cell) {
-        totals.orders += cell.orders
-        totals.unpriced += cell.unpriced
-        totals.revenueMinor += cell.revenueMinor
-      }
-    }
-    const value = orderValue(totals)
-    return value === null ? [] : [{ source, value }]
-  })
-}
-
-function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overview["period"] }) {
+function SalesKpis({
+  sales,
+  period,
+  restock
+}: {
+  sales: Overview["sales"]
+  period: Overview["period"]
+  restock: Overview["restock"]
+}) {
   const { totals } = sales
   const { previous } = totals
   const versus = period.comparison === "previousYear" ? "vs previous year" : "vs previous period"
   const hasSales = trend(sales, (cell) => cell.orders).some((value) => value !== null)
-  const { currency, profit, fees } = sales
+  const { currency, profit } = sales
   // Sales compare the priced orders of both periods; a few orders Amazon hasn't priced yet are noted, not a reason to
   // hide the change.
   const salesComparable = previous !== null
   const notes: string[] = []
-  if (fees.estimatedOrders) {
-    notes.push(`Fees for ${formatNumber(fees.estimatedOrders)} recent orders are estimated`)
-  }
   if (profit.currency && profit.revenueMinor > profit.costedRevenueMinor) {
     notes.push(
       `${compactMoney(profit.revenueMinor - profit.costedRevenueMinor, profit.currency)} of sales without a unit cost left out`
@@ -164,7 +160,13 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
   const quiet = hasSales ? period.label : "Sync orders to see sales"
   const averageOrder = orderValue(totals)
   const previousAverage = previous ? orderValue(previous) : null
-  const byChannel = channelOrderValues(sales)
+  // Sales expected to be lost to stockouts before reorders placed today arrive, at each channel's selling price.
+  let expectedLoss = unavailable
+  if (restock.expectedLostItems === 0) {
+    expectedLoss = formatMoney([], { fallback: currency ?? undefined })
+  } else if (restock.expectedLost.length) {
+    expectedLoss = formatMoney(restock.expectedLost, { compact: true })
+  }
   return (
     <section className={styles.kpis} aria-label={`Sales, ${period.label.toLowerCase()}`}>
       <Kpi
@@ -179,11 +181,6 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
               <Delta current={totals.revenueMinor} previous={previous.revenueMinor} label={versus} />
             ) : (
               <span>{period.label}, before tax and shipping</span>
-            )}
-            {totals.unpriced > 0 && (
-              <span className={styles.kpiNote}>
-                {formatNumber(totals.unpriced)} {totals.unpriced === 1 ? "order isn’t" : "orders aren’t"} priced yet
-              </span>
             )}
           </>
         ) : (
@@ -202,7 +199,7 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
         ) : (
           <>
             <span className={styles.delta[profit.margin >= 0 ? "up" : "down"]}>{formatPercent(profit.margin)}</span>
-            <span>margin after costs, fees, refunds and platform charges</span>
+            <span>{sales.estimatedFeeOrders > 0 ? "margin, some fees estimated" : "margin"}</span>
           </>
         )}
         {notes.map((note) => (
@@ -229,13 +226,6 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
         ) : (
           <span>{currency ? `Sales per order, ${period.label.toLowerCase()}` : quiet}</span>
         )}
-        {currency && byChannel.length > 1 && (
-          <span className={styles.kpiNote}>
-            {byChannel
-              .map(({ source, value }) => `${sourceNames[source]} ${formatMoney([{ minor: value, currency }])}`)
-              .join(", ")}
-          </span>
-        )}
       </Kpi>
       <Kpi
         label="Orders"
@@ -244,6 +234,23 @@ function SalesKpis({ sales, period }: { sales: Overview["sales"]; period: Overvi
         trend={trend(sales, (cell) => cell.orders)}
       >
         {previous ? <Delta current={totals.orders} previous={previous.orders} label={versus} /> : <span>{quiet}</span>}
+      </Kpi>
+      <Kpi
+        label="Stockout losses"
+        icon={TrendingDown}
+        value={expectedLoss}
+        tone={restock.expectedLostItems > 0 ? "loss" : undefined}
+      >
+        <span>
+          {restock.expectedLostItems > 0
+            ? `Expected before reorders placed today arrive, ${formatNumber(restock.expectedLostItems)} ${restock.expectedLostItems === 1 ? "item" : "items"}`
+            : "Nothing runs out before its reorder arrives"}
+        </span>
+        {restock.lostValue.length > 0 && (
+          <span className={styles.kpiNote}>
+            {formatMoney(restock.lostValue, { compact: true })} lost to stockouts in this period
+          </span>
+        )}
       </Kpi>
     </section>
   )
@@ -265,7 +272,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
       {data.setup.some((step) => !step.done) && <SetupChecklist steps={data.setup} />}
       <Attention items={attention} />
 
-      <SalesKpis sales={sales} period={data.period} />
+      <SalesKpis sales={sales} period={data.period} restock={restock} />
 
       <div className={styles.wide}>
         <Card className={styles.fillCard}>
@@ -294,33 +301,6 @@ export function OverviewDashboard({ data }: { data: Overview }) {
                   sources={sales.sources}
                   currency={sales.currency}
                 />
-                {sales.marketplaces.length > 0 && (
-                  <Table>
-                    <caption className="sr-only">Amazon sales by marketplace</caption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Marketplace</TableHead>
-                        <TableHead className="text-right">Orders</TableHead>
-                        <TableHead className="text-right">Units</TableHead>
-                        <TableHead className="text-right">Sales</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sales.marketplaces.map((marketplace) => (
-                        <TableRow key={marketplace.code}>
-                          <TableHead scope="row" className="font-normal">
-                            {marketplace.label}
-                          </TableHead>
-                          <TableCell className="text-right tabular-nums">{formatNumber(marketplace.orders)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatNumber(marketplace.units)}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatMoney([{ minor: marketplace.revenueMinor, currency: marketplace.currency }])}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
                 {sales.otherMarketplaceOrders > 0 && (
                   <p className={styles.note}>
                     Amazon orders that Shopify’s Amazon channel copies into Shopify are counted once, from Amazon.{" "}
@@ -338,7 +318,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
             )}
           </CardContent>
         </Card>
-        <ProfitBreakdown sales={sales} period={data.period} />
+        <ProfitBreakdown sales={sales} />
       </div>
 
       <div className={styles.halves}>
@@ -378,7 +358,7 @@ export function OverviewSkeleton() {
     <div className={styles.page} aria-busy="true" aria-label="Loading overview">
       <Skeleton className={styles.skeleton.attention} />
       <div className={styles.kpis}>
-        {[0, 1, 2, 3].map((index) => (
+        {[0, 1, 2, 3, 4, 5].map((index) => (
           <Skeleton key={index} className={styles.skeleton.kpi} />
         ))}
       </div>

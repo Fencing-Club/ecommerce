@@ -26,6 +26,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
 import type { AttentionItem, Overview, SetupStep } from "@/server/overview"
 import { CoverChart, SpendChart } from "./overview-charts"
@@ -301,29 +302,6 @@ export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]
             href: bucket.items ? restockHref({ channel: channel ?? bucket.channel, cover: bucket.key }) : null
           }))}
         />
-        {restock.lostDays > 0 && (
-          <div className={styles.callout}>
-            <Hourglass aria-hidden />
-            <p>
-              {restock.lostUnits > 0 ? (
-                <>
-                  <strong>
-                    About {plural(restock.lostUnits, "unit", "units")}
-                    {restock.lostValue.length > 0 && ` (${formatMoney(restock.lostValue, { compact: true })})`}
-                  </strong>{" "}
-                  of sales were lost to stockouts in the last {period}:{" "}
-                  {plural(restock.itemsOut, "item was", "items were")} out of stock for{" "}
-                  {plural(restock.lostDays, "day", "days")} in all.
-                </>
-              ) : (
-                <>
-                  {plural(restock.itemsOut, "item was", "items were")} out of stock for{" "}
-                  {plural(restock.lostDays, "day", "days")} in all in the last {period}.
-                </>
-              )}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   )
@@ -759,19 +737,38 @@ export function Purchasing({ purchasing }: { purchasing: Overview["purchasing"] 
 }
 
 // Gross profit line by line: sales with a unit cost, then everything taken off them over the period.
-export function ProfitBreakdown({ sales, period }: { sales: Overview["sales"]; period: Overview["period"] }) {
+// Deductions from sales, grouped so the card reads at a glance; each group's parts show on hover.
+const profitGroups: { label: string; keys: (key: string) => boolean }[] = [
+  { label: "Refunds and disputes", keys: (key) => key === "amazon-refunds" || key === "shopify-disputes" },
+  {
+    label: "Shipping and freight",
+    keys: (key) => key === "amazon-freight" || key === "shopify-labels" || key === "shopify-duties"
+  },
+  { label: "Advertising", keys: (key) => key === "amazon-ads" },
+  { label: "Monthly costs", keys: (key) => key.startsWith("monthly:") }
+]
+
+export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
   const { profit } = sales
   const currency = profit.currency
   const format = (minor: number) => formatMoney([{ minor, currency: currency! }])
   const share = (minor: number) =>
     profit.costedRevenueMinor > 0 ? `${Math.round((Math.abs(minor) / profit.costedRevenueMinor) * 100)}%` : ""
-  const lines = currency
-    ? [
-        { key: "cost", label: "Cost of goods", minor: -profit.costMinor },
-        { key: "fees", label: "Order fees (Amazon and Shopify Payments)", minor: -profit.feesMinor },
-        ...profit.charges.toSorted((a, b) => a.minor - b.minor)
-      ]
-    : []
+  const parts = [{ key: "fees", label: "Order fees", minor: -profit.feesMinor }, ...profit.charges]
+  const grouped = profitGroups.map((group) => ({
+    label: group.label,
+    parts: parts.filter((part) => group.keys(part.key))
+  }))
+  // Fees: order fees and every other platform charge.
+  const fees = parts.filter((part) => !profitGroups.some((group) => group.keys(part.key)))
+  const lines = [
+    { label: "Cost of goods", parts: [{ key: "cost", label: "Cost of goods", minor: -profit.costMinor }] },
+    { label: "Fees", parts: fees },
+    ...grouped
+  ]
+    .map((line) => ({ ...line, minor: line.parts.reduce((sum, part) => sum + part.minor, 0) }))
+    .filter((line) => line.minor !== 0)
+    .toSorted((a, b) => a.minor - b.minor)
   return (
     <Card>
       <CardHeader>
@@ -779,42 +776,56 @@ export function ProfitBreakdown({ sales, period }: { sales: Overview["sales"]; p
           <Wallet aria-hidden />
           Gross profit
         </CardTitle>
-        <CardDescription>{period.rangeLabel}, from sales with a unit cost to what’s left.</CardDescription>
+        <CardAction>
+          <CardLink href="/settings">Monthly costs</CardLink>
+        </CardAction>
       </CardHeader>
       <CardContent className={styles.stack}>
         {currency && profit.costedRevenueMinor > 0 ? (
-          <>
-            <div className={styles.stages}>
-              <div className={styles.stage}>
-                <span className={styles.stepTitle}>Sales</span>
-                <span className={styles.stageCount}>{format(profit.costedRevenueMinor)}</span>
-              </div>
-              {lines.map((line) => (
-                <div key={line.key} className={styles.stage}>
+          <div className={styles.stages}>
+            <div className={styles.stage}>
+              <span className={styles.stepTitle}>Sales</span>
+              <span className={styles.stageCount}>{format(profit.costedRevenueMinor)}</span>
+            </div>
+            {lines.map((line) => (
+              <div key={line.label} className={styles.stage}>
+                <span className="flex items-center gap-1.5">
                   <span className={styles.stageName}>{line.label}</span>
-                  <span className={styles.profitLine}>
-                    <span className={styles.note}>{share(line.minor)}</span>
-                    <span className={styles.stageCount}>{format(line.minor)}</span>
-                  </span>
-                </div>
-              ))}
-              <div className={styles.stage}>
-                <span className={styles.stepTitle}>Gross profit</span>
+                  {line.parts.length > 1 && (
+                    <Tooltip>
+                      <TooltipTrigger
+                        aria-label={`What’s in ${line.label.toLowerCase()}`}
+                        className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                      >
+                        <Info className="size-3.5" aria-hidden />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="start">
+                        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5">
+                          {line.parts.map((part) => (
+                            <div key={part.key} className="col-span-2 grid grid-cols-subgrid">
+                              <dt>{part.label.replace(/, monthly cost$/, "")}</dt>
+                              <dd className="text-right tabular-nums">{format(part.minor)}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </span>
                 <span className={styles.profitLine}>
-                  {profit.margin !== null && <span className={styles.note}>{formatPercentShort(profit.margin)}</span>}
-                  <span className={styles.stageCount}>{format(profit.profitMinor)}</span>
+                  <span className={styles.note}>{share(line.minor)}</span>
+                  <span className={styles.stageCount}>{format(line.minor)}</span>
                 </span>
               </div>
+            ))}
+            <div className={styles.stage}>
+              <span className={styles.stepTitle}>Gross profit</span>
+              <span className={styles.profitLine}>
+                {profit.margin !== null && <span className={styles.note}>{formatPercentShort(profit.margin)}</span>}
+                <span className={styles.stageCount}>{format(profit.profitMinor)}</span>
+              </span>
             </div>
-            <p className={styles.note}>
-              Refunds and platform charges are counted when they’re posted. Amazon’s inbound freight is shared by the
-              units of each shipment it paid for. Apps, your plan and other costs billed to a card come from your{" "}
-              <Link href="/settings">monthly costs</Link>. Shipping labels bought on your Shopify bill aren’t included,
-              because Shopify doesn’t share them unless the bill is paid from Shopify Payments payouts.
-              {profit.revenueMinor > profit.costedRevenueMinor &&
-                ` ${format(profit.revenueMinor - profit.costedRevenueMinor)} of sales without a unit cost aren’t included.`}
-            </p>
-          </>
+          </div>
         ) : (
           <p className={styles.note}>Gross profit appears once orders have prices and products have unit costs.</p>
         )}
