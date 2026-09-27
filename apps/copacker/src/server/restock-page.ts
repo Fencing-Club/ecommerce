@@ -79,8 +79,7 @@ export async function supplierLookup(
   const list: RestockSupplier[] = links.map((link) => ({
     id: link.id,
     name: link.name,
-    leadTimeDays: link.leadTimeDays,
-    amazonLeadTimeDays: link.amazonLeadTimeDays
+    leadTimeDays: link.leadTimeDays
   }))
   const byId = new Map(list.map((supplier) => [supplier.id, supplier]))
   const byVariant = new Map<string, RestockSupplier>()

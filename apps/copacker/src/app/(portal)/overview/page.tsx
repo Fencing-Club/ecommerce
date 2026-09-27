@@ -7,11 +7,13 @@ import { OverviewDashboard, OverviewSkeleton } from "@/components/overview"
 import { ChannelFilter } from "@/components/overview-filter"
 import { SetupChecklist } from "@/components/overview-sections"
 import { PeriodPicker } from "@/components/period-picker"
+import { SupplierOverview } from "@/components/supplier/overview"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { type Session, session } from "@/server/auth"
 import { overview } from "@/server/overview"
 import { storeTimeZone } from "@/server/store-time-zone"
+import { supplierOverview } from "@/server/supplier-workspace"
 import * as styles from "@/components/overview.css"
 
 export const metadata: Metadata = { title: "Overview" }
@@ -55,6 +57,14 @@ async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) 
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
   const s = await session()
+  if (s.org.kind === "supplier") {
+    return (
+      <>
+        <PageHeader title="Overview" />
+        <SupplierOverview data={await supplierOverview(s.org.id)} />
+      </>
+    )
+  }
   if (s.org.kind !== "buyer") {
     redirect("/orders")
   }

@@ -13,6 +13,7 @@ import { LandedCostForm } from "@/components/landed-costs"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
 import { PoTimeline } from "@/components/po-timeline"
 import { RoutePill } from "@/components/route-pill"
+import { ProposalPanel } from "@/components/supplier/proposal-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,7 @@ import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
+import { proposalChanges, proposalState } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
 import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
@@ -45,7 +47,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision))
   ])
-  const workflow = await orderWorkflow(s, id)
+  const [workflow, proposals] = await Promise.all([orderWorkflow(s, id), proposalState(id)])
+  // The supplier's latest changes: pending for both sides, or declined for the supplier to see why.
+  const proposal =
+    proposals.latest &&
+    (proposals.latest.status === "pending" || (proposals.latest.status === "declined" && s.org.kind === "supplier"))
+      ? proposals.latest
+      : null
   const remainingFor = (itemId: string) => workflow.items.find((row) => row.itemId === itemId)?.remainingPieces
   const editable = workflow.shipments.some((row) => row.editable)
   const remaining = workflow.items.some((item) => item.remainingPieces > 0)
@@ -140,7 +148,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current={order.data.reference} />
+      <PageBreadcrumb
+        parents={[{ label: s.org.kind === "supplier" ? "Orders" : "Purchase orders", href: "/orders" }]}
+        current={order.data.reference}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold tracking-tight">{order.data.reference}</h1>
@@ -152,6 +163,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
             </ActionButton>
           )}
+          {s.org.kind === "supplier" &&
+            order.status === "submitted" &&
+            proposals.changeable &&
+            proposal?.status !== "pending" && (
+              <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
+                Edit order
+              </Button>
+            )}
           {order.status === "submitted" && (editable || remaining) && (
             <ActionButton action="shipment.create" data={{ id }}>
               {editable ? "Continue packing" : "Prepare next shipment"}
@@ -178,6 +197,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             Email them the PO yourself, then enter their cartons and invoice on the shipment.
           </AlertDescription>
         </Alert>
+      )}
+
+      {proposal && (proposal.status === "pending" || proposal.status === "declined") && (
+        <ProposalPanel
+          proposal={{ id: proposal.id, status: proposal.status, note: proposal.data.note, reason: proposal.reason }}
+          changes={proposalChanges(order.data, proposal.data)}
+          currency={order.data.currency}
+          viewer={s.org.kind === "buyer" ? "buyer" : "supplier"}
+          supplierName={supplier.name}
+          orderId={id}
+        />
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -384,6 +414,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               <dl className="flex flex-col gap-3">
                 {order.data.dueDate && <Detail label="Required by" value={order.data.dueDate} />}
                 <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
+                {order.data.readyDate && <Detail label="Ready" value={order.data.readyDate} />}
                 <Detail label="Currency" value={currency} />
                 <Detail label="Note to supplier" value={order.data.notes || "None"} />
               </dl>

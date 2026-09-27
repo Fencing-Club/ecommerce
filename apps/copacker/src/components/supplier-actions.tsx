@@ -48,7 +48,6 @@ const supplierSchema = z.object({
   // Shown, not edited: it comes from Shopify's Supplier field.
   shopifySupplierName: z.string(),
   leadTimeDays: z.number().int().min(1).max(730).optional(),
-  amazonLeadTimeDays: z.number().int().min(1).max(730).optional(),
   contactName: z.string().trim().max(120),
   contactEmail: z.union([z.email({ error: "Enter a valid email" }).max(254), z.literal("")]),
   phoneNumber: z.string().trim().max(50),
@@ -69,7 +68,6 @@ export function EditSupplier({
   shopifySupplierName,
   leadTimeDays,
   defaultLeadTimeDays,
-  amazonLeadTimeDays,
   contact,
   joined
 }: {
@@ -79,7 +77,6 @@ export function EditSupplier({
   leadTimeDays: number | null
   // The workspace lead time an empty field falls back to.
   defaultLeadTimeDays: number
-  amazonLeadTimeDays: number | null
   contact: SupplierContact
   // A supplier that joined keeps its own contact details.
   joined: boolean
@@ -93,7 +90,6 @@ export function EditSupplier({
       name,
       shopifySupplierName: shopifySupplierName ?? "",
       leadTimeDays: leadTimeDays ?? undefined,
-      amazonLeadTimeDays: amazonLeadTimeDays ?? undefined,
       contactName: contact.contactName ?? "",
       contactEmail: contact.contactEmail ?? "",
       phoneNumber: contact.phoneNumber ?? "",
@@ -108,7 +104,6 @@ export function EditSupplier({
           id,
           name: values.name,
           leadTimeDays: values.leadTimeDays ?? null,
-          amazonLeadTimeDays: values.amazonLeadTimeDays ?? null,
           ...(!joined && {
             contactName: values.contactName,
             contactEmail: values.contactEmail,
@@ -157,16 +152,8 @@ export function EditSupplier({
             />
             <FormNumber
               name="leadTimeDays"
-              label="To your locations (days)"
+              label="Lead time (days)"
               description={`From PO to sellable stock. Empty means ${defaultLeadTimeDays}.`}
-              min={1}
-              max={730}
-              step={1}
-            />
-            <FormNumber
-              name="amazonLeadTimeDays"
-              label="To Amazon (days)"
-              description="Includes Amazon’s receiving time."
               min={1}
               max={730}
               step={1}

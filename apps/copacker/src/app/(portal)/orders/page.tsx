@@ -4,19 +4,32 @@ import { Plus } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status, formatDestination } from "@/components/common"
+import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
 import { forwarderOrders, visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
+import { supplierOrders } from "@/server/supplier-workspace"
 import { rowLink } from "../portal.css"
 import { sx } from "@/styles/sprinkles.css"
 
-export const metadata: Metadata = { title: "Purchase orders" }
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await session()).org.kind === "supplier" ? "Orders" : "Purchase orders" }
+}
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const s = await session()
+  if (s.org.kind === "supplier") {
+    const [orders, { tab }] = await Promise.all([supplierOrders(s.org.id), searchParams])
+    return (
+      <>
+        <PageHeader title="Orders" />
+        <SupplierOrderIndex orders={orders} initialTab={tab} />
+      </>
+    )
+  }
   // A forwarder sees the POs whose goods pass through it, without their prices.
   const rows = (s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)).reverse()
   const showValue = s.org.kind !== "forwarder"

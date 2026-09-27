@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { supplierProducts, suppliers } from "@/db/schema"
+import { suppliers } from "@/db/schema"
 import { requireBuyer, session } from "@/server/auth"
+import { customerProducts } from "@/server/catalogs"
 import { appUrl } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
@@ -23,26 +24,15 @@ export async function POST(request: Request) {
     requireBuyer(s)
     const input = inputSchema.parse(await request.json())
     const [supplier] = await db()
-      .select({ supplierOrgId: suppliers.supplierOrgId })
+      .select({ supplierOrgId: suppliers.supplierOrgId, catalogId: suppliers.catalogId })
       .from(suppliers)
       .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     if (!supplier) {
       return Response.json({ error: "Supplier is not linked to this workspace" }, { status: 404 })
     }
     const skus = [...new Set(input.supplierSkus.filter(Boolean))]
-    const catalog =
-      supplier.supplierOrgId && skus.length
-        ? await db()
-            .select()
-            .from(supplierProducts)
-            .where(
-              and(
-                eq(supplierProducts.supplierOrgId, supplier.supplierOrgId),
-                inArray(supplierProducts.supplierSku, skus)
-              )
-            )
-        : []
-    const products = catalog.map((product) => ({ ...product, active: product.active === 1 }))
+    // Only what the supplier offers this buyer, at its catalog prices.
+    const products = await customerProducts(db(), supplier, skus)
     const { supplierOrgId } = supplier
     const available = supplierOrgId
       ? await db().transaction((tx) => availableStock(tx, supplierOrgId, skus))

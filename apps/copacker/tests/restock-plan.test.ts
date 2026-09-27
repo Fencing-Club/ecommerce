@@ -96,7 +96,7 @@ const base = {
   productDefaults: new Map(),
   supplierFor: () => null
 }
-const supplier = { id: "00000000-0000-4000-8000-000000000001", name: "Maker", leadTimeDays: 42, amazonLeadTimeDays: 28 }
+const supplier = { id: "00000000-0000-4000-8000-000000000001", name: "Maker", leadTimeDays: 42 }
 const shopify = { kind: "shopify" as const, locationId: "gid://shopify/Location/1" }
 const amazon = { kind: "amazon" as const }
 
@@ -186,16 +186,15 @@ describe("restock plan", () => {
   it("leaves out listings Amazon holds no stock of and has no target for, even with FBM sales", () => {
     expect(restockPlan({ ...base, channel: amazon, fbaRows: [], awdRows: [] })).toEqual([])
   })
-  it("uses the supplier's lead time for the channel", () => {
+  it("uses the supplier's one lead time for every channel", () => {
     const withSupplier = { ...base, supplierFor: () => supplier }
     expect(restockPlan({ ...withSupplier, channel: amazon })[0]).toMatchObject({
       supplier: { id: supplier.id, name: "Maker" },
-      leadTimeDays: 28,
-      purchaseUnits: 486
+      leadTimeDays: 42
     })
     expect(restockPlan({ ...withSupplier, channel: shopify })[0]).toMatchObject({ leadTimeDays: 42 })
-    expect(supplierLeadTime({ ...supplier, amazonLeadTimeDays: null }, amazon, 56)).toBe(42)
-    expect(supplierLeadTime(null, amazon, 56)).toBe(56)
+    expect(supplierLeadTime({ ...supplier, leadTimeDays: null }, 56)).toBe(56)
+    expect(supplierLeadTime(null, 56)).toBe(56)
   })
   it("can't calculate a line whose sales have an attribution gap", () => {
     const [line] = restockPlan({

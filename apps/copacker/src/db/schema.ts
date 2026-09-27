@@ -25,7 +25,9 @@ import {
   boolean
 } from "drizzle-orm/pg-core"
 import type { CasePack } from "../lib/case-packs"
+import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../lib/catalog-pricing"
 import { contactKinds } from "../lib/contacts"
+import type { ProductImage } from "../lib/supplier-product"
 import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
@@ -77,7 +79,6 @@ export const suppliers = pgTable(
     // Days from ordering to stock arriving at the buyer's own locations, and at Amazon. Restock orders enough to last
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
-    amazonLeadTimeDays: integer(),
     // Unused: payment terms are set on each PO, which starts due immediately. To drop in a later migration.
     paymentTerms: text().notNull().default("Due immediately"),
     // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
@@ -88,6 +89,9 @@ export const suppliers = pgTable(
     contactName: text(),
     contactEmail: text(),
     phoneNumber: text(),
+    // The catalog the supplier gave this customer: the products it can order and their prices. Without an active one,
+    // it orders from every active product at its own price.
+    catalogId: uuid().references(() => catalogs.id, { onDelete: "set null" }),
     createdAt: createdAt()
   },
   // One buyer may work with several supplier workspaces owned by the same email.
@@ -125,6 +129,34 @@ export const supplierProfiles = pgTable("supplier_profiles", {
   contactEmail: text(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
+// A product a supplier sells, like a Shopify product: its name, photos, and the options its variants differ by. Its
+// variants are the supplier_products rows, one per SKU, which hold the price and stock POs order from.
+export const supplierProductGroups = pgTable(
+  "supplier_product_groups",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    supplierOrgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    title: text().notNull(),
+    // Where the supplier files it, such as "Epee", its own product code, and its page in the supplier's store.
+    category: text(),
+    productCode: text(),
+    url: text(),
+    // What a buyer should know about it, such as add-ons like a name on the pocket.
+    description: text(),
+    // The options its variants differ by, in order, such as Hand and Blade Size. Empty for a single variant.
+    optionNames: text().array().notNull().default([]),
+    // Photos in document storage, the first being the main one.
+    images: jsonb().$type<ProductImage[]>().notNull().default([]),
+    revision: integer().notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [index("supplier_product_group_org").on(t.supplierOrgId)]
+)
+// One variant of a supplier's product: a SKU with its price and stock. Its title is its full name, the product's title
+// followed by its option values.
 export const supplierProducts = pgTable(
   "supplier_products",
   {
@@ -132,6 +164,12 @@ export const supplierProducts = pgTable(
     supplierOrgId: uuid()
       .notNull()
       .references(() => organizations.id),
+    groupId: uuid()
+      .notNull()
+      .references(() => supplierProductGroups.id),
+    // Its value for each of the product's options, such as { Hand: "Left" }, and its place in the product's list.
+    options: jsonb().$type<Record<string, string>>().notNull().default({}),
+    position: integer().notNull().default(0),
     supplierSku: text().notNull(),
     title: text().notNull(),
     active: integer().notNull().default(1),
@@ -148,10 +186,57 @@ export const supplierProducts = pgTable(
     trackInventory: boolean().notNull().default(false),
     onHand: integer().notNull().default(0),
     continueSelling: boolean().notNull().default(false),
+    // Lower unit prices for bigger orders, and how much a PO can order, in the price basis (see catalog-pricing).
+    priceBreaks: jsonb().$type<PriceBreak[]>().notNull().default([]),
+    quantityRules: jsonb().$type<QuantityRules>().notNull().default(defaultQuantityRules),
     createdAt: createdAt(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
-  (t) => [uniqueIndex("supplier_product_sku").on(t.supplierOrgId, t.supplierSku)]
+  (t) => [
+    uniqueIndex("supplier_product_sku").on(t.supplierOrgId, t.supplierSku),
+    index("supplier_product_group").on(t.groupId)
+  ]
+)
+// A supplier's price list for some of its customers, like a Shopify catalog: which products they can order, and at
+// what prices. Only an active catalog applies.
+export const catalogs = pgTable(
+  "catalogs",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    supplierOrgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    title: text().notNull(),
+    status: text({ enum: ["active", "draft", "archived"] })
+      .notNull()
+      .default("active"),
+    // Moves every price in the catalog that isn't fixed, in hundredths of a percent: -1000 is 10% off.
+    adjustmentBasisPoints: integer().notNull().default(0),
+    // Products the supplier adds later join the catalog.
+    includeNewProducts: boolean().notNull().default(true),
+    revision: integer().notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (t) => [uniqueIndex("catalog_supplier_title").on(t.supplierOrgId, t.title)]
+)
+// The products in a catalog. A row is a product the catalog includes, with anything the catalog sets differently.
+export const catalogProducts = pgTable(
+  "catalog_products",
+  {
+    catalogId: uuid()
+      .notNull()
+      .references(() => catalogs.id, { onDelete: "cascade" }),
+    productId: uuid()
+      .notNull()
+      .references(() => supplierProducts.id, { onDelete: "cascade" }),
+    // A fixed price in the product's currency and price basis, instead of the adjusted one.
+    priceMinor: integer(),
+    // Volume pricing and quantity rules for this catalog; null uses the product's.
+    priceBreaks: jsonb().$type<PriceBreak[]>(),
+    quantityRules: jsonb().$type<QuantityRules>()
+  },
+  (t) => [primaryKey({ columns: [t.catalogId, t.productId] }), index("catalog_product_product").on(t.productId)]
 )
 export const supplierCatalogImports = pgTable("supplier_catalog_imports", {
   id: uuid().defaultRandom().primaryKey(),
@@ -266,6 +351,45 @@ export type ShipmentState =
   | "correction"
   | "needs_attention"
   | "cancelled"
+// Changes a supplier proposes to a sent PO: quantities, prices, added and removed products, payment terms and when the
+// goods are ready. The buyer approves them into the PO's next revision, which comes with the supplier's commercial
+// invoice, or declines them. One can be pending at a time.
+export type ProposalLine = {
+  // The PO line it changes; none for a product the supplier adds.
+  itemId?: string
+  supplierSku: string
+  title: string
+  pieces: number
+  unitPrice: number
+}
+export type Proposal = {
+  lines: ProposalLine[]
+  paymentTerms: string
+  readyDate: string | null
+  note: string
+}
+export const orderProposals = pgTable(
+  "order_proposals",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id),
+    // The PO revision the changes were made against. The PO changing since makes them stale.
+    baseRevision: integer().notNull(),
+    status: text({ enum: ["pending", "approved", "declined", "withdrawn"] })
+      .notNull()
+      .default("pending"),
+    data: jsonb().$type<Proposal>().notNull(),
+    proposedBy: text().notNull(),
+    decidedBy: text(),
+    decidedAt: timestamp({ withTimezone: true }),
+    // Why the buyer declined, for the supplier.
+    reason: text(),
+    createdAt: createdAt()
+  },
+  (t) => [index("order_proposal_order").on(t.orderId)]
+)
 export const shipments = pgTable(
   "shipments",
   {

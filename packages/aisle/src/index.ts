@@ -158,6 +158,8 @@ export const orderInputSchema = z
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
     // When the goods were needed by. No longer asked for; older POs keep theirs.
     dueDate: z.iso.date().optional(),
+    // When the supplier expects the goods ready to ship, which it sets once it has the PO.
+    readyDate: z.iso.date().optional(),
     // How and when the supplier is paid, such as "Net 30" or "30% deposit, 70% before shipment".
     paymentTerms: z.string().trim().max(200).default(""),
     notes: z.string().max(8000).default(""),

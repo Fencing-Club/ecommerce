@@ -684,7 +684,7 @@ async function restockFingerprint(orgId: string) {
     (select max(${productDefaults.updatedAt})::text || count(*) from ${productDefaults}
       where ${productDefaults.orgId} = ${orgId}),
     (select string_agg(${suppliers.id}::text || coalesce(${suppliers.leadTimeDays}, -1)
-      || coalesce(${suppliers.amazonLeadTimeDays}, -1) || coalesce(${suppliers.removedAt}::text, ''), ','
+      || coalesce(${suppliers.removedAt}::text, ''), ','
       order by ${suppliers.id}) from ${suppliers} where ${suppliers.buyerOrgId} = ${orgId}),
     (select sum(${inventoryLocationMappings.revision})::text || count(*) from ${inventoryLocationMappings}
       where ${inventoryLocationMappings.orgId} = ${orgId}),

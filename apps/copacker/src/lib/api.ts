@@ -18,7 +18,6 @@ export type SupplierOption = {
   id: string
   name: string
   leadTimeDays: number | null
-  amazonLeadTimeDays: number | null
 }
 
 // Server-rendered pages refresh with router.refresh(). Data cached here is tagged, so a change made anywhere re-renders
