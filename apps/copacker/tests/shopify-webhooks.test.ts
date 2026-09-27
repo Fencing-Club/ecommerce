@@ -100,8 +100,43 @@ describe("Shopify events", () => {
     expect(await queued("shopify-event")).toHaveLength(4)
   })
 
+  it("refreshes stock for any change to products, variants, inventory items, stock levels or locations", async () => {
+    const topics = [
+      "products/update",
+      "products/delete",
+      "inventory_items/update",
+      "inventory_levels/connect",
+      "inventory_levels/disconnect",
+      "locations/deactivate"
+    ]
+    for (const topic of topics) {
+      expect(await receiveShopifyEvent(event(topic))).toBe(true)
+    }
+    expect(await queued("shopify-event")).toMatchObject([{ payload: { orgId: buyerId, shop, target: "stock" } }])
+  })
+
+  it("syncs orders for refunds, edits and payments", async () => {
+    for (const topic of ["refunds/create", "orders/edited", "order_transactions/create"]) {
+      expect(await receiveShopifyEvent(event(topic))).toBe(true)
+    }
+    expect(await queued("shopify-event")).toMatchObject([{ payload: { target: "sales" } }])
+  })
+
+  it("handles every topic it subscribes to", async () => {
+    const unhandled = []
+    for (const topic of shopifyWebhookTopics) {
+      await pg.exec("TRUNCATE jobs")
+      const name = topic.toLowerCase().replace(/_(?=[a-z]+$)/, "/")
+      await receiveShopifyEvent(event(name))
+      if ((await queued("shopify-event")).length !== 1) {
+        unhandled.push(name)
+      }
+    }
+    expect(unhandled).toEqual([])
+  })
+
   it("acknowledges topics and stores it doesn't handle without queueing work", async () => {
-    expect(await receiveShopifyEvent(event("products/update"))).toBe(true)
+    expect(await receiveShopifyEvent(event("collections/update"))).toBe(true)
     await pg.exec("TRUNCATE connections")
     expect(await receiveShopifyEvent(event("orders/create"))).toBe(true)
     expect(await database.select().from(tables.jobs)).toEqual([])
@@ -173,9 +208,15 @@ describe("Shopify webhook subscriptions", () => {
   it("subscribes the connected store at the EventBridge source", async () => {
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", source)
     await shopifySubscribeJob({ orgId: buyerId }, owned)
-    expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, shopifyWebhookTopics]])
+    // Without read_fulfillments, Shopify would refuse the shipment topics.
+    const withoutShipments = shopifyWebhookTopics.filter((topic) => !topic.startsWith("FULFILLMENTS_"))
+    expect(withoutShipments).toHaveLength(shopifyWebhookTopics.length - 2)
+    expect(shopify.subscribeWebhooks.mock.calls).toEqual([[source, withoutShipments]])
     await shopifySubscribeJob({ orgId: otherBuyerId }, owned)
     expect(shopify.subscribeWebhooks).toHaveBeenCalledTimes(1)
+    await pg.exec("UPDATE connections SET scopes = 'read_orders,read_fulfillments'")
+    await shopifySubscribeJob({ orgId: buyerId }, owned)
+    expect(shopify.subscribeWebhooks).toHaveBeenLastCalledWith(source, shopifyWebhookTopics)
     vi.stubEnv("SHOPIFY_EVENTBRIDGE_SOURCE_ARN", "arn:aws:sqs:us-east-1:1:not-a-source")
     await expect(shopifySubscribeJob({ orgId: buyerId }, owned)).rejects.toThrow("Invalid string")
   })

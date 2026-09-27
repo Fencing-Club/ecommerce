@@ -226,7 +226,7 @@ export function ProductDetails({
               <FormSelect
                 name="supplierId"
                 label="Supplier"
-                description="Restock groups this product under this supplier and uses their lead time."
+                description="Saved to the product’s Supplier field in Shopify. Restock groups this product under this supplier and uses their lead time."
                 placeholder="Not set"
                 options={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))}
               />

@@ -33,6 +33,15 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
 export const supplierUpdateSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().trim().min(1).max(120),
+  // As it appears in Shopify's product Supplier field; empty when it isn't used there.
+  shopifySupplierName: z
+    .string()
+    .trim()
+    .max(255)
+    .nullable()
+    .optional()
+    // Left out keeps the saved name; empty clears it.
+    .transform((value) => (value === undefined ? undefined : value || null)),
   leadTimeDays: z.number().int().min(1).max(730).nullable(),
   amazonLeadTimeDays: z.number().int().min(1).max(730).nullable()
 })
@@ -49,7 +58,12 @@ export async function updateSupplier(buyerOrgId: string, raw: unknown) {
   }
   const updated = await db()
     .update(suppliers)
-    .set({ name: input.name, leadTimeDays: input.leadTimeDays, amazonLeadTimeDays: input.amazonLeadTimeDays })
+    .set({
+      name: input.name,
+      leadTimeDays: input.leadTimeDays,
+      amazonLeadTimeDays: input.amazonLeadTimeDays,
+      ...(input.shopifySupplierName !== undefined && { shopifySupplierName: input.shopifySupplierName })
+    })
     .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
     .returning({ id: suppliers.id })
   if (!updated.length) {

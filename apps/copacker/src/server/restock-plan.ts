@@ -38,6 +38,8 @@ export type RestockLine = {
   // Pieces in one sellable unit when the variation is a multipack bundle.
   packOf: number | null
   supplier: { id: string; name: string } | null
+  // Shopify's Supplier when it isn't a Copacker supplier: the product is ordered outside Copacker, so it gets no PO.
+  externalSupplier: string | null
   status: RestockStatus
   blocked: BlockReason[]
   // Units sold in the sales period; on Shopify, split into sold alone and sold inside bundles.
@@ -52,6 +54,8 @@ export type RestockLine = {
   available: number | null
   incoming: number | null
   targetStock: number | null
+  // Where the target stock is kept: "Amazon", or the Shopify location's name.
+  targetWhere: string | null
   minimumOrder: number | null
   caseQuantity: number | null
   casePack: CasePack | null
@@ -113,6 +117,8 @@ export function restockPlan(input: {
   productDefaults: ReadonlyMap<string, Pick<ProductDefaults, "casePacks" | "minimumOrder">>
   // The supplier each variation was last ordered from.
   supplierFor: (variantId: string) => RestockSupplier | null
+  // The Shopify supplier of a variation ordered outside Copacker.
+  externalSupplierFor?: (variantId: string) => string | null
   // Days of the sales period the variation was out of stock in this channel, when known.
   stockoutsFor?: (variantId: string, sku: string | null) => number
 }): RestockLine[] {
@@ -168,6 +174,7 @@ export function restockPlan(input: {
       let incoming: number | null
       let sold: number | null = null
       let targetStock: number | null = null
+      let targetWhere: string | null = null
       let notStocked = false
       let noListing = false
       if (channel.kind === "shopify") {
@@ -181,6 +188,9 @@ export function restockPlan(input: {
         }
         available = level.available
         incoming = level.incoming === null ? null : Math.max(0, level.incoming) + pendingUnits
+        // Shopify's Fencing Club stock target: the least to keep at the store's own location.
+        targetStock = row?.storeStockTarget ?? null
+        targetWhere = level.locationName
         if (sales && !unidentifiedGap && !sales.gaps.some((gap) => gap.variantId === variant.variantId)) {
           sold = shopifyRows
             .filter((demand) => demand.variantId === variant.variantId)
@@ -203,6 +213,7 @@ export function restockPlan(input: {
         notStocked = amazonTarget === 0
         noListing = !fba && !awd
         targetStock = amazonTarget
+        targetWhere = "Amazon"
         if (skuCount.get(sku) !== 1 || (fba?.length ?? 0) > 1 || (awd?.length ?? 0) > 1) {
           blocked.push("sku_ambiguous")
         }
@@ -274,6 +285,7 @@ export function restockPlan(input: {
         imageUrl: variant.imageUrl ?? product.imageUrl,
         packOf,
         supplier: supplier ? { id: supplier.id, name: supplier.name } : null,
+        externalSupplier: supplier ? null : (input.externalSupplierFor?.(variant.variantId) ?? null),
         blocked: notStocked ? [] : blocked,
         sold,
         soldAlone: channel.kind === "shopify" ? (split.get(variant.variantId)?.soldAlone ?? 0) : null,
@@ -285,6 +297,7 @@ export function restockPlan(input: {
         available,
         incoming,
         targetStock,
+        targetWhere,
         minimumOrder,
         caseQuantity,
         casePack,

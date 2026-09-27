@@ -219,6 +219,26 @@ describe("restock plan", () => {
       rateDays: 7
     })
   })
+  it("keeps Shopify's store stock target at the store's location", () => {
+    const [line] = restockPlan({
+      ...base,
+      channel: shopify,
+      catalog: catalog.map((row) => ({ ...row, storeStockTarget: 20 }))
+    })
+    // 112 over the lead time plus 20 to keep, less 80 available.
+    expect(line).toMatchObject({ targetStock: 20, targetWhere: "Our warehouse", purchaseUnits: 52 })
+  })
+  it("names the Shopify supplier of a product ordered outside Copacker", () => {
+    const [outside] = restockPlan({ ...base, channel: shopify, externalSupplierFor: () => "Fence With Fun" })
+    expect(outside).toMatchObject({ supplier: null, externalSupplier: "Fence With Fun" })
+    const [inside] = restockPlan({
+      ...base,
+      channel: shopify,
+      supplierFor: () => supplier,
+      externalSupplierFor: () => "Fence With Fun"
+    })
+    expect(inside).toMatchObject({ supplier: { name: "Maker" }, externalSupplier: null })
+  })
   it("shows enough stock when nothing needs ordering", () => {
     const [line] = restockPlan({ ...base, channel: shopify, shopifySales: { rows: [], gaps: [] } })
     expect(line).toMatchObject({ status: "stocked", sold: 0, purchaseUnits: 0 })

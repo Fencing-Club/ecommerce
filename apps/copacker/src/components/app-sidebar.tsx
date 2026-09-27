@@ -7,15 +7,20 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  Monitor,
+  Moon,
   PackagePlus,
+  Palette,
   Receipt,
   Settings,
+  Sun,
   Truck,
   Users,
   BookOpen
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTheme } from "@/components/theme-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -23,7 +28,12 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import {
@@ -312,6 +322,8 @@ function UserMenu({ name, email, preview }: { name: string; email: string; previ
               <DropdownMenuLabel className={styles.identityLabel}>{identity}</DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <ThemeMenu />
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               nativeButton
               render={<button type="submit" form="sign-out" aria-label="Sign out" className={sx({ width: "full" })} />}
@@ -323,5 +335,42 @@ function UserMenu({ name, email, preview }: { name: string; email: string; previ
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+const themeOptions = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor }
+] as const
+
+// Light, dark, or the computer's setting. A light or dark choice is remembered in this browser.
+function ThemeMenu() {
+  const { theme, setTheme } = useTheme()
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>
+        <Palette />
+        Theme
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        <DropdownMenuRadioGroup
+          value={theme}
+          onValueChange={(value) => {
+            const option = themeOptions.find((candidate) => candidate.value === value)
+            if (option) {
+              setTheme(option.value)
+            }
+          }}
+        >
+          {themeOptions.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
+              <option.icon />
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }

@@ -55,11 +55,13 @@ function channelsIn(context: InventoryContext) {
   return channels
 }
 
-// The buyer's suppliers with their lead times, and each variation's supplier: the one it was last ordered from, else
-// the one linked supplier whose active catalog holds its Shopify supplier SKU.
+// The buyer's suppliers with their lead times, and each variation's supplier. Shopify's Supplier comes first: a
+// Copacker supplier whose name or Shopify name matches it, or else a supplier ordered outside Copacker. Without one in
+// Shopify: the supplier chosen in Copacker, the one it was last ordered from, or the one linked supplier whose active
+// catalog holds its Shopify supplier SKU.
 export async function supplierLookup(
   orgId: string,
-  catalog: { variantId: string; productId?: string; supplierSku?: string | null }[],
+  catalog: { variantId: string; productId?: string; supplierSku?: string | null; supplierName?: string | null }[],
   chosen: ReadonlyMap<string, { supplierId: string | null }>
 ) {
   const [links, history] = await Promise.all([
@@ -82,8 +84,30 @@ export async function supplierLookup(
   }))
   const byId = new Map(list.map((supplier) => [supplier.id, supplier]))
   const byVariant = new Map<string, RestockSupplier>()
-  // The supplier the buyer chose for the product comes first.
+  const external = new Map<string, string>()
+  const byShopifyName = new Map<string, RestockSupplier>()
+  for (const link of links) {
+    for (const name of [link.name, link.shopifySupplierName]) {
+      if (name?.trim()) {
+        byShopifyName.set(name.trim().toLowerCase(), byId.get(link.id)!)
+      }
+    }
+  }
   for (const row of catalog) {
+    if (row.supplierName) {
+      const supplier = byShopifyName.get(row.supplierName.trim().toLowerCase())
+      if (supplier) {
+        byVariant.set(row.variantId, supplier)
+      } else {
+        external.set(row.variantId, row.supplierName)
+      }
+    }
+  }
+  // Without one in Shopify, the supplier the buyer chose for the product comes first.
+  for (const row of catalog) {
+    if (byVariant.has(row.variantId) || external.has(row.variantId)) {
+      continue
+    }
     const supplierId = row.productId ? chosen.get(row.productId)?.supplierId : null
     const supplier = supplierId ? byId.get(supplierId) : undefined
     if (supplier) {
@@ -96,7 +120,7 @@ export async function supplierLookup(
       continue
     }
     for (const item of order.data.items) {
-      if (!byVariant.has(item.variantId)) {
+      if (!byVariant.has(item.variantId) && !external.has(item.variantId)) {
         byVariant.set(item.variantId, supplier)
       }
     }
@@ -108,7 +132,7 @@ export async function supplierLookup(
       )
     : []
   for (const row of catalog) {
-    if (byVariant.has(row.variantId) || !row.supplierSku) {
+    if (byVariant.has(row.variantId) || external.has(row.variantId) || !row.supplierSku) {
       continue
     }
     const resolved = resolveRestockSupplier({ supplierSku: row.supplierSku, currency: "USD" }, links, products)
@@ -117,7 +141,11 @@ export async function supplierLookup(
       byVariant.set(row.variantId, supplier)
     }
   }
-  return { list, supplierFor: (variantId: string) => byVariant.get(variantId) ?? null }
+  return {
+    list,
+    supplierFor: (variantId: string) => byVariant.get(variantId) ?? null,
+    externalSupplierFor: (variantId: string) => external.get(variantId) ?? null
+  }
 }
 
 // Stockout days per item over the channel's sales period: FBA by seller SKU (from Amazon's ledger and stock syncs),
@@ -212,6 +240,7 @@ async function channelPlan(
     leadTimeDays,
     productDefaults: inputs.productDefaults,
     supplierFor: inputs.lookup.supplierFor,
+    externalSupplierFor: inputs.lookup.externalSupplierFor,
     // Amazon history is by seller SKU, Shopify's by variant.
     stockoutsFor: (variantId, sku) => stockouts.get(channel.kind === "amazon" ? (sku ?? "") : variantId) ?? 0
   })
@@ -235,12 +264,17 @@ export async function restockReport(s: Session, raw: unknown) {
     throw new RestockInputError("Sync Amazon on the Products page before restocking Amazon")
   }
   const plan = await channelPlan(inputs, channel, input.leadTimeDays)
-  // Restock lists only products with a known supplier; the Products page warns about the rest.
-  const lines = plan.filter(
-    (line) => line.supplier !== null && (input.supplier === "all" || line.supplier.id === input.supplier)
+  // Restock lists products with a supplier, in Copacker or in Shopify; the Products page warns about the rest.
+  const lines = plan.filter((line) =>
+    input.supplier === "all"
+      ? line.supplier !== null || line.externalSupplier !== null
+      : line.supplier?.id === input.supplier
   )
   const needsSupplier = plan.filter(
-    (line) => line.supplier === null && (line.status === "stockout" || line.status === "reorder")
+    (line) =>
+      line.supplier === null &&
+      line.externalSupplier === null &&
+      (line.status === "stockout" || line.status === "reorder")
   ).length
   const salesSource = channel.kind === "amazon" ? "amazon" : "shopify"
   return {

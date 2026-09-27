@@ -165,7 +165,7 @@ function explain(line: RestockLine) {
   ]
   if (line.targetStock) {
     steps.push(
-      `Plus the minimum stock of ${line.targetStock} to keep at Amazon, so it’s still there when the order arrives.`
+      `Plus the minimum stock of ${line.targetStock} to keep at ${line.targetWhere ?? "this location"}, so it’s still there when the order arrives.`
     )
   }
   steps.push(
@@ -412,6 +412,7 @@ function LineRows({
 }
 
 function SupplierGroup({
+  groupKey,
   name,
   supplierId,
   lines,
@@ -421,7 +422,9 @@ function SupplierGroup({
   open,
   onOpenChange
 }: {
+  groupKey: string
   name: string
+  // Null for a supplier only in Shopify, ordered outside Copacker, so there's no PO to create.
   supplierId: string | null
   lines: RestockLine[]
   channel: RestockChannel
@@ -433,7 +436,7 @@ function SupplierGroup({
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const po = createPoHref(lines, edits, channel, supplierId)
-  const headingId = `supplier-${supplierId ?? "none"}`
+  const headingId = `supplier-${groupKey.replace(/[^A-Za-z0-9-]/g, "-")}`
   const leadTimes = [...new Set(lines.map((line) => line.leadTimeDays))]
   const totals = orderTotals(lines, edits)
   return (
@@ -458,7 +461,10 @@ function SupplierGroup({
               {lines.length} {lines.length === 1 ? "product" : "products"}
             </span>
           </span>
-          <span className={styles.detail}>Lead time {leadTimes.join(" or ")} days.</span>
+          <span className={styles.detail}>
+            Lead time {leadTimes.join(" or ")} days.
+            {supplierId ? "" : " Ordered outside Copacker, so there’s no PO to create here."}
+          </span>
           <Totals totals={totals} />
         </span>
         <span className={styles.groupActions}>
@@ -466,13 +472,14 @@ function SupplierGroup({
             <span className={styles.detail}>Estimated cost</span>
             <strong>{costText(totals)}</strong>
           </span>
-          {po.count > 0 ? (
-            <Button nativeButton={false} render={<Link href={po.href} />}>
-              Create PO
-            </Button>
-          ) : (
-            <Button disabled>Create PO</Button>
-          )}
+          {supplierId &&
+            (po.count > 0 ? (
+              <Button nativeButton={false} render={<Link href={po.href} />}>
+                Create PO
+              </Button>
+            ) : (
+              <Button disabled>Create PO</Button>
+            ))}
         </span>
       </div>
       <CollapsibleContent className={styles.groupContent}>
@@ -653,11 +660,13 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
         (b.purchaseUnits ?? 0) - (a.purchaseUnits ?? 0)
       )
     })
-  const groups = new Map<string, { name: string; supplierId: string | null; lines: RestockLine[] }>()
+  // Copacker suppliers first, with Create PO; then suppliers only in Shopify, which are ordered outside Copacker.
+  const groups = new Map<string, { key: string; name: string; supplierId: string | null; lines: RestockLine[] }>()
   for (const line of visible) {
-    const key = line.supplier?.id ?? "none"
+    const key = line.supplier?.id ?? `shopify:${line.externalSupplier ?? ""}`
     const group = groups.get(key) ?? {
-      name: line.supplier?.name ?? "No supplier yet",
+      key,
+      name: line.supplier?.name ?? line.externalSupplier ?? "",
       supplierId: line.supplier?.id ?? null,
       lines: []
     }
@@ -689,9 +698,9 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
       {report.needsSupplier > 0 && (
         <p className={styles.summary}>
           {report.needsSupplier} more {report.needsSupplier === 1 ? "product needs" : "products need"} reordering but{" "}
-          {report.needsSupplier === 1 ? "has" : "have"} no supplier, so{" "}
-          {report.needsSupplier === 1 ? "it isn’t" : "they aren’t"} listed. Set suppliers on the{" "}
-          <Link href="/products">Products</Link> page.
+          {report.needsSupplier === 1 ? "has" : "have"} no supplier in Shopify, so{" "}
+          {report.needsSupplier === 1 ? "it isn’t" : "they aren’t"} listed. Set the Supplier field in Shopify, or choose
+          a supplier on the <Link href="/products">Products</Link> page.
         </p>
       )}
       {(cover || onlyOrders) && (
@@ -760,11 +769,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setCollapsed(
-                    collapsed.size < ordered.length
-                      ? new Set(ordered.map((group) => group.supplierId ?? "none"))
-                      : new Set()
-                  )
+                  setCollapsed(collapsed.size < ordered.length ? new Set(ordered.map((group) => group.key)) : new Set())
                 }
               >
                 {collapsed.size < ordered.length ? "Collapse all" : "Expand all"}
@@ -777,16 +782,17 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
       {ordered.length === 0 && <EmptyResults report={report} searching={matching.length < report.lines.length} />}
       {ordered.map((group) => (
         <SupplierGroup
-          key={group.supplierId ?? "none"}
+          key={group.key}
+          groupKey={group.key}
           name={group.name}
           supplierId={group.supplierId}
           lines={group.lines}
           channel={report.channel}
-          open={!collapsed.has(group.supplierId ?? "none")}
+          open={!collapsed.has(group.key)}
           onOpenChange={(open) =>
             setCollapsed((current) => {
               const next = new Set(current)
-              const key = group.supplierId ?? "none"
+              const key = group.key
               if (open) {
                 next.delete(key)
               } else {

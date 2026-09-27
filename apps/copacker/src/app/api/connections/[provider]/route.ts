@@ -31,7 +31,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       target.search = new URLSearchParams({
         client_id: process.env.SHOPIFY_CLIENT_ID,
         scope:
-          "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders,read_shopify_payments_accounts,read_shopify_payments_payouts,read_customers",
+          "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders,read_shopify_payments_accounts,read_shopify_payments_payouts,read_customers,read_fulfillments",
         redirect_uri: callback,
         state
       }).toString()

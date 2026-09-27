@@ -127,6 +127,20 @@
       "when": 1790452229403,
       "tag": "0017_finance_links",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790474994657,
+      "tag": "0018_supplier_shopify_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790475826417,
+      "tag": "0019_supplier_email_optional",
+      "breakpoints": true
     }
   ]
 }

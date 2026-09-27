@@ -113,6 +113,17 @@ const stockLevelFields = `id location{id name isFulfillmentService fulfillmentSe
 // Inventory thumbnails, resized by Shopify's CDN.
 const stockMediaFields = "preview{image{url(transform:{maxWidth:160,maxHeight:160})}}"
 const stockMedia = z.object({ preview: z.object({ image: z.object({ url: z.url() }).nullable() }).nullable() })
+// A stock target metafield: a whole number of units, or null when unset or not a number.
+function stockTarget(field: { value: string } | null) {
+  return field && /^\d+$/.test(field.value.trim()) ? Number(field.value.trim()) : null
+}
+
+// Shopify's Supplier text, or null when it's empty or says "None".
+function supplierName(field: { value: string } | null) {
+  const value = field?.value.trim() ?? ""
+  return value && value.toLowerCase() !== "none" ? value : null
+}
+
 function positiveIntegerField(value: string, name: string) {
   if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) {
     throw new Error(`Shopify ${name} must be a positive integer`)
@@ -283,10 +294,12 @@ export class Shopify {
                   id: z.string().regex(/^gid:\/\/shopify\/Product\/\d+$/),
                   title: z.string(),
                   caseQuantity: field.optional(),
+                  supplier: field.optional(),
                   featuredMedia: stockMedia.nullable()
                 }),
                 media: z.object({ nodes: z.array(stockMedia).max(1) }),
                 amazonTarget: field.optional(),
+                storeTarget: field.optional(),
                 supplierSku: field.optional(),
                 requiresComponents: z.boolean(),
                 inventoryQuantity: z.number().int().safe().nullable(),
@@ -306,7 +319,7 @@ export class Shopify {
       })
       .safeParse(
         await this.graphql(
-          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} countryCodeOfOrigin inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
+          `query Stock($after:String){shop{myshopifyDomain currencyCode} productVariants(first:50,after:$after){nodes{id sku title price amazonTarget:metafield(namespace:"custom",key:"amazon_fulfillment_stock_target"){value} storeTarget:metafield(namespace:"custom",key:"fencing_club_stock_target"){value} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} product{id title caseQuantity:metafield(namespace:"custom",key:"case_quantity"){value} supplier:metafield(namespace:"custom",key:"supplier"){value} featuredMedia{${stockMediaFields}}} media(first:1){nodes{${stockMediaFields}}} requiresComponents inventoryQuantity productVariantComponents(first:25){${bundleComponentFields}} inventoryItem{id tracked unitCost{amount currencyCode} countryCodeOfOrigin inventoryLevels(first:20){nodes{${stockLevelFields}} pageInfo{hasNextPage endCursor}}}} pageInfo{hasNextPage endCursor}}}`,
           { after }
         )
       )
@@ -352,6 +365,11 @@ export class Shopify {
       imageUrl?: string | null
       // Existing Shopify merchant metafield: 0 means this item is intentionally not stocked at Amazon.
       amazonStockTarget?: number | null
+      // Shopify's custom.fencing_club_stock_target: the least to keep at the store's own location.
+      storeStockTarget?: number | null
+      // Shopify's product custom.supplier: the company the product is bought from, by its legal name. Null when unset
+      // (including the "None" some products hold).
+      supplierName?: string | null
       caseQuantity?: number | null
       // Shopify's custom.supplier_sku: the product's SKU in its supplier's catalog.
       supplierSku?: string | null
@@ -432,6 +450,8 @@ export class Shopify {
                 ? null
                 : Number(variant.amazonTarget.value)
           }),
+          ...(variant.storeTarget !== undefined && { storeStockTarget: stockTarget(variant.storeTarget) }),
+          ...(variant.product.supplier !== undefined && { supplierName: supplierName(variant.product.supplier) }),
           ...(variant.supplierSku !== undefined && { supplierSku: variant.supplierSku?.value.trim() || null }),
           ...(variant.product.caseQuantity !== undefined && {
             caseQuantity:
@@ -532,6 +552,28 @@ export class Shopify {
       .parse(
         await this.graphql(`query Variants($ids:[ID!]!){nodes(ids:$ids){... on ProductVariant{${fields}}}}`, { ids })
       ).nodes
+  }
+  // Sets a product's Supplier (custom.supplier) to a supplier's legal name.
+  async productSupplier(productId: string, value: string) {
+    z.string()
+      .regex(/^gid:\/\/shopify\/Product\/\d+$/)
+      .parse(productId)
+    z.string().trim().min(1).max(255).parse(value)
+    const response = z
+      .object({ metafieldsSet: z.object({ userErrors: z.array(z.object({ message: z.string() })) }) })
+      .parse(
+        await this.graphql(
+          `mutation ProductSupplier($fields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$fields){userErrors{message}}}`,
+          {
+            fields: [
+              { ownerId: productId, namespace: "custom", key: "supplier", type: "single_line_text_field", value }
+            ]
+          }
+        )
+      )
+    if (response.metafieldsSet.userErrors.length) {
+      throw new Error("Shopify rejected the product's supplier")
+    }
   }
   async supplierSku(variantId: string, value: string) {
     if (!value) {

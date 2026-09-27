@@ -168,6 +168,29 @@ describe("Shopify complete stock collection", () => {
     await expect(invalid.api.stock()).rejects.toThrow("Amazon stock target")
   })
 
+  it("records the product's supplier and the store's stock target, treating 'None' as no supplier", async () => {
+    const withSupplier = (value: string | null, target: string | null) => ({
+      ...node(1),
+      storeTarget: target === null ? null : { value: target },
+      product: { ...productDetails.product, supplier: value === null ? null : { value } }
+    })
+    for (const [supplier, target, expected] of [
+      [
+        " Wuxi Guanda Sport Goods Co. Ltd. ",
+        "12",
+        { supplierName: "Wuxi Guanda Sport Goods Co. Ltd.", storeStockTarget: 12 }
+      ],
+      ["None", "abc", { supplierName: null, storeStockTarget: null }],
+      [null, null, { supplierName: null, storeStockTarget: null }]
+    ] as const) {
+      const { api, transport } = sequence([{ productVariants: { nodes: [withSupplier(supplier, target)], pageInfo } }])
+      expect((await api.stock()).rows[0]).toMatchObject(expected)
+      const request = JSON.parse(String(transport.mock.calls[0]?.[1]?.body)) as { query: string }
+      expect(request.query).toContain('supplier:metafield(namespace:"custom",key:"supplier")')
+      expect(request.query).toContain('storeTarget:metafield(namespace:"custom",key:"fencing_club_stock_target")')
+    }
+  })
+
   it("collects both connections and retains variants without inventory levels", async () => {
     const initial = node(2)
     const { api, transport } = sequence([

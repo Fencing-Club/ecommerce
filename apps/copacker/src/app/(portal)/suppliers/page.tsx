@@ -111,6 +111,7 @@ export default async function SuppliersPage() {
                     <EditSupplier
                       id={row.id}
                       name={row.name}
+                      shopifySupplierName={row.shopifySupplierName}
                       leadTimeDays={row.leadTimeDays}
                       amazonLeadTimeDays={row.amazonLeadTimeDays}
                     />

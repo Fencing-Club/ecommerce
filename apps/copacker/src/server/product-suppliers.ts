@@ -1,4 +1,5 @@
 import { inventoryContext } from "./inventory-context"
+import { isCollective } from "./inventory-products"
 import { readProductDefaults } from "./product-defaults"
 import { supplierLookup } from "./restock-page"
 
@@ -10,14 +11,15 @@ export type ProductWithoutSupplier = {
 }
 
 // Products restock can't order because no supplier is known: none chosen on the product, never on a PO, and no
-// supplier catalog holds their Shopify supplier SKU. Untracked items, such as gift cards, aren't ordered and are left out.
+// supplier catalog holds their Shopify supplier SKU. Untracked items, such as gift cards, aren't ordered, and Shopify
+// Collective items are stocked and shipped by partners, so both are left out, as on the Products page.
 export async function productsWithoutSupplier(orgId: string): Promise<ProductWithoutSupplier[]> {
   const context = await inventoryContext(orgId)
   const chosen = context.domain ? await readProductDefaults(orgId, context.domain) : new Map()
-  const { supplierFor } = await supplierLookup(orgId, context.rows, chosen)
+  const { supplierFor, externalSupplierFor } = await supplierLookup(orgId, context.rows, chosen)
   const products = new Map<string, ProductWithoutSupplier & { supplied: boolean }>()
   for (const row of context.rows) {
-    if (!row.productId || (!row.tracked && !row.bundle)) {
+    if (!row.productId || (!row.tracked && !row.bundle) || isCollective(row)) {
       continue
     }
     const product = products.get(row.productId) ?? {
@@ -27,7 +29,7 @@ export async function productsWithoutSupplier(orgId: string): Promise<ProductWit
       skus: [],
       supplied: false
     }
-    product.supplied ||= supplierFor(row.variantId) !== null
+    product.supplied ||= supplierFor(row.variantId) !== null || externalSupplierFor(row.variantId) !== null
     if (row.buyerSku) {
       product.skus.push(row.buyerSku)
     }

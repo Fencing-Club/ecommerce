@@ -17,9 +17,13 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
 - The worker reads the queue with the same IAM user as the Amazon queue (`copacker-worker`, policy
   `read-amazon-notifications`, which covers both queues). It needs `SHOPIFY_EVENTS_QUEUE_URL` and, for subscribing,
   `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (`arn:aws:events:us-east-1::event-source/aws.partner/shopify.com/428016009217/copacker-production`).
-- Subscriptions are created through the Admin API at the EventBridge source when a store connects and again daily:
-  orders create, update, cancel and delete, inventory level updates, and app uninstalled. Without
-  `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development) nothing is subscribed, and syncs still copy orders.
+- Subscriptions are created through the Admin API at the EventBridge source when a store connects and again daily,
+  for every change to data Copacker copies. Orders (created, updated, edited, cancelled, deleted), refunds, order
+  transactions and fulfillments start the order sync. Products, inventory items, inventory levels (updated, connected,
+  disconnected) and locations start the stock refresh. App uninstalled disconnects the store. Fulfillment topics need
+  `read_fulfillments`, so a store connected before Copacker asked for it subscribes to them after reconnecting; its
+  shipments still arrive as order updates until then. Without `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development)
+  nothing is subscribed, and syncs still copy orders.
 - Each event carries the webhook's headers as metadata and its body as the payload. Events are gathered into
   five-minute periods; each period starts the existing order sync or stock refresh three minutes after it ends, so a
   burst of orders reads Shopify once.
@@ -36,7 +40,8 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   automation token instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
   `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
   `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
-  Dashboard before releasing it. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
+  Dashboard before releasing it. The `read_fulfillments` scope, which the connect route requests, still needs a
+  release. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
   `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes, which a store
   approves by reconnecting.
 

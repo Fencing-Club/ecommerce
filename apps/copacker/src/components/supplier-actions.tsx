@@ -105,6 +105,7 @@ export function RemoveSupplier({ id, name, joined }: { id: string; name: string;
 
 const supplierSchema = z.object({
   name: z.string().trim().min(1).max(120),
+  shopifySupplierName: z.string().trim().max(255),
   leadTimeDays: z.number().int().min(1).max(730).optional(),
   amazonLeadTimeDays: z.number().int().min(1).max(730).optional()
 })
@@ -113,11 +114,13 @@ const supplierSchema = z.object({
 export function EditSupplier({
   id,
   name,
+  shopifySupplierName,
   leadTimeDays,
   amazonLeadTimeDays
 }: {
   id: string
   name: string
+  shopifySupplierName: string | null
   leadTimeDays: number | null
   amazonLeadTimeDays: number | null
 }) {
@@ -126,7 +129,12 @@ export function EditSupplier({
   const [open, setOpen] = useState(false)
   const form = useForm<z.input<typeof supplierSchema>, unknown, z.output<typeof supplierSchema>>({
     resolver: zodResolver(supplierSchema, { error: formErrorMap }),
-    values: { name, leadTimeDays: leadTimeDays ?? undefined, amazonLeadTimeDays: amazonLeadTimeDays ?? undefined }
+    values: {
+      name,
+      shopifySupplierName: shopifySupplierName ?? "",
+      leadTimeDays: leadTimeDays ?? undefined,
+      amazonLeadTimeDays: amazonLeadTimeDays ?? undefined
+    }
   })
   const submit = form.handleSubmit(async (values) => {
     try {
@@ -135,6 +143,7 @@ export function EditSupplier({
         data: {
           id,
           name: values.name,
+          shopifySupplierName: values.shopifySupplierName,
           leadTimeDays: values.leadTimeDays ?? null,
           amazonLeadTimeDays: values.amazonLeadTimeDays ?? null
         }
@@ -162,6 +171,12 @@ export function EditSupplier({
               </DialogDescription>
             </DialogHeader>
             <FormInput name="name" label="Name" autoComplete="organization" />
+            <FormInput
+              name="shopifySupplierName"
+              label="Name in Shopify"
+              description="As it appears in Shopify’s Supplier field, usually the legal name. Products with it belong to this supplier."
+              autoComplete="off"
+            />
             <FormNumber name="leadTimeDays" label="To your locations (days)" min={1} max={730} step={1} />
             <FormNumber
               name="amazonLeadTimeDays"

@@ -53,7 +53,8 @@ export const suppliers = pgTable(
       .references(() => organizations.id),
     supplierOrgId: uuid().references(() => organizations.id),
     name: text().notNull(),
-    email: text().notNull(),
+    // Where invitations and PO notifications go; null until the buyer invites the supplier.
+    email: text(),
     invitationHash: text().unique(),
     expiresAt: timestamp({ withTimezone: true }),
     // Set when the buyer removes the supplier. The row stays so earlier POs keep their supplier.
@@ -62,6 +63,9 @@ export const suppliers = pgTable(
     // this long; unset uses the restock page's lead time.
     leadTimeDays: integer(),
     amazonLeadTimeDays: integer(),
+    // The supplier's name in Shopify's product Supplier field (custom.supplier), usually its legal name, such as
+    // "SUZHOU BOPAC Teco CO., LTD" for Ok Fencing. Products with it belong to this supplier.
+    shopifySupplierName: text(),
     createdAt: createdAt()
   },
   // One buyer may work with several supplier workspaces owned by the same email.

@@ -114,6 +114,9 @@ importers:
       recharts:
         specifier: ^3.10.1
         version: 3.10.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.3.0)(react@19.2.7)(redux@5.0.1)
+      ts-extras:
+        specifier: ^1.3.0
+        version: 1.3.0
       zod:
         specifier: ^4.4.3
         version: 4.6.5
@@ -603,7 +606,7 @@ packages:
     engines: {node: '>=6.9.0'}
 
   '@base-ui/react@1.8.0':
-    resolution: {integrity: sha1-sTaZrsHniR3IhZ2927oAFuiU3PM=}
+    resolution: {integrity: sha512-P0/1sxo6SBVZOklKMIedvTWqw2s2IQzi9x5bIVsXu980cuSOD4NeuRSs+/L7LZQfDkZP/uRZyGPyfFl/B1oH+Q==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       '@date-fns/tz': ^1.2.0
@@ -2519,7 +2522,8 @@ packages:
     resolution: {integrity: sha1-X4vfZQPdz4zSu1ueNYRwbT95vPU=}
 
   '@shopify/theme-check-docs-updater@3.29.0':
-    resolution: {integrity: sha1-l+R9Qi50xu8baczR6gIN7c2DTik=}
+    resolution: {integrity: sha512-5FgxidomW67gTqQt/Llzkb/3Ug9njm53O4cdrk+YEoYVdONsNWDExtVpg8bYuboelKmfWM0ZGpbZN/npNmJZ5w==}
+    hasBin: true
 
   '@sindresorhus/fnv1a@3.1.0':
     resolution: {integrity: sha512-KV321z5m/0nuAg83W1dPLy85HpHDk7Sdi4fJbwvacWsEhAh+rZUW4ZfGcXmUIvjZg4ss2bcwNlRhJ7GBEUG08w==}
@@ -2743,7 +2747,7 @@ packages:
     deprecated: This is a stub types definition. parse-path provides its own type definitions, so you do not need this installed.
 
   '@types/pg@8.23.1':
-    resolution: {integrity: sha1-fnEs4Cz0StEAhiEn8Q9S6ca50ic=}
+    resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
   '@types/react-dom@19.3.0':
     resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
@@ -2763,7 +2767,7 @@ packages:
     resolution: {integrity: sha1-SEZOS/Ld/RfbE9hFRn9gcP/qSqk=}
 
   '@types/yauzl@3.4.0':
-    resolution: {integrity: sha1-k94X2xWJRy0wtOEGxedxG88ypek=}
+    resolution: {integrity: sha512-NRPn5w6h8dhcnmx3YIRQcqMywY/+nND/uOkJessedcrowO3C0AssHp3tMJpxKAwOhFOo0OV1y9VtsC5hbKKBAw==}
 
   '@typescript/typescript-aix-ppc64@7.0.1-rc':
     resolution: {integrity: sha1-GnD5An0AAYHpaVeTOD85QAYcvwQ=}
@@ -2930,7 +2934,7 @@ packages:
     engines: {node: '>=14'}
 
   '@vitest/coverage-v8@4.1.11':
-    resolution: {integrity: sha1-bwY2q+fiPobdNRJyRFVL4sYLwqU=}
+    resolution: {integrity: sha512-8MVGEFnJIcdGjcbfKmeq8z0pZHH0JlVtoVZH9Q/qwUp6wyFnEJUBMrw9DCaj+ra3vShGmhavjalMIhPNxZAUcw==}
     peerDependencies:
       '@vitest/browser': 4.1.11
       vitest: 4.1.11
@@ -3106,8 +3110,9 @@ packages:
     engines: {node: '>=6.0.0'}
 
   beachball@2.66.0:
-    resolution: {integrity: sha1-dAmbt4djX2YKFo7hfsCrEEqXxpU=}
+    resolution: {integrity: sha512-dCJziBUqgdeHdfMMCgqNSGcPj/v4K3cbHDpHLV5BP8dKLZmGHCMPjkOEMlCbw73wnZbD3I9QD355b7aVmZOIOA==}
     engines: {node: '>=14.0.0'}
+    hasBin: true
 
   big.js@5.2.2:
     resolution: {integrity: sha1-ZfCvOC9Xi83HQr2cKB6cstd2gyg=}
@@ -3978,8 +3983,9 @@ packages:
     resolution: {integrity: sha1-7KKE910pZQeTCdwK2SVauy68FjI=}
 
   liquidjs@10.29.0:
-    resolution: {integrity: sha1-7gYYkMzw2ia+N3qtTwK9MtoBQNg=}
+    resolution: {integrity: sha512-pCVOhs6FLAR8su3ItJ07diN26t6W5dHQRnmTMy8HPyTFuv1+oSCVJIGp5pGjfQyOZfh50KswvKtMTp6p4JEIdw==}
     engines: {node: '>=16'}
+    hasBin: true
 
   loader-utils@2.0.4:
     resolution: {integrity: sha1-i1yzi1w0qaAY7h/A5qBm0d/MUow=}
@@ -4228,8 +4234,9 @@ packages:
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
   npm-run-all2@9.0.3:
-    resolution: {integrity: sha1-Ln85ebMMAZ5bLb+EbsmsoUeKDAI=}
+    resolution: {integrity: sha512-BQAEdU1PtYc48qYRdghW2BVTQT3VqWCoFQmO87NlM1h1PYwMCKQpUWaNyB20V26caNzFsXQDfyOdznLlHCih6g==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0, npm: '>= 10'}
+    hasBin: true
 
   npm-run-path@4.0.1:
     resolution: {integrity: sha1-t+zR5e1T2o43pV4cImnguX7XSOo=}
@@ -4773,6 +4780,10 @@ packages:
   tr46@0.0.3:
     resolution: {integrity: sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=}
 
+  ts-extras@1.3.0:
+    resolution: {integrity: sha1-3qz9sdUboD3N7jKjn+Gfy0ZoAhY=}
+    engines: {node: '>=20'}
+
   tsconfig-paths@4.2.0:
     resolution: {integrity: sha1-73jhkDkTNEbSRL6sD9ahYy4tEHw=}
     engines: {node: '>=6'}
@@ -4784,8 +4795,9 @@ packages:
     resolution: {integrity: sha1-YS7+TtI11Wfoq6Xypfq3AoCt6D8=}
 
   tsx@4.23.13:
-    resolution: {integrity: sha1-OTuN2BPUniWu17HXy6xpMNpJ7Ag=}
+    resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
     engines: {node: '>=18.0.0'}
+    hasBin: true
 
   turbo@2.10.13:
     resolution: {integrity: sha512-69MkPbjk+G8oyC7pC2DeBk0rPdbLz51wuH5eAT0Q4BVJkzq/b1XM4kUUidsARbmDjwIELSJwd1ezITULY9kWNw==}
@@ -4900,7 +4912,7 @@ packages:
         optional: true
 
   vitest@4.1.11:
-    resolution: {integrity: sha1-FlPBUhrpF/lg2bIYd3l8R9/YvyE=}
+    resolution: {integrity: sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
     peerDependencies:
@@ -8796,6 +8808,10 @@ snapshots:
       is-number: 7.0.0
 
   tr46@0.0.3: {}
+
+  ts-extras@1.3.0:
+    dependencies:
+      type-fest: 5.10.0
 
   tsconfig-paths@4.2.0:
     dependencies:

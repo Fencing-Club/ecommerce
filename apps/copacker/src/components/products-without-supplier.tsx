@@ -46,11 +46,12 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
     <Alert>
       <AlertTriangle />
       <AlertTitle>
-        {products.length} {products.length === 1 ? "product has" : "products have"} no supplier
+        {products.length} {products.length === 1 ? "product has" : "products have"} no supplier in Shopify
       </AlertTitle>
       <AlertDescription>
         <p>
-          Restock only suggests products with a supplier. Choose who supplies these, or set it on a product with Edit.
+          Restock only suggests products with a supplier. Set the Supplier field on these in Shopify, or choose one of
+          your Copacker suppliers here, which saves it to Shopify.
         </p>
         <Collapsible className={styles.list}>
           <CollapsibleTrigger className={styles.trigger}>

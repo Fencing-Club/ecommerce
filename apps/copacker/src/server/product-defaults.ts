@@ -7,6 +7,7 @@ import { connections, productDefaults, stockSnapshots, suppliers } from "@/db/sc
 import { type CasePack, casePackSchema } from "@/lib/case-packs"
 import { type ProductLabel, productLabels } from "@/lib/product-label"
 import type { Session } from "./auth"
+import { shopifyFor } from "./connections"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
 export type ProductDefaults = {
@@ -119,7 +120,8 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     }
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
     if (supplierId && supplierId !== previous?.supplierId) {
-      await requireCurrentSupplier(tx, s.org.id, supplierId)
+      const supplier = await requireCurrentSupplier(tx, s.org.id, supplierId)
+      await writeShopifySupplier(s.org.id, account.domain, [input.productId], supplier)
     }
     const value = {
       description: input.description,
@@ -154,11 +156,32 @@ type Transaction = Parameters<Parameters<ReturnType<typeof db>["transaction"]>[0
 
 async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId: string) {
   const [supplier] = await tx
-    .select({ id: suppliers.id })
+    .select({ id: suppliers.id, name: suppliers.name, shopifySupplierName: suppliers.shopifySupplierName })
     .from(suppliers)
     .where(and(eq(suppliers.id, supplierId), eq(suppliers.buyerOrgId, orgId), isNull(suppliers.removedAt)))
   if (!supplier) {
     throw new ProductDefaultsError("Choose one of your current suppliers", 409)
+  }
+  return supplier
+}
+
+// Shopify's product Supplier field is where suppliers are kept, so choosing one in Copacker writes it there, using
+// the supplier's name as Shopify knows it.
+async function writeShopifySupplier(
+  orgId: string,
+  domain: string,
+  productIds: string[],
+  supplier: { name: string; shopifySupplierName: string | null }
+) {
+  if (!supplier.shopifySupplierName?.trim()) {
+    throw new ProductDefaultsError(
+      `Add ${supplier.name}'s name as it appears in Shopify's Supplier field, on the Suppliers page, first`,
+      409
+    )
+  }
+  const shopify = await shopifyFor(orgId, domain)
+  for (const productId of productIds) {
+    await shopify.productSupplier(productId, supplier.shopifySupplierName.trim())
   }
 }
 
@@ -178,10 +201,11 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
     if (!account) {
       throw new ProductDefaultsError("Connect Shopify before editing products", 409)
     }
-    if (input.supplierId) {
-      await requireCurrentSupplier(tx, s.org.id, input.supplierId)
-    }
     const productIds = [...new Set(input.productIds)]
+    if (input.supplierId) {
+      const supplier = await requireCurrentSupplier(tx, s.org.id, input.supplierId)
+      await writeShopifySupplier(s.org.id, account.domain, productIds, supplier)
+    }
     await tx
       .insert(productDefaults)
       .values(

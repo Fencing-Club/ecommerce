@@ -1,5 +1,6 @@
 import { shopDomainSchema, ShopifyRequestError } from "@repo/aisle/shopify"
 import { and, eq } from "drizzle-orm"
+import { objectEntries, objectKeys } from "ts-extras"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations } from "@/db/schema"
@@ -11,23 +12,47 @@ import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-com
 import { type NotificationQueue, pollQueue } from "./sqs"
 import { refreshStock } from "./stock"
 
-// What Shopify tells Copacker about. The events only say that something changed; the existing syncs read the changes.
-export const shopifyWebhookTopics = [
-  "ORDERS_CREATE",
-  "ORDERS_UPDATED",
-  "ORDERS_CANCELLED",
-  "ORDERS_DELETE",
-  "INVENTORY_LEVELS_UPDATE",
-  "APP_UNINSTALLED"
-] as const
-const eventTargets = new Map<string, "sales" | "stock" | "uninstalled">([
-  ["orders/create", "sales"],
-  ["orders/updated", "sales"],
-  ["orders/cancelled", "sales"],
-  ["orders/delete", "sales"],
-  ["inventory_levels/update", "stock"],
-  ["app/uninstalled", "uninstalled"]
+// What Shopify tells Copacker about: every change to data Copacker copies. The events only say that something changed;
+// the existing syncs read the changes. Orders, refunds, payments and shipments start the order sync, which also reads
+// the Shopify balance. Products, variants (title, SKU, metafields, bundle components), inventory items
+// (tracking, cost, country of origin), stock levels and locations start the stock sync.
+const topicTargets = {
+  ORDERS_CREATE: "sales",
+  ORDERS_UPDATED: "sales",
+  ORDERS_EDITED: "sales",
+  ORDERS_CANCELLED: "sales",
+  ORDERS_DELETE: "sales",
+  REFUNDS_CREATE: "sales",
+  ORDER_TRANSACTIONS_CREATE: "sales",
+  FULFILLMENTS_CREATE: "sales",
+  FULFILLMENTS_UPDATE: "sales",
+  PRODUCTS_CREATE: "stock",
+  PRODUCTS_UPDATE: "stock",
+  PRODUCTS_DELETE: "stock",
+  INVENTORY_ITEMS_CREATE: "stock",
+  INVENTORY_ITEMS_UPDATE: "stock",
+  INVENTORY_ITEMS_DELETE: "stock",
+  INVENTORY_LEVELS_CONNECT: "stock",
+  INVENTORY_LEVELS_UPDATE: "stock",
+  INVENTORY_LEVELS_DISCONNECT: "stock",
+  LOCATIONS_CREATE: "stock",
+  LOCATIONS_UPDATE: "stock",
+  LOCATIONS_DELETE: "stock",
+  LOCATIONS_ACTIVATE: "stock",
+  LOCATIONS_DEACTIVATE: "stock",
+  APP_UNINSTALLED: "uninstalled"
+} as const satisfies Record<string, "sales" | "stock" | "uninstalled">
+export const shopifyWebhookTopics = objectKeys(topicTargets)
+// Topics Shopify refuses unless the store granted a scope. A store connected before Copacker asked for the scope grants
+// it by reconnecting; until then, orders/updated still reports its shipments.
+const topicScopes = new Map<string, string>([
+  ["FULFILLMENTS_CREATE", "read_fulfillments"],
+  ["FULFILLMENTS_UPDATE", "read_fulfillments"]
 ])
+// Events name their topic in lower case with a slash before the action, such as inventory_levels/update.
+const eventTargets = new Map<string, (typeof topicTargets)[keyof typeof topicTargets]>(
+  objectEntries(topicTargets).map(([topic, target]) => [topic.toLowerCase().replace(/_(?=[a-z]+$)/, "/"), target])
+)
 // Events are gathered into five-minute periods and each period starts one sync, so a burst of orders reads Shopify
 // once. The sync starts three minutes after its period ends, when the orders in it have settled (see syncChunks).
 const batchMs = 5 * 60000
@@ -146,7 +171,7 @@ export async function shopifySubscribeJob(payload: Record<string, unknown>, asse
   }
   const source = eventBridgeSource.parse(configured)
   const [account] = await db()
-    .select({ id: connections.id })
+    .select({ scopes: connections.scopes })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
   if (!account) {
@@ -154,7 +179,12 @@ export async function shopifySubscribeJob(payload: Record<string, unknown>, asse
   }
   const shopify = await shopifyFor(orgId)
   await assertOwned()
-  await shopify.subscribeWebhooks(source, shopifyWebhookTopics)
+  const granted = new Set(account.scopes.split(/[,\s]+/))
+  const topics = shopifyWebhookTopics.filter((topic) => {
+    const scope = topicScopes.get(topic)
+    return !scope || granted.has(scope)
+  })
+  await shopify.subscribeWebhooks(source, topics)
 }
 
 // Shopify's EventBridge events carry the webhook's headers as metadata and its body as the payload.
