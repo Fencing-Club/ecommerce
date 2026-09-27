@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { session } from "@/server/auth"
 import { inventoryContext } from "@/server/inventory-context"
-import { type AmazonOnlyStock, groupInventory, pageSizes } from "@/server/inventory-products"
+import { type AmazonOnlyStock, groupInventory, isCollective, pageSizes } from "@/server/inventory-products"
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 
@@ -81,7 +81,22 @@ export async function GET(request: Request) {
       : 0
   // Standard-label variations with no country of origin in Shopify, whose labels leave out "Made in". Undefined means
   // the snapshot predates collecting it.
-  const countries = new Map(rows.map((row) => [row.variantId, row.countryOfOrigin]))
+  // A bundle has no inventory item of its own, so it takes its components' countries.
+  const ownCountries = new Map(rows.map((row) => [row.variantId, row.countryOfOrigin]))
+  const countries = new Map(
+    rows.map((row) => {
+      const components = row.bundle?.components
+      if (row.countryOfOrigin || !components?.length) {
+        return [row.variantId, row.countryOfOrigin]
+      }
+      const codes = components.map((component) => ownCountries.get(component.variantId))
+      if (codes.some((code) => code === undefined)) {
+        return [row.variantId, row.countryOfOrigin]
+      }
+      const known = [...new Set(codes.filter(Boolean))]
+      return [row.variantId, known.length ? known.join(", ") : null]
+    })
+  )
   const withoutCountry = (product: (typeof grouped)[number]) =>
     defaults.get(product.productId)?.productLabel === "uploaded"
       ? 0
@@ -117,7 +132,7 @@ export async function GET(request: Request) {
       // Variations in this selection that need an uploaded label and don't have one.
       missingBarcodes: grouped.reduce((sum, product) => sum + unlabelled(product), 0),
       missingCountries: grouped.reduce((sum, product) => sum + withoutCountry(product), 0),
-      duplicateSkus: duplicateSkus(rows),
+      duplicateSkus: duplicateSkus(rows.filter((row) => !isCollective(row))),
       products: products.slice((pageNumber - 1) * pageSize, pageNumber * pageSize).map((product) => ({
         ...product,
         defaults: defaults.get(product.productId) ?? noDefaults,
@@ -128,7 +143,8 @@ export async function GET(request: Request) {
           fnsku: variant.sku ? fnskuFor(fbaRows ?? [], variant.sku) : null,
           // Shopify's custom.supplier_sku, edited from the product's Edit panel.
           supplierSku: supplierSkus.get(variant.variantId) ?? null,
-          // ISO code from Shopify, null when none is recorded, or left out before a sync collects it.
+          // ISO codes from Shopify (a bundle's come from its components), null when none is recorded, or left out
+          // before a sync collects it.
           countryOfOrigin: countries.get(variant.variantId)
         }))
       }))

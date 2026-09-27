@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { inflateSync } from "node:zlib"
 import { PGlite } from "@electric-sql/pglite"
 import type { OrderInput } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
@@ -29,10 +30,34 @@ vi.mock("../src/server/storage", async (original) => ({
   deleteFile: async (key: string) => void storage.files.delete(key)
 }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-// Shopify records each test variation as made in Pakistan.
+// Shopify records the test variations as made in Pakistan, except CORD-1 (China). Variation 3 stands in for a bundle
+// of CORD-1 and GLOVE-6, with no country of its own.
+type TestVariant = {
+  id: string
+  inventoryItem: { countryCodeOfOrigin: string | null }
+  productVariantComponents: { nodes: { productVariant: { id: string } }[] }
+}
 const shopify = vi.hoisted(() => ({
-  variants: vi.fn<(ids: string[]) => Promise<{ id: string; inventoryItem: { countryCodeOfOrigin: string } }[]>>(
-    async (ids) => ids.map((id) => ({ id, inventoryItem: { countryCodeOfOrigin: "PK" } }))
+  variants: vi.fn<(ids: string[]) => Promise<TestVariant[]>>(async (ids) =>
+    ids.map((id) => ({
+      id,
+      inventoryItem: {
+        countryCodeOfOrigin:
+          new Map<string, string | null>([
+            ["gid://shopify/ProductVariant/1", "CN"],
+            ["gid://shopify/ProductVariant/3", null]
+          ]).get(id) ?? (id === "gid://shopify/ProductVariant/3" ? null : "PK")
+      },
+      productVariantComponents: {
+        nodes:
+          id === "gid://shopify/ProductVariant/3"
+            ? [
+                { productVariant: { id: "gid://shopify/ProductVariant/1" } },
+                { productVariant: { id: "gid://shopify/ProductVariant/2" } }
+              ]
+            : []
+      }
+    }))
   )
 }))
 // Amazon lists only GLOVE-6 when Copacker asks for FNSKUs it hasn't synced.
@@ -401,6 +426,21 @@ describe("labels in bulk", () => {
     const glove = await GET(new Request(barcodeUrl(variantB)))
     expect(glove.status).toBe(200)
     expect(amazon.listings).toHaveBeenCalledWith("SELLER1", ["GLOVE-6"])
+  })
+
+  it("prints a bundle's components' countries when it has none of its own", async () => {
+    const response = await GET(new Request(barcodeUrl(sharedA)))
+    expect(response.status).toBe(200)
+    // The sheet's text is in its first (compressed) stream, drawn as hex strings.
+    const pdf = Buffer.from(await response.arrayBuffer())
+    const raw = pdf.toString("latin1")
+    const start = raw.indexOf("stream\n") + 7
+    const length = Number(/\/Length (\d+)/.exec(raw)![1])
+    const text = inflateSync(pdf.subarray(start, start + length)).toString("latin1")
+    const lines = [...text.matchAll(/<([0-9A-F]+)> Tj/g)].map((match) =>
+      Buffer.from(match[1]!, "hex").toString("latin1")
+    )
+    expect(lines).toContain("Made in China and Pakistan")
   })
 
   it("refreshes labels Copacker added, keeping PO uploads and released lines, and combines them", async () => {

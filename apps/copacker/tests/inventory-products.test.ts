@@ -99,6 +99,16 @@ describe("groupInventory", () => {
       ["Mixed", 2, 2],
       ["Partner shoe", 0, 0]
     ])
+    // Shopify Collective items are partners' stock and ship from them, so even the full list leaves them out.
+    const collectiveLevel = {
+      ...level("4", "All Volleyball via Shopify Collective", 7),
+      locationKind: "shopify_collective" as const
+    }
+    const withCollective = [...stock, row(7, 50, { productTitle: "Volleyball shoe", levels: [collectiveLevel] })]
+    expect(groupInventory(withCollective, { classifications, everyProduct: true }).map((p) => p.title)).toEqual([
+      "Mixed",
+      "Partner shoe"
+    ])
     expect(
       inventoryLocations(stock, classifications).map((location) => [location.name, location.classification])
     ).toEqual([

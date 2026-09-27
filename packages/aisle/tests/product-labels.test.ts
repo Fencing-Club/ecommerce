@@ -5,6 +5,7 @@ import {
   code128Modules,
   code128Patterns,
   countryName,
+  madeIn,
   labelTitle,
   standardProductLabels
 } from "../src/product-labels"
@@ -54,5 +55,16 @@ describe("country of origin", () => {
     expect(countryName("us")).toBe("United States")
     expect(countryName(null)).toBeNull()
     expect(countryName("not a country")).toBeNull()
+  })
+})
+
+describe("made in", () => {
+  it("names one country, or a bundle's several in order", () => {
+    expect(madeIn("CN")).toBe("China")
+    expect(madeIn(["CN", "CN"])).toBe("China")
+    expect(madeIn(["CN", "PK"])).toBe("China and Pakistan")
+    expect(madeIn(["CN", "PK", "US"])).toBe("China, Pakistan and United States")
+    expect(madeIn([])).toBeNull()
+    expect(madeIn(null)).toBeNull()
   })
 })

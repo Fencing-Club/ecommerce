@@ -11,6 +11,7 @@ import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { inventoryContext } from "./inventory-context"
+import { isCollective } from "./inventory-products"
 import { type ProductDefaults, readProductDefaults } from "./product-defaults"
 import { releasedStates } from "./readiness"
 import { describeError } from "./stock"
@@ -363,26 +364,42 @@ async function labelCodes(orgId: string, fbaRows: { sellerSku: string; fnSku?: s
   return codes
 }
 
-// Each variation's country of origin as Shopify records it on the inventory item, for the label's "Made in" line.
+// Each variation's countries of origin, for the label's "Made in" line: the one Shopify records on its inventory item,
+// or for a bundle, which has no inventory item of its own, its components' in order.
 async function countriesOfOrigin(orgId: string, domain: string, variantIds: string[]) {
   if (!variantIds.length) {
     return []
   }
-  let variants: Awaited<ReturnType<Awaited<ReturnType<typeof shopifyFor>>["variants"]>>
   try {
     const shopify = await shopifyFor(orgId, domain)
     // Shopify returns at most 250 nodes a request.
-    variants = []
-    for (const batch of chunks(variantIds, 250)) {
-      variants.push(...(await shopify.variants(batch)))
+    const lookup = async (ids: string[]) => {
+      const found = []
+      for (const batch of chunks(ids, 250)) {
+        found.push(...(await shopify.variants(batch)))
+      }
+      return found.flatMap((variant) => (variant ? [variant] : []))
     }
+    const variants = await lookup(variantIds)
+    const componentIds = (variant: (typeof variants)[number]) =>
+      variant.inventoryItem.countryCodeOfOrigin
+        ? []
+        : variant.productVariantComponents.nodes.map((component) => component.productVariant.id)
+    const components = new Map(
+      (await lookup([...new Set(variants.flatMap(componentIds))])).map((variant) => [
+        variant.id,
+        variant.inventoryItem.countryCodeOfOrigin ?? null
+      ])
+    )
+    return variants.map((variant) => {
+      const own = variant.inventoryItem.countryCodeOfOrigin
+      const codes = own ? [own] : componentIds(variant).flatMap((id) => components.get(id) ?? [])
+      return [variant.id, codes] as const
+    })
   } catch (error) {
     console.error(JSON.stringify({ event: "label_origin_lookup_failed", orgId, error: describeError(error) }))
     throw new ProductBarcodeError("Shopify couldn't be reached to look up the country of origin. Try again.", 409)
   }
-  return variants.flatMap((variant) =>
-    variant ? [[variant.id, variant.inventoryItem.countryCodeOfOrigin ?? null] as const] : []
-  )
 }
 
 // A generated label's file name: its title, such as "Pro-Grip Fencing Glove (10, Left).pdf", without characters
@@ -604,7 +621,8 @@ export async function productLabelChoices(s: Session) {
   const domain = await shopifyDomain(s)
   const [rows, defaults] = await Promise.all([storeRows(s.org.id, domain), readProductDefaults(s.org.id, domain)])
   const products = new Map<string, { productId: string; title: string; variations: number }>()
-  for (const row of rows) {
+  // Shopify Collective items are partners' stock, with nothing to label.
+  for (const row of rows.filter((item) => !isCollective(item))) {
     const productId = row.productId ?? row.variantId
     const product = products.get(productId) ?? {
       productId,

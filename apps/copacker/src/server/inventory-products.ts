@@ -264,6 +264,12 @@ export function inventoryLocations(
   return [...locations.values()].toSorted((a, b) => order(a) - order(b) || byName(a.name, b.name))
 }
 
+// A Shopify Collective item: stocked only at partners' Collective locations, which partners stock and ship, so there's
+// nothing to order, label or pack for it.
+export function isCollective(row: StockRow) {
+  return row.levels.length > 0 && row.levels.every((level) => level.locationKind === "shopify_collective")
+}
+
 export function groupInventory(
   rows: StockRow[],
   {
@@ -278,7 +284,8 @@ export function groupInventory(
     query?: string | null
     classifications?: ReadonlyMap<string, LocationClassification>
     includeExcluded?: boolean
-    // Keeps variants stocked only at uncounted locations, with none counted, instead of hiding them.
+    // Keeps variants stocked only at uncounted locations, with none counted, instead of hiding them. Shopify Collective
+    // items, which partners stock and ship, are still left out.
     everyProduct?: boolean
     onOrder?: ReadonlyMap<string, PendingOrder[]>
   } = {}
@@ -294,7 +301,7 @@ export function groupInventory(
       : row.levels.filter((level) => (classifications.get(level.locationId) ?? "merchant") === "merchant")
     const levels = locationId ? counted.filter((level) => level.locationId === locationId) : counted
     const uncounted = row.levels.length > 0 && levels.length === 0
-    if ((locationId && levels.length === 0) || (uncounted && !everyProduct)) {
+    if ((locationId && levels.length === 0) || (uncounted && !everyProduct) || (everyProduct && isCollective(row))) {
       continue
     }
     const title = row.productTitle ?? row.buyerSku ?? "Untitled product"

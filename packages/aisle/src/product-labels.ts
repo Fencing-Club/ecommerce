@@ -169,6 +169,17 @@ export function countryName(code: string | null | undefined) {
   }
 }
 
+// The countries a label's "Made in" line names, such as "China" or "China and Pakistan"; null when none is known.
+export function madeIn(codes: string | readonly string[] | null | undefined) {
+  const names = [
+    ...new Set((typeof codes === "string" ? [codes] : (codes ?? [])).map((code) => countryName(code)).filter(Boolean))
+  ] as string[]
+  if (names.length <= 1) {
+    return names[0] ?? null
+  }
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
+}
+
 // A sheet of 30 identical product labels in the layout of Fencing Club's glove labels: the code as a Code 128
 // barcode with the code centered under it, then the product's title and "Made in" its country of origin when known,
 // left-aligned with the barcode. The code is Amazon's FNSKU, or else the Shopify SKU.
@@ -180,7 +191,8 @@ export async function standardProductLabels({
   code: string
   title: string
   // ISO 3166 code, as Shopify records it on the inventory item.
-  countryOfOrigin?: string | null
+  // ISO 3166 codes: the item's own, or a bundle's components' in order. Several print as "Made in China and Pakistan".
+  countryOfOrigin?: string | readonly string[] | null
 }) {
   const code = printable(raw)
   const modules = code128Modules(code)
@@ -194,7 +206,7 @@ export async function standardProductLabels({
   const moduleWidth = Math.min(1, width / moduleCount)
   const barWidth = moduleCount * moduleWidth
   const name = fitTitle(printable(title), regular, 8, width)
-  const country = countryName(countryOfOrigin)
+  const country = madeIn(countryOfOrigin)
   const origin = country ? printable(`Made in ${country}`) : null
   const black = rgb(0, 0, 0)
   const text = (value: string, size: number, x: number, y: number) =>
