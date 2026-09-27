@@ -8,9 +8,10 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { businessProfileSchema } from "@/lib/business-profile"
 import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
+import { dayRange } from "@/server/restock-report"
 import { ActionForm } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
-import { FormInput, FormSelect } from "./form-controls"
+import { FormInput, FormNumber, FormSelect } from "./form-controls"
 import { sx } from "@/styles/sprinkles.css"
 
 const supplierSchema = z.object({
@@ -93,6 +94,44 @@ export function BusinessProfileForm(profile: z.input<typeof businessProfileSchem
 
 // The browser's time zone doesn't change while the page is open, so there's nothing to subscribe to.
 const noSubscription = () => () => undefined
+const restockSchema = z.object({
+  salesDays: z.number({ error: "Enter the days" }).int().min(dayRange.min).max(dayRange.max),
+  leadTimeDays: z.number({ error: "Enter the days" }).int().min(dayRange.min).max(dayRange.max)
+})
+
+// The sales period and default lead time Restock starts from and the Overview uses.
+export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
+  const { form, submit } = useActionForm({
+    schema: restockSchema,
+    action: "workspace.restock",
+    defaultValues: values,
+    keepSaved: true
+  })
+  return (
+    <ActionForm form={form} onSubmit={submit} label="Save">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormNumber
+          name="salesDays"
+          required
+          label="Sales period (days)"
+          min={dayRange.min}
+          max={dayRange.max}
+          step={1}
+        />
+        <FormNumber
+          name="leadTimeDays"
+          required
+          label="Lead time (days)"
+          description="For suppliers without their own."
+          min={dayRange.min}
+          max={dayRange.max}
+          step={1}
+        />
+      </div>
+    </ActionForm>
+  )
+}
+
 const timeZoneSchema = z.object({ timeZone: z.string() })
 
 // The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.

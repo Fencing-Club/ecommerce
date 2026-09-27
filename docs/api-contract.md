@@ -56,7 +56,7 @@ An order has one destination and one supplier. The first release permits submiss
 
 PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never supplied by the user. `GET /api/documents/:id` authorizes order access and returns a private attachment. Outdated documents cannot be downloaded. Suppliers cannot download carton/carrier labels before buyer release.
 
-`GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and SSCC label number. It does not show PDF filenames/page numbers as carton identity.
+`GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, one sheet of suffocation warning labels when a shipped line needs them, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and SSCC label number. It does not show PDF filenames/page numbers as carton identity.
 
 ## Shipment state and UI actions
 
@@ -229,7 +229,15 @@ New POs get their labels when the PO is created or imported, and again after it 
 - `POST /api/inventory/labels` (same origin) with `{productIds}` returns one PDF with a label sheet for each of their variations, made the same way as a single download with batched Amazon and Shopify lookups. `X-Skipped-Labels` counts variations left out because they have no label yet; none at all returns 404, and more than 1,000 variations returns 400.
 - `GET /api/inventory/products` also adds `countryOfOrigin` to each variant (null when Shopify has none; left out until a Shopify stock sync collects it) and `missingCountries`, the number of standard-label variations without one. `country=missing` lists only products with such a variation.
 - Action `order.labels` (buyer only, open POs) adds missing product labels and makes again the ones Copacker added, from current barcodes and Shopify and Amazon details. Labels uploaded on the PO and lines in released shipments are kept; replaced labels stay as outdated versions. It returns `{updated}`.
-- `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, for anyone who can see the PO; 404 when it has none.
+- `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, then one sheet of suffocation warning labels when a line needs them, for anyone who can see the PO; 404 when it has neither.
+
+### Suffocation warning labels
+
+A PO line's `suffocationWarning` (default `false`), set next to its preparation, asks the supplier to put a suffocation warning label on each polybag. The PO, its checklist and the PO page list it with the line's other requirements. The labels are a US Letter sheet on the product label stock (30 labels, 2 5/8 × 1 in): a warning triangle, then "WARNING:" in bold and the standard polybag warning. The sheet comes with the PO's labels download and the supplier packet.
+
+### PO documents
+
+Sending a PO stores its PDF with the PO, whether or not the supplier is on Copacker; a storage failure is logged as `po_document_failed` and doesn't undo sending, since the PDF is made again when it's emailed or downloaded. The PO page lists every current document the workspace can download, the PO's first and then each shipment's: invoice, packing list, checklist, carton labels and shipping labels. Suppliers see carton and shipping labels once the packet is released.
 - Action `order.delete` (buyer only) deletes a draft PO with its documents, history and landed costs, and returns `{redirect: "/orders"}`. A PO import saved as that draft goes back to review. Sent POs are closed instead.
 
 ### Variation and product details

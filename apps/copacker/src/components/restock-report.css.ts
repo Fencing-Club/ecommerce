@@ -83,12 +83,3 @@ export const chevron = style({
 export const groupTitle = style({ display: "flex", alignItems: "center", gap: space(2) })
 // Filters a link opened Restock with, each clearable.
 export const filters = style({ display: "flex", flexWrap: "wrap", gap: space(2) })
-
-// The counts, and how quantities are worked out behind a link-style toggle.
-export const method = style({ display: "flex", flexDirection: "column", gap: space(2) })
-export const methodTrigger = style({
-  color: vars.color.foreground,
-  textDecoration: "underline",
-  textUnderlineOffset: 2,
-  cursor: "pointer"
-})

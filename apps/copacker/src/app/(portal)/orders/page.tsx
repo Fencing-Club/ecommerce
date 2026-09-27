@@ -57,10 +57,7 @@ export default async function OrdersPage() {
 
   return (
     <>
-      <PageHeader
-        title="Purchase orders"
-        description="A shared view of every order, from the first piece to the last carton."
-      >
+      <PageHeader title="Purchase orders">
         {isBuyer && (
           <Button nativeButton={false} render={<Link href="/orders/new" />}>
             <Plus data-icon="inline-start" />

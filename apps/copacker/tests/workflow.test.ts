@@ -4,7 +4,7 @@ import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal } from "@r
 import { ProviderError } from "@repo/aisle/amazon"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
-import { PDFDocument } from "pdf-lib"
+import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/auth"
@@ -87,6 +87,7 @@ import { POST as readDemand } from "../src/app/api/inventory/demand/route"
 import { GET as readLocations, PATCH as patchLocation } from "../src/app/api/inventory/locations/route"
 import { POST as refreshInventory } from "../src/app/api/inventory/refresh/route"
 import { GET as readInventory } from "../src/app/api/inventory/route"
+import { GET as downloadOrderLabels } from "../src/app/api/orders/[id]/labels/route"
 import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
 import { accessibleOrder } from "../src/server/access"
@@ -126,6 +127,7 @@ import {
 } from "../src/server/product-defaults"
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { runNextJob } from "../src/server/queue"
+import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
 import {
   listSalesOrders,
@@ -184,6 +186,8 @@ function actor(kind: "buyer" | "supplier", id: string): Session {
       workosId: null,
       timeZone: null,
       excludedShopifyTags: ["Amazon"],
+      restockSalesDays: null,
+      restockLeadTimeDays: null,
       createdAt: new Date()
     },
     role: "owner",
@@ -1179,6 +1183,25 @@ describe("Postgres workflow and authorization", () => {
     expect(response.rows).toEqual(stockData.rows)
     expect(response.refresh).toMatchObject({ status: "failed", errorCode: "refresh_failed" })
     expect(JSON.stringify(response)).not.toContain("private provider diagnostic")
+  })
+
+  it("tries a stock refresh again later when the provider is busy, keeping the prior snapshot", async () => {
+    await stockAccount()
+    provider.api.awdStock.mockResolvedValue(stockData)
+    await refreshInventory(refreshRequest())
+    await runNextJob()
+    const [before] = await database.select().from(tables.stockSnapshots)
+    provider.api.awdStock.mockRejectedValue(new ProviderError(503, "request", "busy"))
+    await refreshInventory(refreshRequest())
+    await runNextJob()
+    const response = await (await readInventory(new Request("http://localhost/api/inventory?source=awd"))).json()
+    expect(response.snapshotId).toBe(before?.snapshotId)
+    expect(response.refresh).toMatchObject({ status: "queued", errorCode: null })
+    const [job] = await database
+      .select()
+      .from(tables.jobs)
+      .where(and(eq(tables.jobs.kind, "stock"), eq(tables.jobs.status, "pending")))
+    expect(job?.runAt.getTime()).toBeGreaterThan(Date.now() + 4 * 60000)
   })
 
   it("rejects publication after the seller account changes and hides old account stock", async () => {
@@ -2412,6 +2435,162 @@ describe("document upload and packet release", () => {
   })
 })
 
+// A page of Amazon's AWD carton labels, with its fields in the order the labels API gives them.
+async function amazonCartonLabels(fields: string[][]) {
+  const pdf = await PDFDocument.create(),
+    font = await pdf.embedFont(StandardFonts.Helvetica)
+  for (const page of fields) {
+    const sheet = pdf.addPage([288, 432])
+    page.forEach((text, index) => sheet.drawText(text, { x: 10, y: 400 - index * 20, size: 10, font }))
+  }
+  return pdf.save()
+}
+
+describe("PO to a released Amazon shipment", () => {
+  it("takes a sent PO through packing, Amazon and shipping labels to the supplier's packet", async () => {
+    // The buyer asks for suffocation warning labels on this line.
+    const data = orderInputSchema.parse({
+      ...orderData,
+      items: orderData.items.map((item) => ({ ...item, suffocationWarning: true }))
+    })
+    await database.update(tables.orders).set({ status: "draft", data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    await database
+      .insert(tables.memberships)
+      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    const stored = new Map<string, Uint8Array>()
+    storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
+      stored.set(key, bytes)
+    })
+    storage.getFile.mockImplementation(async (key: string) => stored.get(key)!)
+    provider.shopifyFor.mockResolvedValue({ variants: async () => [] })
+
+    // Sending the PO keeps its document with it and opens the first shipment.
+    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    const kinds = async () =>
+      (await database.select().from(tables.documents).where(eq(tables.documents.outdated, 0))).map((doc) => doc.kind)
+    expect(await kinds()).toEqual(["purchase_order"])
+
+    // The supplier uploads its invoice and submits the cartons.
+    context.actor = supplier
+    const invoice = await uploadPdf("invoice", shipmentId)
+    expect(invoice.status).toBe(200)
+    const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
+    const packing = packingSchema.parse({
+      invoiceDocumentId: invoiceDocument!.id,
+      readyDate: "2026-10-15",
+      origin: {
+        name: "Supplier",
+        addressLine1: "Road 1",
+        city: "Shenzhen",
+        stateOrRegion: "Guangdong",
+        postalCode: "518000",
+        countryCode: "CN",
+        phoneNumber: "+86123456789",
+        email: "supplier@example.com"
+      },
+      cartons: [
+        { cartonId: "A1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] },
+        { cartonId: "A2", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] }
+      ]
+    })
+    expect(await submitPacking(supplier, shipmentId, packing, 1)).toEqual({ approval: false })
+
+    // Amazon creates and confirms the inbound order, then makes its carton labels.
+    const request = buildAwdRequest(data, packing, `copacker-${shipmentId}-1`)
+    const remote = { ...request, orderId: "STAR-E2E", orderStatus: "DRAFT" }
+    provider.api.create.mockResolvedValue({ orderId: remote.orderId })
+    provider.api.order.mockResolvedValue(remote)
+    provider.api.confirm.mockImplementation(async () => {
+      provider.api.order.mockResolvedValue({
+        ...remote,
+        orderStatus: "CONFIRMED",
+        destinationDetails: { shipmentId: "SHIP-E2E" }
+      })
+    })
+    provider.api.labels.mockResolvedValueOnce({ labelStatus: "GENERATING" }).mockResolvedValue({
+      labelStatus: "GENERATED",
+      labelDownloadURL: "https://awd-labels.s3.amazonaws.com/SHIP-E2E.pdf"
+    })
+    const label = (sscc: string) => [
+      "FNSKU#:",
+      "MSKU#:",
+      "QTY: 40",
+      "X000000001",
+      "foil-2",
+      "DC: IUSP",
+      "Serial Shipping Container Code (SSCC)",
+      sscc
+    ]
+    const cartonLabels = await amazonCartonLabels([label("201952611540373988"), label("000000000000000000")])
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response(Buffer.from(cartonLabels)))
+    )
+    // The PO email waits for the email sender, which these tests don't have.
+    await database.delete(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    context.actor = buyer
+    for (let run = 0; run < 3; run++) {
+      await retryDue()
+      expect(await runNextJob()).toBe(true)
+    }
+    const [job] = await database.select().from(tables.jobs)
+    expect(job).toMatchObject({ status: "complete", error: null })
+    expect(provider.api.create).toHaveBeenCalledOnce()
+    expect(provider.api.confirm).toHaveBeenCalledOnce()
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment).toMatchObject({ status: "waiting_labels", amazonShipmentId: "SHIP-E2E", issue: null })
+    expect(shipment!.labels.map((row) => row.cartonId)).toEqual(["A1", "A2"])
+
+    // The buyer books transport in Amazon; all that's left is its shipping labels.
+    const waiting = (await orderWorkflow(buyer, orderId)).shipments[0]!
+    expect(waiting.issues.map((issue) => issue.code)).toEqual(["missing_shipping_label", "missing_shipping_label"])
+    const shipping = await uploadPdf("shipping_label", shipmentId, 2, [
+      { cartonId: "A1", page: 1 },
+      { cartonId: "A2", page: 2 }
+    ])
+    expect(shipping.status).toBe(200)
+    expect((await orderWorkflow(buyer, orderId)).shipments[0]).toMatchObject({ canRelease: true, issues: [] })
+    expect((await release(shipmentId)).status).toBe(200)
+
+    // Every document is kept with the PO, and the supplier can download the labels once they're released.
+    expect((await kinds()).toSorted()).toEqual(
+      [
+        "carton_label",
+        "carton_label",
+        "checklist",
+        "invoice",
+        "packing_list",
+        "purchase_order",
+        "shipping_label",
+        "shipping_label"
+      ].toSorted()
+    )
+    context.actor = supplier
+    const released = await orderWorkflow(supplier, orderId)
+    expect(released.shipments[0]).toMatchObject({ status: "ready", packetUrl: `/api/shipments/${shipmentId}/packet` })
+    expect(released.documents.every((doc) => doc.downloadUrl)).toBe(true)
+    const packet = await downloadPacket(new Request("http://localhost"), {
+      params: Promise.resolve({ id: shipmentId })
+    })
+    expect(packet.status).toBe(200)
+    const pages = (await PDFDocument.load(await packet.arrayBuffer())).getPages()
+    // Packing list and checklist, the product labels, the suffocation warning labels, two carton labels and two
+    // shipping labels.
+    expect(pages.map((page) => [page.getWidth(), page.getHeight()])).toEqual([
+      ...Array.from({ length: 4 }, () => [612, 792]),
+      ...Array.from({ length: 4 }, () => [288, 432])
+    ])
+    // The PO's labels download has the product's sheet, then the warning sheet.
+    const labels = await downloadOrderLabels(new Request("http://localhost"), {
+      params: Promise.resolve({ id: orderId })
+    })
+    expect(labels.status).toBe(200)
+    const sheets = await PDFDocument.load(await labels.arrayBuffer())
+    expect(sheets.getPageCount()).toBe(2)
+  })
+})
+
 describe("fluid packing handoff", () => {
   it("starts a packing draft with PO submission and resumes it on repeated create", async () => {
     await database.update(tables.orders).set({ status: "draft" })
@@ -3388,6 +3567,28 @@ describe("store time zone", () => {
       .where(eq(tables.organizations.id, buyerId))
     expect(org?.timeZone).toBe("America/Los_Angeles")
     expect((await save("Mars/Olympus")).status).toBe(400)
+  })
+})
+
+describe("restock settings", () => {
+  const save = (data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "workspace.restock", data })
+      })
+    )
+  const settings = async () => {
+    const [org] = await database.select().from(tables.organizations).where(eq(tables.organizations.id, buyerId))
+    return restockSettings(org!)
+  }
+
+  it("starts from the defaults and keeps the workspace's own sales period and lead time", async () => {
+    expect(await settings()).toEqual(restockDefaults)
+    expect((await save({ salesDays: 90, leadTimeDays: 45 })).status).toBe(200)
+    expect(await settings()).toEqual({ days: 90, leadTimeDays: 45 })
+    expect((await save({ salesDays: 0, leadTimeDays: 45 })).status).toBe(400)
   })
 })
 

@@ -6,11 +6,12 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import { PageBreadcrumb, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
+import { DocumentList, PageBreadcrumb, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
+import { InfoTip } from "@/components/info-tip"
 import { LandedCostForm } from "@/components/landed-costs"
 import { LineLabel, OrderMenu } from "@/components/order-actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Separator } from "@/components/ui/separator"
@@ -71,6 +72,26 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       revision: r.data
     }))
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
+  // The documents kept with the PO that this workspace can download: the PO's own, then each shipment's, in the order
+  // they're made. Product labels are made from each product instead, in the Products table.
+  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
+  const documentGroups = [
+    { key: "order", title: null, shipmentId: null },
+    ...shipmentRows.map((shipment, index) => ({
+      key: shipment.id,
+      title: `Shipment ${index + 1}`,
+      shipmentId: shipment.id
+    }))
+  ].flatMap((group) => {
+    const documents = workflow.documents
+      .filter((doc) => doc.downloadUrl && doc.shipmentId === group.shipmentId && documentOrder.includes(doc.kind))
+      .toSorted(
+        (a, b) =>
+          documentOrder.indexOf(a.kind) - documentOrder.indexOf(b.kind) ||
+          (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true })
+      )
+    return documents.length ? [{ ...group, documents }] : []
+  })
   const prep = sharedPrep(order.data)
   const instructions = [
     ...(prep ? [`${prepInstructions[prep]}.`] : []),
@@ -99,7 +120,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           reference={order.data.reference}
           draft={order.status === "draft" && buyer}
           closable={order.status === "submitted" && buyer}
-          labels={labels.some((label) => label.state === "uploaded" || label.state === "standard")}
+          labels={
+            labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
+            order.data.items.some((item) => item.suffocationWarning)
+          }
         />
       </PageHeader>
 
@@ -258,6 +282,19 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </p>
             )}
           </section>
+          {documentGroups.length > 0 && (
+            <section aria-labelledby="documents" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
+              <h2 id="documents" className={sx({ text: "lg", fontWeight: "semibold" })}>
+                Documents
+              </h2>
+              {documentGroups.map((group) => (
+                <div key={group.key} className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
+                  {group.title && <h3 className={sx({ text: "sm", fontWeight: "medium" })}>{group.title}</h3>}
+                  <DocumentList documents={group.documents} />
+                </div>
+              ))}
+            </section>
+          )}
         </div>
 
         <aside className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
@@ -291,12 +328,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           {s.org.kind === "buyer" && (
             <Card>
               <CardHeader>
-                <CardTitle>Landed costs</CardTitle>
-                <CardDescription>
-                  Freight, duty and other costs of getting these goods to you. Only your team sees them. The Overview
-                  adds them to your products’ unit costs. Freight Amazon charges for this PO’s shipments is added
-                  automatically.
-                </CardDescription>
+                <CardTitle className="flex items-center gap-1.5">
+                  Landed costs
+                  <InfoTip label="About landed costs">
+                    Freight, duty and other costs of getting these goods to you, added to unit costs on the Overview.
+                    Amazon’s freight for this PO’s shipments is added automatically. Only your team sees them.
+                  </InfoTip>
+                </CardTitle>
               </CardHeader>
               <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
                 {landed.length + freight.length > 0 && (

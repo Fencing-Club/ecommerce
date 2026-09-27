@@ -43,6 +43,8 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
       workosId: null,
       timeZone: null,
       excludedShopifyTags: ["Amazon"],
+      restockSalesDays: null,
+      restockLeadTimeDays: null,
       createdAt: new Date()
     },
     role: "owner",

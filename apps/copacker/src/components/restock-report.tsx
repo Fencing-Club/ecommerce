@@ -35,7 +35,8 @@ import { api, errorMessage, type SupplierOption, useSuppliersQuery } from "@/lib
 import { type CoverBucket, coverBucket, coverBuckets, isCoverBucket } from "@/lib/cover"
 import { cn } from "@/lib/utils"
 import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
-import { dayRange, restockDefaults } from "@/server/restock-report"
+import { dayRange } from "@/server/restock-report"
+import { InfoTip } from "./info-tip"
 import * as styles from "./restock-report.css"
 import { sx } from "@/styles/sprinkles.css"
 import { srOnly } from "@/styles/utilities.css"
@@ -693,8 +694,8 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
   if (searching) {
     return (
       <p className={styles.summary}>
-        No products match. Restock lists only products that have a supplier; set the rest on the{" "}
-        <Link href="/products">Products</Link> page.
+        No products match. Only products with a supplier are listed; set the rest on{" "}
+        <Link href="/products">Products</Link>.
       </p>
     )
   }
@@ -702,8 +703,7 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
     const name = report.suppliers.find((supplier) => supplier.id === report.supplier)?.name ?? "this supplier"
     return (
       <p className={styles.summary}>
-        No products are linked to {name} yet. Set each product’s supplier on the <Link href="/products">Products</Link>{" "}
-        page. Choose All suppliers to see everything.
+        No products are linked to {name} yet. Set suppliers on <Link href="/products">Products</Link>.
       </p>
     )
   }
@@ -833,19 +833,15 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
       {salesError ? (
         <p className={styles.summary}>Restock needs this channel’s sales. Fix the issue above and try again.</p>
       ) : (
-        <Collapsible className={styles.method}>
-          <p className={styles.summary}>
-            {counts.order} to reorder
-            {counts.blocked > 0 && `, ${counts.blocked} can’t be calculated`}, {counts.fine} have enough stock.{" "}
-            <CollapsibleTrigger className={styles.methodTrigger}>How are quantities worked out?</CollapsibleTrigger>
-          </p>
-          <CollapsibleContent className={styles.summary}>
-            Quantities cover each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock
-            and open POs, then round up to the minimum order and whole cases. Each supplier’s own lead time, set on the{" "}
-            <Link href="/suppliers">Suppliers</Link> page, replaces the default. Costs use Shopify’s unit cost and
-            exclude freight, duties and fees.
-          </CollapsibleContent>
-        </Collapsible>
+        <p className={cn(styles.summary, "flex items-center gap-1.5")}>
+          {counts.order} to reorder
+          {counts.blocked > 0 && `, ${counts.blocked} can’t be calculated`}, {counts.fine} have enough stock.
+          <InfoTip label="How quantities are worked out">
+            Enough to last each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock
+            and open POs, rounded up to the minimum order and whole cases. Costs are Shopify’s unit costs, without
+            freight, duties or fees.
+          </InfoTip>
+        </p>
       )}
       {report.needsSupplier > 0 && (
         <WarningNote>
@@ -978,13 +974,12 @@ function wholeDays(text: string) {
   return Number.isInteger(value) && value >= dayRange.min && value <= dayRange.max ? value : null
 }
 
-export function RestockReport() {
-  // Remembered between visits. Kept as typed so the fields can be cleared while editing; validated before loading.
-  const [daysText, setDaysText] = useLocalStorage({ key: "restock-days", defaultValue: String(restockDefaults.days) })
-  const [leadTimeText, setLeadTimeText] = useLocalStorage({
-    key: "restock-lead-time",
-    defaultValue: String(restockDefaults.leadTimeDays)
-  })
+// `settings` are the workspace's sales period and default lead time (Settings), which the page starts from.
+export function RestockReport({ settings }: { settings: { days: number; leadTimeDays: number } }) {
+  // Kept as typed so the fields can be cleared while editing; validated before loading. Changes here are for this
+  // visit; the workspace's settings are changed in Settings.
+  const [daysText, setDaysText] = useState(String(settings.days))
+  const [leadTimeText, setLeadTimeText] = useState(String(settings.leadTimeDays))
   const [channelKey, setChannelKey] = useLocalStorage({ key: "restock-channel", defaultValue: "" })
   const [supplier, setSupplier] = useLocalStorage({ key: "restock-supplier", defaultValue: "all" })
   const days = wholeDays(daysText)

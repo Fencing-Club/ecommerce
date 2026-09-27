@@ -73,10 +73,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="New purchase order" />
-      <PageHeader
-        title="Create purchase order"
-        description="Choose products, set quantities, and give your supplier a clear starting point."
-      />
+      <PageHeader title="Create purchase order" />
       <OrderBuilder
         suppliers={rows.map((r) => ({ id: r.id, name: r.name, paymentTerms: r.paymentTerms }))}
         deliveries={deliveries}

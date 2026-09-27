@@ -54,6 +54,7 @@ export function itemRequirements(
     ...(item.prepCategory === shared ? [] : [prepInstructions[item.prepCategory]]),
     ...(item.piecesPerSet > 1 ? [`Pack ${item.piecesPerSet} pieces together as one unit`] : []),
     ...(amazon && item.fnsku ? [`Label with FNSKU ${item.fnsku}`] : []),
+    ...(item.suffocationWarning ? ["Put a suffocation warning label on each polybag"] : []),
     ...item.instructions
       .split("\n")
       .map((line) => line.trim())

@@ -183,6 +183,13 @@
       "when": 1790497607705,
       "tag": "0025_variant_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790499589277,
+      "tag": "0026_restock_settings",
+      "breakpoints": true
     }
   ]
 }

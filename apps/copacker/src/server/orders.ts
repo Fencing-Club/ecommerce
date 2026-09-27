@@ -28,10 +28,12 @@ import { bundleQuote } from "@/lib/bundle-quote"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
+import { generatePo } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
+import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
@@ -357,8 +359,13 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     })
     return { shipmentId: shipment!.id }
   })
-  // Lines still without a label get one now: barcodes saved since the PO was created, and standard labels for the
-  // FNSKUs completed above.
+  // The PO's document is kept with it from the start, for a supplier that isn't on Copacker as much as one that is. A
+  // storage failure doesn't undo sending: the document is made again when it's emailed or downloaded.
+  try {
+    await generatePo(id)
+  } catch (error) {
+    console.error(JSON.stringify({ event: "po_document_failed", orderId: id, error: describeError(error) }))
+  }
   return submitted
 }
 export async function newShipment(s: Session, orderId: string) {

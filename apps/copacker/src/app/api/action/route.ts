@@ -52,6 +52,7 @@ import {
 } from "@/server/orders"
 import { linesMissingLabels } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
+import { dayRange } from "@/server/restock-report"
 import { appUrl, token, hash } from "@/server/security"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 
@@ -320,6 +321,17 @@ export async function POST(request: Request) {
       await db()
         .update(organizations)
         .set({ timeZone: input.timeZone || null })
+        .where(eq(organizations.id, s.org.id))
+      return Response.json({ ok: true })
+    }
+    if (action === "workspace.restock") {
+      requireOwner(s)
+      // The sales period and default lead time Restock starts from and the Overview uses.
+      const days = z.number().int().min(dayRange.min).max(dayRange.max)
+      const input = z.object({ salesDays: days, leadTimeDays: days }).parse(data)
+      await db()
+        .update(organizations)
+        .set({ restockSalesDays: input.salesDays, restockLeadTimeDays: input.leadTimeDays })
         .where(eq(organizations.id, s.org.id))
       return Response.json({ ok: true })
     }

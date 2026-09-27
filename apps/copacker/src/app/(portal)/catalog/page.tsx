@@ -20,10 +20,7 @@ export default async function CatalogPage() {
     .orderBy(desc(supplierProducts.active), asc(supplierProducts.supplierSku))
   return (
     <>
-      <PageHeader
-        title="Supplier catalog"
-        description="Upload a price list or maintain individual products. Buyers match products by your exact supplier SKU."
-      />
+      <PageHeader title="Supplier catalog" />
       <SupplierCatalogManager products={rows.map((row) => ({ ...row, active: row.active === 1 }))} />
     </>
   )

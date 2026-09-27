@@ -36,6 +36,7 @@ export function orderLine(
     piecesPerSet,
     unitPrice: Math.round((variantUnitCostMinor(variant, currency) ?? 0) / piecesPerSet),
     instructions: defaults.description ?? "",
-    prepCategory: defaults.prepCategory ?? "POLYBAGGING"
+    prepCategory: defaults.prepCategory ?? "POLYBAGGING",
+    suffocationWarning: false
   }
 }

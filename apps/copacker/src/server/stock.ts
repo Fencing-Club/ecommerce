@@ -9,6 +9,7 @@ import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
+import { PollAgain } from "./job-handlers"
 import { copyShopifyFields, fillStockRows } from "./product-fields"
 import { recordStockDays } from "./stock-days"
 
@@ -118,6 +119,9 @@ export async function refreshStock(
   })
 }
 
+const retryDelayMs = 5 * 60000
+const retryAttempts = 12
+
 export async function stockJob(
   payload: Record<string, unknown>,
   assertOwned: () => Promise<void>,
@@ -214,6 +218,14 @@ export async function stockJob(
     }
   } catch (error) {
     const errorCode = stockErrorCode(error)
+    // A busy or briefly unavailable provider (such as Shopify throttling while orders sync) is tried again in a few
+    // minutes, for up to an hour, rather than marking the refresh failed.
+    if (errorCode === "provider_unavailable" && attempt.attempts < retryAttempts) {
+      await db().update(stockSnapshots).set({ status: "queued", workerToken: null }).where(owned)
+      throw new PollAgain(`${claimed.source} is busy; retrying the stock refresh in 5 minutes`, {
+        delayMs: retryDelayMs
+      })
+    }
     console.error(
       JSON.stringify({
         event: "stock_refresh_failed",

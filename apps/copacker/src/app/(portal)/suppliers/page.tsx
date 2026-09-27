@@ -11,7 +11,7 @@ import { db } from "@/db"
 import { supplierProfiles, suppliers } from "@/db/schema"
 import { cn } from "@/lib/utils"
 import { requireBuyer, session } from "@/server/auth"
-import { restockDefaults } from "@/server/restock-report"
+import { restockSettings } from "@/server/restock-report"
 import * as styles from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
 import { srOnly } from "@/styles/utilities.css"
@@ -45,9 +45,9 @@ async function loadSuppliers(orgId: string) {
 
 type SupplierRow = Awaited<ReturnType<typeof loadSuppliers>>[number]
 
-function leadTime(local: number | null, amazon: number | null) {
+function leadTime(local: number | null, amazon: number | null, fallback: number) {
   if (local === null && amazon === null) {
-    return `Lead time ${restockDefaults.leadTimeDays} days (default)`
+    return `Lead time ${fallback} days (default)`
   }
   if (amazon === null) {
     return `Lead time ${local} days`
@@ -67,7 +67,15 @@ function Detail({ icon: Icon, label, children }: { icon: LucideIcon; label: stri
 }
 
 // A supplier: its name and status, its company name when Shopify's differs, then its contact details and lead time.
-function SupplierRow({ row, owner }: { row: SupplierRow; owner: boolean }) {
+function SupplierRow({
+  row,
+  owner,
+  defaultLeadTimeDays
+}: {
+  row: SupplierRow
+  owner: boolean
+  defaultLeadTimeDays: number
+}) {
   const email = row.contact.contactEmail ?? row.email
   const website = row.contact.website?.replace(/^https?:\/\//, "").replace(/\/$/, "")
   return (
@@ -113,7 +121,7 @@ function SupplierRow({ row, owner }: { row: SupplierRow; owner: boolean }) {
             </Detail>
           )}
           <Detail icon={Timer} label="Lead time">
-            {leadTime(row.leadTimeDays, row.amazonLeadTimeDays)}
+            {leadTime(row.leadTimeDays, row.amazonLeadTimeDays, defaultLeadTimeDays)}
           </Detail>
         </div>
       </ItemContent>
@@ -137,6 +145,7 @@ function SupplierRow({ row, owner }: { row: SupplierRow; owner: boolean }) {
           name={row.name}
           shopifySupplierName={row.shopifySupplierName}
           leadTimeDays={row.leadTimeDays}
+          defaultLeadTimeDays={defaultLeadTimeDays}
           amazonLeadTimeDays={row.amazonLeadTimeDays}
           paymentTerms={row.paymentTerms}
           contact={row.contact}
@@ -151,6 +160,7 @@ export default async function SuppliersPage() {
   const s = await session()
   requireBuyer(s)
   const rows = await loadSuppliers(s.org.id)
+  const defaultLeadTimeDays = restockSettings(s.org).leadTimeDays
   // Joined suppliers apart from the rest, which you still share POs with yourself.
   const groups = [
     { title: "Joined", rows: rows.filter((row) => row.supplierOrgId) },
@@ -159,10 +169,7 @@ export default async function SuppliersPage() {
 
   return (
     <>
-      <PageHeader
-        title="Suppliers"
-        description="Everyone you buy from in Shopify. Invite them to work on POs with you."
-      />
+      <PageHeader title="Suppliers" />
       <Card>
         <CardHeader>
           <CardTitle>Your suppliers</CardTitle>
@@ -185,7 +192,12 @@ export default async function SuppliersPage() {
                       </h3>
                       <ItemGroup className={sx({ gap: 2 })}>
                         {group.rows.map((row) => (
-                          <SupplierRow key={row.id} row={row} owner={s.role === "owner"} />
+                          <SupplierRow
+                            key={row.id}
+                            row={row}
+                            owner={s.role === "owner"}
+                            defaultLeadTimeDays={defaultLeadTimeDays}
+                          />
                         ))}
                       </ItemGroup>
                     </section>

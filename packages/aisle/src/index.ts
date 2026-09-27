@@ -104,7 +104,9 @@ export const itemSchema = z
     piecesPerSet: z.number().int().min(1).max(1000),
     unitPrice: z.number().int().min(0).max(100000000),
     instructions: z.string().max(4000).default(""),
-    prepCategory: z.enum(prepCategories).default("POLYBAGGING")
+    prepCategory: z.enum(prepCategories).default("POLYBAGGING"),
+    // Each unit's polybag gets a suffocation warning label, printed from the PO's label sheets.
+    suffocationWarning: z.boolean().default(false)
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Pieces must be divisible by pieces per set")
 export type OrderItem = z.infer<typeof itemSchema>

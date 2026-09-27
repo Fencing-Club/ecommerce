@@ -40,9 +40,7 @@ export default async function ForwardersPage() {
 
   return (
     <>
-      <PageHeader title="Forwarders" description="Freight forwarders your POs can ship to, and their addresses.">
-        {owner && <AddForwarder />}
-      </PageHeader>
+      <PageHeader title="Forwarders">{owner && <AddForwarder />}</PageHeader>
       {rows.length ? (
         <div className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
           {rows.map((row) => (

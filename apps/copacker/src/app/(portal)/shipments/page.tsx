@@ -23,7 +23,7 @@ export default async function ShipmentsPage() {
 
   return (
     <>
-      <PageHeader title="Shipments" description="Track carton preparation, approvals, and labels in one place." />
+      <PageHeader title="Shipments" />
 
       {/* Counts only help once there is something to count. */}
       {list.length > 0 && (

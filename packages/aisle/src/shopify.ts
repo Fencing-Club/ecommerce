@@ -251,6 +251,10 @@ export class Shopify {
           await this.delay(Math.min(60000, Math.max(refill, 1000 * 2 ** attempt)))
           continue
         }
+        // Still throttled after the retries: a rate limit like a 429, so callers can try again later.
+        if (throttled) {
+          throw new ShopifyRequestError(429)
+        }
         // GraphQL error messages describe the query, not the store's data, so they are safe to keep for diagnosis.
         const messages = envelope.errors.map(
           (error) => z.object({ message: z.string() }).safeParse(error).data?.message

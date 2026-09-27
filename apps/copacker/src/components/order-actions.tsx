@@ -128,7 +128,7 @@ export function OrderMenu({
   draft: boolean
   // Buyers can close a sent PO.
   closable: boolean
-  // Whether any product labels are attached, to download together.
+  // Whether the PO has product or suffocation warning labels, to download together.
   labels: boolean
 }) {
   const router = useRouter()

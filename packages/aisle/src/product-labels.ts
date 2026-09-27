@@ -240,6 +240,90 @@ export async function standardProductLabels({
   return pdf.save()
 }
 
+// The warning US law and Amazon require on a polybag whose opening is 5 in (12.7 cm) or wider.
+export const suffocationWarning =
+  "To avoid danger of suffocation, keep plastic bags away from babies and children. Do not use this bag in cribs, beds, carriages or play pens. This bag is not a toy."
+
+// Breaks words into lines no wider than width. The first word is set in the bold font.
+function wrapWords(words: string[], width: number, size: number, regular: PDFFont, bold: PDFFont) {
+  const lines: string[][] = [[]]
+  let used = 0
+  for (const [index, word] of words.entries()) {
+    const font = index === 0 ? bold : regular
+    const wordWidth = font.widthOfTextAtSize(word, size)
+    const line = lines.at(-1)!
+    const space = line.length ? regular.widthOfTextAtSize(" ", size) : 0
+    if (line.length && used + space + wordWidth > width) {
+      lines.push([word])
+      used = wordWidth
+    } else {
+      line.push(word)
+      used += space + wordWidth
+    }
+  }
+  return lines
+}
+
+// A sheet of 30 suffocation warning labels on the same stock as the product labels: a warning triangle, then
+// "WARNING:" in bold and the warning, as on the rectangular polybag warning stickers Amazon sellers use.
+export async function suffocationWarningLabels() {
+  const pdf = await PDFDocument.create()
+  const regular = await pdf.embedFont(StandardFonts.Helvetica)
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
+  pdf.setTitle("Suffocation warning labels")
+  const page = pdf.addPage([sheet.width, sheet.height])
+  const inset = 6
+  const triangle = { width: 30, height: 26 }
+  const textLeft = inset + triangle.width + 5
+  const textWidth = sheet.label - textLeft - inset
+  const words = ["WARNING:", ...suffocationWarning.split(" ")]
+  // The largest size whose lines fit the label's height.
+  let size = 10
+  let lines = wrapWords(words, textWidth, size, regular, bold)
+  while (size > 5 && lines.length * size * 1.15 > labelHeight - inset * 2) {
+    size -= 0.25
+    lines = wrapWords(words, textWidth, size, regular, bold)
+  }
+  const leading = size * 1.15
+  const black = rgb(0, 0, 0)
+  const white = rgb(1, 1, 1)
+  const mark = bold.widthOfTextAtSize("!", 16)
+  for (let row = 0; row < sheet.rows; row++) {
+    for (let column = 0; column < sheet.columns; column++) {
+      const left = sheet.left + column * sheet.pitch
+      const top = sheet.height - sheet.top - row * labelHeight
+      const middle = top - labelHeight / 2
+      // An SVG path's y axis points down, from the point given.
+      page.drawSvgPath(`M ${triangle.width / 2} 0 L ${triangle.width} ${triangle.height} L 0 ${triangle.height} Z`, {
+        x: left + inset,
+        y: middle + triangle.height / 2,
+        color: black
+      })
+      page.drawText("!", {
+        x: left + inset + (triangle.width - mark) / 2,
+        y: middle - triangle.height / 2 + 3,
+        size: 16,
+        font: bold,
+        color: white
+      })
+      // The block of lines is centered on the label, each line on its baseline.
+      let y = middle + (lines.length * leading) / 2 - size
+      let first = true
+      for (const line of lines) {
+        let x = left + textLeft
+        for (const word of line) {
+          const font = first ? bold : regular
+          first = false
+          page.drawText(word, { x, y, size, font, color: black })
+          x += font.widthOfTextAtSize(word, size) + regular.widthOfTextAtSize(" ", size)
+        }
+        y -= leading
+      }
+    }
+  }
+  return pdf.save()
+}
+
 // The title printed on a label: the product's Shopify title, with its variant's options in parentheses unless it's the
 // only variant, such as "Pro-Grip Fencing Glove (10, Left)".
 export function labelTitle(product: string, variant: string | null) {

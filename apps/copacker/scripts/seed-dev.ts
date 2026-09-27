@@ -308,7 +308,8 @@ for (const org of buyers) {
               piecesPerSet: 3,
               unitPrice: 400,
               instructions: "",
-              prepCategory: "POLYBAGGING"
+              prepCategory: "POLYBAGGING",
+              suffocationWarning: false
             }
           ]
         }

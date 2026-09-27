@@ -20,10 +20,7 @@ export default async function ProductsPage() {
     .where(eq(connections.orgId, s.org.id))
   return (
     <>
-      <PageHeader
-        title="Products"
-        description="Your products with stock from your connected accounts. Edit a product to set its supplier, case packs and barcodes."
-      />
+      <PageHeader title="Products" />
       <InventorySync providers={linked.map((row) => row.provider)} />
     </>
   )

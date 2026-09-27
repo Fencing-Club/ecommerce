@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { AttentionItem, Overview, SetupStep } from "@/server/overview"
+import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
 import * as styles from "./overview.css"
 import { vars } from "@/styles/theme.css"
@@ -51,21 +52,6 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
       {children}
       <ArrowRight aria-hidden />
     </Link>
-  )
-}
-
-// A short explanation behind an info icon, for the few things a card can't show on its face.
-export function InfoTip({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        aria-label={label}
-        className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
-      >
-        <Info className="size-3.5" aria-hidden />
-      </TooltipTrigger>
-      <TooltipContent className="max-w-64">{children}</TooltipContent>
-    </Tooltip>
   )
 }
 

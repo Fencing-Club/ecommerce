@@ -7,7 +7,8 @@ import {
   countryName,
   madeIn,
   labelTitle,
-  standardProductLabels
+  standardProductLabels,
+  suffocationWarningLabels
 } from "../src/product-labels"
 
 describe("Code 128", () => {
@@ -46,6 +47,15 @@ describe("standard product labels", () => {
     expect(labelTitle("Body cord", "Default Title")).toBe("Body cord")
     expect(labelTitle("Body cord", null)).toBe("Body cord")
     expect(labelTitle("Pro-Grip Fencing Glove", "10 / Left")).toBe("Pro-Grip Fencing Glove (10, Left)")
+  })
+})
+
+describe("suffocation warning labels", () => {
+  it("fill one US Letter page of the product label stock", async () => {
+    const pdf = await PDFDocument.load(await suffocationWarningLabels())
+    expect(pdf.getPageCount()).toBe(1)
+    expect(pdf.getPage(0).getSize()).toEqual({ width: 612, height: 792 })
+    expect(pdf.getTitle()).toBe("Suffocation warning labels")
   })
 })
 

@@ -10,7 +10,7 @@ export default async function ImportOrder() {
   return (
     <>
       <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="Import document" />
-      <PageHeader title="Import document" description="Start a purchase order from a supplier document." />
+      <PageHeader title="Import document" />
       <ImportIntake />
     </>
   )

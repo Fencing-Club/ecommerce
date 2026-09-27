@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { amazonDestinations, type OrderInput } from "@repo/aisle"
 import { combinePdfs } from "@repo/aisle/documents"
 import { splitPdfPages } from "@repo/aisle/labels"
-import { labelTitle, standardProductLabels } from "@repo/aisle/product-labels"
+import { labelTitle, standardProductLabels, suffocationWarningLabels } from "@repo/aisle/product-labels"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -512,6 +512,14 @@ export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
   return files
 }
 
+// One sheet of suffocation warning labels when any of the lines needs them, for the supplier to print as many as it
+// bags; null when none does.
+export async function warningLabelFile(items: readonly Pick<OrderInput["items"][number], "suffocationWarning">[]) {
+  return items.some((item) => item.suffocationWarning)
+    ? { name: "Suffocation warning labels.pdf", bytes: await suffocationWarningLabels() }
+    : null
+}
+
 // The lines of a PO the workspace can see whose product can't make a label yet.
 export async function linesMissingLabels(s: Session, orderId: string) {
   const { order } = await accessibleOrder(s, orderId)
@@ -535,10 +543,15 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   return file!
 }
 
-// All of a PO's product labels in one PDF, in the PO's line order, for printing them together.
+// All of a PO's product labels in one PDF, in the PO's line order, then its suffocation warning labels, for printing
+// them together.
 export async function orderLabelsPdf(s: Session, orderId: string) {
   const { order } = await accessibleOrder(s, orderId)
   const files = await lineLabelFiles(order, await lineLabels(order))
+  const warnings = await warningLabelFile(order.data.items)
+  if (warnings) {
+    files.push({ itemId: "", ...warnings })
+  }
   if (!files.length) {
     throw new ProductBarcodeError("This PO has no product labels", 404)
   }

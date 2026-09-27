@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { RestockReport } from "@/components/restock-report"
 import { session } from "@/server/auth"
+import { restockSettings } from "@/server/restock-report"
 
 export const metadata: Metadata = { title: "Restock" }
 
@@ -13,11 +14,8 @@ export default async function RestockPage() {
   }
   return (
     <>
-      <PageHeader
-        title="Restock"
-        description="Suggested reorders from recent sales, your stock and what's already on order."
-      />
-      <RestockReport />
+      <PageHeader title="Restock" />
+      <RestockReport settings={restockSettings(s.org)} />
     </>
   )
 }

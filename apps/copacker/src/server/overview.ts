@@ -42,7 +42,7 @@ import {
 } from "./overview-sales"
 import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
-import { restockDefaults } from "./restock-report"
+import { restockSettings } from "./restock-report"
 import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
 import { excludedShopifyTags } from "./shopify-tags"
 
@@ -686,13 +686,14 @@ async function restockFingerprint(orgId: string) {
   return String((result as unknown as { rows: { fingerprint: unknown }[] }).rows[0]?.fingerprint ?? "")
 }
 
-async function cachedRestock(orgId: string, now: number) {
-  const fingerprint = await restockFingerprint(orgId)
+async function cachedRestock(orgId: string, now: number, settings: { days: number; leadTimeDays: number }) {
+  // A change to the workspace's sales period or lead time recalculates.
+  const fingerprint = `${await restockFingerprint(orgId)}:${settings.days}:${settings.leadTimeDays}`
   const cached = restockCache.get(orgId)
   if (cached && cached.fingerprint === fingerprint && now - cached.at < restockCacheMs) {
     return cached.value
   }
-  const value = await restockAllChannels(orgId, restockDefaults.days, restockDefaults.leadTimeDays)
+  const value = await restockAllChannels(orgId, settings.days, settings.leadTimeDays)
   restockCache.set(orgId, { fingerprint, at: now, value })
   return value
 }
@@ -701,11 +702,13 @@ async function cachedRestock(orgId: string, now: number) {
 // "shopify:<location>").
 export async function overview(
   // `timeZone` is the store's: the one set in Settings, or else the viewer's computer's (see storeTimeZone).
-  org: { id: string; timeZone: string },
+  // `restockSalesDays` and `restockLeadTimeDays` are the workspace's restock settings (null uses the defaults).
+  org: { id: string; timeZone: string; restockSalesDays?: number | null; restockLeadTimeDays?: number | null },
   // `period` is the page's query: `period`, or `from` and `to`, and `compare` (see readPeriod).
   options: { channel?: string | null; period?: Record<string, string | string[] | undefined>; now?: Date } = {}
 ) {
   const now = options.now ?? new Date()
+  const settings = restockSettings(org)
   const orgId = org.id
   const { timeZone } = org
   const today = zonedDay(now, timeZone)
@@ -720,7 +723,7 @@ export async function overview(
   )
   const amazonLinked = accounts.find((account) => account.provider === "amazon")
   const [restock, currency, marketplaces] = await Promise.all([
-    cachedRestock(orgId, now.getTime()),
+    cachedRestock(orgId, now.getTime(), settings),
     reportingCurrency(orgId),
     amazonLinked
       ? storedMarketplaces(orgId, amazonLinked.externalId, zonedStart(addDays(today, -365), timeZone))
@@ -1026,8 +1029,8 @@ export async function overview(
       moversComparable: comparable.length > 0
     },
     restock: {
-      days: restockDefaults.days,
-      leadTimeDays: restockDefaults.leadTimeDays,
+      days: settings.days,
+      leadTimeDays: settings.leadTimeDays,
       ...summary,
       // Products whose costs include freight and duty from a PO's landed costs.
       landedProducts: markups.size

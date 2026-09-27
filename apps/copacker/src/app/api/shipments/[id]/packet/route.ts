@@ -5,7 +5,7 @@ import { db } from "@/db"
 import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireMembership } from "@/server/auth"
-import { lineLabelFiles, lineLabels } from "@/server/product-barcodes"
+import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
@@ -46,9 +46,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     order,
     labels.filter((label) => itemIds.has(label.itemId))
   )
+  const warnings = await warningLabelFile(
+    (shipment.snapshot ?? order.data).items.filter((item) => itemIds.has(item.id))
+  )
   const result = await combinePdfs([
     ...(await Promise.all([...byKind("packing_list"), ...byKind("checklist")].map(file))),
     ...productLabels.map((label) => label.bytes),
+    ...(warnings ? [warnings.bytes] : []),
     ...(await Promise.all([...byKind("carton_label"), ...byKind("shipping_label")].map(file)))
   ])
   await accessibleOrder(s, shipment.orderId)

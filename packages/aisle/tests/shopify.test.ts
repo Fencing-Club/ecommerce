@@ -4,6 +4,7 @@ import {
   shopDomainSchema,
   Shopify,
   ShopifyPermissionError,
+  ShopifyRequestError,
   piecesPerUnit,
   bundleSupplierComponents,
   shopifyLocationKind
@@ -74,6 +75,22 @@ describe("Shopify throttling", () => {
     await api.graphql("query Shop { shop { myshopifyDomain } }")
     // 800 points short at 50 a second is 16 seconds, plus one; 900 short is 18, plus one.
     expect(delay.mock.calls).toEqual([[17000], [19000]])
+  })
+
+  it("reports a query still throttled after its retries as a rate limit", async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ errors: [{ message: "Throttled", extensions: { code: "THROTTLED" } }] })
+    )
+    const api = new Shopify(
+      domain,
+      "test",
+      transport,
+      vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined)
+    )
+    const error = await api.graphql("query Shop { shop { myshopifyDomain } }").catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(ShopifyRequestError)
+    expect(error).toMatchObject({ status: 429 })
+    expect(transport).toHaveBeenCalledTimes(5)
   })
 
   it("does not retry permission or other GraphQL errors", async () => {

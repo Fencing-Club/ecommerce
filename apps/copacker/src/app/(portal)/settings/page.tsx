@@ -8,10 +8,16 @@ import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
 import { TextField } from "@/components/form-fields"
+import { InfoTip } from "@/components/info-tip"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { AddMonthlyCost } from "@/components/monthly-costs"
 import { SavedAddresses } from "@/components/saved-addresses"
-import { BusinessProfileForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
+import {
+  BusinessProfileForm,
+  RestockSettingsForm,
+  SupplierProfileForm,
+  TimeZoneForm
+} from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +31,7 @@ import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
 import { reportingCurrency } from "@/server/overview-sales"
+import { restockSettings } from "@/server/restock-report"
 import { salesHistoryDays } from "@/server/sales-orders"
 import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
@@ -54,6 +61,7 @@ export default async function Settings() {
   // The viewer's computer's zone, as their browser last reported it.
   const computerZone = await storeTimeZone({ timeZone: null })
   const buyer = s.org.kind === "buyer"
+  const restock = restockSettings(s.org)
   const [linked, saved, [profile], costs, currency] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
@@ -86,10 +94,7 @@ export default async function Settings() {
 
   return (
     <>
-      <PageHeader
-        title="Workspace settings"
-        description="Connect your accounts and keep pickup and freight forwarder details close at hand."
-      />
+      <PageHeader title="Workspace settings" />
 
       {s.org.kind === "buyer" && (
         <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { md: "2" } })}>
@@ -180,11 +185,12 @@ export default async function Settings() {
       {s.org.kind === "buyer" && (
         <Card>
           <CardHeader>
-            <CardTitle>Store time zone</CardTitle>
-            <CardDescription>
-              The Overview counts sales days and months from midnight in this time zone. Unless you choose one, it uses
-              your computer’s.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-1.5">
+              Store time zone
+              <InfoTip label="About the store time zone">
+                The Overview counts days and months from midnight here. Unless you choose one, it uses your computer’s.
+              </InfoTip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {s.role === "owner" ? (
@@ -203,11 +209,35 @@ export default async function Settings() {
       {buyer && (
         <Card>
           <CardHeader>
-            <CardTitle>Monthly costs</CardTitle>
-            <CardDescription>
-              Costs you pay every month that Shopify and Amazon don’t report, such as apps billed to a card. The
-              Overview takes each month’s share off gross profit.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-1.5">
+              Restock
+              <InfoTip label="About restock settings">
+                Restock starts from these, and the Overview uses them for days of cover and stockout losses.
+              </InfoTip>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {s.role === "owner" ? (
+              <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
+            ) : (
+              <p>
+                {restock.days}-day sales period, {restock.leadTimeDays}-day lead time
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {buyer && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-1.5">
+              Monthly costs
+              <InfoTip label="About monthly costs">
+                Costs Shopify and Amazon don’t report, such as apps billed to a card. The Overview takes them off gross
+                profit.
+              </InfoTip>
+            </CardTitle>
             {s.role === "owner" && (
               <CardAction>
                 <AddMonthlyCost currency={currency} />
@@ -280,10 +310,10 @@ export default async function Settings() {
       {s.org.kind === "supplier" && (
         <Card>
           <CardHeader>
-            <CardTitle>Supplier profile</CardTitle>
-            <CardDescription>
-              Your contact details, which buyers working with you see. Only you can change them.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-1.5">
+              Supplier profile
+              <InfoTip label="About your supplier profile">Buyers working with you see these details.</InfoTip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {s.role === "owner" ? (

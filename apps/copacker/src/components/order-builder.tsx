@@ -16,7 +16,7 @@ import { orderLine } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { FormError, SubmitButton } from "./actions"
 import { EmptyState, WarningNote } from "./common"
-import { FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
+import { FormCheckbox, FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import * as styles from "./order-builder.css"
 import { sx } from "@/styles/sprinkles.css"
 
@@ -482,6 +482,11 @@ export function OrderBuilder({
                             {line.fnsku ? `, FNSKU ${line.fnsku}` : ", FNSKU looked up from Amazon"}
                           </dd>
                         </dl>
+                        <FormCheckbox
+                          name={`items.${index}.suffocationWarning`}
+                          label="Suffocation warning label"
+                          className={sx({ gridColumn: { sm: "span3" } })}
+                        />
                         <FormTextarea
                           name={`items.${index}.instructions`}
                           label="Product instructions"

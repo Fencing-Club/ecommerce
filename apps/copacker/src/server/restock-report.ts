@@ -3,8 +3,16 @@ import type { InventoryProduct } from "./inventory-products"
 
 // Sales periods and lead times are whole days; Amazon keeps two years of orders.
 export const dayRange = { min: 1, max: 730 } as const
-// The sales period and lead time restock starts from; the Overview always uses them.
+// The sales period and lead time restock starts from when the workspace hasn't set its own.
 export const restockDefaults = { days: 60, leadTimeDays: 60 } as const
+
+// The workspace's sales period and default lead time (Settings), which Restock starts from and the Overview uses.
+export function restockSettings(org: { restockSalesDays?: number | null; restockLeadTimeDays?: number | null }) {
+  return {
+    days: org.restockSalesDays ?? restockDefaults.days,
+    leadTimeDays: org.restockLeadTimeDays ?? restockDefaults.leadTimeDays
+  }
+}
 
 export type RestockSuggestion = {
   // Days until the counted stock runs out at the observed rate; null without sales.

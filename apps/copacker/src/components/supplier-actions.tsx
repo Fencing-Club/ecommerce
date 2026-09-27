@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { formErrorMap } from "@/lib/form-errors"
-import { restockDefaults } from "@/server/restock-report"
 import { FormError } from "./actions"
 import { FormInput, FormNumber } from "./form-controls"
 import { SupplierForm } from "./settings-forms"
@@ -71,6 +70,7 @@ export function EditSupplier({
   name,
   shopifySupplierName,
   leadTimeDays,
+  defaultLeadTimeDays,
   amazonLeadTimeDays,
   paymentTerms,
   contact,
@@ -80,6 +80,8 @@ export function EditSupplier({
   name: string
   shopifySupplierName: string | null
   leadTimeDays: number | null
+  // The workspace lead time an empty field falls back to.
+  defaultLeadTimeDays: number
   amazonLeadTimeDays: number | null
   paymentTerms: string
   contact: SupplierContact
@@ -162,7 +164,7 @@ export function EditSupplier({
             <FormNumber
               name="leadTimeDays"
               label="To your locations (days)"
-              description={`From PO to sellable stock. Empty means ${restockDefaults.leadTimeDays}.`}
+              description={`From PO to sellable stock. Empty means ${defaultLeadTimeDays}.`}
               min={1}
               max={730}
               step={1}

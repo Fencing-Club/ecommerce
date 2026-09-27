@@ -32,6 +32,9 @@ export const organizations = pgTable("organizations", {
   // without regard to case. Shopify's Amazon sales channel tags its copies of Amazon's orders "Amazon"; those are
   // counted from Amazon itself.
   excludedShopifyTags: text().array().notNull().default(["Amazon"]),
+  // Restock's sales period and default lead time in days, used by Restock and the Overview. Null uses 60 days.
+  restockSalesDays: integer(),
+  restockLeadTimeDays: integer(),
   createdAt: createdAt()
 })
 export const memberships = pgTable(

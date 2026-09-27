@@ -58,6 +58,14 @@ describe("PO instructions", () => {
     expect(itemRequirements(po.items[0]!, "warehouse")).toEqual(["Seal each unit in a clear polybag"])
   })
 
+  it("asks for a suffocation warning label on the lines that need one, to any destination", () => {
+    const po = order([line({ suffocationWarning: true })])
+    expect(itemRequirements(po.items[0]!, "warehouse", "POLYBAGGING")).toEqual([
+      "Put a suffocation warning label on each polybag"
+    ])
+    expect(order([line()]).items[0]!.suffocationWarning).toBe(false)
+  })
+
   it("keeps preparation on each line when lines differ", () => {
     const po = order([
       line(),

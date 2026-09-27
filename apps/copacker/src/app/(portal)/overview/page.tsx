@@ -20,7 +20,7 @@ type Query = Record<string, string | string[] | undefined>
 
 async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) {
   const channel = typeof query.channel === "string" ? query.channel : null
-  const data = await overview({ id: org.id, timeZone: await storeTimeZone(org) }, { channel, period: query })
+  const data = await overview({ ...org, timeZone: await storeTimeZone(org) }, { channel, period: query })
   if (!data.connected.length) {
     return (
       <div className={styles.page}>
@@ -61,7 +61,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const query = await searchParams
   return (
     <>
-      <PageHeader title="Overview" description="Sales, stock, purchasing and shipments at a glance." />
+      <PageHeader title="Overview" />
       <Suspense key={JSON.stringify(query)} fallback={<OverviewSkeleton />}>
         <Dashboard org={s.org} query={query} />
       </Suspense>

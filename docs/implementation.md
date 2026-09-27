@@ -85,7 +85,7 @@ Checked tasks have local implementation and the evidence stated here. They do no
 
 - [ ] Complete design-owned UI wiring against [api-contract.md](api-contract.md) and exercise browser flows.
 - [ ] Authorize a merchant account, check AWD eligibility, create and confirm an approved test shipment, retrieve labels, and verify SSCC/carton assignments.
-- [ ] Upload buyer-booked carrier labels, reject missing/duplicate assignments, and release the complete supplier packet.
+- [ ] Upload buyer-booked carrier labels, reject missing/duplicate assignments, and release the complete supplier packet. A database test with mocked Amazon covers the whole path, from sending the PO through AWD create, confirm and carton labels to shipping labels, release and the packet; a live shipment remains open.
 - [ ] Review generated packing list/checklist and all label page sizes; ensure actual supplier carton numbers are printed.
 - [ ] Exercise correction, cancellation verification, and replacement without duplicate Amazon shipments or reused labels.
 - [x] Verify live Railway private bucket upload/download using the app storage functions; anonymous access returned denial and the temporary PDF was removed.

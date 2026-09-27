@@ -100,6 +100,8 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
       workosId: null,
       timeZone: null,
       excludedShopifyTags: ["Amazon"],
+      restockSalesDays: null,
+      restockLeadTimeDays: null,
       createdAt: new Date()
     },
     role: "owner",
@@ -158,7 +160,8 @@ function item(id: string, variantId: string): OrderInput["items"][number] {
     piecesPerSet: 1,
     unitPrice: 100,
     instructions: "",
-    prepCategory: "POLYBAGGING"
+    prepCategory: "POLYBAGGING",
+    suffocationWarning: false
   }
 }
 

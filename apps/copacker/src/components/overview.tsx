@@ -16,12 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { change, compactMoney, compactNumber, formatChange, formatMoney, formatPercent, wholeMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
+import { InfoTip } from "./info-tip"
 import { SalesTrend, Sparkline } from "./overview-charts"
 import {
   Attention,
   BestSellers,
   CardLink,
-  InfoTip,
   Customers,
   DaysOfCover,
   OpenOrders,
