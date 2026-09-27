@@ -1,6 +1,7 @@
 import {
   ArrowDownRight,
   ChartLine,
+  Info,
   ArrowUpRight,
   Minus,
   Package,
@@ -13,6 +14,7 @@ import {
 import Link from "next/link"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { change, compactMoney, compactNumber, formatChange, formatMoney, formatPercent, wholeMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
@@ -65,7 +67,8 @@ function Kpi({
   value,
   children,
   trend,
-  tone
+  tone,
+  info
 }: {
   label: string
   icon: typeof Package
@@ -74,12 +77,27 @@ function Kpi({
   trend?: (number | null)[]
   // A loss reads in red.
   tone?: "loss"
+  // What the figure means, behind an info icon after the label.
+  info?: string
 }) {
   return (
     <Card className={styles.kpi}>
       <CardContent className={styles.stack}>
         <div className={styles.kpiHead}>
-          <span className={styles.kpiLabel}>{label}</span>
+          <span className="flex items-center gap-1.5">
+            <span className={styles.kpiLabel}>{label}</span>
+            {info && (
+              <Tooltip>
+                <TooltipTrigger
+                  aria-label={`About ${label.toLowerCase()}`}
+                  className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <Info className="size-3.5" aria-hidden />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-60">{info}</TooltipContent>
+              </Tooltip>
+            )}
+          </span>
           <span className={styles.kpiIcon} aria-hidden>
             <Icon />
           </span>
@@ -229,6 +247,7 @@ function SalesKpis({
       <Kpi
         label="Stockout losses"
         icon={TrendingDown}
+        info="Sales expected to be lost while items are out of stock, before reorders placed today arrive."
         value={expectedLoss}
         tone={restock.expectedLostItems > 0 ? "loss" : undefined}
       >
