@@ -37,7 +37,15 @@ const unknownVariant = "gid://shopify/ProductVariant/99"
 function actor(id: string, kind: "buyer" | "supplier"): Session {
   return {
     user: { id: `user-${id}`, email: "owner@example.com", emailVerified: true },
-    org: { id, kind, name: kind, workosId: null, timeZone: null, createdAt: new Date() },
+    org: {
+      id,
+      kind,
+      name: kind,
+      workosId: null,
+      timeZone: null,
+      excludedShopifyTags: ["Amazon"],
+      createdAt: new Date()
+    },
     role: "owner",
     workspaces: []
   }

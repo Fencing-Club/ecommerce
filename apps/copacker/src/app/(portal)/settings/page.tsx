@@ -6,6 +6,7 @@ import { ActionButton } from "@/components/actions"
 import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
+import { ExcludedOrderTags } from "@/components/excluded-order-tags"
 import { TextField } from "@/components/form-fields"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { AddMonthlyCost } from "@/components/monthly-costs"
@@ -24,6 +25,8 @@ import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
 import { reportingCurrency } from "@/server/overview-sales"
+import { salesHistoryDays } from "@/server/sales-orders"
+import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { pushToBottom } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -64,9 +67,11 @@ export default async function Settings() {
 
   const shopifyAccount = linked.find((c) => c.provider === "shopify")
   const amazonAccount = linked.find((c) => c.provider === "amazon")
-  const [shopName, amazon] = await Promise.all([
+  const [shopName, amazon, orderTags, copyingTags] = await Promise.all([
     shopifyAccount ? shopifyStoreName(s.org.id, shopifyAccount.externalId) : null,
-    amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null
+    amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null,
+    buyer && shopifyAccount && s.role === "owner" ? shopifyOrderTags(s.org.id) : [],
+    buyer && shopifyAccount && s.role === "owner" ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
   const storeNames = { shopify: shopName, amazon: amazon?.name ?? null }
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
@@ -109,7 +114,16 @@ export default async function Settings() {
                 {s.role === "owner" && connection && (
                   <>
                     <CardContent>
-                      {provider.id === "shopify" && <InventoryLocations />}
+                      {provider.id === "shopify" && (
+                        <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
+                          <InventoryLocations />
+                          <ExcludedOrderTags
+                            tags={s.org.excludedShopifyTags}
+                            suggestions={orderTags}
+                            copying={copyingTags}
+                          />
+                        </div>
+                      )}
                       {provider.id === "amazon" && (
                         <section className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
                           <h3 className={sx({ text: "sm", fontWeight: "medium" })}>Marketplaces</h3>

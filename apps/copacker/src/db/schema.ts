@@ -28,6 +28,10 @@ export const organizations = pgTable("organizations", {
   workosId: text().unique(),
   // The store's IANA time zone, such as America/Los_Angeles. Days and months on the Overview use it; null means UTC.
   timeZone: text(),
+  // Shopify order tags whose orders are left out of Copacker's order counts, lists, Overview and Restock, compared
+  // without regard to case. Shopify's Amazon sales channel tags its copies of Amazon's orders "Amazon"; those are
+  // counted from Amazon itself.
+  excludedShopifyTags: text().array().notNull().default(["Amazon"]),
   createdAt: createdAt()
 })
 export const memberships = pgTable(

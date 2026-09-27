@@ -871,7 +871,7 @@ describe("sales queries", () => {
     ])
   })
 
-  it("leaves out Shopify's copies of Amazon orders once Amazon is connected", async () => {
+  it("leaves out Shopify orders with an excluded tag, such as Shopify's copies of Amazon orders", async () => {
     const copy = (id: string, sourceName: string) => ({
       orgId,
       source: "shopify" as const,
@@ -885,6 +885,7 @@ describe("sales queries", () => {
         cancelledAt: null,
         test: false,
         sourceName,
+        tags: ["Amazon", `Amazon-${sourceName.slice("amazon-".length).toUpperCase()}`],
         fulfillments: [],
         lines: [
           {
@@ -909,8 +910,11 @@ describe("sales queries", () => {
     const day = (rows: Awaited<ReturnType<typeof salesByDay>>) => rows.find((row) => row.date === "2026-09-20")
     expect(day(await salesByDay(orgId, [shopifyAccount], since, "UTC", "USD"))?.orders).toBe(3)
     expect(
-      day(await salesByDay(orgId, [{ ...shopifyAccount, withoutAmazon: true }], since, "UTC", "USD"))
+      day(await salesByDay(orgId, [{ ...shopifyAccount, excludedTags: ["amazon"] }], since, "UTC", "USD"))
     ).toBeUndefined()
+    expect(
+      day(await salesByDay(orgId, [{ ...shopifyAccount, excludedTags: ["amazon-uk"] }], since, "UTC", "USD"))?.orders
+    ).toBe(2)
     // Canada's orders are read from Amazon too; the UK's aren't.
     expect(await otherMarketplaceOrders(orgId, "club.myshopify.com", since, new Date("2026-09-26T00:00:00Z"))).toBe(1)
   })

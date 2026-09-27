@@ -8,6 +8,7 @@ import { amazonFor, connection, shopifyFor } from "./connections"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { amazonSalesMarketplaces } from "./sales-orders"
+import { excludedShopifyTags, hasExcludedTag } from "./shopify-tags"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
 export class DemandAccessError extends Error {}
@@ -52,7 +53,11 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
       window,
       check
     )
-    result = attributeShopifySales(orders, await effectiveLocationClassifications(s.org.id, account.externalId))
+    const excluded = await excludedShopifyTags(s.org.id)
+    result = attributeShopifySales(
+      orders.filter((order) => !hasExcludedTag(order, excluded)),
+      await effectiveLocationClassifications(s.org.id, account.externalId)
+    )
   } else {
     const amazon = await amazonFor(s.org.id, account.externalId)
     result = attributeAmazonSales(

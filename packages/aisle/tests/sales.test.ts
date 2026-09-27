@@ -19,7 +19,8 @@ const header = {
   createdAt: "2026-08-20T00:00:00Z",
   cancelledAt: null,
   test: false,
-  sourceName: "web"
+  sourceName: "web",
+  tags: ["Wholesale"]
 }
 const line = { id: "line1", quantity: 2, currentQuantity: 2, sku: "SKU", variant: { id: "variant1" } }
 function shopify() {
@@ -63,6 +64,7 @@ describe("complete sales readers", () => {
       active = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const result = await collectShopifySales(api, "test.myshopify.com", window, active)
     expect(result[0]?.fulfillments[0]?.lines[0]?.quantity).toBe(2)
+    expect(result[0]?.tags).toEqual(["Wholesale"])
     expect(api.graphql).toHaveBeenCalledWith(shopifySalesQueries.orders, {
       query: `created_at:>='${window.from}' created_at:<'${window.to}'`,
       after: null
@@ -584,6 +586,7 @@ describe("backfill readers", () => {
     expect(orders).toHaveLength(1)
     expect(orders[0]).toMatchObject({
       id: "gid://shopify/Order/1",
+      tags: ["Wholesale"],
       customerId: "gid://shopify/Customer/9",
       lines: [line],
       fulfillments: [{ id: "f1", lines: [{ id: "fl1", quantity: 2, lineItem: { id: "line1" } }] }]

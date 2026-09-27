@@ -124,12 +124,14 @@ import { readSalesDemand } from "../src/server/sales"
 import {
   listSalesOrders,
   requestSalesSync,
+  salesHistoryDays,
   salesSyncStatus,
   amazonDataVersion,
   storedDemand,
   syncChunks
 } from "../src/server/sales-orders"
 import { hash } from "../src/server/security"
+import { shopifyOrderTags, untaggedShopifyOrders } from "../src/server/shopify-tags"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
@@ -175,6 +177,7 @@ function actor(kind: "buyer" | "supplier", id: string): Session {
       name: "Test org",
       workosId: null,
       timeZone: null,
+      excludedShopifyTags: ["Amazon"],
       createdAt: new Date()
     },
     role: "owner",
@@ -2853,10 +2856,11 @@ describe("stored sales orders", () => {
     const end = Date.parse("2026-09-25T11:57:00Z")
     const first = syncChunks(now, { coveredFrom: null, coveredTo: null })
     expect(first.fresh).toBe(true)
-    expect(first.chunks).toHaveLength(27)
+    // Two years, less a day, in 14-day periods.
+    expect(first.chunks).toHaveLength(53)
     expect(first.chunks[0]!.to.getTime()).toBe(end)
-    expect(first.chunks.at(-1)!.from.getTime()).toBe(end - 365 * 86400000)
-    // A full year stored until yesterday: only the last 31 days are read again.
+    expect(first.chunks.at(-1)!.from.getTime()).toBe(end - 729 * 86400000)
+    // The full history stored until yesterday: only the last 31 days are read again.
     const later = syncChunks(now, { coveredFrom: first.chunks.at(-1)!.from, coveredTo: new Date(now - 86400000) })
     expect(later.fresh).toBe(false)
     expect(later.chunks).toHaveLength(3)
@@ -2866,7 +2870,7 @@ describe("stored sales orders", () => {
     const extended = syncChunks(now, { coveredFrom: storedFrom, coveredTo: new Date(end) })
     expect(extended.chunks.slice(0, 3).map((chunk) => chunk.to.getTime() <= end)).toEqual([true, true, true])
     expect(extended.chunks[3]).toEqual({ from: new Date(storedFrom.getTime() - 14 * 86400000), to: storedFrom })
-    expect(extended.chunks.at(-1)!.from.getTime()).toBe(end - 365 * 86400000)
+    expect(extended.chunks.at(-1)!.from.getTime()).toBe(end - 729 * 86400000)
     // A stored range entirely before the history start is replaced.
     expect(syncChunks(now, { coveredFrom: new Date(0), coveredTo: new Date(86400000) }).fresh).toBe(true)
   })
@@ -2903,10 +2907,10 @@ describe("stored sales orders", () => {
     expect(demand.rows).toEqual([expect.objectContaining({ buyerSku: "foil-2", pool: "fba", fulfilledUnits: 2 })])
     expect(demand.window.to).toBe(sync!.coveredTo!.toISOString())
     expect((await storedDemand(buyerId, "amazon", 120)).rows[0]?.fulfilledUnits).toBe(5)
-    await expect(storedDemand(buyerId, "amazon", 400)).rejects.toThrow("go back 365 days")
+    await expect(storedDemand(buyerId, "amazon", 800)).rejects.toThrow("go back 729 days")
     expect(provider.api.request.mock.calls.length).toBe(calls)
   })
-  it("leaves Shopify's copies of Amazon orders out once Amazon is connected", async () => {
+  it("leaves out Shopify orders with an excluded tag, such as Shopify's copies of Amazon orders", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2)])
     await requestSalesSync(buyer.org, "amazon")
     await runNextJob()
@@ -2914,7 +2918,7 @@ describe("stored sales orders", () => {
     await database
       .insert(tables.connections)
       .values({ orgId: buyerId, provider: "shopify", externalId: shop, encryptedToken: "test-only", scopes: "" })
-    const shopifyOrder = (id: string, name: string, sourceName: string) => ({
+    const shopifyOrder = (id: string, name: string, sourceName: string, tags: string[] = []) => ({
       orgId: buyerId,
       source: "shopify" as const,
       externalAccountId: shop,
@@ -2927,23 +2931,29 @@ describe("stored sales orders", () => {
         cancelledAt: null,
         test: false,
         sourceName,
+        tags,
         lines: [],
         fulfillments: [],
         transactions: []
       }
     })
-    await database
-      .insert(tables.salesOrders)
-      .values([
-        shopifyOrder("gid://shopify/Order/1", "#1001", "web"),
-        shopifyOrder("gid://shopify/Order/2", "#1002", "amazon-us")
-      ])
+    await database.insert(tables.salesOrders).values([
+      shopifyOrder("gid://shopify/Order/1", "#1001", "web"),
+      shopifyOrder("gid://shopify/Order/2", "#1002", "amazon-us", ["amazon", "FBA"]),
+      // Copied before tags were read, so no tag can leave it out until the next sync.
+      {
+        ...shopifyOrder("gid://shopify/Order/3", "#1003", "amazon"),
+        data: { ...shopifyOrder("gid://shopify/Order/3", "#1003", "amazon").data, tags: undefined }
+      }
+    ])
+    expect((await shopifyOrderTags(buyerId)).toSorted()).toEqual(["FBA", "amazon"].toSorted())
     const shopifyStatus = async () => (await salesSyncStatus(buyerId)).find((state) => state.source === "shopify")
-    expect(await shopifyStatus()).toMatchObject({ orders: 1, recent: { orders: 1 } })
+    expect(await untaggedShopifyOrders(buyerId, salesHistoryDays)).toBe(true)
+    expect(await shopifyStatus()).toMatchObject({ orders: 2, recent: { orders: 2 } })
     const listed = await listSalesOrders(buyerId, { page: 0 })
-    expect(listed.total).toBe(2)
-    expect(listed.orders.map((order) => order.number).toSorted()).toEqual(["#1001", "111-1"])
-    expect((await listSalesOrders(buyerId, { page: 0, source: "shopify" })).total).toBe(1)
+    expect(listed.total).toBe(3)
+    expect(listed.orders.map((order) => order.number).toSorted()).toEqual(["#1001", "#1003", "111-1"])
+    expect((await listSalesOrders(buyerId, { page: 0, source: "shopify" })).total).toBe(2)
     // Orders are found by their products' titles: Amazon's by SKU, Shopify's by variant.
     const catalogRow = {
       inventoryItemId: "gid://shopify/InventoryItem/77",
@@ -2995,10 +3005,51 @@ describe("stored sales orders", () => {
     expect(await found("wire left")).toEqual(["111-1"])
     expect(await found("mask CORD")).toEqual(["#1001"])
     expect(await found("wire mask")).toEqual([])
-    // Without Amazon connected, the copies are the only record of those orders.
-    await database.delete(tables.connections).where(eq(tables.connections.provider, "amazon"))
-    expect(await shopifyStatus()).toMatchObject({ orders: 2, recent: { orders: 2 } })
-    expect((await listSalesOrders(buyerId, { page: 0 })).total).toBe(2)
+    // Restock doesn't count them as Shopify demand either.
+    await database.insert(tables.salesSyncs).values({
+      orgId: buyerId,
+      source: "shopify",
+      externalAccountId: shop,
+      coveredFrom: new Date(daysAgo(40)),
+      coveredTo: new Date()
+    })
+    await database
+      .update(tables.salesOrders)
+      .set({
+        data: {
+          ...shopifyOrder("gid://shopify/Order/2", "#1002", "amazon-us", ["amazon", "FBA"]).data,
+          lines: [{ ...line, id: "gid://shopify/LineItem/2", variant: { id: "gid://shopify/ProductVariant/79" } }]
+        }
+      })
+      .where(eq(tables.salesOrders.orderId, "gid://shopify/Order/2"))
+    const demand = await storedDemand(buyerId, "shopify", 28)
+    expect([...demand.saleDays.keys()]).toEqual(["gid://shopify/ProductVariant/78"])
+    expect(demand.gaps.map((gap) => gap.variantId)).not.toContain("gid://shopify/ProductVariant/79")
+    // With no excluded tags, every Shopify order counts.
+    const save = (tags: string[]) =>
+      action(
+        new Request("http://localhost:3000/api/action", {
+          method: "POST",
+          headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+          body: JSON.stringify({ action: "workspace.excludedShopifyTags", data: { tags } })
+        })
+      )
+    expect((await save([])).status).toBe(200)
+    expect(await shopifyStatus()).toMatchObject({ orders: 3, recent: { orders: 3 } })
+    expect((await listSalesOrders(buyerId, { page: 0 })).total).toBe(4)
+    expect((await save([" FBA ", "fba", "Amazon"])).status).toBe(200)
+    const [org] = await database.select().from(tables.organizations).where(eq(tables.organizations.id, buyerId))
+    expect(org?.excludedShopifyTags).toEqual(["FBA", "Amazon"])
+    expect(await shopifyStatus()).toMatchObject({ orders: 2 })
+    // * matches any run of characters, and _ or % match only themselves.
+    expect((await save(["AMA*"])).status).toBe(200)
+    expect(await shopifyStatus()).toMatchObject({ orders: 2 })
+    expect((await save(["*b*"])).status).toBe(200)
+    expect(await shopifyStatus()).toMatchObject({ orders: 2 })
+    expect((await save(["f_a", "a%"])).status).toBe(200)
+    expect(await shopifyStatus()).toMatchObject({ orders: 3 })
+    await database.delete(tables.salesOrders).where(eq(tables.salesOrders.orderId, "gid://shopify/Order/3"))
+    expect(await untaggedShopifyOrders(buyerId, salesHistoryDays)).toBe(false)
   })
   it("drops orders that disappear from the source when the period is synced again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])

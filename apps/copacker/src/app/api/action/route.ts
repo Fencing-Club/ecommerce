@@ -323,6 +323,18 @@ export async function POST(request: Request) {
         .where(eq(organizations.id, s.org.id))
       return Response.json({ ok: true })
     }
+    if (action === "workspace.excludedShopifyTags") {
+      requireOwner(s)
+      if (s.org.kind !== "buyer") {
+        throw new Error("A buyer workspace is required")
+      }
+      const input = z.object({ tags: z.array(z.string().trim().min(1).max(255)).max(50) }).parse(data)
+      // Shopify compares tags without regard to case, so the first spelling of each is kept.
+      const seen = new Set<string>()
+      const tags = input.tags.filter((tag) => !seen.has(tag.toLowerCase()) && seen.add(tag.toLowerCase()))
+      await db().update(organizations).set({ excludedShopifyTags: tags }).where(eq(organizations.id, s.org.id))
+      return Response.json({ ok: true })
+    }
     if (action === "supplier.profile") {
       if (s.org.kind !== "supplier") {
         throw new Error("A supplier workspace is required")

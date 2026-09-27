@@ -45,6 +45,7 @@ import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockDefaults } from "./restock-report"
 import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
+import { excludedShopifyTags } from "./shopify-tags"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
@@ -782,11 +783,13 @@ export async function overview(
   const locationId = selected?.key.startsWith("shopify:") ? selected.key.slice("shopify:".length) : null
   // With Amazon connected, its orders come from Amazon, not from the copies Shopify's Amazon channel keeps.
   const amazonConnected = accounts.some((account) => account.provider === "amazon")
+  const excludedTags = await excludedShopifyTags(orgId)
   const scopedAccounts = accounts
     .filter((account) => !channelSource || account.provider === channelSource)
     .map((account) => ({
       ...account,
       locationId: account.provider === "shopify" ? locationId : null,
+      excludedTags: account.provider === "shopify" ? excludedTags : [],
       withoutAmazon: account.provider === "shopify" && amazonConnected,
       marketplaceId: account.provider === "amazon" ? marketplaceId : null
     }))

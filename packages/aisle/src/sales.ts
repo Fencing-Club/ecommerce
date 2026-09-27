@@ -49,9 +49,11 @@ const header = z.object({
   createdAt: z.iso.datetime({ offset: true }),
   cancelledAt: z.string().nullable(),
   test: z.boolean(),
-  sourceName: z.string().nullable()
+  sourceName: z.string().nullable(),
+  // Orders copied before tags were read don't have them.
+  tags: z.array(z.string().max(255)).max(250).optional()
 })
-const headers = "id name createdAt cancelledAt test sourceName"
+const headers = "id name createdAt cancelledAt test sourceName tags"
 const money = "shopMoney{amount currencyCode}"
 const lineFields = `id quantity currentQuantity sku variant{id} lineItemGroup{id quantity variantId} originalUnitPriceSet{${money}} discountAllocations{allocatedAmountSet{${money}}}`
 const linePage = `nodes{${lineFields}} pageInfo{hasNextPage endCursor}`
@@ -189,7 +191,8 @@ export async function collectShopifySales(
           createdAt: detail.createdAt,
           cancelledAt: detail.cancelledAt,
           test: detail.test,
-          sourceName: detail.sourceName
+          sourceName: detail.sourceName,
+          tags: detail.tags
         }) !== JSON.stringify(summary)
       ) {
         throw new Error("Shopify order changed during sales collection")
@@ -368,6 +371,7 @@ export async function collectShopifySalesBulk(
         cancelledAt: order.cancelledAt,
         test: order.test,
         sourceName: order.sourceName,
+        tags: order.tags,
         lines: [],
         fulfillments: order.fulfillments.map((entry) => ({ ...entry, lines: [] })),
         transactions: order.transactions,

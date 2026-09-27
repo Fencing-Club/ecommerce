@@ -4,6 +4,7 @@ import { type DayRange, rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import type { SalesSource } from "./sales-orders"
+import { taggedWith } from "./shopify-tags"
 
 // Money here is net product sales: what customers paid for the products, after discounts, without tax, shipping or
 // tips. Shopify lines count at their current quantity (removed and refunded units are gone), with their share of
@@ -64,14 +65,15 @@ end`
 const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',
   jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}')`)
 
-// A connected account, optionally narrowed to the Shopify orders shipped from one location. `withoutAmazon` leaves out
-// the Shopify copies of Amazon orders (from Shopify's Amazon sales channel), counted from Amazon itself when it's
-// connected.
+// A connected account, optionally narrowed to the Shopify orders shipped from one location. `excludedTags` leaves out
+// Shopify orders with those tags (Settings), such as the copies Shopify's Amazon sales channel keeps of Amazon orders.
+// `withoutAmazon` notes that Amazon is connected, so its orders come from Amazon.
 // `marketplaceId` narrows Amazon to one marketplace's orders and charges.
 type Account = {
   provider: SalesSource
   externalId: string
   locationId?: string | null
+  excludedTags?: readonly string[]
   withoutAmazon?: boolean
   marketplaceId?: string | null
 }
@@ -107,7 +109,7 @@ function accountFilter(accounts: Account[]) {
   return sql`(${sql.join(
     accounts.map(
       (account) =>
-        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.withoutAmazon ? sql` and not ${amazonImport}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
+        sql`(o.source = ${account.provider} and o."externalAccountId" = ${account.externalId}${shippedFrom(account.locationId)}${account.excludedTags?.length ? sql` and not ${taggedWith(sql.raw("o.data"), account.excludedTags)}` : sql``}${account.marketplaceId ? sql` and o.data->'salesChannel'->>'marketplaceId' = ${account.marketplaceId}` : sql``})`
     ),
     sql` or `
   )}) and ${counted}`

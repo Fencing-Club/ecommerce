@@ -36,10 +36,11 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 - **Sales, gross profit, units, average order value and orders** over the period, against the previous period when
   every source covers both. Sales are net product sales: after discounts, before tax, shipping and tips. Cancelled orders aren't counted.
   An Amazon order is priced once Amazon adds its proceeds (pending orders wait); an order whose payments all post at
-  zero (a free replacement) counts at zero, with its units' cost. When Amazon is connected, the
-  Shopify copies of Amazon orders (Shopify's Amazon sales channel, sources such as `amazon-us`) are left out, since
-  Amazon's own orders count them. Amazon orders are read from the US, Canada, Mexico and Brazil (whichever the seller
-  sells in); copies from other marketplaces are left out too, and the card says how many.
+  zero (a free replacement) counts at zero, with its units' cost. Shopify orders with a tag in Settings' excluded
+  Shopify tags (default `Amazon`) are left out, here and on the Orders page and Restock. Shopify's Amazon sales channel
+  tags its copies of Amazon orders `Amazon`, and Amazon's own orders count them. Amazon orders are read from the US,
+  Canada, Mexico and Brazil (whichever the seller sells in); when Amazon is connected, the card says how many copies
+  came from other marketplaces.
 - **Gross profit** (with a line-by-line card) is sales with a unit cost, less:
   - the landed cost of the units sold (Shopify's unit cost, a bundle's being its components', plus the PO markup).
     Units Amazon resells after a return (Grade and Resell, SKUs starting `amzn.gr.`) cost nothing more: their cost

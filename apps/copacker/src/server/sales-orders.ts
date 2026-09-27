@@ -24,6 +24,7 @@ import { logLine } from "./log"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { syncShopifyBalance } from "./shopify-balance"
+import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
 import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 
@@ -31,15 +32,19 @@ export const salesSources = ["shopify", "amazon"] as const
 export type SalesSource = (typeof salesSources)[number]
 
 // How far back orders are kept, how much recent history each sync reads again (shipments and cancellations arrive
-// after the order), and the period each provider read covers.
-export const salesHistoryDays = 365
+// after the order), and the period each provider read covers. Two years: Amazon refuses transaction reads that start
+// earlier, and its order search and order reports return nothing older. One day short, so a long sync's later reads
+// still start within the two years.
+export const salesHistoryDays = 2 * 365 - 1
 // The shape of stored orders. Raise it when the readers copy new fields; the next sync reads stored orders again.
 // 1: prices (Shopify line prices and discounts, Amazon item proceeds).
 // 2: Shopify payments, with Shopify Payments' processing fees.
 // 3: Amazon orders from Canada, Mexico and Brazil as well as the US.
+// 5: Shopify order tags, so orders with excluded tags can be left out.
 export const salesDataVersion = 3
-// Shopify orders with each order's customer ID, once the store grants read_customers.
-export const customerDataVersion = 4
+const shopifyTagsVersion = 5
+// Shopify orders with tags and each order's customer ID, once the store grants read_customers.
+export const customerDataVersion = 6
 // Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
 export const amazonDataVersion = 4
 
@@ -50,7 +55,7 @@ export function dataVersionFor(source: SalesSource, scopes: string) {
   if (source === "amazon") {
     return amazonDataVersion
   }
-  return hasCustomerScope(scopes) ? customerDataVersion : salesDataVersion
+  return hasCustomerScope(scopes) ? customerDataVersion : shopifyTagsVersion
 }
 const refreshDays = 30
 const chunkDays = 14
@@ -252,7 +257,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     if (source === "shopify") {
       // Shopify Payments' labels, bills and dispute fees are copied after the orders.
       afterOrders = () => syncShopifyBalance({ orgId, externalAccountId: account, revision, scopes }, assertOwned)
-      // Shopify access tokens last about an hour and a year of orders can take longer, so each period gets a current
+      // Shopify access tokens last about an hour and two years of orders can take longer, so each period gets a current
       // token (renewed when it's about to expire) instead of one from the start of the sync.
       const customers = hasCustomerScope(scopes)
       // Reading many periods (a first sync, or one reading everything again) uses one bulk export of the whole stretch;
@@ -427,15 +432,10 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
   }
 }
 
-// Shopify's Amazon sales channel copies Amazon's orders into Shopify, under a source such as "amazon-us". Once Amazon
-// is connected they're counted from Amazon itself, so Shopify's copies are left out, as on the Overview.
-const amazonCopy = sql`coalesce(${salesOrders.data}->>'sourceName', '') like 'amazon%'`
-const isAmazonCopy = (data: ShopifySale | AmazonSale) =>
-  "sourceName" in data && Boolean(data.sourceName?.startsWith("amazon"))
-
-// Each connected source's sync state and the orders stored for it.
+// Each connected source's sync state and the orders stored for it, without Shopify orders that have an excluded tag.
 export async function salesSyncStatus(orgId: string) {
   const since = new Date(Date.now() - 30 * day)
+  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))}`
   const [accounts, syncs, stored, recent] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
@@ -446,11 +446,10 @@ export async function salesSyncStatus(orgId: string) {
       .select({
         source: salesOrders.source,
         externalAccountId: salesOrders.externalAccountId,
-        orders: count(),
-        amazonCopies: sql<number>`count(*) filter (where ${amazonCopy})`.mapWith(Number)
+        orders: count()
       })
       .from(salesOrders)
-      .where(eq(salesOrders.orgId, orgId))
+      .where(and(eq(salesOrders.orgId, orgId), included))
       .groupBy(salesOrders.source, salesOrders.externalAccountId),
     db()
       .select({
@@ -460,9 +459,8 @@ export async function salesSyncStatus(orgId: string) {
         data: salesOrders.data
       })
       .from(salesOrders)
-      .where(and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since)))
+      .where(and(eq(salesOrders.orgId, orgId), gte(salesOrders.orderedAt, since), included))
   ])
-  const amazonConnected = accounts.some((row) => row.provider === "amazon")
   return salesSources.flatMap((source) => {
     const account = accounts.find((row) => row.provider === source)
     if (!account) {
@@ -470,10 +468,8 @@ export async function salesSyncStatus(orgId: string) {
     }
     const sync = syncs.find((row) => row.source === source && row.externalAccountId === account.externalId)
     const orders = stored.find((row) => row.source === source && row.externalAccountId === account.externalId)
-    const amazonCopies = source === "shopify" && amazonConnected ? (orders?.amazonCopies ?? 0) : 0
     const last30 = recent
       .filter((row) => row.source === source && row.externalAccountId === account.externalId)
-      .filter((row) => !amazonCopies || !isAmazonCopy(row.data))
       .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId))
     return [
       {
@@ -484,7 +480,7 @@ export async function salesSyncStatus(orgId: string) {
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
         coveredTo: sync?.coveredTo?.toISOString() ?? null,
         finishedAt: sync?.finishedAt?.toISOString() ?? null,
-        orders: (orders?.orders ?? 0) - amazonCopies,
+        orders: orders?.orders ?? 0,
         // Orders and units in the last 30 days.
         recent: { orders: last30.length, units: last30.reduce((sum, order) => sum + order.units, 0) }
       }
@@ -534,7 +530,9 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
         lt(salesOrders.orderedAt, to)
       )
     )
-  const orders = rows.map((row) => row.data)
+  // Orders with an excluded tag, such as Shopify's copies of Amazon orders, aren't Shopify demand.
+  const excluded = await excludedShopifyTags(orgId)
+  const orders = rows.map((row) => row.data).filter((order) => !hasExcludedTag(order, excluded))
   const demand =
     source === "shopify"
       ? attributeShopifySales(
@@ -734,8 +732,8 @@ export function summarizeSalesOrder(
 
 export const salesOrdersPageSize = 50
 
-// Stored orders, newest first, for the connected accounts, without Shopify's copies of Amazon orders once Amazon is
-// connected. The search matches order numbers, SKUs and product titles.
+// Stored orders, newest first, for the connected accounts, without Shopify orders that have an excluded tag. The
+// search matches order numbers, SKUs and product titles.
 // Drizzle writes an array as a parenthesized list of values; an empty one would be invalid SQL.
 const listed = (values: string[]) => (values.length ? values : [""])
 
@@ -803,18 +801,18 @@ async function matchingProducts(orgId: string, domain: string, q: string) {
 }
 
 export async function listSalesOrders(orgId: string, filter: { source?: SalesSource; page: number; q?: string }) {
+  const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))}`
   const accounts = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
     .from(connections)
     .where(eq(connections.orgId, orgId))
-  const amazonConnected = accounts.some((account) => account.provider === "amazon")
   const scopes = accounts.flatMap((account) =>
     !filter.source || filter.source === account.provider
       ? [
           and(
             eq(salesOrders.source, account.provider),
             eq(salesOrders.externalAccountId, account.externalId),
-            account.provider === "shopify" && amazonConnected ? sql`not ${amazonCopy}` : undefined
+            account.provider === "shopify" ? included : undefined
           )
         ]
       : []
