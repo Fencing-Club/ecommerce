@@ -138,6 +138,7 @@ function SupplierRow({ row, owner }: { row: SupplierRow; owner: boolean }) {
           shopifySupplierName={row.shopifySupplierName}
           leadTimeDays={row.leadTimeDays}
           amazonLeadTimeDays={row.amazonLeadTimeDays}
+          paymentTerms={row.paymentTerms}
           contact={row.contact}
           joined={row.supplierOrgId !== null}
         />

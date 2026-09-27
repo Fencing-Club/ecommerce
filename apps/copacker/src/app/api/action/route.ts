@@ -50,7 +50,7 @@ import {
   deleteDraftOrder,
   receiveShipment
 } from "@/server/orders"
-import { refreshProductLabels } from "@/server/product-barcodes"
+import { linesMissingLabels } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { appUrl, token, hash } from "@/server/security"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
@@ -604,9 +604,6 @@ export async function POST(request: Request) {
       await deleteDraftOrder(s, id())
       return Response.json({ redirect: "/orders" })
     }
-    if (action === "order.labels") {
-      return Response.json({ ok: true, ...(await refreshProductLabels(s, id())) })
-    }
     if (action === "order.close") {
       await closeOrder(s, id())
       return Response.json({ ok: true })
@@ -641,6 +638,8 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "shipment.release") {
+      const [released] = await db().select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, id()))
+      const missingLabels = released ? await linesMissingLabels(s, released.orderId) : new Set<string>()
       requireBuyer(s)
       await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
@@ -661,7 +660,7 @@ export async function POST(request: Request) {
           .select()
           .from(documents)
           .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-        const issues = releaseIssues(shipment, docs)
+        const issues = releaseIssues(shipment, docs, missingLabels)
         if (issues.length) {
           throw new Error(issues.map((issue) => issue.message).join("\n"))
         }

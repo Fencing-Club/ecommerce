@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Address } from "@repo/aisle"
+import type { Address, OrderInput } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf } from "@repo/aisle/documents"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/db"
@@ -76,34 +76,27 @@ function contactLine(...parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ")
 }
 
-export async function generatePo(orderId: string, revision?: number) {
+// Who a PO or shipment document is from and to: the buyer with its business details, the supplier with its contact
+// details, and the delivery or forwarder address it ships to.
+async function documentParties(order: { buyerOrgId: string; supplierId: string }, data: OrderInput) {
   const [row] = await db()
-    .select({ order: orders, buyer: organizations, supplier: suppliers })
-    .from(orders)
-    .innerJoin(organizations, eq(organizations.id, orders.buyerOrgId))
-    .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-    .where(eq(orders.id, orderId))
+    .select({ buyer: organizations, supplier: suppliers })
+    .from(organizations)
+    .innerJoin(suppliers, eq(suppliers.id, order.supplierId))
+    .where(eq(organizations.id, order.buyerOrgId))
   if (!row) {
     throw new Error("PO is unavailable")
   }
-  const targetRevision = revision ?? row.order.revision
-  const [historical] = await db()
-    .select()
-    .from(orderRevisions)
-    .where(and(eq(orderRevisions.orderId, orderId), eq(orderRevisions.revision, targetRevision)))
-  if (!historical) {
-    throw new Error("PO revision is unavailable")
-  }
-  const { destination, deliveryId, forwarderId } = historical.data
+  const { destination, deliveryId, forwarderId } = data
   // A forwarder's address is the buyer's until the forwarder joins, then the forwarder's own.
   const [forwarder] =
     destination === "forwarder" && forwarderId
       ? await db()
           .select()
           .from(forwarders)
-          .where(and(eq(forwarders.id, forwarderId), eq(forwarders.buyerOrgId, row.order.buyerOrgId)))
+          .where(and(eq(forwarders.id, forwarderId), eq(forwarders.buyerOrgId, order.buyerOrgId)))
       : []
-  const addressOwners = [row.order.buyerOrgId, ...(forwarder?.forwarderOrgId ? [forwarder.forwarderOrgId] : [])]
+  const addressOwners = [order.buyerOrgId, ...(forwarder?.forwarderOrgId ? [forwarder.forwarderOrgId] : [])]
   const [[delivery], [buyerProfile], [supplierProfile]] = await Promise.all([
     deliveryId && (destination === "warehouse" || forwarder)
       ? db()
@@ -111,17 +104,14 @@ export async function generatePo(orderId: string, revision?: number) {
           .from(contacts)
           .where(and(eq(contacts.id, deliveryId), inArray(contacts.orgId, addressOwners)))
       : Promise.resolve([]),
-    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, row.order.buyerOrgId)),
+    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, order.buyerOrgId)),
     row.supplier.supplierOrgId
       ? db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, row.supplier.supplierOrgId))
       : Promise.resolve([])
   ])
   // A joined supplier keeps its own contact details; until then, the buyer's notes on it.
   const supplierContact = row.supplier.supplierOrgId ? supplierProfile : row.supplier
-  const bytes = await purchaseOrderPdf({
-    order: historical.data,
-    revision: targetRevision,
-    issued: historical.createdAt.toISOString().slice(0, 10),
+  return {
     buyer: {
       name: row.buyer.name,
       lines: [
@@ -153,14 +143,35 @@ export async function generatePo(orderId: string, revision?: number) {
           ].filter(Boolean)
         }
       : undefined
+  }
+}
+
+export async function generatePo(orderId: string, revision?: number) {
+  const [order] = await db().select().from(orders).where(eq(orders.id, orderId))
+  if (!order) {
+    throw new Error("PO is unavailable")
+  }
+  const targetRevision = revision ?? order.revision
+  const [historical] = await db()
+    .select()
+    .from(orderRevisions)
+    .where(and(eq(orderRevisions.orderId, orderId), eq(orderRevisions.revision, targetRevision)))
+  if (!historical) {
+    throw new Error("PO revision is unavailable")
+  }
+  const bytes = await purchaseOrderPdf({
+    order: historical.data,
+    revision: targetRevision,
+    issued: historical.createdAt.toISOString().slice(0, 10),
+    ...(await documentParties(order, historical.data))
   })
   const doc = await storeDocument(
     {
       orderId,
       kind: "purchase_order",
-      name: `${row.order.data.reference}.pdf`,
+      name: `${order.data.reference}.pdf`,
       orderRevision: targetRevision,
-      outdated: targetRevision === row.order.revision ? 0 : 1,
+      outdated: targetRevision === order.revision ? 0 : 1,
       uploadedBy: "system"
     },
     bytes
@@ -179,12 +190,21 @@ export async function generateShipmentDocuments(shipmentId: string) {
     shipmentRevision: shipment.revision,
     uploadedBy: "system"
   }
+  const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
+  const { buyer, shipTo } = await documentParties(order!, shipment.snapshot)
   await storeDocument(
     { ...input, kind: "packing_list", name: "Packing list.pdf" },
-    await packingListPdf(shipment.snapshot, shipment.packing, shipment.labels, shipment.amazonShipmentId ?? shipment.id)
+    await packingListPdf({
+      order: shipment.snapshot,
+      packing: shipment.packing,
+      labels: shipment.labels,
+      shipmentId: shipment.amazonShipmentId ?? shipment.id,
+      buyer,
+      shipTo
+    })
   )
   await storeDocument(
     { ...input, kind: "checklist", name: "Packing Checklist.pdf" },
-    await checklistPdf(shipment.snapshot, shipment.packing)
+    await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer })
   )
 }

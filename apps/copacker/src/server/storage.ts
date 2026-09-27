@@ -1,10 +1,4 @@
-import {
-  S3Client,
-  CopyObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand
-} from "@aws-sdk/client-s3"
+import { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
 import { PDFDocument, PDFDict, PDFName } from "pdf-lib"
 function storage() {
   const { S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET } = process.env
@@ -49,10 +43,6 @@ export async function getFile(key: string) {
     throw new Error("Document is unavailable")
   }
   return result.Body.transformToByteArray()
-}
-export async function copyFile(from: string, to: string) {
-  const { client, bucket } = storage()
-  await client.send(new CopyObjectCommand({ Bucket: bucket, CopySource: `${bucket}/${from}`, Key: to }))
 }
 export async function deleteFile(key: string) {
   const { client, bucket } = storage()

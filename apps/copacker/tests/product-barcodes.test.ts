@@ -11,8 +11,7 @@ import type { Session } from "../src/server/auth"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 const storage = vi.hoisted(() => ({
-  files: new Map<string, Uint8Array>(),
-  copies: [] as { from: string; to: string }[]
+  files: new Map<string, Uint8Array>()
 }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 vi.mock("../src/server/auth", async (original) => ({
@@ -23,10 +22,6 @@ vi.mock("../src/server/storage", async (original) => ({
   ...(await original<typeof import("../src/server/storage")>()),
   putFile: async (key: string, bytes: Uint8Array) => void storage.files.set(key, bytes),
   getFile: async (key: string) => storage.files.get(key)!,
-  copyFile: async (from: string, to: string) => {
-    storage.copies.push({ from, to })
-    storage.files.set(to, storage.files.get(from)!)
-  },
   deleteFile: async (key: string) => void storage.files.delete(key)
 }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
@@ -76,9 +71,10 @@ vi.mock("../src/server/connections", async (original) => ({
 import { DELETE, GET, POST } from "../src/app/api/inventory/barcodes/route"
 import { POST as downloadLabels } from "../src/app/api/inventory/labels/route"
 import { GET as listLabelTypes, PATCH as setLabelTypes } from "../src/app/api/inventory/product-labels/route"
+import { GET as lineLabel } from "../src/app/api/orders/[id]/labels/[itemId]/route"
 import { GET as orderLabels } from "../src/app/api/orders/[id]/labels/route"
 import { deleteDraftOrder } from "../src/server/orders"
-import { attachProductBarcodes, labelFileName, refreshProductLabels } from "../src/server/product-barcodes"
+import { labelFileName, lineLabels } from "../src/server/product-barcodes"
 import { appUrl } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -181,6 +177,15 @@ const labels = (orderId: string) =>
     .from(tables.documents)
     .where(and(eq(tables.documents.orderId, orderId), eq(tables.documents.kind, "product_label")))
 
+// Each line's label state, as the PO works it out from its products now.
+const states = async (po: Awaited<ReturnType<typeof order>>) =>
+  Object.fromEntries((await lineLabels(po)).map((label) => [label.itemId, label.state]))
+
+const downloadLine = (orderId: string, itemId: string) =>
+  lineLabel(new Request(`${appUrl()}/api/orders/${orderId}/labels/${itemId}`), {
+    params: Promise.resolve({ id: orderId, itemId })
+  })
+
 beforeAll(async () => {
   await applyMigrations(pg)
   context.current = database
@@ -244,36 +249,21 @@ describe("product barcodes", () => {
     expect((await GET(new Request(barcodeUrl(variantA)))).status).toBe(403)
   })
 
-  it("copies saved barcodes onto a PO's lines, prints the SKU label without Amazon, and keeps PO uploads", async () => {
-    const withLabel = randomUUID()
-    const withBarcode = randomUUID()
-    const without = randomUUID()
-    const created = await order([item(withLabel, variantA), item(withBarcode, variantA), item(without, variantB)])
-    await database.insert(tables.documents).values({
-      orderId: created.id,
-      kind: "product_label",
-      itemId: withLabel,
-      objectKey: `orders/${created.id}/manual.pdf`,
-      name: "manual.pdf",
-      bytes: 1,
-      orderRevision: 1,
-      uploadedBy: "user"
-    })
-    await attachProductBarcodes(actor(buyerId, "buyer"), created.id)
-    const attached = await labels(created.id)
-    expect(attached.map((doc) => [doc.itemId, doc.name]).toSorted()).toEqual(
-      [
-        [withLabel, "manual.pdf"],
-        [withBarcode, "second.pdf"],
-        // No upload and no Amazon, so the standard label prints the Shopify SKU.
-        [without, "Foil cord.pdf"]
-      ].toSorted()
-    )
-    // Running again, such as on submit, adds nothing.
-    await attachProductBarcodes(actor(buyerId, "buyer"), created.id)
-    expect(await labels(created.id)).toHaveLength(3)
+  it("labels each PO line from its product: its upload, or the standard label with the SKU without Amazon", async () => {
+    const uploaded = randomUUID()
+    const standard = randomUUID()
+    const po = await order([item(uploaded, variantA), item(standard, variantB)])
+    expect(await states(po)).toEqual({ [uploaded]: "uploaded", [standard]: "standard" })
+    // Labels are made when downloaded, and never stored on the PO.
+    const upload = await downloadLine(po.id, uploaded)
+    expect(upload.status).toBe(200)
+    expect(upload.headers.get("content-disposition")).toContain("second.pdf")
+    const made = await downloadLine(po.id, standard)
+    expect(made.status).toBe(200)
+    expect(made.headers.get("content-disposition")).toContain(encodeURIComponent("Foil cord.pdf"))
+    expect(await labels(po.id)).toEqual([])
+    expect((await downloadLine(po.id, randomUUID())).status).toBe(404)
   })
-
   it("matches bulk uploads by the SKU in the file name, or a SKU given instead", async () => {
     const byName = await uploadBySku("glove-6.PDF")
     expect(byName.status).toBe(200)
@@ -294,7 +284,7 @@ describe("product barcodes", () => {
     expect(barcodeKeys().toSorted()).toEqual(saved.map((row) => row.objectKey).toSorted())
   })
 
-  it("removes a barcode and its file, keeping the copy on POs", async () => {
+  it("removes a barcode and its file", async () => {
     const [saved] = await database
       .select()
       .from(tables.productBarcodes)
@@ -305,7 +295,6 @@ describe("product barcodes", () => {
       await database.select().from(tables.productBarcodes).where(eq(tables.productBarcodes.variantId, variantA))
     ).toEqual([])
     expect(storage.files.has(saved!.objectKey)).toBe(false)
-    expect(storage.copies.every((copy) => storage.files.has(copy.to))).toBe(true)
     // With the upload gone the standard label applies; without Amazon it prints the Shopify SKU.
     const standard = await GET(new Request(barcodeUrl(variantA)))
     expect(standard.status).toBe(200)
@@ -315,7 +304,7 @@ describe("product barcodes", () => {
 
 describe("standard product labels", () => {
   const fnsku = "X00CORD001"
-  const setProductLabel = (productLabel: "standard" | "uploaded") =>
+  const setProductLabel = (productLabel: "standard" | "uploaded" | "none") =>
     database
       .insert(tables.productDefaults)
       .values({ orgId: buyerId, shopifyDomain: domain, productId: "gid://shopify/Product/1", productLabel })
@@ -350,33 +339,52 @@ describe("standard product labels", () => {
     expect(pdf.getPage(0).getSize()).toEqual({ width: 612, height: 792 })
   })
 
-  it("prints the standard label on PO lines with an FNSKU, unless the product needs an uploaded one", async () => {
+  it("prints the standard label, unless the product needs an uploaded one or no label", async () => {
     const line = randomUUID()
-    const standard = await order([{ ...item(line, variantA), fnsku }])
-    await attachProductBarcodes(actor(buyerId, "buyer"), standard.id)
-    expect(await labels(standard.id)).toMatchObject([{ itemId: line, name: "Foil cord.pdf", uploadedBy: "system" }])
+    const po = await order([{ ...item(line, variantA), fnsku }])
+    expect(await states(po)).toEqual({ [line]: "standard" })
 
     await setProductLabel("uploaded")
-    const sized = await order([{ ...item(randomUUID(), variantA), fnsku }])
-    await attachProductBarcodes(actor(buyerId, "buyer"), sized.id)
-    expect(await labels(sized.id)).toEqual([])
+    expect(await lineLabels(po)).toEqual([
+      { itemId: line, state: "missing", problem: "Upload its label on the Products page" }
+    ])
+    expect((await downloadLine(po.id, line)).status).toBe(404)
     const preview = await GET(new Request(barcodeUrl(variantA)))
     expect(preview.status).toBe(404)
     expect(await preview.json()).toEqual({ error: "This product needs an uploaded label" })
+
+    // No label: none on POs to the buyer's location, but Amazon still labels every unit.
+    await setProductLabel("none")
+    expect(await states(po)).toEqual({ [line]: "none" })
+    expect(await states(await order([{ ...item(line, variantA), fnsku }], "awd_us"))).toEqual({ [line]: "standard" })
     await setProductLabel("standard")
   })
-
   it("waits for the FNSKU on Amazon POs instead of printing the SKU", async () => {
-    const amazonBound = await order([item(randomUUID(), variantA)], "awd_us")
-    await attachProductBarcodes(actor(buyerId, "buyer"), amazonBound.id)
-    expect(await labels(amazonBound.id)).toEqual([])
+    const line = randomUUID()
+    const amazonBound = await order([item(line, variantA)], "awd_us")
+    expect(await lineLabels(amazonBound)).toEqual([
+      { itemId: line, state: "missing", problem: "Its FNSKU is looked up when the PO is sent" }
+    ])
   })
 })
 
 describe("deleting draft POs", () => {
   it("deletes a draft with its labels and files, and keeps sent POs", async () => {
-    const draft = await order([{ ...item(randomUUID(), variantA), fnsku: "X00CORD001" }])
-    await attachProductBarcodes(actor(buyerId, "buyer"), draft.id)
+    const line = randomUUID()
+    const draft = await order([{ ...item(line, variantA), fnsku: "X00CORD001" }])
+    // A label uploaded on the PO before labels were made from the products.
+    const objectKey = `orders/${draft.id}/label.pdf`
+    storage.files.set(objectKey, await pdf(1))
+    await database.insert(tables.documents).values({
+      orderId: draft.id,
+      kind: "product_label",
+      itemId: line,
+      objectKey,
+      name: "label.pdf",
+      bytes: 1,
+      orderRevision: 1,
+      uploadedBy: "user"
+    })
     const [label] = await labels(draft.id)
     expect(storage.files.has(label!.objectKey)).toBe(true)
     await deleteDraftOrder(actor(buyerId, "buyer"), draft.id)
@@ -451,52 +459,23 @@ describe("labels in bulk", () => {
     expect(lines).toContain("Made in China and Pakistan")
   })
 
-  it("refreshes labels Copacker added, keeping PO uploads and released lines, and combines them", async () => {
+  it("combines a PO's labels, made from its products, in line order", async () => {
     const standard = randomUUID()
-    const released = randomUUID()
     const uploaded = randomUUID()
-    const po = await order([
-      { ...item(standard, variantA), fnsku: "X00CORD001" },
-      { ...item(released, variantA), fnsku: "X00CORD001" },
-      item(uploaded, variantB)
-    ])
-    const manualKey = `orders/${po.id}/manual.pdf`
-    storage.files.set(manualKey, await pdf(1))
-    await database.insert(tables.documents).values({
-      orderId: po.id,
-      kind: "product_label",
-      itemId: uploaded,
-      objectKey: manualKey,
-      name: "manual.pdf",
-      bytes: 1,
-      orderRevision: 1,
-      uploadedBy: "user"
-    })
-    await attachProductBarcodes(actor(buyerId, "buyer"), po.id)
-    const before = await labels(po.id)
-    await database.insert(tables.shipments).values({
-      orderId: po.id,
-      orderRevision: 1,
-      status: "ready",
-      packing: { cartons: [{ cartonId: "1", items: [{ itemId: released, pieces: 10 }] }] } as never
-    })
-
-    expect(await refreshProductLabels(actor(buyerId, "buyer"), po.id)).toEqual({ updated: 1 })
-    const current = (await labels(po.id)).filter((label) => label.outdated === 0)
-    const byItem = (itemId: string) => current.filter((label) => label.itemId === itemId)
-    expect(byItem(standard)).toHaveLength(1)
-    expect(byItem(standard)[0]!.id).not.toBe(before.find((label) => label.itemId === standard)!.id)
-    expect(byItem(released)[0]!.id).toBe(before.find((label) => label.itemId === released)!.id)
-    expect(byItem(uploaded)[0]!.name).toBe("manual.pdf")
-
+    const po = await order([{ ...item(standard, variantA), fnsku: "X00CORD001" }, item(uploaded, variantB)])
+    await upload(variantB)
     const combined = await orderLabels(new Request(`${appUrl()}/api/orders/${po.id}/labels`), {
       params: Promise.resolve({ id: po.id })
     })
     expect(combined.status).toBe(200)
-    expect(await pages(combined)).toBe(3)
+    expect(await pages(combined)).toBe(2)
+    expect(await labels(po.id)).toEqual([])
 
-    await database.update(tables.orders).set({ status: "closed" }).where(eq(tables.orders.id, po.id))
-    await expect(refreshProductLabels(actor(buyerId, "buyer"), po.id)).rejects.toThrow("This PO is closed")
+    const unlabelled = await order([item(randomUUID(), variantA)], "awd_us")
+    const none = await orderLabels(new Request(`${appUrl()}/api/orders/${unlabelled.id}/labels`), {
+      params: Promise.resolve({ id: unlabelled.id })
+    })
+    expect(none.status).toBe(404)
   })
 })
 

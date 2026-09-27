@@ -110,6 +110,7 @@ export const itemSchema = z
 export type OrderItem = z.infer<typeof itemSchema>
 // Payment terms offered when creating a PO. Anything else can be typed in.
 export const commonPaymentTerms = [
+  "Due immediately",
   "Payment in advance",
   "30% deposit, 70% before shipment",
   "50% deposit, 50% before shipment",

@@ -29,7 +29,7 @@ import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { forwarderAddress } from "./forwarders"
-import { attachProductBarcodes, discardFile } from "./product-barcodes"
+import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
@@ -261,12 +261,10 @@ export async function updateDraftOrder(s: Session, id: string, raw: unknown, exp
       .insert(orderRevisions)
       .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "PO edited" })
   })
-  await attachProductBarcodes(s, id)
 }
 export async function createOrder(s: Session, raw: unknown) {
   const prepared = await prepareOrder(s, raw)
   const order = await db().transaction((tx) => persistOrder(tx, s, prepared))
-  await attachProductBarcodes(s, order.id)
   return order
 }
 // Amazon shipments need every item's ASIN and FNSKU. A PO saved before Amazon was connected gets them here, before the
@@ -361,7 +359,6 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
   })
   // Lines still without a label get one now: barcodes saved since the PO was created, and standard labels for the
   // FNSKUs completed above.
-  await attachProductBarcodes(s, id)
   return submitted
 }
 export async function newShipment(s: Session, orderId: string) {
@@ -393,7 +390,7 @@ export async function newShipment(s: Session, orderId: string) {
   })
 }
 export async function submitPacking(s: Session, shipmentId: string, raw: unknown, expectedRevision: number) {
-  return db().transaction(async (tx) => {
+  const submitted = await db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
       throw new Error("Shipment not found")
@@ -428,7 +425,10 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     let message = "Packing submitted; ready to ship"
     if (approval) {
       status = "approval"
-      message = "Supplier submitted invoice changes for approval"
+      message =
+        s.org.kind === "buyer"
+          ? "Invoice entered with changes to the PO"
+          : "Supplier submitted invoice changes for approval"
     } else if (amazon) {
       status = "queued"
       message = "Packing submitted; Amazon creation queued"
@@ -455,8 +455,15 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
         })
         .onConflictDoNothing()
     }
-    return { approval }
+    return { approval, revision: shipment.revision }
   })
+  // The buyer entering a supplier's invoice itself, for a supplier that isn't on Copacker, doesn't approve its own
+  // changes: they're applied straight away.
+  if (submitted.approval && s.org.kind === "buyer") {
+    await approveInvoice(s, shipmentId, submitted.revision, false)
+    return { approval: false }
+  }
+  return { approval: submitted.approval }
 }
 export async function approveInvoice(s: Session, shipmentId: string, expectedRevision: number, updateCost: boolean) {
   requireBuyer(s)

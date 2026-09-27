@@ -61,7 +61,8 @@ export function OrderBuilder({
   needsBarcodeVariantIds = [],
   draft
 }: {
-  suppliers: Array<{ id: string; name: string }>
+  // Each supplier's payment terms, which a new PO to it starts with.
+  suppliers: Array<{ id: string; name: string; paymentTerms?: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
   deliveries?: Array<{ id: string; name: string }>
   // Where POs to freight forwarders can ship: each forwarder's addresses.
@@ -92,7 +93,7 @@ export function OrderBuilder({
       destination: initialDestination,
       deliveryId: initialDeliveryId,
       dueDate: "",
-      paymentTerms: "",
+      paymentTerms: suppliers.find((row) => row.id === initialSupplierId)?.paymentTerms ?? "",
       currency: "USD",
       notes: "",
       adjustments: [],
@@ -111,6 +112,21 @@ export function OrderBuilder({
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
   const destination = useWatch({ control: form.control, name: "destination" })
   const deliveryId = useWatch({ control: form.control, name: "deliveryId" })
+  const chosenSupplier = useWatch({ control: form.control, name: "supplierId" })
+  // Choosing another supplier brings its payment terms, unless the buyer typed their own.
+  const lastSupplier = useRef(chosenSupplier)
+  useEffect(() => {
+    if (lastSupplier.current === chosenSupplier) {
+      return
+    }
+    const previous = suppliers.find((row) => row.id === lastSupplier.current)?.paymentTerms ?? ""
+    lastSupplier.current = chosenSupplier
+    const terms = form.getValues("paymentTerms") ?? ""
+    const next = suppliers.find((row) => row.id === chosenSupplier)?.paymentTerms
+    if (next && (!terms || terms === previous)) {
+      form.setValue("paymentTerms", next)
+    }
+  }, [chosenSupplier, suppliers, form])
   // The address list depends on the destination, and a forwarder address names its forwarder, so both follow the
   // chosen destination and address.
   useEffect(() => {

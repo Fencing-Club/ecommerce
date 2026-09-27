@@ -1,6 +1,6 @@
 import { money, type OrderItem, orderTotal } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, prepInstructions, sharedPrep } from "@repo/aisle/requirements"
-import { and, desc, eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { ChevronDown, ChevronRight, Info as InfoIcon } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -16,13 +16,13 @@ import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle }
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
-import { documents, events, orderRevisions, shipments } from "@/db/schema"
+import { events, orderRevisions, shipments } from "@/db/schema"
 import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
-import { linesWithoutLabels } from "@/server/product-barcodes"
+import { lineLabels } from "@/server/product-barcodes"
 import { orderWorkflow } from "@/server/workflow"
 import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -34,12 +34,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const s = await session()
   const id = z.uuid().parse((await params).id)
   const { order, supplier } = await accessibleOrder(s, id)
-  const [shipmentRows, docs, history, revisions] = await Promise.all([
+  const [shipmentRows, history, revisions] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, id)),
-    db()
-      .select()
-      .from(documents)
-      .where(and(eq(documents.orderId, id), eq(documents.outdated, 0))),
     db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision))
   ])
@@ -62,14 +58,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     landed.reduce((sum, cost) => sum + cost.amountMinor, 0) + freight.reduce((sum, row) => sum + row.freightMinor, 0)
   const markup = landedMarkup(order.data, landedTotal)
   const buyer = s.org.kind === "buyer"
-  const labelFor = (itemId: string) => docs.find((doc) => doc.kind === "product_label" && doc.itemId === itemId)
-  // Lines that need a label and don't have one yet. Closed POs no longer need them, nor do products set to No label.
-  const labelFree = await linesWithoutLabels(order)
-  const unlabelled = new Set(
-    order.status === "closed"
-      ? []
-      : order.data.items.filter((item) => !labelFree.has(item.id) && !labelFor(item.id)).map((item) => item.id)
-  )
+  // Each line's label, from its product's current barcode and label setting.
+  const labels = await lineLabels(order)
+  const labelFor = (itemId: string) => labels.find((label) => label.itemId === itemId)
   // What happened to the PO, newest first: its events, and each revision, which opens to show its lines.
   const timeline = [
     ...history.map((event) => ({ key: event.id, at: event.createdAt, message: event.message, revision: null })),
@@ -108,7 +99,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           reference={order.data.reference}
           draft={order.status === "draft" && buyer}
           closable={order.status === "submitted" && buyer}
-          labels={docs.some((doc) => doc.kind === "product_label")}
+          labels={labels.some((label) => label.state === "uploaded" || label.state === "standard")}
         />
       </PageHeader>
 
@@ -174,11 +165,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     </TableCell>
                     <TableCell>
                       <LineLabel
+                        orderId={id}
+                        itemId={item.id}
                         name={[item.name, item.variant === "Default Title" ? "" : item.variant]
                           .filter(Boolean)
                           .join(" / ")}
-                        documentId={labelFor(item.id)?.id ?? null}
-                        missing={unlabelled.has(item.id)}
+                        label={labelFor(item.id)}
                       />
                     </TableCell>
                   </TableRow>

@@ -78,7 +78,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
         description="Choose products, set quantities, and give your supplier a clear starting point."
       />
       <OrderBuilder
-        suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
+        suppliers={rows.map((r) => ({ id: r.id, name: r.name, paymentTerms: r.paymentTerms }))}
         deliveries={deliveries}
         forwarderAddresses={forwarding.map((row) => ({
           addressId: row.addressId,

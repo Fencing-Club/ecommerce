@@ -53,7 +53,7 @@ export function itemRequirements(
   return [
     ...(item.prepCategory === shared ? [] : [prepInstructions[item.prepCategory]]),
     ...(item.piecesPerSet > 1 ? [`Pack ${item.piecesPerSet} pieces together as one unit`] : []),
-    ...(amazon && item.fnsku ? [`FNSKU label ${item.fnsku}`] : []),
+    ...(amazon && item.fnsku ? [`Label with FNSKU ${item.fnsku}`] : []),
     ...item.instructions
       .split("\n")
       .map((line) => line.trim())

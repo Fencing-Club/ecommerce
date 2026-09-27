@@ -168,18 +168,20 @@ export function OrderMenu({
   )
 }
 
-// A PO line's product label, to download, or a warning when the line needs one and has none. Labels come from each
-// product's settings on the Products page.
+// A PO line's product label, made from its product when downloaded, or why it has none. Labels are uploaded and
+// removed on the Products page.
 export function LineLabel({
+  orderId,
+  itemId,
   name,
-  documentId,
-  missing
+  label
 }: {
+  orderId: string
+  itemId: string
   name: string
-  documentId: string | null
-  missing: boolean
+  label?: { state: "uploaded" | "standard" | "none" } | { state: "missing"; problem: string }
 }) {
-  if (documentId) {
+  if (label?.state === "uploaded" || label?.state === "standard") {
     return (
       <Tooltip>
         <TooltipTrigger
@@ -189,28 +191,34 @@ export function LineLabel({
               size="icon-sm"
               nativeButton={false}
               render={
-                <a href={`/api/documents/${documentId}`} download aria-label={`Download the label for ${name}`} />
+                <a
+                  href={`/api/orders/${orderId}/labels/${itemId}`}
+                  download
+                  aria-label={`Download the label for ${name}`}
+                />
               }
             />
           }
         >
           <Download />
         </TooltipTrigger>
-        <TooltipContent>Download label</TooltipContent>
+        <TooltipContent>{label.state === "uploaded" ? "Download uploaded label" : "Download label"}</TooltipContent>
       </Tooltip>
     )
   }
-  if (!missing) {
+  if (label?.state !== "missing") {
     return null
   }
   return (
     <Tooltip>
       <TooltipTrigger
-        render={<span className="inline-flex p-1.5 text-amber-600" aria-label={`No label for ${name} yet`} />}
+        render={
+          <span className="inline-flex p-1.5 text-amber-600" aria-label={`No label for ${name}: ${label.problem}`} />
+        }
       >
         <AlertTriangle className="size-4" />
       </TooltipTrigger>
-      <TooltipContent>No label yet. Set it on the Products page.</TooltipContent>
+      <TooltipContent>{label.problem}</TooltipContent>
     </Tooltip>
   )
 }

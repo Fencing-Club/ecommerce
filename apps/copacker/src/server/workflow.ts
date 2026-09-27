@@ -3,6 +3,7 @@ import { db } from "@/db"
 import { documents, shipments, type ShipmentState } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
+import { linesMissingLabels } from "./product-barcodes"
 import {
   finishedStates,
   orderCoverage,
@@ -20,6 +21,8 @@ const finishedMessages: Partial<Record<ShipmentState, string>> = {
 }
 
 export async function orderWorkflow(s: Session, orderId: string) {
+  // Lines whose product can't make a label yet hold back the packet's release.
+  const missingLabels = await linesMissingLabels(s, orderId)
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx)
     const rows = await tx.select().from(shipments).where(eq(shipments.orderId, orderId)).orderBy(shipments.createdAt)
@@ -47,7 +50,7 @@ export async function orderWorkflow(s: Session, orderId: string) {
           reservedPieces(rows, shipment.id),
           order.revision
         )
-        const release = releaseIssues(shipment, docs)
+        const release = releaseIssues(shipment, docs, missingLabels)
         let next: { owner: "buyer" | "supplier" | "system" | null; step: string; action?: string; message: string }
         if (editable) {
           next = {

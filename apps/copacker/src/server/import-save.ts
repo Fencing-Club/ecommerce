@@ -7,7 +7,6 @@ import { poImports } from "@/db/schema"
 import { requireBuyer, type Session } from "./auth"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
-import { attachProductBarcodes } from "./product-barcodes"
 
 const saveSchema = z
   .object({
@@ -105,6 +104,5 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       .where(scope)
     return { id: order.id }
   })
-  await attachProductBarcodes(s, saved.id)
   return saved
 }

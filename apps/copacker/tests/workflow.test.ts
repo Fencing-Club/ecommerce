@@ -1666,6 +1666,18 @@ describe("Postgres workflow and authorization", () => {
       "shopify"
     ])
   })
+  it("applies invoice changes the buyer enters itself, for a supplier not on Copacker, without asking it to approve", async () => {
+    const shipment = await preparation()
+    await database.update(tables.suppliers).set({ supplierOrgId: null }).where(eq(tables.suppliers.id, supplierLinkId))
+    shipment.packing.changes = [{ itemId, supplierSku: "B02", unitPrice: 230 }]
+    expect(await submitPacking(buyer, shipment.id, shipment.packing, 1)).toEqual({ approval: false })
+    const [saved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
+    expect(saved?.status).not.toBe("approval")
+    const revisions = await database.select().from(tables.orderRevisions).orderBy(tables.orderRevisions.revision)
+    expect(revisions.map((r) => r.data.items[0]?.unitPrice)).toEqual([210, 230])
+    // The supplier isn't on Copacker, so no revised PO is emailed.
+    expect((await database.select().from(tables.jobs)).map((j) => j.kind).sort()).toEqual(["amazon", "shopify"])
+  })
   it("rejects foreign invoices and stale shipment revisions", async () => {
     const shipment = await preparation(),
       other = await preparation()
@@ -2375,10 +2387,13 @@ describe("document upload and packet release", () => {
     await database
       .insert(tables.memberships)
       .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    // The product label is made from the product now; Shopify has no country of origin for it.
+    provider.shopifyFor.mockResolvedValue({ variants: async () => [] })
     const downloaded = await packet()
     expect(downloaded.status).toBe(200)
+    // Packing list, checklist, the product label, the carton label and the shipping label.
     expect((await PDFDocument.load(await downloaded.arrayBuffer())).getPageCount()).toBe(5)
-    expect(storage.getFile).toHaveBeenCalledTimes(5)
+    expect(storage.getFile).toHaveBeenCalledTimes(4)
     storage.getFile.mockImplementation(async () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
       return bytes
@@ -3529,6 +3544,18 @@ describe("business details on POs", () => {
     await post({ action: "business.profile", data: details })
     const { bytes } = await generatePo(orderId)
     expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-")
+  })
+})
+
+describe("supplier payment terms", () => {
+  it("start as due immediately and can be changed, keeping them when left out", async () => {
+    const [row] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
+    expect(row?.paymentTerms).toBe("Due immediately")
+    const update = { id: supplierLinkId, name: "Supplier", leadTimeDays: null, amazonLeadTimeDays: null }
+    await updateSupplier(buyerId, { ...update, paymentTerms: "Net 30" })
+    await updateSupplier(buyerId, update)
+    const [saved] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
+    expect(saved?.paymentTerms).toBe("Net 30")
   })
 })
 

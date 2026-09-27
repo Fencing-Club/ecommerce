@@ -6,16 +6,15 @@ import { labelTitle, standardProductLabels } from "@repo/aisle/product-labels"
 import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, documents, productBarcodes, shipments, stockSnapshots } from "@/db/schema"
+import { connections, productBarcodes, stockSnapshots } from "@/db/schema"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { inventoryContext } from "./inventory-context"
 import { isCollective } from "./inventory-products"
 import { type ProductDefaults, readProductDefaults } from "./product-defaults"
-import { releasedStates } from "./readiness"
 import { describeError } from "./stock"
-import { copyFile, deleteFile, getFile, putFile, validatePdf } from "./storage"
+import { deleteFile, getFile, putFile, validatePdf } from "./storage"
 
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
@@ -76,21 +75,6 @@ const labelFree = (
   productId !== undefined &&
   defaults.get(productId)?.productLabel === "none" &&
   !amazonDestinations.includes(destination)
-
-// A PO's lines that need no product label, so the PO doesn't ask for one.
-export async function linesWithoutLabels(order: { buyerOrgId: string; shopifyDomain: string; data: OrderInput }) {
-  const [defaults, rows] = await Promise.all([
-    readProductDefaults(order.buyerOrgId, order.shopifyDomain),
-    storeRows(order.buyerOrgId, order.shopifyDomain)
-  ])
-  return new Set(
-    order.data.items
-      .filter((item) =>
-        labelFree(defaults, rows.find((row) => row.variantId === item.variantId)?.productId, order.data.destination)
-      )
-      .map((item) => item.id)
-  )
-}
 
 // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
 export async function variantsNeedingBarcode(orgId: string) {
@@ -445,44 +429,19 @@ export function fnskuFor(rows: { sellerSku: string; fnSku?: string }[], sku: str
   return fnskus.size === 1 ? [...fnskus][0]! : null
 }
 
-// Whether every current label on a PO line was added by Copacker, not uploaded on the PO, so a refresh may replace it.
-const addedLabels = (labels: { itemId: string | null; uploadedBy: string }[], itemId: string) =>
-  labels.filter((label) => label.itemId === itemId).every((label) => label.uploadedBy === "system")
+// What a PO line prints as its product label. It's worked out from the product whenever it's needed, so it follows
+// changes to the product's barcode, label setting, title or FNSKU: an uploaded label, the standard FNSKU (or SKU)
+// label, none, or why there's none yet.
+export type LineLabel =
+  | { itemId: string; state: "uploaded"; name: string; objectKey: string }
+  | { itemId: string; state: "standard"; variantId: string; code: string; title: string }
+  | { itemId: string; state: "none" }
+  | { itemId: string; state: "missing"; problem: string }
 
-// Lines packed in shipments released to the supplier. Their labels are part of the released packet and stay as they are.
-async function releasedItems(orderId: string) {
-  const rows = await db()
-    .select({ status: shipments.status, packing: shipments.packing })
-    .from(shipments)
-    .where(eq(shipments.orderId, orderId))
-  return new Set(
-    rows
-      .filter((row) => releasedStates.includes(row.status))
-      .flatMap((row) => row.packing?.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)) ?? [])
-  )
-}
+type LabelOrder = { buyerOrgId: string; shopifyDomain: string; data: OrderInput }
 
-// Adds product labels to a PO's lines that don't have one: the variation's uploaded barcode, or else the standard FNSKU
-// label with the Shopify title, unless its product needs an uploaded label. Labels uploaded on the PO itself are kept.
-// With refresh, labels Copacker added are made again from current barcodes and Shopify and Amazon details, except on
-// lines in released shipments. Returns how many labels were added.
-export async function attachProductBarcodes(s: Session, orderId: string, { refresh = false } = {}) {
-  if (s.org.kind !== "buyer") {
-    return 0
-  }
-  const { order } = await accessibleOrder(s, orderId)
-  const labelled = await db()
-    .select({ itemId: documents.itemId, uploadedBy: documents.uploadedBy })
-    .from(documents)
-    .where(and(eq(documents.orderId, orderId), eq(documents.kind, "product_label"), eq(documents.outdated, 0)))
-  const released = refresh ? await releasedItems(orderId) : new Set<string>()
-  const replaceable = (itemId: string) => refresh && !released.has(itemId) && addedLabels(labelled, itemId)
-  const wanted = order.data.items.filter(
-    (item) => !labelled.some((label) => label.itemId === item.id) || replaceable(item.id)
-  )
-  if (!wanted.length) {
-    return 0
-  }
+export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
+  const variantIds = [...new Set(order.data.items.map((item) => item.variantId))]
   const [barcodes, defaults, rows] = await Promise.all([
     db()
       .select()
@@ -491,139 +450,101 @@ export async function attachProductBarcodes(s: Session, orderId: string, { refre
         and(
           eq(productBarcodes.orgId, order.buyerOrgId),
           eq(productBarcodes.shopifyDomain, order.shopifyDomain),
-          inArray(
-            productBarcodes.variantId,
-            wanted.map((item) => item.variantId)
-          )
+          inArray(productBarcodes.variantId, variantIds)
         )
       ),
     readProductDefaults(order.buyerOrgId, order.shopifyDomain),
     storeRows(order.buyerOrgId, order.shopifyDomain)
   ])
-  const missing = wanted.filter(
-    (item) =>
-      !labelFree(defaults, rows.find((row) => row.variantId === item.variantId)?.productId, order.data.destination)
-  )
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
   const forAmazon = amazonDestinations.includes(order.data.destination)
-  // Standard labels print each variation's country of origin, looked up in one Shopify request. If Shopify can't be
-  // reached, those lines stay without a label; the PO shows them, and sending it tries again.
-  const standard = missing.filter(
-    (item) =>
-      !barcodes.some((row) => row.variantId === item.variantId) &&
-      !needsUpload(defaults, rows.find((row) => row.variantId === item.variantId)?.productId)
-  )
-  const origins = await countriesOfOrigin(
-    order.buyerOrgId,
-    order.shopifyDomain,
-    standard.map((item) => item.variantId)
-  )
-    .then((entries) => new Map(entries))
-    .catch(() => null)
-  const staged: (typeof documents.$inferInsert)[] = []
-  for (const item of missing) {
+  return order.data.items.map((item): LineLabel => {
     const barcode = barcodes.find((row) => row.variantId === item.variantId)
     const productId = rows.find((row) => row.variantId === item.variantId)?.productId
-    const id = randomUUID()
-    const objectKey = `orders/${orderId}/${id}.pdf`
-    const label = {
-      id,
-      orderId,
-      kind: "product_label" as const,
-      itemId: item.id,
-      objectKey,
-      orderRevision: order.revision
-    }
     if (barcode) {
-      await copyFile(barcode.objectKey, objectKey)
-      // Copied labels count as added by Copacker, so a refresh picks up a replaced barcode.
-      staged.push({ ...label, name: barcode.name, bytes: barcode.bytes, uploadedBy: "system" })
-    } else if (!needsUpload(defaults, productId)) {
-      const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
-      if (!code || !origins) {
-        continue
-      }
-      const title = labelTitle(item.name, item.variant)
-      const bytes = await standardProductLabels({
-        code,
-        title,
-        countryOfOrigin: origins.get(item.variantId) ?? null
-      })
-      await putFile(objectKey, bytes)
-      staged.push({ ...label, name: labelFileName(title), bytes: bytes.length, uploadedBy: "system" })
+      return { itemId: item.id, state: "uploaded", name: barcode.name, objectKey: barcode.objectKey }
     }
-  }
-  if (!staged.length) {
-    return 0
-  }
-  const kept = await db().transaction(async (tx) => {
-    const { order: fresh } = await accessibleOrder(s, orderId, tx, true)
-    const current = await tx
-      .select({ id: documents.id, itemId: documents.itemId, uploadedBy: documents.uploadedBy })
-      .from(documents)
-      .where(and(eq(documents.orderId, orderId), eq(documents.kind, "product_label"), eq(documents.outdated, 0)))
-    // A label uploaded meanwhile, or a line removed from the PO, wins over the saved or standard one. A refreshed label
-    // replaces only labels Copacker added; the old ones stay as outdated versions.
-    const values = staged.filter((doc) => {
-      if (!fresh.data.items.some((item) => item.id === doc.itemId)) {
-        return false
-      }
-      const labels = current.filter((label) => label.itemId === doc.itemId)
-      return !labels.length || (refresh && !released.has(doc.itemId!) && addedLabels(current, doc.itemId!))
-    })
-    const replaced = current.filter((label) => values.some((doc) => doc.itemId === label.itemId))
-    if (replaced.length) {
-      await tx
-        .update(documents)
-        .set({ outdated: 1 })
-        .where(
-          inArray(
-            documents.id,
-            replaced.map((label) => label.id)
-          )
-        )
+    if (labelFree(defaults, productId, order.data.destination)) {
+      return { itemId: item.id, state: "none" }
     }
-    if (values.length) {
-      await tx.insert(documents).values(values)
+    if (needsUpload(defaults, productId)) {
+      return { itemId: item.id, state: "missing", problem: "Upload its label on the Products page" }
     }
-    return values
+    const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
+    if (!code) {
+      return { itemId: item.id, state: "missing", problem: "Its FNSKU is looked up when the PO is sent" }
+    }
+    return {
+      itemId: item.id,
+      state: "standard",
+      variantId: item.variantId,
+      code,
+      title: labelTitle(item.name, item.variant)
+    }
   })
-  for (const doc of staged) {
-    if (!kept.includes(doc)) {
-      await discardFile(doc.objectKey)
+}
+
+// The label files for the given lines, in their order: uploaded labels as they are, standard labels made now with the
+// "Made in" line Shopify records. Lines with no label are left out.
+export async function lineLabelFiles(order: LabelOrder, labels: LineLabel[]) {
+  const standard = labels.flatMap((label) => (label.state === "standard" ? [label] : []))
+  const origins = new Map(
+    await countriesOfOrigin(
+      order.buyerOrgId,
+      order.shopifyDomain,
+      standard.map((label) => label.variantId)
+    )
+  )
+  const files: Array<{ itemId: string; name: string; bytes: Uint8Array }> = []
+  for (const label of labels) {
+    if (label.state === "uploaded") {
+      files.push({ itemId: label.itemId, name: label.name, bytes: await getFile(label.objectKey) })
+    } else if (label.state === "standard") {
+      const bytes = await standardProductLabels({
+        code: label.code,
+        title: label.title,
+        countryOfOrigin: origins.get(label.variantId) ?? null
+      })
+      files.push({ itemId: label.itemId, name: labelFileName(label.title), bytes })
     }
   }
-  return kept.length
+  return files
 }
 
-// Adds missing product labels to an open PO and makes the ones Copacker added again, such as after a barcode upload or
-// a title, FNSKU or country change. Labels uploaded on the PO, and lines in released shipments, stay as they are.
-export async function refreshProductLabels(s: Session, orderId: string) {
-  if (s.org.kind !== "buyer") {
-    throw new ProductBarcodeError("A buyer workspace is required", 403)
-  }
+// The lines of a PO the workspace can see whose product can't make a label yet.
+export async function linesMissingLabels(s: Session, orderId: string) {
   const { order } = await accessibleOrder(s, orderId)
-  if (order.status === "closed") {
-    throw new ProductBarcodeError("This PO is closed, so its labels can't change", 409)
-  }
-  return { updated: await attachProductBarcodes(s, orderId, { refresh: true }) }
+  return new Set((await lineLabels(order)).flatMap((label) => (label.state === "missing" ? [label.itemId] : [])))
 }
 
-// All of a PO's current product labels in one PDF, in the PO's line order, for printing them together.
+// One PO line's product label, for downloading from the PO.
+export async function orderLineLabel(s: Session, orderId: string, itemId: string) {
+  const { order } = await accessibleOrder(s, orderId)
+  const label = (await lineLabels(order)).find((row) => row.itemId === itemId)
+  if (!label) {
+    throw new ProductBarcodeError("This line isn't on the PO", 404)
+  }
+  if (label.state === "none") {
+    throw new ProductBarcodeError("This product doesn't need a label", 404)
+  }
+  if (label.state === "missing") {
+    throw new ProductBarcodeError(label.problem, 404)
+  }
+  const [file] = await lineLabelFiles(order, [label])
+  return file!
+}
+
+// All of a PO's product labels in one PDF, in the PO's line order, for printing them together.
 export async function orderLabelsPdf(s: Session, orderId: string) {
   const { order } = await accessibleOrder(s, orderId)
-  const labels = await db()
-    .select({ itemId: documents.itemId, objectKey: documents.objectKey })
-    .from(documents)
-    .where(and(eq(documents.orderId, orderId), eq(documents.kind, "product_label"), eq(documents.outdated, 0)))
-  const ordered = order.data.items.flatMap((item) => labels.filter((label) => label.itemId === item.id))
-  if (!ordered.length) {
-    throw new ProductBarcodeError("This PO has no product labels yet", 404)
+  const files = await lineLabelFiles(order, await lineLabels(order))
+  if (!files.length) {
+    throw new ProductBarcodeError("This PO has no product labels", 404)
   }
   return {
     name: labelFileName(`${order.data.reference} product labels`),
-    bytes: await combinePdfs(await Promise.all(ordered.map((label) => getFile(label.objectKey))))
+    bytes: await combinePdfs(files.map((file) => file.bytes))
   }
 }
 

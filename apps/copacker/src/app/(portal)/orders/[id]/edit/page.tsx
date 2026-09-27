@@ -46,7 +46,7 @@ export default async function EditOrder({ params }: { params: Promise<{ id: stri
       />
       <PageHeader title={`Edit ${order.data.reference}`} />
       <OrderBuilder
-        suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
+        suppliers={rows.map((row) => ({ id: row.id, name: row.name, paymentTerms: row.paymentTerms }))}
         deliveries={deliveries}
         forwarderAddresses={forwarding.map((row) => ({
           addressId: row.addressId,

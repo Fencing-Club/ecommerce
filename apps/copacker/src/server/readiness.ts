@@ -116,7 +116,13 @@ export function packingReadiness(
   return { packing, issues }
 }
 
-export function releaseIssues(shipment: Shipment, docs: Document[]): ReadinessIssue[] {
+// Whether a shipment's packet is complete. Product labels are made from each product when needed, so a line lacks one
+// only when its product can't make one yet, as given in missingLabels (see lineLabels).
+export function releaseIssues(
+  shipment: Shipment,
+  docs: Document[],
+  missingLabels: ReadonlySet<string> = new Set()
+): ReadinessIssue[] {
   if (!shipment.packing || !shipment.snapshot) {
     return [{ code: "missing_packing", message: "Submit the packing list first" }]
   }
@@ -162,11 +168,11 @@ export function releaseIssues(shipment: Shipment, docs: Document[]): ReadinessIs
         continue
       }
       checkedItems.add(item.itemId)
-      if (!active.some((doc) => doc.kind === "product_label" && doc.itemId === item.itemId)) {
+      if (missingLabels.has(item.itemId)) {
         issues.push({
           code: "missing_product_label",
           itemId: item.itemId,
-          message: "Upload a product label for this shipped item"
+          message: "Add a product label for this shipped item on the Products page"
         })
       }
     }
