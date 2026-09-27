@@ -27,13 +27,16 @@ const itemRevenue = sql.raw(`(select coalesce(sum(case b->>'type'
         from jsonb_array_elements(coalesce(b->'detailedBreakdowns', '[]'::jsonb)) d where d->>'subtype' = 'SHIPPING'), 0)
     else 0 end), 0)
   from jsonb_array_elements(coalesce(item->'proceeds'->'breakdowns', '[]'::jsonb)) b)`)
+// An Amazon replacement for another order (Amazon links it with REPLACEMENT_ORIGINAL_ID): sent free, so its sales are
+// zero from the start.
+const amazonReplacement = `(coalesce(o.data->'associatedOrders', '[]'::jsonb) @> '[{"associationType": "REPLACEMENT_ORIGINAL_ID"}]')`
 // An Amazon item has its price once Amazon adds its proceeds. A line with nothing ordered has none to add, and an order
-// Amazon paid nothing for (a free replacement, whose payments all post at zero) is priced at zero.
-const amazonFreeOrder = `(exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
+// Amazon paid nothing for (a replacement, or any order whose payments all post at zero) is priced at zero.
+const amazonFreeOrder = `(${amazonReplacement} or (exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
     and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment')
   and not exists (select 1 from amazon_transactions t where t."orgId" = o."orgId"
     and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId" and t.type = 'Shipment'
-    and t."totalMinor" <> 0))`
+    and t."totalMinor" <> 0)))`
 const itemPriced = sql.raw(`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
   or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`)
 
@@ -97,7 +100,7 @@ function shippedFrom(locationId: string | null | undefined) {
 // has no price or fees yet, so it counts once Amazon confirms it.
 const counted = sql.raw(`(coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') <> 'CANCELLED'
   and o.data->>'cancelledAt' is null
-  and not (coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') = 'PENDING'
+  and not (coalesce(o.data->'fulfillment'->>'fulfillmentStatus', '') = 'PENDING' and not ${amazonReplacement}
     and not exists (select 1 from jsonb_array_elements(o.data->'orderItems') i where i->'proceeds'->'breakdowns' is not null)))`)
 
 function accountFilter(accounts: Account[]) {

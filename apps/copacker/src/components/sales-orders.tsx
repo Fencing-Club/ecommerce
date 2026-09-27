@@ -10,6 +10,7 @@ import {
   Clock,
   ExternalLink,
   RefreshCw,
+  Repeat,
   Search
 } from "lucide-react"
 import Link from "next/link"
@@ -259,6 +260,15 @@ function OrderList({ sources, syncKey }: { sources: SyncState[]; syncKey: string
                               timeStyle: "short"
                             })}
                           </time>
+                          {order.replacementOf && (
+                            <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <Badge variant="outline" className="gap-1 px-1.5">
+                                <Repeat aria-hidden />
+                                Replacement
+                              </Badge>
+                              for {order.replacementOf}
+                            </span>
+                          )}
                           <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground @2xl:hidden">
                             {order.channel}
                             <OrderStatus status={order.status} />

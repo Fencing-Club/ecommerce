@@ -445,6 +445,11 @@ const amazonSale = z.object({
   createdTime: z.iso.datetime({ offset: true }),
   salesChannel: z.object({ channelName: z.string(), marketplaceId: z.string().optional() }),
   fulfillment: z.object({ fulfillmentStatus: z.string(), fulfilledBy: z.string().optional() }).optional(),
+  // Orders this one is linked to: a replacement names the order it replaces (REPLACEMENT_ORIGINAL_ID).
+  associatedOrders: z
+    .array(z.object({ orderId: z.string(), associationType: z.string() }))
+    .max(50)
+    .optional(),
   orderItems: z.array(amazonItem).max(1000)
 })
 export type AmazonSale = z.infer<typeof amazonSale>

@@ -576,6 +576,8 @@ export type SalesOrderSummary = {
   items: { sku: string | null; variantId?: string | null; name?: string | null; quantity: number }[]
   channel: string
   status: string
+  // The Amazon order this one replaces, when it's a replacement sent free.
+  replacementOf?: string | null
   // The order in Shopify admin or Seller Central.
   url: string
   // Net product sales (after discounts, before tax and shipping), or null when the order was copied without prices.
@@ -716,6 +718,8 @@ export function summarizeSalesOrder(
       number: data.orderId,
       orderedAt: orderedAt.toISOString(),
       units: data.orderItems.reduce((sum, item) => sum + item.quantityOrdered, 0),
+      replacementOf:
+        data.associatedOrders?.find((order) => order.associationType === "REPLACEMENT_ORIGINAL_ID")?.orderId ?? null,
       items: data.orderItems.map((item) => ({ sku: item.product.sellerSku ?? null, quantity: item.quantityOrdered })),
       channel,
       status: words(data.fulfillment?.fulfillmentStatus ?? "Unknown"),

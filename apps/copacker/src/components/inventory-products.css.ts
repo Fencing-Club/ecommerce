@@ -1,5 +1,5 @@
 import { globalStyle, style } from "@vanilla-extract/css"
-import { alpha, focusRing, fontSize, space } from "@/styles/tokens"
+import { focusRing, fontSize, space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
 export const toolbar = style({
@@ -47,38 +47,6 @@ export const pagerButtons = style({ display: "flex", alignItems: "center", gap: 
 
 export const summary = style({ ...fontSize.sm, color: vars.color.mutedForeground })
 
-// Stock columns show once the list itself is wide enough, whatever the sidebar leaves it.
-const wide = "(min-width: 44rem)"
-
-export const list = style({
-  containerType: "inline-size",
-  display: "flex",
-  flexDirection: "column",
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.lg,
-  overflow: "hidden"
-})
-
-export const product = style({
-  selectors: { "& + &": { borderTop: `1px solid ${vars.color.border}` } }
-})
-
-export const productRow = style({
-  display: "grid",
-  gridTemplateColumns: "auto auto minmax(0, 1fr) auto",
-  alignItems: "center",
-  gap: space(3),
-  width: "100%",
-  padding: space(3),
-  textAlign: "left",
-  outline: "none",
-  selectors: {
-    "&:is(button):hover": { backgroundColor: alpha(vars.color.muted, 60) },
-    "&:focus-visible": { ...focusRing, borderColor: "transparent" }
-  },
-  "@container": { [wide]: { gridTemplateColumns: "auto auto minmax(0, 1fr) repeat(4, 5.5rem)" } }
-})
-
 export const chevron = style({
   width: "1rem",
   height: "1rem",
@@ -86,9 +54,6 @@ export const chevron = style({
   transition: "transform 150ms",
   selectors: { "[data-panel-open] &": { transform: "rotate(90deg)" } }
 })
-
-// Keeps single-variant rows aligned with expandable ones.
-export const chevronSpacer = style({ width: "1rem" })
 
 export const thumb = style({
   width: space(12),
@@ -113,36 +78,6 @@ export const name = style({ display: "flex", flexDirection: "column", gap: space
 export const title = style({ ...fontSize.sm, fontWeight: 500, overflowWrap: "anywhere" })
 export const detail = style({ ...fontSize.xs, color: vars.color.mutedForeground, overflowWrap: "anywhere" })
 
-export const quantity = style({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "flex-end",
-  fontVariantNumeric: "tabular-nums",
-  ...fontSize.sm,
-  fontWeight: 500
-})
-export const quantityLabel = style({ ...fontSize.xs, fontWeight: 400, color: vars.color.mutedForeground })
-export const negative = style({ color: vars.color.destructive })
-export const unknown = style({ color: vars.color.mutedForeground, fontWeight: 400 })
-
-// In a narrow list only Available shows; On hand, Incoming and On order appear once it's wide.
-export const secondary = style({ display: "none", "@container": { [wide]: { display: "flex" } } })
-
-export const variants = style({
-  display: "flex",
-  flexDirection: "column",
-  backgroundColor: alpha(vars.color.muted, 40),
-  borderTop: `1px solid ${vars.color.border}`
-})
-
-export const variantRow = style([
-  productRow,
-  {
-    paddingLeft: space(10),
-    selectors: { "& + &": { borderTop: `1px solid ${alpha(vars.color.border, 60)}` } }
-  }
-])
-
 export const locations = style({ display: "flex", flexWrap: "wrap", gap: space(1), marginTop: space(1) })
 
 // PO links and Reorder, under an expanded product's header or a single product's name.
@@ -154,7 +89,6 @@ export const actions = style({
   ...fontSize.xs,
   color: vars.color.mutedForeground
 })
-export const panelActions = style([actions, { padding: `${space(2)} ${space(3)}`, paddingLeft: space(10) }])
 
 // A sheet's body scrolls between its fixed header and footer.
 export const locationSettings = style({

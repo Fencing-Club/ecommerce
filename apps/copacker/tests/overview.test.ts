@@ -700,6 +700,17 @@ describe("sales queries", () => {
           orderItems: [{ orderItemId: "i7", quantityOrdered: 2, product: { sellerSku: "A" } }]
         }
       },
+      // A replacement Amazon links to the order it replaces: $0 of sales from the start, before any payment posts.
+      {
+        ...amazonOrder("a6", "2026-09-20T05:00:00Z", []),
+        data: {
+          orderId: "a6",
+          createdTime: "2026-09-20T05:00:00Z",
+          fulfillment: { fulfillmentStatus: "SHIPPED" },
+          associatedOrders: [{ orderId: "a0", associationType: "REPLACEMENT_ORIGINAL_ID" }],
+          orderItems: [{ orderItemId: "i8", quantityOrdered: 1, product: { sellerSku: "A" } }]
+        }
+      },
       // A free replacement: Amazon posts its payment at zero and never adds proceeds.
       amazonOrder("a4", "2026-09-23T06:30:00Z", [
         { orderItemId: "i5", quantityOrdered: 2, product: { sellerSku: "A" } },
@@ -780,6 +791,7 @@ describe("sales queries", () => {
     )
     expect(rows.toSorted((a, b) => a.source.localeCompare(b.source))).toEqual([
       // a1, and a4 at zero; the cancelled a3 and the pending, unpriced a5 aren't counted.
+      { source: "amazon", date: "2026-09-19", orders: 1, units: 1, priced: 1, revenueMinor: 0, currency: "USD" },
       { source: "amazon", date: "2026-09-22", orders: 2, units: 6, priced: 2, revenueMinor: 2700, currency: "USD" },
       // $20 less 2/3 of $3, plus the $20 bundle; the unpriced order counts its unit but no sales.
       { source: "shopify", date: "2026-09-24", orders: 2, units: 5, priced: 1, revenueMinor: 3800, currency: "USD" }
@@ -818,7 +830,8 @@ describe("sales queries", () => {
     const byKey = Object.fromEntries(rows.map((row) => [`${row.source}:${row.period}:${row.key}`, row]))
     expect(byKey["shopify:current:va"]).toMatchObject({ units: 3, pricedUnits: 2, revenueMinor: 1800 })
     expect(byKey["shopify:current:vbundle"]).toMatchObject({ units: 2, pricedUnits: 2, revenueMinor: 2000 })
-    expect(byKey["amazon:current:A"]).toMatchObject({ units: 5, pricedUnits: 5, revenueMinor: 2700, currency: "USD" })
+    // Includes the replacement a6: a unit sold for nothing.
+    expect(byKey["amazon:current:A"]).toMatchObject({ units: 6, pricedUnits: 6, revenueMinor: 2700, currency: "USD" })
     expect(byKey["amazon:current:B"]).toMatchObject({ units: 1, pricedUnits: 1, revenueMinor: 0 })
     expect(byKey["amazon:previous:A"]).toMatchObject({ units: 2, pricedUnits: 0, revenueMinor: 0 })
     expect(byKey["shopify:current:vb"]).toBeUndefined()
@@ -836,7 +849,9 @@ describe("sales queries", () => {
       // The order payment's fees only: the refund is counted with refunds, and the release repeats the payment.
       { orderId: "a1", revenueMinor: 2700, feesMinor: 450 },
       { orderId: "a2", revenueMinor: null, feesMinor: null },
-      { orderId: "a4", revenueMinor: 0, feesMinor: 0 }
+      { orderId: "a4", revenueMinor: 0, feesMinor: 0 },
+      // A replacement is $0 of sales before Amazon posts anything for it.
+      { orderId: "a6", revenueMinor: 0, feesMinor: null }
     ])
   })
 

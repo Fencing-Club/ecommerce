@@ -29,7 +29,6 @@ import type { ProductBarcode } from "@/server/product-barcodes"
 import type { ProductDefaults } from "@/server/product-defaults"
 import * as styles from "./inventory-products.css"
 import { sx } from "@/styles/sprinkles.css"
-import { srOnly } from "@/styles/utilities.css"
 
 type ProductsPage = {
   observedAt: string | null
@@ -183,31 +182,24 @@ function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
 // Why a count isn't shown: a dash on screen, the reason for screen readers.
 const notCounted = { bundle: "Not stocked separately", untracked: "Not tracked" } as const
 
-function Count({
-  value,
-  label,
-  reason,
-  className
-}: {
-  value: number | null
-  label: string
-  reason?: string
-  className?: string
-}) {
+// A stock figure in its column. A figure that isn't counted for this item shows a dash, with the reason for screen
+// readers.
+function Count({ value, reason, className }: { value: number | null; reason?: string; className?: string }) {
   return (
-    <span className={cn(styles.quantity, className)}>
+    <TableCell className={cn("text-right align-top tabular-nums", className)}>
       {reason ? (
-        <span className={styles.unknown}>
+        <span className="text-muted-foreground">
           <span aria-hidden="true">—</span>
-          <span className={srOnly}>{reason}</span>
+          <span className="sr-only">{reason}</span>
         </span>
       ) : (
-        <span className={cn(value === null && styles.unknown, value !== null && value < 0 && styles.negative)}>
+        <span
+          className={cn(value === null && "text-muted-foreground", value !== null && value < 0 && "text-destructive")}
+        >
           {value ?? "Unknown"}
         </span>
       )}
-      <span className={styles.quantityLabel}>{label}</span>
-    </span>
+    </TableCell>
   )
 }
 
@@ -261,14 +253,17 @@ function Locations({ variant }: { variant: InventoryVariant }) {
   )
 }
 
+// On hand, Incoming and On order show once the list is wide enough; Available always shows.
+const wideOnly = "hidden @2xl:table-cell"
+
 function Quantities({ item }: { item: InventoryProduct | InventoryVariant }) {
   const reason = item.stock === "tracked" ? undefined : notCounted[item.stock]
   return (
     <>
-      <Count value={item.available} label="Available" reason={item.stock === "untracked" ? reason : undefined} />
-      <Count value={item.onHand} label="On hand" reason={reason} className={styles.secondary} />
-      <Count value={item.incoming} label="Incoming" reason={reason} className={styles.secondary} />
-      <Count value={item.onOrder.units} label="On order" className={styles.secondary} />
+      <Count value={item.available} reason={item.stock === "untracked" ? reason : undefined} />
+      <Count value={item.onHand} reason={reason} className={wideOnly} />
+      <Count value={item.incoming} reason={reason} className={wideOnly} />
+      <Count value={item.onOrder.units} className={cn(wideOnly, "pr-4")} />
     </>
   )
 }
@@ -340,86 +335,120 @@ function Actions({ product, className }: { product: ListedProduct; className: st
   )
 }
 
+// A product's row, and its variations' rows beneath it once opened. A product with a single, untitled variation is
+// that variation.
 function ProductRow({ product }: { product: ListedProduct }) {
+  const [open, setOpen] = useState(false)
   const only = product.variants.length === 1 && product.variants[0]?.title === null ? product.variants[0] : null
   if (only) {
     return (
-      <li className={styles.product}>
-        <div className={styles.productRow}>
-          <span className={styles.chevronSpacer} />
-          <Thumbnail url={product.imageUrl} />
-          <span className={styles.name}>
-            <span className={styles.title}>{product.title}</span>
-            <span className={styles.detail}>
-              {only.sku ?? "No SKU"}
-              {amazonTargetNote(only.amazonStockTarget)}
-              {stockNotes[only.stock]}
+      <TableRow>
+        <TableCell className="w-10 pl-3 align-top" />
+        <TableCell className="align-top whitespace-normal">
+          <span className="flex items-start gap-3">
+            <Thumbnail url={product.imageUrl} />
+            <span className={styles.name}>
+              <span className="font-medium">{product.title}</span>
+              <span className={styles.detail}>
+                {only.sku ?? "No SKU"}
+                {amazonTargetNote(only.amazonStockTarget)}
+                {stockNotes[only.stock]}
+              </span>
+              {needsLabel(product, only) && <NoLabel />}
+              {needsCountry(product, only) && <WarningNote>No country of origin</WarningNote>}
+              <Locations variant={only} />
+              <Actions product={product} className={styles.actions} />
             </span>
-            {needsLabel(product, only) && <NoLabel />}
-            {needsCountry(product, only) && <WarningNote>No country of origin</WarningNote>}
-            <Locations variant={only} />
-            <Actions product={product} className={styles.actions} />
           </span>
-          <Quantities item={product} />
-        </div>
-      </li>
+        </TableCell>
+        <Quantities item={product} />
+      </TableRow>
     )
   }
   const count = product.variants.length
   const unlabelled = product.variants.filter((variant) => needsLabel(product, variant)).length
   const noCountry = product.variants.filter((variant) => needsCountry(product, variant)).length
+  const variationsId = `variations-${product.productId.split("/").at(-1)}`
   return (
-    <Collapsible render={<li className={styles.product} />}>
-      <CollapsibleTrigger className={styles.productRow}>
-        <ChevronRight className={styles.chevron} aria-hidden="true" />
-        <Thumbnail url={product.imageUrl} />
-        <span className={styles.name}>
-          <span className={styles.title}>{product.title}</span>
-          <span className={styles.detail}>
-            {count === 1 ? "1 variation" : `${count} variations`}
-            {stockNotes[product.stock]}
-          </span>
-          {unlabelled > 0 && (
-            <NoLabel>
-              {unlabelled === count
-                ? "No labels uploaded"
-                : `${unlabelled} ${unlabelled === 1 ? "variation needs its label uploaded" : "variations need their labels uploaded"}`}
-            </NoLabel>
-          )}
-          {noCountry > 0 && (
-            <WarningNote>
-              {noCountry === count
-                ? "No country of origin"
-                : `${noCountry} ${noCountry === 1 ? "variation has" : "variations have"} no country of origin`}
-            </WarningNote>
-          )}
-        </span>
-        <Quantities item={product} />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <Actions product={product} className={styles.panelActions} />
-        <ul className={styles.variants} aria-label={`${product.title} variations`}>
-          {product.variants.map((variant) => (
-            <li key={variant.variantId} className={styles.variantRow}>
-              <span className={styles.chevronSpacer} />
-              <Thumbnail url={variant.imageUrl} small />
-              <span className={styles.name}>
-                <span className={styles.title}>{variant.title ?? product.title}</span>
-                <span className={styles.detail}>
-                  {variant.sku ?? "No SKU"}
-                  {amazonTargetNote(variant.amazonStockTarget)}
-                  {product.stock === variant.stock ? null : stockNotes[variant.stock]}
-                </span>
-                {needsLabel(product, variant) && <NoLabel />}
-                {needsCountry(product, variant) && <WarningNote>No country of origin</WarningNote>}
-                <Locations variant={variant} />
+    <>
+      <TableRow className="cursor-pointer" onClick={() => setOpen(!open)} data-state={open ? "open" : undefined}>
+        <TableCell className="w-10 pl-3 align-top">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-expanded={open}
+            aria-controls={variationsId}
+            aria-label={`${open ? "Hide" : "Show"} the ${count} variations of ${product.title}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              setOpen(!open)
+            }}
+          >
+            <ChevronRight className={cn("transition-transform", open && "rotate-90")} />
+          </Button>
+        </TableCell>
+        <TableCell className="align-top whitespace-normal">
+          <span className="flex items-start gap-3">
+            <Thumbnail url={product.imageUrl} />
+            <span className={styles.name}>
+              <span className="font-medium">{product.title}</span>
+              <span className={styles.detail}>
+                {count === 1 ? "1 variation" : `${count} variations`}
+                {stockNotes[product.stock]}
               </span>
-              <Quantities item={variant} />
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
+              {unlabelled > 0 && (
+                <NoLabel>
+                  {unlabelled === count
+                    ? "No labels uploaded"
+                    : `${unlabelled} ${unlabelled === 1 ? "variation needs its label uploaded" : "variations need their labels uploaded"}`}
+                </NoLabel>
+              )}
+              {noCountry > 0 && (
+                <WarningNote>
+                  {noCountry === count
+                    ? "No country of origin"
+                    : `${noCountry} ${noCountry === 1 ? "variation has" : "variations have"} no country of origin`}
+                </WarningNote>
+              )}
+              {/* Opened, the product's PO links, Reorder and Edit show under its name. */}
+              {open && (
+                <span onClick={(event) => event.stopPropagation()} role="presentation">
+                  <Actions product={product} className={styles.actions} />
+                </span>
+              )}
+            </span>
+          </span>
+        </TableCell>
+        <Quantities item={product} />
+      </TableRow>
+      {open &&
+        product.variants.map((variant, index) => (
+          <TableRow
+            key={variant.variantId}
+            id={index === 0 ? variationsId : undefined}
+            className="bg-muted/30 hover:bg-muted/30"
+          >
+            <TableCell className="w-10 pl-3" />
+            <TableCell className="align-top whitespace-normal">
+              <span className="flex items-start gap-3 pl-6">
+                <Thumbnail url={variant.imageUrl} small />
+                <span className={styles.name}>
+                  <span className="font-medium">{variant.title ?? product.title}</span>
+                  <span className={styles.detail}>
+                    {variant.sku ?? "No SKU"}
+                    {amazonTargetNote(variant.amazonStockTarget)}
+                    {product.stock === variant.stock ? null : stockNotes[variant.stock]}
+                  </span>
+                  {needsLabel(product, variant) && <NoLabel />}
+                  {needsCountry(product, variant) && <WarningNote>No country of origin</WarningNote>}
+                  <Locations variant={variant} />
+                </span>
+              </span>
+            </TableCell>
+            <Quantities item={variant} />
+          </TableRow>
+        ))}
+    </>
   )
 }
 
@@ -572,11 +601,27 @@ export function InventoryProducts({ syncKey }: { syncKey: string }) {
               : "No inventory was reported for this selection."}
           </p>
         ) : (
-          <ul className={styles.list} aria-busy={isFetching}>
-            {data.products.map((product) => (
-              <ProductRow key={product.productId} product={product} />
-            ))}
-          </ul>
+          <div className="@container" aria-busy={isFetching}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 pl-3">
+                    <span className="sr-only">Variations</span>
+                  </TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="text-right">Available</TableHead>
+                  <TableHead className={cn("text-right", wideOnly)}>On hand</TableHead>
+                  <TableHead className={cn("text-right", wideOnly)}>Incoming</TableHead>
+                  <TableHead className={cn("pr-4 text-right", wideOnly)}>On order</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.products.map((product) => (
+                  <ProductRow key={product.productId} product={product} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
         <div className={styles.listHeader}>
           <p className={styles.summary} aria-live="polite">

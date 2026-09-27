@@ -185,6 +185,14 @@ describe("complete sales readers", () => {
     // Only the US unless told otherwise.
     await expect(collectAmazonSales({ request }, window)).rejects.toThrow("marketplace")
   })
+  it("keeps the order a replacement replaces", async () => {
+    const replacement = {
+      ...amazonOrder,
+      associatedOrders: [{ orderId: "111-0000000-0000000", associationType: "REPLACEMENT_ORIGINAL_ID" }]
+    }
+    const request = vi.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({ orders: [replacement] })
+    expect((await collectAmazonSales({ request }, window))[0]?.associatedOrders).toEqual(replacement.associatedOrders)
+  })
   it("rejects duplicate tokens, items and marketplaces", async () => {
     const request = vi
       .fn<(...args: unknown[]) => Promise<unknown>>()
