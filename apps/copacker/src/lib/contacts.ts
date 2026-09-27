@@ -1,10 +1,10 @@
-// Which saved addresses a workspace keeps. Buyers save where goods arrive and their freight forwarders; suppliers save
-// where cartons are collected, so pickup addresses come from the supplier's own workspace.
+// Which saved addresses a workspace keeps. Buyers and forwarders save where goods arrive; suppliers save where cartons
+// are collected. A buyer's addresses for its forwarders are kept with each forwarder, on the Forwarders page.
 export const contactKinds = ["delivery", "forwarder", "pickup"] as const
 export type ContactKind = (typeof contactKinds)[number]
 
-export function contactKindsFor(orgKind: "buyer" | "supplier"): readonly ContactKind[] {
-  return orgKind === "supplier" ? ["pickup"] : ["delivery", "forwarder"]
+export function contactKindsFor(orgKind: "buyer" | "supplier" | "forwarder"): readonly ContactKind[] {
+  return orgKind === "supplier" ? ["pickup"] : ["delivery"]
 }
 
 export const contactKindLabels: Record<ContactKind, string> = {

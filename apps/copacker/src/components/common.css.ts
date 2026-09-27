@@ -27,3 +27,6 @@ globalStyle(`${warningNote} > svg`, {
   marginTop: "0.0625rem",
   color: vars.color.warning
 })
+
+// A page's title keeps room for itself; when the actions don't fit beside it, they wrap below.
+export const pageTitle = style({ flex: "1 1 18rem", minWidth: 0 })

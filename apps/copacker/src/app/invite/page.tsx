@@ -22,13 +22,34 @@ export default async function Invitation({
   const params = await searchParams
   const token = z.string().min(20).parse(params.token)
   const isTeam = params.kind === "team"
-  const next = `/invite?token=${encodeURIComponent(token)}&kind=${isTeam ? "team" : "invite"}`
+  // A freight forwarder joins its own kind of workspace; a supplier, a supplier workspace.
+  const forwarder = params.kind === "forwarder"
+  let inviteKind = "invite"
+  if (isTeam) {
+    inviteKind = "team"
+  } else if (forwarder) {
+    inviteKind = "forwarder"
+  }
+  const next = `/invite?token=${encodeURIComponent(token)}&kind=${inviteKind}`
   const user = await identity(next)
   const supplierMembership = await db()
     .select()
     .from(memberships)
     .innerJoin(organizations, eq(organizations.id, memberships.orgId))
-    .where(and(eq(memberships.userId, user.id), eq(memberships.role, "owner"), eq(organizations.kind, "supplier")))
+    .where(
+      and(
+        eq(memberships.userId, user.id),
+        eq(memberships.role, "owner"),
+        eq(organizations.kind, forwarder ? "forwarder" : "supplier")
+      )
+    )
+
+  let description = "Create or select your supplier workspace to receive the buyer’s purchase orders."
+  if (isTeam) {
+    description = "Join your company’s shared workspace."
+  } else if (forwarder) {
+    description = "Create or select your forwarder workspace to share your warehouse addresses."
+  }
 
   return (
     <main id="main-content" className={cn(centeredPage, mutedBackground)}>
@@ -38,15 +59,12 @@ export default async function Invitation({
             <Box className={sx({ size: 5 })} />
           </div>
           <CardTitle className={sx({ text: "xl" })}>You’re invited to Copacker</CardTitle>
-          <CardDescription>
-            Sign in with the email that received this invitation.{" "}
-            {isTeam
-              ? "Join your company’s shared workspace."
-              : "Create or select your supplier workspace to receive the buyer’s purchase orders."}
-          </CardDescription>
+          <CardDescription>Sign in with the email that received this invitation. {description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {!isTeam && !supplierMembership.length && <WorkspaceForm next={next} />}
+          {!isTeam && !supplierMembership.length && (
+            <WorkspaceForm next={next} kind={forwarder ? "forwarder" : "supplier"} />
+          )}
           {isTeam && (
             <ActionButton action="team.accept" data={{ token }}>
               Accept invitation
@@ -54,6 +72,7 @@ export default async function Invitation({
           )}
           {!isTeam && supplierMembership.length > 0 && (
             <AcceptSupplierInvitation
+              forwarder={forwarder}
               token={token}
               workspaces={supplierMembership.map(({ organizations: org }) => ({ id: org.id, name: org.name }))}
             />

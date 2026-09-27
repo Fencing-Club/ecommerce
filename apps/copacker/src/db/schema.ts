@@ -24,7 +24,7 @@ const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultN
 export const organizations = pgTable("organizations", {
   id: uuid().defaultRandom().primaryKey(),
   name: text().notNull(),
-  kind: text({ enum: ["buyer", "supplier"] }).notNull(),
+  kind: text({ enum: ["buyer", "supplier", "forwarder"] }).notNull(),
   workosId: text().unique(),
   // The store's IANA time zone, such as America/Los_Angeles. Days and months on the Overview use it; null means UTC.
   timeZone: text(),
@@ -76,6 +76,28 @@ export const suppliers = pgTable(
   // One buyer may work with several supplier workspaces owned by the same email.
   (t) => [uniqueIndex("supplier_buyer_name").on(t.buyerOrgId, t.name)]
 )
+// A freight forwarder a buyer ships POs to, such as a consolidator in China. Its addresses are the ones the buyer
+// saved for it until it joins Copacker; after that it keeps its own in its workspace.
+export const forwarders = pgTable(
+  "forwarders",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    buyerOrgId: uuid()
+      .notNull()
+      .references(() => organizations.id),
+    forwarderOrgId: uuid().references(() => organizations.id),
+    name: text().notNull(),
+    // Where its invitation goes; null until the buyer invites it.
+    email: text(),
+    invitationHash: text().unique(),
+    expiresAt: timestamp({ withTimezone: true }),
+    // Set when the buyer removes the forwarder. The row stays so earlier POs keep their destination.
+    removedAt: timestamp({ withTimezone: true }),
+    createdAt: createdAt()
+  },
+  (t) => [uniqueIndex("forwarder_buyer_name").on(t.buyerOrgId, t.name)]
+)
+// A workspace's own contact details. A supplier's are shown to its buyers; a buyer's head its POs.
 export const supplierProfiles = pgTable("supplier_profiles", {
   orgId: uuid()
     .primaryKey()
@@ -84,6 +106,8 @@ export const supplierProfiles = pgTable("supplier_profiles", {
   phoneNumber: text(),
   contactName: text(),
   contactEmail: text(),
+  // The business address printed on POs.
+  address: jsonb().$type<Address>(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
 export const supplierProducts = pgTable(
@@ -129,6 +153,8 @@ export const contacts = pgTable("contacts", {
   address: jsonb().$type<Address>().notNull(),
   // For a delivery address, the Shopify location its stock appears at, so POs sent there show as on order there.
   shopifyLocationId: text(),
+  // For a freight forwarder's address the buyer saved, the forwarder it belongs to.
+  forwarderId: uuid().references(() => forwarders.id),
   createdAt: createdAt()
 })
 export const connections = pgTable(
@@ -392,8 +418,9 @@ export const productDefaults = pgTable(
     // The supplier this product is ordered from, chosen by the buyer. Restock groups it under this supplier.
     supplierId: uuid().references(() => suppliers.id),
     // Where a PO line's product label comes from when no barcode was uploaded: "standard" prints Amazon's FNSKU label
-    // with the Shopify title; "uploaded" needs the buyer's own, such as a label with size measurements.
-    productLabel: text({ enum: ["standard", "uploaded"] })
+    // with the Shopify title; "uploaded" needs the buyer's own, such as a label with size measurements; "none" needs
+    // no label, except on POs to Amazon.
+    productLabel: text({ enum: ["standard", "uploaded", "none"] })
       .notNull()
       .default("standard"),
     revision: integer().notNull().default(1),

@@ -13,6 +13,7 @@ import {
   Palette,
   Receipt,
   Settings,
+  Ship,
   Sun,
   Truck,
   Users,
@@ -73,11 +74,16 @@ const navigation = [
   { view: "restock", label: "Restock", icon: PackagePlus, buyerOnly: true },
   { view: "shipments", label: "Shipments", icon: Truck },
   { view: "suppliers", label: "Suppliers", icon: Users, buyerOnly: true },
+  { view: "forwarders", label: "Forwarders", icon: Ship, buyerOnly: true },
   { view: "catalog", label: "Catalog", icon: BookOpen, supplierOnly: true },
   { view: "settings", label: "Settings", icon: Settings }
 ]
 
+// A forwarder's workspace keeps its addresses and profile in Settings, for now its only page.
 function navigationFor(kind: string) {
+  if (kind === "forwarder") {
+    return navigation.filter((item) => item.view === "settings")
+  }
   return navigation.filter(
     (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
   )
@@ -179,7 +185,7 @@ function WorkspaceSwitcher({
   const [run] = useActionMutation()
   const { isMobile } = useSidebar()
   const current = workspaces.find((workspace) => workspace.id === active)?.name ?? fallbackName
-  let subtitle = kind === "supplier" ? "Supplier workspace" : "Buyer workspace"
+  let subtitle = { supplier: "Supplier workspace", forwarder: "Forwarder workspace" }[kind] ?? "Buyer workspace"
   if (preview) {
     subtitle = "Design preview"
   }

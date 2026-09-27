@@ -128,7 +128,7 @@ export async function amazonEventJob(
 // Reads the orders changed since the stored orders' end and saves them. Every order placed since then is among them, so
 // the stored period extends to the read. Without a recent, current-shape stored period, a full sync runs instead.
 async function updateStoredOrders(
-  org: { id: string; kind: "buyer" | "supplier" },
+  org: { id: string; kind: "buyer" | "supplier" | "forwarder" },
   sellerId: string,
   assertOwned: () => Promise<void>,
   now: number

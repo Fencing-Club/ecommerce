@@ -108,15 +108,30 @@ export const itemSchema = z
   })
   .refine((i) => i.pieces % i.piecesPerSet === 0, "Pieces must be divisible by pieces per set")
 export type OrderItem = z.infer<typeof itemSchema>
+// Payment terms offered when creating a PO. Anything else can be typed in.
+export const commonPaymentTerms = [
+  "Payment in advance",
+  "30% deposit, 70% before shipment",
+  "50% deposit, 50% before shipment",
+  "30% deposit, 70% against bill of lading",
+  "Net 15",
+  "Net 30",
+  "Net 60",
+  "Due on receipt of goods",
+  "Letter of credit at sight"
+] as const
 export const orderInputSchema = z
   .object({
     supplierId: z.uuid(),
     reference: z.string().trim().min(1).max(80),
     destination: destinationSchema,
+    // For a PO to a freight forwarder, the forwarder; deliveryId is then one of its addresses.
     forwarderId: z.uuid().optional(),
     deliveryId: z.uuid().optional(),
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
     dueDate: z.iso.date(),
+    // How and when the supplier is paid, such as "Net 30" or "30% deposit, 70% before shipment".
+    paymentTerms: z.string().trim().max(200).default(""),
     notes: z.string().max(8000).default(""),
     adjustments: z
       .array(
@@ -136,8 +151,8 @@ export const orderInputSchema = z
     if (!Number.isSafeInteger(total) || total < 0) {
       ctx.addIssue({ code: "custom", message: "PO total must be a nonnegative safe integer", path: ["adjustments"] })
     }
-    if (order.destination === "forwarder" && !order.forwarderId) {
-      ctx.addIssue({ code: "custom", message: "Choose a freight forwarder", path: ["forwarderId"] })
+    if (order.destination === "forwarder" && (!order.forwarderId || !order.deliveryId)) {
+      ctx.addIssue({ code: "custom", message: "Choose a forwarder address", path: ["deliveryId"] })
     }
     if (order.destination === "warehouse" && !order.deliveryId) {
       ctx.addIssue({ code: "custom", message: "Choose a delivery address", path: ["deliveryId"] })

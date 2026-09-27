@@ -242,10 +242,11 @@ export function ProductDetails({
                 name="productLabel"
                 required
                 label="Product label"
-                description="Standard prints Amazon’s FNSKU barcode, or the Shopify SKU without Amazon, with the Shopify title. Choose Uploaded for labels that show more, such as size measurements on uniforms."
+                description="Standard prints the FNSKU or SKU barcode. Uploaded is your own PDF. POs to Amazon always get a label."
                 options={[
                   { value: "standard", label: "Standard label" },
-                  { value: "uploaded", label: "Uploaded label" }
+                  { value: "uploaded", label: "Uploaded label" },
+                  { value: "none", label: "No label" }
                 ]}
               />
               <SupplierSkus productTitle={title} variations={variants} onChanged={onSaved} />

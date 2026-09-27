@@ -11,7 +11,8 @@
     "./sales": "./src/sales.ts",
     "./ledger": "./src/ledger.ts",
     "./documents": "./src/documents.ts",
-    "./product-labels": "./src/product-labels.ts"
+    "./product-labels": "./src/product-labels.ts",
+    "./requirements": "./src/requirements.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

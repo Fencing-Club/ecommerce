@@ -148,6 +148,20 @@
       "when": 1790476855844,
       "tag": "0020_supplier_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790487829413,
+      "tag": "0021_business_address",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790490201489,
+      "tag": "0022_forwarders",
+      "breakpoints": true
     }
   ]
 }

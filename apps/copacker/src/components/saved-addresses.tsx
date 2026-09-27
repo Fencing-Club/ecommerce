@@ -47,9 +47,7 @@ export function SavedAddresses({
       <CardHeader>
         <CardTitle>{supplier ? "Pickup addresses" : "Saved addresses"}</CardTitle>
         <CardDescription>
-          {supplier
-            ? "Locations where Amazon or a carrier can collect your cartons."
-            : "Your delivery addresses and freight forwarders. Suppliers add their pickup addresses in their own workspace."}
+          {supplier ? "Locations where Amazon or a carrier can collect your cartons." : "Where POs can be delivered."}
         </CardDescription>
         <CardAction>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -61,9 +59,7 @@ export function SavedAddresses({
               <DialogHeader>
                 <DialogTitle>Add address</DialogTitle>
                 <DialogDescription>
-                  {supplier
-                    ? "Save a pickup location to reuse on shipments."
-                    : "Save a delivery address or a freight forwarder."}
+                  {supplier ? "Save a pickup location to reuse on shipments." : "Save a delivery address."}
                 </DialogDescription>
               </DialogHeader>
               <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
@@ -84,7 +80,7 @@ export function SavedAddresses({
             description={
               supplier
                 ? "Add your pickup locations so they're ready when you prepare a shipment."
-                : "Add your delivery addresses and freight forwarders so they're ready for your POs."
+                : "Add your delivery addresses so they're ready for your POs."
             }
           />
         )}

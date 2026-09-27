@@ -18,17 +18,27 @@ import {
   teamInvitations,
   supplierProfiles
 } from "@/db/schema"
+import { businessProfileSchema } from "@/lib/business-profile"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
+import {
+  acceptForwarderInvitation,
+  createForwarder,
+  inviteForwarder,
+  removeForwarder,
+  renameForwarder,
+  saveForwarderAddress
+} from "@/server/forwarders"
 import { acceptSupplierInvitation } from "@/server/invitations"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
 import {
   createOrder,
+  updateDraftOrder,
   submitOrder,
   newShipment,
   submitPacking,
@@ -54,7 +64,9 @@ export async function POST(request: Request) {
     const { action, data } = inputSchema.parse(await request.json())
     if (action === "workspace.create") {
       const user = await identity(),
-        input = z.object({ name: z.string().trim().min(2).max(120), kind: z.enum(["buyer", "supplier"]) }).parse(data)
+        input = z
+          .object({ name: z.string().trim().min(2).max(120), kind: z.enum(["buyer", "supplier", "forwarder"]) })
+          .parse(data)
       const id = randomUUID(),
         workos = new WorkOS(process.env.WORKOS_API_KEY)
       const remote = await workos.organizations.createOrganization({ name: input.name })
@@ -228,6 +240,42 @@ export async function POST(request: Request) {
       await updateSupplier(s.org.id, data)
       return Response.json({ ok: true })
     }
+    if (action === "forwarder.accept") {
+      const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
+      await acceptForwarderInvitation(s.user, input.orgId, input.token)
+      await setWorkspace(input.orgId)
+      return Response.json({ redirect: "/settings" })
+    }
+    if (action === "forwarder.create") {
+      requireBuyer(s)
+      requireOwner(s)
+      const forwarder = await createForwarder(s.org, data)
+      return Response.json({ id: forwarder.id })
+    }
+    if (action === "forwarder.rename") {
+      requireBuyer(s)
+      requireOwner(s)
+      await renameForwarder(s.org.id, id(), data)
+      return Response.json({ ok: true })
+    }
+    if (action === "forwarder.remove") {
+      requireBuyer(s)
+      requireOwner(s)
+      await removeForwarder(s.org.id, id())
+      return Response.json({ ok: true })
+    }
+    if (action === "forwarder.invite") {
+      requireBuyer(s)
+      requireOwner(s)
+      await inviteForwarder(s.org, id(), data.email)
+      return Response.json({ ok: true })
+    }
+    if (action === "forwarder.address") {
+      requireBuyer(s)
+      requireOwner(s)
+      await saveForwarderAddress(s.org.id, data)
+      return Response.json({ ok: true })
+    }
     if (action === "supplier.accept") {
       const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
       await acceptSupplierInvitation(s.user, input.orgId, input.token)
@@ -255,7 +303,7 @@ export async function POST(request: Request) {
         throw new Error(
           s.org.kind === "supplier"
             ? "Supplier workspaces can save pickup addresses only"
-            : "Pickup addresses come from your suppliers' workspaces. Save delivery and freight forwarder addresses here"
+            : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
         )
       }
       await db()
@@ -294,6 +342,36 @@ export async function POST(request: Request) {
         .onConflictDoUpdate({ target: supplierProfiles.orgId, set: { ...profile, updatedAt: new Date() } })
       return Response.json({ ok: true })
     }
+    if (action === "business.profile") {
+      requireBuyer(s)
+      requireOwner(s)
+      // The buyer's business details, printed at the top of its POs.
+      const input = businessProfileSchema.parse(data)
+      const profile = {
+        website: input.website || null,
+        phoneNumber: input.phoneNumber || null,
+        contactName: input.contactName || null,
+        contactEmail: input.contactEmail || null,
+        address: input.addressLine1
+          ? {
+              name: input.contactName,
+              addressLine1: input.addressLine1,
+              addressLine2: input.addressLine2,
+              city: input.city,
+              stateOrRegion: input.stateOrRegion,
+              postalCode: input.postalCode,
+              countryCode: input.countryCode,
+              phoneNumber: input.phoneNumber,
+              email: input.contactEmail
+            }
+          : null
+      }
+      await db()
+        .insert(supplierProfiles)
+        .values({ orgId: s.org.id, ...profile })
+        .onConflictDoUpdate({ target: supplierProfiles.orgId, set: { ...profile, updatedAt: new Date() } })
+      return Response.json({ ok: true })
+    }
     if (action === "contact.update") {
       const input = z
         .object({
@@ -315,7 +393,7 @@ export async function POST(request: Request) {
         throw new Error(
           s.org.kind === "supplier"
             ? "Supplier workspaces can save pickup addresses only"
-            : "Pickup addresses come from your suppliers' workspaces. Save delivery and freight forwarder addresses here"
+            : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
         )
       }
       const updated = await db()
@@ -354,6 +432,11 @@ export async function POST(request: Request) {
     if (action === "order.create") {
       const order = await createOrder(s, data)
       return Response.json({ redirect: `/orders/${order.id}` })
+    }
+    if (action === "order.update") {
+      const input = z.object({ id: z.uuid(), revision: z.number().int().positive(), order: z.unknown() }).parse(data)
+      await updateDraftOrder(s, input.id, input.order, input.revision)
+      return Response.json({ redirect: `/orders/${input.id}` })
     }
     if (action === "order.submit") {
       return Response.json({ ok: true, ...(await submitOrder(s, id(), revision())) })

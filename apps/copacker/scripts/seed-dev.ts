@@ -290,6 +290,7 @@ for (const org of buyers) {
           destination: "awd_us",
           currency: "USD",
           dueDate: "2026-12-01",
+          paymentTerms: "30% deposit, 70% before shipment",
           notes: "",
           adjustments: [],
           items: [

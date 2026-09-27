@@ -57,6 +57,9 @@ function LabelSource({ variation, productLabel }: { variation: BarcodeVariation;
   if (productLabel === "uploaded") {
     return <WarningNote>No label uploaded</WarningNote>
   }
+  if (productLabel === "none") {
+    return <span className={styles.detail}>No label, except on POs to Amazon</span>
+  }
   return (
     <span className={styles.detail}>
       {variation.fnsku ? `Standard label, FNSKU ${variation.fnsku}` : "Standard label"}
@@ -85,7 +88,7 @@ function BarcodeRow({
   const { barcode } = variation
   const verb = barcode ? "Replace" : "Upload"
   // There's a label to show when one was uploaded, or the standard label applies. Its FNSKU is looked up if needed.
-  const viewable = barcode !== null || productLabel === "standard"
+  const viewable = barcode !== null || productLabel !== "uploaded"
 
   let previewText = preview ? "Hide" : "Preview"
   if (loading === "preview") {
@@ -244,6 +247,14 @@ function BarcodeRow({
   )
 }
 
+const labelHelp: Record<ProductLabel, string> = {
+  standard:
+    "New POs include each variation’s label for your supplier to print: an uploaded one-page PDF, or else the standard label with its Amazon FNSKU (or Shopify SKU without Amazon) and Shopify title. Uploads are saved right away.",
+  uploaded:
+    "Upload a one-page PDF label for each variation, such as one with its size measurements. New POs include it for your supplier to print. Uploads are saved right away.",
+  none: "POs to your locations or a forwarder skip labels. POs to Amazon get the standard FNSKU label, or an uploaded one."
+}
+
 // Each variation's product label. Uploads save right away, separately from the rest of the product's details.
 export function ProductBarcodes({
   productTitle,
@@ -261,11 +272,7 @@ export function ProductBarcodes({
       <h3 id="barcodes" className={styles.title}>
         Labels
       </h3>
-      <p className={styles.detail}>
-        {productLabel === "standard"
-          ? "New POs include each variation’s label for your supplier to print: an uploaded one-page PDF, or else the standard label with its Amazon FNSKU (or Shopify SKU without Amazon) and Shopify title. Uploads are saved right away."
-          : "Upload a one-page PDF label for each variation, such as one with its size measurements. New POs include it for your supplier to print. Uploads are saved right away."}
-      </p>
+      <p className={styles.detail}>{labelHelp[productLabel]}</p>
       <ul className={styles.barcodeList}>
         {variations.map((variation) => (
           <BarcodeRow

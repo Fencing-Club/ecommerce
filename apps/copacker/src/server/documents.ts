@@ -1,8 +1,19 @@
 import { randomUUID } from "node:crypto"
+import type { Address } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf } from "@repo/aisle/documents"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/db"
-import { contacts, documents, orders, shipments, organizations, suppliers, orderRevisions } from "@/db/schema"
+import {
+  contacts,
+  documents,
+  forwarders,
+  orders,
+  shipments,
+  organizations,
+  supplierProfiles,
+  suppliers,
+  orderRevisions
+} from "@/db/schema"
 import { putFile } from "./storage"
 
 type DocumentInput = Omit<typeof documents.$inferInsert, "id" | "objectKey" | "bytes">
@@ -50,6 +61,21 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     return doc!
   })
 }
+// "1 Test Street", "Suite 2", "Testville, WA 98000", "US"
+function addressLines(address: Address) {
+  return [
+    address.addressLine1,
+    address.addressLine2,
+    [address.city, [address.stateOrRegion, address.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+    address.countryCode
+  ].filter(Boolean)
+}
+
+// "Wei Chen, wei@supplier.example, +86 512 5555 0100", leaving out what isn't known.
+function contactLine(...parts: Array<string | null | undefined>) {
+  return parts.filter(Boolean).join(", ")
+}
+
 export async function generatePo(orderId: string, revision?: number) {
   const [row] = await db()
     .select({ order: orders, buyer: organizations, supplier: suppliers })
@@ -68,33 +94,66 @@ export async function generatePo(orderId: string, revision?: number) {
   if (!historical) {
     throw new Error("PO revision is unavailable")
   }
-  const deliveryId = historical.data.destination === "warehouse" ? historical.data.deliveryId : undefined
-  const [delivery] = deliveryId
-    ? await db()
-        .select({ name: contacts.name, address: contacts.address })
-        .from(contacts)
-        .where(and(eq(contacts.id, deliveryId), eq(contacts.orgId, row.order.buyerOrgId)))
-    : []
-  const deliveryAddress = delivery
-    ? [
-        delivery.address.name,
-        delivery.address.addressLine1,
-        delivery.address.addressLine2,
-        delivery.address.city,
-        delivery.address.stateOrRegion,
-        delivery.address.postalCode,
-        delivery.address.countryCode
-      ]
-        .filter(Boolean)
-        .join(", ")
-    : undefined
-  const bytes = await purchaseOrderPdf(
-    historical.data,
-    row.buyer.name,
-    row.supplier.name,
-    targetRevision,
-    deliveryAddress
-  )
+  const { destination, deliveryId, forwarderId } = historical.data
+  // A forwarder's address is the buyer's until the forwarder joins, then the forwarder's own.
+  const [forwarder] =
+    destination === "forwarder" && forwarderId
+      ? await db()
+          .select()
+          .from(forwarders)
+          .where(and(eq(forwarders.id, forwarderId), eq(forwarders.buyerOrgId, row.order.buyerOrgId)))
+      : []
+  const addressOwners = [row.order.buyerOrgId, ...(forwarder?.forwarderOrgId ? [forwarder.forwarderOrgId] : [])]
+  const [[delivery], [buyerProfile], [supplierProfile]] = await Promise.all([
+    deliveryId && (destination === "warehouse" || forwarder)
+      ? db()
+          .select({ name: contacts.name, address: contacts.address })
+          .from(contacts)
+          .where(and(eq(contacts.id, deliveryId), inArray(contacts.orgId, addressOwners)))
+      : Promise.resolve([]),
+    db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, row.order.buyerOrgId)),
+    row.supplier.supplierOrgId
+      ? db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, row.supplier.supplierOrgId))
+      : Promise.resolve([])
+  ])
+  // A joined supplier keeps its own contact details; until then, the buyer's notes on it.
+  const supplierContact = row.supplier.supplierOrgId ? supplierProfile : row.supplier
+  const bytes = await purchaseOrderPdf({
+    order: historical.data,
+    revision: targetRevision,
+    issued: historical.createdAt.toISOString().slice(0, 10),
+    buyer: {
+      name: row.buyer.name,
+      lines: [
+        ...(buyerProfile?.address ? addressLines(buyerProfile.address) : []),
+        contactLine(buyerProfile?.contactName, buyerProfile?.phoneNumber)
+      ].filter(Boolean),
+      email: buyerProfile?.contactEmail,
+      website: buyerProfile?.website
+    },
+    supplier: {
+      name: row.supplier.name,
+      lines: [
+        row.supplier.shopifySupplierName && row.supplier.shopifySupplierName !== row.supplier.name
+          ? row.supplier.shopifySupplierName
+          : "",
+        contactLine(
+          supplierContact?.contactName,
+          supplierContact?.contactEmail ?? row.supplier.email,
+          supplierContact?.phoneNumber
+        )
+      ].filter(Boolean)
+    },
+    shipTo: delivery
+      ? {
+          name: forwarder ? `${forwarder.name}, ${delivery.name}` : delivery.name,
+          lines: [
+            ...addressLines(delivery.address),
+            contactLine(delivery.address.name, delivery.address.email, delivery.address.phoneNumber)
+          ].filter(Boolean)
+        }
+      : undefined
+  })
   const doc = await storeDocument(
     {
       orderId,

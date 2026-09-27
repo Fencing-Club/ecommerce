@@ -159,6 +159,18 @@ const variant = z.object({
   productVariantComponents: bundleComponents
 })
 export type CatalogVariant = z.infer<typeof variant>
+// What one unit costs in Shopify, in minor units, when it's recorded in the given currency; otherwise null.
+export function variantUnitCostMinor(catalog: Pick<CatalogVariant, "inventoryItem">, currency: string) {
+  const cost = catalog.inventoryItem.unitCost
+  if (!cost || cost.currencyCode !== currency) {
+    return null
+  }
+  try {
+    return costMinor(cost.amount)
+  } catch {
+    return null
+  }
+}
 // Pieces in one sellable unit: a bundle's component quantities added up (a 3-pack of one item is 3), otherwise 1.
 export function piecesPerUnit(catalog: Pick<CatalogVariant, "requiresComponents" | "productVariantComponents">) {
   if (!catalog.requiresComponents) {

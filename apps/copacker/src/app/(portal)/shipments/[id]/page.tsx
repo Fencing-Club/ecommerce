@@ -66,6 +66,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     return item.supplierSku === change.supplierSku && item.unitPrice === change.unitPrice ? [] : [{ item, change }]
   })
   const origin = shipment.packing?.origin
+  // A supplier that isn't on Copacker sends its details by email, and the buyer enters them here.
+  const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
 
   return (
     <>
@@ -77,13 +79,16 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
         current={shipment.amazonShipmentId ?? "Shipment"}
       />
       <PageHeader
-        title={shipment.amazonShipmentId ?? "Prepare your shipment"}
+        title={shipment.amazonShipmentId ?? (enteringFor ? "Shipment" : "Prepare your shipment")}
         description={`${order.data.reference} to ${order.data.destination === "amazon" ? "Amazon AWD USA" : formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
       >
         <Status status={shipment.status} />
       </PageHeader>
 
-      <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={step.next.message} />
+      <ShipmentProgress
+        processing={["queued", "creating"].includes(shipment.status)}
+        message={enteringFor && editable ? `Enter ${enteringFor}’s cartons and invoice` : step.next.message}
+      />
       {shipment.issue && (
         <Alert variant="destructive">
           <AlertTriangle />
@@ -106,6 +111,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           initial={shipment.packingDraft ?? shipment.packing}
           invoices={docs.filter((d) => d.kind === "invoice")}
           addresses={addresses}
+          enteringFor={enteringFor}
         />
       ) : (
         <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>

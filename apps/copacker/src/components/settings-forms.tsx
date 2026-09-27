@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react"
 import { useWatch } from "react-hook-form"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
+import { businessProfileSchema } from "@/lib/business-profile"
 import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { ActionForm } from "./actions"
@@ -64,6 +65,32 @@ export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchem
   )
 }
 
+// The buyer's business details, printed at the top of its POs.
+export function BusinessProfileForm(profile: z.input<typeof businessProfileSchema>) {
+  const { form, submit } = useActionForm({
+    schema: businessProfileSchema,
+    action: "business.profile",
+    defaultValues: profile,
+    keepSaved: true
+  })
+  return (
+    <ActionForm form={form} onSubmit={submit} label="Save details">
+      <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
+        <FormInput name="contactName" label="Contact name" autoComplete="name" />
+        <FormInput name="contactEmail" label="Email" type="email" autoComplete="email" />
+        <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
+        <FormInput name="website" label="Website" type="url" placeholder="https://example.com" />
+        <FormInput name="addressLine1" label="Street address" autoComplete="address-line1" />
+        <FormInput name="addressLine2" label="Address line 2" autoComplete="address-line2" />
+        <FormInput name="city" label="City" autoComplete="address-level2" />
+        <FormInput name="stateOrRegion" label="State or province" autoComplete="address-level1" />
+        <FormInput name="postalCode" label="Postal code" autoComplete="postal-code" />
+        <FormInput name="countryCode" label="Country code" placeholder="US" autoComplete="country" />
+      </div>
+    </ActionForm>
+  )
+}
+
 // The browser's time zone doesn't change while the page is open, so there's nothing to subscribe to.
 const noSubscription = () => () => undefined
 const timeZoneSchema = z.object({ timeZone: z.string() })
@@ -108,13 +135,19 @@ export function TimeZoneForm({
   )
 }
 
-const workspaceSchema = z.object({ name: z.string().trim().min(2).max(120), kind: z.enum(["buyer", "supplier"]) })
+const workspaceSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  kind: z.enum(["buyer", "supplier", "forwarder"])
+})
 
-export function WorkspaceForm({ next }: { next?: string } = {}) {
+export function WorkspaceForm({
+  next,
+  kind = "buyer"
+}: { next?: string; kind?: z.input<typeof workspaceSchema>["kind"] } = {}) {
   const { form, submit } = useActionForm({
     schema: workspaceSchema,
     action: "workspace.create",
-    defaultValues: { name: "", kind: "buyer" },
+    defaultValues: { name: "", kind },
     toPayload: (values) => ({ ...values, ...(next && { next }) })
   })
   return (
@@ -126,7 +159,8 @@ export function WorkspaceForm({ next }: { next?: string } = {}) {
         label="Workspace type"
         options={[
           { value: "buyer", label: "Buyer: I place purchase orders" },
-          { value: "supplier", label: "Supplier: I prepare orders and cartons" }
+          { value: "supplier", label: "Supplier: I prepare orders and cartons" },
+          { value: "forwarder", label: "Freight forwarder: I receive and ship goods" }
         ]}
       />
     </ActionForm>
@@ -183,7 +217,7 @@ export function ContactForm({
     <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"} dialog>
       <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
         <FormInput name="name" required label="Address name" placeholder="Shenzhen warehouse" />
-        {!supplier && (
+        {!supplier && contactKindsFor("buyer").length > 1 && (
           <FormSelect
             name="kind"
             required
@@ -210,14 +244,17 @@ const acceptSchema = z.object({ orgId: z.uuid() })
 
 export function AcceptSupplierInvitation({
   token,
-  workspaces
+  workspaces,
+  forwarder = false
 }: {
   token: string
   workspaces: Array<{ id: string; name: string }>
+  // A forwarder's invitation joins a forwarder workspace instead of a supplier one.
+  forwarder?: boolean
 }) {
   const { form, submit } = useActionForm({
     schema: acceptSchema,
-    action: "supplier.accept",
+    action: forwarder ? "forwarder.accept" : "supplier.accept",
     defaultValues: { orgId: workspaces.length === 1 ? workspaces[0]!.id : "" },
     toPayload: (values) => ({ ...values, token })
   })
@@ -226,7 +263,7 @@ export function AcceptSupplierInvitation({
       <FormSelect
         name="orgId"
         required
-        label="Supplier workspace"
+        label={forwarder ? "Forwarder workspace" : "Supplier workspace"}
         placeholder="Choose a workspace"
         options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
       />

@@ -1,29 +1,20 @@
-import { money, orderTotal } from "@repo/aisle"
+import { money, type OrderItem, orderTotal } from "@repo/aisle"
+import { destinationRequirements, itemRequirements, prepInstructions, sharedPrep } from "@repo/aisle/requirements"
 import { and, desc, eq } from "drizzle-orm"
-import { ChevronDown, ChevronRight, Download, Info as InfoIcon } from "lucide-react"
+import { ChevronDown, ChevronRight, Info as InfoIcon } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import {
-  DocumentList,
-  EmptyState,
-  PageBreadcrumb,
-  PageHeader,
-  Status,
-  WarningNote,
-  formatDestination
-} from "@/components/common"
+import { PageBreadcrumb, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
 import { LandedCostForm } from "@/components/landed-costs"
-import { ClosePurchaseOrder, DeleteDraftOrder } from "@/components/order-actions"
+import { LineLabel, OrderMenu } from "@/components/order-actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@/components/ui/item"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Upload } from "@/components/upload"
 import { db } from "@/db"
 import { documents, events, orderRevisions, shipments } from "@/db/schema"
 import { cn } from "@/lib/utils"
@@ -31,6 +22,7 @@ import { accessibleOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
+import { linesWithoutLabels } from "@/server/product-barcodes"
 import { orderWorkflow } from "@/server/workflow"
 import { alignTop, revisionChevron, revisionTrigger } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -52,6 +44,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision))
   ])
   const workflow = await orderWorkflow(s, id)
+  const remainingFor = (itemId: string) => workflow.items.find((row) => row.itemId === itemId)?.remainingPieces
   const editable = workflow.shipments.some((row) => row.editable)
   const remaining = workflow.items.some((item) => item.remainingPieces > 0)
   const { currency } = order.data
@@ -68,15 +61,30 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const landedTotal =
     landed.reduce((sum, cost) => sum + cost.amountMinor, 0) + freight.reduce((sum, row) => sum + row.freightMinor, 0)
   const markup = landedMarkup(order.data, landedTotal)
-  const labels = docs.filter((d) => d.kind === "product_label" || d.kind === "purchase_order")
-  // Lines the supplier can't label yet. Closed POs no longer need them.
+  const buyer = s.org.kind === "buyer"
+  const labelFor = (itemId: string) => docs.find((doc) => doc.kind === "product_label" && doc.itemId === itemId)
+  // Lines that need a label and don't have one yet. Closed POs no longer need them, nor do products set to No label.
+  const labelFree = await linesWithoutLabels(order)
   const unlabelled = new Set(
     order.status === "closed"
       ? []
-      : order.data.items
-          .filter((item) => !docs.some((doc) => doc.kind === "product_label" && doc.itemId === item.id))
-          .map((item) => item.id)
+      : order.data.items.filter((item) => !labelFree.has(item.id) && !labelFor(item.id)).map((item) => item.id)
   )
+  // What happened to the PO, newest first: its events, and each revision, which opens to show its lines.
+  const timeline = [
+    ...history.map((event) => ({ key: event.id, at: event.createdAt, message: event.message, revision: null })),
+    ...revisions.map((r) => ({
+      key: r.id,
+      at: r.createdAt,
+      message: r.revision === 1 ? r.reason : `Revision ${r.revision}: ${r.reason}`,
+      revision: r.data
+    }))
+  ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
+  const prep = sharedPrep(order.data)
+  const instructions = [
+    ...(prep ? [`${prepInstructions[prep]}.`] : []),
+    ...destinationRequirements(order.data.destination)
+  ]
 
   return (
     <>
@@ -85,211 +93,179 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         title={order.data.reference}
         description={`${supplier.name} to ${formatDestination(order.data.destination)}, revision ${order.revision}`}
       >
-        <Status status={order.status} />
-        {order.status === "draft" && s.org.kind === "buyer" && (
-          <>
-            <DeleteDraftOrder id={id} reference={order.data.reference} />
-            <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-              {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
-            </ActionButton>
-          </>
+        {order.status === "draft" && buyer && (
+          <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
+            {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
+          </ActionButton>
         )}
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<a href={`/api/orders/${id}/po`} download aria-label={`Download ${order.data.reference}`} />}
-        >
-          <Download data-icon="inline-start" />
-          Download PO
-        </Button>
         {order.status === "submitted" && (editable || remaining) && (
           <ActionButton action="shipment.create" data={{ id }}>
             {editable ? "Continue packing" : "Prepare next shipment"}
           </ActionButton>
         )}
-        {order.status === "submitted" && s.org.kind === "buyer" && (
-          <ClosePurchaseOrder id={id} reference={order.data.reference} />
-        )}
+        <OrderMenu
+          id={id}
+          reference={order.data.reference}
+          draft={order.status === "draft" && buyer}
+          closable={order.status === "submitted" && buyer}
+          labels={docs.some((doc) => doc.kind === "product_label")}
+        />
       </PageHeader>
 
       {s.org.kind === "buyer" && !supplier.supplierOrgId && (
         <Alert>
           <InfoIcon />
-          <AlertTitle>{supplier.name} hasn’t joined Copacker</AlertTitle>
+          <AlertTitle>{supplier.name} isn’t on Copacker</AlertTitle>
           <AlertDescription>
-            Copacker doesn’t email them. Download the PO and labels and send them yourself, then enter their cartons,
-            invoice and ready date on the shipment when they reply. Invite them on the Suppliers page to have them do it
-            here.
+            Email them the PO yourself, then enter their cartons and invoice on the shipment.
           </AlertDescription>
         </Alert>
       )}
 
       <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { base: "1", xl: "mainAside" } })}>
         <div className={sx({ display: "flex", minWidth: 0, flexDirection: "column", gap: 6 })}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead className={sx({ textAlign: "right" })}>Pieces</TableHead>
-                    <TableHead className={sx({ textAlign: "right" })}>Pack size</TableHead>
-                    <TableHead className={sx({ textAlign: "right" })}>Price per piece</TableHead>
-                    <TableHead className={sx({ textAlign: "right" })}>Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {order.data.items.map((item) => (
-                    <TableRow key={item.id} className={alignTop}>
-                      <TableCell className={sx({ whiteSpace: "normal" })}>
-                        <p className={sx({ fontWeight: "medium" })}>{item.name}</p>
-                        <p className={sx({ color: "muted" })}>{item.variant}</p>
-                        <p className={sx({ marginTop: 1, text: "xs", color: "muted" })}>Buyer SKU: {item.buyerSku}</p>
-                        <p className={sx({ text: "xs", color: "muted" })}>
-                          Supplier SKU: {item.supplierSku || "Not provided"}
+          <section aria-labelledby="products" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
+            <h2 id="products" className={sx({ text: "lg", fontWeight: "semibold" })}>
+              Products
+            </h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Supplier SKU</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Units</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Price</TableHead>
+                  <TableHead className={sx({ textAlign: "right" })}>Total</TableHead>
+                  <TableHead>
+                    <span className={srOnly}>Label</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {order.data.items.map((item) => (
+                  <TableRow key={item.id} className={alignTop}>
+                    <TableCell className={sx({ whiteSpace: "normal" })}>
+                      <p className={sx({ fontWeight: "medium" })}>{item.name}</p>
+                      {item.variant !== "Default Title" && <p className={sx({ color: "muted" })}>{item.variant}</p>}
+                      <p className={sx({ marginTop: 1, text: "xs", color: "muted" })}>SKU {item.buyerSku}</p>
+                      {itemRequirements(item, order.data.destination, prep).map((line) => (
+                        <p key={line} className={sx({ text: "xs", color: "muted" })}>
+                          {line}
                         </p>
-                        {unlabelled.has(item.id) && (
-                          <WarningNote className={sx({ marginTop: 1 })}>
-                            {s.org.kind === "buyer"
-                              ? "No product label. Upload one below. For future POs, set this product’s label on the Products page."
-                              : "The buyer hasn’t added a product label yet."}
-                          </WarningNote>
-                        )}
-                        {item.instructions && (
-                          <p
-                            className={sx({
-                              marginTop: 2,
-                              maxWidth: "sm",
-                              text: "xs",
-                              whiteSpace: "pre-line",
-                              color: "muted"
-                            })}
-                          >
-                            {item.instructions}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {item.pieces}
-                        <p className={sx({ text: "xs", color: "muted" })}>
-                          {workflow.items.find((row) => row.itemId === item.id)?.remainingPieces} remaining
-                        </p>
-                      </TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {item.piecesPerSet}
-                      </TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {money(item.unitPrice, currency)}
-                      </TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {money(item.pieces * item.unitPrice, currency)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  {!!order.data.adjustments?.length && (
-                    <TableRow>
-                      <TableCell colSpan={4}>Products subtotal</TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {money(
-                          order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
-                          currency
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {order.data.adjustments?.map((adjustment, index) => (
-                    <TableRow key={index}>
-                      <TableCell colSpan={4}>{adjustment.description}</TableCell>
-                      <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                        {money(adjustment.amount, currency)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow>
-                    <TableCell colSpan={4}>PO total</TableCell>
+                      ))}
+                    </TableCell>
+                    <TableCell className={sx({ whiteSpace: "normal" })}>
+                      <SupplierSku item={item} />
+                    </TableCell>
                     <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {money(orderTotal(order.data), currency)}
+                      {item.pieces}
+                      {item.piecesPerSet > 1 && (
+                        <p className={sx({ text: "xs", color: "muted" })}>{item.piecesPerSet} per pack</p>
+                      )}
+                      {remainingFor(item.id) !== item.pieces && (
+                        <p className={sx({ text: "xs", color: "muted" })}>{remainingFor(item.id)} to ship</p>
+                      )}
+                    </TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {money(item.unitPrice, currency)}
+                    </TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {money(item.pieces * item.unitPrice, currency)}
+                    </TableCell>
+                    <TableCell>
+                      <LineLabel
+                        name={[item.name, item.variant === "Default Title" ? "" : item.variant]
+                          .filter(Boolean)
+                          .join(" / ")}
+                        documentId={labelFor(item.id)?.id ?? null}
+                        missing={unlabelled.has(item.id)}
+                      />
                     </TableCell>
                   </TableRow>
-                </TableFooter>
-              </Table>
-            </CardContent>
-          </Card>
+                ))}
+              </TableBody>
+              <TableFooter>
+                {!!order.data.adjustments?.length && (
+                  <TableRow>
+                    <TableCell colSpan={4}>Subtotal</TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {money(
+                        order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+                        currency
+                      )}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                )}
+                {order.data.adjustments?.map((adjustment, index) => (
+                  <TableRow key={index}>
+                    <TableCell colSpan={4}>{adjustment.description}</TableCell>
+                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                      {money(adjustment.amount, currency)}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                ))}
+                <TableRow>
+                  <TableCell colSpan={4}>Total</TableCell>
+                  <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
+                    {money(orderTotal(order.data), currency)}
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Shipments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {shipmentRows.length ? (
-                <ItemGroup className={sx({ gap: 2 })}>
-                  {shipmentRows.map((shipment, index) => (
-                    <Item key={shipment.id} variant="outline" render={<Link href={`/shipments/${shipment.id}`} />}>
-                      <ItemContent>
-                        <ItemTitle>Shipment {index + 1}</ItemTitle>
-                        <ItemDescription>
-                          {shipment.amazonShipmentId ?? "Cartons in preparation"},{" "}
-                          {shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0} cartons
-                        </ItemDescription>
-                      </ItemContent>
-                      <ItemActions>
-                        <Status status={shipment.status} />
-                        <ChevronRight className={sx({ size: 4, color: "muted" })} />
-                      </ItemActions>
-                    </Item>
+          {(instructions.length > 0 || order.data.notes) && (
+            <section
+              aria-labelledby="instructions"
+              className={sx({ display: "flex", flexDirection: "column", gap: 3 })}
+            >
+              <h2 id="instructions" className={sx({ text: "lg", fontWeight: "semibold" })}>
+                Instructions
+              </h2>
+              {instructions.length > 0 && (
+                <ul className={sx({ display: "flex", flexDirection: "column", gap: 1, text: "sm" })}>
+                  {instructions.map((line) => (
+                    <li key={line}>{line}</li>
                   ))}
-                </ItemGroup>
-              ) : (
-                <EmptyState
-                  title="No shipments yet"
-                  description="Once this PO is submitted, the supplier can upload an invoice and prepare the first shipment."
-                />
+                </ul>
               )}
-            </CardContent>
-          </Card>
+              {order.data.notes && (
+                <p className={sx({ text: "sm", whiteSpace: "pre-line", color: "muted" })}>{order.data.notes}</p>
+              )}
+            </section>
+          )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Product labels</CardTitle>
-              <CardDescription>
-                Copacker adds each line’s uploaded barcode or standard label. Update labels after changing a barcode,
-                title, FNSKU or country of origin.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-              <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
-                {s.org.kind === "buyer" && order.status !== "closed" && (
-                  <ActionButton
-                    action="order.labels"
-                    data={{ id }}
-                    variant="outline"
-                    size="sm"
-                    successMessage="Labels are up to date."
-                  >
-                    Update labels
-                  </ActionButton>
-                )}
-                {docs.some((doc) => doc.kind === "product_label") && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    nativeButton={false}
-                    render={<a href={`/api/orders/${id}/labels`} download aria-label="Download all product labels" />}
-                  >
-                    <Download data-icon="inline-start" />
-                    Download all labels
-                  </Button>
-                )}
-              </div>
-              {s.org.kind === "buyer" && <Upload orderId={id} kind="product_label" items={order.data.items} />}
-              {labels.length > 0 && <DocumentList documents={labels} />}
-            </CardContent>
-          </Card>
+          <section aria-labelledby="shipments" className={sx({ display: "flex", flexDirection: "column", gap: 3 })}>
+            <h2 id="shipments" className={sx({ text: "lg", fontWeight: "semibold" })}>
+              Shipments
+            </h2>
+            {shipmentRows.length ? (
+              <ItemGroup className={sx({ gap: 2 })}>
+                {shipmentRows.map((shipment, index) => (
+                  <Item key={shipment.id} variant="outline" render={<Link href={`/shipments/${shipment.id}`} />}>
+                    <ItemContent>
+                      <ItemTitle>Shipment {index + 1}</ItemTitle>
+                      <ItemDescription>
+                        {shipment.amazonShipmentId ?? "Cartons in preparation"},{" "}
+                        {shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0} cartons
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Status status={shipment.status} />
+                      <ChevronRight className={sx({ size: 4, color: "muted" })} />
+                    </ItemActions>
+                  </Item>
+                ))}
+              </ItemGroup>
+            ) : (
+              <p className={sx({ text: "sm", color: "muted" })}>
+                {order.status === "draft" ? "Shipments start once the PO is sent." : "No shipments yet."}
+              </p>
+            )}
+          </section>
         </div>
 
         <aside className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
@@ -307,17 +283,16 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   text: "sm"
                 })}
               >
+                <dt className={sx({ color: "muted" })}>Status</dt>
+                <dd className={sx({ display: "flex", justifyContent: "flex-end" })}>
+                  <Status status={order.status} />
+                </dd>
                 <Info label="Supplier" value={supplier.name} />
                 <Info label="Required date" value={order.data.dueDate} />
+                <Info label="Payment terms" value={order.data.paymentTerms || "Not set"} />
                 <Info label="Currency" value={currency} />
-                <Info label="Quantity" value={`${order.data.items.reduce((n, i) => n + i.pieces, 0)} pieces`} />
+                <Info label="Units" value={String(order.data.items.reduce((n, i) => n + i.pieces, 0))} />
               </dl>
-              {order.data.notes && (
-                <>
-                  <Separator />
-                  <p className={sx({ text: "sm", whiteSpace: "pre-line", color: "muted" })}>{order.data.notes}</p>
-                </>
-              )}
             </CardContent>
           </Card>
 
@@ -410,66 +385,67 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
           <Card>
             <CardHeader>
-              <CardTitle>Activity</CardTitle>
+              <CardTitle>Timeline</CardTitle>
             </CardHeader>
             <CardContent>
-              {history.length ? (
-                <ol className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                  {history.map((event) => (
-                    <li key={event.id} className={sx({ display: "flex", flexDirection: "column", gap: 0.5 })}>
-                      <p className={sx({ text: "sm" })}>{event.message}</p>
-                      <time className={sx({ text: "xs", color: "muted" })} dateTime={event.createdAt.toISOString()}>
-                        {event.createdAt.toLocaleDateString("en-US")}
-                      </time>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className={sx({ text: "sm", color: "muted" })}>Your order activity will appear here.</p>
-              )}
+              <ol className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+                {timeline.map((entry) => (
+                  <li key={entry.key} className={sx({ display: "flex", flexDirection: "column", gap: 0.5 })}>
+                    {entry.revision ? (
+                      <Collapsible>
+                        <CollapsibleTrigger className={revisionTrigger}>
+                          {entry.message}
+                          <ChevronDown
+                            className={cn(sx({ size: 4, flexShrink: 0, color: "muted" }), revisionChevron)}
+                          />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <ul
+                            className={sx({
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 1,
+                              paddingY: 2,
+                              text: "xs",
+                              color: "muted"
+                            })}
+                          >
+                            {entry.revision.items.map((i) => (
+                              <li key={i.id}>
+                                {i.buyerSku}: {i.pieces} units at {money(i.unitPrice, entry.revision.currency)}
+                                {i.supplierSku && `, supplier SKU ${i.supplierSku}`}
+                              </li>
+                            ))}
+                          </ul>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      <p className={sx({ text: "sm" })}>{entry.message}</p>
+                    )}
+                    <time className={sx({ text: "xs", color: "muted" })} dateTime={entry.at.toISOString()}>
+                      {entry.at.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </time>
+                  </li>
+                ))}
+              </ol>
             </CardContent>
           </Card>
-
-          {revisions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>PO history</CardTitle>
-              </CardHeader>
-              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-                {revisions.map((r) => (
-                  <Collapsible key={r.id}>
-                    <CollapsibleTrigger className={revisionTrigger}>
-                      Revision {r.revision}: {r.reason}
-                      <ChevronDown className={cn(sx({ size: 4, flexShrink: 0, color: "muted" }), revisionChevron)} />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <ul
-                        className={sx({
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 1,
-                          paddingY: 2,
-                          text: "xs",
-                          color: "muted"
-                        })}
-                      >
-                        {r.data.items.map((i) => (
-                          <li key={i.id}>
-                            {i.buyerSku}: {i.pieces} pieces at {money(i.unitPrice, r.data.currency)}, supplier SKU{" "}
-                            {i.supplierSku || "not provided"}
-                          </li>
-                        ))}
-                      </ul>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </CardContent>
-            </Card>
-          )}
         </aside>
       </div>
     </>
   )
+}
+
+// A line's supplier SKU, or each component's for a bundle, so the supplier knows what to make.
+function SupplierSku({ item }: { item: OrderItem }) {
+  if (item.components?.length) {
+    return item.components.map((component) => (
+      <p key={component.variantId}>
+        {component.quantity} × {component.supplierSku || component.buyerSku || "Not set"}
+      </p>
+    ))
+  }
+  return item.supplierSku || <WarningNote>Not set</WarningNote>
 }
 
 function Info({ label, value }: { label: string; value: string }) {

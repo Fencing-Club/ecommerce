@@ -1,5 +1,6 @@
 "use client"
 
+import { AlertTriangle, Download, Ellipsis } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
@@ -10,18 +11,27 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
-export function ClosePurchaseOrder({ id, reference }: { id: string; reference: string }) {
+// Opened from the PO's actions menu.
+type Controlled = { id: string; reference: string; open: boolean; onOpenChange: (open: boolean) => void }
+
+export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
   const router = useRouter()
   const [run] = useActionMutation()
-  const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -41,7 +51,6 @@ export function ClosePurchaseOrder({ id, reference }: { id: string; reference: s
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="outline" />}>Close PO</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Close {reference}?</AlertDialogTitle>
@@ -64,10 +73,9 @@ export function ClosePurchaseOrder({ id, reference }: { id: string; reference: s
 }
 
 // Deletes a draft PO the supplier hasn't seen, then returns to the list.
-export function DeleteDraftOrder({ id, reference }: { id: string; reference: string }) {
+export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
   const router = useRouter()
   const [run] = useActionMutation()
-  const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -86,7 +94,6 @@ export function DeleteDraftOrder({ id, reference }: { id: string; reference: str
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="outline" />}>Delete draft</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {reference}?</AlertDialogTitle>
@@ -105,5 +112,105 @@ export function DeleteDraftOrder({ id, reference }: { id: string; reference: str
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+// A PO's less common actions: edit, downloads, closing and deleting.
+export function OrderMenu({
+  id,
+  reference,
+  draft,
+  closable,
+  labels
+}: {
+  id: string
+  reference: string
+  draft: boolean
+  // Buyers can close a sent PO.
+  closable: boolean
+  // Whether any product labels are attached, to download together.
+  labels: boolean
+}) {
+  const router = useRouter()
+  const [closing, setClosing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button variant="outline" size="icon" aria-label={`More actions for ${reference}`} />}
+        >
+          <Ellipsis />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {draft && <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>Edit</DropdownMenuItem>}
+          <DropdownMenuItem render={<a href={`/api/orders/${id}/po`} download aria-label="Download PO" />}>
+            Download PO
+          </DropdownMenuItem>
+          {labels && (
+            <DropdownMenuItem render={<a href={`/api/orders/${id}/labels`} download aria-label="Download labels" />}>
+              Download labels
+            </DropdownMenuItem>
+          )}
+          {(closable || draft) && <DropdownMenuSeparator />}
+          {closable && <DropdownMenuItem onClick={() => setClosing(true)}>Close PO</DropdownMenuItem>}
+          {draft && (
+            <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
+              Delete draft
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {closable && <ClosePurchaseOrder id={id} reference={reference} open={closing} onOpenChange={setClosing} />}
+      {draft && <DeleteDraftOrder id={id} reference={reference} open={deleting} onOpenChange={setDeleting} />}
+    </>
+  )
+}
+
+// A PO line's product label, to download, or a warning when the line needs one and has none. Labels come from each
+// product's settings on the Products page.
+export function LineLabel({
+  name,
+  documentId,
+  missing
+}: {
+  name: string
+  documentId: string | null
+  missing: boolean
+}) {
+  if (documentId) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              nativeButton={false}
+              render={
+                <a href={`/api/documents/${documentId}`} download aria-label={`Download the label for ${name}`} />
+              }
+            />
+          }
+        >
+          <Download />
+        </TooltipTrigger>
+        <TooltipContent>Download label</TooltipContent>
+      </Tooltip>
+    )
+  }
+  if (!missing) {
+    return null
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<span className="inline-flex p-1.5 text-amber-600" aria-label={`No label for ${name} yet`} />}
+      >
+        <AlertTriangle className="size-4" />
+      </TooltipTrigger>
+      <TooltipContent>No label yet. Set it on the Products page.</TooltipContent>
+    </Tooltip>
   )
 }

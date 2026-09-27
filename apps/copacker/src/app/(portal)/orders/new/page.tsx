@@ -9,6 +9,7 @@ import { contacts, suppliers } from "@/db/schema"
 import { orderLine } from "@/lib/order-lines"
 import { requireBuyer, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
+import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
 
@@ -56,6 +57,7 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
     reorderLines(s.org.id, params.variant),
     variantsNeedingBarcode(s.org.id)
   ])
+  const forwarding = await forwarderAddresses(s.org.id)
   const deliveries = await db()
     .select({ id: contacts.id, name: contacts.name, shopifyLocationId: contacts.shopifyLocationId })
     .from(contacts)
@@ -76,6 +78,11 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
       <OrderBuilder
         suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
         deliveries={deliveries}
+        forwarderAddresses={forwarding.map((row) => ({
+          addressId: row.addressId,
+          forwarderId: row.forwarderId,
+          label: `${row.forwarderName}, ${row.addressName}`
+        }))}
         initialItems={initialItems}
         needsBarcodeVariantIds={needsBarcode}
         initialDestination={initialDestination}

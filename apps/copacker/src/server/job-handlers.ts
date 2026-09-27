@@ -162,7 +162,7 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
   }
   const input = z
     .object({
-      type: z.enum(["invite", "team", "po", "ready", "data_request"]),
+      type: z.enum(["invite", "forwarder", "team", "po", "ready", "data_request"]),
       to: z.email(),
       orderId: z.uuid().optional(),
       revision: z.number().int().positive().optional(),
@@ -179,6 +179,9 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
   if (input.type === "invite" || input.type === "team") {
     subject = `${input.name ?? "A buyer"} invited you to Copacker`
     text = `Sign in with ${input.to}, then accept this invitation to manage purchase orders and shipments: ${appUrl()}/invite?token=${input.invitation}&kind=${input.type}`
+  } else if (input.type === "forwarder") {
+    subject = `${input.name ?? "A buyer"} invited you to Copacker`
+    text = `Sign in with ${input.to}, then accept this invitation to share your warehouse addresses and see the shipments coming to you: ${appUrl()}/invite?token=${input.invitation}&kind=forwarder`
   } else if (input.type === "po") {
     const po = await generatePo(input.orderId!, input.revision)
     subject = `New purchase order: ${po.doc.name.replace(/\.pdf$/, "")}`

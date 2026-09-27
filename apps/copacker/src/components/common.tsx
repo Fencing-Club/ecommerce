@@ -69,13 +69,13 @@ export function PageHeader({
     <div
       className={sx({
         display: "flex",
-        flexDirection: { base: "column", sm: "row" },
-        alignItems: { sm: "flex-end" },
-        justifyContent: { sm: "space-between" },
+        flexWrap: "wrap",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
         gap: 4
       })}
     >
-      <div className={sx({ display: "flex", flexDirection: "column", gap: 1 })}>
+      <div className={cn(styles.pageTitle, sx({ display: "flex", flexDirection: "column", gap: 1 }))}>
         <h1 className={sx({ text: "2xl", fontWeight: "semibold", letterSpacing: "tight" })}>{title}</h1>
         {description && <p className={sx({ maxWidth: "2xl", text: "sm", color: "muted" })}>{description}</p>}
       </div>

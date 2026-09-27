@@ -1,5 +1,5 @@
 import type { OrderInput, PrepCategory } from "@repo/aisle"
-import { bundleSupplierComponents, type CatalogVariant } from "@repo/aisle/shopify"
+import { bundleSupplierComponents, type CatalogVariant, variantUnitCostMinor } from "@repo/aisle/shopify"
 
 export type LineDefaults = {
   // Looked up on the server when the PO is saved or sent, so often empty here.
@@ -12,11 +12,13 @@ export type LineDefaults = {
   prepCategory?: PrepCategory | null
 }
 
-// A new PO line for a Shopify variant.
+// A new PO line for a Shopify variant, priced at its Shopify unit cost per piece until a supplier quote or the buyer
+// sets one.
 export function orderLine(
   variant: CatalogVariant,
   id: string,
-  defaults: LineDefaults = {}
+  defaults: LineDefaults = {},
+  currency = "USD"
 ): OrderInput["items"][number] {
   const piecesPerSet = defaults.piecesPerSet ?? 1
   return {
@@ -32,7 +34,7 @@ export function orderLine(
     fnsku: defaults.fnsku ?? "",
     pieces: piecesPerSet,
     piecesPerSet,
-    unitPrice: 0,
+    unitPrice: Math.round((variantUnitCostMinor(variant, currency) ?? 0) / piecesPerSet),
     instructions: defaults.description ?? "",
     prepCategory: defaults.prepCategory ?? "POLYBAGGING"
   }

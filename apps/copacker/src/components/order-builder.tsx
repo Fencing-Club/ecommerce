@@ -1,6 +1,6 @@
 "use client"
 
-import { money, orderInputSchema } from "@repo/aisle"
+import { commonPaymentTerms, money, type OrderInput, orderInputSchema } from "@repo/aisle"
 import { Plus, Search, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { FormProvider, useFieldArray, useWatch } from "react-hook-form"
@@ -26,7 +26,7 @@ const destinations = [
   { value: "warehouse", label: "Your location" },
   { value: "awd_china", label: "Amazon AWD China (planned)", disabled: true },
   { value: "fba", label: "Amazon FBA (draft only)" },
-  { value: "forwarder", label: "Freight forwarder (planned)", disabled: true }
+  { value: "forwarder", label: "Freight forwarder" }
 ]
 const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"].map((value) => ({
   value,
@@ -53,15 +53,19 @@ function supplierMatchMessage(status: string) {
 export function OrderBuilder({
   suppliers,
   deliveries = [],
+  forwarderAddresses = [],
   initialItems = [],
   initialDestination = "amazon",
   initialDeliveryId,
   initialSupplierId,
-  needsBarcodeVariantIds = []
+  needsBarcodeVariantIds = [],
+  draft
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations.
   deliveries?: Array<{ id: string; name: string }>
+  // Where POs to freight forwarders can ship: each forwarder's addresses.
+  forwarderAddresses?: Array<{ addressId: string; forwarderId: string; label: string }>
   // Lines added before the builder opens, such as a reorder from Products.
   initialItems?: ReturnType<typeof orderLine>[]
   initialDestination?: "amazon" | "awd_us" | "fba" | "warehouse"
@@ -71,6 +75,8 @@ export function OrderBuilder({
   // Variations whose product needs an uploaded label, such as one with size measurements, that don't have one yet.
   // Other lines get their saved barcode or the standard FNSKU label.
   needsBarcodeVariantIds?: string[]
+  // A draft PO being edited, saved as its next revision.
+  draft?: { id: string; revision: number; data: OrderInput }
 }) {
   const needsBarcode = new Set(needsBarcodeVariantIds)
   const [query, setQuery] = useState("")
@@ -78,13 +84,15 @@ export function OrderBuilder({
   const [searchCatalog, catalog] = useLazyCatalogQuery()
   const { form, submit } = useActionForm({
     schema: orderInputSchema,
-    action: "order.create",
-    defaultValues: {
+    action: draft ? "order.update" : "order.create",
+    toPayload: draft ? (order) => ({ id: draft.id, revision: draft.revision, order }) : undefined,
+    defaultValues: draft?.data ?? {
       reference: "",
       supplierId: initialSupplierId ?? "",
       destination: initialDestination,
       deliveryId: initialDeliveryId,
       dueDate: "",
+      paymentTerms: "",
       currency: "USD",
       notes: "",
       adjustments: [],
@@ -102,6 +110,27 @@ export function OrderBuilder({
   const items = useWatch({ control: form.control, name: "items" }) ?? []
   const currency = useWatch({ control: form.control, name: "currency" }) ?? "USD"
   const destination = useWatch({ control: form.control, name: "destination" })
+  const deliveryId = useWatch({ control: form.control, name: "deliveryId" })
+  // The address list depends on the destination, and a forwarder address names its forwarder, so both follow the
+  // chosen destination and address.
+  useEffect(() => {
+    let choices: string[] = []
+    if (destination === "forwarder") {
+      choices = forwarderAddresses.map((row) => row.addressId)
+    } else if (destination === "warehouse") {
+      choices = deliveries.map((row) => row.id)
+    }
+    if (deliveryId && !choices.includes(deliveryId)) {
+      form.setValue("deliveryId", undefined)
+    }
+    const forwarderId =
+      destination === "forwarder"
+        ? forwarderAddresses.find((row) => row.addressId === deliveryId)?.forwarderId
+        : undefined
+    if (form.getValues("forwarderId") !== forwarderId) {
+      form.setValue("forwarderId", forwarderId)
+    }
+  }, [destination, deliveryId, deliveries, forwarderAddresses, form])
   const supplierId = useWatch({ control: form.control, name: "supplierId" }) ?? ""
   const itemsError = form.formState.errors.items
   const lookupGroups = items.map((item) =>
@@ -120,7 +149,10 @@ export function OrderBuilder({
     }>
   >([])
   const [matchError, setMatchError] = useState("")
-  const lastDefaultedPrice = useRef<Record<string, number>>({})
+  // Prices filled in for the buyer, from Shopify's unit cost or a supplier quote, which a newer quote may replace.
+  const lastDefaultedPrice = useRef<Record<string, number>>(
+    Object.fromEntries(initialItems.map((item) => [item.id, item.unitPrice]))
+  )
   const buyerEditedPrices = useRef(new Set<string>())
 
   useEffect(() => {
@@ -191,13 +223,14 @@ export function OrderBuilder({
   }
 
   function add(product: CatalogProduct) {
-    lineItems.append(
-      orderLine(product, crypto.randomUUID(), {
-        asin: product.amazonAsin,
-        fnsku: product.fnsku,
-        ...product.lineDefaults
-      })
+    const line = orderLine(
+      product,
+      crypto.randomUUID(),
+      { asin: product.amazonAsin, fnsku: product.fnsku, ...product.lineDefaults },
+      form.getValues("currency")
     )
+    lastDefaultedPrice.current[line.id] = line.unitPrice
+    lineItems.append(line)
     setShowResults(false)
   }
 
@@ -231,6 +264,15 @@ export function OrderBuilder({
                 options={destinations}
                 description={destination === "amazon" ? "The Amazon warehouse is chosen when you ship." : undefined}
               />
+              {destination === "forwarder" && (
+                <FormSelect
+                  name="deliveryId"
+                  required
+                  label="Forwarder address"
+                  placeholder={forwarderAddresses.length ? "Select an address" : "Add a forwarder address first"}
+                  options={forwarderAddresses.map((row) => ({ value: row.addressId, label: row.label }))}
+                />
+              )}
               {destination === "warehouse" && (
                 <FormSelect
                   name="deliveryId"
@@ -242,6 +284,18 @@ export function OrderBuilder({
               )}
               <FormInput name="dueDate" required label="Required date" type="date" />
               <FormSelect name="currency" required label="Currency" options={currencies} />
+              <FormInput
+                name="paymentTerms"
+                label="Payment terms"
+                list="payment-terms"
+                placeholder="Choose or type terms"
+                autoComplete="off"
+              />
+              <datalist id="payment-terms">
+                {commonPaymentTerms.map((terms) => (
+                  <option key={terms} value={terms} aria-label={terms} />
+                ))}
+              </datalist>
             </FieldGroup>
           </CardContent>
         </Card>
@@ -514,7 +568,7 @@ export function OrderBuilder({
             {lineItems.fields.length} products, {pieces} pieces, {money(amount, currency)}
           </p>
           <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!lineItems.fields.length}>
-            Save purchase order
+            {draft ? "Save changes" : "Save purchase order"}
           </SubmitButton>
         </div>
       </form>

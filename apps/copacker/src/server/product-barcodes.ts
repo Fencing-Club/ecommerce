@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { amazonDestinations } from "@repo/aisle"
+import { amazonDestinations, type OrderInput } from "@repo/aisle"
 import { combinePdfs } from "@repo/aisle/documents"
 import { splitPdfPages } from "@repo/aisle/labels"
 import { labelTitle, standardProductLabels } from "@repo/aisle/product-labels"
@@ -65,6 +65,32 @@ async function storeRows(orgId: string, domain: string) {
 // Whether a variation's product needs an uploaded label rather than the standard FNSKU label.
 const needsUpload = (defaults: ReadonlyMap<string, ProductDefaults>, productId: string | undefined) =>
   productId !== undefined && defaults.get(productId)?.productLabel === "uploaded"
+
+// Whether a product needs no label on a PO: it's set to "No label" and the PO doesn't go to Amazon, which labels every
+// unit with its FNSKU.
+const labelFree = (
+  defaults: ReadonlyMap<string, ProductDefaults>,
+  productId: string | undefined,
+  destination: OrderInput["destination"]
+) =>
+  productId !== undefined &&
+  defaults.get(productId)?.productLabel === "none" &&
+  !amazonDestinations.includes(destination)
+
+// A PO's lines that need no product label, so the PO doesn't ask for one.
+export async function linesWithoutLabels(order: { buyerOrgId: string; shopifyDomain: string; data: OrderInput }) {
+  const [defaults, rows] = await Promise.all([
+    readProductDefaults(order.buyerOrgId, order.shopifyDomain),
+    storeRows(order.buyerOrgId, order.shopifyDomain)
+  ])
+  return new Set(
+    order.data.items
+      .filter((item) =>
+        labelFree(defaults, rows.find((row) => row.variantId === item.variantId)?.productId, order.data.destination)
+      )
+      .map((item) => item.id)
+  )
+}
 
 // Variations whose product needs an uploaded label, such as one with size measurements, and that don't have one yet.
 export async function variantsNeedingBarcode(orgId: string) {
@@ -451,10 +477,10 @@ export async function attachProductBarcodes(s: Session, orderId: string, { refre
     .where(and(eq(documents.orderId, orderId), eq(documents.kind, "product_label"), eq(documents.outdated, 0)))
   const released = refresh ? await releasedItems(orderId) : new Set<string>()
   const replaceable = (itemId: string) => refresh && !released.has(itemId) && addedLabels(labelled, itemId)
-  const missing = order.data.items.filter(
+  const wanted = order.data.items.filter(
     (item) => !labelled.some((label) => label.itemId === item.id) || replaceable(item.id)
   )
-  if (!missing.length) {
+  if (!wanted.length) {
     return 0
   }
   const [barcodes, defaults, rows] = await Promise.all([
@@ -467,13 +493,17 @@ export async function attachProductBarcodes(s: Session, orderId: string, { refre
           eq(productBarcodes.shopifyDomain, order.shopifyDomain),
           inArray(
             productBarcodes.variantId,
-            missing.map((item) => item.variantId)
+            wanted.map((item) => item.variantId)
           )
         )
       ),
     readProductDefaults(order.buyerOrgId, order.shopifyDomain),
     storeRows(order.buyerOrgId, order.shopifyDomain)
   ])
+  const missing = wanted.filter(
+    (item) =>
+      !labelFree(defaults, rows.find((row) => row.variantId === item.variantId)?.productId, order.data.destination)
+  )
   // Amazon only accepts its FNSKU, which is filled in when the PO is sent. Other destinations print the Shopify SKU
   // when there's no FNSKU, such as for a product Amazon doesn't list or a store without Amazon.
   const forAmazon = amazonDestinations.includes(order.data.destination)

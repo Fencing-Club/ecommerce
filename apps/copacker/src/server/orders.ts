@@ -28,6 +28,7 @@ import { bundleQuote } from "@/lib/bundle-quote"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { shopifyFor, amazonFor, connection } from "./connections"
+import { forwarderAddress } from "./forwarders"
 import { attachProductBarcodes, discardFile } from "./product-barcodes"
 import { finishedStates, reservedPieces, packingReadiness } from "./readiness"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
@@ -162,7 +163,9 @@ export async function prepareOrder(s: Session, raw: unknown) {
   orderInputSchema.parse(input)
   return { input, shopifyDomain: shop.externalId, amazonSellerId: amazon?.externalId ?? null }
 }
-export async function persistOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
+// Checks a prepared PO against the workspace inside the saving transaction: the same merchant accounts, one of its
+// suppliers, and one of its addresses.
+async function checkOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
   const { input, shopifyDomain, amazonSellerId } = prepared
   requireBuyer(s)
   // Keep the selected accounts stable through the commit, including after slow catalog reads.
@@ -197,16 +200,16 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
       throw new Error("Choose one of your delivery addresses")
     }
   }
-  if (input.destination === "forwarder") {
-    const [forwarder] = await tx
-      .select({ id: contacts.id })
-      .from(contacts)
-      .where(and(eq(contacts.id, input.forwarderId!), eq(contacts.orgId, s.org.id), eq(contacts.kind, "forwarder")))
-      .for("share")
-    if (!forwarder) {
-      throw new Error("Choose a freight forwarder in this workspace")
-    }
+  if (
+    input.destination === "forwarder" &&
+    !(await forwarderAddress(s.org.id, input.forwarderId!, input.deliveryId!, tx))
+  ) {
+    throw new Error("Choose one of your forwarders' addresses")
   }
+}
+export async function persistOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
+  await checkOrder(tx, s, prepared)
+  const { input, shopifyDomain, amazonSellerId } = prepared
   const [order] = await tx
     .insert(orders)
     .values({
@@ -221,6 +224,39 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
     .insert(orderRevisions)
     .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "PO created" })
   return order!
+}
+// Saves changes to a draft PO as its next revision. A sent PO changes through its shipments instead.
+export async function updateDraftOrder(s: Session, id: string, raw: unknown, expectedRevision: number) {
+  requireBuyer(s)
+  const prepared = await prepareOrder(s, raw)
+  await db().transaction(async (tx) => {
+    const { order } = await accessibleOrder(s, id, tx, true)
+    if (order.status !== "draft") {
+      throw new Error("Only a draft PO can be edited")
+    }
+    if (order.revision !== expectedRevision) {
+      throw new Error("This PO has changed. Refresh before saving")
+    }
+    if (order.shopifyDomain !== prepared.shopifyDomain) {
+      throw new Error("The connected Shopify store changed. Create a new PO instead")
+    }
+    await checkOrder(tx, s, prepared)
+    const revision = order.revision + 1
+    await tx
+      .update(orders)
+      .set({
+        supplierId: prepared.input.supplierId,
+        amazonSellerId: prepared.amazonSellerId,
+        data: prepared.input,
+        revision,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, id))
+    await tx
+      .insert(orderRevisions)
+      .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "PO edited" })
+  })
+  await attachProductBarcodes(s, id)
 }
 export async function createOrder(s: Session, raw: unknown) {
   const prepared = await prepareOrder(s, raw)

@@ -84,7 +84,14 @@ import { GET as readInventory } from "../src/app/api/inventory/route"
 import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
 import { accessibleOrder } from "../src/server/access"
-import { generateShipmentDocuments, storeDocument } from "../src/server/documents"
+import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
+import {
+  acceptForwarderInvitation,
+  createForwarder,
+  forwarderAddresses,
+  inviteForwarder,
+  saveForwarderAddress
+} from "../src/server/forwarders"
 import { importJob } from "../src/server/import-job"
 import { importProposalSchema } from "../src/server/import-proposal"
 import { saveImportedOrder } from "../src/server/import-save"
@@ -102,7 +109,8 @@ import {
   savePacking,
   checkPacking,
   closeOrder,
-  receiveShipment
+  receiveShipment,
+  updateDraftOrder
 } from "../src/server/orders"
 import {
   assignProductSupplier,
@@ -161,7 +169,14 @@ const orderData = orderInputSchema.parse({
 function actor(kind: "buyer" | "supplier", id: string): Session {
   return {
     user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true },
-    org: { id, kind, name: "Test org", workosId: null, timeZone: null, createdAt: new Date() },
+    org: {
+      id,
+      kind,
+      name: "Test org",
+      workosId: null,
+      timeZone: null,
+      createdAt: new Date()
+    },
     role: "owner",
     workspaces: []
   }
@@ -385,24 +400,38 @@ describe("supplier catalog snapshots", () => {
 })
 describe("reviewed import save", () => {
   beforeEach(orderConnections)
-  it.each(["missing", "other_workspace", "pickup"] as const)(
+  it.each(["missing", "other_workspace", "removed"] as const)(
     "rejects a %s forwarder without saving a draft",
     async (scenario) => {
       const imported = await reviewedImport()
       const forwarderId = randomUUID()
+      const deliveryId = randomUUID()
       if (scenario !== "missing") {
         const { packing } = await preparation()
-        await database.insert(tables.contacts).values({
+        const owner = scenario === "other_workspace" ? otherId : buyerId
+        await database.insert(tables.forwarders).values({
           id: forwarderId,
-          orgId: scenario === "other_workspace" ? otherId : buyerId,
-          kind: scenario === "pickup" ? "pickup" : "forwarder",
-          name: "Contact",
+          buyerOrgId: owner,
+          name: "Forwarder",
+          removedAt: scenario === "removed" ? new Date() : null
+        })
+        await database.insert(tables.contacts).values({
+          id: deliveryId,
+          orgId: owner,
+          kind: "forwarder",
+          forwarderId,
+          name: "Warehouse",
           address: packing.origin
         })
       }
       await expect(
-        saveImportedOrder(buyer, imported.id, { ...imported.input, destination: "forwarder", forwarderId })
-      ).rejects.toThrow("freight forwarder in this workspace")
+        saveImportedOrder(buyer, imported.id, {
+          ...imported.input,
+          destination: "forwarder",
+          forwarderId,
+          deliveryId
+        })
+      ).rejects.toThrow("forwarders' addresses")
       expect(await database.select().from(tables.orders)).toHaveLength(1)
       expect((await database.select().from(tables.poImports))[0]).toMatchObject({ status: "review", orderId: null })
       expect(await database.select().from(tables.jobs)).toHaveLength(0)
@@ -411,22 +440,31 @@ describe("reviewed import save", () => {
   it("saves an owned forwarder as a draft without email or shipment jobs", async () => {
     const imported = await reviewedImport()
     const { packing } = await preparation()
+    const [forwarder] = await database
+      .insert(tables.forwarders)
+      .values({ buyerOrgId: buyerId, name: "Forwarder" })
+      .returning()
     const [contact] = await database
       .insert(tables.contacts)
       .values({
         orgId: buyerId,
         kind: "forwarder",
-        name: "Forwarder",
+        forwarderId: forwarder!.id,
+        name: "Warehouse",
         address: packing.origin
       })
       .returning()
     const saved = await saveImportedOrder(buyer, imported.id, {
       ...imported.input,
       destination: "forwarder",
-      forwarderId: contact!.id
+      forwarderId: forwarder!.id,
+      deliveryId: contact!.id
     })
     const [order] = await database.select().from(tables.orders).where(eq(tables.orders.id, saved.id))
-    expect(order).toMatchObject({ status: "draft", data: { destination: "forwarder", forwarderId: contact!.id } })
+    expect(order).toMatchObject({
+      status: "draft",
+      data: { destination: "forwarder", forwarderId: forwarder!.id, deliveryId: contact!.id }
+    })
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
     expect(
       (await database.select().from(tables.shipments)).filter((shipment) => shipment.orderId === saved.id)
@@ -835,7 +873,7 @@ describe("Postgres workflow and authorization", () => {
     expect(await database.select().from(tables.inventoryLocationMappings)).toHaveLength(1)
   })
 
-  it("keeps delivery and forwarder addresses for buyers and pickup addresses for suppliers", async () => {
+  it("keeps delivery addresses for buyers and pickup addresses for suppliers", async () => {
     const { packing } = await preparation()
     const save = (kind: string) =>
       action(
@@ -846,17 +884,16 @@ describe("Postgres workflow and authorization", () => {
         })
       )
     expect((await save("delivery")).status).toBe(200)
-    expect((await save("forwarder")).status).toBe(200)
-    expect(await (await save("pickup")).json()).toMatchObject({
-      error: expect.stringContaining("suppliers' workspaces")
-    })
+    // Forwarders' addresses are kept with each forwarder, on the Forwarders page.
+    expect(await (await save("forwarder")).json()).toMatchObject({ error: expect.stringContaining("Forwarders page") })
+    expect(await (await save("pickup")).json()).toMatchObject({ error: expect.stringContaining("Forwarders page") })
     context.actor = supplier
     expect((await save("pickup")).status).toBe(200)
     expect(await (await save("delivery")).json()).toMatchObject({
       error: expect.stringContaining("pickup addresses only")
     })
     const saved = await database.select({ kind: tables.contacts.kind }).from(tables.contacts)
-    expect(saved.map((contact) => contact.kind).toSorted()).toEqual(["delivery", "forwarder", "pickup"])
+    expect(saved.map((contact) => contact.kind).toSorted()).toEqual(["delivery", "pickup"])
   })
 
   it("lists tracked products without a supplier until one is chosen", async () => {
@@ -3374,5 +3411,174 @@ describe("suppliers from Shopify and invitations", () => {
     const response = await post({ action: "supplier.invite", data: { id: supplierLinkId, email: "x@example.com" } })
     expect(response.status).toBeGreaterThanOrEqual(400)
     expect(await database.select().from(tables.jobs)).toHaveLength(0)
+  })
+})
+
+describe("business details on POs", () => {
+  const post = (body: unknown) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify(body)
+      })
+    )
+  const details = {
+    contactName: "Test Buyer",
+    contactEmail: "orders@example.com",
+    phoneNumber: "",
+    website: "",
+    addressLine1: "10 Sample Road",
+    addressLine2: "",
+    city: "Sampletown",
+    stateOrRegion: "WA",
+    postalCode: "98001",
+    countryCode: "us"
+  }
+
+  it("saves the buyer's business details, with an address only when it's complete", async () => {
+    expect((await post({ action: "business.profile", data: { ...details, city: "" } })).status).toBeGreaterThanOrEqual(
+      400
+    )
+    expect((await post({ action: "business.profile", data: details })).status).toBe(200)
+    const [profile] = await database
+      .select()
+      .from(tables.supplierProfiles)
+      .where(eq(tables.supplierProfiles.orgId, buyerId))
+    expect(profile).toMatchObject({ contactName: "Test Buyer", website: null })
+    expect(profile?.address).toMatchObject({ addressLine1: "10 Sample Road", city: "Sampletown", countryCode: "US" })
+
+    expect(
+      (
+        await post({
+          action: "business.profile",
+          data: { ...details, addressLine1: "", city: "", stateOrRegion: "", postalCode: "", countryCode: "" }
+        })
+      ).status
+    ).toBe(200)
+    const [cleared] = await database
+      .select()
+      .from(tables.supplierProfiles)
+      .where(eq(tables.supplierProfiles.orgId, buyerId))
+    expect(cleared?.address).toBeNull()
+  })
+
+  it("is for buyers only", async () => {
+    context.actor = supplier
+    expect((await post({ action: "business.profile", data: details })).status).toBeGreaterThanOrEqual(400)
+  })
+
+  it("prints a PO with the buyer's details", async () => {
+    await post({ action: "business.profile", data: details })
+    const { bytes } = await generatePo(orderId)
+    expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-")
+  })
+})
+
+describe("draft PO edits", () => {
+  beforeEach(orderConnections)
+  const identity = () => {
+    provider.connection.mockImplementation(async (_orgId: string, kind: string) => ({
+      externalId: kind === "shopify" ? "test.myshopify.com" : "A123456789"
+    }))
+    provider.shopifyFor.mockResolvedValue({
+      variants: async () => [
+        {
+          id: orderData.items[0]!.variantId,
+          sku: "foil-2",
+          title: "Two-pack",
+          product: { title: "Foil cord" },
+          inventoryItem: { id: orderData.items[0]!.inventoryItemId },
+          supplierSku: { value: "B-2" },
+          asin: { value: "B000000001" }
+        }
+      ]
+    })
+    provider.api.listings.mockResolvedValue(new Map([["foil-2", { asin: "B000000001", fnsku: "X000000001" }]]))
+  }
+
+  it("saves a draft's changes, with its payment terms, as its next revision", async () => {
+    identity()
+    const created = await createOrder(buyer, { ...orderData, paymentTerms: "Net 30" })
+    expect(created.data.paymentTerms).toBe("Net 30")
+    await updateDraftOrder(
+      buyer,
+      created.id,
+      { ...orderData, reference: "PO-EDITED", paymentTerms: "30% deposit, 70% before shipment" },
+      1
+    )
+    const [saved] = await database.select().from(tables.orders).where(eq(tables.orders.id, created.id))
+    expect(saved).toMatchObject({
+      revision: 2,
+      data: { reference: "PO-EDITED", paymentTerms: "30% deposit, 70% before shipment" }
+    })
+    const revisions = await database
+      .select()
+      .from(tables.orderRevisions)
+      .where(eq(tables.orderRevisions.orderId, created.id))
+    expect(revisions.map((row) => row.reason).toSorted()).toEqual(["PO created", "PO edited"])
+    // A stale revision, or a PO that's been sent, can't be edited.
+    await expect(updateDraftOrder(buyer, created.id, orderData, 1)).rejects.toThrow("changed")
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, created.id))
+    await expect(updateDraftOrder(buyer, created.id, orderData, 2)).rejects.toThrow("Only a draft")
+  })
+})
+
+describe("freight forwarders", () => {
+  const address = {
+    name: "Lisa Yao",
+    addressLine1: "1000 Siji Road",
+    addressLine2: "",
+    city: "Yiwu",
+    stateOrRegion: "Zhejiang",
+    postalCode: "322000",
+    countryCode: "CN",
+    phoneNumber: "",
+    email: ""
+  }
+
+  it("adds a forwarder with saved addresses, invites it, and hands the addresses over when it joins", async () => {
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    expect(await database.select().from(tables.jobs)).toHaveLength(0)
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
+    expect((await forwarderAddresses(buyerId)).map((row) => row.addressName)).toEqual(["Yiwu warehouse"])
+
+    await inviteForwarder({ id: buyerId, name: "Buyer" }, forwarder.id, buyer.user.email)
+    const [job] = await database.select().from(tables.jobs)
+    expect(job?.payload).toMatchObject({ type: "forwarder", to: buyer.user.email })
+
+    // Joining needs a forwarder workspace the user owns.
+    const forwarderOrg = randomUUID()
+    await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+    await database
+      .insert(tables.memberships)
+      .values({ orgId: forwarderOrg, userId: buyer.user.id, email: buyer.user.email, role: "owner" })
+    const [invited] = await database.select().from(tables.forwarders)
+    await database
+      .update(tables.forwarders)
+      .set({ invitationHash: hash("forwarder-invitation-test-token") })
+      .where(eq(tables.forwarders.id, invited!.id))
+    await expect(acceptForwarderInvitation(buyer.user, supplierId, "forwarder-invitation-test-token")).rejects.toThrow(
+      "forwarder workspace"
+    )
+    await acceptForwarderInvitation(buyer.user, forwarderOrg, "forwarder-invitation-test-token")
+
+    // The forwarder now keeps the address in its own workspace, and POs ship to that one.
+    const own = await database.select().from(tables.contacts).where(eq(tables.contacts.orgId, forwarderOrg))
+    expect(own).toMatchObject([{ kind: "delivery", name: "Yiwu warehouse" }])
+    expect(await forwarderAddresses(buyerId)).toMatchObject([
+      { forwarderId: forwarder.id, joined: true, addressId: own[0]!.id }
+    ])
+    await expect(
+      saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Another", address })
+    ).rejects.toThrow("keeps its own addresses")
+  })
+
+  it("keeps forwarders to the buyer that added them", async () => {
+    const forwarder = await createForwarder({ id: otherId, name: "Other" }, { name: "Elsewhere", email: "" })
+    await expect(
+      saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Warehouse", address })
+    ).rejects.toThrow("removed")
+    expect(await forwarderAddresses(buyerId)).toEqual([])
   })
 })

@@ -52,7 +52,8 @@ export function PackingForm({
   order,
   initial,
   invoices,
-  addresses
+  addresses,
+  enteringFor
 }: {
   orderId: string
   shipmentId: string
@@ -63,6 +64,8 @@ export function PackingForm({
   initial: PackingDraft | null
   invoices: Array<{ id: string; name: string }>
   addresses: Array<{ id: string; name: string; address: Address }>
+  // The supplier's name when the buyer enters its details for it, because it isn't on Copacker.
+  enteringFor?: string
 }) {
   const router = useRouter()
   const [run] = useActionMutation()
@@ -171,7 +174,9 @@ export function PackingForm({
               <CardHeader>
                 <CardTitle>Invoice details</CardTitle>
                 <CardDescription>
-                  Enter the prices and supplier SKUs from your official invoice. Changes go to the buyer for approval.
+                  {enteringFor
+                    ? `From ${enteringFor}’s invoice.`
+                    : "Enter the prices and supplier SKUs from your official invoice. Changes go to the buyer for approval."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -196,9 +201,11 @@ export function PackingForm({
                       >
                         <div className={sx({ display: "flex", flexDirection: "column", gap: 1 })}>
                           <p className={sx({ text: "sm", fontWeight: "medium" })}>
-                            {item.name} / {item.variant}
+                            {[item.name, item.variant === "Default Title" ? "" : item.variant]
+                              .filter(Boolean)
+                              .join(" / ")}
                           </p>
-                          <p className={sx({ text: "xs", color: "muted" })}>Buyer SKU: {item.buyerSku}</p>
+                          <p className={sx({ text: "xs", color: "muted" })}>SKU {item.buyerSku}</p>
                           <p className={sx({ text: "xs", color: "muted" })}>
                             {availablePieces[item.id] ?? 0} pieces available on this PO
                           </p>
@@ -208,7 +215,7 @@ export function PackingForm({
                             <p className={sx({ fontWeight: "medium" })}>Supplier components per sellable unit</p>
                             {item.components.map((component) => (
                               <p key={component.variantId} className={sx({ color: "muted" })}>
-                                {component.quantity} × {component.buyerSku || "Shopify component"} · Supplier SKU{" "}
+                                {component.quantity} × {component.buyerSku || "Shopify component"}, supplier SKU{" "}
                                 {component.supplierSku || "missing"}
                               </p>
                             ))}
@@ -235,8 +242,9 @@ export function PackingForm({
               <CardHeader>
                 <CardTitle>Pickup details</CardTitle>
                 <CardDescription>
-                  Tell the buyer when the cartons will be ready. The buyer books transportation, and Amazon coordinates
-                  pickup with this contact.
+                  {enteringFor
+                    ? `When and where ${enteringFor}’s cartons will be ready.`
+                    : "Tell the buyer when the cartons will be ready. The buyer books transportation, and Amazon coordinates pickup with this contact."}
                 </CardDescription>
               </CardHeader>
               <CardContent>

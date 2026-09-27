@@ -33,7 +33,11 @@ const labelsApi = api.injectEndpoints({
   })
 })
 
-const labelNames: Record<ProductLabel, string> = { standard: "Standard label", uploaded: "Uploaded label" }
+const labelNames: Record<ProductLabel, string> = {
+  standard: "Standard label",
+  uploaded: "Uploaded label",
+  none: "No label"
+}
 
 // Saves a PDF the browser received, under the name the server gave it.
 function save(blob: Blob, name: string) {
@@ -218,6 +222,14 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
                 onClick={() => void setLabel("standard")}
               >
                 Use standard labels
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!selected.length || busy}
+                onClick={() => void setLabel("none")}
+              >
+                No labels
               </Button>
               <Button type="button" disabled={!selected.length || busy} onClick={() => void download()}>
                 <Download data-icon="inline-start" />

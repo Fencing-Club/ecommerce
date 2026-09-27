@@ -10,7 +10,7 @@ import { TextField } from "@/components/form-fields"
 import { InventoryLocations } from "@/components/inventory-locations"
 import { AddMonthlyCost } from "@/components/monthly-costs"
 import { SavedAddresses } from "@/components/saved-addresses"
-import { SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
+import { BusinessProfileForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -232,6 +232,37 @@ export default async function Settings() {
         </Card>
       )}
 
+      {buyer && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Business details</CardTitle>
+            <CardDescription>Printed at the top of your POs.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {s.role === "owner" ? (
+              <BusinessProfileForm
+                contactName={profile?.contactName ?? ""}
+                contactEmail={profile?.contactEmail ?? ""}
+                phoneNumber={profile?.phoneNumber ?? ""}
+                website={profile?.website ?? ""}
+                addressLine1={profile?.address?.addressLine1 ?? ""}
+                addressLine2={profile?.address?.addressLine2 ?? ""}
+                city={profile?.address?.city ?? ""}
+                stateOrRegion={profile?.address?.stateOrRegion ?? ""}
+                postalCode={profile?.address?.postalCode ?? ""}
+                countryCode={profile?.address?.countryCode ?? ""}
+              />
+            ) : (
+              <p>
+                {[profile?.contactName, profile?.contactEmail, profile?.phoneNumber, profile?.website]
+                  .filter(Boolean)
+                  .join(", ") || "No business details saved"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {s.org.kind === "supplier" && (
         <Card>
           <CardHeader>
@@ -259,7 +290,13 @@ export default async function Settings() {
         </Card>
       )}
 
-      <SavedAddresses contacts={saved} supplier={s.org.kind === "supplier"} locations={ownLocations} />
+      <SavedAddresses
+        // Addresses saved for a forwarder live on the Forwarders page. Older forwarder addresses, saved before
+        // forwarders had their own page, stay here to copy over and delete.
+        contacts={saved.filter((contact) => contact.kind !== "forwarder" || !contact.forwarderId)}
+        supplier={s.org.kind === "supplier"}
+        locations={ownLocations}
+      />
     </>
   )
 }

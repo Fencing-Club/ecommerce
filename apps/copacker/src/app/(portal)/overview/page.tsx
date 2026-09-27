@@ -1,4 +1,3 @@
-import { ClipboardList } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -62,15 +61,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const query = await searchParams
   return (
     <>
-      <PageHeader title="Overview" description="Sales, stock, purchasing and shipments at a glance.">
-        <Button variant="outline" nativeButton={false} render={<Link href="/orders/new" />}>
-          <ClipboardList data-icon="inline-start" />
-          Create purchase order
-        </Button>
-        <Button nativeButton={false} render={<Link href="/restock" />}>
-          Plan restock
-        </Button>
-      </PageHeader>
+      <PageHeader title="Overview" description="Sales, stock, purchasing and shipments at a glance." />
       <Suspense key={JSON.stringify(query)} fallback={<OverviewSkeleton />}>
         <Dashboard org={s.org} query={query} />
       </Suspense>
