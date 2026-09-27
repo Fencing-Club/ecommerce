@@ -1,23 +1,40 @@
 # Shopify webhooks and Amazon notifications
 
-Copacker learns about order and stock changes as they happen: Shopify sends webhooks and Amazon sends notifications
-to a queue. A daily reconciliation reads everything again to catch anything missed.
+Copacker learns about order and stock changes as they happen: Shopify and Amazon both deliver events to SQS queues
+that the worker reads, so events wait through outages instead of depending on Copacker answering. A daily
+reconciliation reads everything again to catch anything missed.
 
-## Shopify webhooks
+## Shopify events through Amazon EventBridge
 
-- Shopify posts to `/api/webhooks/shopify`. The route checks the HMAC of the raw body against `SHOPIFY_CLIENT_SECRET`
-  and answers at once; the work is queued. `src/proxy.ts` leaves `/api/webhooks/` out of sign-in.
-- Subscriptions are created through the Admin API when a store connects and again daily: orders create, update, cancel
-  and delete, inventory level updates, and app uninstalled. Shopify only delivers to HTTPS, so a local app with an
-  `http://` `APP_URL` skips subscribing.
-- Events are gathered into five-minute periods. Each period starts the existing order sync or stock refresh three
-  minutes after it ends, so a burst of orders reads Shopify once.
+Shopify delivers webhook events straight to AWS; nothing calls Copacker's web service.
+
+- The production Shopify app ("Copacker", Dev Dashboard app `428016009217`) has an Amazon EventBridge source, added in
+  the app's settings: `aws.partner/shopify.com/428016009217/copacker-production`, in AWS account `316338643347`,
+  region `us-east-1`. It was accepted by creating an event bus of the same name.
+- On that bus, rule `copacker-shopify-to-sqs` forwards every event to the SQS queue `copacker-shopify-events`. The
+  queue only accepts messages from that rule. A message that fails five times moves to `copacker-shopify-events-dlq`,
+  which keeps it for 14 days.
+- The worker reads the queue with the same IAM user as the Amazon queue (`copacker-worker`, policy
+  `read-amazon-notifications`, which covers both queues). It needs `SHOPIFY_EVENTS_QUEUE_URL` and, for subscribing,
+  `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (`arn:aws:events:us-east-1::event-source/aws.partner/shopify.com/428016009217/copacker-production`).
+- Subscriptions are created through the Admin API at the EventBridge source when a store connects and again daily:
+  orders create, update, cancel and delete, inventory level updates, and app uninstalled. Without
+  `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development) nothing is subscribed, and syncs still copy orders.
+- Each event carries the webhook's headers as metadata and its body as the payload. Events are gathered into
+  five-minute periods; each period starts the existing order sync or stock refresh three minutes after it ends, so a
+  burst of orders reads Shopify once.
 - An uninstall disconnects the store only once Shopify refuses the stored authorization, so a quick reinstall is kept.
-- The privacy topics (`customers/data_request`, `customers/redact`, `shop/redact`) arrive at the same address. Shopify
-  doesn't allow subscribing to them through the API: set the compliance webhooks URL to
-  `<APP_URL>/api/webhooks/shopify` in each Shopify app's settings. Copacker stores no customer contact details, so a data
-  request emails workspace owners the stored order details, a customer redaction needs no deletion, and a shop
-  redaction erases the orders, stock snapshots and stock history copied from that store.
+- The privacy topics (`customers/data_request`, `customers/redact`, `shop/redact`) can't be subscribed through the
+  API; `apps/copacker/shopify.app.toml` routes them to the same EventBridge source and is released with
+  `shopify app deploy`. A data request emails workspace owners the stored order details, a customer redaction removes
+  the customer's Shopify ID from their orders, and a shop redaction erases the orders, stock snapshots and stock
+  history copied from that store.
+- Cut over from HTTPS webhooks on 2026-09-27. Tag changes on order #9103 were traced through EventBridge, the queue
+  and the worker to the stored order, and the HTTPS subscriptions and `/api/webhooks/shopify` route were then removed.
+- As of 2026-09-27 the `shopify.app.toml` release is pending: the Shopify CLI (4.8.0) is refused with "You are not a
+  member of the requested organization" for andrew@fencing.club, although that account manages the app in the Dev
+  Dashboard. Until it's released, the active app version (copacker-5) has no privacy topics and lacks the
+  `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes.
 
 ## Amazon notifications
 

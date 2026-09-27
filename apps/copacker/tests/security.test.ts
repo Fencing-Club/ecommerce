@@ -1,7 +1,7 @@
 import { randomBytes, createHmac } from "node:crypto"
 import { PDFDocument, PDFName, PDFString } from "pdf-lib"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { encrypt, decrypt, returnPath, verifyShopifyHmac, verifyShopifyWebhook } from "../src/server/security"
+import { encrypt, decrypt, returnPath, verifyShopifyHmac } from "../src/server/security"
 import { validatePdf } from "../src/server/storage"
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -26,14 +26,6 @@ describe("Connection and document boundaries", () => {
     expect(verifyShopifyHmac(params, secret)).toBe(true)
     params.set("state", "different")
     expect(verifyShopifyHmac(params, secret)).toBe(false)
-  })
-  it("accepts only webhook bodies signed with the app's client secret", () => {
-    const body = '{"id":1}',
-      signature = createHmac("sha256", "test-secret").update(body).digest("base64")
-    expect(verifyShopifyWebhook(body, signature, "test-secret")).toBe(true)
-    expect(verifyShopifyWebhook('{"id":2}', signature, "test-secret")).toBe(false)
-    expect(verifyShopifyWebhook(body, signature, "other-secret")).toBe(false)
-    expect(verifyShopifyWebhook(body, null, "test-secret")).toBe(false)
   })
   it("rejects non-PDF and active-content uploads", async () => {
     await expect(validatePdf(new Uint8Array([1, 2, 3]))).rejects.toThrow("PDF")

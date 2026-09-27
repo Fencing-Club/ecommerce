@@ -606,31 +606,5 @@ export class Shopify {
     }
     return missing
   }
-  // Removes this app's subscriptions to the address, such as HTTPS webhooks replaced by EventBridge delivery. Returns
-  // how many were removed.
-  async unsubscribeWebhooks(address: string) {
-    const ids = z
-      .object({
-        webhookSubscriptions: z.object({ nodes: z.array(z.object({ id: z.string(), uri: z.string() })).max(100) })
-      })
-      .parse(await this.graphql(`query Webhooks{webhookSubscriptions(first:100){nodes{id uri}}}`))
-      .webhookSubscriptions.nodes.filter((subscription) => subscription.uri === address)
-      .map((subscription) => subscription.id)
-    for (const id of ids) {
-      const response = z
-        .object({ webhookSubscriptionDelete: z.object({ userErrors: z.array(z.object({ message: z.string() })) }) })
-        .parse(
-          await this.graphql(
-            `mutation Unsubscribe($id:ID!){webhookSubscriptionDelete(id:$id){deletedWebhookSubscriptionId userErrors{message}}}`,
-            { id }
-          )
-        )
-      if (response.webhookSubscriptionDelete.userErrors.length) {
-        const messages = response.webhookSubscriptionDelete.userErrors.map((error) => error.message).join("; ")
-        throw new Error(`Shopify didn't remove the webhook subscription: ${messages}`)
-      }
-    }
-    return ids.length
-  }
 }
 const fields = `id title sku product{id title} inventoryItem{id unitCost{amount currencyCode} countryCodeOfOrigin} supplierSku:metafield(namespace:"custom",key:"supplier_sku"){value} asin:metafield(namespace:"custom",key:"asin"){value} requiresComponents productVariantComponents(first:25){${catalogBundleComponentFields}}`

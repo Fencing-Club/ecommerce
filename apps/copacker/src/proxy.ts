@@ -7,5 +7,4 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
   }
   return auth(request, event)
 }
-// Webhooks authenticate by signature, not by a signed-in session.
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/webhooks/).*)"] }
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health).*)"] }

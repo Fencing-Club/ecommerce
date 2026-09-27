@@ -7,7 +7,6 @@ import { disconnect, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { PollAgain } from "./job-handlers"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
-import { appUrl } from "./security"
 import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-compliance"
 import { type NotificationQueue, pollQueue } from "./sqs"
 import { refreshStock } from "./stock"
@@ -34,27 +33,13 @@ const eventTargets = new Map<string, "sales" | "stock" | "uninstalled">([
 const batchMs = 5 * 60000
 const settleMs = 3 * 60000
 
-export function shopifyWebhookAddress() {
-  return `${appUrl()}/api/webhooks/shopify`
-}
-
-// Where Shopify delivers events. With the app's Amazon EventBridge source configured, only there: it forwards to an
-// SQS queue the worker reads, which keeps events through outages that HTTPS retries don't outlast, and HTTPS webhooks
-// left from before are removed. Otherwise the HTTPS webhook route, when the app is reachable over HTTPS.
+// Shopify delivers events to the app's Amazon EventBridge source, which forwards them to an SQS queue the worker
+// reads. A queue keeps events through outages that HTTPS webhook retries don't outlast.
 const eventBridgeSource = z
   .string()
   .regex(/^arn:aws:events:[a-z0-9-]+::event-source\/aws\.partner\/shopify\.com\/\d+\/[\w.-]+$/)
-export function shopifyEventAddresses() {
-  const https = shopifyWebhookAddress()
-  const reachable = https.startsWith("https://") ? [https] : []
-  const source = process.env.SHOPIFY_EVENTBRIDGE_SOURCE_ARN
-  if (source) {
-    return { subscribe: [eventBridgeSource.parse(source)], retire: reachable }
-  }
-  return { subscribe: reachable, retire: [] }
-}
 
-// Queues the work a verified webhook calls for, for every workspace connected to the store. Returns how many were.
+// Queues the work a Shopify event calls for, for every workspace connected to the store. Returns how many were.
 export async function receiveShopifyWebhook(topic: string, shop: string, now = Date.now()) {
   const target = eventTargets.get(topic)
   if (!target || !shopDomainSchema.safeParse(shop).success) {
@@ -150,18 +135,16 @@ export async function queueShopifySubscription(orgId: string, key: string) {
     .onConflictDoNothing()
 }
 
-// Worker job: subscribes the connected store to each topic it isn't subscribed to yet, and removes subscriptions at
-// addresses Copacker no longer delivers to.
+// Worker job: subscribes the connected store to each topic it isn't subscribed to yet, at the EventBridge source.
 export async function shopifySubscribeJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   const { orgId } = z.object({ orgId: z.uuid() }).parse(payload)
-  const { subscribe, retire } = shopifyEventAddresses()
-  // Shopify only delivers to HTTPS or EventBridge, so a local app without either can't subscribe.
-  if (!subscribe.length) {
-    console.warn(
-      JSON.stringify({ event: "shopify_webhooks_skipped", orgId, reason: "no HTTPS or EventBridge address" })
-    )
+  const configured = process.env.SHOPIFY_EVENTBRIDGE_SOURCE_ARN
+  // An app without its own EventBridge source (such as local development) can't subscribe; syncs still copy orders.
+  if (!configured) {
+    console.warn(JSON.stringify({ event: "shopify_webhooks_skipped", orgId, reason: "no EventBridge source" }))
     return
   }
+  const source = eventBridgeSource.parse(configured)
   const [account] = await db()
     .select({ id: connections.id })
     .from(connections)
@@ -170,14 +153,8 @@ export async function shopifySubscribeJob(payload: Record<string, unknown>, asse
     return
   }
   const shopify = await shopifyFor(orgId)
-  for (const address of subscribe) {
-    await assertOwned()
-    await shopify.subscribeWebhooks(address, shopifyWebhookTopics)
-  }
-  for (const address of retire) {
-    await assertOwned()
-    await shopify.unsubscribeWebhooks(address)
-  }
+  await assertOwned()
+  await shopify.subscribeWebhooks(source, shopifyWebhookTopics)
 }
 
 // Shopify's EventBridge events carry the webhook's headers as metadata and its body as the payload.
@@ -186,8 +163,8 @@ const eventBridgeEvent = z.object({
   detail: z.object({ metadata: z.record(z.string(), z.unknown()), payload: z.unknown() })
 })
 
-// Handles one event from the EventBridge queue as the webhook route would. The queue only accepts events from the
-// app's own EventBridge rule, so there's no signature to check. Returns false for a message it can't use.
+// Handles one event from the EventBridge queue. The queue only accepts events from the app's own EventBridge rule,
+// so there's no signature to check. Returns false for a message it can't use.
 export async function receiveShopifyEvent(body: string, now = Date.now()) {
   let json: unknown
   try {

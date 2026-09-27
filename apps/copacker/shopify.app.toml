@@ -1,0 +1,28 @@
+# Configuration for the production Shopify app "Copacker" (Dev Dashboard app 428016009217). Release changes with
+# `shopify app deploy --config shopify.app.toml` from apps/copacker; each release becomes a new app version.
+# Local development uses the separate "Copacker Dev" app, which this file doesn't configure.
+client_id = "2903380b0f1a61a045fab751fae12106"
+name = "Copacker"
+application_url = "https://copacker-production.up.railway.app"
+embedded = false
+
+[access_scopes]
+# Matches the scopes the connect route requests (src/app/api/connections/[provider]/route.ts).
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,read_all_orders,read_shopify_payments_accounts,read_shopify_payments_payouts,read_customers"
+use_legacy_install_flow = true
+
+[auth]
+redirect_urls = [
+  "https://copacker-production.up.railway.app/api/connections/shopify",
+  "http://localhost:3000/api/connections/shopify"
+]
+
+[webhooks]
+api_version = "2026-07"
+
+# The privacy topics can only be subscribed here. Order and inventory topics are subscribed per store by the
+# worker (src/server/shopify-webhooks.ts). Both deliver to the app's Amazon EventBridge source, which forwards to the
+# SQS queue the worker reads.
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "arn:aws:events:us-east-1::event-source/aws.partner/shopify.com/428016009217/copacker-production"
