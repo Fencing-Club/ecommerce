@@ -85,6 +85,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     throw new ProductDefaultsError("A buyer workspace is required", 403)
   }
   const input = productDefaultsInputSchema.parse(raw)
+  const shopify = input.supplierId ? await shopifyWriter(s.org.id) : null
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })
@@ -121,7 +122,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
     if (supplierId && supplierId !== previous?.supplierId) {
       const supplier = await requireCurrentSupplier(tx, s.org.id, supplierId)
-      await writeShopifySupplier(s.org.id, account.domain, [input.productId], supplier)
+      await writeShopifySupplier(shopify, account.domain, [input.productId], supplier)
     }
     const value = {
       description: input.description,
@@ -165,10 +166,22 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
   return supplier
 }
 
+type ShopifyWriter = { domain: string; client: Awaited<ReturnType<typeof shopifyFor>> }
+
+// Loaded before a transaction that locks the Shopify connection: renewing the token locks that row for update, so
+// loading it inside the transaction would wait on the transaction's own lock forever.
+async function shopifyWriter(orgId: string): Promise<ShopifyWriter | null> {
+  const [account] = await db()
+    .select({ domain: connections.externalId })
+    .from(connections)
+    .where(and(eq(connections.orgId, orgId), eq(connections.provider, "shopify")))
+  return account ? { domain: account.domain, client: await shopifyFor(orgId, account.domain) } : null
+}
+
 // Shopify's product Supplier field is where suppliers are kept, so choosing one in Copacker writes it there, using
 // the supplier's name as Shopify knows it.
 async function writeShopifySupplier(
-  orgId: string,
+  shopify: ShopifyWriter | null,
   domain: string,
   productIds: string[],
   supplier: { name: string; shopifySupplierName: string | null }
@@ -179,9 +192,11 @@ async function writeShopifySupplier(
       409
     )
   }
-  const shopify = await shopifyFor(orgId, domain)
+  if (shopify?.domain !== domain) {
+    throw new ProductDefaultsError("Shopify was reconnected while saving. Try again", 409)
+  }
   for (const productId of productIds) {
-    await shopify.productSupplier(productId, supplier.shopifySupplierName.trim())
+    await shopify.client.productSupplier(productId, supplier.shopifySupplierName.trim())
   }
 }
 
@@ -192,6 +207,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
     throw new ProductDefaultsError("A buyer workspace is required", 403)
   }
   const input = assignSupplierInputSchema.parse(raw)
+  const shopify = input.supplierId ? await shopifyWriter(s.org.id) : null
   return db().transaction(async (tx) => {
     const [account] = await tx
       .select({ domain: connections.externalId })
@@ -204,7 +220,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
     const productIds = [...new Set(input.productIds)]
     if (input.supplierId) {
       const supplier = await requireCurrentSupplier(tx, s.org.id, input.supplierId)
-      await writeShopifySupplier(s.org.id, account.domain, productIds, supplier)
+      await writeShopifySupplier(shopify, account.domain, productIds, supplier)
     }
     await tx
       .insert(productDefaults)
