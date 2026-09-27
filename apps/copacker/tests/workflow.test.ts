@@ -878,6 +878,11 @@ describe("Postgres workflow and authorization", () => {
         tracked(5, "gid://shopify/Product/13", "Mask"),
         { ...tracked(7, "gid://shopify/Product/15", "Guard"), supplierName: "Fence With Fun" },
         { ...tracked(8, "gid://shopify/Product/16", "Cord 2-pack"), supplierName: "Test Supplier Legal Name" },
+        // A bundle's supplier is on its components, so a bundle without one isn't listed.
+        {
+          ...tracked(9, "gid://shopify/Product/17", "Glove 2-pack"),
+          bundle: { available: 3, components: [{ variantId: "gid://shopify/ProductVariant/1", quantity: 2 }] }
+        },
         // Untracked items, such as gift cards, aren't ordered.
         { ...shopifyStock.rows[0], variantId: "gid://shopify/ProductVariant/4", productId: "gid://shopify/Product/12" },
         // Nor are Shopify Collective items, which a partner stocks and ships.

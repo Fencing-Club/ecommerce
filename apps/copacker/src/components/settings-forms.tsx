@@ -29,11 +29,11 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
       <FormInput name="name" label="Supplier company" placeholder="Ok Fencing" autoComplete="organization" />
       <FormInput
         name="email"
-        label="Supplier email (optional)"
+        label="Email"
         type="email"
         placeholder="supplier@example.com"
         autoComplete="email"
-        description="With an email, the supplier is invited to their own workspace, where they see only the orders you share. Without one, you can still send them POs and share the documents yourself."
+        description="Add one to invite them now."
       />
     </ActionForm>
   )

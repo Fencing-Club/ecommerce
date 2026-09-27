@@ -9,6 +9,7 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { formErrorMap } from "@/lib/form-errors"
+import { restockDefaults } from "@/server/restock-report"
 import { FormError } from "./actions"
 import { FormInput, FormNumber } from "./form-controls"
 import { SupplierForm } from "./settings-forms"
@@ -34,9 +36,7 @@ export function InviteSupplier() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a supplier</DialogTitle>
-          <DialogDescription>
-            Suppliers in Shopify’s Supplier field are added for you. Add one here that isn’t in Shopify yet.
-          </DialogDescription>
+          <DialogDescription>For a supplier that isn’t in Shopify yet.</DialogDescription>
         </DialogHeader>
         <SupplierForm onSuccess={() => setOpen(false)} />
       </DialogContent>
@@ -132,30 +132,22 @@ export function EditSupplier({
           <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
             <DialogHeader>
               <DialogTitle>Edit supplier</DialogTitle>
-              <DialogDescription>
-                Their name, contact details and how long their orders take to arrive.
-              </DialogDescription>
+              <DialogDescription>Name, contact details and lead times.</DialogDescription>
             </DialogHeader>
-            <FormInput name="name" label="Name" autoComplete="organization" />
+            <FormInput name="name" required label="Name" autoComplete="organization" />
             <FormInput
               name="shopifySupplierName"
               label="Company name"
-              description="From Shopify’s Supplier field. Products with it belong to this supplier."
+              description="As in Shopify’s Supplier field."
               placeholder="Not in Shopify"
               disabled
             />
-            <FormInput name="contactName" label="Contact name (optional)" autoComplete="off" disabled={joined} />
-            <FormInput
-              name="contactEmail"
-              label="Contact email (optional)"
-              type="email"
-              autoComplete="off"
-              disabled={joined}
-            />
-            <FormInput name="phoneNumber" label="Phone (optional)" type="tel" autoComplete="off" disabled={joined} />
+            <FormInput name="contactName" label="Contact name" autoComplete="off" disabled={joined} />
+            <FormInput name="contactEmail" label="Contact email" type="email" autoComplete="off" disabled={joined} />
+            <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="off" disabled={joined} />
             <FormInput
               name="website"
-              label="Website (optional)"
+              label="Website"
               type="url"
               placeholder="https://supplier.example"
               disabled={joined}
@@ -164,7 +156,7 @@ export function EditSupplier({
             <FormNumber
               name="leadTimeDays"
               label="To your locations (days)"
-              description="Days from sending a PO until the stock can be sold. Restock orders enough to last this long. Empty uses the lead time on the Restock page."
+              description={`From PO to sellable stock. Empty means ${restockDefaults.leadTimeDays}.`}
               min={1}
               max={730}
               step={1}
@@ -172,13 +164,14 @@ export function EditSupplier({
             <FormNumber
               name="amazonLeadTimeDays"
               label="To Amazon (days)"
-              description="Include Amazon’s receiving time. Empty uses the lead time to your locations."
+              description="Includes Amazon’s receiving time."
               min={1}
               max={730}
               step={1}
             />
             <FormError message={form.formState.errors.root?.server?.message} />
             <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Saving…" : "Save"}
               </Button>
@@ -222,13 +215,13 @@ export function InviteSupplierByEmail({ id, name, email }: { id: string; name: s
             <DialogHeader>
               <DialogTitle>Invite {name}</DialogTitle>
               <DialogDescription>
-                They get their own workspace, see only the POs you share, and are emailed when a PO needs their
-                documents. Until they join, you share documents with them yourself.
+                They’ll see the POs you share and get emailed when one needs documents.
               </DialogDescription>
             </DialogHeader>
-            <FormInput name="email" label="Supplier email" type="email" autoComplete="email" />
+            <FormInput name="email" required label="Supplier email" type="email" autoComplete="email" />
             <FormError message={form.formState.errors.root?.server?.message} />
             <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Sending…" : "Send invitation"}
               </Button>
