@@ -1,10 +1,5 @@
-import { ArrowRight, Box } from "lucide-react"
-import Link from "next/link"
-import { BrandMark } from "@/components/auth/stage"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
-import { Bar } from "./bar"
 import { Connect } from "./connect"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
@@ -13,71 +8,12 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
+import { free, GetStarted, lit, rise, Site, stage } from "./site"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
 // the mess a restock makes settles into order, and the diagrams of the handoffs and agents. The product shots are the
 // app's own components with demo data (./mockups). There are no paid plans yet, so it asks only for a sign-up.
-
-// Copacker's orange, lit from above, as the ad's end card has it.
-const lit = "bg-[linear-gradient(180deg,#ffb27a_0%,#ff7a2e_45%,#f54a00_100%)] bg-clip-text text-transparent"
-const free = "Free to use, no credit card needed."
-const rise =
-  "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-[0.35em] motion-safe:duration-1000 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:fill-mode-both"
-// The page's two grounds: the paper, and the ink of the stages set into it.
-const paper = "light bg-(--paper) text-foreground [color-scheme:light]"
-const stage = "dark bg-(--ink) text-foreground [color-scheme:dark]"
-
-function GetStarted({ className }: { className?: string }) {
-  return (
-    <Button
-      size="lg"
-      className={cn("h-11 gap-2 rounded-xl px-5 text-[0.9375rem]", className)}
-      nativeButton={false}
-      render={<Link href="/signup" />}
-    >
-      Get started
-      <ArrowRight />
-    </Button>
-  )
-}
-
-function Nav() {
-  const links = [
-    ["#forecast", "Forecast"],
-    ["#handoffs", "Handoffs"],
-    ["#agents", "Agents"],
-    ["#faq", "FAQ"]
-  ]
-  return (
-    <Bar>
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-10 px-6">
-        <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-          <BrandMark />
-        </Link>
-        <nav aria-label="Main" className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">
-          {links.map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              className="rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
-        <div className="ml-auto flex items-center gap-1.5">
-          <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
-            Sign in
-          </Button>
-          <Button nativeButton={false} render={<Link href="/signup" />}>
-            Get started
-          </Button>
-        </div>
-      </div>
-    </Bar>
-  )
-}
 
 // A product shot: the app window in a thin glass bezel. The caption is for screen readers.
 function Shot({
@@ -301,68 +237,9 @@ function Closing() {
   )
 }
 
-function Footer() {
-  const columns = [
-    {
-      title: "Product",
-      links: [
-        ["#forecast", "Forecast"],
-        ["#handoffs", "Handoffs"],
-        ["#agents", "Agents"],
-        ["#faq", "FAQ"]
-      ]
-    },
-    {
-      title: "Account",
-      links: [
-        ["/signup", "Get started"],
-        ["/login", "Sign in"]
-      ]
-    }
-  ]
-  return (
-    <footer className={paper}>
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-24">
-        <div className="flex flex-col gap-5">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Box className="size-5" />
-          </span>
-          <p className="max-w-xs text-muted-foreground">Forecasting, purchase orders and logistics, in one place.</p>
-        </div>
-        {columns.map((column) => (
-          <nav key={column.title} aria-label={column.title} className="flex flex-col gap-3 text-sm">
-            <span className="text-muted-foreground">{column.title}</span>
-            {column.links.map(([href, label]) =>
-              href?.startsWith("#") ? (
-                <a key={href} href={href} className="w-fit text-foreground/80 hover:text-foreground">
-                  {label}
-                </a>
-              ) : (
-                <Link key={href} href={href ?? "/"} className="w-fit text-foreground/80 hover:text-foreground">
-                  {label}
-                </Link>
-              )
-            )}
-          </nav>
-        ))}
-      </div>
-      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-foreground/10 px-6 py-6 text-xs text-muted-foreground">
-        <span>© {new Date().getFullYear()} Copacker</span>
-        <span>copacker.ai</span>
-      </div>
-    </footer>
-  )
-}
-
 export function Landing() {
   return (
-    <div
-      className={cn(
-        paper,
-        "relative min-h-svh overflow-x-clip [--ink:oklch(0.145_0_0)] [--paper:oklch(0.972_0.008_78)]"
-      )}
-    >
-      <Nav />
+    <Site>
       <main id="main-content">
         <Hero />
         <Section
@@ -394,7 +271,6 @@ export function Landing() {
         <Faq />
         <Closing />
       </main>
-      <Footer />
-    </div>
+    </Site>
   )
 }

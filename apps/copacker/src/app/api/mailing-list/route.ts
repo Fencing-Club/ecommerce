@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { joinMailingList } from "@/server/mailing-list"
+import { clientAddress, rateLimit } from "@/server/rate-limit"
 
 const signup = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
@@ -8,24 +9,7 @@ const signup = z.object({
 })
 
 // A few signups per address in a short while is plenty; more is someone filling the list with other people's email.
-const period = 10 * 60 * 1000
-const allowed = 5
-const recent = new Map<string, number[]>()
-
-function limited(key: string) {
-  const now = Date.now()
-  if (recent.size > 5000) {
-    for (const [other, times] of recent) {
-      if (times.every((time) => now - time >= period)) {
-        recent.delete(other)
-      }
-    }
-  }
-  const times = (recent.get(key) ?? []).filter((time) => now - time < period)
-  times.push(now)
-  recent.set(key, times)
-  return times.length > allowed
-}
+const limited = rateLimit({ period: 10 * 60 * 1000, allowed: 5 })
 
 // The marketing page's signup for product news. Anyone signed out can use it.
 export async function POST(request: Request) {
@@ -37,8 +21,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Enter a valid email address." }, { status: 400 })
   }
-  const address = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
-  if (limited(address)) {
+  if (limited(clientAddress(request))) {
     return Response.json({ error: "Too many signups. Try again in a few minutes." }, { status: 429 })
   }
   try {

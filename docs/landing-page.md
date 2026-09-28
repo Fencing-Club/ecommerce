@@ -2,11 +2,14 @@
 
 Anyone signed out sees the marketing page at `/` (`apps/copacker/src/app/page.tsx`). Signed in, `/` still goes
 straight to their home. The page is set on warm paper, with dark stages set into it for the hero and the agents, and an
-orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
+orange one for the close. The contact page at `/contact` (`apps/copacker/src/app/contact/page.tsx`) shares its frame.
+Both live in `apps/copacker/src/components/marketing/`:
 
 | File                             | What it is                                                                                          |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `landing.tsx`                    | The page: nav, hero, forecast, journey, agents, FAQ, close and footer.                              |
+| `site.tsx`                       | The frame both pages share: the paper and stage grounds, the nav bar and the footer.                |
+| `landing.tsx`                    | The home page: hero, forecast, journey, agents, FAQ and the close.                                  |
+| `contact.tsx`, `contact-form.tsx` | The contact page, and its form, which posts to `/api/contact`.                                      |
 | `bar.tsx`                        | The nav bar, which turns dark over the stages (marked `data-tone="dark"`) and light over the paper. |
 | `dot-field.tsx`                  | The hero's WebGL backdrop: points that settle from scattered to ordered, lit around the pointer.    |
 | `tilt.tsx`                       | Leans the hero's product shot back and straightens it as it scrolls in.                             |
@@ -37,6 +40,9 @@ orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
   where the session cookie isn't set.
 - There are no paid plans, so the page asks only for a sign-up, and says it's free.
+- The contact form emails each message through Resend to `CONTACT_EMAIL`, with replies going to the person who wrote
+  (`src/server/contact.ts`). Like the mailing list, its endpoint takes anyone, turns away bots that fill in a hidden
+  field, and slows down more than five messages from one address in ten minutes (`src/server/rate-limit.ts`).
 - The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), in the segment
   `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed out, so it checks the address, turns
   away bots that fill in a hidden field, and slows down more than five signups from one address in ten minutes.
