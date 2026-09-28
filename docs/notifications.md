@@ -23,7 +23,7 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   disconnected) and locations start the stock refresh. App uninstalled disconnects the store. Fulfillment topics need
   `read_fulfillments`, so a store connected before Copacker asked for it subscribes to them after reconnecting; its
   shipments still arrive as order updates until then. Editing only a variant metafield (supplier SKU, ASIN, Amazon
-  stock target, case quantity) in Shopify sends no event (tested 2026-09-27), so those edits reach Copacker with the
+  stock target, case quantity) in Shopify sends no event, so those edits reach Copacker with the
   next stock refresh, at the latest the daily reconciliation. Supplier SKUs edited in Copacker update its copy
   directly. Without `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development)
   nothing is subscribed, and syncs still copy orders.
@@ -36,8 +36,6 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   `shopify app deploy`. A data request emails workspace owners the stored order details, a customer redaction removes
   the customer's Shopify ID from their orders, and a shop redaction erases the orders, stock snapshots and stock
   history copied from that store.
-- Cut over from HTTPS webhooks on 2026-09-27. Tag changes on order #9103 were traced through EventBridge, the queue
-  and the worker to the stored order, and the HTTPS subscriptions and `/api/webhooks/shopify` route were then removed.
 - Releasing `shopify.app.toml`: the Shopify CLI signed in with an account is refused for this app ("You are not a
   member of the requested organization"), because the app belongs to the store's organization. Signing in again, with
   any account, doesn't help: andrew@fencing.club is a member, and the Dev Dashboard works for it. The CLI's first
@@ -47,12 +45,7 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
   `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
   `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
-  Dashboard before releasing it. Version copacker-9 (2026-09-28) set the app URL to `https://copacker.ai` and
-  allowed redirects from `copacker.ai` and `staging.copacker.ai`; it was released through the organization's endpoint
-  (`appVersionCreate` with every module of the active version, then `appReleaseCreate`). Version copacker-8 (2026-09-27) added the `read_fulfillments` scope, which a
-  store approves by reconnecting. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
-  `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes, which a store
-  approves by reconnecting.
+  Dashboard before releasing it. Scopes a new version adds reach a store when it reconnects.
 
 ## Amazon notifications
 
@@ -72,17 +65,23 @@ Amazon delivers notifications only to Amazon SQS or EventBridge, not to HTTPS.
 - An order change reads only the orders updated since the stored orders' end (`lastUpdatedAfter`), saves them and
   extends the stored period. Without a recent stored period in the current shape, a full sync runs instead. A
   throttled read reschedules itself rather than holding the worker. An FBA stock change starts an FBA stock refresh.
-- As of 2026-09-26 the production destination is registered, and the seller's subscription was rejected with
-  `400 InvalidInput`. Commit `3e9cad2` subscribes to `ORDER_CHANGE` with the event filter from Amazon's tutorial and
-  keeps Amazon's error details; the subscription runs again on the next Amazon connect or daily run.
+- `ORDER_CHANGE` is subscribed with the event filter from Amazon's tutorial. A rejected subscription is logged with
+  Amazon's error details and tried again on the next connect or daily run.
+
+## Staging
+
+Staging's worker reads `copacker-amazon-notifications-staging` and `copacker-shopify-events-staging` (each with a
+`-dlq`) as IAM user `copacker-worker-staging`, which can read only those two. Its Shopify queue receives nothing until
+Copacker Dev has an EventBridge source for staging with a rule to that queue, and `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` is
+set on staging's worker.
 
 ## Amazon apps per environment
 
 The apps live in the Solution Provider Portal (Developer Central) under the Fencing Club developer account.
 
 - **Aisle** (`amzn1.sp.solution.b446d45f-ec63-496a-bb76-4e541d313a82`): production.
-- **Aisle Dev** (`amzn1.sp.solution.1a3ed765-2087-4715-adb3-01595ecc2e27`): local development. Created on 2026-09-26
-  with the same roles as Aisle.
+- **Aisle Dev** (`amzn1.sp.solution.1a3ed765-2087-4715-adb3-01595ecc2e27`): local development and staging, with the
+  same roles as Aisle.
 - **Aisle Sandbox**: Amazon's sandbox API only, which returns sample data.
 
 A refresh token works only with the client ID and secret of the app that issued it, so the local `.env` holds Aisle

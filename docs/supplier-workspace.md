@@ -72,3 +72,12 @@ products, payment terms and the ready date. A change to the ready date alone app
 become a pending `order_proposals` row that the buyer approves or declines on the PO page. Approving publishes the next
 PO revision, which fills in added products from the buyer's Shopify variants with that supplier SKU. It also files the
 supplier's commercial invoice with the shipment being packed, so the supplier doesn't upload one.
+
+## Saved addresses and product details
+
+Buyers save delivery addresses (their own locations) and freight forwarders. Suppliers save pickup addresses in their
+own workspace; for a supplier without one, the buyer saves them on the Partners page. Packing offers the supplier's
+pickup addresses, or another address typed in.
+
+The product details Copacker keeps itself, a default description and preparation per Shopify product, are edited on
+Products and prefill new PO lines. Everything else about a product comes from Shopify or Amazon.

@@ -67,6 +67,8 @@ Typed replacements for unsafe built-ins. Import from `ts-extras`. Use these inst
 
 ## `ts-pattern` — pattern matching
 
+Not installed yet: add it to the package the first time you need it.
+
 Use for branching on unions/shapes instead of `switch` or nested conditionals.
 
 ```ts
@@ -90,6 +92,8 @@ Key API:
 - `isMatching(pattern)` — a standalone type guard built from a pattern.
 
 ## `tiny-invariant` — runtime assertions
+
+Not installed yet: add it to the package the first time you need it.
 
 ```ts
 import invariant from "tiny-invariant"
@@ -115,5 +119,4 @@ const user = User.parse(await res.json()) // throws on mismatch
 const result = User.safeParse(input) // { success, data | error }
 ```
 
-The same zod schemas power form validation (`react-hook-form` with `@hookform/resolvers/zod`) and API/env parsing
-(`@t3-oss/env-core`).
+The same zod schemas power form validation (`react-hook-form` with `@hookform/resolvers/zod`) and API and environment parsing.

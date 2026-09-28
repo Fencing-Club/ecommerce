@@ -80,17 +80,3 @@ shipments, whoever created them: FBA from `GET /fba/inbound/v0/shipments` in eve
 read from Amazon when the page loads and cached for two minutes; if Amazon can't be read, the page says so and shows the
 purchase order shipments. Open shipments come first, then FBA before AWD, newest first (FBA lists no dates, so its
 shipment IDs order it).
-
-## Live acceptance, 2026-09-27
-
-Against the Fencing Club seller account, from the local app: AWD order `STAR-SCD4VEWN4AETX` (shipment
-`STAR-TXBA6PPAPYKPM`, IUSJ) was created, confirmed and labeled; FBA plan `wfec129c8f-688a-4076-9b4b-8f5186f11c10`
-(shipment `FBA19R99RSQC`, HGR6) went through packing, placement, own-carrier transport and three box labels. Both were
-then cancelled with Cancel in Amazon (CANCELLED and VOIDED). The runs found and fixed: AWD prep categories, Amazon's
-echoed eligibility cartons, the prepDetails query format, the 40-character plan name, and a create rejection leaving
-the shipment stuck in `sending`. Shipping-label upload and release were covered by tests, not live.
-
-Later that day a purchase order with an FBA line and an AWD line, entered through the app, created FBA shipment
-`FBA19R9S05PM` (HEA2); its link opened the shipment in Seller Central, and it was then cancelled. Amazon rejected the AWD
-shipment with `CAPACITY_UNAVAILABLE` even at 20 × 15 × 5 cm, since open AWD shipment `STAR-WBSAXKQKBYMYS` (16 cartons)
-held the capacity; the AWD links were confirmed on that shipment and on `STAR-TXBA6PPAPYKPM`.

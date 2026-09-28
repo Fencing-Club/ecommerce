@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start",
     "lint": "oxlint --max-warnings=0",
     "check:types": "tsc --noEmit",
     "test": "vitest run",

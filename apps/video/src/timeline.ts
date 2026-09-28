@@ -138,39 +138,4 @@ export const moments = {
 } as const
 
 // A moment's time from the start of the ad.
-// The cutdowns, by length in seconds: each is stitched from stretches of the full ad, cut on the beat so the score
-// carries across the joins. A line is heard only if it fits whole inside a stretch.
-export const cutdowns = {
-  30: [
-    [0, 17],
-    [23, 28],
-    [96, 104]
-  ],
-  15: [
-    [4, 14],
-    [98, 103]
-  ],
-  6: [
-    [9.8, 12],
-    [98, 101.8]
-  ]
-} as const satisfies Record<number, readonly Stretch[]>
-
-// A stretch of the full ad, from and to, in seconds.
-type Stretch = readonly [number, number]
-
-// Where each stretch lands in its cutdown.
-export const placed = (stretches: readonly Stretch[]) =>
-  stretches.map(([from, to], i) => ({
-    from,
-    to,
-    start: stretches.slice(0, i).reduce((sum, [a, b]) => sum + b - a, 0)
-  }))
-
-export const lengthOf = (stretches: readonly Stretch[]) => stretches.reduce((sum, [from, to]) => sum + to - from, 0)
-
-// Whether a line heard from `at` to `end` fits whole inside one of a cutdown's stretches.
-export const fits = (stretches: readonly Stretch[], at: number, end: number) =>
-  stretches.some(([from, to]) => at >= from - 0.001 && end <= to + 0.001)
-
 export const at = (section: Section, offset: number) => sections[section].from + offset

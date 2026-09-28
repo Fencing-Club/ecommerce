@@ -55,12 +55,9 @@ export const Stage = ({ children, glow = { x: 68, y: 58 } }: StageProps) => {
 // When each line is heard, from its cue to the end of its take.
 export const heard = cues.map(({ id, at }) => ({ id, at, end: at + takes.lines[id].end }))
 
-// The voiceover burned in for muted viewers, each word lighting up as it's spoken. The end card shows its own words,
-// and a cutdown captions only the lines it keeps.
-export const Captions = ({ t, lines }: { t: number; lines?: readonly string[] }) => {
-  const line = heard.find(
-    ({ id, at, end }) => id !== "end" && (!lines || lines.includes(id)) && t >= at && t < end + 0.25
-  )
+// The voiceover burned in for muted viewers, each word lighting up as it's spoken. The end card shows its own words.
+export const Captions = ({ t }: { t: number }) => {
+  const line = heard.find(({ id, at, end }) => id !== "end" && t >= at && t < end + 0.25)
   if (!line) {
     return null
   }

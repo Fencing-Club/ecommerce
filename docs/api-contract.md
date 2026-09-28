@@ -1,107 +1,302 @@
 # Copacker application contract
 
-This document is the integration handoff for the design agent. Page layout, components, styles, and visual design are owned by the design workstream. The backend workstream owns `src/server`, `src/db`, `src/app/api`, worker/scripts, shared `packages/aisle`, tests, infrastructure, and this contract.
+The HTTP contract between the Copacker pages and `apps/copacker/src/app/api`: the `/api/action` commands, the other
+routes, and the rules behind them.
 
 ## Authentication and responses
 
-All business routes use the WorkOS session. The active workspace is selected with a server-set HttpOnly cookie and checked against live database membership on every request. No client-supplied organization grants access. Every mutation requires Origin equal to APP_URL. Never use browser-provided account credentials.
+Business routes use the WorkOS session ([Sign-in and getting started](auth.md)). The active workspace is selected with a
+server-set HttpOnly cookie and checked against live database membership on every request. No client-supplied
+organization grants access. Every mutation requires an Origin equal to APP_URL; other origins get 403.
 
-`POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`, or `{ redirect }`; failure returns HTTP 400 with `{ error }`, or 403 when the person's role or page access doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant form. Refresh server data after successful mutations. Unexpected errors must not display raw database queries or tokens.
+`POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`,
+`{ redirect }` or the command's own result; failure returns HTTP 400 with `{ error }`, or 403 when the person's role or
+page access doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant
+form. Refresh server data after successful mutations. Unexpected errors never show raw database queries or tokens.
 
-The UI should always send the last displayed numeric revision for a PO/shipment mutation. Revision conflicts require refresh, never silent overwrite.
+Send the last displayed numeric revision with every PO or shipment mutation. A revision conflict requires a refresh,
+never a silent overwrite.
+
+Private PDF responses (`/api/documents/:id`, `/api/shipments/:id/packet`, `/api/imports/:id/source`) recheck database
+workspace membership after the storage read or packet assembly, before returning bytes. Removing a member during a slow
+download stops that response. They are sent `private, no-store` with `Content-Security-Policy: sandbox`.
 
 ## Commands
 
+Permissions below name the checks the route makes: _buyer_, _supplier_ and _forwarder_ are the workspace kind;
+_admin_ means the owner or an admin; _Page: Edit_ is a member's page access; _prices_ is price access.
+
+### Sign-in and getting started
+
 | Action | Data | Permission / result |
 | --- | --- | --- |
-| workspace.create | name, kind: buyer or supplier, optional next invitation URL | Authenticated user; creates owner membership |
-| workspace.switch | id | Existing workspace member |
-| team.invite | email, role: admin or member, access | Owner or admin; exact-email invitation with the role and a member's pages |
-| team.access | userId or email, role, access | Owner or admin; changes a colleague's or an invitation's access, never the owner's or your own |
-| team.resend, team.cancel | email | Owner or admin |
-| team.accept | token | Verified invited email, no prior workspace needed |
-| team.remove | userId | Owner or admin; removes anyone but the owner and yourself |
+| auth.signIn, auth.signUp, auth.verifyEmail, auth.resendCode, auth.forgotPassword, auth.resetPassword | See [auth.md](auth.md) | Before sign-in |
+| onboarding.workspace | person, kind: buyer, supplier or forwarder, company, address or null, invitation `{kind: supplier or forwarder, token}` or null | Signed in, no workspace needed. Creates the workspace with its owner, profile and first address, accepts the invitation that brought them, and switches to it; returns redirect |
+| onboarding.join | kind: team, supplier or forwarder, token, orgId (supplier or forwarder), optional person | Verified invited email. A colleague joins the inviting workspace; a supplier or forwarder links a workspace it owns or administers; returns redirect |
+
+### Workspace and team
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| workspace.switch | id | Member of that workspace; returns redirect |
+| workspace.timeZone | timeZone (IANA name, or empty for each viewer's own) | Admin |
+| workspace.restock | salesDays, leadTimeDays | Admin; Restock's sales period and default lead time |
+| workspace.excludedShopifyTags | tags (up to 50) | Buyer admin; Shopify order tags left out of order counts, ignoring case |
+| workspace.delete | name | Owner; the name confirms it. Deletes the workspace and everything in it; returns redirect |
+| team.invite | email, role: admin or member, access | Admin; exact-email invitation with the role and a member's pages |
+| team.access | userId or email, role, access | Admin; changes a colleague's or an invitation's access, never the owner's or your own |
+| team.resend, team.cancel | email | Admin |
+| team.remove | userId | Admin; removes anyone but the owner and yourself |
 | team.transfer | userId | Owner; makes a colleague the owner and stays on as an admin |
-| workspace.delete | name | Owner; the workspace's name confirms it. Deletes the workspace and everything in it for everyone; returns redirect |
-| account.delete | email | Anyone; their email confirms it. Refused while they own a workspace others use. Deletes their sign-in and memberships, closes workspaces only they use, signs them out; returns redirect |
-| supplier.create | name, email | Buyer, Partners: Edit; invitation to supplier workspace |
-| supplier.accept | token, orgId | Exact verified invited email; owner or admin of the selected supplier workspace. Acceptance switches to that workspace and consumes the invitation once. |
-| contact.create | name, kind: pickup or forwarder, address | Owner or admin |
-| order.create | OrderInput | Buyer; catalog identities re-read from connected Shopify |
-| order.submit | id, revision | Buyer; publishes PO, queues email with PDF attachment, creates first packing draft; returns ok and shipmentId |
-| shipment.create | id (PO ID) | Buyer or assigned supplier; resumes the editable packing draft, or creates the next partial shipment; returns shipment URL |
-| shipment.save | id, revision, orderRevision, draft | Buyer or assigned supplier; saves incomplete packing; returns revision and savedAt |
-| shipment.check | id, optional packing | Buyer or assigned supplier; read-only preflight of provided packing or saved draft |
-| shipment.submit | id, revision, optional packing | Buyer or assigned supplier; submits provided packing or saved draft, reserves quantities and queues approval or Amazon creation |
-| shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit and prices; updates PO and queues supplier SKU writeback |
-| shipment.correct | id, reason | Buyer or assigned supplier; invalidates affected shipment documents |
-| shipment.reconcile | id, amazonOrderId | Buyer; reads Amazon order and verifies reference before worker resumes |
-| shipment.cancelAmazon | id | Buyer; cancels the AWD order or FBA inbound plan in Amazon and verifies it's cancelled before releasing quantities |
-| shipment.release | id, revision, bookingReference | Buyer; requires all carton, product and carrier label assignments |
-| shipment.collected | id | Buyer or supplier; records reported collection, not carrier tracking proof |
-| job.retry | id | Buyer owner or admin; failed email/Shopify job for an accessible PO |
+| account.delete | email | Anyone; the email confirms it. Refused while they own a workspace others use. Deletes their sign-in and memberships, closes workspaces only they use, signs them out; returns redirect |
 
-Canonical schemas are exported by `@repo/aisle`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema, cartonInputSchema, addressSchema. Prices are integer minor currency units **per individual piece**; weights kg; dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID, and product names are read-only to suppliers. They propose supplier SKU and unit-price changes in `packing.changes`.
+### Profile
 
-An order has one destination and one supplier. A PO to Amazon sends each line to its own Amazon network (FBA or AWD US), so it can ship as several Amazon shipments.
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| profile.update | firstName, lastName, position, company, optional website | Anyone for their own profile; the website is the workspace's, buyer admin only |
+| profile.locale | locale, or empty for the browser's language | Anyone |
+| supplier.profile | website, contactName, contactEmail, phoneNumber | Supplier admin; the contact details its buyers see |
 
-## Catalog and connections
+### Addresses
 
-- `GET /api/catalog?q=`: buyer-only Shopify search; returns variant id/title/SKU, product title, inventory item id/unitCost, supplierSku, asin, plus Amazon ASIN/FNSKU when the connected listing exposes them. An empty mapping is unknown, never an invented barcode.
-- `POST /api/supplier-catalog/match` `{ supplierId, currency, supplierSkus }`: buyer-only; each SKU's catalog match and `available`, the pieces the supplier can still sell (on hand less what its sent POs haven't yet taken), or null when the product doesn't track inventory or continues selling when out of stock.
-- `POST /api/supplier-catalog/stock` `{ id, onHand }`: supplier-only; sets a tracked catalog product's on hand count. 404 when the product isn't the supplier's or doesn't track inventory.
-- `GET /api/connections/shopify?shop=store.myshopify.com`: buyer owner or admin authorization redirect. The same path receives the HMAC-verified OAuth callback.
-- `GET /api/connections/amazon`: buyer owner or admin OAuth redirect and callback. Single-use state is tied to user, organization, and provider.
+Contact kinds are `delivery`, `forwarder` and `pickup`. Buyers and forwarders save `delivery` addresses, suppliers
+`pickup` ones. A buyer's addresses for its forwarders (`forwarder`) and for suppliers not on Copacker (`pickup`) are
+kept with that partner and change through the partner's commands.
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| contact.create | name, kind, address, optional shopifyLocationId (delivery only) | Admin |
+| contact.update | id, name, kind, address, optional shopifyLocationId | Admin; the workspace's own addresses only |
+| contact.delete | id | Admin; the workspace's own addresses only |
+
+### Partners
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| supplier.create | name, optional email | Buyer, Partners: Edit. Adds the supplier, or restores a removed one of that name; with an email, invites it; returns id |
+| supplier.invite, supplier.resend | id, optional email | Buyer, Partners: Edit. Supplier not yet joined; a fresh token replaces earlier links |
+| supplier.update | id, name, shopifySupplierName, leadTimeDays, contact details | Buyer, Partners: Edit. Contact details stay the supplier's own once it joins |
+| supplier.remove | id | Buyer, Partners: Edit. Refused while it has open POs |
+| supplier.address | supplierId, optional id, name, address, or `remove: true` | Buyer, Partners: Edit. Pickup addresses of a supplier not yet joined |
+| forwarder.create | name, optional email | Buyer, Partners: Edit. Adds or restores a forwarder, inviting it with an email; returns id |
+| forwarder.rename | id, name | Buyer, Partners: Edit |
+| forwarder.invite | id, optional email | Buyer, Partners: Edit. Invites or re-invites a forwarder not yet joined |
+| forwarder.address | forwarderId, optional id, name, address | Buyer, Partners: Edit. Addresses of a forwarder not yet joined |
+| forwarder.remove | id | Buyer, Partners: Edit |
+
+### Connections
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| connection.amazonSelfAuthorized | refreshToken | Buyer admin. Connects a self-authorized Amazon seller after checking the token with Amazon, then starts the first sync |
+| connection.delete | provider: amazon or shopify | Buyer admin. Removes the credentials and reports whether the provider confirmed the revocation |
+
+### Purchase orders
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| order.create | OrderInput | Buyer, Orders: Edit. Catalog identities re-read from the connected stores; returns redirect |
+| order.update | id, revision, order | Buyer, Orders: Edit. Saves a draft as its next revision; returns redirect |
+| order.submit | id, revision | Buyer, Orders: Edit. Sends the PO, emails a supplier that has joined, stores the PO PDF and creates the first packing draft; returns ok and shipmentId |
+| order.delete | id | Buyer, Orders: Edit. Deletes a draft with its documents, history and landed costs; a PO import saved as that draft goes back to review; returns redirect |
+| order.close | id | Buyer, Orders: Edit. Closes a sent PO: unpacked shipments are cancelled; refused while a shipment is being created or on its way |
+| order.comment | orderId, message | Orders: View; a comment on the PO's timeline |
+| landedCost.create | orderId, kind: freight, duty or other, description, amount | Buyer, Orders: Edit; returns the cost |
+| landedCost.delete | id | Buyer, Orders: Edit |
+| monthlyCost.create, monthlyCost.delete | cost fields, or id | Buyer admin; costs paid monthly that no platform reports |
+| job.retry | id | Buyer admin. A failed email or Shopify job for an accessible PO |
+
+### Shipments
+
+| Action | Data | Permission / result |
+| --- | --- | --- |
+| shipment.create | id (PO ID) | Shipments: Edit. Resumes the editable packing draft, or creates the next partial shipment; returns redirect |
+| shipment.save | id, revision, orderRevision, draft | Shipments: Edit. Saves incomplete packing; returns revision and savedAt |
+| shipment.check | id, optional packing | Shipments: Edit. Read-only preflight of the given packing or the saved draft |
+| shipment.submit | id, revision, optional packing | Shipments: Edit. Submits packing, reserves quantities, then queues approval, Amazon creation, or (not to Amazon) marks it ready; returns `{approval}` |
+| shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit, prices. Approves the invoice's changes as the PO's next revision, saves supplier SKUs, and with updateCost writes unit costs to Shopify |
+| shipment.correct | id, reason | Shipments: Edit. Moves the shipment to correction and outdates its documents |
+| shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
+| shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
+| shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
+| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete |
+| shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
+| shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
+| shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
+
+## Schemas and units
+
+Canonical schemas are exported by `@repo/aisle`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema,
+cartonInputSchema, addressSchema. Prices are integer minor currency units **per individual piece**; weights kg;
+dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID and product names are read-only to suppliers. They propose
+supplier SKU and unit-price changes in `packing.changes`.
+
+An order has one destination (`amazon` or `warehouse`) and one supplier. A freight forwarder is never a destination,
+only a stop on the way: `via` is `{forwarderId, addressId}`, one of the buyer's forwarder addresses. On a PO to Amazon
+each line has `amazonNetwork`, `fba` (default) or `awd_us`, defaulted from the product's `amazonNetwork` setting. A
+submission splits into one shipment per network; see [Amazon inbound shipments](amazon-inbound.md).
+
+PO data may include `adjustments: [{description, amount}]`, signed integer minor-unit amounts included in totals and the
+PO PDF. A line's `skuLabel` overrides whether each unit gets its SKU label; left out, the product's label setting
+decides.
+
+## Routes
+
+Page and price checks follow [permissions.md](permissions.md) and return 403 when access is missing.
+
+### Public and session
+
+- `GET /api/health`: `{status, service, commit}` for deploy checks.
+- `GET /api/maintenance`: `{active}`, polled by the maintenance page.
+- `GET /api/workspace`: the browser's current workspace ID, which another tab may have switched.
+- `GET /api/search`: the app header's search index for the workspace.
+- `POST /api/contact`: the contact page's message; anyone, five per ten minutes per address (429 after).
+- `POST /api/mailing-list`: waitlist signup from the marketing page; sends a welcome email in the page's language.
+- `POST /api/mailing-list/unsubscribe`: signed unsubscribe from the page's form or a mail app's List-Unsubscribe post.
+- `GET /login/:provider`, `GET /callback`, `POST /logout`: social sign-in, the WorkOS return, and sign-out
+  ([auth.md](auth.md)).
+
+### Connections
+
+- `GET /api/connections/shopify?shop=store.myshopify.com`: buyer admin authorization redirect; the same path receives
+  the HMAC-verified OAuth callback.
+- `GET /api/connections/amazon`: buyer admin OAuth redirect and callback. Single-use state is tied to user, organization
+  and provider. A new connection starts its first order and stock sync at once.
+
+### Purchase orders
+
+- `GET /api/catalog?q=` or `?ids=`: buyer, Orders: Edit. Shopify variant search or lookup with line defaults, supplier
+  SKU and ASIN, plus Amazon `amazonAsin`/`fnsku` and `amazonError` (see [Catalog identity](#catalog-identity)).
+- `POST /api/supplier-catalog/match` `{supplierId, currency, supplierSkus}`: buyer, Orders: Edit. Each SKU's catalog
+  match at this buyer's catalog prices, and `available`: the pieces the supplier can still sell, or null when the
+  product has no stock limit.
+- `GET /api/orders/summary`: open PO coverage ([below](#open-purchase-order-coverage)).
+- `GET /api/orders/:id/workflow`: the order handoff view ([below](#order-workflow)).
+- `GET /api/orders/:id/po`: Orders and prices. The PO PDF, to share with a supplier not on Copacker.
+- `GET /api/orders/:id/labels`: the PO's product labels in line order, then its suffocation warning sheet; 404 when it
+  has neither.
+- `GET /api/orders/:id/labels/:itemId`: one line's product label; 404 when it needs none or can't be made yet.
+- `GET /api/orders/:id/labels/warning`: the PO's suffocation warning sheet, when a line needs it.
+- `POST /api/orders/:id/proposal` `{revision, proposal}`: supplier, Orders: Edit. Proposes changes to a sent PO:
+  quantities, prices, added and removed products, payment terms and ready date. One can be pending at a time; packing
+  waits while it is.
+- `POST /api/proposals/:id` `{action: approve | decline (reason) | withdraw}`: Orders: Edit. The buyer approves or
+  declines; the supplier withdraws.
+- `POST /api/documents`, `GET /api/documents/:id`, `GET /api/shipments/:id/packet`: see [Documents](#documents).
+- `/api/imports/*`: see [AI document imports](#ai-document-imports).
+
+### Products and stock (buyer)
+
+- `GET /api/inventory`, `POST /api/inventory/refresh`: store stock snapshots ([below](#shopify-fba-and-awd-stock)).
+- `GET /api/inventory/products`: Products page or Orders: Edit. Inventory across counted Shopify locations, FBA and AWD,
+  grouped by product and paged (`q`, `page`, `pageSize`, `barcode=missing`, `country=missing`).
+- `GET, PATCH /api/inventory/locations`: Shopify location settings ([below](#inventory-location-settings)).
+- `PATCH /api/inventory/product-defaults`: Products: Edit. A product's description, preparation, case packs, case
+  quantity, minimum order, supplier, label type, suffocation warning and Amazon network, with `expectedRevision`;
+  optional fields left out keep their saved values.
+- `PATCH /api/inventory/variant-fields`: Products: Edit ([below](#variation-and-product-details)).
+- `/api/inventory/product-labels` (GET, PATCH), `/api/inventory/labels` (POST) and `/api/inventory/barcodes` (GET,
+  POST, DELETE): product labels ([below](#product-labels)).
+- `GET /api/products/without-supplier`: Products. Products with no known supplier, for the Products page warning.
+- `POST /api/inventory/demand`: Sales. Sales demand for a date range ([Sales demand](sales-demand.md)); 409 when a
+  source can't be read, 503 when the refresh fails.
+- `GET /api/sales`: Sales. Each connected source's order sync and how much history is stored.
+- `GET /api/sales/orders?source=&page=&q=`: Sales. Stored sales orders, newest first.
+- `POST /api/sales/sync` `{source: shopify | amazon}`: Sales. Queues an order sync; 202.
+- `GET /api/restock/channels`: Restock. Amazon and each counted Shopify location.
+- `POST /api/restock/plan`: Restock. Restock suggestions for a channel from stored orders; without prices, lines omit
+  costs, prices and lost sales.
+- `GET /api/restock/suppliers`: the buyer's suppliers and lead times, for Restock's filter.
+- `POST /api/restock/assign-supplier` `{productIds, supplierId}`: Products: Edit. Sets several products' supplier.
+
+### Supplier catalog (supplier)
+
+- `POST /api/supplier-catalog/products`: Products: Edit and prices. Creates or saves a product and its variants.
+- `POST /api/supplier-catalog/status` `{ids, active}`: Products: Edit. Archives or restores products; archived products
+  can't be ordered.
+- `POST /api/supplier-catalog/stock` `{counts: [{id, onHand}]}`: Inventory: Edit. Replaces tracked products' on hand
+  counts, all or none; returns `{saved}`, 404 when a product isn't the supplier's or isn't tracked.
+- `POST /api/supplier-catalog/tracking` `{id, trackInventory?, continueSelling?}`: Inventory: Edit. Turns stock counting
+  on or off, or lets POs order past what's on hand.
+- `GET /api/supplier-catalog/template?format=csv`: the blank product template, an Excel workbook by default.
+- `GET /api/supplier-catalog/export?format=csv`: Products and prices. Every product in the template, to edit and import.
+- `POST /api/supplier-catalog/import`: Products: Edit and prices. Multipart `file` (CSV or XLSX) with `mode=preview`,
+  then `mode=commit` with the preview's `fileHash` and `revisionHash`, which guard against changes made in between. Each
+  file is imported once.
+- `POST /api/product-images`: Products: Edit. Stores an uploaded product photo; `GET /api/product-images?key=` returns
+  it to the supplier and the buyers it supplies.
+- `POST /api/catalogs`: Catalogs: Edit. Creates or saves a catalog; `DELETE /api/catalogs/:id` deletes one.
+- `GET /api/catalogs/:id/export?format=pdf`: Catalogs. The catalog's price list, an Excel workbook by default.
+- `POST /api/customers/:id/catalog` `{catalogId | null}`: Customers: Edit. Gives a customer a catalog, or removes it so
+  the customer sees every active product at its own price.
 
 ## Documents
 
 `POST /api/documents` is multipart: orderId, kind, file, and:
 
-- invoice: shipmentId; official commercial invoice PDF, mandatory before packing submission.
-- product_label: itemId; exactly one PDF page per variation, uploaded by buyer. Multiple pages are rejected. Replacing a label used by a released shipment requires a correction first.
-- shipping_label: shipmentId and `assignments`, JSON array of `{ cartonId, page }`. Page is 1-based in uploaded PDF. Each page can map to one supplier carton. The server splits pages, preserves their dimensions, and stores each assignment. Multiple files can be uploaded to cover all cartons.
+- invoice: shipmentId; the commercial invoice PDF, required before packing submission. Only while the shipment is in
+  packing or correction; a new invoice outdates the previous one.
+- product_label: itemId; buyer, Orders: Edit; one PDF page stored with the PO line. Refused once a released shipment
+  carries that line.
+- shipping_label: buyer; shipmentId and `assignments`, a JSON array of `{ cartonId, page }`, while the shipment waits
+  for labels. Page is 1-based in the uploaded PDF and each page maps to one carton. The server splits pages, preserves
+  their dimensions and stores each assignment. Several files can cover all cartons.
 
-PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never supplied by the user. `GET /api/documents/:id` authorizes order access and returns a private attachment. Outdated documents cannot be downloaded. Suppliers cannot download carton/carrier labels before buyer release.
+PDFs are limited to 32 MB and 1,000 pages and may not carry active content. Paths and bucket keys are never supplied by
+the user. `GET /api/documents/:id` authorizes access to the order and returns a private attachment. Outdated documents
+can't be downloaded. Suppliers can't download carton or shipping labels before release. The PO and commercial invoice
+need prices. A forwarder reads only the invoice, packing list, carton labels and shipping labels.
 
-`GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, one sheet of suffocation warning labels when a shipped line needs them, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and the Amazon label number (an AWD SSCC or an FBA box ID), with the destination warehouse codes as its ship-to. It does not show PDF filenames/page numbers as carton identity.
+Sending a PO stores its PDF with the PO; a storage failure is logged as `po_document_failed` and doesn't undo sending,
+since the PDF is made again when it's emailed or downloaded.
 
-A shipment to any other destination, such as the buyer's own location, is released as soon as its packing is submitted (or its invoice changes approved), and has no carton or shipping labels. Its packet is the packing list and checklist, made from its packing at download with the PO's delivery address as the ship-to, then the product labels and suffocation warning labels for the lines it carries. The PO and commercial invoice stay separate documents. For any destination, a packet with a shipped line whose product label can't be made yet is incomplete: the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
+`GET /api/shipments/:id/packet` returns the released supplier packet as one PDF: packing list, checklist, the product
+labels and suffocation warning sheet for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels
+and the buyer's shipping labels. Original page dimensions are preserved; print at actual size. The packing list shows
+supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg and the Amazon label number (an AWD SSCC
+or an FBA box ID), with the destination warehouse codes as its ship-to.
 
-## Shipment state and UI actions
+A shipment to any other destination is released as soon as its packing is submitted (or its invoice changes approved)
+and has no carton or shipping labels. Its packing list and checklist are made from its packing at download, with the
+PO's delivery address as the ship-to. A packet with a shipped line whose product label can't be made yet is incomplete:
+the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
+
+Release requires current packing-list and checklist PDFs, a unique Amazon label and current carton PDF for every
+carton, a current shipping label assigned to every carton, and a product label for every shipped line. It rejects stale
+revisions and repeated release attempts.
+
+## Shipment states
 
 | State | Meaning | Next action |
 | --- | --- | --- |
-| packing | Supplier is entering invoice, contacts, ready date, cartons | Upload invoice; submit packing |
-| approval | Commercial changes await buyer decision | Buyer approves or requests correction |
-| queued / creating | Worker creates the AWD order or FBA inbound plan, confirms it and retrieves labels | Refresh status; no manual repeat create |
-| waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA), uploads carrier labels, releases packet |
-| ready | Label assignments complete and packet released; for a shipment not to Amazon, packing submitted | Supplier prints; mark collected after pickup |
-| collected | Collection reported by a participant | Read-only historical shipment |
-| correction | Existing documents outdated | Edit uncreated shipment, or cancel the Amazon shipment before replacement |
-| needs_attention | Provider request failed or write outcome uncertain | Show actionable error; buyer reconciliation |
-| cancelled | Amazon cancellation verified | Quantities available for a new shipment |
+| packing | Supplier is entering invoice, addresses, ready date and cartons | Upload invoice; submit packing |
+| approval | Commercial changes await the buyer | Buyer approves, or requests a correction |
+| queued / creating | Worker creates the AWD order or FBA inbound plan, confirms it and retrieves labels | Refresh status; never repeat the create by hand |
+| waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA), uploads shipping labels, releases the packet |
+| ready | Packet released; for a shipment not to Amazon, packing submitted | Supplier prints and ships (`shipment.ship`) |
+| shipped | The supplier shipped the goods, to the forwarder or straight to the destination | Forwarder ships on (`shipment.forward`), or buyer records receipt |
+| forwarded | The forwarder shipped them on, with freight, carrier and tracking | Buyer records receipt (`shipment.received`) |
+| received | Goods arrived where the PO sent them | None |
+| correction | Existing documents outdated | Edit and resubmit, or cancel the Amazon shipment before replacing it |
+| needs_attention | Provider request failed or its outcome is uncertain | Retry a known outcome; reconcile an uncertain one |
+| cancelled | Unpacked on close, or Amazon cancellation verified | Quantities available for a new shipment |
 
-See [Amazon inbound shipments](amazon-inbound.md) for how the worker creates AWD orders and FBA inbound plans.
+Packets are downloadable from `ready` on. Once shipped, a shipment's cartons and documents can't change.
 
-The ready date is the supplier's local calendar date, not a confirmed pickup appointment. Copacker does not book AGL. Avoid wording implying Amazon has agreed to the requested date.
+The ready date is the supplier's local calendar date, not a confirmed pickup appointment. Copacker doesn't book AGL.
+Avoid wording implying Amazon has agreed to the requested date.
 
-## Required UI coverage for the design workstream
+## Resumable packing
 
-- Workspace creation/switching, invitation landing (including new users), team administration.
-- Buyer connections/settings, suppliers, saved pickup/forwarder addresses.
-- PO create, draft review, submit, commercial revision history, failed notification/writeback status.
-- Supplier PO details, invoice upload, proposed changes, carton form with duplicate/remove and real carton IDs.
-- Buyer approval; waiting-for-labels booking handoff; page-to-carton carrier label assignment; release.
-- Document download, packet print/download, correction/reconciliation/cancellation verification/collection actions.
-- Empty, loading, validation, conflicting-revision, unconfigured-integration, and provider-failure states.
+Submitting a PO creates its first packing draft, so the supplier can enter packing at once. `shipment.create` resumes
+the editable draft; it creates another shipment only when there is none and unassigned PO quantity remains. Submitted
+shipments reserve quantities; saved drafts don't.
 
-Live WorkOS/merchant OAuth and actual Amazon shipment acceptance remain separate verification gates from local implementation.
-
-## Resumable packing and next steps
-
-Submitting a PO automatically creates its first packing draft. The supplier can enter packing immediately without a separate create step. `shipment.create` resumes the existing editable draft; it creates another shipment only when there is no editable draft and unassigned PO quantity remains. Submitted partial shipments reserve quantities; saved drafts do not.
-
-`shipment.save` replaces the complete draft snapshot, not a patch. It accepts incomplete addresses, missing measurements and blank form fields allowed by `packingDraftSchema`. Omit empty numeric fields or use zero while editing. Product IDs must still belong to the PO. Save on deliberate edits; the design workstream may debounce autosave. Use the returned shipment revision on the next save or submission. A conflicting revision requires reloading and reviewing changes, never silently overwriting another user's work. The current PO revision is required on every save. If another shipment's approved commercial changes update the PO, review the latest PO and save before submission.
+`shipment.save` replaces the complete draft snapshot, not a patch. It accepts incomplete addresses, missing measurements
+and blank fields allowed by `packingDraftSchema`. Omit empty numeric fields or use zero while editing. Product IDs must
+still belong to the PO. Use the returned shipment revision on the next save or submission. The current PO revision is
+required on every save; if another shipment's approved changes update the PO, review it and save before submitting.
 
 ```json
 {
@@ -119,161 +314,221 @@ Submitting a PO automatically creates its first packing draft. The supplier can 
 }
 ```
 
-Saving does not reserve quantities, queue a job, contact Amazon or send email. Invoice uploads return document IDs to include in the draft. Ordinary saves retain the uploaded invoice; corrections invalidate it. Avoid saving during an in-flight upload: if the shipment changes before upload completion, upload returns a conflict and must be retried.
+Saving doesn't reserve quantities, queue a job, contact Amazon or send email. Invoice uploads return document IDs to
+include in the draft. Ordinary saves keep the uploaded invoice; corrections invalidate it. If the shipment changes while
+an upload is in flight, the upload returns a conflict and must be retried.
 
-`shipment.check` returns `{ revision, orderRevision, canSubmit, requiresApproval, issues, items }`. Each issue includes a stable code and message, plus field, cartonId or itemId where applicable. Each item reports orderedPieces, reservedPieces and availablePieces, excluding the shipment being checked. Preflight is advisory: final submission repeats the same rules under the order lock. It never creates an Amazon shipment.
+`shipment.check` returns `{ revision, orderRevision, canSubmit, requiresApproval, issues, items }`. Each issue has a
+stable code and message, plus field, cartonId or itemId where applicable. Each item reports orderedPieces,
+reservedPieces and availablePieces, excluding the shipment being checked. Preflight is advisory: submission repeats the
+same rules under the order lock. It never creates an Amazon shipment.
 
-`GET /api/orders/:id/workflow` is an authenticated, uncached view for the order handoff. It includes PO revision/status/destination, supplier name, ordered/assigned/remaining pieces, shipments with saved drafts, and current document download links. Each item also includes `assignedByStatus` (piece quantities by shipment status, absent statuses mean no assignment) and `overAssignedPieces` (positive discrepancy when assignments exceed ordered pieces). Remaining pieces are nonnegative; use the discrepancy rather than interpreting zero remaining as proof of a valid allocation. Packing drafts and cancelled shipments do not reserve pieces. Submitted packing in correction or needs-attention states continues to reserve quantities. Collected quantities are supplier-reported pickup, not confirmed warehouse receipts or available stock. Each shipment includes:
+A buyer entering a supplier's invoice itself, for a supplier not on Copacker, has its changes applied at once rather
+than waiting for approval.
 
-- `next`: responsible owner (`buyer`, `supplier`, `system`, or null), step, message and applicable command.
+## Order workflow
+
+`GET /api/orders/:id/workflow` (Orders and prices, uncached) returns the PO's revision, status and destination, the
+supplier's name, each item's coverage, the shipments with their saved drafts, and current document download links.
+Each item has ordered, assigned and remaining pieces, `assignedByStatus` (pieces by shipment status; absent statuses
+mean none) and `overAssignedPieces` (positive when assignments exceed the order). Packing drafts and cancelled shipments
+reserve nothing; submitted packing in correction or needs-attention still reserves. Each shipment includes:
+
+- `next`: responsible owner (`buyer`, `supplier`, `forwarder`, `system`, or null), step, message and applicable command.
 - `editable`, `canSubmit`, `canRelease`, structured `issues`, and the saved provider `issue` when work needs attention.
-- Shipment and PO revisions, ready date, Amazon identifiers, and packetUrl after release while the packet is complete.
+- Shipment and PO revisions, ready date, Amazon identifiers, and `packetUrl` once released while the packet is complete.
 
-Use the server's next step and issues for progress presentation rather than duplicating shipment rules in the UI. `canRelease` means documents are complete; the buyer must still enter a booking reference. Document metadata never includes storage keys. Supplier carton/carrier download links remain unavailable until release. UI integration and browser acceptance are pending with the design workstream.
+Use the server's next step and issues for progress rather than duplicating shipment rules in the UI. `canRelease` means
+documents are complete; the buyer still enters a booking reference. Document metadata never includes storage keys.
 
 ## Open purchase-order coverage
 
-`GET /api/orders/summary` returns `{ orders, nextCursor }` for the active buyer workspace. It reads submitted POs only; drafts and closed POs are excluded. Supplier workspaces receive 403. Responses use `Cache-Control: private, no-store`; this endpoint never calls Shopify/Amazon or queues work.
-
-Optional query parameters:
+`GET /api/orders/summary` returns `{ orders, nextCursor }` for the active buyer workspace (Orders page). It reads sent
+POs only; drafts and closed POs are excluded. It never calls Shopify or Amazon or queues work.
 
 | Parameter | Meaning |
 | --- | --- |
-| `supplierId` | Exact buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
+| `supplierId` | A buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
 | `destination` | `amazon` or `warehouse`. |
-| `limit` | Orders per page, integer 1–50, default 20. |
-| `cursor` | Last order UUID returned as `nextCursor`; omit on the first page. |
+| `limit` | Orders per page, 1–50, default 20. |
+| `cursor` | The previous page's `nextCursor`; omit on the first page. |
 
-Unknown parameters, duplicate parameters and invalid values return 400. Orders use immutable ID ascending order, not creation time. Keep filters unchanged between pages; restart without a cursor after changing filters. Each page reads orders and assignments in one repeatable-read transaction. Pages are not a frozen export: later submissions or closures can change subsequent results. A cursor remains usable if its order is closed or removed. `nextCursor: null` means no further matches were present when that page was read.
+Unknown, duplicate or invalid parameters return 400. Orders come in ID order, not creation time. Keep filters unchanged
+between pages. Each page is read in one repeatable-read transaction, but pages aren't a frozen export. A cursor stays
+usable if its order is closed. `nextCursor: null` means no further matches when that page was read.
 
-Each order includes `id`, `reference`, `revision`, `destination`, nullable `forwarderId` (the forwarder of its stop on the way), supplier `id`/`name`, pinned `shopifyDomain`/`amazonSellerId`, and `items`. Each item includes the workflow coverage fields plus `variantId`, `supplierSku`, `asin`, `fnsku`, and `piecesPerSet`. Product identity is store plus variant, never SKU alone. No cross-order totals, price conversion, warehouse availability or receipt inference is performed.
+Each order includes `id`, `reference`, `revision`, `destination`, nullable `forwarderId` (its stop on the way), supplier
+`id`/`name`, pinned `shopifyDomain`/`amazonSellerId`, and `items` with the workflow coverage fields plus `variantId`,
+`supplierSku`, `asin`, `fnsku` and `piecesPerSet`. Product identity is store plus variant, never SKU alone. No
+cross-order totals, price conversion or stock inference is performed.
 
-For example, a 160-piece PO with 40 pieces reported collected and another 60 in an uncertain Amazon create has this quantity fragment:
+A 160-piece PO with 40 pieces received and 60 in an uncertain Amazon create:
 
 ```json
 {
   "orderedPieces": 160,
   "assignedPieces": 100,
-  "assignedByStatus": { "collected": 40, "needs_attention": 60 },
+  "assignedByStatus": { "received": 40, "needs_attention": 60 },
   "remainingPieces": 60,
   "overAssignedPieces": 0,
   "piecesPerSet": 2
 }
 ```
 
-The 60 uncertain pieces remain reserved. The 40 collected pieces are not confirmed received. A saved, unsubmitted packing draft reserves nothing. If assignments total 180, report `remainingPieces: 0` and `overAssignedPieces: 20`; do not interpret the zero as a reconciled PO. UI integration and connected warehouse-stock reporting remain separate tasks.
+The 60 uncertain pieces stay reserved. If assignments totalled 180, it would report `remainingPieces: 0` and
+`overAssignedPieces: 20`; don't read the zero as a reconciled PO.
 
-## Catalog identity and worker recovery
+## Shopify, FBA and AWD stock
 
-### Current Shopify, FBA and AWD stock
+- `POST /api/inventory/refresh` (buyer, Products) accepts `{ "source": "shopify" }`, `{ "source": "awd" }` or
+  `{ "source": "fba", "marketplaceId": "ATVPDKIKX0DER" }`. The account comes from the workspace's connection. Returns
+  202 `{id, revision, status}`; a queued or running refresh is reused. No connection returns 409, other inputs 400. It
+  queues a read of the whole Shopify store, US FBA or US AWD, never a write.
+- Refreshes also start when a store connects, from Shopify inventory webhooks and Amazon FBA notifications, and in a
+  daily reconciliation at 07:00 UTC for every stock scope already in use.
+- `GET /api/inventory?source=...&limit=100&cursor=...` (buyer, Products) returns source, scope and account identity,
+  `snapshotId`, `startedAt`/`observedAt`, the latest `refresh` state (`status`, `revision`, `requestedAt`,
+  `errorCode`), `locations`, `rows` and `nextCursor`. Limit is 1–200. FBA requires `marketplaceId=ATVPDKIKX0DER`;
+  Shopify and AWD reject it. Unknown or duplicate parameters and malformed cursors return 400. A replaced snapshot or a
+  changed location filter under a cursor returns 409; restart pagination. Without prices, rows omit cost and price.
+- Before the first successful collection, snapshot ID and timestamps are null and rows are empty: unknown stock, not
+  zero. A failed refresh keeps the last complete snapshot and reports `errorCode` `shopify_permissions`, `reconnect`,
+  `provider_unavailable` or `refresh_failed`; no connection reports `not_connected`. Switching accounts hides the old
+  account's data.
+- AWD rows keep `sellerSku`, `unit: "amazon_sellable_unit"`, nullable `inbound`, `onHand`, `availableDistributable`,
+  `reservedDistributable` and `replenishment`. FBA rows keep each seller SKU/FNSKU/condition identity with Amazon's
+  inventory detail fields, in the same unit. Don't add these overlapping states or equate sellable units with PO pieces.
+- Shopify rows use scope `store`: variant and inventory item, nullable buyer SKU, tracked status,
+  `shopify_inventory_unit`, and location levels with available, on hand, incoming and committed quantities. Signed
+  values stay signed and unknown quantities stay null. Variants without levels are kept with empty levels. Shopify,
+  FBA and AWD quantities are never combined or converted to PO pieces by these routes. Missing Shopify permissions are
+  reported, never requested automatically.
+- Shopify reads accept `locationId` (a Shopify Location GID), applied to the whole snapshot before paging; only matching
+  levels are returned. `locations` lists the snapshot's observed locations. An unobserved location, or a location on an
+  Amazon source, returns 400.
+- Amazon reads are paced within a five-minute collection deadline and retry 429 and 5xx responses at most twice.
 
-- `POST /api/inventory/refresh` accepts `{ "source": "awd" }` or `{ "source": "shopify" }`, or `{ "source": "fba", "marketplaceId": "ATVPDKIKX0DER" }` in a buyer workspace. The account comes from the workspace connection for the selected provider. Returns 202 `{id, revision, status}`; repeated calls reuse an already queued/running revision. Missing connection returns 409, unsupported inputs return 400, supplier workspace returns 403. It queues a read-only US AWD, US FBA or complete Shopify store collection, never a shipment or inventory write.
-- `GET /api/inventory?source=awd&limit=100&cursor=...` (or `source=shopify`) returns source/scope/account identity, `snapshotId`, collection `startedAt`/`observedAt`, latest `refresh` state and bounded `rows` plus `nextCursor`. Limit is 1–200. Omit cursor on the first page. Unknown filters, duplicates and malformed cursors return 400. A replaced or inaccessible cursor snapshot returns 409; restart pagination. Responses are private and uncached.
-- Before the first successful collection, snapshot ID/timestamps are null and rows are empty: that is unknown stock, not a successful zero inventory result. Failed refreshes report `refresh_failed` while preserving the last complete snapshot. A disconnected account reports `not_connected`; switching accounts hides old account data.
-- Each row preserves `sellerSku`, `unit: "amazon_sellable_unit"`, nullable `inbound`, `onHand`, `availableDistributable`, `reservedDistributable`, and `replenishment`. Do not add these overlapping states or equate sellable units with individual PO pieces. There are no per-shipment receipts, Shopify mappings or calculated available-stock totals in this response.
-- Current implementation supports US AWD only. Shopify/FBA readers and refresh selection and hosted live acceptance remain tracked tasks. AWD reads are paced per collection and retry selected temporary errors at most twice within the collection deadline. No scheduled sync is enabled.
+## Inventory location settings
 
-### AI document imports (backend available; UI integration pending)
+`GET /api/inventory/locations` returns the connected Shopify domain, current snapshot ID and time, observed locations
+with their Shopify kind, classification, automatic classification, whether one is saved, and revision, plus saved but
+unobserved location IDs. No connection or snapshot means no observed locations, not zero inventory. Names never decide
+classification.
 
-Buyer-only endpoints bind every record and merchant lookup to the active organization:
+`PATCH /api/inventory/locations` (buyer admin) accepts only `locationId` (a Shopify Location GID), `classification`,
+`snapshotId` (the current one) and `expectedRevision`. Classifications are `merchant`, `amazon_mirror`, `excluded` and
+`unresolved`. Revision starts at 0 for an unsaved location; saves return the next one. A stale revision or snapshot, or
+no connection, returns 409; invalid input or an unobserved location returns 400. These settings never write to Shopify
+or Amazon. `amazon_mirror` excludes duplicate stock; it doesn't assert a verified FBA or AWD pool.
 
-- `POST /api/imports`: multipart `file` PDF; returns `202 {id,status:"queued"}`. Limit 10 MB / 50 pages. Source is private Railway storage; processing runs in the existing worker.
-- `GET /api/imports`: latest 50 import summaries for this buyer.
-- `GET /api/imports/{id}`: status, revision, proposal, error and model/prompt metadata. No private object keys or credentials.
-- `GET /api/imports/{id}/source`: authorized inline PDF, no-store.
-- `PATCH /api/imports/{id}`: `{revision,proposal}` saves corrections only in review state, rechecks candidate IDs against the pinned Shopify store, and returns the incremented revision. Stale revisions return 409.
-- `DELETE /api/imports/{id}`: cancels processing by advancing the revision; source data is retained. Cannot cancel saved imports.
-- `POST /api/imports/{id}`: explicitly retries a failed import with a fresh revision/job. Cannot rerun active, review, cancelled or saved imports.
+## Product labels
 
-Proposal schema: `src/server/import-proposal.ts`. It preserves source units/prices, product candidates, unresolved values and separate non-product charges. No automatic PO creation, submission or merchant writes occur. A review proposal becomes a saved draft only through the explicit save endpoint below. A production prompt label and OpenRouter configuration are required for live processing.
+A PO line's product label is worked out from its product whenever it's needed, so it follows changes to the product's
+barcode, label setting, title and FNSKU:
 
-`GET /api/catalog?q=...` retains the Shopify variant array with `amazonAsin` and `fnsku`. `amazonError` is null after a successful Amazon lookup, or an actionable message if Amazon could not be queried. An empty FNSKU after a successful query means the listing has no US FNSKU available. Surface provider errors instead of presenting them as a missing listing.
+1. The barcode the buyer uploaded for the variation: a one-page PDF (32 MB or less, no active content).
+2. Otherwise none, when the line's `skuLabel` is false or its product's `productLabel` is `none`, except on POs to
+   Amazon, which label every unit.
+3. Otherwise, for a product set to `uploaded` (such as uniforms whose labels show size measurements), nothing yet: the
+   line is flagged until a barcode is uploaded.
+4. Otherwise the standard label (`standard`, the default): a US Letter sheet of 30 labels (2 5/8 × 1 in) with a Code 128
+   barcode of the code, the code under it, the Shopify title with the variant's options in parentheses, and "Made in
+   {country}" from Shopify's country of origin (left out when none is recorded). The code is the line's FNSKU; on a PO
+   not to Amazon without one, the Shopify SKU. A line on a PO to Amazon gets its FNSKU when the PO is sent.
 
-PO creation re-fetches product names, buyer SKU, supplier SKU and inventory-item identity from Shopify, and ASIN/FNSKU from the connected Amazon seller's exact SKU listing. Client-supplied Amazon identities are not persisted. Disagreement with an existing Shopify ASIN stops creation for correction. Missing identities may be saved in a draft but cannot pass shipment packing validation. Listings are fetched in batches of 20 with bounded pagination; comma-containing SKUs use an exact item lookup.
+- `POST /api/inventory/barcodes` (buyer, Products: Edit, multipart) saves or replaces a barcode and returns `{name,
+  bytes, uploadedAt, replaced, target: {variantId, sku, product, variant}}`. It names the variation with `variantId` or,
+  for bulk uploads, by SKU: the `sku` field, or else the file name without `.pdf`, matched exactly ignoring case. A
+  multi-page or invalid PDF returns 400; an unknown variation or SKU 404; a SKU several variations share, or no Shopify
+  connection, 409. Replacing or removing a barcode deletes its stored file; a failed delete is logged as
+  `barcode_file_delete_failed`.
+- `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` (Products) downloads the variation's label: its
+  upload, or else the standard sheet. The FNSKU comes from the latest FBA stock sync or else Amazon's listing; without
+  either, the Shopify SKU is printed. `view=inline` shows it in the browser. 404 when the product needs an uploaded
+  label or the variation has no SKU; 409 when Amazon can't be reached. `DELETE` with the same query removes the upload.
+- `GET /api/inventory/products` adds `barcode`, `fnsku` and `countryOfOrigin` to each variant, plus `missingBarcodes`
+  (variations whose product needs an uploaded label and has none), `missingCountries` (standard-label variations
+  without a country) and `duplicateSkus` (SKUs more than one variation uses).
+- `GET /api/inventory/product-labels` lists every synced product as `{productId, title, variations, productLabel}`.
+  `PATCH` with `{productIds, productLabel}` sets `standard`, `uploaded` or `none` for up to 500 products and returns
+  `{updated}`.
+- `POST /api/inventory/labels` with `{productIds}` returns one PDF with a label sheet per variation. `X-Skipped-Labels`
+  counts variations without a label yet; none at all returns 404, more than 1,000 variations 400.
 
-`shipment.retry` takes `id` and `revision` and is buyer-only. It resumes an interrupted shipment with a known create outcome. An uncertain create must be reconciled first; requesting a correction is blocked until the original order is identified, preserving the reference needed for readback. Reconciliation and cancellation verification use the Amazon account pinned to the PO.
+A product's `suffocationWarning` setting (default false) starts each new PO line with the same value. A line's
+`suffocationWarning` asks the supplier to put a suffocation warning label on each polybag; the PO, its checklist and the
+PO page list it with the line's other requirements. The sheet (30 labels on the same stock: a warning triangle,
+"WARNING:" in bold and the standard polybag warning) comes with the PO's labels download and the supplier packet.
 
-Workers refresh leases while active. Attempt ownership is checked before external operations, and an atomic create checkpoint prevents concurrent Amazon creation. Manual retries start a fresh job identity while retaining the stable business deduplication key, so an expired worker cannot regain ownership when attempt counts restart. Reconciled orders are re-read and matched against reference, carton contents and origin before confirmation.
+## Variation and product details
 
-Amazon model reference: https://github.com/amzn/selling-partner-api-models/blob/main/models/listings-items-api-model/listingsItems_2021-08-01.json
+Copacker keeps each variation's supplier SKU, ASIN, Amazon stock target and store stock target, and each product's case
+quantity and supplier. The first Shopify stock sync for a store copies them once from the Shopify metafields
+`custom.supplier_sku`, `custom.asin`, `custom.amazon_fulfillment_stock_target`, `custom.fencing_club_stock_target`,
+`custom.case_quantity` and `custom.supplier`, keeping values Copacker already has; each Supplier name joins the buyer's
+suppliers. Copacker doesn't read or write those metafields after that.
 
-Release requires current packing-list/checklist PDFs, a unique SSCC and current Amazon carton PDF for every supplier carton, a current carrier page assigned to every carton, and a product label for every shipped item. It rejects stale revisions and repeated release attempts. Uploading a replacement draft invoice makes the previous invoice outdated.
+Stock syncs fill these into stored Shopify rows, and catalog reads (PO lines, imports, catalog search) add each
+variant's `supplierSku` and `asin` and its bundle components' supplier SKUs. `GET /api/inventory/products` returns
+`supplierSku`, `asin`, `amazonStockTarget` and `storeStockTarget` on each variant, and `caseQuantity` in each product's
+`defaults`.
 
-### Save a reviewed import
+`PATCH /api/inventory/variant-fields` (buyer, Products: Edit) accepts `{ "variantId": "gid://shopify/ProductVariant/1",
+"supplierSku": "AB-100", "asin": "B000000001", "amazonStockTarget": 0, "storeStockTarget": 12 }`; fields left out are
+kept. Text is trimmed, one line and up to 255 characters, and empty removes it; targets are whole units or null. The
+variation must be in the synced Shopify snapshot (404 otherwise). It refreshes the stored rows and returns all four
+values. Invalid input returns 400, no Shopify connection 409. Approving a supplier's invoice saves its supplier SKU
+changes the same way.
 
-`POST /api/imports/{id}/save` accepts `{revision, reviewed: true, supplierId, destination, deliveryId?, via?, reference, dueDate, notes?}` and returns `{id, redirect: "/orders/{id}"}`. Save proposal corrections with PATCH first and use its returned revision. All rows require resolved variants, positive whole-piece quantities, valid set conversion and prices representable in minor currency units. Known line and document totals must reconcile with products and signed adjustments.
+## AI document imports
 
-The server re-fetches canonical Shopify and Amazon identities and rejects changed merchant connections. The import and newly created draft PO are linked in one transaction. Repeated saves of the same completed import return the existing PO even when providers are unavailable. Saving sends no email and creates no Amazon shipment. Source SKU remains extraction evidence; it never replaces the canonical buyer or supplier SKU.
+Buyer routes (Orders: Edit) that bind every record and store lookup to the active workspace:
 
-PO data may include `adjustments: [{description, amount}]`, with signed integer minor-unit amounts. These are included in totals and the generated purchase-order PDF.
+- `POST /api/imports`: multipart `file` PDF, up to 10 MB and 50 pages; returns `202 {id, status: "queued"}` once the
+  source is stored in private object storage and the import and its job commit together. An upload failure creates no
+  retryable import. Needs a Shopify connection and the OpenRouter and Langfuse configuration.
+- `GET /api/imports`: the latest 50 imports.
+- `GET /api/imports/:id`: status, revision, proposal, error and model/prompt metadata. No object keys or credentials.
+- `GET /api/imports/:id/source`: the source PDF inline, no-store.
+- `GET /api/imports/:id/catalog?q=&cursor=`: searches one 100-variant page of the import's pinned store by buyer SKU,
+  supplier SKU and description; returns `results`, `nextCursor` and `complete`. Exact SKU matches rank first within a
+  page. No Amazon calls or writes.
+- `PATCH /api/imports/:id` `{revision, proposal}`: saves corrections in review, rechecks candidates against the pinned
+  store and returns the next revision. 400 for invalid input, 409 when not in review or stale, 503 when catalog
+  verification is unavailable (the saved proposal is unchanged; keep local corrections and retry).
+- `DELETE /api/imports/:id`: cancels by advancing the revision; the source is kept. Saved imports can't be cancelled.
+- `POST /api/imports/:id`: retries a failed import with a fresh revision and job; 409 otherwise.
+- `POST /api/imports/:id/save` `{revision, reviewed: true, supplierId, destination, deliveryId?, via?, reference,
+  dueDate, notes?}`: returns `{id, redirect: "/orders/:id"}`. Every row needs a resolved variant, whole-piece
+  quantities, a valid set conversion and prices representable in minor units; known totals must reconcile. The server
+  re-fetches Shopify and Amazon identities and rejects changed store connections. The import and the new draft PO are
+  linked in one transaction; saving again returns the same PO. Saving sends no email and creates no Amazon shipment.
 
-Import uploads return 202 only after the source PDF is stored and the import/job records commit together. An upload failure returns an error without creating a retryable import. Retry applies to failed processing of an existing stored source; upload the document again after a source-upload failure.
+The proposal schema is `src/server/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
+values and non-product charges. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
+SKU. Processing runs in the worker with the prompt's `production` label.
 
-Review PATCH returns 400 for malformed JSON or invalid fields, 409 for stale revisions, and 503 when catalog verification is unavailable. A 503 leaves the saved proposal and revision unchanged; retain local corrections and retry.
+Each import attempt sends Langfuse a root observation and bounded generation and catalog-tool child observations.
+Children carry only timing, fixed operation names and status; document content, model responses, tool arguments and
+results, and error text are never sent. The root carries prompt version, model, token and call counts and reported cost
+as metadata. Export failure doesn't fail or retry an import.
 
-Import attempts emit sanitized operational spans to Langfuse. Export failure does not fail or retry a PO import. Successful attempts include resolved prompt version, model and token/tool counts; failed attempts currently include outcome and duration but may lack partial usage. Original PDFs and catalog results remain outside trace payloads.
+## Catalog identity
 
-GET /api/imports/{id}/catalog?q=...&cursor=... searches one 100-variant Shopify page for buyer SKU, supplier SKU and description. Uses the import's pinned store and authenticated tenant. Returns results, nextCursor and complete. Follow nextCursor to search remaining pages; exact SKU matches rank first within each page. No Amazon calls or writes occur.
+`GET /api/catalog` adds `amazonAsin` and `fnsku` from the connected seller's listings. `amazonError` is null after a
+successful lookup, or a message when Amazon couldn't be queried; surface it rather than presenting a missing listing.
+Without an Amazon connection both are empty and identities are looked up when the PO is sent.
 
-Shopify stock uses scope `store`. Each row identifies a variant and inventory item, nullable buyer SKU, tracked status, `shopify_inventory_unit`, and location levels with available/on-hand/incoming/committed quantities. Signed values remain signed and unknown quantities remain null. Variants without levels are retained with an empty levels array. These units are not automatically converted to PO pieces or combined with Amazon stock. Authorization failures preserve the previous snapshot; no OAuth permissions are automatically added. Live merchant grant and hosted acceptance remain pending.
+PO creation re-reads product names, buyer SKU, supplier SKU and inventory item from Shopify, and ASIN and FNSKU from the
+connected seller's exact SKU listing. Client-supplied Amazon identities are never kept. An ASIN that disagrees with the
+one Copacker holds stops creation. Sending a PO to Amazon fills missing ASINs and FNSKUs and refuses SKUs Amazon doesn't
+list. Listings are fetched in batches of 20; SKUs containing commas use an exact item lookup.
 
-FBA reads use `GET /api/inventory?source=fba&marketplaceId=ATVPDKIKX0DER`. The marketplace is required for FBA and rejected for Shopify/AWD. Only the US marketplace is currently supported; unsupported values fail before queueing work. FBA uses the marketplace ID as its snapshot scope and retains each seller SKU/FNSKU/condition identity with its individual inventory detail fields and Amazon sellable-unit quantity basis. No FBA quantity is added to AWD or mirrored Shopify locations by these routes. Hosted deployment and live acceptance remain separate gates.
+## Worker recovery
 
-Shopify inventory reads accept optional `locationId` (a Shopify Location GID). Filtering is applied to the entire tenant snapshot before row pagination, and only matching levels are returned. `locations` lists observed location IDs/names from the complete snapshot. Unknown observed locations and location filters on Amazon sources return 400. Cursors bind to both snapshot ID and selected location; reusing a cursor after changing the filter returns 409. A location filter changes the view only; it does not classify merchant stock or Amazon mirrors.
-
-
-### Product labels
-
-Each PO line needs a product label for the supplier to print. A variation's label is, in order:
-
-1. The barcode the buyer uploaded for it: a one-page PDF (32 MB or less, no active content), on the Products page or in bulk.
-2. Otherwise, when its product's `productLabel` setting is `standard` (the default), the standard label: a US Letter sheet of 30 labels (2 5/8 × 1 in), laid out like Fencing Club's glove labels: a Code 128 barcode of the code with the code centered under it, then, left-aligned, the Shopify title with the variant's options in parentheses ("Pro-Grip Fencing Glove (10, Left)") and "Made in {country}" from the country of origin Shopify records on the inventory item (left out when none is recorded). No condition is printed. The code is Amazon's FNSKU, or the Shopify SKU without Amazon or for a product Amazon doesn't list. Lines on POs to Amazon only get the FNSKU, filled in when the PO is sent.
-3. A product set to `uploaded`, such as uniforms and chest protectors whose labels show size measurements, gets no standard label; its variations are flagged until a label is uploaded.
-
-New POs get their labels when the PO is created or imported, and again after it is sent (when missing FNSKUs have been filled in) for lines still without one. A label uploaded on the PO itself is never replaced. Replacing or removing a barcode doesn't change POs that already have its label.
-
-- Buyer-only `POST /api/inventory/barcodes` (same origin, multipart) saves or replaces the barcode and returns `{name, bytes, uploadedAt, replaced, target: {variantId, sku, product, variant}}`. It names the variation with `variantId` or, for bulk uploads, by SKU: the `sku` field, or else the file name without `.pdf`, matched exactly ignoring case. A multi-page or invalid PDF returns 400; an unknown variation or a SKU no variation has returns 404; a SKU several variations share, or no Shopify connection, returns 409.
-- Replacing or removing a barcode deletes its stored file. POs keep their own copy. A failed delete is logged as `barcode_file_delete_failed` and leaves the file behind.
-- `GET /api/inventory/barcodes?variantId=gid://shopify/ProductVariant/1` downloads the variation's label: its upload, or else the standard sheet. Its FNSKU comes from the latest FBA stock sync or else Amazon's listing for the SKU; without either, the Shopify SKU is printed. `view=inline` shows it in the browser instead. It returns 404 when the product needs an uploaded label or the variation has no SKU, and 409 when Amazon can't be reached. `DELETE` with the same query (same origin) removes the upload. Supplier workspaces get 403.
-- `GET /api/inventory/products` adds `barcode` (or null) and `fnsku` (or null) to each variant; `missingBarcodes`, the number of variations whose product needs an uploaded label and has none; and `duplicateSkus`, the SKUs more than one variation uses. `barcode=missing` lists only products with such a variation.
-- `GET /api/inventory/product-labels` lists every synced product as `{productId, title, variations, productLabel}`. `PATCH` (same origin) with `{productIds, productLabel}` sets the label type for up to 500 products at once and returns `{updated}`.
-- `POST /api/inventory/labels` (same origin) with `{productIds}` returns one PDF with a label sheet for each of their variations, made the same way as a single download with batched Amazon and Shopify lookups. `X-Skipped-Labels` counts variations left out because they have no label yet; none at all returns 404, and more than 1,000 variations returns 400.
-- `GET /api/inventory/products` also adds `countryOfOrigin` to each variant (null when Shopify has none; left out until a Shopify stock sync collects it) and `missingCountries`, the number of standard-label variations without one. `country=missing` lists only products with such a variation.
-- Action `order.labels` (buyer only, open POs) adds missing product labels and makes again the ones Copacker added, from current barcodes and Shopify and Amazon details. Labels uploaded on the PO and lines in released shipments are kept; replaced labels stay as outdated versions. It returns `{updated}`.
-- `GET /api/orders/{id}/labels` returns the PO's current product labels as one PDF in line order, then one sheet of suffocation warning labels when a line needs them, for anyone who can see the PO; 404 when it has neither.
-
-### Amazon networks
-
-`destination` is `amazon` or `warehouse`. A freight forwarder is never a destination, only a stop on the way to
-either: `via` is `{forwarderId, addressId}`, one of the buyer's forwarder addresses. On a PO to Amazon each line has `amazonNetwork`, `fba` (default) or
-`awd_us`, defaulted from the product's `amazonNetwork` setting (`product_defaults.amazonNetwork`; `PATCH
-/api/inventory/product-defaults` keeps it when left out). Shipments carry `amazonNetwork` once queued; see
-[amazon-inbound.md](amazon-inbound.md) for packing rules and how a submission splits into one shipment per network.
-Migration `0028_amazon_networks` converted earlier POs: `amazon` and `awd_us` became `amazon` with AWD US lines, `fba`
-became `amazon` with FBA lines. Migration `0040_forwarder_stops` turned POs to a forwarder into POs to Amazon with
-that forwarder address as their stop.
-
-### Suffocation warning labels
-
-A product's `suffocationWarning` setting (`product_defaults.suffocationWarning`, default `false`, in the Products Edit panel and `PATCH /api/inventory/product-defaults`, where leaving it out keeps the saved value) starts each new PO line for the product with the same value. A PO line's `suffocationWarning`, set with its preparation, asks the supplier to put a suffocation warning label on each polybag. The PO, its checklist and the PO page list it with the line's other requirements. The labels are a US Letter sheet on the product label stock (30 labels, 2 5/8 × 1 in): a warning triangle, then "WARNING:" in bold and the standard polybag warning. The sheet comes with the PO's labels download and the supplier packet.
-
-### PO documents
-
-Sending a PO stores its PDF with the PO, whether or not the supplier is on Copacker; a storage failure is logged as `po_document_failed` and doesn't undo sending, since the PDF is made again when it's emailed or downloaded. The PO page lists every current document the workspace can download, the PO's first and then each shipment's: invoice, packing list, checklist, carton labels and shipping labels. Suppliers see carton and shipping labels once the packet is released.
-- Action `order.delete` (buyer only) deletes a draft PO with its documents, history and landed costs, and returns `{redirect: "/orders"}`. A PO import saved as that draft goes back to review. Sent POs are closed instead.
-
-### Variation and product details
-
-Copacker keeps each variation's supplier SKU, ASIN, Amazon stock target and warehouse (Fencing Club) stock target in `variant_fields`, and each product's case quantity and supplier in `product_defaults`. They were Shopify metafields (`custom.supplier_sku`, `custom.asin`, `custom.amazon_fulfillment_stock_target`, `custom.fencing_club_stock_target`, and the product's `custom.case_quantity` and `custom.supplier`). The first Shopify stock sync after the cutover copies them once per store (`shopify_field_imports` records it), keeping any value Copacker already has; each Supplier name joins the buyer's suppliers, as before, and becomes the product's supplier. Copacker no longer reads or writes those metafields, so they can be deleted in Shopify.
-
-Stock syncs fill these into the stored Shopify stock rows (`supplierSku`, `amazonStockTarget`, `storeStockTarget`, `caseQuantity`, and `supplierName`, the supplier's Shopify name or else its name), and catalog reads (PO lines, imports, catalog search) add each variant's `supplierSku` and `asin` and its bundle components' supplier SKUs. `GET /api/inventory/products` returns `supplierSku`, `asin`, `amazonStockTarget` and `storeStockTarget` on each variant, and `caseQuantity` in each product's `defaults`.
-
-Buyer-only `PATCH /api/inventory/variant-fields` (same origin) accepts `{ "variantId": "gid://shopify/ProductVariant/1", "supplierSku": "AB-100", "asin": "B000000001", "amazonStockTarget": 0, "storeStockTarget": 12 }`; fields left out are kept. Text is trimmed, one line and up to 255 characters, and empty removes it; targets are whole numbers of units or null. The variation must be in the synced Shopify stock snapshot (404 otherwise). It saves to Copacker, refreshes the stored stock rows, and returns all four values. Invalid input returns 400, supplier workspaces 403, and no Shopify connection 409. Supplier SKUs a supplier changes on a PO save the same way when the buyer approves the PO.
-
-### Inventory location settings
-
-Buyer-only `GET /api/inventory/locations` returns the connected Shopify domain, current snapshot ID/time, observed locations with classification and revision, and previously configured but unobserved location IDs. No connection/snapshot means no observed locations, not zero inventory. Names never determine classification.
-
-`PATCH /api/inventory/locations` accepts only `{ "locationId": "gid://shopify/Location/123", "classification": "merchant", "snapshotId": "<current UUID>", "expectedRevision": 0 }`. Classifications are `merchant`, `amazon_mirror`, `excluded`, `unresolved`. Revision starts at 0 for an unset location; saves return the next revision. The account/workspace come from the session. Stale revision/snapshot or missing connection returns 409; invalid input/unobserved location returns 400; supplier access returns 403. Both responses are private/no-store. Database/provider internals are not returned on unexpected failures. These settings do not write to Shopify or Amazon. Amazon mirror classification excludes duplicate stock; it does not assert a verified FBA/AWD pool association.
-
-Deployment prerequisite: apply the additive inventory_location_mappings table before enabling these endpoints or their UI on the shared database. Local database tests pass; shared database DDL and live acceptance remain pending.
+Workers refresh leases while active. Attempt ownership is checked before external operations, and an atomic create
+checkpoint prevents concurrent Amazon creation. Never blindly retry a create: an uncertain outcome must be reconciled
+with `shipment.reconcile`, and a correction is refused until the original order is identified. Manual retries start a
+fresh job identity with the same business key, so an expired worker can't regain ownership. Reconciled orders are
+re-read and matched against reference, carton contents and origin before confirmation. Reconciliation and cancellation
+use the Amazon account pinned to the PO.

@@ -7,9 +7,9 @@ frame by frame to stills and MP4. It's excluded from the Docker and Railway buil
   takes, each on its cue, into one track there (Git ignores them). Run it before rendering, and again after changing
   the timeline or recording takes.
 - `pnpm --filter video dev` opens Remotion Studio at http://localhost:3100.
-- `pnpm --filter video exec remotion render Copacker out/copacker.mp4` renders the ad, and `Copacker-30`,
-  `Copacker-15` and `Copacker-6` render its cutdowns. Renders land in `apps/video/out/`, which Git ignores.
-- `pnpm --filter video subtitles` writes SRT subtitles for the ad and each cutdown to `out/`.
+- `pnpm --filter video exec remotion render Copacker out/copacker.mp4` renders the ad. Renders land in
+  `apps/video/out/`, which Git ignores.
+- `pnpm --filter video subtitles` writes the ad's SRT subtitles to `out/copacker.srt`.
 
 Remotion is free for individuals and companies of up to three employees. A larger company needs a
 [company license](https://www.remotion.pro/license).
@@ -68,11 +68,8 @@ effects and the scenes all read their timing from it. `src/ad.tsx` plays each se
 - The score (`scripts/score.ts`) and sound effects (`scripts/sfx.ts`) are synthesized with `scripts/audio/dsp.ts`, so
   they need no license. A licensed track can replace the score.
 
-## Cutdowns and delivery
+## Delivery
 
-- `cutdowns` in `src/timeline.ts` stitches the 30, 15 and 6 second versions from stretches of the full ad, cut on bar
-  lines so the score carries across the joins. A line is heard, and captioned, only if it fits whole inside a stretch.
-  `src/cutdown.tsx` plays them.
 - `node scripts/loudness.ts <file.wav>` measures a mix's integrated loudness (BS.1770, gated) and sample peak. Decode a
   render at 48 kHz first: `pnpm --filter video exec remotion ffmpeg -i out/copacker.mp4 -vn -ar 48000 out/copacker.wav`.
   Deliver about -14 LUFS for YouTube and social, and -24 LKFS for US broadcast (ATSC A/85).

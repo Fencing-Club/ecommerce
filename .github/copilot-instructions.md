@@ -19,9 +19,9 @@ verification suite. Do not run these checks after each small edit. Once the impl
 relevant focused checks, then run the required final verification. If a check exposes related defects, batch the repairs
 before rerunning that check.
 
-Run `pnpm verify` before declaring work done — it must be clean. It runs `check` (oxfmt format + `oxlint` lint and `tsc`
-type-check deferred per-package via Turbo + `knip` once over the whole graph) then `test:coverage`. Formatting is
-global; lint and type-check are per-package; knip is root-only.
+Run `pnpm verify` before declaring work done — it must be clean. It runs, in order, `check:format` (oxfmt), `check:lint`
+and `check:types` (per package via Turbo), `check:unused` (`knip` over the whole graph) and `test:coverage`. Formatting
+is global; lint and type-check are per-package.
 
 Git hooks (lefthook): **pre-commit** runs `oxlint --fix` + `oxfmt` on staged files; **pre-push** runs
 `pnpm check:types`. The pre-commit tools run via `node node_modules/...`, not `pnpm`, so lefthook can split any number

@@ -45,6 +45,6 @@
   "js/ts.updateImportsOnFileMove.enabled": "always",
   // TypeScript 7 is the native (Go) compiler and has no classic tsserver. Use the
   // "TypeScript (Native Preview)" extension's language service so the editor
-  // resolves modules exactly like `pnpm check-types` does.
+  // resolves modules exactly like `pnpm check:types` does.
   "js/ts.experimental.useTsgo": true
 }

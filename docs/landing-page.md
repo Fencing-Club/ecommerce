@@ -60,7 +60,7 @@ parts live in `apps/copacker/src/components/marketing/`:
 - The contact form emails each message through Resend to `CONTACT_EMAIL`, with replies going to the person who wrote
   (`src/server/contact.ts`). Like the mailing list, its endpoint takes anyone, turns away bots that fill in a hidden
   field, and slows down more than five messages from one address in ten minutes (`src/server/rate-limit.ts`).
-- Every setup in `setups.ts` adds the hosted server, `https://copacker.ai/mcp`, and signs in with OAuth; each follows
+- Every setup in `setups.ts` adds the hosted server, `https://copacker.ai/mcp`, which isn't built yet, and signs in with OAuth; each follows
   the client's own docs as of September 2026. For those sign-ins to work unaided, the server's OAuth needs dynamic
   client registration or client metadata documents, `iss` in its authorization response, loopback redirects on any
   port, and refresh tokens (`offline_access`), or ChatGPT signs people out when the first token expires.

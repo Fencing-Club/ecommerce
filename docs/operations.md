@@ -1,27 +1,49 @@
 # Run Copacker
 
-Node 24+ and pnpm 11 are required. Install at the root with `pnpm install`, then `pnpm dev`. The checked-in registry configuration matches the source template's corporate registry; outside that network set `PNPM_CONFIG_REGISTRY=https://registry.npmjs.org/` for install. On this host the reachable mirror is `https://packagefeedproxy.microsoft.io/npm`.
+Node 24+ and pnpm 11 are required. Install at the root with `pnpm install`, then `pnpm dev`. The checked-in `.npmrc`
+points at the corporate registry (`pnpm auth` signs in to it); outside that network set
+`PNPM_CONFIG_REGISTRY=https://registry.npmjs.org/` for install. CI and the Docker builds use the public registry.
 
-Copy `apps/copacker/.env.example` to `apps/copacker/.env`, then configure WorkOS, Railway Postgres, and the private Railway bucket. `TOKEN_ENCRYPTION_KEY` is 32 random bytes encoded as base64. WorkOS cookie password is at least 32 random characters. Do not commit environment files.
+Copy `apps/copacker/.env.example` to `apps/copacker/.env` and fill it in. `TOKEN_ENCRYPTION_KEY` is 32 random bytes
+encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Never commit environment files.
 
-Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and `pnpm --filter copacker worker` in a second process. The worker consumes durable jobs from Postgres; it does not schedule catalog or inventory syncing. Production and staging run it as a second Railway service, built from `Dockerfile.worker`, which installs Copacker's packages and skips `next build` (the worker runs its TypeScript through tsx). Only the web service uses the HTTP healthcheck.
+Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
+`pnpm --filter copacker worker` in a second process. The worker runs the durable jobs queued in Postgres. Staging and
+production run it as a second Railway service built from `Dockerfile.worker`, which skips `next build` and runs the
+worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
 
 ## External setup
 
-1. WorkOS: create an AuthKit application. Register `<APP_URL>/callback`, login URI `<APP_URL>/login`, sign-out URI `<APP_URL>` and password reset URL `<APP_URL>/reset-password`. Copacker draws its own sign-in pages against the WorkOS API ([Sign-in and getting started](auth.md)); Copacker's database owns workspace memberships and per-order supplier sharing.
-2. Shopify: use a public-distribution merchant app for unrelated merchants. Register `<APP_URL>/api/connections/shopify`. Required scopes: read_products, write_products, read_inventory, write_inventory. Existing private Aisle client-credentials authorization cannot onboard unrelated stores. Supplier SKU remains the merchant-owned PRODUCTVARIANT `custom.supplier_sku` field already used by Aisle.
-3. Amazon: register a public SP-API application with the AWD role and Listings access. Register `<APP_URL>/api/connections/amazon`; Amazon requires an HTTPS redirect, so test on a deployed environment rather than localhost. While the app is a draft, set `AMAZON_APP_DRAFT=true` so the consent link requests `version=beta`. Use US marketplace authorization for the first release. Tokens are encrypted per buyer organization.
-4. Email: configure Resend API key and a verified sender using EMAIL_API_KEY / EMAIL_FROM. The worker sends invitations, attached POs, and label-ready notifications, and the app sends password resets, all as HTML with a plain-text version from `packages/copacker-emails`; their header mark loads from APP_URL (`public/email/mark.png`). No production supplier emails are sent during development. The landing page's mailing list adds signups as Resend contacts, which a sending-only key can't do: give it a full access key in EMAIL_MAILING_LIST_API_KEY (it falls back to EMAIL_API_KEY), and set MAILING_LIST_SEGMENT_ID to put signups in a segment. The contact page emails its messages to CONTACT_EMAIL.
-
-   Use a sending-only API key. The Resend onboarding sender is suitable only for tests to the account owner's email; verify an owned domain before inviting external suppliers. Domain verification is deferred at the user's request. The 2026-09-25 test to the authorized Gmail recipient was marked Delivered in Resend. Local configuration and both Railway services have the key; the worker references the web service's email variables. No key is committed or included in logs.
-5. S3: use private Railway bucket credentials. Objects are accessed only through server-authorized routes.
-6. Privacy policy and terms: developer programs and app listings (Amazon SP-API, Amazon Ads API, eBay, Shopify) ask for the privacy policy at `<APP_URL>/privacy`, and some for the terms at `<APP_URL>/terms` ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, which the policy promises in every email.
+1. WorkOS: an AuthKit application with `<APP_URL>/callback` as a redirect, `<APP_URL>/login` as the login URI,
+   `<APP_URL>` as a sign-out redirect and `<APP_URL>/reset-password` as the password reset URL. Copacker draws its own
+   sign-in pages against the WorkOS API ([Sign-in and getting started](auth.md)); its database owns workspace
+   memberships and per-order sharing.
+2. Shopify: a public-distribution app with `<APP_URL>/api/connections/shopify` as its redirect and the scopes in
+   `apps/copacker/shopify.app.toml`. The supplier SKU is the variant metafield `custom.supplier_sku`.
+3. Amazon: a public SP-API application with the AWD role and Listings access, redirecting to
+   `<APP_URL>/api/connections/amazon`. Amazon requires an HTTPS redirect, so test it on a deployed environment. While the
+   app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link then asks for `version=beta`, and sellers can connect by
+   self-authorization. Tokens are encrypted per workspace.
+4. Email (Resend): `EMAIL_API_KEY` (sending only) and `EMAIL_FROM`. The worker sends invitations, POs and label-ready
+   notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
+   `APP_URL` (`public/email/mark.png`). The landing page's mailing list adds contacts, which needs a full access key in
+   `EMAIL_MAILING_LIST_API_KEY` (it falls back to `EMAIL_API_KEY`); `MAILING_LIST_SEGMENT_ID` puts signups in a segment.
+   The contact page emails `CONTACT_EMAIL`. Resend's onboarding sender only reaches the account owner, so verify an owned
+   domain before inviting suppliers.
+5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
+6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
+   ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, as the policy promises.
 
 ## Recovery
 
-Amazon create is checkpointed before the network request. If its response is lost, do not blindly retry. Find the corresponding order in Amazon and use the buyer reconciliation form; reference and carton readback must match before confirmation proceeds. If a correction affects an existing shipment, cancel it in Amazon where supported and use Copacker's cancellation verification before creating a replacement. Copacker never invents an AWD cancellation endpoint.
+An Amazon create is checkpointed before the request. If its response is lost, don't retry: find the order in Amazon and
+use the buyer's reconciliation form, where the reference and cartons must match before it's confirmed. If a correction
+affects a shipment, cancel it in Amazon where Amazon allows and let Copacker verify the cancellation before creating a
+replacement. Copacker never invents an AWD cancellation.
 
-Failed notification and Shopify write jobs remain visible for an owner to retry after fixing configuration. Shopify cost updates require equal currencies and use supplier piece price multiplied by the sellable pack size. No estimated exchange rate or hidden freight allocation is applied.
+Failed notification and Shopify write jobs stay visible for an owner to retry once the configuration is fixed. Shopify
+cost updates need matching currencies and use the supplier's piece price times the sellable pack size, with no estimated
+exchange rate or hidden freight.
 
 ## Maintenance
 
@@ -41,8 +63,8 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-Every push to `codex/copacker` runs CI (`pnpm verify`, the build, and every migration on an empty Postgres 18). When
-it passes, the `deploy-staging` job deploys that commit to Railway's staging environment. To release to production,
+Every push to `codex/copacker` runs CI (`pnpm verify`, Copacker's build, and every migration on an empty Postgres 18).
+When it passes, the `deploy-staging` job deploys that commit to Railway's staging environment. To release to production,
 run the **Promote to production** workflow in GitHub Actions. It releases the commit staging serves, after taking a
 backup of the production database.
 
@@ -59,72 +81,73 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
   one release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to
   undo a migration, write a new one, or restore the backup the promote took.
 - Production Postgres also has Railway's daily (6 days) and weekly (27 days) backups.
-- CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change,
-  and it builds only Copacker.
-- Deploying by hand with `railway up` still works (see [Infrastructure](#infrastructure)); prefer the workflows so the
-  health check reports the commit.
+- CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change.
+- Deploying by hand with `railway up` still works; prefer the workflows so the health check reports the commit.
 
 ## Infrastructure
 
-Railway project `copacker`: d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6. Production: 3fdd8f47-c9ad-44c5-b554-78b64818b4e5. Staging: b822ecad-68dd-4f4f-89e0-d9db00485545. Postgres: aef82310-c9f9-4472-a2bb-e19949723c31. Web: 79da7d29-d1d6-4aa7-9fef-709dbf2b9619. Private documents bucket: 868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2. Project name identifies the deployed app; repository name is ecommerce.
+Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 
-Domain: `copacker.ai` is registered with Cloudflare Registrar (auto-renews every two years) and uses Cloudflare DNS. `copacker.ai` and `staging.copacker.ai` are proxied CNAMEs to the production and staging web services, each with a `_railway-verify` TXT record. `www` redirects to the root with a Cloudflare redirect rule. SSL/TLS is set to Full; Railway does not work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served at `https://media.copacker.ai/film.mp4`; [Landing page](landing-page.md#assets) says how to replace it.
+| Resource                | ID                                     |
+| ----------------------- | -------------------------------------- |
+| Production environment  | `3fdd8f47-c9ad-44c5-b554-78b64818b4e5` |
+| Staging environment     | `b822ecad-68dd-4f4f-89e0-d9db00485545` |
+| Web service (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
+| Worker (`copacker-worker`) | `08c1edb8-c309-4fe4-b71e-14b54065a0fc` |
+| Postgres                | `aef82310-c9f9-4472-a2bb-e19949723c31` |
+| Documents bucket        | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
 
-Still to do after the move to `copacker.ai` (2026-09-28):
+Each environment has its own instance of every service, database and bucket. Production answers on
+`https://copacker.ai` (`APP_URL`) and `https://copacker-production.up.railway.app`; staging on
+`https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both use WorkOS's staging environment.
 
-- Amazon: add `https://copacker.ai/api/connections/amazon` and `https://staging.copacker.ai/api/connections/amazon` to
-  the redirect URIs of the "Aisle" app (`amzn1.sp.solution.b446d45f-…`, `AMAZON_APPLICATION_ID`) in the Solution
-  Provider Portal. Its edit page shows no OAuth fields while the developer registration is under review. Until then,
-  connect Amazon from `https://copacker-production.up.railway.app`.
-- Email: `EMAIL_FROM` is still `onboarding@resend.dev`, so Copacker's emails reach only the Resend account's owner,
-  and `CONTACT_EMAIL` is a personal Gmail. Verify `copacker.ai` in Resend (its DNS records go in Cloudflare), move
-  `EMAIL_FROM` to an `@copacker.ai` address, and route incoming `@copacker.ai` mail (Cloudflare Email Routing) before
-  pointing `CONTACT_EMAIL` at it. Then turn off WorkOS's own password reset email ([Auth](auth.md#workos-settings)).
-- Staging: the Railway environment `staging` (2026-09-28) was duplicated from production. It has its own Postgres,
-  documents bucket, `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses the local development apps (Copacker
-  Dev, Aisle Dev), so connecting a store there never rotates production's tokens. WorkOS stays on the staging
-  environment for both. It reads no SQS queues until it has its own: production's would be drained by its worker.
-  `staging.copacker.ai` is a proxied CNAME to staging's web service (`ii9zhosg.up.railway.app`), and
-  `copacker-staging.up.railway.app` reaches it directly. To fill it with the demo store, sign in there once, then run
-  `railway ssh --environment staging --service copacker-worker -- pnpm --filter copacker db:seed`. Still to do: add
-  the staging redirect to Aisle Dev, and an EventBridge source on Copacker Dev for staging's Shopify queue.
+`copacker.ai` is registered with Cloudflare Registrar and uses Cloudflare DNS. The root and `staging` are proxied CNAMEs
+to their environment's web service, each with a `_railway-verify` TXT record; `www` redirects to the root. SSL/TLS is
+Full, since Railway doesn't work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served from
+`media.copacker.ai` ([Landing page](landing-page.md#assets)).
 
-Worker: `08c1edb8-c309-4fe4-b71e-14b54065a0fc`, start command `pnpm --filter copacker worker`. The web domain is `https://copacker.ai` (`APP_URL`); `https://copacker-production.up.railway.app` still reaches the service directly, port 3000, healthcheck `/api/health`. WorkOS currently uses staging credentials; the Railway environment name does not imply production AuthKit readiness. On 2026-09-28, Google sign-in, a signed-in API request and a Shopify reconnect of the Fencing Club store passed on both `https://copacker.ai` and `https://staging.copacker.ai`.
+Staging was duplicated from production. It has its own `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses
+the development apps (Copacker Dev, Aisle Dev), so connecting a store there never rotates production's tokens. Its
+worker reads its own SQS queues (`copacker-*-staging`) as IAM user `copacker-worker-staging`. To fill it with the demo
+store, sign in there once, then run `railway ssh --environment staging --service copacker-worker -- pnpm --filter
+copacker db:seed`.
 
-Web deployment `5c678750-a2e6-4177-b80b-1b42ee0f7be6` succeeded on 2026-09-25. The public `/api/health` endpoint returns 200; `/orders` redirects to `/login`, which redirects to WorkOS authorization. This verifies HTTP startup and authentication routing, not callback completion or authenticated database workflows. Prior uploads failed before Docker output; the fresh explicit-root upload built successfully without a service configuration change, so the earlier root cause remains unproven.
+Still to do:
 
-Worker deployment `d14852f6-46ed-4ff7-a91c-6cd8bc627eb6` is live. Before startup, the queue contained only three completed email jobs. Hosted worker consumed a provider-free synthetic missing-import job on attempt 1 and recovered an expired running lease on attempt 2. Both completed without errors; real interrupted-import recovery remains unverified. Existing OpenRouter and Langfuse credentials are configured on both services; web refresh `7c63d2ee-7d4e-4204-98b3-d9de764893b9` is SUCCESS and health returns 200. The prompt is still staging-only, so ordinary new imports remain gated by production-prompt availability. Deployment `184ca5da-50e7-4e7b-a755-47853794c9b1` runs the generated standalone server with public/static assets copied into its monorepo output directory. Local container health, root, public SVG and emitted CSS returned 200; hosted health and that CSS returned 200 with no startup warning. The exact hosted callback and sign-out URL are now registered in the existing WorkOS staging application, with localhost URLs preserved. Hosted sign-in reaches AuthKit and the authenticated orders page loads. AuthKit callback now receives `baseURL: appUrl()` at request time so container addresses cannot become the post-login destination; deployment `f899e883-40cf-4ff4-ba04-300c824b822e` succeeded. Integrated-browser sign-out, fresh Google sign-in, organization selection and direct return to hosted `/orders` passed on 2026-09-25. Public page requests can redirect to AuthKit; verify response origins when checking assets. Do not recreate the database or bucket for stateless deployment troubleshooting.
-
-## Repository migration
-
-The Fencing Club packages were copied from the current Agency working tree, excluding dependencies, build outputs, and local credentials. Actual package names are `fc-templates`, `fc-theme`, `fc-theme-base`, `shopify-emails`, and `shopify-content`. Shared TypeScript/oxlint configuration accompanies them. All 1,500 source/local-data files matched before cleanup. The user authorized deleting the originals, but automatic approval review blocked the removal; all five original package directories remain in Agency. Shared config packages remain required in both repositories. No store themes were pushed or published.
-
-`packages/aisle` is the reusable Node-compatible commerce library extracted/adapted from the existing CLI's boundaries. It does not relocate the entire Bun CLI, local SQLite databases, or account credentials.
-
-## Saved addresses and product details
-
-Buyers save delivery addresses (their own locations) and freight forwarders. Suppliers save pickup addresses in their own workspace; for a supplier without a workspace, the buyer saves them on the Partners page. Packing offers the supplier's pickup addresses, or another address typed in.
-
-Product details Copacker keeps itself (a default description and preparation per Shopify product) are edited from Inventory and prefill new PO lines. Everything else about a product comes from Shopify or Amazon.
+- Amazon: add `https://copacker.ai/api/connections/amazon` to the redirect URIs of the Aisle app, and
+  `https://staging.copacker.ai/api/connections/amazon` to Aisle Dev's, in the Solution Provider Portal. The edit page
+  hides OAuth fields while the developer registration is under review; until then, connect by self-authorization.
+- Shopify: an EventBridge source on Copacker Dev for staging's Shopify queue ([notifications](notifications.md)).
+- Email: `EMAIL_FROM` is still `onboarding@resend.dev` and `CONTACT_EMAIL` a personal Gmail. Verify `copacker.ai` in
+  Resend (its DNS records go in Cloudflare), move `EMAIL_FROM` to an `@copacker.ai` address, and route incoming
+  `@copacker.ai` mail (Cloudflare Email Routing) before pointing `CONTACT_EMAIL` at it. Then turn off WorkOS's own
+  password reset email ([Auth](auth.md#workos-settings)).
 
 ## Databases and migrations
 
-Local development uses its own Postgres 18 in Docker, matching production's major version. Run `pnpm --filter copacker db:up` (then `db:migrate`) and point `DATABASE_URL` at `postgres://copacker:copacker@127.0.0.1:54329/copacker`. Run the worker locally too; jobs queued locally are never processed by the production worker. Local data starts empty: sign in, create a workspace, and connect accounts locally, or run `pnpm --filter copacker db:seed` for a demo store with bundles, a Collective location, an Amazon location and a sent PO (it skips workspaces already connected to a real store). Never point local development at the production database, and never copy production connection tokens locally: Shopify rotates refresh tokens, so a local refresh would disconnect production.
+Local development uses its own Postgres 18 in Docker (`db:up`), at
+`postgres://copacker:copacker@127.0.0.1:54329/copacker`. Run the worker locally too; jobs queued locally never reach a
+deployed worker. Local data starts empty: sign in, create a workspace and connect accounts, or run
+`pnpm --filter copacker db:seed` for a demo store with bundles, a Collective location, an Amazon location and a sent PO
+(it skips workspaces connected to a real store). Never point local development at a deployed database or copy its
+connection tokens: Shopify rotates refresh tokens, so a local refresh would disconnect the deployed store.
 
-Local Shopify connects through its own app, "Copacker Dev" in the Shopify Dev Dashboard (client ID `d7bad24713b6495c6f6e43d18f143eec`, redirect `http://localhost:3000/api/connections/shopify`, legacy install flow, not embedded). Its install is separate from production's, so connecting or refreshing locally never replaces production's token. Put its client ID and secret in the local `.env`. Staging uses it too, and it also allows staging's two addresses as redirects. It has exactly the production app's scopes (`copacker-dev-3`, 2026-09-28); keep them the same when production's change. Until Shopify approves `read_all_orders` for it, order syncs through it copy the last 60 days. Local Amazon connects by self-authorization, as production does while the app is a draft (`AMAZON_APPLICATION_ID` and `AMAZON_APP_DRAFT=true`), through its own app, Aisle Dev; production uses Aisle. Put Aisle Dev's client ID, secret and application ID in the local `.env`. Webhooks, Amazon notifications, the notification queue and the Amazon app for each environment are described in [Shopify webhooks and Amazon notifications](notifications.md).
+Local Shopify connects through "Copacker Dev" in the Shopify Dev Dashboard (client ID
+`d7bad24713b6495c6f6e43d18f143eec`, legacy install flow, not embedded), which staging uses too; it allows localhost's
+and staging's redirects. Keep its scopes the same as production's app. Until Shopify approves `read_all_orders` for it,
+order syncs through it copy the last 60 days. Local Amazon connects by self-authorization through Aisle Dev; production
+uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application ID) in the local `.env`. Local
+`NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`, registered in WorkOS. Webhooks, notifications and
+queues per environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
-Schema changes are migrations. Edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration or when an applied migration is edited; record each migration's hash there once it is deployed. The Railway web service's pre-deploy command is `pnpm --filter copacker predeploy`; the `predeploy` script in `apps/copacker/package.json` owns what runs before a release (today, `db:migrate`), so changes to it ship with the code. Only the web service runs it, so migrations never run twice at once. Verify migration logs and the live table/column before treating a schema-dependent deployment as complete. `railway run` from a local computer uses the service's private `postgres.railway.internal` hostname and cannot reach it. Do not assume the local `.env` points to production. Deploy the web service before the worker so the worker never runs against an older schema.
+Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
+under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied
+migration is edited (record each migration's hash there once it's deployed), or when migrations are numbered out of the
+order they were made. The web service's pre-deploy command runs the `predeploy` script in `apps/copacker/package.json`
+(today, `db:migrate`), so changes to it ship with the code; only the web service runs it, so migrations never run twice.
 
-`pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it) against a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local Docker database after `db:migrate`), read-only on both. On 2026-09-25 production matched `0000_copacker` exactly before `0001_optional_amazon_seller` was added.
-
-To reach the production database for a one-off read, use the Railway CLI rather than storing its URL locally. Railway's public TCP proxy needs `sslmode=verify-ca` with the CA retrieved through authenticated Railway access; never disable certificate verification.
-
-Local `NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`; register that exact callback in WorkOS. Keep it aligned with `APP_URL` when changing the local port or deployment URL.
-
-Import telemetry includes a root attempt and bounded generation/catalog-tool child observations using [Langfuse OTLP observation types](https://langfuse.com/integrations/native/opentelemetry). Child observations contain timing, fixed operation names and status only; document content, model responses, tool arguments/results and error text are excluded. Root usage and reported provider cost remain metadata. Synthetic readback was verified; merchant-connected import acceptance remains separate.
-
-Private PDF responses recheck database workspace membership after storage reads or packet assembly, before returning bytes. This complements current order sharing, document revision and release checks; removing a member during a slow download prevents that response from returning the document. Deterministic race tests cover individual documents, supplier packets and import sources. Hosted browser download acceptance remains open because Edge blocks document-link navigation before a document HTTP response is observed.
-
-Web deployment b35a9436-3a91-44ab-b71a-654f9f814455 is SUCCESS and includes GET /api/orders/summary and shared assignment coverage. Health returned 200 and anonymous summary access redirected to login. Edge blocked signed-in direct JSON navigation before a response body could be inspected; authenticated hosted report acceptance is still open. Inventory snapshot persistence and provider refresh are planned, not deployed by this release.
-
-Stock worker 5528ecaf-b310-48d9-b35f-23aca4bf6774 and web f5688512-c8ee-484e-b666-544df87e2f6c are deployed successfully. The earlier stock worker crashed due to a runtime import of web auth/server-only; stock.ts now imports Session as a type only. Plain Node/tsx module-load verification and full repository checks pass. Provider-free stock job 3ceca032-39f2-4802-9aa8-227c2f52f574 completed on attempt 1. The 14-column stock_snapshots table was applied additively. Hosted authenticated refresh/read acceptance remains separate from the successful local live seven-row AWD read.
+`pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
+with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.
+To read a deployed database, go through the Railway CLI rather than storing its URL locally: `railway run` uses the
+private `postgres.railway.internal` hostname, which a local computer can't reach, and the public TCP proxy needs
+`sslmode=verify-ca` with the CA from Railway. Never disable certificate verification.

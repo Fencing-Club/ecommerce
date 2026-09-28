@@ -1,9 +1,3 @@
 {
-  "recommendations": [
-    "oxc.oxc-vscode",
-    "TypeScriptTeam.native-preview",
-    "vitest.explorer",
-    "ms-playwright.playwright",
-    "visualstudioexptteam.vscodeintellicode"
-  ]
+  "recommendations": ["oxc.oxc-vscode", "TypeScriptTeam.native-preview", "vitest.explorer"]
 }

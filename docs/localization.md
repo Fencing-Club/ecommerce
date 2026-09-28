@@ -18,7 +18,8 @@ another namespace needs it added to its page's list.
 Dates format in the time zone the browser last reported (the `tz` cookie), so the server and browser render the same
 text. Worker jobs and emails have no request: use `translatorFor(profile.locale)` from `src/i18n/translator.ts`.
 
-Supported languages are listed in `src/i18n/locales.ts`: English, Spanish, French, German and Simplified Chinese.
+Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
+Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
 
 ## Messages
 

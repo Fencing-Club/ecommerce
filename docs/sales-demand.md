@@ -63,19 +63,16 @@ Gaps contain orderId, nullable variantId/buyerSku, sourceName, nullable location
 
 A multipack is a Shopify bundle (a variant that requires components), not a separate stocked SKU. The stock sync records each bundle's components and quantities. Pieces per sellable unit on a PO line come from those quantities (`piecesPerUnit`); the PO builder no longer asks for them, and a bundle line must be a whole number of bundles.
 
-Shopify orders expand a bundle into component lines, each with `lineItemGroup` naming the bundle variant bought; demand rows carry it as `bundleVariantId`. Amazon sells the multipack under the bundle variant's own SKU, so an Amazon row whose SKU matches exactly one Shopify bundle variant is a bundle sale. `bundleSales` combines both into, per variant, units sold alone, units sold inside bundles, and bundles sold. `POST /api/inventory/sales` with `{ "days": 28 | 56 }` reads every connected source and returns that summary; the Inventory page shows it under each product and variation. A 28-day Shopify read of about 360 orders took about two minutes on 2026-09-25.
+Shopify orders expand a bundle into component lines, each with `lineItemGroup` naming the bundle variant bought; demand rows carry it as `bundleVariantId`. Amazon sells the multipack under the bundle variant's own SKU, so an Amazon row whose SKU matches exactly one Shopify bundle variant is a bundle sale. `bundleSales` combines both into, per variant, units sold alone, units sold inside bundles, and bundles sold. Restock uses it to split each variant's sales between units sold alone and inside bundles (`restock-plan.ts`).
 
 Shopify's order search needs quoted timestamps (`created_at:>='…'`); unquoted, the colons cut the value short and Shopify returned orders outside the window.
 
 Location classifications are the buyer's saved choice, otherwise automatic from the location's fulfillment service: the store's own locations are merchant, Shopify Collective is excluded, Amazon's fulfillment location is amazon_mirror, and other apps' locations are unresolved.
 
-## Evidence and remaining acceptance
+## Known gaps
 
-2026-09-25: Shopify queries validate against the current Admin schema, artifact copacker-sales-attribution revision 2. A live rolling 56-day Amazon read returned 574 orders, 92 SKU rows and 649 FBA fulfilled units with no attribution gaps. It used the original buyer workspace's seller connection, not the separate Gmail buyer workspace. No provider writes, shipment creation or supplier contact occurred.
-
-The original Fencing Club buyer connection now has order-read access. A live 56-day read displayed variant sales and 913 uncounted units; these include unfulfilled orders, but the causes have not yet been reconciled. The sales response now separates gap units by reason so the next live read can distinguish unfulfilled demand from unmapped channels, locations or products. Another agent owns the restock UI, settings and draft batches.
-
-Remaining coverage: explicit configuration for additional sales apps, Shopify fulfillment-order allocation for pending units, FBM warehouse reconciliation, non-Amazon MCF demand and durable collection above current request budgets. These are gaps, not zero demand.
+Additional sales apps need explicit configuration. Shopify fulfillment-order allocation for pending units, FBM
+warehouse reconciliation and non-Amazon MCF demand aren't read yet. These are gaps, not zero demand.
 
 ## References
 
@@ -93,7 +90,9 @@ These rows are separate from fulfilledUnits and its gross-fulfilled measurement 
 
 Confirmed against Shopify inventory-state documentation and Amazon FBA inventory documentation: Shopify available already excludes committed inventory; FBA fulfillableQuantity is separate from reserved customer orders and other reserved states. Never subtract unfulfilled orders again from these values. Do not substitute physical on-hand or FBA totalQuantity for sellable availability. AWD uses availableDistributable, retaining reservedDistributable separately.
 
-The deterministic server helper restockAvailability in restock-availability.ts selects these source values without another allocation deduction. It preserves null availability and negative Shopify availability. Six regression cases verify this alongside the restock formula: 100 physical units, 20 committed and 80 available against lead-time demand of 112 means a purchase of 32, not 52. The other agent's report should call this adapter when composing source data; this helper does not itself wire the unfinished restock page.
+Restock uses these source values without another allocation deduction, keeping null availability and negative
+Shopify availability. For example, 100 physical units with 20 committed and 80 available, against lead-time demand of
+112, means buying 32, not 52.
 
 Unfulfilled orders are therefore already accounted for in available stock. Including confirmed open orders in the historical demand series is a separate forecasting choice; do not confuse it with an extra stock deduction. Supplier PO incoming quantities are a third, separate state and must be reconciled once.
 

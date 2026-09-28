@@ -1,7 +1,7 @@
-// Writes subtitles for the ad and each cutdown to out/ as SRT files: every voiceover line a cut keeps, split into cues
-// of at most two lines of 42 characters, each timed to its words in the take.
+// Writes subtitles for the ad to out/copacker.srt: every voiceover line, split into cues of at most two lines of 42
+// characters, each timed to its words in the take.
 import { mkdir, writeFile } from "node:fs/promises"
-import { cues, cutdowns, fits, placed } from "../src/timeline.ts"
+import { cues } from "../src/timeline.ts"
 import { voiceover } from "../src/voiceover.ts"
 import { readTakes } from "./takes.ts"
 
@@ -94,13 +94,4 @@ const srt = (all: readonly Cue[]) =>
 
 await mkdir("out", { recursive: true })
 await writeFile("out/copacker.srt", srt(cues.flatMap(({ id, at }) => cuesFor(id, at))))
-for (const [length, stretches] of Object.entries(cutdowns)) {
-  const parts = placed(stretches)
-  const kept = cues.flatMap(({ id, at }) => {
-    const home = parts.find(({ from, to }) => at >= from - 0.001 && at < to)
-    const end = at + (takes.lines[id]?.end ?? 0)
-    return home && fits(stretches, at, end) ? cuesFor(id, home.start + at - home.from) : []
-  })
-  await writeFile(`out/copacker-${length}.srt`, srt(kept))
-}
 process.stdout.write("out/copacker.srt, and one for each cutdown\n")

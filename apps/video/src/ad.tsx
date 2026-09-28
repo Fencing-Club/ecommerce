@@ -28,27 +28,26 @@ const scenes: Record<Section, (props: { t: number }) => ReactNode> = {
   end: End
 }
 
-// The score dips under the voice, and only a little under the last line, so the ending stays full. A cutdown ducks
-// only under the lines it keeps.
-export const musicVolume = (t: number, lines?: readonly string[]) => {
+// The score dips under the voice, and only a little under the last line, so the ending stays full.
+const musicVolume = (t: number) => {
   const under = Math.max(
     0,
-    ...heard
-      .filter(({ id }) => !lines || lines.includes(id))
-      .map(({ id, at, end }) => (id === "end" ? 0.4 : 1) * Math.min(ramp(t, at - 0.2, at), 1 - ramp(t, end, end + 0.3)))
+    ...heard.map(
+      ({ id, at, end }) => (id === "end" ? 0.4 : 1) * Math.min(ramp(t, at - 0.2, at), 1 - ramp(t, end, end + 0.3))
+    )
   )
   return 0.85 - 0.55 * under
 }
 
-// The picture at a moment of the ad, in seconds: that section's scene, and the captions, only for `lines` if given.
-export const Frame = ({ time, lines }: { time: number; lines?: readonly string[] }) => {
+// The picture at a moment of the ad, in seconds: that section's scene, and the captions.
+const Frame = ({ time }: { time: number }) => {
   const section = sectionAt(time)
   const Scene = scenes[section]
   return (
     <Clock value={time}>
       <AbsoluteFill>
         <Scene t={time - sections[section].from} />
-        <Captions t={time} lines={lines} />
+        <Captions t={time} />
       </AbsoluteFill>
     </Clock>
   )
