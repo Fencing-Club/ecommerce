@@ -20,8 +20,8 @@ orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
   with demo data, in the light theme. Paper sections carry `.light` and the stages `.dark` (`src/styles/theme.css.ts`),
   and Tailwind's `dark:` variant skips anything inside `.light`. When the app's pages change, update the shot to match.
 - The forecast is a small model, not the app's: sales per store per day, lifted through the rush, with the order placed
-  far enough ahead to land ten days of sales before the shelf runs dry. Amazon checks the shipment in over five days,
-  or up to nine in the rush, while sales go on.
+  far enough ahead to land ten days of sales before the shelf runs dry. Amazon checks the shipment in over a day or
+  two while sales go on.
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
   line (FNSKU and choking hazard labels on the units, the box right-sized round them, then the carton and shipping

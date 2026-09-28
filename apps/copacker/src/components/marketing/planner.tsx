@@ -57,9 +57,9 @@ function plan(inputs: Inputs) {
   const orderBy = Number.isFinite(out) ? Math.max(0, out - inputs.lead - buffer) : horizon
   const lands = orderBy + inputs.lead
   const units = Math.ceil((soldBy(lands + cover) - soldBy(lands)) / product.casePack) * product.casePack
-  // Amazon checks a shipment in over several days, and slower in the rush, while the sales go on. They stop when the
-  // shelf is empty, and what can't be sold then is lost.
-  const receiving = 5 + 4 * inputs.rush * rushShare(lands)
+  // Amazon checks a shipment in over a day or two, a little slower in the rush, while the sales go on. They stop when
+  // the shelf is empty, and what can't be sold then is lost.
+  const receiving = 1.2 + 0.8 * inputs.rush * rushShare(lands)
   const received = (day: number) => units * clamp((day - lands) / receiving)
   const level = [product.stock]
   let short = 0
@@ -203,9 +203,17 @@ export function Planner() {
   const samples = Array.from({ length: horizon + 1 }, (_, day) => day)
   const without = path(samples.map((day) => [x(day), y(stock(day))]))
   const withLine = path(samples.map((day) => [x(day), y(result.level[day] ?? 0)]))
-  // The top of the climb, once the shipment is all checked in.
-  const topDay = result.lands + result.receiving
-  const topY = y(result.levelAt(topDay))
+  // The top of the climb: the day the stock peaks once the shipment is all checked in.
+  const climb = samples.filter((day) => day >= Math.floor(result.lands) && day <= result.lands + result.receiving + 1)
+  const topDay = climb.reduce(
+    (best, day) => ((result.level[day] ?? 0) > (result.level[best] ?? 0) ? day : best),
+    climb[0] ?? horizon
+  )
+  const topY = y(result.level[topDay] ?? 0)
+  // The restock's label points at the middle of the climb from its right, or from its left near the chart's end.
+  const climbX = x(result.lands + result.receiving / 2)
+  const climbY = (y(result.levelAt(result.lands)) + topY) / 2
+  const side = climbX > chart.right - 210 * u ? -1 : 1
   const area = `${withLine} L${x(horizon)} ${chart.bottom} L${x(0)} ${chart.bottom} Z`
   const orderX = x(result.orderBy)
   const landX = x(result.lands)
@@ -257,6 +265,17 @@ export function Planner() {
         <figcaption className="sr-only">{`Stock of the ${product.name} over the next ${horizon} days. Without a reorder it runs out in ${days(final.out)}. ${final.late ? "Ordered today" : `Ordered in ${days(final.orderBy)}`}, ${final.units.toLocaleString("en-US")} units land ${final.late ? `after it runs out, losing about ${money(final.lost)} in sales` : "before it runs out"}.`}</figcaption>
         <svg viewBox={`0 0 ${chart.width} ${chart.height}`} className="w-full overflow-visible" aria-hidden>
           <defs>
+            <marker
+              id="planner-arrow"
+              viewBox="0 0 10 10"
+              refX={8}
+              refY={5}
+              markerWidth={5}
+              markerHeight={5}
+              orient="auto-start-reverse"
+            >
+              <path d="M0 0 L10 5 L0 10 Z" className="fill-foreground/70" />
+            </marker>
             <linearGradient id="planner-area" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#f54a00" stopOpacity={0.18} />
               <stop offset="1" stopColor="#f54a00" stopOpacity={0} />
@@ -391,13 +410,24 @@ export function Planner() {
             {result.lands <= horizon && (
               <g>
                 <circle cx={x(topDay)} cy={topY} r={5 * u} className="fill-primary" />
+                <line
+                  x1={climbX + side * 44 * u}
+                  x2={climbX + side * 9 * u}
+                  y1={climbY}
+                  y2={climbY}
+                  strokeWidth={1.5 * u}
+                  markerEnd="url(#planner-arrow)"
+                  className="stroke-foreground/70"
+                />
                 <text
-                  x={x(topDay) + 10 * u}
-                  y={(y(result.levelAt(result.lands)) + topY) / 2 + 4 * u}
-                  className="fill-foreground font-medium tabular-nums"
+                  x={climbX + side * 50 * u}
+                  y={climbY + 4.5 * u}
+                  textAnchor={side > 0 ? "start" : "end"}
+                  className="tabular-nums"
                   style={type}
                 >
-                  +{result.units.toLocaleString("en-US")} units
+                  <tspan className="fill-muted-foreground">Restock </tspan>
+                  <tspan className="fill-foreground font-semibold">+{result.units.toLocaleString("en-US")} units</tspan>
                 </text>
                 <g strokeWidth={u} className="stroke-foreground/35">
                   <line x1={orderX} x2={landX} y1={chart.bottom + 26 * u} y2={chart.bottom + 26 * u} />
