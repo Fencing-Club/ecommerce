@@ -29,7 +29,20 @@ Railway project `copacker`: d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6. Production: 3f
 
 Domain: `copacker.ai` is registered with Cloudflare Registrar (auto-renews every two years) and uses Cloudflare DNS. `copacker.ai` and `staging.copacker.ai` are proxied CNAMEs to the web service (staging runs on production, through `APP_ALIAS_URLS`, until a staging environment exists), each with a `_railway-verify` TXT record. `www` redirects to the root with a Cloudflare redirect rule. SSL/TLS is set to Full; Railway does not work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served at `https://media.copacker.ai/film.mp4`; [Landing page](landing-page.md#assets) says how to replace it.
 
-Worker: `08c1edb8-c309-4fe4-b71e-14b54065a0fc`, start command `pnpm --filter copacker worker`. The web domain is `https://copacker.ai` (`APP_URL`); `https://copacker-production.up.railway.app` still reaches the service directly, port 3000, healthcheck `/api/health`. WorkOS currently uses staging credentials; the Railway environment name does not imply production AuthKit readiness. Hosted callbacks and actual sign-in remain to be verified.
+Still to do after the move to `copacker.ai` (2026-09-28):
+
+- Amazon: add `https://copacker.ai/api/connections/amazon` and `https://staging.copacker.ai/api/connections/amazon` to
+  the redirect URIs of the "Aisle" app (`amzn1.sp.solution.b446d45f-…`, `AMAZON_APPLICATION_ID`) in the Solution
+  Provider Portal. Its edit page shows no OAuth fields while the developer registration is under review. Until then,
+  connect Amazon from `https://copacker-production.up.railway.app`.
+- Email: `EMAIL_FROM` is still `onboarding@resend.dev`, so Copacker's emails reach only the Resend account's owner,
+  and `CONTACT_EMAIL` is a personal Gmail. Verify `copacker.ai` in Resend (its DNS records go in Cloudflare), move
+  `EMAIL_FROM` to an `@copacker.ai` address, and route incoming `@copacker.ai` mail (Cloudflare Email Routing) before
+  pointing `CONTACT_EMAIL` at it. Then turn off WorkOS's own password reset email ([Auth](auth.md#workos-settings)).
+- Staging: `staging.copacker.ai` is the production service and database under another address, so anything done there
+  is real. Give it its own Railway environment, then drop it from `APP_ALIAS_URLS` and point its DNS record there.
+
+Worker: `08c1edb8-c309-4fe4-b71e-14b54065a0fc`, start command `pnpm --filter copacker worker`. The web domain is `https://copacker.ai` (`APP_URL`); `https://copacker-production.up.railway.app` still reaches the service directly, port 3000, healthcheck `/api/health`. WorkOS currently uses staging credentials; the Railway environment name does not imply production AuthKit readiness. On 2026-09-28, Google sign-in, a signed-in API request and a Shopify reconnect of the Fencing Club store passed on both `https://copacker.ai` and `https://staging.copacker.ai`.
 
 Web deployment `5c678750-a2e6-4177-b80b-1b42ee0f7be6` succeeded on 2026-09-25. The public `/api/health` endpoint returns 200; `/orders` redirects to `/login`, which redirects to WorkOS authorization. This verifies HTTP startup and authentication routing, not callback completion or authenticated database workflows. Prior uploads failed before Docker output; the fresh explicit-root upload built successfully without a service configuration change, so the earlier root cause remains unproven.
 
