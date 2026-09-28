@@ -1,5 +1,6 @@
 import { authkitProxy } from "@workos-inc/authkit-nextjs"
 import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server"
+import { keepForBackForwardCache } from "@/server/back-forward-cache"
 import { closedForMaintenance, maintenanceResponse, underMaintenance } from "@/server/maintenance"
 import { resumeCookie, returnPath, siteUrlFor } from "@/server/security"
 const auth = authkitProxy()
@@ -18,6 +19,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   if (closedForMaintenance(request) && (await underMaintenance())) {
     return maintenanceResponse(request)
   }
-  return auth(request, event)
+  const response = await auth(request, event)
+  return response ? keepForBackForwardCache(request, response) : response
 }
 export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health).*)"] }
