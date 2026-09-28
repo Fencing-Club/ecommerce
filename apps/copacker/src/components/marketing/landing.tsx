@@ -199,10 +199,7 @@ function Faq() {
               <AccordionTrigger className="gap-6 py-6 text-lg font-medium tracking-[-0.01em] transition-colors hover:text-foreground/70 hover:no-underline **:data-[slot=accordion-trigger-icon]:mt-1 **:data-[slot=accordion-trigger-icon]:size-5">
                 {t(`questions.${question}.question`)}
               </AccordionTrigger>
-              <AccordionContent
-                hiddenUntilFound
-                className="max-w-[60ch] pb-7 text-base text-pretty text-muted-foreground"
-              >
+              <AccordionContent hiddenUntilFound className={cn("max-w-[60ch] pb-7 text-base text-pretty", quiet)}>
                 {t(`questions.${question}.answer`)}
               </AccordionContent>
             </AccordionItem>

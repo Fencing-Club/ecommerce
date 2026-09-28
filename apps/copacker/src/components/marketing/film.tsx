@@ -33,6 +33,7 @@ export function Film({ className }: { className?: string }) {
         {/* The captions are part of the picture, so there's no separate track. */}
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
         <video
+          aria-label={t("title")}
           className="aspect-video w-full bg-black"
           src="https://media.copacker.ai/film-924d480a.mp4"
           poster="/marketing/film.jpg"

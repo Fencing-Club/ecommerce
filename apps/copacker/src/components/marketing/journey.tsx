@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"
 import type { Place, World } from "./journey-world"
 import { through } from "./scroll"
+import { quiet } from "./site"
 
 // One purchase order's trip from the supplier's factory, through customs, to Amazon and the seller's own warehouse,
 // played by scroll over a 3D diorama (./journey-world). The section is tall and its view is pinned, so scrolling moves
@@ -474,7 +475,11 @@ export function Journey() {
       return
     }
     const top = element.getBoundingClientRect().top + scrollY
-    scrollTo({ top: top + (entry.at + 0.02) * (element.offsetHeight - innerHeight), behavior: "smooth" })
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches
+    scrollTo({
+      top: top + (entry.at + 0.02) * (element.offsetHeight - innerHeight),
+      behavior: still ? "auto" : "smooth"
+    })
   }
 
   const latest = documents[saved - 1]
@@ -525,7 +530,7 @@ export function Journey() {
                   {!note.spot && (
                     <span className="absolute bottom-0 left-0 h-3 w-px -translate-x-1/2 bg-foreground/25 transition-opacity duration-500 group-data-[shown=false]/note:opacity-0" />
                   )}
-                  <div className="absolute bottom-3 left-1/2 origin-bottom -translate-x-1/2 transition-[opacity,scale,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=false]/note:translate-y-2 group-data-[shown=false]/note:scale-95 group-data-[shown=false]/note:opacity-0">
+                  <div className="absolute bottom-3 left-1/2 origin-bottom -translate-x-1/2 transition-[opacity,scale,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=false]/note:translate-y-2 motion-reduce:group-data-[shown=false]/note:translate-y-0 group-data-[shown=false]/note:scale-95 group-data-[shown=false]/note:opacity-0">
                     {note.content(t, format)}
                   </div>
                 </>
@@ -549,7 +554,7 @@ export function Journey() {
         <div
           className={cn(
             "pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end bg-[linear-gradient(to_top,var(--paper)_50%,transparent)] px-6 pt-24 pb-8 transition-opacity duration-700 lg:inset-y-0 lg:end-auto lg:start-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] lg:w-[26rem] lg:justify-center lg:bg-none lg:p-0",
-            ending && "opacity-0"
+            ending && "opacity-0 has-focus-visible:opacity-100"
           )}
         >
           <nav aria-label={t("steps")} className={cn("mb-7 flex flex-wrap gap-1.5", !ending && "pointer-events-auto")}>
@@ -563,7 +568,7 @@ export function Journey() {
                   "rounded-full px-3 py-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   i === chapter
                     ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                    : cn(quiet, "hover:bg-foreground/5 hover:text-foreground")
                 )}
               >
                 {t(`chapters.${entry.key}.step`)}
@@ -575,7 +580,7 @@ export function Journey() {
               <div
                 key={entry.key}
                 className={cn(
-                  "col-start-1 row-start-1 transition-[opacity,translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "col-start-1 row-start-1 transition-[opacity,translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:translate-y-0",
                   i === chapter ? "opacity-100" : "pointer-events-none opacity-0",
                   i < chapter && "-translate-y-3",
                   i > chapter && "translate-y-3"
@@ -584,9 +589,7 @@ export function Journey() {
                 <p className="text-[clamp(2rem,4vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance">
                   {t(`chapters.${entry.key}.title`)}
                 </p>
-                <p className="mt-4 max-w-sm text-lg text-pretty text-muted-foreground">
-                  {t(`chapters.${entry.key}.text`)}
-                </p>
+                <p className={cn("mt-4 max-w-sm text-lg text-pretty", quiet)}>{t(`chapters.${entry.key}.text`)}</p>
               </div>
             ))}
           </div>
@@ -625,7 +628,7 @@ export function Journey() {
               </div>
             ))}
           </div>
-          <p aria-hidden className="mt-4 flex h-5 items-center gap-2 text-sm text-muted-foreground lg:hidden">
+          <p aria-hidden className={cn("mt-4 flex h-5 items-center gap-2 text-sm lg:hidden", quiet)}>
             {latest && (
               <>
                 <Check className="size-4 text-success" />

@@ -115,6 +115,7 @@ export function SelectControl({
           }
         }}
         aria-invalid={invalid}
+        aria-describedby={invalid ? `${id}-error` : undefined}
         className="w-full"
       >
         <SelectValue>
@@ -193,14 +194,15 @@ export function FormInput({
     value: fieldValue ?? "",
     onChange,
     onBlur,
-    "aria-invalid": fieldState.invalid
+    "aria-invalid": fieldState.invalid,
+    "aria-describedby": fieldState.invalid ? `${id}-error` : undefined
   }
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
       <FormLabel htmlFor={id} label={label} required={props.required} />
       {type === "date" ? <DateInput {...control} /> : <Input {...control} type={type} />}
       {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError errors={[fieldState.error]} />
+      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )
 }
@@ -242,9 +244,10 @@ export function FormNumber({
         }}
         onBlur={onBlur}
         aria-invalid={fieldState.invalid}
+        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError errors={[fieldState.error]} />
+      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )
 }
@@ -308,7 +311,7 @@ export function FormMoney({
             onBlur()
           }}
           aria-invalid={fieldState.invalid}
-          aria-describedby={`${id}-currency`}
+          aria-describedby={fieldState.invalid ? `${id}-currency ${id}-error` : `${id}-currency`}
           className="text-end tabular-nums"
         />
         <InputGroupAddon align="inline-end">
@@ -316,7 +319,7 @@ export function FormMoney({
         </InputGroupAddon>
       </InputGroup>
       {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError errors={[fieldState.error]} />
+      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )
 }
@@ -344,7 +347,7 @@ export function FormSelect({ name, label, description, className, options, place
         onBlur={onBlur}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError errors={[fieldState.error]} />
+      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )
 }
@@ -373,9 +376,10 @@ export function FormTextarea({
         onChange={onChange}
         onBlur={onBlur}
         aria-invalid={fieldState.invalid}
+        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
-      <FieldError errors={[fieldState.error]} />
+      <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>
   )
 }
@@ -396,11 +400,12 @@ export function FormCheckbox({ name, label, description, className }: Common) {
         onCheckedChange={onChange}
         onBlur={onBlur}
         aria-invalid={fieldState.invalid}
+        aria-describedby={fieldState.invalid ? `${id}-error` : undefined}
       />
       <FieldContent>
         <FieldLabel htmlFor={id}>{label}</FieldLabel>
         {description && <FieldDescription>{description}</FieldDescription>}
-        <FieldError errors={[fieldState.error]} />
+        <FieldError id={`${id}-error`} errors={[fieldState.error]} />
       </FieldContent>
     </Field>
   )

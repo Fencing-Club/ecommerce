@@ -13,7 +13,7 @@ import "./globals.css"
 import { skipLink } from "./layout.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false })
 // Geist has no Devanagari or Urdu letters, so Hindi and Urdu pages add a font for them after Geist, which still draws
 // Latin text such as SKUs. They load only on those pages.
 const devanagari = Noto_Sans_Devanagari({ subsets: ["devanagari"], preload: false })
