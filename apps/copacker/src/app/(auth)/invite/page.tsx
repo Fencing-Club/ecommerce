@@ -25,6 +25,11 @@ const joining: Record<InvitationKind, string> = {
   supplier: "Join Copacker as their supplier.",
   forwarder: "Join Copacker as their freight forwarder."
 }
+// For someone already on Copacker with a workspace of the invited kind, which then picks the workspace.
+const choosing = {
+  supplier: "Choose the workspace that supplies them.",
+  forwarder: "Choose the workspace that ships for them."
+}
 
 function initials(name: string) {
   return name
@@ -132,8 +137,9 @@ export default async function Invitation({
         }
       >
         <form action="/logout" method="post">
+          <input type="hidden" name="next" value={here} />
           <Button type="submit" className="h-10 w-full">
-            Sign out
+            Sign out and continue
           </Button>
         </form>
       </AuthPage>
@@ -162,7 +168,7 @@ export default async function Invitation({
     redirect(setUp)
   }
   return (
-    <AuthPage title={title} description={joining[kind]}>
+    <AuthPage title={title} description={choosing[kind]}>
       <AcceptInvitation kind={kind} token={token} label="Accept invitation" workspaces={owned} setUp={setUp} />
     </AuthPage>
   )

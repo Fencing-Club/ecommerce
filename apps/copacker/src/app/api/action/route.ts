@@ -3,18 +3,7 @@ import { addressSchema } from "@repo/aisle"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import {
-  organizations,
-  memberships,
-  suppliers,
-  contacts,
-  jobs,
-  shipments,
-  documents,
-  events,
-  teamInvitations,
-  supplierProfiles
-} from "@/db/schema"
+import { organizations, suppliers, contacts, jobs, shipments, documents, events, supplierProfiles } from "@/db/schema"
 import type { ActionResult } from "@/lib/api"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
@@ -57,6 +46,7 @@ import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
+import { cancelInvitation, inviteColleague, removeColleague } from "@/server/team"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
@@ -90,31 +80,15 @@ export async function POST(request: Request) {
       revision = () => z.number().int().positive().parse(data.revision)
     if (action === "team.invite") {
       requireOwner(s)
-      const email = z.email().parse(data.email).toLowerCase(),
-        invitation = token()
-      const [row] = await db()
-        .insert(teamInvitations)
-        .values({ orgId: s.org.id, email, hash: hash(invitation), expiresAt: new Date(Date.now() + 7 * 86400000) })
-        .returning()
-      await db()
-        .insert(jobs)
-        .values({
-          key: `team:${row!.id}`,
-          kind: "email",
-          payload: { type: "team", to: email, name: s.org.name, invitation }
-        })
-      return Response.json({ ok: true })
+      return Response.json(await inviteColleague(s.org, data))
+    }
+    if (action === "team.cancel") {
+      requireOwner(s)
+      return Response.json(await cancelInvitation(s.org.id, data))
     }
     if (action === "team.remove") {
       requireOwner(s)
-      const userId = z.string().parse(data.userId)
-      if (userId === s.user.id) {
-        throw new Error("You cannot remove your own membership")
-      }
-      await db()
-        .delete(memberships)
-        .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, userId), eq(memberships.role, "member")))
-      return Response.json({ ok: true })
+      return Response.json(await removeColleague(s, data))
     }
     if (action === "workspace.switch") {
       await requireMembership(s.user.id, id())

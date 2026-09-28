@@ -41,6 +41,9 @@ export function appUrl() {
   const value = process.env.APP_URL ?? "http://localhost:3000"
   return new URL(value).origin
 }
+// The page to open once WorkOS returns from signing out, such as an invitation for another email. WorkOS only returns
+// to the sign-out redirects set in its dashboard, so the page waits in this cookie for the proxy.
+export const resumeCookie = "copacker-resume"
 // Where to send someone after sign-in: a page on this app, never another origin or an auth route that would loop.
 export function returnPath(value: string | null | undefined, fallback = "/orders") {
   // Browsers read a backslash as a slash, so "/\host" could leave the app; such paths are never ours.

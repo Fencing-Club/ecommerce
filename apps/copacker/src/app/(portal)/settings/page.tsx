@@ -12,6 +12,7 @@ import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
+import { TeamSettings } from "@/components/team-settings"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +30,7 @@ import { restockSettings } from "@/server/restock-report"
 import { salesHistoryDays } from "@/server/sales-orders"
 import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
+import { teamOf } from "@/server/team"
 
 export const metadata: Metadata = { title: "Settings" }
 
@@ -50,7 +52,7 @@ export default async function Settings() {
   const supplier = s.org.kind === "supplier"
   const owner = s.role === "owner"
   const restock = restockSettings(s.org)
-  const [linked, saved, [profile], costs, currency] = await Promise.all([
+  const [linked, saved, [profile], costs, currency, team] = await Promise.all([
     db()
       .select({ provider: connections.provider, externalId: connections.externalId })
       .from(connections)
@@ -58,7 +60,9 @@ export default async function Settings() {
     db().select().from(contacts).where(eq(contacts.orgId, s.org.id)),
     db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id)),
     buyer ? listMonthlyCosts(s.org.id) : Promise.resolve([]),
-    buyer ? reportingCurrency(s.org.id) : Promise.resolve("USD")
+    buyer ? reportingCurrency(s.org.id) : Promise.resolve("USD"),
+    // Invitations expire on a day in the store's time zone, or the viewer's when it's automatic.
+    teamOf({ id: s.org.id, timeZone: s.org.timeZone ?? computerZone })
   ])
 
   const shopifyAccount = linked.find((c) => c.provider === "shopify")
@@ -94,6 +98,10 @@ export default async function Settings() {
               ...(buyer && owner && { website: profile?.website ?? "" })
             }}
           />
+        </Section>
+
+        <Section id="team" title="Team" description={`People in ${s.org.name}`}>
+          <TeamSettings {...team} owner={owner} you={s.user.id} workspace={s.org.name} />
         </Section>
 
         {buyer && (
