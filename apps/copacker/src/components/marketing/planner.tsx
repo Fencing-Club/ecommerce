@@ -21,11 +21,11 @@ const hand = Caveat({ subsets: ["latin"], preload: false })
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
 type Inputs = { lead: number; amazon: number; shopify: number; ebay: number; rush: number }
 
-const product = { name: "Steel Bottle 32 oz", sku: "SM-3201", stock: 3400, price: 32, casePack: 24 }
+const product = { name: "Steel Bottle 32 oz", sku: "SM-3201", stock: 10200, price: 32, casePack: 24 }
 const stores: Store[] = [
-  { key: "amazon", name: "Amazon", perDay: 21 },
-  { key: "shopify", name: "Shopify", perDay: 8 },
-  { key: "ebay", name: "eBay", perDay: 4 }
+  { key: "amazon", name: "Amazon", perDay: 63 },
+  { key: "shopify", name: "Shopify", perDay: 24 },
+  { key: "ebay", name: "eBay", perDay: 12 }
 ]
 const horizon = 150
 const rush = { from: 56, to: 92, lift: 2.1 }
@@ -162,7 +162,9 @@ const tallLayout: Layout = {
   unit: 2.6,
   ticks: [0, 60, 120]
 }
-const most = 5000
+// The chart's top, in units, and its gridlines.
+const most = 15000
+const gridlines = [3000, 6000, 9000, 12000, 15000]
 const path = (points: [number, number][]) =>
   points.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join(" ")
 const anchor = (day: number) => {
@@ -227,7 +229,7 @@ export function Planner() {
   const climbY = (y(result.levelAt(result.lands)) + topY) / 2
   const noteSize = (wide ? 24 : 19) * u
   const noteRight = Math.max(climbX - 44 * u, chart.left + noteSize * 5.4)
-  const noteTop = y(4450)
+  const noteTop = y(most * 0.89)
   const arrowFrom = { x: noteRight + 8 * u, y: noteTop + noteSize * 1.45 }
   const arrowTo = { x: climbX - 7 * u, y: Math.max(climbY, arrowFrom.y + 18 * u) }
   const bend = { x: arrowFrom.x + (arrowTo.x - arrowFrom.x) * 0.15, y: arrowTo.y }
@@ -312,7 +314,7 @@ export function Planner() {
               />
             </clipPath>
           </defs>
-          {[1000, 2000, 3000, 4000, 5000].map((units) => (
+          {gridlines.map((units) => (
             <g key={units}>
               <line
                 x1={chart.left}
