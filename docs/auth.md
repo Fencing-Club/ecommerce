@@ -32,9 +32,9 @@ Local and production share the WorkOS staging environment. In its dashboard:
   (`APP_URL` and each of `APP_ALIAS_URLS`), each of those addresses as a sign-out redirect, and the **Password reset
   URL** `https://copacker.ai/reset-password`, so WorkOS's own reset email opens Copacker's page too. Sign-in returns
   to the address it started on, so `staging.copacker.ai` keeps its own session.
-- **Password reset email** (Emails → Configuration): turn off WorkOS's own once Copacker's sender domain is verified in
-  Resend, so only Copacker's goes out. Until then both are sent, and Copacker's reaches only the Resend account's owner
-  while the sender is `resend.dev`.
+- **Password reset email** (Emails → Configuration): production now sends from the verified `copacker.ai`, so WorkOS's
+  own can be turned off and only Copacker's goes out. Until then both are sent. Local and staging still send from
+  `resend.dev`, so without WorkOS's email, their resets reach only the Resend account's owner.
 - **Authentication:** email and password, and Google and Microsoft OAuth. Staging uses WorkOS's demo OAuth
   credentials; a production WorkOS environment needs Copacker's own Google and Microsoft apps.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.

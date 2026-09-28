@@ -28,8 +28,12 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
    `APP_URL` (`public/email/mark.png`). The landing page's mailing list adds contacts, which needs a full access key in
    `EMAIL_MAILING_LIST_API_KEY` (it falls back to `EMAIL_API_KEY`); `MAILING_LIST_SEGMENT_ID` puts signups in a segment.
-   The contact page's messages and a notice of each new waitlist signup go to `CONTACT_EMAIL`. Resend's onboarding
-   sender only reaches the account owner, so verify an owned domain before inviting suppliers.
+   The contact page's messages and a notice of each new waitlist signup go to `CONTACT_EMAIL`. `copacker.ai` is
+   verified in Resend for sending only (us-east-1, no open or click tracking). Its DKIM (`resend._domainkey`), return
+   path (`send`, `rsend`) and DMARC (`_dmarc`, `p=none`) records are DNS-only in Cloudflare; none sit at the root, which
+   stays free for a mail provider. Production's `EMAIL_FROM` is `Copacker <hello@copacker.ai>`, on both services. Local
+   and staging keep `onboarding@resend.dev`, which reaches only the Resend account's owner, so their tests can't email
+   anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, as the policy promises.
@@ -123,10 +127,10 @@ Still to do:
   `https://staging.copacker.ai/api/connections/amazon` to Aisle Dev's, in the Solution Provider Portal. The edit page
   hides OAuth fields while the developer registration is under review; until then, connect by self-authorization.
 - Shopify: an EventBridge source on Copacker Dev for staging's Shopify queue ([notifications](notifications.md)).
-- Email: `EMAIL_FROM` is still `onboarding@resend.dev` and `CONTACT_EMAIL` a personal Gmail. Verify `copacker.ai` in
-  Resend (its DNS records go in Cloudflare), move `EMAIL_FROM` to an `@copacker.ai` address, and route incoming
-  `@copacker.ai` mail (Cloudflare Email Routing) before pointing `CONTACT_EMAIL` at it. Then turn off WorkOS's own
-  password reset email ([Auth](auth.md#workos-settings)).
+- Email: nothing receives `@copacker.ai` mail yet. Invitations, purchase orders, label notices and password resets
+  set no reply-to, so replies to them go to `hello@copacker.ai` and bounce. Set up mailboxes (Google Workspace, whose
+  records go at the root), then point `CONTACT_EMAIL` there from the personal Gmail. Turn off WorkOS's own password
+  reset email ([Auth](auth.md#workos-settings)).
 
 ## Databases and migrations
 
