@@ -1,3 +1,4 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
 import { Connect } from "./connect"
@@ -202,17 +203,23 @@ function Faq() {
         >
           Questions
         </h2>
-        <dl className="border-t border-foreground/10">
+        {/* All closed to start, so people open the ones they care about. Closed answers stay in the page, hidden
+            until found, so find in page and search engines still reach them. */}
+        <Accordion multiple className="border-t border-foreground/10">
           {questions.map(([question, answer]) => (
-            <div
-              key={question}
-              className="grid gap-2 border-b border-foreground/10 py-7 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-10"
-            >
-              <dt className="text-lg font-medium">{question}</dt>
-              <dd className="text-muted-foreground">{answer}</dd>
-            </div>
+            <AccordionItem key={question} value={question} className="border-b border-foreground/10">
+              <AccordionTrigger className="gap-6 py-6 text-lg font-medium tracking-[-0.01em] transition-colors hover:text-foreground/70 hover:no-underline **:data-[slot=accordion-trigger-icon]:mt-1 **:data-[slot=accordion-trigger-icon]:size-5">
+                {question}
+              </AccordionTrigger>
+              <AccordionContent
+                hiddenUntilFound
+                className="max-w-[60ch] pb-7 text-base text-pretty text-muted-foreground"
+              >
+                {answer}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </dl>
+        </Accordion>
       </div>
     </section>
   )
