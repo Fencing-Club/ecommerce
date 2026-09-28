@@ -2,9 +2,10 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { jobs, memberships, profiles, teamInvitations } from "@/db/schema"
-import { type Access, accessSchema, viewOnlyAreas } from "@/lib/access"
+import { type Access, accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
 import type { Session } from "./auth"
+import { AccessError } from "./errors"
 import { hash, token } from "./security"
 
 const week = 7 * 86400000
@@ -17,21 +18,24 @@ const grantSchema = z.discriminatedUnion("role", [
 ])
 type Grant = { role: "admin" | "member"; access: Access }
 
-// The role and pages to save from a choice in Settings: only the pages this kind of workspace has, and View for a page
-// with nothing to edit. A member needs at least one page.
+// The role and pages to save from a choice in Settings: only the pages this kind of workspace has, each at most what
+// it allows (View for a page with nothing to edit, and without prices, nothing for a page about money and View for one
+// whose changes set prices). A member needs at least one page.
 function grantFor(kind: Session["org"]["kind"], raw: unknown): Grant {
   const grant = grantSchema.parse(raw)
   if (grant.role === "admin") {
     return { role: "admin", access: {} }
   }
-  const access: Access = {}
+  const prices = grant.access.prices !== undefined
+  const access: Access = prices ? { prices: "view" } : {}
   for (const { area } of areasFor(kind)) {
     const level = grant.access[area]
-    if (level) {
-      access[area] = viewOnlyAreas.has(area) ? "view" : level
+    const highest = highestLevel(kind, area, prices)
+    if (level && highest) {
+      access[area] = highest === "view" ? "view" : level
     }
   }
-  if (!Object.keys(access).length) {
+  if (!Object.keys(access).some((key) => key !== "prices")) {
     throw new Error("Choose at least one page")
   }
   return { role: "member", access }
@@ -198,6 +202,37 @@ export async function changeAccess(
   if (!changed.length) {
     throw new Error("They’re no longer in this workspace")
   }
+  return { ok: true }
+}
+
+// Hands the workspace to a colleague, who becomes its owner; the owner stays on as an admin. Only the owner does this,
+// so a workspace always has exactly one.
+export async function transferOwnership(
+  s: { org: Pick<Session["org"], "id">; user: Pick<Session["user"], "id"> },
+  raw: unknown
+) {
+  const { userId } = userSchema.parse(raw)
+  if (userId === s.user.id) {
+    throw new Error("You already own this workspace")
+  }
+  await db().transaction(async (tx) => {
+    const [previous] = await tx
+      .update(memberships)
+      .set({ role: "admin", access: {} })
+      .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, s.user.id), eq(memberships.role, "owner")))
+      .returning({ userId: memberships.userId })
+    if (!previous) {
+      throw new AccessError("Only the owner can do this")
+    }
+    const [next] = await tx
+      .update(memberships)
+      .set({ role: "owner", access: {} })
+      .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, userId)))
+      .returning({ userId: memberships.userId })
+    if (!next) {
+      throw new Error("They’re no longer in this workspace")
+    }
+  })
   return { ok: true }
 }
 

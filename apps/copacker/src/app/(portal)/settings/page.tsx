@@ -2,6 +2,7 @@ import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { PageHeader } from "@/components/common"
+import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
 import { Integrations } from "@/components/integrations"
 import { DetailRow, InventoryLocations } from "@/components/inventory-locations"
@@ -19,6 +20,7 @@ import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
 import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
+import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
 import { reportingCurrency } from "@/server/overview-sales"
@@ -73,7 +75,11 @@ export default async function Settings() {
         .map((location) => ({ id: location.locationId, name: location.name }))
     : []
 
-  const [person] = await db().select().from(profiles).where(eq(profiles.userId, s.user.id))
+  const [[person], owned] = await Promise.all([
+    db().select().from(profiles).where(eq(profiles.userId, s.user.id)),
+    // What deleting the account would do to the workspaces the person owns.
+    ownedWorkspaces(s.user.id)
+  ])
   return (
     <>
       <PageHeader title="Settings" />
@@ -92,7 +98,14 @@ export default async function Settings() {
         </Section>
 
         <Section id="team" title="Team" description={`People in ${s.org.name}`}>
-          <TeamSettings {...team} admin={admin} you={s.user.id} workspace={s.org.name} kind={s.org.kind} />
+          <TeamSettings
+            {...team}
+            admin={admin}
+            owner={s.role === "owner"}
+            you={s.user.id}
+            workspace={s.org.name}
+            kind={s.org.kind}
+          />
         </Section>
 
         {buyer && (
@@ -221,6 +234,17 @@ export default async function Settings() {
             supplier={supplier}
             locations={ownLocations}
             admin={admin}
+          />
+        </Section>
+
+        <Section id="delete" title="Delete" description="Permanent, and can’t be undone">
+          <DangerZone
+            workspace={s.org.name}
+            kind={s.org.kind}
+            owner={s.role === "owner"}
+            email={s.user.email}
+            handOver={owned.handOver.map((workspace) => workspace.name)}
+            closing={owned.closing.map((workspace) => workspace.name)}
           />
         </Section>
       </div>

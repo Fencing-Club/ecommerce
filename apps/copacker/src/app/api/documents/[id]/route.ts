@@ -23,7 +23,11 @@ const forwarderKinds = ["invoice", "packing_list", "carton_label", "shipping_lab
 async function canRead(s: Session, doc: typeof documents.$inferSelect) {
   if (s.org.kind !== "forwarder") {
     // The purchase order's own documents belong to its page; invoices, packing lists and labels to its shipments.
+    // The purchase order and the commercial invoice are priced.
     requirePage(s, ["purchase_order", "product_label"].includes(doc.kind) ? "orders" : "shipments")
+    if (["purchase_order", "invoice"].includes(doc.kind)) {
+      requirePage(s, "prices")
+    }
     await accessibleOrder(s, doc.orderId)
     return
   }

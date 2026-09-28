@@ -1,7 +1,24 @@
 import { ZodError } from "zod"
+import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { RestockInputError, restockReport } from "@/server/restock-page"
+import type { RestockLine } from "@/server/restock-plan"
 import { appUrl } from "@/server/security"
+
+// A line without what it costs and sells for, or the sales and profit it would lose, for a member who doesn't see
+// prices. The quantities stay.
+function withoutPrices(line: RestockLine): RestockLine {
+  return {
+    ...line,
+    unitCostMinor: null,
+    costCurrency: null,
+    estimatedCostMinor: null,
+    priceMinor: null,
+    priceCurrency: null,
+    lostSalesMinor: null,
+    lostProfitMinor: null
+  }
+}
 
 // Restock suggestions for Amazon or one Shopify location, from stored orders.
 export async function POST(request: Request) {
@@ -15,7 +32,8 @@ export async function POST(request: Request) {
   }
   requirePage(s, "restock")
   try {
-    return Response.json(await restockReport(s, await request.json()), { headers })
+    const report = await restockReport(s, await request.json())
+    return Response.json(can(s, "prices") ? report : { ...report, lines: report.lines.map(withoutPrices) }, { headers })
   } catch (error) {
     if (error instanceof RestockInputError) {
       return Response.json({ error: error.message }, { status: 409, headers })

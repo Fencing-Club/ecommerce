@@ -21,6 +21,9 @@ The UI should always send the last displayed numeric revision for a PO/shipment 
 | team.resend, team.cancel | email | Owner or admin |
 | team.accept | token | Verified invited email, no prior workspace needed |
 | team.remove | userId | Owner or admin; removes anyone but the owner and yourself |
+| team.transfer | userId | Owner; makes a colleague the owner and stays on as an admin |
+| workspace.delete | name | Owner; the workspace's name confirms it. Deletes the workspace and everything in it for everyone; returns redirect |
+| account.delete | email | Anyone; their email confirms it. Refused while they own a workspace others use. Deletes their sign-in and memberships, closes workspaces only they use, signs them out; returns redirect |
 | supplier.create | name, email | Buyer, Partners: Edit; invitation to supplier workspace |
 | supplier.accept | token, orgId | Exact verified invited email; owner or admin of the selected supplier workspace. Acceptance switches to that workspace and consumes the invitation once. |
 | contact.create | name, kind: pickup or forwarder, address | Owner or admin |
@@ -30,7 +33,7 @@ The UI should always send the last displayed numeric revision for a PO/shipment 
 | shipment.save | id, revision, orderRevision, draft | Buyer or assigned supplier; saves incomplete packing; returns revision and savedAt |
 | shipment.check | id, optional packing | Buyer or assigned supplier; read-only preflight of provided packing or saved draft |
 | shipment.submit | id, revision, optional packing | Buyer or assigned supplier; submits provided packing or saved draft, reserves quantities and queues approval or Amazon creation |
-| shipment.approve | id, revision, updateCost: boolean | Buyer; updates PO and queues supplier SKU writeback |
+| shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit and prices; updates PO and queues supplier SKU writeback |
 | shipment.correct | id, reason | Buyer or assigned supplier; invalidates affected shipment documents |
 | shipment.reconcile | id, amazonOrderId | Buyer; reads Amazon order and verifies reference before worker resumes |
 | shipment.cancelAmazon | id | Buyer; cancels the AWD order or FBA inbound plan in Amazon and verifies it's cancelled before releasing quantities |

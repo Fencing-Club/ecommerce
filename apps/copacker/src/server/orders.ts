@@ -27,6 +27,7 @@ import {
   poImports,
   type ShipmentState
 } from "@/db/schema"
+import { can } from "@/lib/access"
 import { bundleQuote } from "@/lib/bundle-quote"
 import { quantityProblem } from "@/lib/catalog-pricing"
 import { accessibleOrder } from "./access"
@@ -447,6 +448,23 @@ export async function newShipment(s: Session, orderId: string) {
     return shipment!
   })
 }
+// A packer who doesn't see prices can't change them: each invoice line keeps the purchase order's price, whatever the
+// form sent, so only supplier SKUs can change.
+function keepOrderPrices(s: Session, data: OrderInput, raw: unknown) {
+  if (can(s, "prices")) {
+    return raw
+  }
+  const parsed = z.looseObject({ changes: z.array(z.looseObject({ itemId: z.string() })) }).safeParse(raw)
+  if (!parsed.success) {
+    return raw
+  }
+  const price = (itemId: string) => data.items.find((item) => item.id === itemId)?.unitPrice
+  return {
+    ...parsed.data,
+    changes: parsed.data.changes.map((change) => ({ ...change, unitPrice: price(change.itemId) }))
+  }
+}
+
 export async function submitPacking(s: Session, shipmentId: string, raw: unknown, expectedRevision: number) {
   const submitted = await db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
@@ -467,7 +485,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     const assessed = packingReadiness(
       order.data,
       shipment,
-      raw ?? shipment.packingDraft,
+      keepOrderPrices(s, order.data, raw ?? shipment.packingDraft),
       docs,
       reservedPieces(others, shipmentId),
       order.revision
@@ -692,13 +710,14 @@ export async function savePacking(
   expectedRevision: number,
   expectedOrderRevision: number
 ) {
-  const draft = packingDraftSchema.parse(raw)
+  const input = packingDraftSchema.parse(raw)
   return db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
       throw new Error("Shipment not found")
     }
     const { order } = await accessibleOrder(s, initial.orderId, tx, true)
+    const draft = packingDraftSchema.parse(keepOrderPrices(s, order.data, input))
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || shipment.revision !== expectedRevision || order.revision !== expectedOrderRevision) {
       throw new Error("The purchase order or packing draft has changed. Refresh before saving")
@@ -738,7 +757,7 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
     const result = packingReadiness(
       order.data,
       shipment,
-      raw ?? shipment.packingDraft ?? shipment.packing ?? {},
+      keepOrderPrices(s, order.data, raw ?? shipment.packingDraft ?? shipment.packing ?? {}),
       docs,
       reserved,
       order.revision

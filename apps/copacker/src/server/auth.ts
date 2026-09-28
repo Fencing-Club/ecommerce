@@ -1,10 +1,11 @@
 import { withAuth } from "@workos-inc/authkit-nextjs"
 import { and, eq } from "drizzle-orm"
+import type { Metadata } from "next"
 import { cookies, headers } from "next/headers"
 import { forbidden, redirect } from "next/navigation"
 import { db } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
-import { type AccessLevel, type Area, can, isAdmin, type Permissions } from "@/lib/access"
+import { type AccessLevel, type Area, can, type Grant, isAdmin, type Permissions } from "@/lib/access"
 import { areaLabel } from "@/lib/navigation"
 import { AccessError } from "@/server/errors"
 import { returnPath } from "@/server/security"
@@ -109,16 +110,36 @@ export function requireAdmin(s: Pick<Session, "role">) {
     throw new AccessError("Only admins can do this")
   }
 }
-// For a request: a member without the page, or without edit access to it for a change, is turned away.
-export function requireAccess(s: Permissions & { org: Pick<Session["org"], "kind"> }, area: Area, level: AccessLevel) {
-  if (!can(s, area, level)) {
-    throw new AccessError(`Ask an admin for access to ${areaLabel(s.org.kind, area)}`)
+// Handing the workspace over and deleting it are its owner's alone.
+export function requireOwner(s: Pick<Session, "role">) {
+  if (s.role !== "owner") {
+    throw new AccessError("Only the owner can do this")
   }
+}
+// For a request: a member without the page, or without edit access to it for a change, is turned away, as is one who
+// doesn't see prices from anything that shows or sets them.
+export function requireAccess(
+  s: Permissions & { org: Pick<Session["org"], "kind"> },
+  grant: Grant,
+  level: AccessLevel = "view"
+) {
+  if (!can(s, grant, level)) {
+    const name = grant === "prices" ? "prices and costs" : areaLabel(s.org.kind, grant)
+    throw new AccessError(`Ask an admin for access to ${name}`)
+  }
+}
+// The No access page's title, for a page someone can't open. A page's metadata returns it rather than calling
+// forbidden(): Next titles a page whose metadata throws forbidden() as not found.
+export const noAccessTitle: Metadata = { title: "No access" }
+// A guarded page's title, as its generateMetadata. Someone who can't open the page gets the No access page's title,
+// which a page's own static title would otherwise replace.
+export function titleFor(title: string, area: Area, level: AccessLevel = "view") {
+  return async (): Promise<Metadata> => (can(await session(), area, level) ? { title } : noAccessTitle)
 }
 // For a page, or a request that only reads: someone without access gets Next's 403, which shows a page as the portal's
 // No access page.
-export function requirePage(s: Permissions, area: Area, level: AccessLevel = "view") {
-  if (!can(s, area, level)) {
+export function requirePage(s: Permissions, grant: Grant, level: AccessLevel = "view") {
+  if (!can(s, grant, level)) {
     forbidden()
   }
 }

@@ -1,7 +1,6 @@
 import { money } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
 import { AlertTriangle, ArrowRight, Clock, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
-import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Fragment } from "react"
@@ -24,14 +23,15 @@ import { shortDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
+import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { finishedStates, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { orderWorkflow } from "@/server/workflow"
 import { shipmentDestinations } from "../destination"
 
-export const metadata: Metadata = { title: "Shipment" }
+export const generateMetadata = titleFor("Shipment", "shipments")
 
 export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -40,6 +40,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   // can open it.
   const editsShipments = can(s, "shipments", "edit")
   const seesOrder = can(s, "orders")
+  // Someone who doesn't see prices packs and follows the shipment without its invoice's prices.
+  const prices = can(s, "prices")
   // A malformed link is a shipment that doesn't exist.
   const parsed = z.uuid().safeParse((await params).id)
   if (!parsed.success) {
@@ -80,7 +82,9 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
   const visibleDocs = docs.filter(
-    (d) => isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)
+    (d) =>
+      (isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)) &&
+      (prices || d.kind !== "invoice")
   )
   // The shipment's commercial invoice. There's one at most: each upload replaces the last.
   const invoice = docs.find((d) => d.kind === "invoice")
@@ -202,8 +206,12 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           availablePieces={Object.fromEntries(
             order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
           )}
-          order={order.data}
-          initial={shipment.packingDraft ?? shipment.packing}
+          order={prices ? order.data : unpricedOrder(order.data)}
+          initial={
+            prices
+              ? (shipment.packingDraft ?? shipment.packing)
+              : unpricedDraft(shipment.packingDraft ?? shipment.packing)
+          }
           invoice={invoice && { id: invoice.id, name: invoice.name, bytes: invoice.bytes }}
           addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
           enteringFor={isBuyer ? supplier.name : undefined}
@@ -226,7 +234,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                             .filter(Boolean)
                             .join(" / ")}
                         </ItemTitle>
-                        {change.unitPrice !== item.unitPrice && (
+                        {prices && change.unitPrice !== item.unitPrice && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
                             Price per piece {money(item.unitPrice, snapshot.currency)}
                             <ArrowRight className="size-3" aria-label="changed to" />
@@ -244,7 +252,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                     </Item>
                   ))}
                 </ItemGroup>
-                {isBuyer && editsShipments && <ApproveInvoice id={id} revision={shipment.revision} />}
+                {/* Approving accepts the invoice's prices. */}
+                {isBuyer && editsShipments && prices && <ApproveInvoice id={id} revision={shipment.revision} />}
                 {!isBuyer && <p className="text-sm text-muted-foreground">Waiting for the buyer’s approval</p>}
               </CardContent>
             </Card>

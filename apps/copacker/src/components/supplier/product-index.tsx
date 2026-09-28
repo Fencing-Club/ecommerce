@@ -94,6 +94,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   // Choosing products is for archiving or restoring them, which changes them.
   const editable = useCan("products", "edit")
+  const prices = useCan("prices")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -218,7 +219,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
               <TableHead className={columns.inventory}>Inventory</TableHead>
               <TableHead className={columns.category}>Category</TableHead>
               <TableHead className={columns.catalogs}>Catalogs</TableHead>
-              <TableHead className="text-right">Price</TableHead>
+              {prices && <TableHead className="text-right">Price</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -275,9 +276,11 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   </TableCell>
                   <TableCell className={columns.category}>{product.category ?? "—"}</TableCell>
                   <TableCell className={columns.catalogs}>{product.catalogs}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {price ?? <WarningNote>No price</WarningNote>}
-                  </TableCell>
+                  {prices && (
+                    <TableCell className="text-right tabular-nums">
+                      {price ?? <WarningNote>No price</WarningNote>}
+                    </TableCell>
+                  )}
                 </TableRow>
               )
             })}

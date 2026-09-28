@@ -814,7 +814,13 @@ async function matchingProducts(orgId: string, domain: string, q: string) {
   }
 }
 
-export async function listSalesOrders(orgId: string, filter: { source?: SalesSource; page: number; q?: string }) {
+// Someone who doesn't see prices searches only order numbers, SKUs and product titles, so no search finds orders by
+// their amounts.
+export async function listSalesOrders(
+  orgId: string,
+  filter: { source?: SalesSource; page: number; q?: string },
+  { prices = true }: { prices?: boolean } = {}
+) {
   const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))}`
   const accounts = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
@@ -843,7 +849,11 @@ export async function listSalesOrders(orgId: string, filter: { source?: SalesSou
     or(...scopes),
     pattern
       ? or(
-          sql`${salesOrders.data}::text ilike ${pattern}`,
+          prices
+            ? sql`${salesOrders.data}::text ilike ${pattern}`
+            : sql`(concat_ws(' ', ${salesOrders.orderId}, ${salesOrders.data}->>'name') ilike ${pattern}
+                or exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems')) l
+                  where concat_ws(' ', l->>'sku', l->'product'->>'sellerSku') ilike ${pattern}))`,
           titled && (titled.variantIds.length || titled.skus.length)
             ? sql`exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems')) l
                 where l->'variant'->>'id' in ${listed(titled.variantIds)}

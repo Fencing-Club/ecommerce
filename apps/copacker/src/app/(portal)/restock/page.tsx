@@ -1,11 +1,10 @@
-import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { RestockReport } from "@/components/restock-report"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { restockSettings } from "@/server/restock-report"
 
-export const metadata: Metadata = { title: "Restock" }
+export const generateMetadata = titleFor("Restock", "restock")
 
 export default async function RestockPage() {
   const s = await session()

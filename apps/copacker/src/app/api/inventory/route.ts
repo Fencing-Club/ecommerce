@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
+import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { stockSource, stockScopes, stockSelection } from "@/server/stock"
 
@@ -30,6 +31,9 @@ const querySchema = z.strictObject({
     .regex(/^[A-Za-z0-9_-]+$/)
     .optional()
 })
+
+// A Shopify variation's cost and price, which the stock rows carry for the Overview and Restock.
+const moneyFields = new Set(["unitCostMinor", "costCurrency", "priceMinor", "priceCurrency"])
 
 export async function GET(request: Request) {
   const s = await session()
@@ -99,7 +103,11 @@ export async function GET(request: Request) {
     return Response.json({ error: "Stock snapshot or location changed; restart pagination" }, { status: 409, headers })
   }
   const offset = cursor?.offset ?? 0
-  const rows = allRows.slice(offset, offset + query.data.limit)
+  // Someone who doesn't see prices gets each variation without what it costs and sells for.
+  const prices = can(s, "prices")
+  const rows = allRows
+    .slice(offset, offset + query.data.limit)
+    .map((row) => (prices ? row : Object.fromEntries(Object.entries(row).filter(([key]) => !moneyFields.has(key)))))
   const nextOffset = offset + rows.length
   return Response.json(
     {

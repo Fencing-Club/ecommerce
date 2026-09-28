@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 import { POST as action } from "../src/app/api/action/route"
+import { GET as purchaseOrderPdf } from "../src/app/api/orders/[id]/po/route"
 import { GET as salesOrders } from "../src/app/api/sales/orders/route"
 import { type Access, can, canOpen, pageOf, type Role } from "../src/lib/access"
 import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
@@ -121,6 +122,30 @@ describe("the server's checks", () => {
     // An admin gets past the check, to the request's own validation.
     context.actor = actor("buyer", "admin")
     expect((await send("team.invite", { email: "not an email", role: "admin" })).status).toBe(400)
+  })
+
+  it("keeps prices from a member who doesn't see them", async () => {
+    context.actor = actor("buyer", "member", { orders: "view", shipments: "edit" })
+    const approval = await send("shipment.approve", { id: "00000000-0000-4000-8000-000000000002", revision: 1 })
+    expect(approval.status).toBe(403)
+    expect(await approval.json()).toEqual({ error: "Ask an admin for access to prices and costs" })
+    await expect(
+      purchaseOrderPdf(new Request("http://localhost:3000/api/orders/x/po"), {
+        params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000003" })
+      })
+    ).rejects.toThrow("forbidden")
+  })
+
+  it("keeps handing over and deleting the workspace to its owner", async () => {
+    context.actor = actor("buyer", "admin")
+    for (const [name, data] of [
+      ["team.transfer", { userId: "user-sam" }],
+      ["workspace.delete", { name: "Test org" }]
+    ] as const) {
+      const response = await send(name, data)
+      expect(response.status).toBe(403)
+      expect(await response.json()).toEqual({ error: "Only the owner can do this" })
+    }
   })
 
   it("answers a read of a page the member doesn't have with 403", async () => {

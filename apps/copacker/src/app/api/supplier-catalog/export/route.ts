@@ -9,6 +9,8 @@ export async function GET(request: Request) {
     return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
   }
   requirePage(s, "products")
+  // The sheet has every price.
+  requirePage(s, "prices")
   const format = new URL(request.url).searchParams.get("format") === "csv" ? "csv" : "xlsx"
   const rows = sheetRows(
     (await productList(s.org.id)).map((product) => ({ ...product, active: product.status === "active" }))

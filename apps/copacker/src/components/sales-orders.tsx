@@ -5,9 +5,10 @@ import { money } from "@repo/aisle"
 import { ChevronLeft, ChevronRight, ExternalLink, Repeat, Search } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { useCan, useIsAdmin } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
-import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -58,8 +59,11 @@ const isSource = (value: unknown): value is SalesSource => value === "shopify" |
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
 
-// Why a source's last sync failed, and what to do about it.
-function failure(errorCode: string | null, title: string) {
+// Why a source's last sync failed, and what to do about it: the owner and admins reconnect in Settings.
+function failure(errorCode: string | null, title: string, admin: boolean) {
+  if ((errorCode === "reconnect" || errorCode === "shopify_permissions") && !admin) {
+    return `Ask an admin to reconnect ${title}`
+  }
   if (errorCode === "reconnect" || errorCode === "shopify_permissions") {
     return (
       <>
@@ -77,13 +81,14 @@ function failure(errorCode: string | null, title: string) {
 // now is in the store's Settings.
 function SourceSummary({ state }: { state: SyncState }) {
   const title = titles[state.source]
+  const admin = useIsAdmin()
   const active = state.status === "queued" || state.status === "running"
   const syncedAt = state.finishedAt ?? state.coveredTo
   let detail: React.ReactNode = "Not synced"
   if (active) {
     detail = "Syncing…"
   } else if (state.status === "failed") {
-    detail = <span className="text-destructive">{failure(state.errorCode, title)}</span>
+    detail = <span className="text-destructive">{failure(state.errorCode, title, admin)}</span>
   } else if (syncedAt) {
     detail = <SyncedAt at={syncedAt} />
   }
@@ -224,8 +229,10 @@ function Items({ items }: { items: SalesOrderSummary["items"] }) {
   )
 }
 
-// One order. Narrower, channel and status move under the order number; on a phone each order stacks.
+// One order. Narrower, channel and status move under the order number; on a phone each order stacks. Its sales and
+// fees show only to someone who sees prices; without them, the last column shown keeps the table's right inset.
 function OrderRow({ order }: { order: SalesOrderSummary }) {
+  const prices = useCan("prices")
   return (
     <TableRow className="group/row @max-md:flex @max-md:flex-col @max-md:gap-2 @max-md:px-4 @max-md:py-3">
       <TableCell className="pl-4 align-top @max-md:p-0">
@@ -258,26 +265,32 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
           </span>
         </div>
       </TableCell>
-      <TableCell className="min-w-40 align-top whitespace-normal @max-md:min-w-0 @max-md:p-0">
+      <TableCell
+        className={cn("min-w-40 align-top whitespace-normal @max-md:min-w-0 @max-md:p-0", !prices && "pr-4 @2xl:pr-2")}
+      >
         <Items items={order.items} />
       </TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">{order.channel}</TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">
         <SalesStatus status={order.status} />
       </TableCell>
-      <TableCell className="hidden text-right align-top tabular-nums @2xl:table-cell">
+      <TableCell className={cn("hidden text-right align-top tabular-nums @2xl:table-cell", !prices && "pr-4")}>
         {formatNumber(order.units)}
       </TableCell>
-      <TableCell className="pr-4 text-right align-top tabular-nums @2xl:pr-2 @max-md:p-0 @max-md:text-left">
-        {closedStatuses.has(order.status) ? (
-          <Placeholder />
-        ) : (
-          <Amount order={order} value={order.sales} pending="Amazon hasn’t priced this order yet" />
-        )}
-      </TableCell>
-      <TableCell className="hidden pr-4 text-right align-top tabular-nums @2xl:table-cell">
-        <Amount order={order} value={order.fees} pending="Amazon hasn’t posted its fees yet" />
-      </TableCell>
+      {prices && (
+        <>
+          <TableCell className="pr-4 text-right align-top tabular-nums @2xl:pr-2 @max-md:p-0 @max-md:text-left">
+            {closedStatuses.has(order.status) ? (
+              <Placeholder />
+            ) : (
+              <Amount order={order} value={order.sales} pending="Amazon hasn’t priced this order yet" />
+            )}
+          </TableCell>
+          <TableCell className="hidden pr-4 text-right align-top tabular-nums @2xl:table-cell">
+            <Amount order={order} value={order.fees} pending="Amazon hasn’t posted its fees yet" />
+          </TableCell>
+        </>
+      )}
     </TableRow>
   )
 }
@@ -295,6 +308,7 @@ function OrderList({
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState(initialSearch)
   const [q] = useDebouncedValue(search.trim(), 300)
+  const prices = useCan("prices")
   // The last page loaded stays on screen while the next one loads.
   const { data, isFetching, isError, error } = salesApi.useSalesOrdersQuery({
     source: source ?? undefined,
@@ -342,14 +356,18 @@ function OrderList({
           <TableHeader className="@max-md:hidden">
             <TableRow>
               <TableHead className="pl-4">Order</TableHead>
-              <TableHead className="w-full">Items</TableHead>
+              <TableHead className={cn("w-full", !prices && "pr-4 @2xl:pr-2")}>Items</TableHead>
               <TableHead className="hidden @2xl:table-cell">Channel</TableHead>
               <TableHead className="hidden @2xl:table-cell">Status</TableHead>
-              <TableHead className="hidden text-right @2xl:table-cell">Units</TableHead>
-              <TableHead className="pr-4 text-right @2xl:pr-2" title="After discounts, before tax and shipping">
-                Sales
-              </TableHead>
-              <TableHead className="hidden pr-4 text-right @2xl:table-cell">Fees</TableHead>
+              <TableHead className={cn("hidden text-right @2xl:table-cell", !prices && "pr-4")}>Units</TableHead>
+              {prices && (
+                <>
+                  <TableHead className="pr-4 text-right @2xl:pr-2" title="After discounts, before tax and shipping">
+                    Sales
+                  </TableHead>
+                  <TableHead className="hidden pr-4 text-right @2xl:table-cell">Fees</TableHead>
+                </>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody className="@max-md:block">
@@ -435,6 +453,8 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
   })
+  // The owner and admins connect stores; everyone else is told who can.
+  const admin = useIsAdmin()
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4">
@@ -457,13 +477,16 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
       <Card>
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>Connect Shopify or Amazon</EmptyTitle>
+            <EmptyTitle>{admin ? "Connect Shopify or Amazon" : "No store connected"}</EmptyTitle>
+            {!admin && <EmptyDescription>Ask an admin to connect one</EmptyDescription>}
           </EmptyHeader>
-          <EmptyContent>
-            <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-              Go to settings
-            </Button>
-          </EmptyContent>
+          {admin && (
+            <EmptyContent>
+              <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
+                Go to settings
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       </Card>
     )

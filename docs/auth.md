@@ -72,7 +72,16 @@ it instead of making a new one. Accepting always needs the invited, confirmed em
 The owner and admins invite colleagues in **Settings → Team** (`src/server/team.ts`), as admins or as members with
 the pages chosen for them ([Roles and page access](permissions.md)). Invitations last seven days. Sending one again
 replaces the link and drops the old email if it hasn't gone out yet; cancelling does the same. The owner and admins
-change anyone's access and remove people, but not the owner or themselves.
+change anyone's access and remove people, but not the owner or themselves. The owner can hand the workspace to a
+colleague, and stays on as an admin.
+
+## Deleting an account
+
+**Settings → Delete** deletes someone's account: the WorkOS user first (`userManagement.deleteUser`), so nothing else
+changes if WorkOS refuses, then their memberships, OAuth states and profile, and then AuthKit's cookie and the open
+workspace's, which signs them out. Someone who owns a workspace others use transfers ownership first. The owner can
+also delete the workspace, which deletes its WorkOS organization once its records are gone. See
+[Roles and page access](permissions.md#deleting).
 
 ## Testing sign-up locally
 

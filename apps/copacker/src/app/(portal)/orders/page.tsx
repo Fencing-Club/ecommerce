@@ -10,11 +10,15 @@ import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { forwarderOrders, visibleOrders } from "@/server/access"
-import { requirePage, session } from "@/server/auth"
-import { supplierOrders } from "@/server/supplier-workspace"
+import { noAccessTitle, requirePage, session } from "@/server/auth"
+import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: (await session()).org.kind === "supplier" ? "Orders" : "Purchase orders" }
+  const s = await session()
+  if (!can(s, "orders")) {
+    return noAccessTitle
+  }
+  return { title: s.org.kind === "supplier" ? "Orders" : "Purchase orders" }
 }
 
 export default async function OrdersPage({
@@ -29,13 +33,14 @@ export default async function OrdersPage({
     return (
       <>
         <PageHeader title="Orders" />
-        <SupplierOrderIndex orders={orders} initialTab={tab} />
+        <SupplierOrderIndex orders={can(s, "prices") ? orders : withoutTotals(orders)} initialTab={tab} />
       </>
     )
   }
   // A forwarder sees the POs whose goods pass through it, without their prices.
   const rows = (s.org.kind === "forwarder" ? await forwarderOrders(s) : await visibleOrders(s)).reverse()
-  const showValue = s.org.kind !== "forwarder"
+  // A forwarder never sees what a purchase order is worth, and a member sees it only with prices.
+  const showValue = s.org.kind !== "forwarder" && can(s, "prices")
   const isBuyer = s.org.kind === "buyer"
   // With no POs yet, a buyer is pointed at whichever step comes next: connecting Shopify, inviting a supplier, or the
   // first PO.

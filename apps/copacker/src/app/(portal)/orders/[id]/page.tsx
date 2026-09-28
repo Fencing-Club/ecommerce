@@ -23,9 +23,9 @@ import { can } from "@/lib/access"
 import { dayDate } from "@/lib/format"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
-import { requirePage, session } from "@/server/auth"
+import { noAccessTitle, requirePage, session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
-import { proposalChanges, proposalState } from "@/server/order-proposals"
+import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
 import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
@@ -37,7 +37,9 @@ type Props = { params: Promise<{ id: string }> }
 // title.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [s, { id }] = await Promise.all([session(), params])
-  requirePage(s, "orders")
+  if (!can(s, "orders")) {
+    return noAccessTitle
+  }
   const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
   return { title: order.data.reference }
 }
@@ -54,6 +56,8 @@ export default async function OrderPage({ params }: Props) {
   const editsOrder = can(s, "orders", "edit")
   const seesShipments = can(s, "shipments")
   const editsShipments = can(s, "shipments", "edit")
+  // Someone who doesn't see prices gets the PO without its costs, totals, landed costs and priced documents.
+  const prices = can(s, "prices")
   const { order, supplier } = await accessibleOrder(s, id)
   const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
@@ -143,6 +147,8 @@ export default async function OrderPage({ params }: Props) {
           documentOrder.indexOf(a.kind) - documentOrder.indexOf(b.kind) ||
           (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true })
       )
+      // The purchase order and the commercial invoice are priced.
+      .filter((doc) => prices || !["purchase_order", "invoice"].includes(doc.kind))
     return documents.length ? [{ ...group, documents }] : []
   })
   const prep = sharedPrep(order.data)
@@ -229,7 +235,11 @@ export default async function OrderPage({ params }: Props) {
       {proposal && (proposal.status === "pending" || proposal.status === "declined") && (
         <ProposalPanel
           proposal={{ id: proposal.id, status: proposal.status, note: proposal.data.note, reason: proposal.reason }}
-          changes={proposalChanges(order.data, proposal.data)}
+          changes={
+            prices
+              ? proposalChanges(order.data, proposal.data)
+              : unpricedChanges(proposalChanges(order.data, proposal.data))
+          }
           currency={order.data.currency}
           viewer={s.org.kind === "buyer" ? "buyer" : "supplier"}
           supplierName={supplier.name}
@@ -271,8 +281,8 @@ export default async function OrderPage({ params }: Props) {
                     <th className="px-3 py-2 text-left font-medium">Products</th>
                     <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
                     <th className="w-24 px-2 py-2 text-right font-medium">Qty</th>
-                    <th className="w-28 px-2 py-2 text-right font-medium">Cost</th>
-                    <th className="w-28 px-2 py-2 text-right font-medium">Total</th>
+                    {prices && <th className="w-28 px-2 py-2 text-right font-medium">Cost</th>}
+                    {prices && <th className="w-28 px-2 py-2 text-right font-medium">Total</th>}
                     <th className="w-12">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -307,10 +317,14 @@ export default async function OrderPage({ params }: Props) {
                           <p className="text-xs text-muted-foreground">{remainingFor(item.id)} to ship</p>
                         )}
                       </td>
-                      <td className="px-2 py-2.5 text-right tabular-nums">{money(item.unitPrice, currency)}</td>
-                      <td className="px-2 py-2.5 text-right tabular-nums">
-                        {money(item.pieces * item.unitPrice, currency)}
-                      </td>
+                      {prices && (
+                        <td className="px-2 py-2.5 text-right tabular-nums">{money(item.unitPrice, currency)}</td>
+                      )}
+                      {prices && (
+                        <td className="px-2 py-2.5 text-right tabular-nums">
+                          {money(item.pieces * item.unitPrice, currency)}
+                        </td>
+                      )}
                       <td className="py-1.5 pr-2 text-right">
                         <LineMenu
                           orderId={id}
@@ -380,9 +394,13 @@ export default async function OrderPage({ params }: Props) {
                       ) : (
                         <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">{summary}</div>
                       )}
-                      {buyer && editsShipments && shipment.status === "shipped" && leg && !leg.forwarderOrgId && (
-                        <ForwardShipment shipmentId={shipment.id} currency={currency} />
-                      )}
+                      {/* Shipping it on records the forwarder's freight cost, so it needs prices too. */}
+                      {buyer &&
+                        editsShipments &&
+                        prices &&
+                        shipment.status === "shipped" &&
+                        leg &&
+                        !leg.forwarderOrgId && <ForwardShipment shipmentId={shipment.id} currency={currency} />}
                     </li>
                   )
                 })}
@@ -415,36 +433,39 @@ export default async function OrderPage({ params }: Props) {
             viewerOrg={s.org.name}
             timeZone={s.org.timeZone ?? undefined}
             entries={timeline}
+            prices={prices}
           />
         </div>
 
         <aside className="flex flex-col gap-4">
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Cost summary</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <p className="font-medium">Order details</p>
-              <div className="flex justify-between gap-3">
-                <span>
-                  {order.data.items.length} {order.data.items.length === 1 ? "variant" : "variants"} ({units}{" "}
-                  {units === 1 ? "item" : "items"})
-                </span>
-                <span className="tabular-nums">{money(subtotal, currency)}</span>
-              </div>
-              {order.data.adjustments?.map((adjustment, index) => (
-                <div key={index} className="flex justify-between gap-3">
-                  <span>{adjustment.description}</span>
-                  <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
+          {prices && (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Cost summary</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <p className="font-medium">Order details</p>
+                <div className="flex justify-between gap-3">
+                  <span>
+                    {order.data.items.length} {order.data.items.length === 1 ? "variant" : "variants"} ({units}{" "}
+                    {units === 1 ? "item" : "items"})
+                  </span>
+                  <span className="tabular-nums">{money(subtotal, currency)}</span>
                 </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between font-semibold">
-                <span>Total</span>
-                <span className="tabular-nums">{money(orderTotal(order.data), currency)}</span>
-              </div>
-            </CardContent>
-          </Card>
+                {order.data.adjustments?.map((adjustment, index) => (
+                  <div key={index} className="flex justify-between gap-3">
+                    <span>{adjustment.description}</span>
+                    <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span className="tabular-nums">{money(orderTotal(order.data), currency)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card size="sm">
             <CardHeader>
@@ -461,7 +482,7 @@ export default async function OrderPage({ params }: Props) {
             </CardContent>
           </Card>
 
-          {s.org.kind === "buyer" && (
+          {s.org.kind === "buyer" && prices && (
             <LandedCosts
               orderId={id}
               currency={currency}

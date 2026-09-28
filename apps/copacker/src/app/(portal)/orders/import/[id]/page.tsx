@@ -1,15 +1,14 @@
 import { and, eq, isNull } from "drizzle-orm"
-import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { ImportReview, type ReviewProduct } from "@/components/import-review"
 import { db } from "@/db"
 import { poImports, suppliers } from "@/db/schema"
-import { requireBuyer, requirePage, session } from "@/server/auth"
+import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
 
-export const metadata: Metadata = { title: "Review import" }
+export const generateMetadata = titleFor("Review import", "orders", "edit")
 
 export default async function ReviewImport({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

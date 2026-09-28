@@ -119,6 +119,8 @@ export function ProposalPanel({
   const busy = pending !== null || refreshing
   // Answering or withdrawing changes the purchase order, which needs Edit access to it.
   const editable = useCan("orders", "edit")
+  // Someone who doesn't see prices gets the changes without them.
+  const prices = useCan("prices")
 
   async function act(action: "approve" | "decline" | "withdraw", body: Record<string, unknown>) {
     setPending(action)
@@ -168,7 +170,7 @@ export function ProposalPanel({
               <TableRow>
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
-                <TableHead className="text-right">Unit price</TableHead>
+                {prices && <TableHead className="text-right">Unit price</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -188,13 +190,15 @@ export function ProposalPanel({
                   <TableCell className="text-right tabular-nums">
                     <Delta before={line.before?.pieces ?? null} after={line.after?.pieces ?? null} format={count} />
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    <Delta
-                      before={line.before?.unitPrice ?? null}
-                      after={line.after?.unitPrice ?? null}
-                      format={price}
-                    />
-                  </TableCell>
+                  {prices && (
+                    <TableCell className="text-right tabular-nums">
+                      <Delta
+                        before={line.before?.unitPrice ?? null}
+                        after={line.after?.unitPrice ?? null}
+                        format={price}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -223,10 +227,14 @@ export function ProposalPanel({
               </dd>
             </>
           )}
-          <dt className="text-muted-foreground">Total</dt>
-          <dd className="tabular-nums">
-            <Delta before={changes.total.before} after={changes.total.after} format={price} />
-          </dd>
+          {prices && (
+            <>
+              <dt className="text-muted-foreground">Total</dt>
+              <dd className="tabular-nums">
+                <Delta before={changes.total.before} after={changes.total.after} format={price} />
+              </dd>
+            </>
+          )}
         </dl>
       </div>
       {!declined && editable && (

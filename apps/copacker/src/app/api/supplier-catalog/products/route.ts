@@ -11,6 +11,8 @@ export async function POST(request: Request) {
   try {
     const s = await session()
     requireAccess(s, "products", "edit")
+    // A product's variants carry its prices.
+    requireAccess(s, "prices")
     return Response.json(await saveProduct(s, await request.json()))
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save product"

@@ -115,6 +115,8 @@ type Customer = {
 }
 
 export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; catalogs: CatalogOption[] }) {
+  // What each customer spent is left out for someone who doesn't see prices, whose rows come without it.
+  const prices = useCan("prices")
   const [tab, setTab] = useState<"all" | "open" | "none">("all")
   const [query, setQuery] = useState("")
   if (!customers.length) {
@@ -153,7 +155,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
               <TableHead>Catalog</TableHead>
               <TableHead className="hidden text-right @2xl:table-cell">Orders</TableHead>
               <TableHead className="hidden @3xl:table-cell">Last order</TableHead>
-              <TableHead className="text-right">Amount spent</TableHead>
+              {prices && <TableHead className="text-right">Amount spent</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -179,9 +181,11 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                 <TableCell className="hidden text-muted-foreground @3xl:table-cell">
                   {customer.lastOrderAt ? formatDate(customer.lastOrderAt) : "—"}
                 </TableCell>
-                <TableCell className="text-right">
-                  <Amounts amounts={customer.spent} />
-                </TableCell>
+                {prices && (
+                  <TableCell className="text-right">
+                    <Amounts amounts={customer.spent} />
+                  </TableCell>
+                )}
               </LinkRow>
             ))}
           </TableBody>

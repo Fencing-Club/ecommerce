@@ -258,8 +258,9 @@ function calculation(line: RestockLine): Step[] {
   return steps
 }
 
-// What an order placed today can't prevent: the days out of stock before it arrives, and the sales lost in them.
-function lossSteps(line: RestockLine): Step[] {
+// What an order placed today can't prevent: the days out of stock before it arrives, and the sales lost in them, in
+// units alone without prices.
+function lossSteps(line: RestockLine, prices: boolean): Step[] {
   if (!line.lostUnits || !line.lostDays) {
     return []
   }
@@ -269,7 +270,7 @@ function lossSteps(line: RestockLine): Step[] {
     {
       label: "Lost sales",
       value:
-        line.lostSalesMinor !== null && line.priceCurrency
+        prices && line.lostSalesMinor !== null && line.priceCurrency
           ? `${money(line.lostSalesMinor, line.priceCurrency)} (${units})`
           : units
     }
@@ -307,13 +308,14 @@ function Steps({ steps, loss = false }: { steps: Step[]; loss?: boolean }) {
 }
 
 function Explanation({ line }: { line: RestockLine }) {
+  const prices = useCan("prices")
   if (line.status === "not_stocked") {
     return <p className="text-sm text-muted-foreground">{notStocked}</p>
   }
   if (line.status === "blocked") {
     return <p className="text-sm text-muted-foreground">{blockedText(line)}</p>
   }
-  const loss = lossSteps(line)
+  const loss = lossSteps(line, prices)
   return (
     <div className="grid max-w-sm grid-cols-[minmax(0,1fr)_1ch_auto] gap-x-3 text-sm">
       <Steps steps={calculation(line)} />
@@ -489,6 +491,8 @@ function LineRows({
   expanded: boolean
   onToggle: () => void
 }) {
+  // Lost sales and costs are money, which a member sees only with prices.
+  const prices = useCan("prices")
   const orderable = line.status !== "blocked" && line.status !== "not_stocked"
   const suggested = line.purchaseUnits ?? 0
   const current = edit ?? {
@@ -498,7 +502,7 @@ function LineRows({
   const label = `${line.product}${line.variant ? `, ${line.variant}` : ""}`
   const invalid = current.selected && !(Number.isInteger(Number(current.units)) && Number(current.units) > 0)
   const lost =
-    line.lostSalesMinor !== null && line.lostSalesMinor > 0 && line.priceCurrency
+    prices && line.lostSalesMinor !== null && line.lostSalesMinor > 0 && line.priceCurrency
       ? money(line.lostSalesMinor, line.priceCurrency)
       : null
   return (
@@ -534,9 +538,11 @@ function LineRows({
         <TableCell className={cn("text-right tabular-nums", columns.stockLeft)}>
           <StockLeft line={line} />
         </TableCell>
-        <TableCell className={cn("text-right tabular-nums", columns.lostSales)}>
-          <LostSales line={line} />
-        </TableCell>
+        {prices && (
+          <TableCell className={cn("text-right tabular-nums", columns.lostSales)}>
+            <LostSales line={line} />
+          </TableCell>
+        )}
         <TableCell className={cn("text-right tabular-nums", columns.sold)}>
           <Count value={line.sold} />
         </TableCell>
@@ -575,9 +581,11 @@ function LineRows({
             <Blank />
           )}
         </TableCell>
-        <TableCell className="text-right tabular-nums @max-md:p-0">
-          <LineCost line={line} units={orderable ? current.units : null} />
-        </TableCell>
+        {prices && (
+          <TableCell className="text-right tabular-nums @max-md:p-0">
+            <LineCost line={line} units={orderable ? current.units : null} />
+          </TableCell>
+        )}
         <TableCell className="w-10 pr-4 @max-md:w-auto @max-md:p-0">
           <Button
             variant="ghost"
@@ -596,11 +604,15 @@ function LineRows({
         <TableRow className="bg-muted/30 hover:bg-muted/30 @max-md:block @max-md:px-4 @max-md:py-3">
           <TableCell className="@max-md:hidden" />
           {/* Spans the columns after the checkbox: four when narrow; when wide, the eleven there can be, which covers
-              however many show (a span past the last column adds no width). */}
-          <TableCell colSpan={11} className="hidden py-3 pr-4 whitespace-normal @4xl:table-cell">
+              however many show (a span past the last column adds no width). Without prices, Cost and Lost sales
+              aren't among them. */}
+          <TableCell colSpan={prices ? 11 : 9} className="hidden py-3 pr-4 whitespace-normal @4xl:table-cell">
             <Explanation line={line} />
           </TableCell>
-          <TableCell colSpan={4} className="py-3 pr-4 whitespace-normal @4xl:hidden @max-md:block @max-md:p-0">
+          <TableCell
+            colSpan={prices ? 4 : 3}
+            className="py-3 pr-4 whitespace-normal @4xl:hidden @max-md:block @max-md:p-0"
+          >
             <Explanation line={line} />
           </TableCell>
         </TableRow>
@@ -667,12 +679,13 @@ function SupplierGroup({
   onOpenChange: (open: boolean) => void
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+  const prices = useCan("prices")
   const po = createPoHref(lines, edits, channel, supplierId)
   const headingId = `supplier-${groupKey.replace(/[^A-Za-z0-9-]/g, "-")}`
   const leadTimes = [...new Set(lines.map((line) => line.leadTimeDays))]
   const totals = orderTotals(lines, edits)
   const cost = costText(totals)
-  const lost = lostText(lines)
+  const lost = prices ? lostText(lines) : ""
   return (
     <Collapsible open={open} onOpenChange={onOpenChange} render={<section aria-labelledby={headingId} />}>
       <Card className="gap-0 py-0">
@@ -695,11 +708,14 @@ function SupplierGroup({
               )}
             </CardDescription>
           </div>
-          <div className="ml-auto flex items-center gap-4">
-            <div className="flex flex-col items-end">
-              <span className="text-xs text-muted-foreground">Estimated cost</span>
-              <span className="font-semibold tabular-nums">{cost ?? <Blank reason="No unit costs" />}</span>
-            </div>
+          {/* Empty without prices or Reorder, and then hidden so it can't wrap onto a line of its own. */}
+          <div className="ml-auto flex items-center gap-4 empty:hidden">
+            {prices && (
+              <div className="flex flex-col items-end">
+                <span className="text-xs text-muted-foreground">Estimated cost</span>
+                <span className="font-semibold tabular-nums">{cost ?? <Blank reason="No unit costs" />}</span>
+              </div>
+            )}
             <Reorder supplierId={supplierId} po={po} />
           </div>
         </CardHeader>
@@ -713,12 +729,14 @@ function SupplierGroup({
                 <TableHead className="@4xl:min-w-64">Product</TableHead>
                 <TableHead className={columns.status}>Status</TableHead>
                 <TableHead className={cn("text-right", columns.stockLeft)}>Stock left</TableHead>
-                <TableHead
-                  className={cn("text-right", columns.lostSales)}
-                  title="Sales lost before an order placed today arrives, at the Shopify price"
-                >
-                  Lost sales
-                </TableHead>
+                {prices && (
+                  <TableHead
+                    className={cn("text-right", columns.lostSales)}
+                    title="Sales lost before an order placed today arrives, at the Shopify price"
+                  >
+                    Lost sales
+                  </TableHead>
+                )}
                 <TableHead className={cn("text-right", columns.sold)}>Sold</TableHead>
                 <TableHead className={cn("text-right", columns.daysOut)}>
                   <abbr
@@ -731,7 +749,7 @@ function SupplierGroup({
                 <TableHead className={cn("text-right", columns.available)}>Available</TableHead>
                 <TableHead className={cn("text-right", columns.incoming)}>Incoming</TableHead>
                 <TableHead className="pr-5 text-right">Order</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
+                {prices && <TableHead className="text-right">Cost</TableHead>}
                 <TableHead className="w-10 pr-4">
                   <span className="sr-only">Calculation</span>
                 </TableHead>
@@ -779,19 +797,24 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 // What the selected lines of every supplier add up to, and the sales expected to be lost before reorders arrive.
+// Without prices, it's only the selection's size.
 function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
+  const prices = useCan("prices")
   const cost = costText(totals)
+  const noUnitCost = prices ? totals.unknownCost : 0
   const noCaseCount = totals.cases > 0 ? totals.unknownSize : 0
   return (
     <Card>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4" aria-live="polite">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm text-muted-foreground">Estimated cost</span>
-            <span className="text-3xl font-semibold tracking-tight tabular-nums">
-              {cost ?? <Blank reason="No unit costs" />}
-            </span>
-          </div>
+          {prices && (
+            <div className="flex flex-col gap-1">
+              <span className="text-sm text-muted-foreground">Estimated cost</span>
+              <span className="text-3xl font-semibold tracking-tight tabular-nums">
+                {cost ?? <Blank reason="No unit costs" />}
+              </span>
+            </div>
+          )}
           <dl className="flex flex-wrap gap-x-8 gap-y-3">
             <Stat label="Lines" value={formatNumber(totals.count)} />
             <Stat label="Units" value={formatNumber(totals.units)} />
@@ -800,11 +823,9 @@ function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
             {totals.weight > 0 && <Stat label="Weight" value={weightText(totals.weight)} />}
           </dl>
         </div>
-        {(totals.unknownCost > 0 || noCaseCount > 0) && (
+        {(noUnitCost > 0 || noCaseCount > 0) && (
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {totals.unknownCost > 0 && (
-              <WarningNote>{plural(totals.unknownCost, "line")} without a unit cost</WarningNote>
-            )}
+            {noUnitCost > 0 && <WarningNote>{plural(noUnitCost, "line")} without a unit cost</WarningNote>}
             {noCaseCount > 0 && <WarningNote>{plural(noCaseCount, "line")} without a case pack</WarningNote>}
           </div>
         )}
@@ -929,6 +950,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
   // Supplier groups showing their table. All start collapsed to their headers, whose totals and Reorder still use
   // the selections in `edits`.
   const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(new Set())
+  const prices = useCan("prices")
   const salesError = report.sources.some((source) => source.error)
   const matching = report.lines.filter(
     (line) =>
@@ -979,7 +1001,8 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
     (a, b) => Number(a.supplierId === null) - Number(b.supplierId === null) || a.name.localeCompare(b.name)
   )
   const selected = orderTotals(visible, edits)
-  const lost = lostText(visible)
+  // Without prices, the summary shows only once something is selected, and never lost sales.
+  const lost = prices ? lostText(visible) : ""
   // The toggle expands every group until they're all open, then collapses them all.
   const allOpen = ordered.every((group) => openGroups.has(group.key))
   return (
@@ -1093,6 +1116,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
 // for having no supplier.
 function ResultSummary({ report }: { report: Report }) {
   const setsSuppliers = useCan("products", "edit")
+  const prices = useCan("prices")
   const errors = report.sources.flatMap(({ source, error }) => (error ? [`${sourceNames[source]}: ${error}`] : []))
   const count = (statuses: RestockStatus[]) => report.lines.filter((line) => statuses.includes(line.status)).length
   const blocked = count(["blocked"])
@@ -1118,8 +1142,8 @@ function ResultSummary({ report }: { report: Report }) {
           {summary}
           <InfoTip label="How quantities are worked out">
             Enough to last each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock
-            and open purchase orders, rounded up to the minimum order and whole cases. Costs are Shopify’s unit costs,
-            without freight, duties or fees.
+            and open purchase orders, rounded up to the minimum order and whole cases.
+            {prices && " Costs are Shopify’s unit costs, without freight, duties or fees."}
           </InfoTip>
         </p>
       )}

@@ -1,9 +1,8 @@
-import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { blankProduct, ProductEditor } from "@/components/supplier/product-editor"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 
-export const metadata: Metadata = { title: "Add product" }
+export const generateMetadata = titleFor("Add product", "products", "edit")
 
 export default async function NewProductPage() {
   const s = await session()

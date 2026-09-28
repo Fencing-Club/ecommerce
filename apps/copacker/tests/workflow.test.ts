@@ -1857,6 +1857,15 @@ describe("Postgres workflow and authorization", () => {
       "shopify"
     ])
   })
+  it("keeps the purchase order's prices when a packer who doesn't see them submits", async () => {
+    const shipment = await preparation()
+    shipment.packing.changes = [{ itemId, supplierSku: "B02", unitPrice: 1 }]
+    const packer: Session = { ...supplier, role: "member", access: { orders: "view", shipments: "edit" } }
+    // Only the supplier SKU changes, which still goes to the buyer for approval.
+    expect(await submitPacking(packer, shipment.id, shipment.packing, 1)).toEqual({ approval: true })
+    const [saved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
+    expect(saved?.packing?.changes).toEqual([{ itemId, supplierSku: "B02", unitPrice: 210 }])
+  })
   it("applies invoice changes the buyer enters itself, for a supplier not on Copacker, without asking it to approve", async () => {
     const shipment = await preparation()
     await database.update(tables.suppliers).set({ supplierOrgId: null }).where(eq(tables.suppliers.id, supplierLinkId))
@@ -4276,6 +4285,14 @@ describe("stored sales orders", () => {
     expect(await found("wire left")).toEqual(["111-1"])
     expect(await found("mask CORD")).toEqual(["#1001"])
     expect(await found("wire mask")).toEqual([])
+    // Someone who doesn't see prices can't find orders by their amounts, only by number, SKU and product.
+    const unpriced = async (q: string) =>
+      (await listSalesOrders(buyerId, { page: 0, q }, { prices: false })).orders.map((order) => order.number).toSorted()
+    expect(await found("10.00")).toEqual(["#1001"])
+    expect(await unpriced("10.00")).toEqual([])
+    expect(await unpriced("1001")).toEqual(["#1001"])
+    expect(await unpriced("FOIL-2")).toEqual(["111-1"])
+    expect(await unpriced("mask cord")).toEqual(["#1001"])
     // Restock doesn't count them as Shopify demand either.
     await database.insert(tables.salesSyncs).values({
       orgId: buyerId,

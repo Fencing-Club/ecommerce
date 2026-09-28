@@ -16,10 +16,12 @@ import {
   requireAdmin,
   requireBuyer,
   requireMembership,
+  requireOwner,
   setWorkspace
 } from "@/server/auth"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
+import { deleteAccount, deleteWorkspace } from "@/server/deletion"
 import { failureStatus } from "@/server/errors"
 import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
 import {
@@ -55,7 +57,14 @@ import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
-import { cancelInvitation, changeAccess, inviteColleague, removeColleague, resendInvitation } from "@/server/team"
+import {
+  cancelInvitation,
+  changeAccess,
+  inviteColleague,
+  removeColleague,
+  resendInvitation,
+  transferOwnership
+} from "@/server/team"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
@@ -94,6 +103,18 @@ export async function POST(request: Request) {
     if (action === "team.resend") {
       requireAdmin(s)
       return Response.json(await resendInvitation(s.org, data))
+    }
+    if (action === "team.transfer") {
+      requireOwner(s)
+      return Response.json(await transferOwnership(s, data))
+    }
+    if (action === "workspace.delete") {
+      requireOwner(s)
+      return Response.json(await deleteWorkspace(s.org, data))
+    }
+    // Anyone can delete their own account, once the workspaces they own that others use have a new owner.
+    if (action === "account.delete") {
+      return Response.json(await deleteAccount(s.user, data))
     }
     if (action === "team.access") {
       requireAdmin(s)
@@ -445,6 +466,8 @@ export async function POST(request: Request) {
     }
     if (action === "shipment.approve") {
       requireAccess(s, "shipments", "edit")
+      // Approving a supplier's invoice accepts its prices.
+      requireAccess(s, "prices")
       await approveInvoice(s, id(), revision(), z.boolean().parse(data.updateCost))
       return Response.json({ ok: true })
     }
@@ -609,6 +632,10 @@ export async function POST(request: Request) {
     }
     if (action === "shipment.forward") {
       requireAccess(s, s.org.kind === "forwarder" ? "orders" : "shipments", "edit")
+      // The buyer records the forwarder's freight cost, so it needs prices; a forwarder enters its own charge.
+      if (s.org.kind !== "forwarder") {
+        requireAccess(s, "prices")
+      }
       await forwardShipment(s, data)
       return Response.json({ ok: true })
     }

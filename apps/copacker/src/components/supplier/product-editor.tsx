@@ -3,7 +3,7 @@
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
-import { PageLink } from "@/components/access"
+import { PageLink, useCan } from "@/components/access"
 import { PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -243,6 +243,7 @@ function VariantSheet({
   onClose: () => void
   onSave: (variant: EditorVariant) => void
 }) {
+  const prices = useCan("prices")
   const [draft, setDraft] = useState(variant)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [shown, setShown] = useState(variant)
@@ -292,62 +293,64 @@ function VariantSheet({
                 onChange={(event) => change({ supplierSku: event.target.value })}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="variant-price">Price</FieldLabel>
-                <MoneyInput
-                  label="Price"
-                  currency={draft.currency}
-                  value={draft.priceMinor}
-                  onValueChange={(value) => change({ priceMinor: value })}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="variant-currency">Currency</FieldLabel>
-                <Select
-                  items={currencies.map((value) => ({ value, label: value }))}
-                  value={draft.currency}
-                  onValueChange={(value) => value && change({ currency: value as Currency })}
-                >
-                  <SelectTrigger id="variant-currency" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencies.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="variant-basis">Price per</FieldLabel>
-                <Select
-                  items={basisOptions}
-                  value={draft.priceBasis}
-                  onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
-                >
-                  <SelectTrigger id="variant-basis" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {basisOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Volume pricing</FieldLabel>
-                <Button type="button" variant="outline" className="justify-start" onClick={() => setRulesOpen(true)}>
-                  <SlidersHorizontal data-icon="inline-start" />
-                  <span className="truncate">{summary || "Add rules"}</span>
-                </Button>
-              </Field>
-            </div>
+            {prices && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field>
+                  <FieldLabel htmlFor="variant-price">Price</FieldLabel>
+                  <MoneyInput
+                    label="Price"
+                    currency={draft.currency}
+                    value={draft.priceMinor}
+                    onValueChange={(value) => change({ priceMinor: value })}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="variant-currency">Currency</FieldLabel>
+                  <Select
+                    items={currencies.map((value) => ({ value, label: value }))}
+                    value={draft.currency}
+                    onValueChange={(value) => value && change({ currency: value as Currency })}
+                  >
+                    <SelectTrigger id="variant-currency" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="variant-basis">Price per</FieldLabel>
+                  <Select
+                    items={basisOptions}
+                    value={draft.priceBasis}
+                    onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
+                  >
+                    <SelectTrigger id="variant-basis" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {basisOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>Volume pricing</FieldLabel>
+                  <Button type="button" variant="outline" className="justify-start" onClick={() => setRulesOpen(true)}>
+                    <SlidersHorizontal data-icon="inline-start" />
+                    <span className="truncate">{summary || "Add rules"}</span>
+                  </Button>
+                </Field>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="variant-pieces">Pieces per pack</FieldLabel>
@@ -422,7 +425,7 @@ function VariantSheet({
             Cancel
           </Button>
         </SheetFooter>
-        {draft && (
+        {draft && prices && (
           <PricingRulesDialog
             open={rulesOpen}
             onOpenChange={setRulesOpen}
@@ -453,6 +456,7 @@ export function ProductEditor({
   readOnly?: boolean
 }) {
   const router = useRouter()
+  const prices = useCan("prices")
   const [saved, setSaved] = useState(initial)
   const [product, setProduct] = useState(initial)
   const [editing, setEditing] = useState<string | null>(null)
@@ -661,7 +665,7 @@ export function ProductEditor({
                       >
                         SKU
                       </TableHead>
-                      <TableHead className="w-px">Price</TableHead>
+                      {prices && <TableHead className="w-px">Price</TableHead>}
                       {tracked && <TableHead className="hidden text-right @lg:table-cell">On hand</TableHead>}
                       <TableHead className={cn(grid.last, "w-px bg-muted")}>
                         <span className="sr-only">Actions</span>
@@ -715,15 +719,17 @@ export function ProductEditor({
                               <p className="mt-1 text-xs whitespace-normal text-muted-foreground @xl:hidden">{label}</p>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <MoneyInput
-                              label={`Price for ${name || "new variant"}`}
-                              currency={variant.currency}
-                              value={variant.priceMinor}
-                              onValueChange={(value) => setVariant(variant.key, { priceMinor: value })}
-                              className="h-8 w-32"
-                            />
-                          </TableCell>
+                          {prices && (
+                            <TableCell>
+                              <MoneyInput
+                                label={`Price for ${name || "new variant"}`}
+                                currency={variant.currency}
+                                value={variant.priceMinor}
+                                onValueChange={(value) => setVariant(variant.key, { priceMinor: value })}
+                                className="h-8 w-32"
+                              />
+                            </TableCell>
+                          )}
                           {tracked && (
                             <TableCell className="hidden text-right tabular-nums @lg:table-cell">
                               {variant.trackInventory ? variant.onHand.toLocaleString("en-US") : "—"}

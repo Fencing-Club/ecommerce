@@ -1,5 +1,4 @@
 import { Search } from "lucide-react"
-import type { Metadata } from "next"
 import { EmptyState, PageHeader } from "@/components/common"
 import { AddPartner, ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import { TabLinks } from "@/components/tab-links"
@@ -7,11 +6,11 @@ import { Card } from "@/components/ui/card"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { can } from "@/lib/access"
-import { requireBuyer, requirePage, session } from "@/server/auth"
+import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
 import { listPartners, type PartnerForwarder, type PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 
-export const metadata: Metadata = { title: "Partners" }
+export const generateMetadata = titleFor("Partners", "partners")
 
 const tabs = [
   { key: "all", label: "All" },

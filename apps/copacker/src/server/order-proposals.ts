@@ -115,6 +115,19 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
   }
 }
 
+// The changes without their prices, for someone who doesn't see them: what's added, removed or changed stays.
+export function unpricedChanges(changes: ReturnType<typeof proposalChanges>): ReturnType<typeof proposalChanges> {
+  return {
+    ...changes,
+    lines: changes.lines.map((line) =>
+      line.change === "removed"
+        ? { ...line, before: { ...line.before, unitPrice: 0 } }
+        : { ...line, before: line.before && { ...line.before, unitPrice: 0 }, after: { ...line.after, unitPrice: 0 } }
+    ),
+    total: { before: 0, after: 0 }
+  }
+}
+
 // A PO's pending proposal and the latest decision, and whether the supplier can propose changes now.
 export async function proposalState(orderId: string) {
   const [latest] = await db()

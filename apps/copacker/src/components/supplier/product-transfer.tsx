@@ -26,8 +26,9 @@ import { Input } from "@/components/ui/input"
 // The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
 export function ProductActions() {
   const [importing, setImporting] = useState(false)
-  // Importing changes products; exporting only reads them.
+  // Importing changes products; exporting only reads them, prices included.
   const editable = useCan("products", "edit")
+  const prices = useCan("prices")
   return (
     <>
       <DropdownMenu>
@@ -44,19 +45,23 @@ export function ProductActions() {
               <DropdownMenuSeparator />
             </>
           )}
-          <DropdownMenuItem
-            render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
-          >
-            <Download />
-            Export to Excel
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            render={<a href="/api/supplier-catalog/export?format=csv" download aria-label="Export to CSV" />}
-          >
-            <Download />
-            Export to CSV
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {prices && (
+            <>
+              <DropdownMenuItem
+                render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
+              >
+                <Download />
+                Export to Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={<a href="/api/supplier-catalog/export?format=csv" download aria-label="Export to CSV" />}
+              >
+                <Download />
+                Export to CSV
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem
             render={<a href="/api/supplier-catalog/template?format=xlsx" download aria-label="Download template" />}
           >
@@ -88,6 +93,7 @@ function ProductImportDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
+  const prices = useCan("prices")
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [pending, setPending] = useState(false)
@@ -160,9 +166,11 @@ function ProductImportDialog({
             <a href="/api/supplier-catalog/template?format=csv" download className="underline underline-offset-4">
               CSV template
             </a>
-            <a href="/api/supplier-catalog/export?format=xlsx" download className="underline underline-offset-4">
-              Your products in Excel
-            </a>
+            {prices && (
+              <a href="/api/supplier-catalog/export?format=xlsx" download className="underline underline-offset-4">
+                Your products in Excel
+              </a>
+            )}
           </div>
           <Input
             type="file"

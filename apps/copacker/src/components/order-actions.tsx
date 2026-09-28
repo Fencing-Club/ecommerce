@@ -3,6 +3,7 @@
 import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -132,6 +133,7 @@ export function OrderMenu({
   labels: boolean
 }) {
   const router = useRouter()
+  const prices = useCan("prices")
   const [closing, setClosing] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -150,10 +152,15 @@ export function OrderMenu({
               Edit
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem render={<a href={`/api/orders/${id}/po`} download aria-label="Download purchase order" />}>
-            <Download />
-            Download purchase order
-          </DropdownMenuItem>
+          {/* The PO's document is priced. */}
+          {prices && (
+            <DropdownMenuItem
+              render={<a href={`/api/orders/${id}/po`} download aria-label="Download purchase order" />}
+            >
+              <Download />
+              Download purchase order
+            </DropdownMenuItem>
+          )}
           {labels && (
             <DropdownMenuItem render={<a href={`/api/orders/${id}/labels`} download aria-label="Download labels" />}>
               <Download />

@@ -1,7 +1,6 @@
 import { amazonNetworkNames } from "@repo/aisle"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { AlertTriangle, ExternalLink } from "lucide-react"
-import type { Metadata } from "next"
 import { unstable_cache } from "next/cache"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status } from "@/components/common"
@@ -15,11 +14,11 @@ import { can } from "@/lib/access"
 import { shortDate } from "@/lib/format"
 import { visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
 import { shipmentDestinations } from "./destination"
 
-export const metadata: Metadata = { title: "Shipments" }
+export const generateMetadata = titleFor("Shipments", "shipments")
 
 // The workspace's shipments in its connected Amazon account, read from Amazon at most every two minutes. Null when no
 // Amazon account is connected.

@@ -4,8 +4,9 @@ import { redirect } from "next/navigation"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
+import { can } from "@/lib/access"
 import { accessibleOrder } from "@/server/access"
-import { requireBuyer, requirePage, session } from "@/server/auth"
+import { noAccessTitle, requireBuyer, requirePage, session } from "@/server/auth"
 import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 
@@ -14,7 +15,9 @@ type Props = { params: Promise<{ id: string }> }
 // Looking the PO up here too gives a malformed or unknown id the not-found page's title.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = await session()
-  requirePage(s, "orders", "edit")
+  if (!can(s, "orders", "edit")) {
+    return noAccessTitle
+  }
   const { order } = await accessibleOrder(s, (await params).id)
   return { title: `Edit ${order.data.reference}` }
 }

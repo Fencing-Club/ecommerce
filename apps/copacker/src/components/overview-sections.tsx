@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overview"
-import { IfCanOpen, PageLink } from "./access"
+import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
 
@@ -879,14 +879,16 @@ export function Customers({ customers }: { customers: NonNullable<Overview["sale
       <CardContent className="flex-1">
         {customers.status === "reconnect" && (
           <p className="text-sm text-muted-foreground">
-            Reconnect Shopify in{" "}
-            <PageLink
-              href="/settings#integrations"
-              className="font-medium text-foreground underline underline-offset-2"
-            >
-              Settings
-            </PageLink>{" "}
-            to count repeat customers
+            <ForAdmins fallback="Ask an admin to reconnect Shopify to count repeat customers">
+              Reconnect Shopify in{" "}
+              <PageLink
+                href="/settings#integrations"
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                Settings
+              </PageLink>{" "}
+              to count repeat customers
+            </ForAdmins>
           </p>
         )}
         {customers.status === "syncing" && (

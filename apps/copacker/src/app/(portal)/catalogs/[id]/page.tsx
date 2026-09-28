@@ -1,12 +1,11 @@
-import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import { can } from "@/lib/access"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { catalogEditor } from "@/server/catalogs"
 
-export const metadata: Metadata = { title: "Catalog" }
+export const generateMetadata = titleFor("Catalog", "catalogs")
 
 export default async function CatalogPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

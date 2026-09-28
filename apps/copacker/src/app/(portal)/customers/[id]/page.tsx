@@ -1,5 +1,4 @@
 import { Globe, Mail, Phone, User } from "lucide-react"
-import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
@@ -12,13 +11,15 @@ import { can } from "@/lib/access"
 import { formatDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
-import { requirePage, session } from "@/server/auth"
-import { customerDetail } from "@/server/supplier-workspace"
+import { requirePage, session, titleFor } from "@/server/auth"
+import { customerDetail, withoutTotals } from "@/server/supplier-workspace"
 
-export const metadata: Metadata = { title: "Customer" }
+export const generateMetadata = titleFor("Customer", "customers")
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
+  // What the customer spent and its orders' totals are left out for someone who doesn't see prices.
+  const prices = can(s, "prices")
   if (s.org.kind !== "supplier") {
     redirect("/")
   }
@@ -48,14 +49,16 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card size="sm">
-            <CardContent className="grid grid-cols-3 divide-x text-sm">
-              <div className="pr-3">
-                <p className="text-muted-foreground">Amount spent</p>
-                <p className="mt-1 text-lg font-semibold">
-                  <Amounts amounts={customer.spent} />
-                </p>
-              </div>
-              <div className="px-3">
+            <CardContent className={cn("grid divide-x text-sm", prices ? "grid-cols-3" : "grid-cols-2")}>
+              {prices && (
+                <div className="pr-3">
+                  <p className="text-muted-foreground">Amount spent</p>
+                  <p className="mt-1 text-lg font-semibold">
+                    <Amounts amounts={customer.spent} />
+                  </p>
+                </div>
+              )}
+              <div className={prices ? "px-3" : "pr-3"}>
                 <p className="text-muted-foreground">Orders</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">{customer.orders}</p>
               </div>
@@ -66,7 +69,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             </CardContent>
           </Card>
           {/* The customer's orders, for someone who can open them. */}
-          {can(s, "orders") && <SupplierOrderIndex orders={orders} showCustomer={false} />}
+          {can(s, "orders") && (
+            <SupplierOrderIndex orders={prices ? orders : withoutTotals(orders)} showCustomer={false} />
+          )}
         </div>
         <div className="flex flex-col gap-4">
           <Card size="sm">

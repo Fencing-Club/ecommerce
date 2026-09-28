@@ -26,6 +26,8 @@ export async function POST(request: Request) {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
     requireAccess(s, "products", "edit")
+    // The sheet sets prices.
+    requireAccess(s, "prices")
     const form = await request.formData()
     const file = form.get("file")
     const mode = form.get("mode")

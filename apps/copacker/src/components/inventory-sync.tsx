@@ -2,6 +2,7 @@
 
 import { CircleAlert } from "lucide-react"
 import Link from "next/link"
+import { useIsAdmin } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { InventoryProducts, ProductsSkeleton } from "@/components/inventory-products"
 import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
@@ -150,13 +151,20 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   const shopify = useSelection(sources[0].selections[0], providers.includes("shopify"))
   const fba = useSelection(sources[1].selections[0], providers.includes("amazon"))
   const awd = useSelection(sources[1].selections[1], providers.includes("amazon"))
+  // The owner and admins connect stores; everyone else is told who can.
+  const admin = useIsAdmin()
   if (providers.length === 0) {
     return (
       <Card>
-        <EmptyState title="No store connected" description="Connect Shopify or Amazon to see your products">
-          <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-            Open settings
-          </Button>
+        <EmptyState
+          title="No store connected"
+          description={admin ? "Connect Shopify or Amazon to see your products" : "Ask an admin to connect one"}
+        >
+          {admin && (
+            <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
+              Open settings
+            </Button>
+          )}
         </EmptyState>
       </Card>
     )
@@ -191,9 +199,11 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   )
 }
 
-// A store whose last inventory sync failed, so its stock may be out of date. Settings has Reconnect and Sync now.
+// A store whose last inventory sync failed, so its stock may be out of date. Settings has Reconnect and Sync now, for
+// the owner and admins.
 function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] }) {
   const { problem } = sourceState(statuses)
+  const admin = useIsAdmin()
   if (!problem) {
     return null
   }
@@ -202,11 +212,13 @@ function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] 
       <CircleAlert />
       <AlertTitle>{source.title} inventory didn’t sync</AlertTitle>
       <AlertDescription>{problem.message}</AlertDescription>
-      <AlertAction>
-        <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
-          Open settings
-        </Button>
-      </AlertAction>
+      {admin && (
+        <AlertAction>
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
+            Open settings
+          </Button>
+        </AlertAction>
+      )}
     </Alert>
   )
 }

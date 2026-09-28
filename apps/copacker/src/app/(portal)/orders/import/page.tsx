@@ -1,9 +1,8 @@
-import type { Metadata } from "next"
 import { PageHeader } from "@/components/common"
 import { ImportIntake } from "@/components/import-intake"
-import { requireBuyer, requirePage, session } from "@/server/auth"
+import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
 
-export const metadata: Metadata = { title: "Import purchase order" }
+export const generateMetadata = titleFor("Import purchase order", "orders", "edit")
 
 export default async function ImportOrder() {
   const s = await session()

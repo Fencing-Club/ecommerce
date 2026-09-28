@@ -16,6 +16,7 @@ import {
 } from "react-hook-form"
 import { objectKeys } from "ts-extras"
 import { z } from "zod"
+import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
@@ -120,6 +121,9 @@ export function PackingForm({
   const router = useRouter()
   const [run] = useActionMutation()
   const formId = useId()
+  // Someone who doesn't see prices packs without them: the order comes without prices, and the server keeps its
+  // prices, so only supplier SKUs can change.
+  const prices = useCan("prices")
   const [savedRevision, setSavedRevision] = useState(revision)
   const [notice, setNotice] = useState("")
   const [serverError, setServerError] = useState("")
@@ -270,10 +274,12 @@ export function PackingForm({
                   <TableHead>Product</TableHead>
                   <TableHead className="text-right">Packed</TableHead>
                   <TableHead className="w-52">Supplier SKU</TableHead>
-                  <TableHead className="w-44">
-                    Price per piece
-                    <RequiredMark />
-                  </TableHead>
+                  {prices && (
+                    <TableHead className="w-44">
+                      Price per piece
+                      <RequiredMark />
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,15 +311,17 @@ export function PackingForm({
                           <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" className={cellField} />
                         )}
                       </TableCell>
-                      <TableCell className="whitespace-normal">
-                        <FormMoney
-                          name={`changes.${index}.unitPrice`}
-                          required
-                          label="Price per piece"
-                          currency={order.currency}
-                          className={cellField}
-                        />
-                      </TableCell>
+                      {prices && (
+                        <TableCell className="whitespace-normal">
+                          <FormMoney
+                            name={`changes.${index}.unitPrice`}
+                            required
+                            label="Price per piece"
+                            currency={order.currency}
+                            className={cellField}
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })}

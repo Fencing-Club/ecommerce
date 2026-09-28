@@ -1,10 +1,9 @@
-import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { SalesOrders } from "@/components/sales-orders"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 
-export const metadata: Metadata = { title: "Orders" }
+export const generateMetadata = titleFor("Orders", "sales")
 
 // `?q=` starts the list filtered, such as a header search for an order number. The orders API takes up to 100
 // characters.

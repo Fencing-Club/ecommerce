@@ -30,8 +30,9 @@ import {
 import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { useActionForm } from "@/hooks/useActionForm"
-import { type Access, type Area, type Role, viewOnlyAreas } from "@/lib/access"
+import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
 import { ActionForm, FormError } from "./actions"
@@ -44,11 +45,13 @@ type Invitation = { email: string; role: "admin" | "member"; access: Access; exp
 const roleNames: Record<Role, string> = { owner: "Owner", admin: "Admin", member: "Member" }
 
 // The workspace's people and the invitations waiting on someone to join, each with their role. Admins invite from the
-// card's header and change or remove someone from their row's menu; the owner's row and your own have none.
+// card's header and change or remove someone from their row's menu; the owner's row and your own have none. The owner
+// can also hand the workspace to someone from their row.
 export function TeamSettings({
   members,
   invitations,
   admin,
+  owner,
   you,
   workspace,
   kind
@@ -57,6 +60,8 @@ export function TeamSettings({
   invitations: Invitation[]
   // Whether the signed-in person manages the team: the owner or an admin.
   admin: boolean
+  // Whether the signed-in person owns the workspace.
+  owner: boolean
   // The signed-in person's user id.
   you: string
   workspace: string
@@ -100,6 +105,7 @@ export function TeamSettings({
             member={member}
             you={member.userId === you}
             manageable={admin && member.role !== "owner" && member.userId !== you}
+            transferable={owner && member.userId !== you}
             workspace={workspace}
             kind={kind}
           />
@@ -124,6 +130,8 @@ export function TeamSettings({
 const accessDialog = "max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md"
 
 const levelChoices = ["none", "view", "edit"] as const
+// How many of the levels a page offers, from No access up to the most it allows.
+const optionCounts = { view: 2, edit: 3 }
 const levelOptions = [
   { value: "none", label: "No access" },
   { value: "view", label: "View" },
@@ -133,28 +141,38 @@ const levelOptions = [
 const accessSchema = z
   .object({
     role: z.enum(["admin", "member"]),
-    access: z.record(z.string(), z.enum(levelChoices))
+    access: z.record(z.string(), z.enum(levelChoices)),
+    prices: z.boolean()
   })
   .refine((values) => values.role === "admin" || Object.values(values.access).some((level) => level !== "none"), {
     message: "Choose at least one page",
     path: ["access"]
   })
 
-// The fields' starting values: an admin, or a member's pages for this kind of workspace, with none chosen for someone
-// new.
+// The fields' starting values: an admin, or a member's pages for this kind of workspace and whether they see prices.
+// Someone new starts with no pages, seeing prices, as members always have.
 function accessValues(kind: string, role: Role, access: Access) {
   const levels: Record<string, (typeof levelChoices)[number]> = {}
   for (const { area } of areasFor(kind)) {
     levels[area] = access[area] ?? "none"
   }
-  return { role: role === "admin" ? ("admin" as const) : ("member" as const), access: levels }
+  const existingMember = role === "member" && Object.keys(access).length > 0
+  return {
+    role: role === "admin" ? ("admin" as const) : ("member" as const),
+    access: levels,
+    prices: !existingMember || access.prices !== undefined
+  }
 }
 
-// The access to send: the role, and a member's pages with the ones they can't open left out.
+// The access to send: the role, and a member's pages with the ones they can't open left out, and prices when they see
+// them.
 function grant(values: z.output<typeof accessSchema>) {
   return {
     role: values.role,
-    access: Object.fromEntries(Object.entries(values.access).filter(([, level]) => level !== "none"))
+    access: {
+      ...Object.fromEntries(Object.entries(values.access).filter(([, level]) => level !== "none")),
+      ...(values.prices && { prices: "view" })
+    }
   }
 }
 
@@ -189,13 +207,17 @@ const roleChoices = [
   { value: "member", label: "Member", description: "Only the pages you choose" }
 ]
 
-// The role, and for a member, each page they can open and whether they can change what's on it.
+// The role, and for a member, whether they see prices and costs, and each page they can open and whether they can
+// change what's on it. Without prices, pages about money close and pages whose changes set prices are view only.
 function AccessFields({ kind }: { kind: string }) {
   const id = useId()
   const { field: role } = useController({ name: "role" })
+  const { field: prices } = useController({ name: "prices" })
   const member = useWatch({ name: "role" }) === "member"
   const {
     trigger,
+    getValues,
+    setValue,
     formState: { errors }
   } = useFormContext()
   // "Choose at least one page", when a member has none, until they choose one.
@@ -233,6 +255,29 @@ function AccessFields({ kind }: { kind: string }) {
           ))}
         </RadioGroup>
       </FieldSet>
+      {/* A forwarder's pages have no prices, so its members keep the default. */}
+      {member && kind !== "forwarder" && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border py-2.5 pr-3 pl-3">
+          <span id={`${id}-prices`}>See prices and costs</span>
+          <Switch
+            checked={prices.value === true}
+            aria-labelledby={`${id}-prices`}
+            onCheckedChange={(checked) => {
+              prices.onChange(checked)
+              // Pages that need prices drop to what's left without them.
+              for (const { area } of areasFor(kind)) {
+                const highest = highestLevel(kind, area, checked)
+                const level = getValues(`access.${area}`)
+                if (!highest && level !== "none") {
+                  setValue(`access.${area}`, "none")
+                } else if (highest === "view" && level === "edit") {
+                  setValue(`access.${area}`, "view")
+                }
+              }
+            }}
+          />
+        </div>
+      )}
       {member && (
         <FieldSet data-invalid={typeof pagesError === "string"} className="gap-0">
           <FieldLegend variant="label">Pages</FieldLegend>
@@ -242,6 +287,7 @@ function AccessFields({ kind }: { kind: string }) {
                 key={area}
                 area={area}
                 label={label}
+                highest={highestLevel(kind, area, prices.value === true)}
                 onChosen={() => typeof pagesError === "string" && void trigger("access")}
               />
             ))}
@@ -253,13 +299,29 @@ function AccessFields({ kind }: { kind: string }) {
   )
 }
 
-function PageAccess({ area, label, onChosen }: { area: Area; label: string; onChosen: () => void }) {
+function PageAccess({
+  area,
+  label,
+  highest,
+  onChosen
+}: {
+  area: Area
+  label: string
+  // The most this page allows: none for a page about money without prices, and view for one with nothing to change or
+  // whose changes set prices.
+  highest: "view" | "edit" | null
+  onChosen: () => void
+}) {
   const id = useId()
   const {
     field: { ref, value, onChange, onBlur }
   } = useController({ name: `access.${area}` })
+  const options = levelOptions.slice(0, highest ? optionCounts[highest] : 1)
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 pr-1.5 pl-3">
+    <div
+      className="flex items-center justify-between gap-3 py-1.5 pr-1.5 pl-3"
+      title={highest ? undefined : "Needs prices and costs"}
+    >
       <label htmlFor={id} className="min-w-0 truncate">
         {label}
       </label>
@@ -268,8 +330,8 @@ function PageAccess({ area, label, onChosen }: { area: Area; label: string; onCh
           id={id}
           ref={ref}
           required
-          // A page with nothing to change can only be viewed.
-          options={viewOnlyAreas.has(area) ? levelOptions.slice(0, 2) : levelOptions}
+          disabled={!highest}
+          options={options}
           value={typeof value === "string" ? value : "none"}
           onValueChange={(next) => {
             onChange(next ?? "none")
@@ -368,17 +430,21 @@ function MemberRow({
   member,
   you,
   manageable,
+  transferable,
   workspace,
   kind
 }: {
   member: Member
   you: boolean
+  // Whether the signed-in person can change or remove them: an admin, for anyone but the owner and themselves.
   manageable: boolean
+  // Whether the signed-in person can make them the owner: the owner, for anyone else.
+  transferable: boolean
   workspace: string
   kind: string
 }) {
   const { perform, pending, error } = useRowAction()
-  const [open, setOpen] = useState<"access" | "remove" | null>(null)
+  const [open, setOpen] = useState<"access" | "remove" | "transfer" | null>(null)
   const initials = member.name
     .split(/[\s@.]+/)
     .filter(Boolean)
@@ -400,22 +466,59 @@ function MemberRow({
         <p className="truncate text-muted-foreground">{member.email}</p>
       </div>
       <Badge variant={member.role === "member" ? "outline" : "secondary"}>{roleNames[member.role]}</Badge>
+      {(manageable || transferable) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${member.name}`} />}
+          >
+            <Ellipsis />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {manageable && <DropdownMenuItem onClick={() => setOpen("access")}>Change access</DropdownMenuItem>}
+            {transferable && (
+              <DropdownMenuItem onClick={() => setOpen("transfer")}>Transfer ownership</DropdownMenuItem>
+            )}
+            {manageable && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={() => setOpen("remove")}>
+                  Remove
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {transferable && (
+        <AlertDialog open={open === "transfer"} onOpenChange={(next) => setOpen(next ? "transfer" : null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Transfer ownership to {member.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They become the owner of {workspace}, and you stay an admin.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <FormError message={error} />
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={pending}
+                aria-busy={pending}
+                onClick={async () => {
+                  if (await perform("team.transfer", { userId: member.userId })) {
+                    setOpen(null)
+                  }
+                }}
+              >
+                {pending && <Spinner data-icon="inline-start" />}
+                Transfer ownership
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       {manageable && (
         <>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${member.name}`} />}
-            >
-              <Ellipsis />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setOpen("access")}>Change access</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setOpen("remove")}>
-                Remove
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <ChangeAccess
             who={member.name}
             target={{ userId: member.userId }}

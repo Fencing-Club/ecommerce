@@ -39,13 +39,16 @@ export function PoTimeline({
   viewer,
   viewerOrg,
   timeZone,
-  entries
+  entries,
+  prices
 }: {
   orderId: string
   viewer: string
   viewerOrg: string
   timeZone?: string
   entries: TimelineEntry[]
+  // Whether a revision's lines show their prices.
+  prices: boolean
 }) {
   const day = (at: Date) =>
     at.toLocaleDateString("en-US", { timeZone, weekday: "long", month: "long", day: "numeric", year: "numeric" })
@@ -104,7 +107,7 @@ export function PoTimeline({
                         className="absolute top-1.5 -left-[1.9375rem] size-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
                       />
                       <div className="flex items-start justify-between gap-3">
-                        <EventText entry={entry} />
+                        <EventText entry={entry} prices={prices} />
                         <time
                           className="shrink-0 pt-0.5 text-xs text-muted-foreground"
                           dateTime={entry.at.toISOString()}
@@ -135,7 +138,7 @@ function spelledOut(message: string) {
 }
 
 // An event's text; a revision opens to show the lines it had.
-function EventText({ entry }: { entry: TimelineEntry }) {
+function EventText({ entry, prices }: { entry: TimelineEntry; prices: boolean }) {
   if (!entry.revision) {
     return <p className="min-w-0 flex-1">{spelledOut(entry.message)}</p>
   }
@@ -150,7 +153,8 @@ function EventText({ entry }: { entry: TimelineEntry }) {
         <ul className="flex flex-col gap-1 pt-1.5 text-xs text-muted-foreground">
           {revision.items.map((item) => (
             <li key={item.id}>
-              {item.buyerSku}: {item.pieces} units at {money(item.unitPrice, revision.currency)}
+              {item.buyerSku}: {item.pieces} units
+              {prices && ` at ${money(item.unitPrice, revision.currency)}`}
               {item.supplierSku && `, supplier SKU ${item.supplierSku}`}
             </li>
           ))}

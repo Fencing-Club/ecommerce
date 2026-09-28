@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm"
 import { Plus } from "lucide-react"
-import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
@@ -11,15 +10,16 @@ import { Button } from "@/components/ui/button"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { can } from "@/lib/access"
-import { requirePage, session } from "@/server/auth"
-import { productList } from "@/server/supplier-products"
+import { requirePage, session, titleFor } from "@/server/auth"
+import { productList, withoutPrices } from "@/server/supplier-products"
 
-export const metadata: Metadata = { title: "Products" }
+export const generateMetadata = titleFor("Products", "products")
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const s = await session()
   requirePage(s, "products")
   if (s.org.kind === "supplier") {
+    const products = await productList(s.org.id)
     return (
       <>
         <PageHeader title="Products">
@@ -31,7 +31,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             </Button>
           )}
         </PageHeader>
-        <ProductIndex products={await productList(s.org.id)} />
+        <ProductIndex products={can(s, "prices") ? products : withoutPrices(products)} />
       </>
     )
   }

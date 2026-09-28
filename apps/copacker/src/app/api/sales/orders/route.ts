@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { listSalesOrders, salesSources } from "@/server/sales-orders"
 
@@ -25,5 +26,11 @@ export async function GET(request: Request) {
   if (!input.success) {
     return Response.json({ error: "Check the filters and try again" }, { status: 400, headers })
   }
-  return Response.json(await listSalesOrders(s.org.id, input.data), { headers })
+  const prices = can(s, "prices")
+  const list = await listSalesOrders(s.org.id, input.data, { prices })
+  // A member who doesn't see prices gets each order without its sales and fees.
+  return Response.json(
+    prices ? list : { ...list, orders: list.orders.map((order) => ({ ...order, sales: null, fees: null })) },
+    { headers }
+  )
 }

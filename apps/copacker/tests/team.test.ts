@@ -15,7 +15,8 @@ import {
   inviteColleague,
   removeColleague,
   resendInvitation,
-  teamOf
+  teamOf,
+  transferOwnership
 } from "../src/server/team"
 import { applyMigrations, migrationSql } from "./migrations"
 
@@ -56,7 +57,7 @@ const membership = async (userId: string) =>
       .from(tables.memberships)
       .where(and(eq(tables.memberships.orgId, orgId), eq(tables.memberships.userId, userId)))
   )[0]
-const buyerPages = { overview: "view", orders: "edit", partners: "view" } as const
+const buyerPages = { prices: "view", overview: "view", orders: "edit", partners: "view" } as const
 
 describe("the team", () => {
   it("lists the owner first, then everyone by name, with the email for anyone without a name", async () => {
@@ -129,10 +130,23 @@ describe("inviting a colleague", () => {
     await inviteColleague(org, {
       email: "lee@club.example",
       role: "member",
-      access: { overview: "edit", orders: "edit", partners: "view", catalogs: "edit" }
+      access: { prices: "edit", overview: "edit", orders: "edit", partners: "view", catalogs: "edit" }
     })
     const [invitation] = await invitationsTo("lee@club.example")
     expect(invitation).toMatchObject({ role: "member", access: buyerPages })
+  })
+
+  it("without prices, leaves out the Overview and keeps purchase orders to viewing", async () => {
+    await inviteColleague(org, {
+      email: "lee@club.example",
+      role: "member",
+      access: { overview: "view", orders: "edit", shipments: "edit" }
+    })
+    const [invitation] = await invitationsTo("lee@club.example")
+    expect(invitation?.access).toStrictEqual({ orders: "view", shipments: "edit" })
+    await expect(
+      inviteColleague(org, { email: "kim@club.example", role: "member", access: { overview: "view" } })
+    ).rejects.toThrow("Choose at least one page")
   })
 
   it("needs at least one page for a member, and never makes an owner", async () => {
@@ -201,6 +215,24 @@ describe("changing a colleague’s access", () => {
       role: "member",
       access: { restock: "view", shipments: "view" }
     })
+  })
+
+  it("hands the workspace to a colleague, keeping the owner on as an admin", async () => {
+    await transferOwnership(s, { userId: "user_sam" })
+    await expect(membership("user_sam")).resolves.toStrictEqual({ role: "owner", access: {} })
+    await expect(membership(owner.id)).resolves.toStrictEqual({ role: "admin", access: {} })
+    const { members } = await teamOf(org)
+    expect(members[0]).toMatchObject({ userId: "user_sam", role: "owner" })
+  })
+
+  it("leaves handing it over to the owner", async () => {
+    await expect(
+      transferOwnership({ ...s, user: { ...owner, id: "user_ada" } }, { userId: "user_sam" })
+    ).rejects.toThrow("Only the owner can do this")
+    await expect(transferOwnership(s, { userId: owner.id })).rejects.toThrow("You already own this workspace")
+    await expect(transferOwnership(s, { userId: "user_gone" })).rejects.toThrow("They’re no longer in this workspace")
+    await expect(membership(owner.id)).resolves.toMatchObject({ role: "owner" })
+    await expect(membership("user_ada")).resolves.toMatchObject({ role: "admin" })
   })
 
   it("leaves the owner’s and your own as they are", async () => {

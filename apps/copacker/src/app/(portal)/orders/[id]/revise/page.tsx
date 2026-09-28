@@ -1,15 +1,14 @@
 import { eq } from "drizzle-orm"
-import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { OrderReviser } from "@/components/supplier/order-reviser"
 import { db } from "@/db"
 import { organizations } from "@/db/schema"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 
-export const metadata: Metadata = { title: "Edit order" }
+export const generateMetadata = titleFor("Edit order", "orders", "edit")
 
 export default async function ReviseOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

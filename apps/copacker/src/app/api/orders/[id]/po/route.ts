@@ -14,6 +14,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   }
   const s = await session()
   requirePage(s, "orders")
+  requirePage(s, "prices")
   try {
     // Only a workspace that can see the PO gets its document.
     await accessibleOrder(s, id.data)

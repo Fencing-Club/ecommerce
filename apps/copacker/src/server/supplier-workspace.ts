@@ -98,6 +98,13 @@ export async function supplierOrders(orgId: string, customerId?: string) {
     .toSorted((a, b) => b.sentAt.getTime() - a.sentAt.getTime())
 }
 export type SupplierOrder = Awaited<ReturnType<typeof supplierOrders>>[number]
+// An order as a list shows it: without its total for someone who doesn't see prices.
+export type ListedOrder = Omit<SupplierOrder, "total"> & { total: number | null }
+
+// Orders for someone who doesn't see prices, without their totals.
+export function withoutTotals(list: SupplierOrder[]): ListedOrder[] {
+  return list.map((order) => ({ ...order, total: null }))
+}
 
 // Amounts in several currencies, added up per currency, largest first.
 export function totalsByCurrency(rows: Array<{ currency: string; total: number }>) {

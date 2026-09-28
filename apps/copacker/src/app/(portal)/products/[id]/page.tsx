@@ -1,12 +1,11 @@
-import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { type EditorProduct, ProductEditor } from "@/components/supplier/product-editor"
 import { can } from "@/lib/access"
-import { requirePage, session } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
 import { productDetail } from "@/server/supplier-products"
 
-export const metadata: Metadata = { title: "Product" }
+export const generateMetadata = titleFor("Product", "products")
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -20,6 +19,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     notFound()
   }
   const { group } = detail
+  // Someone who doesn't see prices gets the product without them, only to view: saving it would clear them.
+  const prices = can(s, "prices")
   const initial: EditorProduct = {
     id: group.id,
     revision: group.revision,
@@ -37,14 +38,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       supplierSku: variant.supplierSku,
       options: variant.options,
       currency: variant.currency as EditorProduct["variants"][number]["currency"],
-      priceMinor: variant.priceMinor,
+      priceMinor: prices ? variant.priceMinor : null,
       priceBasis: variant.priceBasis,
       piecesPerSellablePack: variant.piecesPerSellablePack,
       sellablePacksPerCase: variant.sellablePacksPerCase,
       trackInventory: variant.trackInventory,
       onHand: variant.onHand,
       continueSelling: variant.continueSelling,
-      priceBreaks: variant.priceBreaks,
+      priceBreaks: prices ? variant.priceBreaks : [],
       quantityRules: variant.quantityRules,
       notes: variant.notes ?? ""
     }))
@@ -55,7 +56,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       key={group.revision}
       initial={initial}
       catalogs={detail.catalogs}
-      readOnly={!can(s, "products", "edit")}
+      readOnly={!prices || !can(s, "products", "edit")}
     />
   )
 }

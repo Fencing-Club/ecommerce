@@ -3,12 +3,12 @@
 import { money } from "@repo/aisle"
 import Link from "next/link"
 import { useState } from "react"
-import { PageLink } from "@/components/access"
+import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
-import type { OrderStage, SupplierOrder } from "@/server/supplier-workspace"
+import type { ListedOrder, OrderStage } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager } from "./shared"
 
 type Tab = "all" | OrderStage
@@ -29,10 +29,12 @@ export function SupplierOrderIndex({
   initialTab = "all",
   showCustomer = true
 }: {
-  orders: SupplierOrder[]
+  // Without totals for someone who doesn't see prices.
+  orders: ListedOrder[]
   initialTab?: string
   showCustomer?: boolean
 }) {
+  const prices = useCan("prices")
   const [tab, setTab] = useState<Tab>(tabs.find((option) => option.value === initialTab)?.value ?? "all")
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(0)
@@ -76,7 +78,7 @@ export function SupplierOrderIndex({
               {showCustomer && <TableHead>Customer</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead className="hidden text-right @3xl:table-cell">Pieces</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              {prices && <TableHead className="text-right">Total</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,7 +108,11 @@ export function SupplierOrderIndex({
                 <TableCell className="hidden text-right tabular-nums @3xl:table-cell">
                   {order.pieces.toLocaleString("en-US")}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{money(order.total, order.currency)}</TableCell>
+                {prices && (
+                  <TableCell className="text-right tabular-nums">
+                    {order.total === null ? null : money(order.total, order.currency)}
+                  </TableCell>
+                )}
               </LinkRow>
             ))}
           </TableBody>
