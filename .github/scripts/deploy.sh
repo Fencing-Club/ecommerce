@@ -14,7 +14,8 @@ newest() {
     let input = ""
     process.stdin.on("data", (chunk) => (input += chunk)).on("end", () => {
       const [deployment] = JSON.parse(input)
-      process.stdout.write(deployment ? `${deployment.id} ${deployment.status}` : "none NONE")
+      // read needs the newline, or it fails and set -e ends the script.
+      console.log(deployment ? `${deployment.id} ${deployment.status}` : "none NONE")
     })'
 }
 
@@ -22,7 +23,7 @@ deploy() {
   local service="$1" before id status
   before=$(newest "$service" | cut -d' ' -f1)
   echo "::group::Deploy $service"
-  railway up --service "$service" --detach --message "$sha" .
+  railway up --service "$service" --detach --message "$sha"
   # Railway gives the deployment an id once the upload is accepted; wait for it, then for it to settle.
   for _ in $(seq 1 180); do
     read -r id status < <(newest "$service")

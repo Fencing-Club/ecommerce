@@ -1,5 +1,5 @@
-// Fills the local database with a demo Shopify store for every buyer workspace, so Inventory, POs and Restock can be
-// tried without connecting real accounts. Refuses to run against anything but a local database.
+// Fills the local (or staging) database with a demo Shopify store for every buyer workspace, so Inventory, POs and Restock can be
+// tried without connecting real accounts. Refuses to run against anything but a local or staging database.
 // Usage: pnpm db:seed (after signing in locally once, so a workspace exists).
 import { randomUUID } from "node:crypto"
 import type { ShopifySale } from "@repo/aisle/sales"
@@ -19,9 +19,11 @@ import {
 import { salesDataVersion } from "../src/server/sales-orders"
 import { encrypt } from "../src/server/security"
 
+// Railway names the environment it runs in, so this also seeds staging: `railway ssh --environment staging
+// --service copacker-worker -- pnpm --filter copacker db:seed`.
 const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid")
-if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
-  throw new Error("db:seed only runs against a local database")
+if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && process.env.RAILWAY_ENVIRONMENT_NAME !== "staging") {
+  throw new Error("db:seed only runs against a local or staging database")
 }
 
 const shop = "copacker-demo.myshopify.com"

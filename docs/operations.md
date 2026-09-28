@@ -50,7 +50,7 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
 
 Railway project `copacker`: d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6. Production: 3fdd8f47-c9ad-44c5-b554-78b64818b4e5. Staging: b822ecad-68dd-4f4f-89e0-d9db00485545. Postgres: aef82310-c9f9-4472-a2bb-e19949723c31. Web: 79da7d29-d1d6-4aa7-9fef-709dbf2b9619. Private documents bucket: 868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2. Project name identifies the deployed app; repository name is ecommerce.
 
-Domain: `copacker.ai` is registered with Cloudflare Registrar (auto-renews every two years) and uses Cloudflare DNS. `copacker.ai` and `staging.copacker.ai` are proxied CNAMEs to the web service (staging runs on production, through `APP_ALIAS_URLS`, until a staging environment exists), each with a `_railway-verify` TXT record. `www` redirects to the root with a Cloudflare redirect rule. SSL/TLS is set to Full; Railway does not work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served at `https://media.copacker.ai/film.mp4`; [Landing page](landing-page.md#assets) says how to replace it.
+Domain: `copacker.ai` is registered with Cloudflare Registrar (auto-renews every two years) and uses Cloudflare DNS. `copacker.ai` and `staging.copacker.ai` are proxied CNAMEs to the production and staging web services, each with a `_railway-verify` TXT record. `www` redirects to the root with a Cloudflare redirect rule. SSL/TLS is set to Full; Railway does not work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served at `https://media.copacker.ai/film.mp4`; [Landing page](landing-page.md#assets) says how to replace it.
 
 Still to do after the move to `copacker.ai` (2026-09-28):
 
@@ -66,9 +66,10 @@ Still to do after the move to `copacker.ai` (2026-09-28):
   documents bucket, `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses the local development apps (Copacker
   Dev, Aisle Dev), so connecting a store there never rotates production's tokens. WorkOS stays on the staging
   environment for both. It reads no SQS queues until it has its own: production's would be drained by its worker.
-  Still to do: move `staging.copacker.ai` from the production service to staging's and drop it from production's
-  `APP_ALIAS_URLS`; add the staging redirects to Copacker Dev and Aisle Dev; create staging's Shopify EventBridge
-  source and queues.
+  `staging.copacker.ai` is a proxied CNAME to staging's web service (`ii9zhosg.up.railway.app`), and
+  `copacker-staging.up.railway.app` reaches it directly. To fill it with the demo store, sign in there once, then run
+  `railway ssh --environment staging --service copacker-worker -- pnpm --filter copacker db:seed`. Still to do: add
+  the staging redirects to Copacker Dev and Aisle Dev; create staging's Shopify EventBridge source and queues.
 
 Worker: `08c1edb8-c309-4fe4-b71e-14b54065a0fc`, start command `pnpm --filter copacker worker`. The web domain is `https://copacker.ai` (`APP_URL`); `https://copacker-production.up.railway.app` still reaches the service directly, port 3000, healthcheck `/api/health`. WorkOS currently uses staging credentials; the Railway environment name does not imply production AuthKit readiness. On 2026-09-28, Google sign-in, a signed-in API request and a Shopify reconnect of the Fencing Club store passed on both `https://copacker.ai` and `https://staging.copacker.ai`.
 
