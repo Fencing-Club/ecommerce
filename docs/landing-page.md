@@ -40,6 +40,12 @@ parts live in `apps/copacker/src/components/marketing/`:
   (`locate`) or hold a spot on screen, and slide to stay clear of the screen's edges, the header and the words. The
   last shot fits the whole board to any screen's shape; on a phone the trip ends at the warehouses instead. The sea's
   color, glints and foam are drawn per point in a shader patched onto its material (`onBeforeCompile`).
+- The journey asks phones and tablets (a coarse pointer) for less of the GPU: a 1.5x pixel ratio and a 1024 px shadow
+  map, and one more try without anti-aliasing if the first context fails. When a browser still can't draw the world,
+  or drops its context, the section shows a still per chapter from `public/marketing/journey/` (`wide-<n>.jpg` at
+  1440×900 and `phone-<n>.jpg` at 390×844, 2x), the words and documents over them as usual. Remake the stills when the
+  world changes: load the page in headless Chromium with reduced motion, hide the header, the words and the cards, and
+  screenshot the sticky view at each chapter's start.
 - Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
   order, and the journey steps from chapter to chapter instead of moving.
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,

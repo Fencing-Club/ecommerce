@@ -171,13 +171,23 @@ const during = (p: number, [from, to]: [number, number]) => span(p, from, to)
 
 // `words` are the ones painted into the world in the reader's language: the purchase order's name on its page.
 export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: string; customs: string }): World {
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance"
-  })
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))
+  // Phones and tablets get a lighter renderer, with fewer pixels and a smaller shadow map, so the world fits in their
+  // GPU's memory next to the hero's. A browser that won't make an anti-aliased context gets one more try without.
+  const handheld = matchMedia("(pointer: coarse)").matches
+  const make = (antialias: boolean) =>
+    new THREE.WebGLRenderer({
+      canvas,
+      antialias,
+      alpha: true,
+      powerPreference: handheld ? "default" : "high-performance"
+    })
+  let renderer: THREE.WebGLRenderer
+  try {
+    renderer = make(true)
+  } catch {
+    renderer = make(false)
+  }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, handheld ? 1.5 : 2))
   renderer.setClearColor(0x000000, 0)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
@@ -193,7 +203,7 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
   scene.add(new THREE.HemisphereLight("#fff9f0", "#e6d7c4", 1.7))
   const sun = new THREE.DirectionalLight("#fff3e3", 2.3)
   sun.castShadow = true
-  sun.shadow.mapSize.set(2048, 2048)
+  sun.shadow.mapSize.setScalar(handheld ? 1024 : 2048)
   sun.shadow.radius = 4
   sun.shadow.bias = -0.0004
   sun.shadow.normalBias = 0.03

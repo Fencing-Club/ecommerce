@@ -333,6 +333,8 @@ export function Journey() {
   const [chapter, setChapter] = useState(0)
   const [saved, setSaved] = useState(0)
   const [ready, setReady] = useState(false)
+  // True when the browser can't draw the world, or loses its drawing context: the section shows the chapter's still.
+  const [failed, setFailed] = useState(false)
   const [ending, setEnding] = useState(false)
 
   useEffect(() => {
@@ -423,6 +425,14 @@ export function Journey() {
       frame ||= requestAnimationFrame(tick)
     }
 
+    // A phone can drop the world's drawing context to free memory; three.js restores it when the browser allows.
+    const lost = () => setFailed(true)
+    const restored = () => {
+      setFailed(false)
+      request()
+    }
+    canvas.addEventListener("webglcontextlost", lost)
+    canvas.addEventListener("webglcontextrestored", restored)
     const load = () => {
       loading = true
       import("./journey-world")
@@ -436,7 +446,8 @@ export function Journey() {
           request()
         })
         .catch(() => {
-          // Without WebGL the chapters still play, over the paper.
+          // Without WebGL the chapters still play, over stills of the world.
+          setFailed(true)
         })
     }
     const seen = new IntersectionObserver(
@@ -463,6 +474,8 @@ export function Journey() {
       seen.disconnect()
       resize.disconnect()
       removeEventListener("scroll", request)
+      canvas.removeEventListener("webglcontextlost", lost)
+      canvas.removeEventListener("webglcontextrestored", restored)
       world?.dispose()
     }
   }, [orderName, customsSign])
@@ -511,10 +524,25 @@ export function Journey() {
           aria-hidden
           className={cn(
             "absolute inset-0 size-full transition-opacity duration-1000",
-            ready ? "opacity-100" : "opacity-0"
+            ready && !failed ? "opacity-100" : "opacity-0"
           )}
         />
-        <div aria-hidden className="pointer-events-none absolute inset-0">
+        {/* Stills of each chapter, made from the world itself (see docs/landing-page.md), for browsers that can't draw
+            it. A wide screen's still keeps the world to the right of the words, and a phone's above them. */}
+        {failed && (
+          <picture key={chapter} className="absolute inset-0 animate-in duration-700 fade-in">
+            <source media="(min-width: 1024px)" srcSet={`/marketing/journey/wide-${chapter}.jpg`} />
+            <img
+              src={`/marketing/journey/phone-${chapter}.jpg`}
+              alt=""
+              className={cn(
+                "size-full object-cover object-[50%_34%]",
+                chapter === chapters.length - 1 ? "lg:object-center" : "lg:object-[66%_60%]"
+              )}
+            />
+          </picture>
+        )}
+        <div aria-hidden className={cn("pointer-events-none absolute inset-0", failed && "hidden")}>
           {notes.map((note, i) => (
             <div
               key={`${note.place}-${note.kind}-${note.shown[0]?.[0]}`}
