@@ -19,7 +19,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-import { shortDate } from "@/lib/format"
+import { dayDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { proposalChanges } from "@/server/order-proposals"
 
@@ -85,7 +85,7 @@ function proposalStatus(status: "pending" | "declined", viewer: "buyer" | "suppl
     : ({ tone: "info", label: "Awaiting approval" } as const)
 }
 
-const day = (value: string | null) => (value ? shortDate(value) : "Not set")
+const day = (value: string | null) => (value ? dayDate(value) : "Not set")
 
 // A supplier's proposed changes to a purchase order, as the buyer reviews them and the supplier waits on them: each
 // changed line with its old and new quantity and price, then terms, the ready date and the new total.

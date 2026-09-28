@@ -44,6 +44,16 @@ export function formatChange(value: number) {
 }
 
 // "2026-09-03" as "Sep 3", read as a UTC day.
+// A calendar day such as "2026-12-01" as "Dec 1, 2026", read in UTC so it stays the same day in every time zone.
+export function dayDate(day: string) {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  })
+}
+
 export function shortDate(day: string) {
   return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 }

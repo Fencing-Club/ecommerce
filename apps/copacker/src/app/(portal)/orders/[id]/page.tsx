@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { db } from "@/db"
 import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
-import { shortDate } from "@/lib/format"
+import { dayDate } from "@/lib/format"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
@@ -429,9 +429,9 @@ export default async function OrderPage({ params }: Props) {
             </CardHeader>
             <CardContent>
               <dl className="flex flex-col gap-3">
-                {order.data.dueDate && <Detail label="Required by" value={shortDate(order.data.dueDate)} />}
+                {order.data.dueDate && <Detail label="Required by" value={dayDate(order.data.dueDate)} />}
                 <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
-                {order.data.readyDate && <Detail label="Ready" value={shortDate(order.data.readyDate)} />}
+                {order.data.readyDate && <Detail label="Ready" value={dayDate(order.data.readyDate)} />}
                 <Detail label="Currency" value={currency} />
                 <Detail label={noteLabel(s.org.kind, buyerName)} value={order.data.notes || "—"} />
               </dl>
