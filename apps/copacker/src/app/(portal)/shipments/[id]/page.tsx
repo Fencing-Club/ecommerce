@@ -20,6 +20,7 @@ import { contacts, documents, shipments } from "@/db/schema"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
+import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { reservedPieces } from "@/server/readiness"
 import { finishedStates, releasedStates } from "@/server/readiness"
@@ -58,6 +59,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const editable =
     ["packing", "correction"].includes(shipment.status) && !shipment.amazonOrderId && shipment.operation === "none"
   const isBuyer = s.org.kind === "buyer"
+  // The Amazon shipments are in the buyer's Seller Central, which the supplier can't open.
+  const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
   const visibleDocs = docs.filter(
     (d) => isBuyer || releasedStates.includes(shipment.status) || !["shipping_label", "carton_label"].includes(d.kind)
   )
@@ -80,7 +83,27 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
         current={shipment.amazonShipmentId ?? "Shipment"}
       />
       <PageHeader
-        title={shipment.amazonShipmentId ?? (enteringFor ? "Shipment" : "Prepare your shipment")}
+        title={
+          amazonLinks.length ? (
+            <span className="flex flex-wrap gap-x-4 gap-y-1">
+              {amazonLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-sm underline-offset-4 hover:underline"
+                >
+                  {link.id}
+                  <ExternalLink aria-hidden="true" className="size-5 opacity-60" />
+                  <span className="sr-only"> (opens in Seller Central)</span>
+                </a>
+              ))}
+            </span>
+          ) : (
+            (shipment.amazonShipmentId ?? (enteringFor ? "Shipment" : "Prepare your shipment"))
+          )
+        }
         description={`${order.data.reference} to ${shipment.amazonNetwork ? `Amazon ${amazonNetworkNames[shipment.amazonNetwork]}` : formatDestination(order.data.destination)}, ${shipment.packing?.cartons.length ?? 0} cartons`}
       >
         <Status status={shipment.status} />
@@ -172,27 +195,6 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
               </CardHeader>
               {isBuyer && (
                 <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
-                  <div>
-                    <Button
-                      variant="outline"
-                      nativeButton={false}
-                      render={
-                        <a
-                          href={
-                            fba
-                              ? "https://sellercentral.amazon.com/fba/sendtoamazon"
-                              : "https://sellercentral.amazon.com/awd"
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label="Open Amazon Seller Central in a new tab"
-                        />
-                      }
-                    >
-                      Open Amazon Seller Central
-                      <ExternalLink data-icon="inline-end" />
-                    </Button>
-                  </div>
                   <Upload
                     orderId={order.id}
                     shipmentId={id}

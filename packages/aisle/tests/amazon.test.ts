@@ -465,6 +465,61 @@ describe("inbound shipment contents", () => {
   })
 })
 
+describe("inbound shipment lists", () => {
+  it("lists every FBA shipment but deleted ones, across pages", async () => {
+    const { api, calls } = client([
+      {
+        payload: {
+          ShipmentData: [
+            { ShipmentId: "FBA19A", ShipmentName: "FBA STA (09/27/2026 23:41)-HEA2", ShipmentStatus: "WORKING" }
+          ],
+          NextToken: "next"
+        }
+      },
+      { payload: { ShipmentData: [{ ShipmentId: "FBA15B", ShipmentName: "", ShipmentStatus: "CLOSED" }] } }
+    ])
+    expect(await api.fbaShipments()).toEqual([
+      { shipmentId: "FBA19A", name: "FBA STA (09/27/2026 23:41)-HEA2", status: "WORKING" },
+      { shipmentId: "FBA15B", name: null, status: "CLOSED" }
+    ])
+    expect(calls[0]?.pathname).toBe("/fba/inbound/v0/shipments")
+    expect(calls[0]?.searchParams.get("QueryType")).toBe("SHIPMENT")
+    expect(calls[0]?.searchParams.get("ShipmentStatusList")?.split(",")).not.toContain("DELETED")
+    expect(calls[1]?.searchParams.get("QueryType")).toBe("NEXT_TOKEN")
+    expect(calls[1]?.searchParams.get("NextToken")).toBe("next")
+  })
+
+  it("lists every AWD shipment across pages", async () => {
+    const { api, calls } = client([
+      {
+        shipments: [
+          {
+            shipmentId: "STAR-2",
+            orderId: "STAR-O2",
+            shipmentStatus: "CREATED",
+            createdAt: "2026-09-12T22:24:18.192Z",
+            externalReferenceId: "wf2"
+          }
+        ],
+        nextToken: "next"
+      },
+      { shipments: [{ shipmentId: "STAR-1", orderId: "STAR-O1", shipmentStatus: "CLOSED" }] }
+    ])
+    expect(await api.awdShipments()).toEqual([
+      { shipmentId: "STAR-2", orderId: "STAR-O2", status: "CREATED", createdAt: "2026-09-12T22:24:18.192Z" },
+      { shipmentId: "STAR-1", orderId: "STAR-O1", status: "CLOSED", createdAt: null }
+    ])
+    expect(calls[0]?.pathname).toBe("/awd/2024-05-09/inboundShipments")
+    expect(calls[1]?.searchParams.get("nextToken")).toBe("next")
+  })
+
+  it("stops when Amazon repeats a page token", async () => {
+    const page = { payload: { ShipmentData: [], NextToken: "same" } }
+    const { api } = client([page, page])
+    await expect(api.fbaShipments()).rejects.toThrow("repeated a page token")
+  })
+})
+
 describe("AWD inbound eligibility", () => {
   const carton = {
     count: 1,

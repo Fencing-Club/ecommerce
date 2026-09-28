@@ -32,7 +32,7 @@ export async function amazonPacking(buyerOrgId: string, order: OrderInput, packi
   }
   const stop = await forwarderAddress(buyerOrgId, order.via.forwarderId, order.via.addressId)
   if (!stop) {
-    throw new Error("The PO's forwarder address was removed. Edit the PO to choose another")
+    throw new Error("The purchase order's forwarder address was removed. Edit the purchase order to choose another")
   }
   const origin = originSchema.safeParse({ ...stop.address, name: stop.address.name || stop.forwarderName })
   if (!origin.success) {

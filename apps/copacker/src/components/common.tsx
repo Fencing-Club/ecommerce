@@ -33,6 +33,15 @@ const statuses: Record<string, { label: string; tone: Tone }> = {
   forwarded: { label: "Shipped by forwarder", tone: "progress" },
   received: { label: "Received", tone: "done" },
   cancelled: { label: "Cancelled", tone: "neutral" },
+  // Amazon inbound shipments, in Seller Central's words (shipped, closed and cancelled read as above)
+  working: { label: "Working", tone: "progress" },
+  created: { label: "Created", tone: "progress" },
+  ready_to_ship: { label: "Ready to ship", tone: "progress" },
+  in_transit: { label: "In transit", tone: "progress" },
+  delivered: { label: "Delivered", tone: "progress" },
+  checked_in: { label: "Checked in", tone: "progress" },
+  receiving: { label: "Receiving", tone: "progress" },
+  error: { label: "Error", tone: "problem" },
   needs_attention: { label: "Needs attention", tone: "problem" },
   correction: { label: "Correction requested", tone: "action" },
   closed: { label: "Closed", tone: "neutral" }
@@ -62,7 +71,7 @@ export function PageHeader({
   description,
   children
 }: {
-  title: string
+  title: React.ReactNode
   description?: string
   children?: React.ReactNode
 }) {

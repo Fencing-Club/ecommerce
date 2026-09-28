@@ -51,7 +51,7 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
   }
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
   if (!order) {
-    throw new Error("PO is missing")
+    throw new Error("Purchase order is missing")
   }
   const api = await amazonFor(order.buyerOrgId, order.amazonSellerId)
   const packing = await amazonPacking(order.buyerOrgId, shipment.snapshot, shipment.packing)
@@ -258,11 +258,11 @@ export async function shopifyJob(payload: Record<string, unknown>, assertOwned: 
     .from(orderRevisions)
     .where(and(eq(orderRevisions.orderId, input.orderId), eq(orderRevisions.revision, input.revision)))
   if (!record) {
-    throw new Error("Approved PO revision is unavailable")
+    throw new Error("Approved purchase order revision is unavailable")
   }
   const [currentOrder] = await db().select().from(orders).where(eq(orders.id, input.orderId))
   if (!currentOrder || currentOrder.buyerOrgId !== input.orgId) {
-    throw new Error("PO account mismatch")
+    throw new Error("Purchase order account mismatch")
   }
   if (currentOrder.revision !== input.revision) {
     return
@@ -276,7 +276,7 @@ export async function shopifyJob(payload: Record<string, unknown>, assertOwned: 
       throw new Error("Shopify product identity has changed")
     }
     if (input.updateCost && product.inventoryItem.unitCost?.currencyCode !== record.data.currency) {
-      throw new Error("Shopify unit cost currency differs from the PO. No currency conversion is applied")
+      throw new Error("Shopify unit cost currency differs from the purchase order. No currency conversion is applied")
     }
   }
   // Supplier SKUs are kept in Copacker; unit costs in Shopify.

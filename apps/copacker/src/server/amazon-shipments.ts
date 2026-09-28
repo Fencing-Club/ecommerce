@@ -1,7 +1,65 @@
+import { type AmazonNetwork, amazonNetworks } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { amazonInboundShipments } from "@/db/schema"
+import { amazonInboundShipments, type shipments } from "@/db/schema"
+
+// Each network's page for one of its inbound shipments in Seller Central, which opens on the shipment's events.
+const sellerCentralShipment: Record<AmazonNetwork, (shipmentId: string) => string> = {
+  fba: (id) => `https://sellercentral.amazon.com/fba/inbound-shipment/summary/${id}`,
+  awd_us: (id) => `https://sellercentral.amazon.com/awd/inbound-shipment/${id}`
+}
+
+// The Amazon shipments a shipment's cartons travel in, each with its page in Seller Central. An FBA inbound plan can
+// split into several, recorded comma-separated.
+export function amazonShipmentLinks(
+  shipment: Pick<typeof shipments.$inferSelect, "amazonNetwork" | "amazonShipmentId">
+) {
+  const { amazonNetwork: network, amazonShipmentId } = shipment
+  if (!network || !amazonShipmentId) {
+    return []
+  }
+  return amazonShipmentId.split(", ").map((id) => ({ id, url: sellerCentralShipment[network](encodeURIComponent(id)) }))
+}
+
+// Statuses of a shipment Amazon has finished with: fully received, or cancelled.
+const finishedStatuses = new Set(["CLOSED", "CANCELLED"])
+
+export type AmazonShipment = {
+  network: AmazonNetwork
+  shipmentId: string
+  name: string | null
+  status: string
+  createdAt: string | null
+  url: string
+}
+
+// Every FBA and AWD inbound shipment in the connected Amazon account, whoever created it, each with its page in Seller
+// Central. Open shipments come first, then FBA before AWD, newest first: FBA lists no dates, but its shipment IDs grow
+// over time.
+export async function listAmazonShipments(
+  amazon: Pick<Amazon, "fbaShipments" | "awdShipments">
+): Promise<AmazonShipment[]> {
+  const [fba, awd] = await Promise.all([amazon.fbaShipments(), amazon.awdShipments()])
+  const rows = [
+    ...fba.map((row) => ({ network: "fba" as const, ...row, createdAt: null })),
+    ...awd.map((row) => ({ network: "awd_us" as const, ...row, name: null }))
+  ].map(({ network, shipmentId, name, status, createdAt }) => ({
+    network,
+    shipmentId,
+    name,
+    status,
+    createdAt,
+    url: sellerCentralShipment[network](encodeURIComponent(shipmentId))
+  }))
+  return rows.toSorted(
+    (a, b) =>
+      Number(finishedStatuses.has(a.status)) - Number(finishedStatuses.has(b.status)) ||
+      amazonNetworks.indexOf(a.network) - amazonNetworks.indexOf(b.network) ||
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? "") ||
+      b.shipmentId.localeCompare(a.shipmentId)
+  )
+}
 
 // Amazon's charges for getting stock into its warehouses: its freight service, inbound placement, transport after
 // inbound, and AWD transport. Each names the shipment it's for in its ORDER_ID.

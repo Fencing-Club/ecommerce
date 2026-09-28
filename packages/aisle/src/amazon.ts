@@ -232,6 +232,51 @@ const fbaShipmentItemsPage = z.object({
     })
     .optional()
 })
+// FBA's shipment statuses, all but DELETED: a shipment deleted in Seller Central never existed as far as the seller is
+// concerned.
+const fbaShipmentStatuses = [
+  "WORKING",
+  "READY_TO_SHIP",
+  "SHIPPED",
+  "IN_TRANSIT",
+  "DELIVERED",
+  "CHECKED_IN",
+  "RECEIVING",
+  "CLOSED",
+  "CANCELLED",
+  "ERROR"
+]
+const fbaShipmentsPage = z.object({
+  payload: z
+    .object({
+      ShipmentData: z
+        .array(
+          z.object({
+            ShipmentId: z.string().min(1),
+            ShipmentName: z.string().nullish(),
+            ShipmentStatus: z.string().min(1)
+          })
+        )
+        .max(1000)
+        .optional(),
+      NextToken: z.string().min(1).nullish()
+    })
+    .optional()
+})
+const awdShipmentsPage = z.object({
+  shipments: z
+    .array(
+      z.object({
+        shipmentId: z.string().min(1),
+        orderId: z.string().min(1),
+        shipmentStatus: z.string().min(1),
+        createdAt: z.string().nullish()
+      })
+    )
+    .max(1000)
+    .nullish(),
+  nextToken: z.string().min(1).nullish()
+})
 type AwdContents = {
   products?: { sku: string; quantity: number }[] | null
   packages?: { count: number; distributionPackage: { contents: AwdContents } }[] | null
@@ -823,6 +868,64 @@ export class Amazon {
       })}`
     }
     throw new Error("FBA shipment items exceed the supported page limit")
+  }
+  /** Every FBA inbound shipment to the US marketplace, whoever created it, in Amazon's order. */
+  async fbaShipments() {
+    const shipments: Array<{ shipmentId: string; name: string | null; status: string }> = []
+    const tokens = new Set<string>()
+    let query = new URLSearchParams({
+      QueryType: "SHIPMENT",
+      MarketplaceId: "ATVPDKIKX0DER",
+      ShipmentStatusList: fbaShipmentStatuses.join(",")
+    })
+    for (let pageNumber = 0; pageNumber < 50; pageNumber++) {
+      const page = fbaShipmentsPage.parse(await this.request("GET", `/fba/inbound/v0/shipments?${query}`)).payload
+      for (const row of page?.ShipmentData ?? []) {
+        shipments.push({ shipmentId: row.ShipmentId, name: row.ShipmentName || null, status: row.ShipmentStatus })
+      }
+      const next = page?.NextToken
+      if (!next) {
+        return shipments
+      }
+      if (tokens.has(next)) {
+        throw new Error("FBA shipments repeated a page token")
+      }
+      tokens.add(next)
+      query = new URLSearchParams({ QueryType: "NEXT_TOKEN", MarketplaceId: "ATVPDKIKX0DER", NextToken: next })
+    }
+    throw new Error("FBA shipments exceed the supported page limit")
+  }
+  /** Every AWD inbound shipment, whoever created it, newest first. */
+  async awdShipments() {
+    const shipments: Array<{ shipmentId: string; orderId: string; status: string; createdAt: string | null }> = []
+    const tokens = new Set<string>()
+    let nextToken: string | undefined
+    for (let pageNumber = 0; pageNumber < 50; pageNumber++) {
+      const query = new URLSearchParams({
+        sortBy: "CREATED_AT",
+        sortOrder: "DESCENDING",
+        maxResults: "200",
+        ...(nextToken ? { nextToken } : {})
+      })
+      const page = awdShipmentsPage.parse(await this.request("GET", `/awd/2024-05-09/inboundShipments?${query}`))
+      for (const row of page.shipments ?? []) {
+        shipments.push({
+          shipmentId: row.shipmentId,
+          orderId: row.orderId,
+          status: row.shipmentStatus,
+          createdAt: row.createdAt ?? null
+        })
+      }
+      if (!page.nextToken) {
+        return shipments
+      }
+      if (tokens.has(page.nextToken)) {
+        throw new Error("AWD shipments repeated a page token")
+      }
+      tokens.add(page.nextToken)
+      nextToken = page.nextToken
+    }
+    throw new Error("AWD shipments exceed the supported page limit")
   }
   /**
    * The units of each seller SKU in an AWD inbound shipment, by its shipment ID (such as STAR-ABC123): each carton's

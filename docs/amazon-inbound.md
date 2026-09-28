@@ -57,6 +57,30 @@ after the request leaves the outcome unknown; the buyer links the existing AWD o
 with `shipment.reconcile`, which checks its reference or name. `shipment.cancelAmazon`, from a shipment in correction,
 cancels the AWD order or voids the inbound plan and marks the shipment cancelled once Amazon confirms.
 
+Amazon rejects a new AWD order with `CAPACITY_UNAVAILABLE` while the account's AWD capacity is taken, such as by open
+AWD shipments that haven't arrived. Smaller cartons don't help; the shipment stays in Needs attention until capacity
+frees and it's retried.
+
+## Seller Central links
+
+For the buyer, each Amazon shipment ID opens the shipment in Seller Central: the shipment page's title (one link per
+Amazon shipment when an FBA plan splits) and the Shipments list. Seller Central opens either page on the shipment's
+events:
+
+- FBA: `https://sellercentral.amazon.com/fba/inbound-shipment/summary/{FBA shipment ID}`
+- AWD: `https://sellercentral.amazon.com/awd/inbound-shipment/{STAR shipment ID}`
+
+The supplier can't open the buyer's Seller Central, so it sees the IDs as text.
+
+## Shipments list
+
+The buyer's Shipments list shows every inbound shipment in its connected Amazon account after its purchase order
+shipments, whoever created them: FBA from `GET /fba/inbound/v0/shipments` in every status but deleted, AWD from
+`GET /awd/2024-05-09/inboundShipments`. A shipment a purchase order shipment already shows isn't repeated. The list is
+read from Amazon when the page loads and cached for two minutes; if Amazon can't be read, the page says so and shows the
+purchase order shipments. Open shipments come first, then FBA before AWD, newest first (FBA lists no dates, so its
+shipment IDs order it).
+
 ## Live acceptance, 2026-09-27
 
 Against the Fencing Club seller account, from the local app: AWD order `STAR-SCD4VEWN4AETX` (shipment
@@ -65,3 +89,8 @@ Against the Fencing Club seller account, from the local app: AWD order `STAR-SCD
 then cancelled with Cancel in Amazon (CANCELLED and VOIDED). The runs found and fixed: AWD prep categories, Amazon's
 echoed eligibility cartons, the prepDetails query format, the 40-character plan name, and a create rejection leaving
 the shipment stuck in `sending`. Shipping-label upload and release were covered by tests, not live.
+
+Later that day a purchase order with an FBA line and an AWD line, entered through the app, created FBA shipment
+`FBA19R9S05PM` (HEA2); its link opened the shipment in Seller Central, and it was then cancelled. Amazon rejected the AWD
+shipment with `CAPACITY_UNAVAILABLE` even at 20 × 15 × 5 cm, since open AWD shipment `STAR-WBSAXKQKBYMYS` (16 cartons)
+held the capacity; the AWD links were confirmed on that shipment and on `STAR-TXBA6PPAPYKPM`.
