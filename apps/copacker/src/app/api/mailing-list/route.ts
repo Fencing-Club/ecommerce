@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { negotiateLocale } from "@/i18n/locales"
 import { errorResponse } from "@/server/errors"
-import { joinMailingList, sendSignupNotice, sendWelcome } from "@/server/mailing-list"
+import { joinWaitlist, sendSignupNotice, sendWelcome } from "@/server/mailing-list"
 import { clientAddress, rateLimit } from "@/server/rate-limit"
 
 const signup = z.object({
@@ -13,9 +13,9 @@ const signup = z.object({
 // A few signups per address in a short while is plenty; more is someone filling the list with other people's email.
 const limited = rateLimit({ period: 10 * 60 * 1000, allowed: 5 })
 
-// The marketing page's waitlist signup. Anyone signed out can use it. The list keeps the language the page was shown
-// in. Someone new to it gets a welcome email in that language, and CONTACT_EMAIL hears they joined; if either email
-// fails, they're still on the list.
+// The marketing page's waitlist signup, a WorkOS waitlist entry. Anyone signed out can use it. The entry keeps the
+// language the page was shown in. Someone new to it gets a welcome email in that language, and CONTACT_EMAIL hears
+// they joined; if either email fails, they're still on the waitlist.
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null)
   if (typeof body === "object" && body && "website" in body && body.website) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const locale = negotiateLocale(request.headers.get("accept-language"))
   let joined = false
   try {
-    ;({ joined } = await joinMailingList(parsed.data.email, locale))
+    ;({ joined } = await joinWaitlist(parsed.data.email, locale))
   } catch {
     return errorResponse("signupFailed", 502)
   }

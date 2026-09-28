@@ -34,7 +34,8 @@ const client = vi.hoisted(() => ({
   createUser: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   createPasswordReset: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   resetPassword: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
-  getAuthorizationUrlWithPKCE: vi.fn<(...args: unknown[]) => Promise<unknown>>()
+  getAuthorizationUrlWithPKCE: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  findInvitationByToken: vi.fn<(...args: unknown[]) => Promise<unknown>>()
 }))
 vi.mock("../src/server/workos", () => ({
   workos: () => ({ userManagement: client }),
@@ -52,6 +53,7 @@ vi.mock("@/db", () => ({
 import {
   authorizationUrl,
   finishOAuth,
+  invitedEmail,
   pendingVerification,
   requestPasswordReset,
   resetPassword,
@@ -250,11 +252,41 @@ describe("creating an account", () => {
     )
   })
 
+  it("accepts a WorkOS invitation it was opened with, which confirms the address instead of a code", async () => {
+    client.createUser.mockResolvedValue({ id: "user_1" })
+    client.authenticateWithPassword.mockResolvedValue(session)
+    await expect(
+      signUp({ email: "ann@example.net", password: "a long passphrase", invitation: "invitation_token_1" })
+    ).resolves.toEqual({ redirect: "/" })
+    expect(client.authenticateWithPassword).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "ann@example.net", invitationToken: "invitation_token_1" })
+    )
+  })
+
   it("checks the password's length before asking WorkOS", async () => {
     await expect(signUp({ email: "ann@example.net", password: "short" })).rejects.toThrow(
       "auth.validation.passwordTooShort"
     )
     expect(client.createUser).not.toHaveBeenCalled()
+  })
+})
+
+describe("WorkOS invitations", () => {
+  const invitation = (state: string) => ({ id: "invitation_1", email: "ann@example.net", state })
+
+  it("finds the address a pending invitation is for", async () => {
+    client.findInvitationByToken.mockResolvedValue(invitation("pending"))
+    await expect(invitedEmail("invitation_token_1")).resolves.toBe("ann@example.net")
+    expect(client.findInvitationByToken).toHaveBeenCalledWith("invitation_token_1")
+  })
+
+  it("ignores an invitation that was used, revoked or has expired, or a token WorkOS doesn't know", async () => {
+    for (const state of ["accepted", "revoked", "expired"]) {
+      client.findInvitationByToken.mockResolvedValueOnce(invitation(state))
+      await expect(invitedEmail("invitation_token_1")).resolves.toBeNull()
+    }
+    client.findInvitationByToken.mockRejectedValueOnce(new NotFoundException({ path: "", requestID: "request" }))
+    await expect(invitedEmail("unknown")).resolves.toBeNull()
   })
 })
 

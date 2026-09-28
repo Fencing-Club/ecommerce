@@ -152,9 +152,10 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 - `GET /api/workspace`: the browser's current workspace ID, which another tab may have switched.
 - `GET /api/search`: the app header's search index for the workspace.
 - `POST /api/contact`: the contact page's message; anyone, five per ten minutes per address (429 after).
-- `POST /api/mailing-list`: waitlist signup from the marketing page; sends a welcome email in the page's language, and
-  a notice to `CONTACT_EMAIL`.
-- `POST /api/mailing-list/unsubscribe`: signed unsubscribe from the page's form or a mail app's List-Unsubscribe post.
+- `POST /api/mailing-list`: waitlist signup from the marketing page, a WorkOS waitlist entry; sends a welcome email in
+  the page's language, and a notice to `CONTACT_EMAIL`.
+- `POST /api/mailing-list/unsubscribe`: signed removal from the waitlist, from the page's form or a mail app's
+  List-Unsubscribe post.
 - `GET /login/:provider`, `GET /callback`, `POST /logout`: social sign-in, the WorkOS return, and sign-out
   ([auth.md](auth.md)).
 

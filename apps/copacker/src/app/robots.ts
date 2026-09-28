@@ -18,7 +18,7 @@ const closed = [
   "/callback",
   "/logout",
   "/setup",
-  // Each mailing list address's own unsubscribe link.
+  // Each waitlist address's own unsubscribe link.
   "/unsubscribe"
 ]
 

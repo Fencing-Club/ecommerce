@@ -63,7 +63,7 @@ parts live in `apps/copacker/src/components/marketing/`:
   where the session cookie isn't set.
 - There are no paid plans, so the page asks only for a sign-up, and says it's free.
 - The contact form emails each message through Resend to `CONTACT_EMAIL`, with replies going to the person who wrote
-  (`src/server/contact.ts`). Like the mailing list, its endpoint takes anyone, turns away bots that fill in a hidden
+  (`src/server/contact.ts`). Like the waitlist, its endpoint takes anyone, turns away bots that fill in a hidden
   field, and slows down more than five messages from one address in ten minutes (`src/server/rate-limit.ts`).
 - Every setup in `setups.ts` adds the hosted server, `https://copacker.ai/mcp`, which isn't built yet, and signs in with OAuth; each follows
   the client's own docs as of September 2026. For those sign-ins to work unaided, the server's OAuth needs dynamic
@@ -71,17 +71,20 @@ parts live in `apps/copacker/src/components/marketing/`:
   port, and refresh tokens (`offline_access`), or ChatGPT signs people out when the first token expires.
 - Copacker lets teams in a few at a time, so the pages link to neither sign-in nor sign-up: the nav bar's, hero's and
   contact page's buttons go to the waitlist. `/login` and `/signup` still work for anyone with the link.
-- The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), with the full access key in
-  `EMAIL_MAILING_LIST_API_KEY`, in the segment `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone
-  signed out, so it checks the address, turns away bots that fill in a hidden field, and slows down more than five
-  signups from one address in ten minutes. Someone new to the list, or back after unsubscribing, gets one welcome
-  email (`waitlist-welcome` in `packages/copacker-emails`), in the language the page was shown in, with replies going
-  to `CONTACT_EMAIL`. That language, such as `de` or `es-MX`, is saved as the contact's `locale` property so later
-  emails to the list can be sent in it; Resend refuses contacts with a property it doesn't have, so the property
-  (a string, falling back to `en`) must exist in the Resend account. It carries a signed unsubscribe link to `/unsubscribe`, which asks before unsubscribing since
-  mail scanners open links, and a one-click `List-Unsubscribe` header that posts to `/api/mailing-list/unsubscribe`.
-  The signature is keyed on `TOKEN_ENCRYPTION_KEY`, so the links need no storage. The same signups, new or back,
-  also send `CONTACT_EMAIL` a plain-text notice with the address and language; replying reaches the person who joined.
+- The waitlist is WorkOS's (`src/server/mailing-list.ts`): each signup is an entry on the environment's default
+  waitlist, which the Waitlist feature (Authentication, Features) created, with the page's language and the site it
+  came from as additional fields, since local, staging and production share the WorkOS environment. Approving an entry
+  (Users, Waitlist) sends WorkOS's invitation; its link, the application's User invitation URL, opens `/signup` with
+  `invitation_token`, where the form keeps to the invited address and signing up accepts the invitation, which
+  confirms the address without a code. The endpoint takes anyone signed out, so it checks the address, turns away bots
+  that fill in a hidden field, and slows down more than five signups from one address in ten minutes. WorkOS returns an
+  address's existing entry unchanged, so an entry created in the last minute counts as new; someone new gets one
+  welcome email (`waitlist-welcome` in `packages/copacker-emails`) through Resend, in the language the page was shown
+  in, with replies going to `CONTACT_EMAIL`, and `CONTACT_EMAIL` gets a plain-text notice with the address and
+  language, whose replies reach the person who joined. WorkOS's own waitlist confirmation email isn't asked for. The
+  welcome carries a signed link to `/unsubscribe`, which asks before leaving since mail scanners open links, and a
+  one-click `List-Unsubscribe` header that posts to `/api/mailing-list/unsubscribe`; leaving deletes the entry, so
+  joining again is new. The signature is keyed on `TOKEN_ENCRYPTION_KEY`, so the links need no storage.
 - The privacy policy and terms are written from what the code does: the stores Copacker reads (and that it keeps no
   customer's name, email address, phone number or address), the providers that run it, its cookies and its AI import.
   Amazon's, Amazon Ads' and eBay's developer programs read the policy's marketplace data section. When a data flow

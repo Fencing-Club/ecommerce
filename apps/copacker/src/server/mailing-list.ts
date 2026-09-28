@@ -1,88 +1,49 @@
-import { randomUUID } from "node:crypto"
 import { waitlistWelcomeEmail } from "@repo/copacker-emails"
+import { UnprocessableEntityException } from "@workos-inc/node"
 import { type Locale, localeNames } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
 import { sendEmail } from "./email"
 import { appUrl, hash, sign, verifySignature } from "./security"
+import { workos } from "./workos"
 
-// The mailing list the marketing page's waitlist signs people up to: contacts in Resend, added to the segment
-// MAILING_LIST_SEGMENT_ID names when it's set, so broadcasts can go to just them. Managing contacts takes a full access
-// key, EMAIL_MAILING_LIST_API_KEY, since the key the app sends email with should only be able to send; without one, it
-// tries that key. Anyone can sign up, so the page says the same thing whether the address was on the list or not.
+// The waitlist the marketing page signs people up to: entries on the WorkOS environment's default waitlist, which
+// the Waitlist feature (Authentication, Features) must have created. Approving an entry in the dashboard (Users,
+// Waitlist) sends WorkOS's invitation, whose link opens /signup. Anyone can sign up, so the page says the same thing
+// whether the address was on the list or not.
 
-const api = "https://api.resend.com"
 // What signs an address's unsubscribe links.
 const scope = "mailing-list"
+// How recently an entry must have been created to count as new: WorkOS returns an address's existing entry unchanged.
+const fresh = 60 * 1000
 
-function contacts(path: string, init: RequestInit = {}) {
-  const key = process.env.EMAIL_MAILING_LIST_API_KEY || process.env.EMAIL_API_KEY
-  if (!key) {
-    throw new Error("Mailing list is not configured")
-  }
-  return fetch(`${api}/contacts${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-    signal: AbortSignal.timeout(15000)
-  })
-}
-
-// Puts the address on the list. `joined` is true when it wasn't on it, or had unsubscribed: the times it gets the
-// welcome email. Someone signing up twice gets it once. Joining records the language they signed up in as the
-// contact's `locale` property, which must exist in Resend, so later emails to the list can be written in it.
-export async function joinMailingList(email: string, locale: string): Promise<{ joined: boolean }> {
-  const address = encodeURIComponent(email)
-  const segment = process.env.MAILING_LIST_SEGMENT_ID
-  const found = await contacts(`/${address}`)
-  if (found.ok) {
-    const contact: unknown = await found.json().catch(() => null)
-    const back = typeof contact === "object" && contact !== null && "unsubscribed" in contact && contact.unsubscribed
-    if (back) {
-      const resubscribed = await contacts(`/${address}`, {
-        method: "PATCH",
-        body: JSON.stringify({ unsubscribed: false, properties: { locale } })
-      })
-      if (!resubscribed.ok) {
-        throw new Error(`Mailing list rejected the signup (${resubscribed.status})`)
-      }
-    }
-    // An address that joined some other way may not be in the segment yet. Being in it already isn't a failure.
-    if (segment) {
-      await contacts(`/${address}/segments/${encodeURIComponent(segment)}`, { method: "POST" }).catch(() => null)
-    }
-    return { joined: Boolean(back) }
-  }
-  if (found.status !== 404) {
-    throw new Error(`Mailing list rejected the signup (${found.status})`)
-  }
-  const created = await contacts("", {
-    method: "POST",
-    body: JSON.stringify({
+// Puts the address on the waitlist, with the language they signed up in and the site they used, since local, staging
+// and production share one WorkOS environment. `joined` is true when the entry is new, the one time it gets the
+// welcome email; leaving deletes the entry, so coming back is new again. `id` is the entry's.
+export async function joinWaitlist(email: string, locale: string): Promise<{ joined: boolean; id?: string }> {
+  try {
+    const entry = await workos().userManagement.createWaitlistEntry("default", {
       email,
-      unsubscribed: false,
-      properties: { locale },
-      ...(segment ? { segments: [{ id: segment }] } : {})
+      additionalFields: { locale, site: appUrl() }
     })
-  })
-  if (created.ok) {
-    return { joined: true }
+    const joined = entry.state === "pending" && Date.now() - Date.parse(entry.createdAt) < fresh
+    return { joined, id: entry.id }
+  } catch (error) {
+    // WorkOS refuses an address that already has an account. It's told the same as anyone else.
+    if (error instanceof UnprocessableEntityException) {
+      return { joined: false }
+    }
+    throw error
   }
-  // Another signup for the same address can land between the lookup and this.
-  const body: unknown = await created.json().catch(() => null)
-  const message = typeof body === "object" && body && "message" in body ? String(body.message) : ""
-  if (/already exists/i.test(message)) {
-    return { joined: false }
-  }
-  throw new Error(`Mailing list rejected the signup (${created.status})`)
 }
 
-// Takes the address off the list's emails. An address that was never on it is already off.
-export async function leaveMailingList(email: string) {
-  const response = await contacts(`/${encodeURIComponent(email)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ unsubscribed: true })
-  })
-  if (!response.ok && response.status !== 404) {
-    throw new Error(`Mailing list couldn't unsubscribe the address (${response.status})`)
+// Takes the address off the waitlist. An address that was never on it is already off. WorkOS finds entries only by
+// listing them, which is fine at a waitlist's size.
+export async function leaveWaitlist(email: string) {
+  const entries = await workos().userManagement.listWaitlistEntries("default", { limit: 100 })
+  for (const entry of await entries.autoPagination()) {
+    if (entry.email.toLowerCase() === email.toLowerCase()) {
+      await workos().userManagement.deleteWaitlistEntry(entry.id)
+    }
   }
 }
 
@@ -132,8 +93,8 @@ export async function sendWelcome(email: string, locale: string) {
   })
 }
 
-// Tells Copacker's contact address that someone joined, and in which language. Replying goes straight to them. Without
-// CONTACT_EMAIL, nobody is told.
+// Tells Copacker's contact address that someone joined, in which language, and where to let them in. Replying goes
+// straight to them. Without CONTACT_EMAIL, nobody is told.
 export async function sendSignupNotice(email: string, locale: Locale) {
   const to = process.env.CONTACT_EMAIL
   if (!to) {
@@ -143,7 +104,11 @@ export async function sendSignupNotice(email: string, locale: Locale) {
     to,
     replyTo: email,
     subject: `Waitlist signup: ${email}`,
-    text: [`${email} joined the waitlist.`, `Language: ${localeNames[locale]}`].join("\n"),
-    key: randomUUID()
+    text: [
+      `${email} joined the waitlist.`,
+      `Language: ${localeNames[locale]}`,
+      "Approve them in WorkOS, under Users, Waitlist."
+    ].join("\n"),
+    key: `waitlist-signup:${hash(email)}`
   })
 }

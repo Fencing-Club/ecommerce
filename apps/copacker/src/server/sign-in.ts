@@ -230,9 +230,18 @@ export async function signIn(raw: unknown) {
   )
 }
 
-// Creates the account, then signs in, which emails a code to confirm the address.
+// The address a WorkOS invitation is for, such as one approving a waitlist entry, while it can still be accepted.
+export async function invitedEmail(token: string) {
+  const invitation = await workos()
+    .userManagement.findInvitationByToken(token)
+    .catch(() => null)
+  return invitation?.state === "pending" ? invitation.email : null
+}
+
+// Creates the account, then signs in, which emails a code to confirm the address. Signing in with a WorkOS invitation's
+// token accepts it, which confirms the address instead.
 export async function signUp(raw: unknown) {
-  const input = signUpSchema.extend({ next }).parse(raw)
+  const input = signUpSchema.extend({ next, invitation: z.string().max(200).optional() }).parse(raw)
   const context = await requestContext()
   try {
     await workos().userManagement.createUser({ email: input.email, password: input.password, ...context })
@@ -245,6 +254,7 @@ export async function signUp(raw: unknown) {
         clientId: workosClientId(),
         email: input.email,
         password: input.password,
+        ...(input.invitation ? { invitationToken: input.invitation } : {}),
         ...context
       }),
     input.next

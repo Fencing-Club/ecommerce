@@ -17,7 +17,7 @@ async function PrivacyPage() {
   return (
     <Legal
       title={t("privacy.title")}
-      updated="2026-09-27"
+      updated="2026-09-28"
       lead="This policy explains what Copacker collects, how we use it, who helps us run the service, and the choices you have. It covers copacker.ai, the Copacker app and the emails we send."
       sections={[
         {
@@ -85,10 +85,10 @@ async function PrivacyPage() {
                 addresses.
               </p>
               <p>We also keep the credentials each service gives us when you connect it, encrypted.</p>
-              <h3 id="collect-messages">Messages and the mailing list</h3>
+              <h3 id="collect-messages">Messages and the waitlist</h3>
               <p>
-                The contact form sends us your name, email address, company and message. The mailing list keeps your
-                email address.
+                The contact form sends us your name, email address, company and message. The waitlist keeps your email
+                address and the language you read the site in.
               </p>
               <h3 id="collect-usage">When you use Copacker</h3>
               <p>
@@ -118,13 +118,13 @@ async function PrivacyPage() {
                   notices when labels are ready.
                 </li>
                 <li>To keep Copacker secure, prevent abuse and fix problems.</li>
-                <li>To answer your messages, and to send product news if you joined the mailing list.</li>
+                <li>To answer your messages, and to email you about the waitlist if you joined it.</li>
                 <li>To meet our legal obligations.</li>
               </ul>
               <p>
                 Where the law requires a legal basis, we rely on our contract with you to provide the service, our
-                legitimate interest in keeping Copacker secure and working, your consent for the mailing list, and our
-                legal obligations.
+                legitimate interest in keeping Copacker secure and working, your consent for the waitlist, and our legal
+                obligations.
               </p>
               <p>
                 We don’t sell your information, we don’t use it for advertising, and we don’t use it to train AI models.
@@ -187,12 +187,12 @@ async function PrivacyPage() {
                 rows={[
                   [
                     "WorkOS",
-                    "Sign-in and accounts: passwords, sign-in with Google or Microsoft, single sign-on, and checks that protect sign-in."
+                    "Sign-in and accounts: passwords, sign-in with Google or Microsoft, single sign-on, checks that protect sign-in, and the waitlist."
                   ],
                   ["Railway", "Hosting: runs Copacker, and stores its database, documents and logs."],
                   ["Cloudflare", "Carries and protects traffic to copacker.ai, and serves the site’s video."],
                   ["Amazon Web Services", "Delivers notifications from Amazon and Shopify to Copacker."],
-                  ["Resend", "Sends Copacker’s emails, and keeps the mailing list."],
+                  ["Resend", "Sends Copacker’s emails."],
                   [
                     "OpenRouter",
                     "Passes documents you import to the AI model that reads them, currently Anthropic’s Claude."
@@ -270,7 +270,7 @@ async function PrivacyPage() {
                 <strong>Your messages to us:</strong> as long as we need them to help you.
               </li>
               <li>
-                <strong>The mailing list:</strong> until you unsubscribe.
+                <strong>The waitlist:</strong> until you leave it.
               </li>
             </ul>
           )
@@ -311,9 +311,7 @@ async function PrivacyPage() {
               <ul>
                 <li>Change your name, position and company in Settings.</li>
                 <li>Disconnect a store or marketplace in Settings.</li>
-                <li>
-                  Unsubscribe from the mailing list at any time, from any of its emails or through the contact page.
-                </li>
+                <li>Leave the waitlist at any time, from any of its emails or through the contact page.</li>
               </ul>
               <p>
                 If your information is in a workspace someone else runs, such as a buyer’s, we may pass your request to
@@ -389,7 +387,7 @@ const sections = [
 export const Default = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Privacy policy" })).toBeVisible()
-    await expect(canvas.getByText("September 27, 2026")).toHaveAttribute("dateTime", "2026-09-27")
+    await expect(canvas.getByText("September 28, 2026")).toHaveAttribute("dateTime", "2026-09-28")
     // Every section is in the contents, in order, linked to its anchor.
     const [contents] = canvas.getAllByRole("navigation", { name: "Contents" })
     if (!contents) {

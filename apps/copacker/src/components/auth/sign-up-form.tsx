@@ -12,14 +12,24 @@ import { PasswordField } from "./password-field"
 import { authFields, leaving } from "./sign-in-form"
 
 // A new account: an email and a password. A code sent to the email confirms it next; everything else about the person
-// and their company comes after, in getting started.
-export function SignUpForm({ next, email = "", locked = false }: { next: string; email?: string; locked?: boolean }) {
+// and their company comes after, in getting started. `invitation`, a WorkOS invitation's token, is accepted with it.
+export function SignUpForm({
+  next,
+  email = "",
+  locked = false,
+  invitation
+}: {
+  next: string
+  email?: string
+  locked?: boolean
+  invitation?: string
+}) {
   const t = useTranslations("auth")
   const { form, submit } = useActionForm({
     schema: signUpSchema,
     action: "auth.signUp",
     defaultValues: { email, password: "" },
-    toPayload: (values) => ({ ...values, next })
+    toPayload: (values) => ({ ...values, next, ...(invitation ? { invitation } : {}) })
   })
   return (
     <FormProvider {...form}>

@@ -11,17 +11,33 @@ import { serverStory } from "@/stories/server"
 const actions = actionRecorder()
 
 // The sign-up page (page.tsx) in the auth layout, for someone signed out. `next` is the query's page to return to, as
-// returnPath reads it; signed in, the page redirects there instead. The layout's AppProviders is the story frame's
-// own providers.
-async function SignUp({ next, email }: { next: string; email?: string }) {
+// returnPath reads it; signed in, the page redirects there instead. `invited` is the address a WorkOS invitation's
+// `invitation` token is for, as invitedEmail finds it. The layout's AppProviders is the story frame's own providers.
+async function SignUp({
+  next,
+  email,
+  invited,
+  invitation
+}: {
+  next: string
+  email?: string
+  invited?: string
+  invitation?: string
+}) {
   const onward = next === "/" ? "" : `?${new URLSearchParams({ next })}`
   const t = await getTranslations("auth")
   return (
     <AuthShell>
       <AuthPage title={t("signup.title")}>
         <div className="flex flex-col gap-6">
-          <SocialSignIn next={next} />
-          <SignUpForm next={next} email={email} />
+          {invited && invitation ? (
+            <SignUpForm next={next} email={invited} locked invitation={invitation} />
+          ) : (
+            <>
+              <SocialSignIn next={next} />
+              <SignUpForm next={next} email={email} />
+            </>
+          )}
         </div>
         <AuthSwitch prompt={t("switch.haveAccount")} href={`/login${onward}`}>
           {t("switch.signIn")}
@@ -89,5 +105,25 @@ export const WithEmail = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
     await expect(await canvas.findByText("Use at least 10 characters")).toBeVisible()
     await expect(actions.sent).toHaveLength(0)
+  }
+})
+
+// Opened from a WorkOS invitation, such as approving a waitlist entry: the form keeps to the invited address, sends
+// the invitation along to accept it, and leaves out Google and Microsoft, which can't carry it.
+export const Invited = meta.story({
+  args: { invited: "alex@example.com", invitation: "invitation_01K2WAITLIST" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByLabelText("Work email")).toHaveValue("alex@example.com")
+    await expect(canvas.getByLabelText("Work email")).toHaveAttribute("readonly")
+    await expect(canvas.queryByRole("button", { name: "Continue with Google" })).toBeNull()
+    await userEvent.type(canvas.getByLabelText("Password"), "a long enough password")
+    await userEvent.click(canvas.getByRole("button", { name: "Create account" }))
+    await waitFor(() => expect(actions.sent).toHaveLength(1))
+    await expect(actions.sent[0]?.data).toEqual({
+      email: "alex@example.com",
+      password: "a long enough password",
+      next: "/",
+      invitation: "invitation_01K2WAITLIST"
+    })
   }
 })

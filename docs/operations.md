@@ -27,17 +27,16 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    self-authorization. Tokens are encrypted per workspace.
 4. Email (Resend): `EMAIL_API_KEY` (sending only) and `EMAIL_FROM`. The worker sends invitations, POs and label-ready
    notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
-   `APP_URL` (`public/email/mark.png`). The landing page's mailing list adds contacts, which needs a full access key in
-   `EMAIL_MAILING_LIST_API_KEY` (it falls back to `EMAIL_API_KEY`); `MAILING_LIST_SEGMENT_ID` puts signups in a segment.
-   The contact page's messages and a notice of each new waitlist signup go to `CONTACT_EMAIL`. `copacker.ai` is
-   verified in Resend for sending only (us-east-1, no open or click tracking). Its DKIM (`resend._domainkey`), return
+   `APP_URL` (`public/email/mark.png`). Resend only sends: the landing page's waitlist is WorkOS's
+   ([Landing page](landing-page.md)). The contact page's messages and a notice of each new waitlist signup go to
+   `CONTACT_EMAIL`. `copacker.ai` is verified in Resend for sending only (us-east-1, no open or click tracking). Its DKIM (`resend._domainkey`), return
    path (`send`, `rsend`) and DMARC (`_dmarc`, `p=none`) records are DNS-only in Cloudflare; none sit at the root, which
    stays free for a mail provider. Production's `EMAIL_FROM` is `Copacker <hello@copacker.ai>`, on both services. Local
    and staging keep `onboarding@resend.dev`, which reaches only the Resend account's owner, so their tests can't email
    anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
-   ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, as the policy promises.
+   ([Landing page](landing-page.md)).
 
 ## Recovery
 

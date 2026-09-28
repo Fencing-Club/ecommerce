@@ -26,7 +26,7 @@ export function decrypt(value: string, scope: string) {
   decipher.setAuthTag(raw.subarray(12, 28))
   return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString("utf8")
 }
-// A signature for a value in one scope, such as a mailing list address, so a link can prove Copacker made it without
+// A signature for a value in one scope, such as a waitlist address, so a link can prove Copacker made it without
 // Copacker storing anything. It's keyed on the token encryption key, and a different scope gives a different signature.
 export function sign(value: string, scope: string) {
   return createHmac("sha256", encryptionKey()).update(`${scope}:${value}`).digest("base64url")
