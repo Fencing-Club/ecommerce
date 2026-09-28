@@ -74,8 +74,8 @@ function Hero() {
             className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
             style={{ animationDelay: "520ms" }}
           >
-            Copacker forecasts what to reorder from your Amazon, Shopify and eBay sales, sends the purchase order, and
-            runs the logistics from your supplier to Amazon or your own warehouse.
+            Copacker forecasts your inventory, sends purchase orders just in time so you don’t run out, and handles the
+            handoffs to your forwarder, Amazon FBA and AWD, with every label and document made for you.
           </p>
           <div
             className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}

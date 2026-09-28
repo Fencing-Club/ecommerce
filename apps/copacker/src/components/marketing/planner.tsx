@@ -2,6 +2,7 @@
 
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
+import { Caveat } from "next/font/google"
 import { useEffect, useRef, useState } from "react"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -11,6 +12,9 @@ import { cn } from "@/lib/utils"
 // The forecast, for the visitor to play with: one product's stock, sold through Amazon, Shopify and eBay, with the
 // holiday rush ahead. Copacker works back from the day it would run out, through the supplier's lead time, to the day
 // to order and how much. Changing the lead time, the stores or the rush glides everything to its new place.
+
+// The hand the chart's note is written in.
+const hand = Caveat({ subsets: ["latin"] })
 
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
 type Inputs = { lead: number; amazon: number; shopify: number; ebay: number; rush: number }
@@ -210,10 +214,19 @@ export function Planner() {
     climb[0] ?? horizon
   )
   const topY = y(result.level[topDay] ?? 0)
-  // The restock's label points at the middle of the climb from its right, or from its left near the chart's end.
+  // The restock's note, written by hand in the empty space above the line to the left of the climb, with an arrow
+  // that drops from it and turns into the middle of the climb.
   const climbX = x(result.lands + result.receiving / 2)
   const climbY = (y(result.levelAt(result.lands)) + topY) / 2
-  const side = climbX > chart.right - 210 * u ? -1 : 1
+  const noteSize = (wide ? 24 : 19) * u
+  const noteRight = Math.max(climbX - 44 * u, chart.left + noteSize * 5.4)
+  const noteTop = y(4450)
+  const arrowFrom = { x: noteRight + 8 * u, y: noteTop + noteSize * 1.45 }
+  const arrowTo = { x: climbX - 7 * u, y: Math.max(climbY, arrowFrom.y + 18 * u) }
+  const bend = { x: arrowFrom.x + (arrowTo.x - arrowFrom.x) * 0.15, y: arrowTo.y }
+  const heading = Math.atan2(arrowTo.y - bend.y, arrowTo.x - bend.x)
+  const barb = (turn: number) =>
+    `${arrowTo.x + 9 * u * Math.cos(heading + Math.PI + turn)} ${arrowTo.y + 9 * u * Math.sin(heading + Math.PI + turn)}`
   const area = `${withLine} L${x(horizon)} ${chart.bottom} L${x(0)} ${chart.bottom} Z`
   const orderX = x(result.orderBy)
   const landX = x(result.lands)
@@ -265,17 +278,6 @@ export function Planner() {
         <figcaption className="sr-only">{`Stock of the ${product.name} over the next ${horizon} days. Without a reorder it runs out in ${days(final.out)}. ${final.late ? "Ordered today" : `Ordered in ${days(final.orderBy)}`}, ${final.units.toLocaleString("en-US")} units land ${final.late ? `after it runs out, losing about ${money(final.lost)} in sales` : "before it runs out"}.`}</figcaption>
         <svg viewBox={`0 0 ${chart.width} ${chart.height}`} className="w-full overflow-visible" aria-hidden>
           <defs>
-            <marker
-              id="planner-arrow"
-              viewBox="0 0 10 10"
-              refX={8}
-              refY={5}
-              markerWidth={5}
-              markerHeight={5}
-              orient="auto-start-reverse"
-            >
-              <path d="M0 0 L10 5 L0 10 Z" className="fill-foreground/70" />
-            </marker>
             <linearGradient id="planner-area" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#f54a00" stopOpacity={0.18} />
               <stop offset="1" stopColor="#f54a00" stopOpacity={0} />
@@ -338,14 +340,15 @@ export function Planner() {
               rx={10 * u}
               className="fill-primary/[0.07]"
             />
+            {/* On a phone the band is narrow, so its label is short and keeps to its right end, clear of the order's chip. */}
             <text
-              x={(x(rush.from) + x(rush.to)) / 2}
+              x={wide ? (x(rush.from) + x(rush.to)) / 2 : x(rush.to) - 8 * u}
               y={chart.top - 8 * u}
-              textAnchor="middle"
+              textAnchor={wide ? "middle" : "end"}
               className="fill-primary font-medium"
               style={type}
             >
-              Holiday rush
+              {wide ? "Holiday rush" : "Rush"}
             </text>
           </g>
           <g clipPath="url(#planner-reveal)">
@@ -410,25 +413,29 @@ export function Planner() {
             {result.lands <= horizon && (
               <g>
                 <circle cx={x(topDay)} cy={topY} r={5 * u} className="fill-primary" />
-                <line
-                  x1={climbX + side * 44 * u}
-                  x2={climbX + side * 9 * u}
-                  y1={climbY}
-                  y2={climbY}
-                  strokeWidth={1.5 * u}
-                  markerEnd="url(#planner-arrow)"
-                  className="stroke-foreground/70"
-                />
-                <text
-                  x={climbX + side * 50 * u}
-                  y={climbY + 4.5 * u}
-                  textAnchor={side > 0 ? "start" : "end"}
-                  className="tabular-nums"
-                  style={type}
+                <g
+                  transform={`rotate(-4 ${noteRight} ${noteTop})`}
+                  textAnchor="end"
+                  className="fill-foreground/85"
+                  style={{ fontFamily: hand.style.fontFamily, fontSize: noteSize }}
                 >
-                  <tspan className="fill-muted-foreground">Restock </tspan>
-                  <tspan className="fill-foreground font-semibold">+{result.units.toLocaleString("en-US")} units</tspan>
-                </text>
+                  <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
+                    Restock
+                  </text>
+                  <text x={noteRight} y={noteTop + noteSize * 1.7} style={{ fontWeight: 700 }}>
+                    +{result.units.toLocaleString("en-US")} units
+                  </text>
+                </g>
+                <g
+                  fill="none"
+                  strokeWidth={1.7 * u}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="stroke-foreground/80"
+                >
+                  <path d={`M${arrowFrom.x} ${arrowFrom.y} Q${bend.x} ${bend.y} ${arrowTo.x} ${arrowTo.y}`} />
+                  <path d={`M${barb(0.5)} L${arrowTo.x} ${arrowTo.y} L${barb(-0.5)}`} />
+                </g>
                 <g strokeWidth={u} className="stroke-foreground/35">
                   <line x1={orderX} x2={landX} y1={chart.bottom + 26 * u} y2={chart.bottom + 26 * u} />
                   <line x1={orderX} x2={orderX} y1={chart.bottom + 20 * u} y2={chart.bottom + 32 * u} />
