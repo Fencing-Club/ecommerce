@@ -1,7 +1,7 @@
-import { handleAuth } from "@workos-inc/authkit-nextjs"
-import type { NextRequest } from "next/server"
-import { appUrl } from "@/server/security"
+import { redirect } from "next/navigation"
+import { finishOAuth } from "@/server/sign-in"
 
-export function GET(request: NextRequest) {
-  return handleAuth({ returnPathname: "/", baseURL: appUrl() })(request)
+// WorkOS brings people back here from Google, Microsoft or their company's single sign-on.
+export async function GET(request: Request) {
+  redirect(await finishOAuth(new URL(request.url).searchParams))
 }

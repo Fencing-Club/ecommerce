@@ -1,0 +1,71 @@
+# Sign-in and getting started
+
+Copacker draws its own sign-in pages and talks to WorkOS directly (the User Management API), rather than sending people
+to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, so `withAuth`, the proxy's refreshes and
+sign-out work as before. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
+`src/server/invitations.ts`; the pages are the `(auth)` route group, `app/onboarding` and `app/workspaces/new`.
+
+## Ways in
+
+- **Email and password.** Sign-up creates the WorkOS user, then signs in. WorkOS requires a confirmed email, so the
+  first sign-in answers `email_verification_required` and emails a six-digit code; the pending sign-in waits in an
+  encrypted, ten-minute cookie (`copacker-verify`) while `/verify-email` asks for the code. The same happens when an
+  unconfirmed account signs in.
+- **Google and Microsoft.** `/login/google` and `/login/microsoft` start an OAuth round trip with PKCE; the state and
+  verifier wait in an encrypted cookie (`copacker-oauth`) until WorkOS returns to `/callback`.
+- **Single sign-on.** An email whose company requires SSO is sent to its connection instead of signing in with a
+  password.
+- **Password reset.** `/forgot-password` asks WorkOS to email a link, and answers the same whether or not the email has
+  an account. The link opens `/reset-password?token=…`, which saves the new password and signs straight in.
+
+A person belongs to one WorkOS organization per workspace, so WorkOS asks which one a session is for
+(`organization_selection_required`). Copacker picks its workspaces itself: the session takes the workspace this
+browser had open, or else the first. `next` survives every step, and only ever points at a Copacker page
+(`returnPath`).
+
+## WorkOS settings
+
+Local and production share the WorkOS staging environment. In its dashboard:
+
+- **Redirects:** `<APP_URL>/callback` for each environment, and the sign-out redirect `<APP_URL>`.
+- **Password reset URL:** `https://copacker-production.up.railway.app/reset-password`. Until it's set, reset emails
+  link to AuthKit's hosted page, which still resets the password.
+- **Authentication:** email and password, and Google and Microsoft OAuth. Staging uses WorkOS's demo OAuth
+  credentials; a production WorkOS environment needs Copacker's own Google and Microsoft apps.
+- **Email verification:** required, which is what makes new accounts confirm their email with a code.
+
+WorkOS sends the verification, reset and code emails itself. Copacker's own emails (invitations, purchase orders) go
+through Resend.
+
+## Getting started
+
+`/onboarding` asks only what's missing, one step at a time beside a preview of the workspace taking shape, and saves
+everything in one request at the end:
+
+| Arrived by                                   | Steps                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| Signing up                                   | About you, what the company does, company, first address           |
+| A buyer's supplier or forwarder invitation   | About you, company (from the buyer's details), address             |
+| A colleague's invitation                     | About you, then joining the workspace                              |
+| Joining a workspace without a full profile   | About you (the portal sends people here until their profile is set) |
+
+The address step is a delivery address for a buyer, a pickup address for a supplier (Amazon needs its phone number)
+and a warehouse address for a forwarder; it can be skipped. Finishing opens the new workspace at its home: the
+Overview for a buyer, Purchase orders otherwise.
+
+**New workspace** in the workspace menu runs the same steps from what the company does onwards, for someone who runs
+another company or works as both a buyer and a supplier.
+
+## Invitations
+
+An invitation link is `/invite?token=…&kind=…`, where `kind` is `invite` (a supplier), `forwarder` or `team`. The page
+names the workspace that sent it before anyone signs in, then signs up or signs in with the invited email. Someone
+signed in with another email is asked to sign out. A supplier or forwarder who already owns a workspace of that kind
+can link it instead of making a new one. Accepting always needs the invited, confirmed email.
+
+## Testing sign-up locally
+
+Test inboxes can't receive codes. WorkOS records each code it sends: list the environment's
+`email_verification.created` events, then `getEmailVerification(id)` returns the code (and `password_reset.created`
+with `getPasswordReset(id)`, the reset token). Use `example.net` addresses: staging's test SSO organization claims
+`example.com`, which answers every password sign-in with `sso_required`.

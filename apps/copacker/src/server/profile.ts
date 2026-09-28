@@ -1,20 +1,27 @@
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
+import { db, type Transaction } from "@/db"
 import { profiles, supplierProfiles } from "@/db/schema"
+import { personSchema, websiteSchema } from "@/lib/onboarding"
 import type { Session } from "./auth"
 
-export const profileInputSchema = z.object({
-  firstName: z.string().trim().min(1, "Enter your first name").max(60),
-  lastName: z.string().trim().min(1, "Enter your last name").max(60),
-  position: z.string().trim().min(1, "Choose your position").max(100),
+// The profile the portal asks for before anything else: the person and their company, and for a buyer's owner, the
+// workspace's website.
+export const profileInputSchema = personSchema.extend({
   company: z.string().trim().min(1, "Enter your company").max(120),
-  website: z
-    .union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
-    .optional()
+  website: websiteSchema.optional()
 })
 
-// Saves the person's own name, position and company, which their comments show from now on.
+type ProfileValues = Omit<z.output<typeof profileInputSchema>, "website">
+
+// Saves a person's own name, position and company, which their comments show from now on.
+export async function writeProfile(tx: Transaction, userId: string, values: ProfileValues) {
+  await tx
+    .insert(profiles)
+    .values({ userId, ...values })
+    .onConflictDoUpdate({ target: profiles.userId, set: { ...values, updatedAt: new Date() } })
+}
+
 export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw: unknown) {
   const { website, ...input } = profileInputSchema.parse(raw)
   // The website is the workspace's, which only its owner changes.
@@ -22,10 +29,7 @@ export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw
     throw new Error("Only the workspace owner can change its website")
   }
   await db().transaction(async (tx) => {
-    await tx
-      .insert(profiles)
-      .values({ userId: s.user.id, ...input })
-      .onConflictDoUpdate({ target: profiles.userId, set: { ...input, updatedAt: new Date() } })
+    await writeProfile(tx, s.user.id, input)
     if (website !== undefined) {
       await tx
         .insert(supplierProfiles)

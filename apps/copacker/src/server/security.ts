@@ -50,7 +50,10 @@ export function returnPath(value: string | null | undefined, fallback = "/orders
   const url = new URL(value, "http://app.invalid")
   const local = value.startsWith("/") && !value.startsWith("//") && url.origin === "http://app.invalid"
   const path = `${url.pathname}${url.search}`
-  if (!local || /^\/(login|logout|callback|api)(\/|$)/.test(url.pathname)) {
+  if (
+    !local ||
+    /^\/(login|signup|verify-email|forgot-password|reset-password|logout|callback|api)(\/|$)/.test(url.pathname)
+  ) {
     return fallback
   }
   return path

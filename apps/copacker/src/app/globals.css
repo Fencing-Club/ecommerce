@@ -51,6 +51,30 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* The sign-in panel's cards drift, and its shipment's current leg runs. */
+@theme {
+  --animate-float: float 9s ease-in-out infinite;
+  --animate-travel: travel 2.6s ease-in-out infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes travel {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(200%);
+    }
+  }
+}
+
 :root {
   --radius: 0.625rem;
 }

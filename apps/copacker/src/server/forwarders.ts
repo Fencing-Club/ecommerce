@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 import { type Address, addressSchema } from "@repo/aisle"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
-import { db } from "@/db"
+import { db, type Transaction } from "@/db"
 import { contacts, forwarders, jobs, memberships, organizations } from "@/db/schema"
 import { hash, token } from "./security"
 
@@ -231,16 +231,18 @@ export async function saveForwarderAddress(buyerOrgId: string, raw: unknown) {
     .values({ orgId: buyerOrgId, kind: "forwarder", forwarderId: forwarder.id, ...values })
 }
 
-// Links an invited forwarder to the forwarder workspace its owner chose.
+// Links an invited forwarder to the forwarder workspace its owner chose, in the given transaction (such as the one
+// that creates that workspace) or in its own.
 export async function acceptForwarderInvitation(
   user: { id: string; email: string; emailVerified: boolean },
   orgId: string,
-  invitation: string
+  invitation: string,
+  transaction?: Transaction
 ) {
   if (!user.emailVerified) {
     throw new Error("Verify your email before accepting an invitation")
   }
-  await db().transaction(async (tx) => {
+  const accept = async (tx: Transaction) => {
     const [workspace] = await tx
       .select()
       .from(memberships)
@@ -277,5 +279,6 @@ export async function acceptForwarderInvitation(
           saved.map((contact) => ({ orgId, kind: "delivery" as const, name: contact.name, address: contact.address }))
         )
     }
-  })
+  }
+  await (transaction ? accept(transaction) : db().transaction(accept))
 }

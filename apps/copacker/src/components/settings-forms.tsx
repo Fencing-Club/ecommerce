@@ -300,38 +300,6 @@ function TimeZoneField({
   )
 }
 
-const workspaceSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  kind: z.enum(["buyer", "supplier", "forwarder"])
-})
-
-export function WorkspaceForm({
-  next,
-  kind = "buyer"
-}: { next?: string; kind?: z.input<typeof workspaceSchema>["kind"] } = {}) {
-  const { form, submit } = useActionForm({
-    schema: workspaceSchema,
-    action: "workspace.create",
-    defaultValues: { name: "", kind },
-    toPayload: (values) => ({ ...values, ...(next && { next }) })
-  })
-  return (
-    <ActionForm form={form} onSubmit={submit} label="Create workspace">
-      <FormInput name="name" required label="Company name" autoComplete="organization" />
-      <FormSelect
-        name="kind"
-        required
-        label="Workspace type"
-        options={[
-          { value: "buyer", label: "Buyer: I place purchase orders" },
-          { value: "supplier", label: "Supplier: I prepare orders and cartons" },
-          { value: "forwarder", label: "Freight forwarder: I receive and ship goods" }
-        ]}
-      />
-    </ActionForm>
-  )
-}
-
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(100),
   kind: z.enum(contactKinds),
@@ -402,37 +370,6 @@ export function ContactForm({
         />
       )}
       <AddressFields path="address" />
-    </ActionForm>
-  )
-}
-
-const acceptSchema = z.object({ orgId: z.uuid() })
-
-export function AcceptSupplierInvitation({
-  token,
-  workspaces,
-  forwarder = false
-}: {
-  token: string
-  workspaces: Array<{ id: string; name: string }>
-  // A forwarder's invitation joins a forwarder workspace instead of a supplier one.
-  forwarder?: boolean
-}) {
-  const { form, submit } = useActionForm({
-    schema: acceptSchema,
-    action: forwarder ? "forwarder.accept" : "supplier.accept",
-    defaultValues: { orgId: workspaces.length === 1 ? workspaces[0]!.id : "" },
-    toPayload: (values) => ({ ...values, token })
-  })
-  return (
-    <ActionForm form={form} onSubmit={submit} label="Accept invitation">
-      <FormSelect
-        name="orgId"
-        required
-        label={forwarder ? "Forwarder workspace" : "Supplier workspace"}
-        placeholder="Choose a workspace"
-        options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
-      />
     </ActionForm>
   )
 }

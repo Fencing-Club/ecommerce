@@ -1,48 +1,21 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { FormProvider } from "react-hook-form"
 import { z } from "zod"
-import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
-import { FormError, SubmitButton } from "./actions"
-import { FormChoice, FormInput } from "./form-controls"
+import { personSchema, positions, websiteSchema } from "@/lib/onboarding"
+import { FormInput, FormSelect } from "./form-controls"
+import { SettingsForm } from "./settings-forms"
 
-const schema = z.object({
-  firstName: z.string().trim().min(1, "Enter your first name").max(60),
-  lastName: z.string().trim().min(1, "Enter your last name").max(60),
-  position: z.string().trim().min(1, "Choose your position").max(100),
+const schema = personSchema.extend({
   company: z.string().trim().min(1, "Enter your company").max(120),
-  // The workspace's website, printed on its POs. Only its owner sees and changes it.
-  website: z
-    .union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
-    .optional()
+  // The workspace's website, printed on its purchase orders. Only its owner sees and changes it.
+  website: websiteSchema.optional()
 })
 
 type Profile = z.input<typeof schema>
 
-// Roles at buyers, suppliers and freight forwarders.
-const positions = [
-  "Owner",
-  "General manager",
-  "Operations manager",
-  "Purchasing manager",
-  "Buyer",
-  "Sales manager",
-  "Account manager",
-  "Production manager",
-  "Quality control",
-  "Logistics coordinator",
-  "Warehouse manager",
-  "Customer service",
-  "Finance",
-  "Other"
-]
-
-// A person's name, position and company, shown on their comments. `then` is where to go once it's saved, when asked
-// for before starting.
-export function ProfileForm({ profile, then }: { profile: Profile; then?: string }) {
-  const router = useRouter()
+// A person's name, position and company, shown on their comments, in Settings. Getting started asks for them first.
+export function ProfileForm({ profile }: { profile: Profile }) {
   // A position saved before the list existed stays one of the choices.
   const options = [
     ...(profile.position && !positions.includes(profile.position) ? [profile.position] : []),
@@ -52,35 +25,26 @@ export function ProfileForm({ profile, then }: { profile: Profile; then?: string
     schema,
     action: "profile.update",
     defaultValues: profile,
-    keepSaved: true,
-    onSuccess: () => {
-      if (then) {
-        router.push(then)
-      }
-    }
+    keepSaved: true
   })
   return (
-    <FormProvider {...form}>
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-        <FieldGroup className="grid gap-4 sm:grid-cols-2">
-          <FormInput name="firstName" required label="First name" autoComplete="given-name" />
-          <FormInput name="lastName" required label="Last name" autoComplete="family-name" />
-          <FormChoice name="position" required label="Position" placeholder="Choose" options={options} />
-          <FormInput name="company" required label="Company" autoComplete="organization" />
-          {profile.website !== undefined && (
-            <FormInput name="website" label="Website" type="url" placeholder="https://example.com" autoComplete="url" />
-          )}
-        </FieldGroup>
-        <FormError message={form.formState.errors.root?.server?.message} />
-        <SubmitButton
-          type="submit"
-          className="self-start"
-          pending={form.formState.isSubmitting}
-          disabled={!then && !form.formState.isDirty}
-        >
-          {then ? "Continue" : "Save"}
-        </SubmitButton>
-      </form>
-    </FormProvider>
+    <SettingsForm form={form} onSubmit={submit}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="firstName" required label="First name" autoComplete="given-name" />
+        <FormInput name="lastName" required label="Last name" autoComplete="family-name" />
+        <FormSelect name="position" required label="Position" placeholder="Choose" options={options} />
+        <FormInput name="company" required label="Company" autoComplete="organization" />
+        {profile.website !== undefined && (
+          <FormInput
+            name="website"
+            label="Company website"
+            inputMode="url"
+            placeholder="example.com"
+            autoComplete="url"
+            spellCheck={false}
+          />
+        )}
+      </div>
+    </SettingsForm>
   )
 }

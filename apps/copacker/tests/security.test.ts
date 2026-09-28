@@ -53,6 +53,11 @@ describe("Sign-in return path", () => {
       "/\\evil.example",
       "inventory",
       "/login?next=/x",
+      "/login/google",
+      "/signup",
+      "/verify-email",
+      "/forgot-password?email=a@b.example",
+      "/reset-password?token=abc",
       "/callback",
       "/api/inventory"
     ]) {

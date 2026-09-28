@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, ChevronsUpDown, LogOut, Monitor, Moon, Palette, Sun } from "lucide-react"
+import { Check, ChevronsUpDown, LogOut, Monitor, Moon, Palette, Plus, Sun } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "@/components/theme-provider"
@@ -214,6 +214,14 @@ function WorkspaceSwitcher({
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            {/* Another company, or another role for this one, such as a buyer that also supplies. */}
+            <DropdownMenuItem render={<Link href="/workspaces/new" />}>
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-md border bg-background">
+                <Plus className="size-3.5" />
+              </span>
+              New workspace
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

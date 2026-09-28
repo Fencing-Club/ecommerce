@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { addressSchema } from "@repo/aisle"
-import { WorkOS } from "@workos-inc/node"
 import { and, eq, isNull } from "drizzle-orm"
-import { cookies } from "next/headers"
 import { z } from "zod"
 import { db } from "@/db"
 import {
@@ -17,25 +15,25 @@ import {
   teamInvitations,
   supplierProfiles
 } from "@/db/schema"
+import type { ActionResult } from "@/lib/api"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
-import { identity, session, requireOwner, requireBuyer, requireMembership } from "@/server/auth"
+import { identity, session, requireOwner, requireBuyer, requireMembership, setWorkspace } from "@/server/auth"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
 import {
-  acceptForwarderInvitation,
   createForwarder,
   inviteForwarder,
   removeForwarder,
   renameForwarder,
   saveForwarderAddress
 } from "@/server/forwarders"
-import { acceptSupplierInvitation } from "@/server/invitations"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
+import { joinWorkspace, setUpWorkspace } from "@/server/onboarding"
 import {
   createOrder,
   updateDraftOrder,
@@ -56,56 +54,36 @@ import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { appUrl, token, hash } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
+import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
+const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
+  ["auth.signIn", signIn],
+  ["auth.signUp", signUp],
+  ["auth.verifyEmail", verifyEmail],
+  ["auth.resendCode", resendCode],
+  ["auth.forgotPassword", requestPasswordReset],
+  ["auth.resetPassword", resetPassword]
+])
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== appUrl()) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {
     const { action, data } = inputSchema.parse(await request.json())
-    if (action === "workspace.create") {
-      const user = await identity(),
-        input = z
-          .object({ name: z.string().trim().min(2).max(120), kind: z.enum(["buyer", "supplier", "forwarder"]) })
-          .parse(data)
-      const id = randomUUID(),
-        workos = new WorkOS(process.env.WORKOS_API_KEY)
-      const remote = await workos.organizations.createOrganization({ name: input.name })
-      await workos.userManagement.createOrganizationMembership({ userId: user.id, organizationId: remote.id })
-      await db().transaction(async (tx) => {
-        await tx.insert(organizations).values({ id, ...input, workosId: remote.id })
-        await tx.insert(memberships).values({ orgId: id, userId: user.id, email: user.email, role: "owner" })
-      })
-      await setWorkspace(id)
-      const next = typeof data.next === "string" && data.next.startsWith("/invite?") ? data.next : "/"
-      return Response.json({ redirect: next })
+    // Signing in and up, before anyone is signed in.
+    const signInAction = signInActions.get(action)
+    if (signInAction) {
+      return Response.json(await signInAction(data))
     }
-    if (action === "team.accept") {
-      const user = await identity()
-      const invitation = z.string().min(20).parse(data.token)
-      if (!user.emailVerified) {
-        throw new Error("Verify your email before accepting an invitation")
-      }
-      await db().transaction(async (tx) => {
-        const [row] = await tx
-          .select()
-          .from(teamInvitations)
-          .where(eq(teamInvitations.hash, hash(invitation)))
-          .for("update")
-        if (!row || row.email !== user.email.toLowerCase() || row.expiresAt < new Date()) {
-          throw new Error("Invitation expired or belongs to a different email")
-        }
-        await tx
-          .insert(memberships)
-          .values({ orgId: row.orgId, userId: user.id, email: user.email, role: "member" })
-          .onConflictDoNothing()
-        await tx.delete(teamInvitations).where(eq(teamInvitations.id, row.id))
-        await setWorkspace(row.orgId)
-      })
-      return Response.json({ redirect: "/" })
+    // Getting started: signed in, but maybe without a workspace yet.
+    if (action === "onboarding.workspace") {
+      return Response.json(await setUpWorkspace(await identity(), data))
+    }
+    if (action === "onboarding.join") {
+      return Response.json(await joinWorkspace(await identity(), data))
     }
     const s = await session()
     const id = () => z.uuid().parse(data.id),
@@ -244,12 +222,6 @@ export async function POST(request: Request) {
       await updateSupplier(s.org.id, data)
       return Response.json({ ok: true })
     }
-    if (action === "forwarder.accept") {
-      const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
-      await acceptForwarderInvitation(s.user, input.orgId, input.token)
-      await setWorkspace(input.orgId)
-      return Response.json({ redirect: "/settings" })
-    }
     if (action === "forwarder.create") {
       requireBuyer(s)
       requireOwner(s)
@@ -279,12 +251,6 @@ export async function POST(request: Request) {
       requireOwner(s)
       await saveForwarderAddress(s.org.id, data)
       return Response.json({ ok: true })
-    }
-    if (action === "supplier.accept") {
-      const input = z.object({ orgId: z.uuid(), token: z.string().min(20) }).parse(data)
-      await acceptSupplierInvitation(s.user, input.orgId, input.token)
-      await setWorkspace(input.orgId)
-      return Response.json({ redirect: "/orders" })
     }
     // Adds or edits a pickup address for a supplier that hasn't joined, or with `remove`, deletes it.
     if (action === "supplier.address") {
@@ -699,12 +665,4 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-}
-async function setWorkspace(id: string) {
-  ;(await cookies()).set("copacker-workspace", id, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/"
-  })
 }

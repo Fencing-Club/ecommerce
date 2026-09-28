@@ -5,18 +5,38 @@ import { redirect } from "next/navigation"
 import { db } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
 import { returnPath } from "@/server/security"
+
+// The workspace this browser has open, until another is chosen.
+export const workspaceCookie = "copacker-workspace"
+
+export async function setWorkspace(id: string) {
+  ;(await cookies()).set(workspaceCookie, id, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/"
+  })
+}
+
+// The signed-in person, or null, for pages that anyone can open, such as sign-in itself.
+export async function signedInUser() {
+  if (!process.env.WORKOS_CLIENT_ID) {
+    return null
+  }
+  return (await withAuth()).user
+}
+
 // Without an explicit page, sign-in returns to the page that was requested; the auth proxy records it as x-url.
 export async function identity(returnTo?: string) {
   if (!process.env.WORKOS_CLIENT_ID) {
     redirect("/setup")
   }
-  // Sign-in sets a PKCE cookie, which Server Components cannot do; the /login route handler can.
   const { user } = await withAuth()
   if (!user) {
     // x-url is the full request URL (behind Railway its host is internal), so only its path is kept.
     const url = (await headers()).get("x-url")
     const requested = returnTo ?? (url && URL.canParse(url) ? `${new URL(url).pathname}${new URL(url).search}` : null)
-    redirect(`/login?next=${encodeURIComponent(returnPath(requested))}`)
+    redirect(`/login?next=${encodeURIComponent(returnPath(requested, "/"))}`)
   }
   return user
 }
@@ -33,7 +53,7 @@ export async function session() {
   if (!available.length) {
     redirect("/onboarding")
   }
-  const active = (await cookies()).get("copacker-workspace")?.value
+  const active = (await cookies()).get(workspaceCookie)?.value
   const chosen = available.find((row) => row.org.id === active) ?? available[0]!
   return {
     user: {

@@ -4542,8 +4542,9 @@ describe("suppliers from Shopify and invitations", () => {
 describe("the workspace website on POs", () => {
   it("lets the buyer's owner set the website with their profile, and prints it on the PO", async () => {
     const profile = { firstName: "Tess", lastName: "Tester", position: "Owner", company: "Buyer" }
-    await expect(saveProfile(buyer, { ...profile, website: "buyer.example" })).rejects.toThrow("full address")
-    await saveProfile(buyer, { ...profile, website: "https://buyer.example" })
+    // A website typed without https:// is read as https.
+    await expect(saveProfile(buyer, { ...profile, website: "ftp://buyer.example" })).rejects.toThrow("Enter a website")
+    await saveProfile(buyer, { ...profile, website: "buyer.example" })
     const [saved] = await database
       .select()
       .from(tables.supplierProfiles)

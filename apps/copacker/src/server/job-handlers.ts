@@ -201,12 +201,20 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     .parse(payload)
   const attachments: Array<{ filename: string; content: string }> = []
   let subject: string, text: string
-  if (input.type === "invite" || input.type === "team") {
-    subject = `${input.name ?? "A buyer"} invited you to Copacker`
-    text = `Sign in with ${input.to}, then accept this invitation to manage purchase orders and shipments: ${appUrl()}/invite?token=${input.invitation}&kind=${input.type}`
-  } else if (input.type === "forwarder") {
-    subject = `${input.name ?? "A buyer"} invited you to Copacker`
-    text = `Sign in with ${input.to}, then accept this invitation to share your warehouse addresses and see the shipments coming to you: ${appUrl()}/invite?token=${input.invitation}&kind=forwarder`
+  if (input.type === "invite" || input.type === "team" || input.type === "forwarder") {
+    // The link's page signs the person up or in with this email, then sets up what's still missing.
+    const from = input.name ?? (input.type === "team" ? "Your team" : "A buyer")
+    const joining = {
+      invite: "to join Copacker as their supplier, and get their purchase orders there.",
+      team: "to join their workspace on Copacker.",
+      forwarder: "to join Copacker as their freight forwarder, and share your warehouse addresses with them."
+    }[input.type]
+    subject = `${from} invited you to Copacker`
+    text = [
+      `${from} invited you ${joining}`,
+      `Accept the invitation: ${appUrl()}/invite?token=${input.invitation}&kind=${input.type}`,
+      `It’s for ${input.to} and expires in 7 days.`
+    ].join("\n\n")
   } else if (input.type === "po") {
     const po = await generatePo(input.orderId!, input.revision)
     subject = `New purchase order: ${po.doc.name.replace(/\.pdf$/, "")}`

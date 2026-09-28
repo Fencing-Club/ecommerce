@@ -1,0 +1,90 @@
+"use client"
+
+import { useInterval } from "@mantine/hooks"
+import { useState } from "react"
+import { FormProvider } from "react-hook-form"
+import { FormError, SubmitButton } from "@/components/actions"
+import { Button } from "@/components/ui/button"
+import { useActionForm } from "@/hooks/useActionForm"
+import { errorMessage, useActionMutation } from "@/lib/api"
+import { codeSchema } from "@/lib/sign-in"
+import { CodeField } from "./code-field"
+import { leaving } from "./sign-in-form"
+
+// Seconds before another code can be sent. The page opens just after one was.
+const cooldown = 30
+
+// The code WorkOS emailed. It sends itself once all six digits are in; a wrong one clears for another try.
+export function VerifyEmailForm() {
+  const { form, submit } = useActionForm({
+    schema: codeSchema,
+    action: "auth.verifyEmail",
+    defaultValues: { code: "" }
+  })
+  async function send() {
+    if (form.formState.isSubmitting) {
+      return
+    }
+    await submit()
+    if (form.formState.errors.root) {
+      form.setValue("code", "")
+      form.setFocus("code")
+    }
+  }
+  return (
+    <div className="flex flex-col gap-6">
+      <FormProvider {...form}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void send()
+          }}
+          noValidate
+          className="flex flex-col gap-6"
+        >
+          <CodeField name="code" label="Verification code" onComplete={() => void send()} />
+          <FormError message={form.formState.errors.root?.server?.message} />
+          <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
+            Verify email
+          </SubmitButton>
+        </form>
+      </FormProvider>
+      <ResendCode />
+    </div>
+  )
+}
+
+function ResendCode() {
+  const [run, { isLoading }] = useActionMutation()
+  const [wait, setWait] = useState(cooldown)
+  const [status, setStatus] = useState("")
+  useInterval(() => setWait((seconds) => Math.max(0, seconds - 1)), 1000, { autoInvoke: true })
+  async function resend() {
+    setStatus("")
+    try {
+      await run({ action: "auth.resendCode", data: {} }).unwrap()
+      setWait(cooldown)
+      setStatus("New code sent")
+    } catch (error) {
+      setStatus(errorMessage(error))
+    }
+  }
+  return (
+    <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+      <p>
+        Didn’t get it?{" "}
+        <Button
+          variant="link"
+          className="h-auto p-0 font-medium text-foreground"
+          disabled={wait > 0 || isLoading}
+          onClick={() => void resend()}
+        >
+          {wait > 0 ? `Send again in ${wait}s` : "Send a new code"}
+        </Button>
+      </p>
+      <output aria-live="polite" className="min-h-5 text-xs">
+        {status}
+      </output>
+    </div>
+  )
+}

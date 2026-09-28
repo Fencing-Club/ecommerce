@@ -1,0 +1,87 @@
+import { addressSchema } from "@repo/aisle"
+import { z } from "zod"
+
+// What getting started asks, shared by the steps in the browser and the server that saves them.
+
+export const workspaceKinds = ["buyer", "supplier", "forwarder"] as const
+export type WorkspaceKind = (typeof workspaceKinds)[number]
+
+// Roles at buyers, suppliers and freight forwarders.
+export const positions = [
+  "Owner",
+  "General manager",
+  "Operations manager",
+  "Purchasing manager",
+  "Buyer",
+  "Sales manager",
+  "Account manager",
+  "Production manager",
+  "Quality control",
+  "Logistics coordinator",
+  "Warehouse manager",
+  "Customer service",
+  "Finance",
+  "Other"
+]
+
+// A website as typed: "example.com" is read as https://example.com.
+export const websiteSchema = z
+  .string()
+  .trim()
+  .transform((value) => (value && !/^[a-z][a-z\d+.-]*:\/\//i.test(value) ? `https://${value}` : value))
+  .pipe(z.union([z.url({ protocol: /^https?$/, error: "Enter a website, such as example.com" }), z.literal("")]))
+
+export const personSchema = z.object({
+  firstName: z.string().trim().min(1, "Enter your first name").max(60),
+  lastName: z.string().trim().min(1, "Enter your last name").max(60),
+  position: z.string().trim().min(1, "Choose your position").max(100)
+})
+
+export const companySchema = z.object({
+  name: z.string().trim().min(2, "Enter your company’s name").max(120),
+  website: websiteSchema,
+  phone: z
+    .string()
+    .trim()
+    .pipe(z.union([z.literal(""), z.string().min(6, "Enter the full number").max(30)]))
+})
+
+// An address with nothing filled in yet, for the address step to start from.
+export const blankPlace = {
+  name: "",
+  address: {
+    name: "",
+    phoneNumber: "",
+    email: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    stateOrRegion: "",
+    postalCode: "",
+    countryCode: ""
+  }
+}
+
+// A saved address: its name in Copacker's lists, and the address itself.
+export const placeSchema = z.object({
+  name: z.string().trim().min(1, "Name this address").max(100),
+  address: addressSchema
+})
+
+// A new workspace, with the person's profile and, when a buyer invited them, the invitation it accepts.
+export const workspaceSetupSchema = z.object({
+  person: personSchema,
+  kind: z.enum(workspaceKinds),
+  company: companySchema,
+  address: placeSchema.nullable(),
+  invitation: z.object({ kind: z.enum(["supplier", "forwarder"]), token: z.string().min(20).max(200) }).nullable()
+})
+
+// Accepting an invitation without making a workspace: a colleague joins, or a supplier or forwarder brings one it
+// already owns. A colleague gives their profile here when they haven't yet.
+export const joinSchema = z.object({
+  kind: z.enum(["team", "supplier", "forwarder"]),
+  token: z.string().min(20).max(200),
+  orgId: z.uuid().optional(),
+  person: personSchema.optional()
+})
