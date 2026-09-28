@@ -6,6 +6,7 @@
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
+- [Inventory sync spec (planned): master counts, receiving, two-way sync, marketplace orders](specs/inventory-sync/README.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
 - [Roles and page access](permissions.md)
