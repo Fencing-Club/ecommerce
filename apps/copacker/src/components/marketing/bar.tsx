@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 // The page's bar takes the tone of whatever it's over: dark on the dark stages, which carry data-tone="dark", and light
-// on the paper between them.
-export function Bar({ children }: { children: React.ReactNode }) {
+// on the paper between them. It starts in the tone of the top of its page, so it doesn't flash before it can look.
+export function Bar({ tone, children }: { tone: "dark" | "light"; children: React.ReactNode }) {
   const ref = useRef<HTMLElement>(null)
-  const [dark, setDark] = useState(true)
+  const [dark, setDark] = useState(tone === "dark")
   useEffect(() => {
     let frame = 0
     const check = () => {

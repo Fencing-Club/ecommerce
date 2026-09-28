@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Bar } from "./bar"
 
-// The marketing site's frame, shared by the home page and the contact page: its grounds and type treatments, the nav
-// bar and the footer. The site is set on warm paper, with dark stages set into it.
+// The marketing site's frame, shared by its pages (home, contact, privacy and terms): its grounds and type treatments,
+// the nav bar and the footer. The site is set on warm paper, with dark stages set into it.
 
 // The two grounds: the paper, and the ink of the stages set into it.
 export const paper = "light bg-(--paper) text-foreground [color-scheme:light]"
@@ -32,7 +32,7 @@ export function GetStarted({ className }: { className?: string }) {
   )
 }
 
-function Nav() {
+function Nav({ tone }: { tone: "dark" | "light" }) {
   const sections = [
     ["/#forecast", "Forecast"],
     ["/#handoffs", "Handoffs"],
@@ -42,7 +42,7 @@ function Nav() {
   const link =
     "rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
   return (
-    <Bar>
+    <Bar tone={tone}>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-10 px-6">
         <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark />
@@ -132,7 +132,8 @@ function Footer() {
   )
 }
 
-export function Site({ children }: { children: React.ReactNode }) {
+// `tone` is the ground at the top of the page, where the nav bar starts.
+export function Site({ tone = "dark", children }: { tone?: "dark" | "light"; children: React.ReactNode }) {
   return (
     <div
       className={cn(
@@ -140,7 +141,7 @@ export function Site({ children }: { children: React.ReactNode }) {
         "relative min-h-svh overflow-x-clip [--ink:oklch(0.145_0_0)] [--paper:oklch(0.972_0.008_78)]"
       )}
     >
-      <Nav />
+      <Nav tone={tone} />
       {children}
       <Footer />
     </div>

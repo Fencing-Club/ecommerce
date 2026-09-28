@@ -69,7 +69,7 @@ export function Legal({
     timeZone: "UTC"
   })
   return (
-    <Site>
+    <Site tone="light">
       <main
         id="main-content"
         className="mx-auto max-w-6xl px-6 pt-16 pb-28 sm:pt-24 sm:pb-36 lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-20"
