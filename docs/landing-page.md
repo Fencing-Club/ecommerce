@@ -16,7 +16,7 @@ Both live in `apps/copacker/src/components/marketing/`:
 | `planner.tsx`                    | The forecast to play with: lead time, stores and the holiday rush move the reorder date and size.   |
 | `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory to Amazon, as a 3D diorama that scroll plays (three.js).         |
 | `agents.tsx`, `ticker.tsx`       | The animated diagram of agents working over MCP, and the lines that take turns in its card.         |
-| `connect.tsx`                    | How agents connect (any MCP client, by URL or on your machine) and the CLI's terminal session.      |
+| `connect.tsx`, `setups.ts`       | The agent picker, with each agent's setup to copy (`copy-button.tsx`), and the CLI's session.       |
 | `signup.tsx`                     | The close: the mailing list signup, which posts to `/api/mailing-list`.                             |
 | `mockups.tsx`, `scaled.tsx`      | The hero's product shot, and the wrapper that scales it to its column like a screenshot.            |
 | `film.tsx`                       | The ad, in a dialog.                                                                                |
@@ -43,6 +43,10 @@ Both live in `apps/copacker/src/components/marketing/`:
 - The contact form emails each message through Resend to `CONTACT_EMAIL`, with replies going to the person who wrote
   (`src/server/contact.ts`). Like the mailing list, its endpoint takes anyone, turns away bots that fill in a hidden
   field, and slows down more than five messages from one address in ten minutes (`src/server/rate-limit.ts`).
+- Every setup in `setups.ts` adds the hosted server, `https://copacker.ai/mcp`, and signs in with OAuth; each follows
+  the client's own docs as of September 2026. For those sign-ins to work unaided, the server's OAuth needs dynamic
+  client registration or client metadata documents, `iss` in its authorization response, loopback redirects on any
+  port, and refresh tokens (`offline_access`), or ChatGPT signs people out when the first token expires.
 - The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), in the segment
   `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed out, so it checks the address, turns
   away bots that fill in a hidden field, and slows down more than five signups from one address in ten minutes.

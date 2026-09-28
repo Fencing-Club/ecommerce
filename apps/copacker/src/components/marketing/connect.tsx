@@ -1,26 +1,13 @@
 "use client"
 
 import { useClipboard, useInViewport, useReducedMotion } from "@mantine/hooks"
-import { Check, Copy } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { CopyButton } from "./copy-button"
+import { setups } from "./setups"
 
-// How agents reach Copacker: over MCP from any client that speaks it, by URL for the chat apps or through the CLI's
-// own server for editors and agents on your machine; and the CLI itself, which reads the same data for scripts and
-// coding agents. The terminal types out its session once it scrolls into view.
-
-const clients = ["ChatGPT", "Claude", "Cursor", "VS Code", "Hermes", "OpenClaw"]
-const url = "https://copacker.ai/mcp"
-const config = `{
-  "mcpServers": {
-    "copacker": {
-      "command": "copacker",
-      "args": ["mcp", "serve"]
-    }
-  }
-}`
+// How agents reach Copacker: pick yours, and its own setup shows, ready to copy (./setups); and the CLI, which reads
+// the same data for scripts and coding agents. The terminal types out its session once it scrolls into view.
 
 type Line = { command: string } | { output: string }
 
@@ -130,59 +117,77 @@ function Terminal() {
   )
 }
 
+// Any MCP client can connect. Picking an agent shows exactly how to add Copacker to it.
+function Agents() {
+  const [chosen, setChosen] = useState(setups[0]?.name ?? "")
+  const clipboard = useClipboard({ timeout: 1800 })
+  const setup = setups.find((entry) => entry.name === chosen) ?? setups[0]
+  if (!setup) {
+    return null
+  }
+  return (
+    <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
+      <div className="flex flex-col gap-3">
+        <h3 className="text-2xl font-semibold tracking-tight">Works with any agent.</h3>
+        <p className="text-pretty text-white/60">
+          Add Copacker’s MCP server to your agent, and it works with your restock, orders and shipments like you do.
+        </p>
+      </div>
+      <fieldset className="flex flex-wrap gap-2">
+        <legend className="sr-only">Your agent</legend>
+        {setups.map((entry) => (
+          <label
+            key={entry.name}
+            className={cn(
+              "cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-white/40",
+              entry.name === setup.name
+                ? "bg-white text-[#1c1917] ring-white"
+                : "bg-white/[0.06] text-white/85 ring-white/10 hover:bg-white/10",
+              entry.any &&
+                entry.name !== setup.name &&
+                "bg-transparent text-white/60 outline-1 -outline-offset-1 outline-white/25 outline-dashed ring-0"
+            )}
+          >
+            <input
+              type="radio"
+              name="agent"
+              value={entry.name}
+              checked={entry.name === setup.name}
+              onChange={() => {
+                setChosen(entry.name)
+                clipboard.reset()
+              }}
+              className="sr-only"
+            />
+            {entry.name}
+          </label>
+        ))}
+      </fieldset>
+      <div className="flex flex-col gap-3">
+        <p className="min-h-10 text-sm text-pretty text-white/55">{setup.how}</p>
+        <div
+          className={cn(
+            "overflow-hidden rounded-xl bg-black/30 ring-1 transition-[box-shadow] duration-500",
+            clipboard.copied ? "shadow-[0_0_0_4px_rgb(52_211_153/0.15)] ring-emerald-400/50" : "ring-white/10"
+          )}
+        >
+          <div className="flex items-center gap-3 border-b border-white/[0.06] py-2 pr-2 pl-4">
+            <span className="min-w-0 flex-1 truncate font-mono text-xs text-white/45">{setup.where}</span>
+            <CopyButton copied={clipboard.copied} onCopy={() => clipboard.copy(setup.code)} />
+          </div>
+          <pre className="min-h-52 p-4 font-mono text-[0.8125rem] leading-6 whitespace-pre-wrap text-white/85 [overflow-wrap:anywhere]">
+            {setup.code}
+          </pre>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Connect() {
-  const clipboard = useClipboard({ timeout: 1600 })
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
-        <div className="flex flex-col gap-3">
-          <h3 className="text-2xl font-semibold tracking-tight">Works with any agent.</h3>
-          <p className="text-pretty text-white/60">
-            Add Copacker’s MCP server to your agent, and it works with your restock, orders and shipments like you do.
-          </p>
-        </div>
-        <ul aria-label="Agents that connect over MCP" className="flex flex-wrap gap-2">
-          {clients.map((client) => (
-            <li
-              key={client}
-              className="rounded-full bg-white/[0.06] px-3.5 py-1.5 text-sm font-medium text-white/85 ring-1 ring-white/10"
-            >
-              {client}
-            </li>
-          ))}
-          <li className="rounded-full px-3.5 py-1.5 text-sm text-white/55 ring-1 ring-white/15 ring-inset [--tw-ring-style:dashed] outline-1 -outline-offset-1 outline-white/20 outline-dashed">
-            Any MCP client
-          </li>
-        </ul>
-        <Tabs defaultValue="apps" className="mt-auto gap-4">
-          <TabsList className="bg-white/[0.06]">
-            <TabsTrigger value="apps" className="px-3">
-              Chat apps
-            </TabsTrigger>
-            <TabsTrigger value="local" className="px-3">
-              On your machine
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="apps" className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 rounded-xl bg-black/30 p-1.5 pl-4 ring-1 ring-white/10">
-              <code className="min-w-0 flex-1 truncate font-mono text-sm text-white/85">{url}</code>
-              <Button size="sm" variant="secondary" onClick={() => clipboard.copy(url)}>
-                {clipboard.copied ? <Check /> : <Copy />}
-                {clipboard.copied ? "Copied" : "Copy"}
-              </Button>
-            </div>
-            <p className="text-sm text-white/50">Add it as a connector in ChatGPT, Claude or any app that takes one.</p>
-          </TabsContent>
-          <TabsContent value="local" className="flex flex-col gap-3">
-            <pre className="overflow-x-auto rounded-xl bg-black/30 p-4 font-mono text-[0.8125rem] leading-6 text-white/85 ring-1 ring-white/10">
-              {config}
-            </pre>
-            <p className="text-sm text-white/50">
-              For Cursor, VS Code, Hermes, OpenClaw and other agents on your machine.
-            </p>
-          </TabsContent>
-        </Tabs>
-      </div>
+      <Agents />
       <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
         <div className="flex flex-col gap-3">
           <h3 className="text-2xl font-semibold tracking-tight">The same data, in your terminal.</h3>
