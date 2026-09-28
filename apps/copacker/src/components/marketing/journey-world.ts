@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
+import { releaseWhenGone } from "./webgl"
 
 // The journey's world: a paper diorama of one purchase order's trip, from the supplier's factory through customs to
 // Amazon and the seller's own warehouse, built from rounded blocks and played by the page's scroll. `frame` poses the
@@ -1525,6 +1526,7 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
         thing.dispose()
       }
       renderer.dispose()
+      releaseWhenGone(canvas, renderer.getContext())
     }
   }
 }

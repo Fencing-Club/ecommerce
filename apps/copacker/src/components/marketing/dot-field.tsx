@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { whenPageIdle } from "./use-page-idle"
+import { releaseWhenGone } from "./webgl"
 
 // The hero's backdrop, drawn with WebGL: a grid of points, one for every unit on the shelf. It opens on the mess a
 // restock makes, the points scattered and drifting with a few red stockouts among them, then settles into order, as
@@ -184,20 +185,44 @@ function play(canvas: HTMLCanvasElement | null, settled: boolean) {
     resize.disconnect()
     seen.disconnect()
     removeEventListener("pointermove", move)
+    releaseWhenGone(canvas, gl)
   }
 }
 
 export function DotField({ settled = false, className }: { settled?: boolean; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) {
+      return
+    }
     let stop: (() => void) | undefined
+    let retry: ReturnType<typeof setTimeout> | undefined
+    // A browser that won't make the context, as while its GPU process restarts, gets one more try a moment later.
+    const start = (again: boolean) => {
+      stop = play(canvas, settled)
+      if (!stop && again) {
+        retry = setTimeout(() => start(false), 1000)
+      }
+    }
+    // A phone can drop the context to free memory. Preventing the default lets the browser give it back, and the field
+    // starts over on it.
+    const lost = (event: Event) => {
+      event.preventDefault()
+      stop?.()
+      stop = undefined
+    }
+    const restored = () => start(false)
+    canvas.addEventListener("webglcontextlost", lost)
+    canvas.addEventListener("webglcontextrestored", restored)
     // WebGL starts once the page is idle, so compiling its shaders stays out of the way of the first paint and hydration.
-    const cancel = whenPageIdle(() => {
-      stop = play(ref.current, settled)
-    })
+    const cancel = whenPageIdle(() => start(true))
     return () => {
       cancel()
+      clearTimeout(retry)
       stop?.()
+      canvas.removeEventListener("webglcontextlost", lost)
+      canvas.removeEventListener("webglcontextrestored", restored)
     }
   }, [settled])
   return <canvas ref={ref} aria-hidden className={cn("pointer-events-none absolute inset-0 size-full", className)} />

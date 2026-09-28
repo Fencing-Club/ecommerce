@@ -433,7 +433,8 @@ export function Journey() {
     }
     canvas.addEventListener("webglcontextlost", lost)
     canvas.addEventListener("webglcontextrestored", restored)
-    const load = () => {
+    let retry: ReturnType<typeof setTimeout> | undefined
+    const load = (again: boolean) => {
       loading = true
       import("./journey-world")
         .then(({ createWorld }) => {
@@ -446,15 +447,20 @@ export function Journey() {
           request()
         })
         .catch(() => {
-          // Without WebGL the chapters still play, over stills of the world.
-          setFailed(true)
+          // A browser that won't make the context, as while its GPU process restarts, gets one more try a moment
+          // later. Without WebGL the chapters still play, over stills of the world.
+          if (again) {
+            retry = setTimeout(() => load(false), 1000)
+          } else {
+            setFailed(true)
+          }
         })
     }
     const seen = new IntersectionObserver(
       ([entry]) => {
         near = entry?.isIntersecting ?? false
         if (near && !loading) {
-          load()
+          load(true)
         }
         if (near) {
           request()
@@ -471,6 +477,7 @@ export function Journey() {
     addEventListener("scroll", request, { passive: true })
     return () => {
       cancelAnimationFrame(frame)
+      clearTimeout(retry)
       seen.disconnect()
       resize.disconnect()
       removeEventListener("scroll", request)
