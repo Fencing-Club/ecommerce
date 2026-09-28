@@ -1,7 +1,7 @@
 "use client"
 
 import { money } from "@repo/aisle"
-import { ChevronDown, ChevronRight, Download, EllipsisVertical, SlidersHorizontal, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Download, Ellipsis, SlidersHorizontal, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -313,9 +313,8 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
         </div>
         {catalog && (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" />}>
-              More actions
-              <EllipsisVertical data-icon="inline-end" />
+            <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="More actions" />}>
+              <Ellipsis />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem

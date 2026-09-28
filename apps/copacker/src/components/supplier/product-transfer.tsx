@@ -1,6 +1,6 @@
 "use client"
 
-import { Download, EllipsisVertical, FileSpreadsheet, Upload } from "lucide-react"
+import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -28,9 +28,8 @@ export function ProductActions() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" />}>
-          More actions
-          <EllipsisVertical data-icon="inline-end" />
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="More actions" />}>
+          <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem onClick={() => setImporting(true)}>
