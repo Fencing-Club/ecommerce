@@ -62,7 +62,7 @@ export function AddForwarder({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a forwarder</DialogTitle>
-          <DialogDescription>A freight forwarder your purchase orders can ship to.</DialogDescription>
+          <DialogDescription>Picks up from your supplier and ships on to Amazon.</DialogDescription>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Add forwarder" dialog>
           <FormInput name="name" required label="Company" placeholder="Shenzhen Logistics" autoComplete="off" />
