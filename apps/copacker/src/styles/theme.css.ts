@@ -46,39 +46,43 @@ export const vars = createGlobalThemeContract(
 
 const radius = "0.625rem"
 
+// The light colors, which :root takes, and which a .light element takes back inside a dark one, such as the product
+// shots on the dark marketing page.
+const light = {
+  background: "oklch(1 0 0)",
+  foreground: "oklch(0.145 0 0)",
+  card: "oklch(1 0 0)",
+  cardForeground: "oklch(0.145 0 0)",
+  popover: "oklch(1 0 0)",
+  popoverForeground: "oklch(0.145 0 0)",
+  primary: "oklch(0.646 0.222 41.116)",
+  primaryForeground: "oklch(0.98 0.016 73.684)",
+  secondary: "oklch(0.97 0 0)",
+  secondaryForeground: "oklch(0.205 0 0)",
+  muted: "oklch(0.97 0 0)",
+  mutedForeground: "oklch(0.556 0 0)",
+  accent: "oklch(0.97 0 0)",
+  accentForeground: "oklch(0.205 0 0)",
+  destructive: "oklch(0.577 0.245 27.325)",
+  border: "oklch(0.922 0 0)",
+  input: "oklch(0.922 0 0)",
+  ring: "oklch(0.75 0.183 55.934)",
+  sidebar: "oklch(0.985 0 0)",
+  sidebarForeground: "oklch(0.145 0 0)",
+  sidebarPrimary: "oklch(0.646 0.222 41.116)",
+  sidebarPrimaryForeground: "oklch(0.98 0.016 73.684)",
+  sidebarAccent: "oklch(0.97 0 0)",
+  sidebarAccentForeground: "oklch(0.205 0 0)",
+  sidebarBorder: "oklch(0.922 0 0)",
+  sidebarRing: "oklch(0.75 0.183 55.934)",
+  chart1: "#2a78d6",
+  chart2: "#eb6834",
+  success: "#006300",
+  warning: "#fab219"
+}
+
 createGlobalTheme(":root", vars, {
-  color: {
-    background: "oklch(1 0 0)",
-    foreground: "oklch(0.145 0 0)",
-    card: "oklch(1 0 0)",
-    cardForeground: "oklch(0.145 0 0)",
-    popover: "oklch(1 0 0)",
-    popoverForeground: "oklch(0.145 0 0)",
-    primary: "oklch(0.646 0.222 41.116)",
-    primaryForeground: "oklch(0.98 0.016 73.684)",
-    secondary: "oklch(0.97 0 0)",
-    secondaryForeground: "oklch(0.205 0 0)",
-    muted: "oklch(0.97 0 0)",
-    mutedForeground: "oklch(0.556 0 0)",
-    accent: "oklch(0.97 0 0)",
-    accentForeground: "oklch(0.205 0 0)",
-    destructive: "oklch(0.577 0.245 27.325)",
-    border: "oklch(0.922 0 0)",
-    input: "oklch(0.922 0 0)",
-    ring: "oklch(0.75 0.183 55.934)",
-    sidebar: "oklch(0.985 0 0)",
-    sidebarForeground: "oklch(0.145 0 0)",
-    sidebarPrimary: "oklch(0.646 0.222 41.116)",
-    sidebarPrimaryForeground: "oklch(0.98 0.016 73.684)",
-    sidebarAccent: "oklch(0.97 0 0)",
-    sidebarAccentForeground: "oklch(0.205 0 0)",
-    sidebarBorder: "oklch(0.922 0 0)",
-    sidebarRing: "oklch(0.75 0.183 55.934)",
-    chart1: "#2a78d6",
-    chart2: "#eb6834",
-    success: "#006300",
-    warning: "#fab219"
-  },
+  color: light,
   radius: {
     sm: `calc(${radius} * 0.6)`,
     md: `calc(${radius} * 0.8)`,
@@ -130,3 +134,5 @@ createGlobalTheme(".dark", vars.color, {
   success: "#0ca30c",
   warning: "#fab219"
 })
+
+createGlobalTheme(".light", vars.color, light)

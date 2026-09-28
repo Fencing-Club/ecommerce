@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Dark inside a .dark ancestor, but not within a .light element nested in it (the marketing page's product shots). */
+@custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
 /* The color values themselves, light and dark, live in src/styles/theme.css.ts, which vanilla-extract styles share. */
 @theme inline {
@@ -49,6 +50,28 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* The marketing page's diagrams: lines of news that take turns in a loop, four to a cycle, each delayed by a quarter. */
+@theme {
+  --animate-turn: turn 12s ease-in-out infinite both;
+
+  @keyframes turn {
+    0% {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    4%,
+    21% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    25%,
+    100% {
+      opacity: 0;
+      transform: translateY(-0.5rem);
+    }
+  }
 }
 
 /* The sign-in panel's cards drift, and its shipment's current leg runs. */
