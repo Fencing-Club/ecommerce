@@ -347,13 +347,12 @@ async function workbookTable(bytes: Uint8Array) {
   if (!sheet) {
     throw new Error("The workbook has no sheets")
   }
+  // Only rows with values: the template's dropdowns reach a thousand empty rows below the products.
   const rows: string[][] = []
-  sheet.eachRow({ includeEmpty: true }, (row, number) => {
-    const cells: string[] = []
-    for (let column = 1; column <= sheet.columnCount; column++) {
-      cells.push(cellText(row.getCell(column).value))
-    }
-    rows[number - 1] = cells
+  sheet.eachRow((row, number) => {
+    // row.values starts at index 1, for column A.
+    const values = Array.isArray(row.values) ? row.values.slice(1) : []
+    rows[number - 1] = Array.from(values, (value) => cellText(value))
   })
   return Array.from(rows, (row) => row ?? [])
 }
