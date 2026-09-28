@@ -1,7 +1,7 @@
 import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
 import { eq, type SQL, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { organizations, salesOrders } from "@/db/schema"
+import { organizations, salesOrders, salesSyncs } from "@/db/schema"
 
 // The workspace's excluded Shopify order tags, trimmed and lower-cased: Shopify compares tags without regard to case.
 export async function excludedShopifyTags(orgId: string) {
@@ -47,13 +47,16 @@ export function hasExcludedTag(data: ShopifySale | AmazonSale, tags: readonly st
   )
 }
 
-// Whether any Shopify order from the last `days` (the history syncs keep) was copied before tags were read. Until the
-// next sync reads them again, excluded tags can't leave those out.
+// Whether a Shopify sync is still copying tags: one is queued or running, and some order from the last `days` (the
+// history syncs keep) was copied before tags were read, so excluded tags can't leave it out yet. Orders a finished sync
+// didn't reach wait for a later one, and don't count as copying.
 export async function untaggedShopifyOrders(orgId: string, days: number) {
   const result = await db().execute(sql`
-    select exists (select 1 from ${salesOrders} o
-      where o."orgId" = ${orgId} and o.source = 'shopify' and not (o.data ? 'tags')
-        and o."orderedAt" > now() - make_interval(days => ${days})) as untagged`)
+    select exists (select 1 from ${salesSyncs} s
+        where s."orgId" = ${orgId} and s.source = 'shopify' and s.status in ('queued', 'running'))
+      and exists (select 1 from ${salesOrders} o
+        where o."orgId" = ${orgId} and o.source = 'shopify' and not (o.data ? 'tags')
+          and o."orderedAt" > now() - make_interval(days => ${days})) as untagged`)
   return (result as unknown as { rows: { untagged: unknown }[] }).rows[0]?.untagged === true
 }
 

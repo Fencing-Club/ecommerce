@@ -3957,7 +3957,13 @@ describe("stored sales orders", () => {
     ])
     expect((await shopifyOrderTags(buyerId)).toSorted()).toEqual(["FBA", "amazon"].toSorted())
     const shopifyStatus = async () => (await salesSyncStatus(buyerId)).find((state) => state.source === "shopify")
+    // Tags are still being copied only while a Shopify sync is queued or running.
+    expect(await untaggedShopifyOrders(buyerId, salesHistoryDays)).toBe(false)
+    await database
+      .insert(tables.salesSyncs)
+      .values({ orgId: buyerId, source: "shopify", externalAccountId: shop, status: "queued" })
     expect(await untaggedShopifyOrders(buyerId, salesHistoryDays)).toBe(true)
+    await database.delete(tables.salesSyncs).where(eq(tables.salesSyncs.source, "shopify"))
     expect(await shopifyStatus()).toMatchObject({ orders: 2, recent: { orders: 2 } })
     const listed = await listSalesOrders(buyerId, { page: 0 })
     expect(listed.total).toBe(3)

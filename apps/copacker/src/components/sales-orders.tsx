@@ -2,7 +2,7 @@
 
 import { useDebouncedValue } from "@mantine/hooks"
 import { money } from "@repo/aisle"
-import { ChevronLeft, ChevronRight, ExternalLink, RefreshCw, Repeat, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ExternalLink, Repeat, Search } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { StatusBadge, type StatusTone } from "@/components/common"
@@ -12,12 +12,13 @@ import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/em
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
 import { formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
+import { DetailRow } from "./inventory-locations"
+import { SyncedAt, SyncMenu } from "./sync-menu"
 
 type SyncState = {
   source: SalesSource
@@ -86,53 +87,30 @@ function failure(errorCode: string | null, title: string) {
   return errorCode === "provider_unavailable" ? `Couldn’t reach ${title}` : "Sync failed"
 }
 
-// One source in the summary strip: its sync state, the last 30 days' orders and units, and Sync. Beside the numbers
-// when there's room, under them when not.
-function SourceSummary({ state, refetch }: { state: SyncState; refetch: () => void }) {
-  const [sync, mutation] = salesApi.useSyncSalesMutation()
+// One source in the summary strip: its sync state and the last 30 days' orders and units. Syncs run on their own; Sync
+// now is in the store's Settings.
+function SourceSummary({ state }: { state: SyncState }) {
   const title = titles[state.source]
-  const active = mutation.isLoading || state.status === "queued" || state.status === "running"
-  async function startSync() {
-    try {
-      await sync({ source: state.source }).unwrap()
-      refetch()
-    } catch {
-      // RTK Query retains the failure for the inline message.
-    }
-  }
+  const active = state.status === "queued" || state.status === "running"
   const syncedAt = state.finishedAt ?? state.coveredTo
   let detail: React.ReactNode = "Not synced"
   if (active) {
     detail = "Syncing…"
-  } else if (mutation.isError) {
-    detail = <span className="text-destructive">{errorMessage(mutation.error, "Couldn’t start the sync")}</span>
   } else if (state.status === "failed") {
     detail = <span className="text-destructive">{failure(state.errorCode, title)}</span>
   } else if (syncedAt) {
-    detail = (
-      <>
-        Synced{" "}
-        <time dateTime={syncedAt}>
-          {new Date(syncedAt).toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit"
-          })}
-        </time>
-      </>
-    )
+    detail = <SyncedAt at={syncedAt} />
   }
   return (
     <li className="@container/source px-4 py-3">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 @md/source:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2">
         <div className="flex min-w-0 flex-col">
           <span className="font-medium">{title}</span>
           <span className="text-xs text-muted-foreground" aria-live="polite">
             {detail}
           </span>
         </div>
-        <dl className="col-span-2 row-start-2 flex flex-col @md/source:col-span-1 @md/source:col-start-2 @md/source:row-start-1">
+        <dl className="flex flex-col">
           <dt className="text-xs text-muted-foreground">Last 30 days</dt>
           <dd className="flex gap-4 whitespace-nowrap tabular-nums">
             <span>
@@ -145,19 +123,67 @@ function SourceSummary({ state, refetch }: { state: SyncState; refetch: () => vo
             </span>
           </dd>
         </dl>
-        <Button
-          variant="outline"
-          size="sm"
-          className="col-start-2 row-start-1 @md/source:col-start-3"
-          onClick={startSync}
-          disabled={active}
-          aria-label={`Sync ${title} orders`}
-        >
-          {active ? <Spinner data-icon="inline-start" className="size-3.5" /> : <RefreshCw data-icon="inline-start" />}
-          Sync
-        </Button>
       </div>
     </li>
+  )
+}
+
+// A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
+export function OrdersSyncRow({ source }: { source: SalesSource }) {
+  const { currentData, isLoading, refetch } = salesApi.useSalesStatusQuery(undefined, {
+    pollingInterval: 5000,
+    skipPollingIfUnfocused: true
+  })
+  const [sync, mutation] = salesApi.useSyncSalesMutation()
+  const state = currentData?.sources.find((item) => item.source === source)
+  const title = titles[source]
+  const syncing = mutation.isLoading || state?.status === "queued" || state?.status === "running"
+  async function startSync() {
+    try {
+      await sync({ source }).unwrap()
+      void refetch()
+    } catch {
+      // RTK Query retains the failure for the inline message.
+    }
+  }
+  const syncedAt = state ? (state.finishedAt ?? state.coveredTo) : null
+  let text: React.ReactNode = "Not synced yet"
+  if (isLoading) {
+    text = "Loading…"
+  } else if (syncing) {
+    text = "Syncing…"
+  } else if (mutation.isError) {
+    text = <span className="text-destructive">{errorMessage(mutation.error, "Couldn’t start the sync")}</span>
+  } else if (state?.status === "failed") {
+    text = (
+      <span className="text-destructive">
+        {state.errorCode === "provider_unavailable" ? `Couldn’t reach ${title}` : "Last sync failed"}
+      </span>
+    )
+  } else if (syncedAt) {
+    text = <SyncedAt at={syncedAt} />
+  }
+  let reconnect: string | null = null
+  if (state?.status === "failed" && (state.errorCode === "reconnect" || state.errorCode === "shopify_permissions")) {
+    reconnect =
+      source === "shopify"
+        ? `/api/connections/shopify?shop=${encodeURIComponent(state.externalAccountId)}`
+        : "/api/connections/amazon"
+  }
+  return (
+    <DetailRow
+      title="Orders"
+      action={
+        <SyncMenu
+          label={`${title} orders`}
+          syncing={syncing || isLoading}
+          onSync={() => void startSync()}
+          reconnect={reconnect}
+        />
+      }
+    >
+      <span aria-live="polite">{text}</span>
+    </DetailRow>
   )
 }
 
@@ -419,7 +445,7 @@ function OrderList({
 // Copies each source's orders into Copacker and lists them, so restock reads stored orders instead of waiting on
 // Shopify and Amazon. `initialSearch` starts the list filtered, such as from the header search.
 export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) {
-  const { currentData, isLoading, error, refetch } = salesApi.useSalesStatusQuery(undefined, {
+  const { currentData, isLoading, error } = salesApi.useSalesStatusQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
   })
@@ -466,7 +492,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
           className="grid divide-y @3xl/sources:auto-cols-fr @3xl/sources:grid-flow-col @3xl/sources:divide-x @3xl/sources:divide-y-0"
         >
           {currentData.sources.map((state) => (
-            <SourceSummary key={state.source} state={state} refetch={() => void refetch()} />
+            <SourceSummary key={state.source} state={state} />
           ))}
         </ul>
       </Card>

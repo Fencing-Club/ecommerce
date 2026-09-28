@@ -1,23 +1,18 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
-import { CircleCheck, CircleDashed } from "lucide-react"
 import type { Metadata } from "next"
-import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
-import { DisconnectButton } from "@/components/disconnect-button"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
-import { RequiredMark } from "@/components/form-controls"
+import { Integrations } from "@/components/integrations"
 import { DetailRow, InventoryLocations } from "@/components/inventory-locations"
+import { InventorySyncRow } from "@/components/inventory-sync"
 import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
+import { OrdersSyncRow } from "@/components/sales-orders"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { TeamSettings } from "@/components/team-settings"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import { db } from "@/db"
 import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
@@ -33,14 +28,6 @@ import { storeTimeZone } from "@/server/store-time-zone"
 import { teamOf } from "@/server/team"
 
 export const metadata: Metadata = { title: "Settings" }
-
-// What connecting each store brings.
-const providers = {
-  shopify: { name: "Shopify", description: "Catalog, stock, sales and costs" },
-  amazon: { name: "Amazon", description: "Sales, stock and AWD shipments" }
-} as const
-
-type Provider = keyof typeof providers
 
 // The person's own profile first, then the workspace's settings, each as a section: its title and a short description
 // on the left, its cards on the right, stacked on smaller screens.
@@ -106,67 +93,40 @@ export default async function Settings() {
 
         {buyer && (
           <Section id="integrations" title="Integrations" description="Stores Copacker syncs with">
-            {shopifyAccount ? (
-              <ConnectedCard
-                provider="shopify"
-                account={account(shopName, shopifyAccount.externalId)}
-                externalId={shopifyAccount.externalId}
-                owner={owner}
-              >
-                <InventoryLocations />
-                <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
-              </ConnectedCard>
-            ) : (
-              <NotConnectedCard provider="shopify" owner={owner}>
-                <form action="/api/connections/shopify">
-                  <Card>
-                    <IntegrationHeader provider="shopify" />
-                    <CardContent>
-                      <Field>
-                        <FieldLabel htmlFor="shop">
-                          <span>
-                            Shopify store
-                            <RequiredMark />
-                          </span>
-                        </FieldLabel>
-                        <Input id="shop" name="shop" placeholder="your-store.myshopify.com" required />
-                        <FieldDescription>Admin link or myshopify.com domain</FieldDescription>
-                      </Field>
-                    </CardContent>
-                    <CardFooter className="justify-end">
-                      <Button type="submit">Connect Shopify</Button>
-                    </CardFooter>
-                  </Card>
-                </form>
-              </NotConnectedCard>
-            )}
-            {amazonAccount ? (
-              <ConnectedCard
-                provider="amazon"
-                account={account(amazon?.name ?? null, amazonAccount.externalId)}
-                externalId={amazonAccount.externalId}
-                owner={owner}
-              >
-                <DetailRow title="Marketplaces">
-                  {amazon ? amazon.marketplaces.join(", ") || "—" : "Couldn’t load from Amazon"}
-                </DetailRow>
-              </ConnectedCard>
-            ) : (
-              <NotConnectedCard provider="amazon" owner={owner}>
-                <Card>
-                  <IntegrationHeader provider="amazon" />
-                  <CardFooter className="justify-end">
-                    {amazonDraft ? (
-                      <AmazonSelfAuthorize />
-                    ) : (
-                      <form action="/api/connections/amazon">
-                        <Button type="submit">Connect Amazon</Button>
-                      </form>
-                    )}
-                  </CardFooter>
-                </Card>
-              </NotConnectedCard>
-            )}
+            <Integrations
+              owner={owner}
+              amazonDraft={amazonDraft}
+              shopify={
+                shopifyAccount
+                  ? { account: account(shopName, shopifyAccount.externalId), externalId: shopifyAccount.externalId }
+                  : null
+              }
+              amazon={
+                amazonAccount
+                  ? {
+                      account: account(amazon?.name ?? null, amazonAccount.externalId),
+                      externalId: amazonAccount.externalId
+                    }
+                  : null
+              }
+              shopifySettings={
+                <>
+                  <OrdersSyncRow source="shopify" />
+                  <InventorySyncRow provider="shopify" />
+                  <InventoryLocations />
+                  <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
+                </>
+              }
+              amazonSettings={
+                <>
+                  <OrdersSyncRow source="amazon" />
+                  <InventorySyncRow provider="amazon" />
+                  <DetailRow title="Marketplaces">
+                    {amazon ? amazon.marketplaces.join(", ") || "—" : "Couldn’t load from Amazon"}
+                  </DetailRow>
+                </>
+              }
+            />
           </Section>
         )}
 
@@ -294,79 +254,6 @@ function Section({
 // A store's name and account id, once when they're the same: "Fencing Club, fencing-club.myshopify.com".
 function account(name: string | null, externalId: string) {
   return name && name !== externalId ? `${name}, ${externalId}` : externalId
-}
-
-function IntegrationHeader({ provider, children }: { provider: Provider; children?: React.ReactNode }) {
-  return (
-    <CardHeader>
-      <CardTitle>{providers[provider].name}</CardTitle>
-      <CardDescription>{providers[provider].description}</CardDescription>
-      {children && <CardAction>{children}</CardAction>}
-    </CardHeader>
-  )
-}
-
-// A connected store: its account and status, the settings the owner can change, and Disconnect.
-function ConnectedCard({
-  provider,
-  account: name,
-  externalId,
-  owner,
-  children
-}: {
-  provider: Provider
-  account: string
-  externalId: string
-  owner: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{providers[provider].name}</CardTitle>
-        <CardDescription className="break-words">{name}</CardDescription>
-        <CardAction>
-          <Badge variant="outline">
-            <CircleCheck data-icon="inline-start" className="text-success" />
-            Connected
-          </Badge>
-        </CardAction>
-      </CardHeader>
-      {owner && (
-        <>
-          <CardContent className="flex flex-col divide-y">{children}</CardContent>
-          <CardFooter className="justify-end">
-            <DisconnectButton provider={provider} account={externalId} />
-          </CardFooter>
-        </>
-      )}
-    </Card>
-  )
-}
-
-// A store that isn't connected: the owner's connect card, or for everyone else, that it isn't connected.
-function NotConnectedCard({
-  provider,
-  owner,
-  children
-}: {
-  provider: Provider
-  owner: boolean
-  children: React.ReactNode
-}) {
-  if (owner) {
-    return children
-  }
-  return (
-    <Card>
-      <IntegrationHeader provider={provider}>
-        <Badge variant="outline">
-          <CircleDashed data-icon="inline-start" />
-          Not connected
-        </Badge>
-      </IntegrationHeader>
-    </Card>
-  )
 }
 
 // Settings only the owner changes, as the rest of the team sees them.

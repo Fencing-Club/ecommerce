@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,7 @@ import { FormInput } from "./form-controls"
 // While Copacker's Amazon app is a draft, Amazon's consent page won't offer it, so the seller authorizes the app in
 // the Solution Provider Portal and pastes the refresh token here. Copacker checks it with Amazon and stores it
 // encrypted.
-export function AmazonSelfAuthorize() {
+export function AmazonSelfAuthorize({ className, children }: { className?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const { form, submit } = useActionForm({
     schema: selfAuthorizationSchema,
@@ -28,7 +27,7 @@ export function AmazonSelfAuthorize() {
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>Connect Amazon</DialogTrigger>
+      <DialogTrigger className={className}>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Connect Amazon</DialogTitle>

@@ -1,14 +1,16 @@
 "use client"
 
-import { CircleAlert, CircleCheck, CircleDashed, RefreshCw } from "lucide-react"
+import { CircleAlert } from "lucide-react"
 import Link from "next/link"
 import { EmptyState } from "@/components/common"
 import { InventoryProducts, ProductsSkeleton } from "@/components/inventory-products"
 import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { api, errorMessage } from "@/lib/api"
-import { cn } from "@/lib/utils"
+import { DetailRow } from "./inventory-locations"
+import { SyncedAt, SyncMenu } from "./sync-menu"
 
 type Selection = { source: "shopify" | "awd" | "fba"; marketplaceId?: string }
 type StockStatus = {
@@ -54,26 +56,8 @@ function failure(errorCode: string | null) {
   }
 }
 
-// Signs in to the source again: Shopify from here, Amazon in Settings.
-function Reconnect({ source, shop }: { source: Source; shop: string | null }) {
-  if (source.provider === "amazon") {
-    return (
-      <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
-        Reconnect
-      </Button>
-    )
-  }
-  return (
-    <form action="/api/connections/shopify">
-      <input type="hidden" name="shop" value={shop ?? ""} />
-      <Button type="submit" variant="outline" size="sm">
-        Reconnect
-      </Button>
-    </form>
-  )
-}
-
-// Polls a selection's saved sync status. Provider calls happen only through the Sync button.
+// Polls a selection's saved sync status. Syncs run on their own (webhooks, and every account again each night); Sync
+// now in Settings starts one at once.
 function useSelection(selection: Selection, connected: boolean) {
   return stockApi.useInventoryStatusQuery(selection, {
     pollingInterval: 5000,
@@ -85,26 +69,36 @@ type Status = ReturnType<typeof useSelection>
 // A status that hasn't loaded yet, including before its first request starts.
 const isPending = (status: Status) => status.isLoading || status.isUninitialized
 
-const syncedAt = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
-
-// One source in the strip: when it last synced, what went wrong if the last sync failed, and its actions.
-function SourceStatus({ source, statuses }: { source: Source; statuses: Status[] }) {
-  const [sync, mutation] = stockApi.useSyncInventoryMutation()
+// A source's sync from its parts' statuses: whether one is running, what went wrong if the last one failed, and when
+// the source last synced, which is when its oldest part did.
+function sourceState(statuses: Status[]) {
   const data = statuses.map((status) => status.currentData)
-  const loading = statuses.some(isPending)
-  const unavailable = statuses.some((status) => status.isError)
-  const active =
-    mutation.isLoading || data.some((item) => item?.refresh.status === "queued" || item?.refresh.status === "running")
+  const active = data.some((item) => item?.refresh.status === "queued" || item?.refresh.status === "running")
   const failed = data.find((item) => item?.refresh.status === "failed")
-  const problem = failed && !active ? failure(failed.refresh.errorCode) : null
-  // The source is as fresh as its oldest part; it counts as synced once every part has been.
   const observed = data.map((item) => item?.observedAt ?? null)
-  const observedAt = observed.every((value) => value !== null) ? observed.toSorted()[0]! : null
-  const externalAccountId = data.find((item) => item?.externalAccountId)?.externalAccountId ?? null
+  return {
+    active,
+    problem: failed && !active ? failure(failed.refresh.errorCode) : null,
+    observedAt: observed.every((value) => value !== null) ? observed.toSorted()[0]! : null,
+    externalAccountId: data.find((item) => item?.externalAccountId)?.externalAccountId ?? null,
+    loading: statuses.some(isPending),
+    unavailable: statuses.some((status) => status.isError)
+  }
+}
+
+// A store's inventory sync in its Settings: when it last synced or what went wrong, with Sync now and Reconnect.
+export function InventorySyncRow({ provider }: { provider: Source["provider"] }) {
+  const source = sources.find((item) => item.provider === provider)!
+  const selections: readonly Selection[] = source.selections
+  const first = useSelection(selections[0]!, true)
+  const second = useSelection(selections[1] ?? selections[0]!, selections.length > 1)
+  const statuses = selections.length > 1 ? [first, second] : [first]
+  const [sync, mutation] = stockApi.useSyncInventoryMutation()
+  const state = sourceState(statuses)
+  const syncing = mutation.isLoading || state.active
   async function startSync() {
     try {
-      await Promise.all(source.selections.map((selection) => sync(selection).unwrap()))
+      await Promise.all(selections.map((selection) => sync(selection).unwrap()))
       for (const status of statuses) {
         void status.refetch()
       }
@@ -112,64 +106,41 @@ function SourceStatus({ source, statuses }: { source: Source; statuses: Status[]
       // RTK Query retains the failure for the inline message.
     }
   }
-
-  let icon = <CircleDashed className="text-muted-foreground" />
-  if (problem || mutation.isError) {
-    icon = <CircleAlert className="text-destructive" />
-  } else if (observedAt) {
-    icon = <CircleCheck className="text-success" />
+  let text: React.ReactNode = "Not synced yet"
+  if (syncing) {
+    text = "Syncing…"
+  } else if (mutation.isError) {
+    text = <span className="text-destructive">{errorMessage(mutation.error, "Couldn’t start the sync")}</span>
+  } else if (state.problem) {
+    text = <span className="text-destructive">{state.problem.message}</span>
+  } else if (state.loading) {
+    text = "Loading…"
+  } else if (state.unavailable) {
+    text = "Status unavailable"
+  } else if (state.observedAt) {
+    text = <SyncedAt at={state.observedAt} />
   }
-  let state: React.ReactNode = "Not synced yet"
-  if (loading) {
-    state = "Loading…"
-  } else if (unavailable) {
-    state = "Status unavailable"
-  } else if (observedAt) {
-    state = (
-      <>
-        Synced{" "}
-        <time
-          dateTime={observedAt}
-          title={new Date(observedAt).toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" })}
-        >
-          {syncedAt(observedAt)}
-        </time>
-      </>
-    )
+  let reconnect: string | null = null
+  if (state.problem?.reconnect) {
+    reconnect =
+      provider === "shopify"
+        ? `/api/connections/shopify?shop=${encodeURIComponent(state.externalAccountId ?? "")}`
+        : "/api/connections/amazon"
   }
-
   return (
-    <li className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
-      <span className="flex shrink-0 [&_svg]:size-4" aria-hidden="true">
-        {icon}
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-sm font-medium">{source.title}</span>
-        <span className="text-xs text-muted-foreground" aria-live="polite">
-          {state}
-          {active && <span className="sr-only">, syncing</span>}
-        </span>
-        {problem && <span className="text-xs text-destructive">{problem.message}</span>}
-        {mutation.isError && (
-          <span role="alert" className="text-xs text-destructive">
-            {errorMessage(mutation.error, "Couldn't start the sync. Try again.")}
-          </span>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {problem?.reconnect && <Reconnect source={source} shop={externalAccountId} />}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={startSync}
-          disabled={active || loading || !externalAccountId}
-          aria-label={`Sync ${source.title}`}
-        >
-          <RefreshCw data-icon="inline-start" className={cn(active && "animate-spin")} />
-          {active ? "Syncing…" : "Sync"}
-        </Button>
-      </div>
-    </li>
+    <DetailRow
+      title="Inventory"
+      action={
+        <SyncMenu
+          label={`${source.title} inventory`}
+          syncing={syncing || state.loading || !state.externalAccountId}
+          onSync={() => void startSync()}
+          reconnect={reconnect}
+        />
+      }
+    >
+      <span aria-live="polite">{text}</span>
+    </DetailRow>
   )
 }
 
@@ -182,7 +153,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   if (providers.length === 0) {
     return (
       <Card>
-        <EmptyState title="No store connected" description="Connect Shopify or Amazon to see your products.">
+        <EmptyState title="No store connected" description="Connect Shopify or Amazon to see your products">
           <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
             Open Settings
           </Button>
@@ -200,14 +171,9 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   const anySynced = all.some((status) => status.currentData?.observedAt)
   return (
     <div className="flex flex-col gap-4">
-      <ul
-        aria-label="Sources"
-        className="flex flex-col divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 sm:flex-row sm:divide-x sm:divide-y-0"
-      >
-        {connected.map(({ source, statuses }) => (
-          <SourceStatus key={source.title} source={source} statuses={statuses} />
-        ))}
-      </ul>
+      {connected.map(({ source, statuses }) => (
+        <SyncProblem key={source.title} source={source} statuses={statuses} />
+      ))}
       {anySynced && (
         <>
           <ProductsWithoutSupplier syncKey={syncKey} />
@@ -218,9 +184,29 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
       {!anySynced && all.some(isPending) && <ProductsSkeleton />}
       {!anySynced && !all.some(isPending) && (
         <Card>
-          <EmptyState title="No products yet" description="Sync a source to load your products." />
+          <EmptyState title="No products yet" description="They appear after the first sync" />
         </Card>
       )}
     </div>
+  )
+}
+
+// A store whose last inventory sync failed, so its stock may be out of date. Settings has Reconnect and Sync now.
+function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] }) {
+  const { problem } = sourceState(statuses)
+  if (!problem) {
+    return null
+  }
+  return (
+    <Alert variant="destructive">
+      <CircleAlert />
+      <AlertTitle>{source.title} inventory didn’t sync</AlertTitle>
+      <AlertDescription>{problem.message}</AlertDescription>
+      <AlertAction>
+        <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
+          Open Settings
+        </Button>
+      </AlertAction>
+    </Alert>
   )
 }
