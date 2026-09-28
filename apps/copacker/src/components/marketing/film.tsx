@@ -32,7 +32,7 @@ export function Film({ className }: { className?: string }) {
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           className="aspect-video w-full bg-black"
-          src="https://media.copacker.ai/film.mp4"
+          src="https://media.copacker.ai/film-924d480a.mp4"
           poster="/marketing/film.jpg"
           controls
           autoPlay
