@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto"
 import { waitlistWelcomeEmail } from "@repo/copacker-emails"
+import { type Locale, localeNames } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
 import { sendEmail } from "./email"
 import { appUrl, hash, sign, verifySignature } from "./security"
@@ -127,5 +129,21 @@ export async function sendWelcome(email: string, locale: string) {
         tagline: t("emails.tagline")
       }
     }))
+  })
+}
+
+// Tells Copacker's contact address that someone joined, and in which language. Replying goes straight to them. Without
+// CONTACT_EMAIL, nobody is told.
+export async function sendSignupNotice(email: string, locale: Locale) {
+  const to = process.env.CONTACT_EMAIL
+  if (!to) {
+    return
+  }
+  await sendEmail({
+    to,
+    replyTo: email,
+    subject: `Waitlist signup: ${email}`,
+    text: [`${email} joined the waitlist.`, `Language: ${localeNames[locale]}`].join("\n"),
+    key: randomUUID()
   })
 }

@@ -80,7 +80,8 @@ parts live in `apps/copacker/src/components/marketing/`:
   emails to the list can be sent in it; Resend refuses contacts with a property it doesn't have, so the property
   (a string, falling back to `en`) must exist in the Resend account. It carries a signed unsubscribe link to `/unsubscribe`, which asks before unsubscribing since
   mail scanners open links, and a one-click `List-Unsubscribe` header that posts to `/api/mailing-list/unsubscribe`.
-  The signature is keyed on `TOKEN_ENCRYPTION_KEY`, so the links need no storage.
+  The signature is keyed on `TOKEN_ENCRYPTION_KEY`, so the links need no storage. The same signups, new or back,
+  also send `CONTACT_EMAIL` a plain-text notice with the address and language; replying reaches the person who joined.
 - The privacy policy and terms are written from what the code does: the stores Copacker reads (and that it keeps no
   customer's name, email address, phone number or address), the providers that run it, its cookies and its AI import.
   Amazon's, Amazon Ads' and eBay's developer programs read the policy's marketplace data section. When a data flow

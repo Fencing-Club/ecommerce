@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { negotiateLocale } from "@/i18n/locales"
 import { errorResponse } from "@/server/errors"
-import { joinMailingList, sendWelcome } from "@/server/mailing-list"
+import { joinMailingList, sendSignupNotice, sendWelcome } from "@/server/mailing-list"
 import { clientAddress, rateLimit } from "@/server/rate-limit"
 
 const signup = z.object({
@@ -14,7 +14,8 @@ const signup = z.object({
 const limited = rateLimit({ period: 10 * 60 * 1000, allowed: 5 })
 
 // The marketing page's waitlist signup. Anyone signed out can use it. The list keeps the language the page was shown
-// in, and someone new to it gets a welcome email in that language; if that email fails, they're still on the list.
+// in. Someone new to it gets a welcome email in that language, and CONTACT_EMAIL hears they joined; if either email
+// fails, they're still on the list.
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null)
   if (typeof body === "object" && body && "website" in body && body.website) {
@@ -35,9 +36,13 @@ export async function POST(request: Request) {
     return errorResponse("signupFailed", 502)
   }
   if (joined) {
-    await sendWelcome(parsed.data.email, locale).catch((error: unknown) => {
-      console.error(JSON.stringify({ event: "waitlist_welcome_failed", error: String(error) }))
-    })
+    const logFailure = (event: string) => (error: unknown) => {
+      console.error(JSON.stringify({ event, error: String(error) }))
+    }
+    await Promise.all([
+      sendWelcome(parsed.data.email, locale).catch(logFailure("waitlist_welcome_failed")),
+      sendSignupNotice(parsed.data.email, locale).catch(logFailure("waitlist_signup_notice_failed"))
+    ])
   }
   return Response.json({ ok: true })
 }

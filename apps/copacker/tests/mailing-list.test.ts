@@ -22,6 +22,9 @@ const calls = (key: string) =>
   fetchMock.mock.calls.filter(
     ([input, init]) => `${init?.method ?? "GET"} ${decodeURIComponent(new URL(String(input)).pathname)}` === key
   )
+// The requests to send an email to the address.
+const sentTo = (address: string) =>
+  calls("POST /emails").filter(([, init]) => JSON.parse(String(init?.body)).to.includes(address))
 const missing = () => Response.json({ name: "not_found", message: "Contact not found" }, { status: 404 })
 
 beforeEach(() => {
@@ -137,7 +140,7 @@ describe("POST /api/mailing-list", () => {
     const response = await signup({ email: " Ana@Example.com " }, "203.0.113.2", "de-DE,de;q=0.9")
     expect(response.status).toBe(200)
     expect(JSON.parse(String(calls("POST /contacts")[0]?.[1]?.body)).properties).toEqual({ locale: "de" })
-    const [sent] = calls("POST /emails")
+    const [sent] = sentTo("ana@example.com")
     const email = JSON.parse(String(sent?.[1]?.body))
     expect(email.to).toEqual(["ana@example.com"])
     expect(email.subject).toBe("Sie stehen auf der Copacker-Warteliste")
@@ -148,7 +151,35 @@ describe("POST /api/mailing-list", () => {
     expect(new Headers(sent?.[1]?.headers).get("idempotency-key")).toMatch(/^waitlist-welcome:/)
   })
 
-  it("doesn't welcome an address that was already on the list", async () => {
+  it("tells the contact address who joined, in which language, with replies going to them", async () => {
+    resend({
+      "GET /contacts/ana@example.com": missing,
+      "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 }),
+      "POST /emails": () => Response.json({ id: "email-1" })
+    })
+    expect((await signup({ email: "ana@example.com" }, "203.0.113.9", "es-MX")).status).toBe(200)
+    const [sent] = sentTo("owner@copacker.ai")
+    expect(JSON.parse(String(sent?.[1]?.body))).toMatchObject({
+      subject: "Waitlist signup: ana@example.com",
+      text: "ana@example.com joined the waitlist.\nLanguage: Español (México)",
+      reply_to: "ana@example.com"
+    })
+  })
+
+  it("tells nobody when there's no contact address", async () => {
+    vi.stubEnv("CONTACT_EMAIL", "")
+    resend({
+      "GET /contacts/ana@example.com": missing,
+      "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 }),
+      "POST /emails": () => Response.json({ id: "email-1" })
+    })
+    expect((await signup({ email: "ana@example.com" }, "203.0.113.10")).status).toBe(200)
+    // Only the welcome goes out.
+    expect(calls("POST /emails")).toHaveLength(1)
+    expect(sentTo("ana@example.com")).toHaveLength(1)
+  })
+
+  it("doesn't welcome or announce an address that was already on the list", async () => {
     resend({
       "GET /contacts/ana@example.com": () => Response.json({ id: "contact-1", unsubscribed: false }),
       "POST /contacts/ana@example.com/segments/segment-1": () => Response.json({ id: "segment-1" })
@@ -157,14 +188,18 @@ describe("POST /api/mailing-list", () => {
     expect(calls("POST /emails")).toHaveLength(0)
   })
 
-  it("keeps the signup when the welcome email can't be sent", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined)
+  it("keeps the signup when its emails can't be sent, and logs both", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined)
     resend({
       "GET /contacts/ana@example.com": missing,
       "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 }),
       "POST /emails": () => Response.json({ message: "Down" }, { status: 500 })
     })
     expect((await signup({ email: "ana@example.com" }, "203.0.113.8")).status).toBe(200)
+    expect(logged.mock.calls.map(([line]) => JSON.parse(String(line)).event).toSorted()).toEqual([
+      "waitlist_signup_notice_failed",
+      "waitlist_welcome_failed"
+    ])
   })
 
   it("turns away an address that isn't one", async () => {

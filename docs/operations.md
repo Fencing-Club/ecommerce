@@ -28,8 +28,8 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
    `APP_URL` (`public/email/mark.png`). The landing page's mailing list adds contacts, which needs a full access key in
    `EMAIL_MAILING_LIST_API_KEY` (it falls back to `EMAIL_API_KEY`); `MAILING_LIST_SEGMENT_ID` puts signups in a segment.
-   The contact page emails `CONTACT_EMAIL`. Resend's onboarding sender only reaches the account owner, so verify an owned
-   domain before inviting suppliers.
+   The contact page's messages and a notice of each new waitlist signup go to `CONTACT_EMAIL`. Resend's onboarding
+   sender only reaches the account owner, so verify an owned domain before inviting suppliers.
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, as the policy promises.
