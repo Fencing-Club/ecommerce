@@ -4,7 +4,7 @@ import { z } from "zod"
 // the same things. A topic is sent in English, for whoever reads the message at Copacker; the form shows each in the
 // visitor's language (marketing.contact.form.topics).
 export const contactTopics = [
-  "Getting started",
+  "Early access",
   "A walkthrough",
   "Support",
   "Partnerships",

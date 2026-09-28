@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "¿Cuánto cuesta Copacker?",
-        "answer": "Por ahora, nada. No hay planes de pago y para registrarte no te pedimos tarjeta."
+        "answer": "Nada durante el acceso anticipado. No hay planes de pago, y unirte a la lista de espera no pide tarjeta."
       },
       "stores": {
         "question": "¿Con qué tiendas funciona?",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "¿De qué se trata?",
       "topics": {
-        "gettingStarted": "Primeros pasos",
+        "earlyAccess": "Acceso anticipado",
         "walkthrough": "Una demostración",
         "support": "Soporte",
         "partnerships": "Alianzas",

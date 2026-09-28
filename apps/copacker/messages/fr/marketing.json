@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "Combien coûte Copacker ?",
-        "answer": "Rien pour l’instant. Il n’y a aucune offre payante, et l’inscription ne demande pas de carte bancaire."
+        "answer": "Rien pendant l’accès anticipé. Il n’y a pas d’offre payante, et rejoindre la liste d’attente ne demande aucune carte."
       },
       "stores": {
         "question": "Avec quelles boutiques fonctionne-t-il ?",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "De quoi s’agit-il ?",
       "topics": {
-        "gettingStarted": "Premiers pas",
+        "earlyAccess": "Accès anticipé",
         "walkthrough": "Une démo",
         "support": "Support",
         "partnerships": "Partenariats",

@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "Was kostet Copacker?",
-        "answer": "Derzeit nichts. Es gibt keine kostenpflichtigen Tarife, und für die Registrierung brauchen Sie keine Karte."
+        "answer": "Während des frühen Zugangs nichts. Es gibt keine kostenpflichtigen Tarife, und für die Warteliste brauchen Sie keine Karte."
       },
       "stores": {
         "question": "Mit welchen Shops funktioniert es?",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "Worum geht es?",
       "topics": {
-        "gettingStarted": "Erste Schritte",
+        "earlyAccess": "Früher Zugang",
         "walkthrough": "Eine Demo",
         "support": "Support",
         "partnerships": "Partnerschaften",

@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "Quanto costa Copacker?",
-        "answer": "Per ora niente. Non ci sono piani a pagamento e per iscriverti non serve una carta."
+        "answer": "Niente durante l’accesso in anteprima. Non ci sono piani a pagamento, e per entrare in lista d’attesa non serve una carta."
       },
       "stores": {
         "question": "Con quali negozi funziona?",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "Di cosa si tratta?",
       "topics": {
-        "gettingStarted": "Primi passi",
+        "earlyAccess": "Accesso in anteprima",
         "walkthrough": "Una demo",
         "support": "Assistenza",
         "partnerships": "Partnership",

@@ -17,16 +17,16 @@ import { cn } from "@/lib/utils"
 
 // Each topic's icon, and its key under marketing.contact.form.topics.
 const topics: Record<ContactTopic, { icon: typeof Rocket; key: TopicKey }> = {
-  "Getting started": { icon: Rocket, key: "gettingStarted" },
+  "Early access": { icon: Rocket, key: "earlyAccess" },
   "A walkthrough": { icon: Presentation, key: "walkthrough" },
   Support: { icon: LifeBuoy, key: "support" },
   Partnerships: { icon: Handshake, key: "partnerships" },
   Press: { icon: Newspaper, key: "press" },
   "Something else": { icon: MessageCircle, key: "other" }
 }
-type TopicKey = "gettingStarted" | "walkthrough" | "support" | "partnerships" | "press" | "other"
+type TopicKey = "earlyAccess" | "walkthrough" | "support" | "partnerships" | "press" | "other"
 
-const blank = { topic: "Getting started", name: "", email: "", company: "", message: "" } as const
+const blank = { topic: "Early access", name: "", email: "", company: "", message: "" } as const
 
 // A kraft box, taped and labeled for Copacker, that drops in and settles, with a check stamped on its corner.
 function Parcel() {

@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "What does Copacker cost?",
-        "answer": "Nothing right now. There are no paid plans, and signing up doesn’t ask for a card."
+        "answer": "Nothing during early access. There are no paid plans, and joining the waitlist doesn’t ask for a card."
       },
       "stores": {
         "question": "Which stores does it work with?",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "What’s it about?",
       "topics": {
-        "gettingStarted": "Getting started",
+        "earlyAccess": "Early access",
         "walkthrough": "A walkthrough",
         "support": "Support",
         "partnerships": "Partnerships",

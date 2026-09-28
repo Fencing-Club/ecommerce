@@ -57,7 +57,7 @@
     "questions": {
       "cost": {
         "question": "Copacker 怎么收费？",
-        "answer": "目前完全免费。没有付费套餐，注册也不需要绑定银行卡。"
+        "answer": "抢先体验期间免费。目前没有付费方案，加入候补名单也无需绑卡。"
       },
       "stores": {
         "question": "支持哪些店铺？",
@@ -303,7 +303,7 @@
     "form": {
       "topic": "关于什么？",
       "topics": {
-        "gettingStarted": "入门",
+        "earlyAccess": "抢先体验",
         "walkthrough": "产品演示",
         "support": "技术支持",
         "partnerships": "合作",
