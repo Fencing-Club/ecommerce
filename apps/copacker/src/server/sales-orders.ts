@@ -680,8 +680,11 @@ export function summarizeSalesOrder(
         items.push({ sku: line.sku, variantId: line.variant?.id ?? null, quantity: line.currentQuantity })
       }
     }
+    // An order Shopify cancelled is Cancelled whatever shipped; otherwise its shipments decide.
     let status = "Unfulfilled"
-    if (data.fulfillments.length) {
+    if (data.cancelledAt) {
+      status = "Cancelled"
+    } else if (data.fulfillments.length) {
       const shipped = new Set(
         data.fulfillments.flatMap((fulfillment) => fulfillment.lines.map((line) => line.lineItem.id))
       )

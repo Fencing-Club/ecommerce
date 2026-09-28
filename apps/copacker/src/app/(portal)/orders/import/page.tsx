@@ -9,8 +9,8 @@ export default async function ImportOrder() {
   requireBuyer(await session())
   return (
     <>
-      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="Import document" />
-      <PageHeader title="Import document" />
+      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="Import" />
+      <PageHeader title="Import purchase order" />
       <ImportIntake />
     </>
   )

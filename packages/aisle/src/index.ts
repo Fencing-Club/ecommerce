@@ -30,7 +30,7 @@ export const addressSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "Enter a two-letter country code, such as CN"),
+    .regex(/^[A-Z]{2}$/, "Choose a country"),
   phoneNumber: z
     .string()
     .trim()
@@ -179,7 +179,11 @@ export const orderInputSchema = z
       order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0) +
       (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
     if (!Number.isSafeInteger(total) || total < 0) {
-      ctx.addIssue({ code: "custom", message: "PO total must be a nonnegative safe integer", path: ["adjustments"] })
+      ctx.addIssue({
+        code: "custom",
+        message: "Purchase order total must be a nonnegative safe integer",
+        path: ["adjustments"]
+      })
     }
     if (order.via && (order.destination === "forwarder" || order.destination === "warehouse")) {
       ctx.addIssue({ code: "custom", message: "Ship to the forwarder directly instead", path: ["via"] })
@@ -332,7 +336,7 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
     for (const content of carton.items) {
       const item = order.items.find((i) => i.id === content.itemId)
       if (!item) {
-        add("Carton contains a product that is not on this PO")
+        add("Carton contains a product that is not on this purchase order")
         continue
       }
       totals[item.id] = (totals[item.id] ?? 0) + content.pieces
@@ -357,13 +361,13 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   }
   for (const item of order.items) {
     if ((totals[item.id] ?? 0) + (reserved[item.id] ?? 0) > item.pieces) {
-      issues.push({ message: `${item.buyerSku}: cartons exceed the remaining PO quantity` })
+      issues.push({ message: `${item.buyerSku}: cartons exceed the quantity remaining on the purchase order` })
     }
   }
   const changedIds = new Set<string>()
   for (const change of packing.changes) {
     if (!order.items.some((i) => i.id === change.itemId) || changedIds.has(change.itemId)) {
-      issues.push({ message: "Invoice changes must reference unique PO items" })
+      issues.push({ message: "Invoice changes must reference unique items on the purchase order" })
     }
     changedIds.add(change.itemId)
   }

@@ -55,8 +55,8 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
         <AlertDialogHeader>
           <AlertDialogTitle>Close {reference}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Nothing more will ship on this PO, and its remaining units leave On order. Shipments the supplier hasn’t
-            packed are cancelled.
+            Nothing more will ship on this purchase order, and its remaining units leave On order. Shipments the
+            supplier hasn’t packed are cancelled.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
@@ -64,7 +64,7 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <AlertDialogAction disabled={pending} aria-busy={pending} onClick={close}>
             {pending && <Spinner data-icon="inline-start" />}
-            Close PO
+            Close purchase order
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -143,10 +143,10 @@ export function OrderMenu({
         >
           <Ellipsis />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-56">
           {draft && <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>Edit</DropdownMenuItem>}
-          <DropdownMenuItem render={<a href={`/api/orders/${id}/po`} download aria-label="Download PO" />}>
-            Download PO
+          <DropdownMenuItem render={<a href={`/api/orders/${id}/po`} download aria-label="Download purchase order" />}>
+            Download purchase order
           </DropdownMenuItem>
           {labels && (
             <DropdownMenuItem render={<a href={`/api/orders/${id}/labels`} download aria-label="Download labels" />}>
@@ -154,7 +154,7 @@ export function OrderMenu({
             </DropdownMenuItem>
           )}
           {(closable || draft) && <DropdownMenuSeparator />}
-          {closable && <DropdownMenuItem onClick={() => setClosing(true)}>Close PO</DropdownMenuItem>}
+          {closable && <DropdownMenuItem onClick={() => setClosing(true)}>Close purchase order</DropdownMenuItem>}
           {draft && (
             <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
               Delete draft
@@ -194,10 +194,7 @@ export function LineMenu({
         <Tooltip>
           <TooltipTrigger
             render={
-              <span
-                className="inline-flex p-1.5 text-amber-600"
-                aria-label={`No label for ${name}: ${label.problem}`}
-              />
+              <span className="inline-flex p-1.5 text-warning" aria-label={`No label for ${name}: ${label.problem}`} />
             }
           >
             <AlertTriangle className="size-4" />

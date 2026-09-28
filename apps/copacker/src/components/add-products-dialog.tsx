@@ -194,7 +194,7 @@ export function AddProductsDialog({
                         )}
                         <span className="font-medium">{product.title}</span>
                         {single && added.has(product.variants[0]!.variantId) && (
-                          <span className="text-xs text-muted-foreground">Already on the PO</span>
+                          <span className="text-xs text-muted-foreground">Already on the purchase order</span>
                         )}
                       </label>
                     </td>
@@ -216,7 +216,7 @@ export function AddProductsDialog({
                                 />
                                 <span>
                                   {variant.title}
-                                  {already && <span className="block text-xs">Already on the PO</span>}
+                                  {already && <span className="block text-xs">Already on the purchase order</span>}
                                 </span>
                               </label>
                             </td>
@@ -255,8 +255,8 @@ export function AddProductsDialog({
 function Stock({ variant, at }: { variant: Variant; at: number | null }) {
   return (
     <>
-      <td className="px-4 py-1.5 text-right tabular-nums">{at ?? "–"}</td>
-      <td className="px-4 py-1.5 text-right tabular-nums">{variant.available ?? "–"}</td>
+      <td className="px-4 py-1.5 text-right tabular-nums">{at ?? "—"}</td>
+      <td className="px-4 py-1.5 text-right tabular-nums">{variant.available ?? "—"}</td>
     </>
   )
 }

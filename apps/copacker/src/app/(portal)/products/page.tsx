@@ -15,7 +15,7 @@ import { productList } from "@/server/supplier-products"
 
 export const metadata: Metadata = { title: "Products" }
 
-export default async function ProductsPage() {
+export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const s = await session()
   if (s.org.kind === "supplier") {
     return (
@@ -38,10 +38,13 @@ export default async function ProductsPage() {
     .select({ provider: connections.provider })
     .from(connections)
     .where(eq(connections.orgId, s.org.id))
+  // A search to open the list with, such as a product chosen in the header's search.
+  const { q } = await searchParams
+  const search = typeof q === "string" ? q.trim().slice(0, 200) : ""
   return (
     <>
       <PageHeader title="Products" />
-      <InventorySync providers={linked.map((row) => row.provider)} />
+      <InventorySync providers={linked.map((row) => row.provider)} search={search} />
     </>
   )
 }

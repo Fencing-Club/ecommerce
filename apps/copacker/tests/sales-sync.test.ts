@@ -1,6 +1,7 @@
 import { ProviderError } from "@repo/aisle/amazon"
+import type { ShopifySale } from "@repo/aisle/sales"
 import { describe, expect, it, vi } from "vitest"
-import { orderSales, salesDataVersion, syncChunks, throttled } from "../src/server/sales-orders"
+import { orderSales, salesDataVersion, summarizeSalesOrder, syncChunks, throttled } from "../src/server/sales-orders"
 import { ledgerChunks } from "../src/server/stock-days"
 
 const day = 86400000
@@ -88,5 +89,30 @@ describe("order and stock history syncs", () => {
     }
     expect(orderSales(amazon)).toEqual({ minor: 2700, currency: "USD" })
     expect(orderSales({ ...amazon, orderItems: [item()] })).toBeNull()
+  })
+
+  it("lists an order Shopify cancelled as Cancelled, whatever shipped", () => {
+    const order: ShopifySale = {
+      id: "gid://shopify/Order/1",
+      name: "#1001",
+      createdAt: "2026-09-24T10:00:00Z",
+      cancelledAt: null,
+      test: false,
+      sourceName: "web",
+      lines: [{ id: "l1", quantity: 1, currentQuantity: 1, sku: "A", variant: { id: "va" } }],
+      fulfillments: []
+    }
+    const shipped = {
+      id: "f1",
+      status: "SUCCESS",
+      location: null,
+      lines: [{ id: "fl1", quantity: 1, lineItem: { id: "l1" } }]
+    }
+    const status = (data: ShopifySale) =>
+      summarizeSalesOrder("shopify", new Date(data.createdAt), data, "test.myshopify.com").status
+    expect(status(order)).toBe("Unfulfilled")
+    expect(status({ ...order, fulfillments: [shipped] })).toBe("Fulfilled")
+    expect(status({ ...order, cancelledAt: "2026-09-25T08:00:00Z" })).toBe("Cancelled")
+    expect(status({ ...order, cancelledAt: "2026-09-25T08:00:00Z", fulfillments: [shipped] })).toBe("Cancelled")
   })
 })

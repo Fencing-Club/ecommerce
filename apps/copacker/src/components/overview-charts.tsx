@@ -4,23 +4,13 @@ import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
 import Link from "next/link"
 import { useState } from "react"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  type TooltipContentProps,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts"
-import { compactMoney, compactNumber, formatNumber, monthName, shortDate } from "@/lib/format"
+import { Area, AreaChart, CartesianGrid, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
+import { isPresent } from "ts-extras"
+import { formatNumber, monthName, shortDate, wholeMoney } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { DailySales, SourceDay } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
-import * as styles from "./overview.css"
 import { vars } from "@/styles/theme.css"
-import { srOnly } from "@/styles/utilities.css"
 
 // Each source keeps its color everywhere: Amazon first, then Shopify.
 export const sourceSeries: Record<SalesSource, { label: string; color: string }> = {
@@ -29,46 +19,13 @@ export const sourceSeries: Record<SalesSource, { label: string; color: string }>
 }
 const sourceOrder: SalesSource[] = ["amazon", "shopify"]
 
+// Recessive axes: no rules or tick marks, small muted labels.
 const axis = {
   axisLine: false,
   tickLine: false,
-  tick: { fill: vars.color.mutedForeground, fontSize: 12 },
+  tick: { fill: vars.color.mutedForeground, fontSize: 11 },
   tickMargin: 8
 } as const
-const grid = { vertical: false, stroke: vars.color.border } as const
-const cursor = { stroke: vars.color.border, strokeWidth: 1 }
-
-type Entry = { name?: unknown; value?: unknown; color?: string; dataKey?: unknown }
-
-// Recharts fills in `active` and `payload` when it renders the tooltip.
-function ChartTooltip({
-  active,
-  payload,
-  titleOf,
-  format
-}: Partial<Pick<TooltipContentProps, "active">> & {
-  payload?: readonly (Entry & { payload?: unknown })[]
-  titleOf: (row: never) => string
-  format: (value: number) => string
-}) {
-  if (!active || !payload?.length) {
-    return null
-  }
-  return (
-    <div className={styles.tooltip}>
-      <span className={styles.tooltipTitle}>{titleOf(payload[0]!.payload as never)}</span>
-      {payload.map((entry) => (
-        <div key={String(entry.dataKey)} className={styles.tooltipRow}>
-          <span className={styles.swatch} style={{ backgroundColor: entry.color }} />
-          <span className={styles.tooltipName}>{String(entry.name)}</span>
-          <span className={styles.tooltipValue}>
-            {typeof entry.value === "number" ? format(entry.value) : "No data"}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // Each source's value, and its value in the compared period under "previous:<source>".
 type Point = { key: string; label: string; title: string } & Partial<
@@ -78,7 +35,45 @@ type Metric = "orders" | "units" | "sales"
 // What each measure counts, named wherever a number appears so units aren't read as orders.
 const metricNames = { orders: ["order", "orders"], units: ["unit", "units"] } as const
 
-function measure(cell: { orders: number; units: number; revenueMinor: number }, metric: Metric) {
+// Recharts fills in `active`, `activeIndex` and `payload` when it renders the tooltip.
+function ChartTooltip({
+  active,
+  activeIndex,
+  payload,
+  points,
+  format
+}: Partial<Pick<TooltipContentProps, "active" | "activeIndex" | "payload">> & {
+  points: Point[]
+  format: (value: number) => string
+}) {
+  const point = activeIndex === null || activeIndex === undefined ? undefined : points[Number(activeIndex)]
+  if (!active || !point || !payload?.length) {
+    return null
+  }
+  return (
+    <div className="flex min-w-40 flex-col gap-1.5 rounded-lg bg-popover px-2.5 py-2 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10">
+      <span className="font-medium">{point.title}</span>
+      {payload.map((entry) => (
+        <div key={String(entry.dataKey)} className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className={cn(
+              "w-3 shrink-0 border-t-2",
+              String(entry.dataKey).startsWith("previous:") && "border-dashed opacity-50"
+            )}
+            style={{ borderColor: entry.color }}
+          />
+          <span className="flex-1 text-muted-foreground">{String(entry.name)}</span>
+          <span className="font-medium tabular-nums">
+            {typeof entry.value === "number" ? format(entry.value) : "—"}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function measure(cell: SourceDay, metric: Metric) {
   if (metric === "sales") {
     return cell.revenueMinor
   }
@@ -151,7 +146,18 @@ function points(
   })
 }
 
-function Switch<T extends string>({
+// Axis labels in one short style from top to bottom: $0, $5K, $10K.
+function axisLabel(metric: Metric, currency: string | null) {
+  const format = new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+    ...(metric === "sales" && { style: "currency", currency: currency ?? "USD" })
+  })
+  return (value: number) => format.format(metric === "sales" ? value / 100 : value)
+}
+
+// A segmented control: the chosen option sits raised on a muted track.
+function Segmented<T extends string>({
   label,
   value,
   options,
@@ -164,7 +170,7 @@ function Switch<T extends string>({
 }) {
   return (
     <ToggleGroup
-      className={styles.range}
+      className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-lg bg-muted p-0.5"
       value={[value]}
       onValueChange={(next) => {
         const option = options.find((candidate) => candidate.value === next[0])
@@ -175,7 +181,11 @@ function Switch<T extends string>({
       aria-label={label}
     >
       {options.map((option) => (
-        <Toggle key={option.value} value={option.value} className={styles.rangeItem}>
+        <Toggle
+          key={option.value}
+          value={option.value}
+          className="h-7 cursor-pointer rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-xs dark:data-pressed:bg-input/40"
+        >
           {option.label}
         </Toggle>
       ))}
@@ -183,8 +193,8 @@ function Switch<T extends string>({
   )
 }
 
-// Units or sales by source over the Overview's period, with the compared period as a dotted line. Sales appear once
-// orders have prices; orders without a price are left out of them.
+// Units or sales by source over the Overview's period, with the compared period as a faint dashed line. Sales appear
+// once orders have prices; orders without a price are left out of them.
 export function SalesTrend({
   daily,
   previous,
@@ -204,99 +214,94 @@ export function SalesTrend({
   const step = stepFor(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
   const data = points(daily, previous, shown, metric, step)
-  const compared = data.some((point) =>
-    shown.some((source) => point[`previous:${source}`] !== null && point[`previous:${source}`] !== undefined)
-  )
-  const format = (value: number) => (metric === "sales" ? compactMoney(value, currency ?? "USD") : formatNumber(value))
-  // "12 orders", "1 unit", "$4.2K".
+  const compared = data.some((point) => shown.some((source) => isPresent(point[`previous:${source}`])))
+  const format = (value: number) => (metric === "sales" ? wholeMoney(value, currency ?? "USD") : formatNumber(value))
+  // "12 orders", "1 unit", "$4,203".
   const describe = (value: number) =>
     metric === "sales" ? format(value) : `${formatNumber(value)} ${metricNames[metric][value === 1 ? 0 : 1]}`
   const totals = shown.map((source) => ({
     source,
     value: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
-    known: data.some((point) => point[source] !== null)
+    known: data.some((point) => isPresent(point[source]))
   }))
 
   return (
-    <div className={styles.fill}>
-      <div className={styles.chartControls}>
-        <div className={styles.legend}>
+    <div className="flex flex-1 flex-col gap-4">
+      {/* The legend and the measure switch share one row, centered on each other. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <ul className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
           {totals.map((total) => (
-            <div key={total.source} className={styles.legendItem}>
-              <span className={styles.legendLabel}>
-                <span className={styles.swatch} style={{ backgroundColor: sourceSeries[total.source].color }} />
-                {sourceSeries[total.source].label}
-              </span>
-              <span className={styles.legendValue}>
-                {total.known ? format(total.value) : "No orders synced"}
-                {total.known && metric !== "sales" && (
-                  <span className={styles.legendUnit}> {metricNames[metric][total.value === 1 ? 0 : 1]}</span>
-                )}
-              </span>
-            </div>
+            <li key={total.source} className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 rounded-[3px]"
+                style={{ backgroundColor: sourceSeries[total.source].color }}
+              />
+              <span className="text-muted-foreground">{sourceSeries[total.source].label}</span>
+              <span className="font-medium tabular-nums">{total.known ? format(total.value) : "—"}</span>
+            </li>
           ))}
           {compared && (
-            <div className={styles.legendItem}>
-              <span className={styles.legendLabel}>
-                <span className={styles.swatchDashed} />
-                {previousLabel}
-              </span>
-            </div>
+            <li className="flex items-center gap-2 text-muted-foreground">
+              <span aria-hidden className="w-3 shrink-0 border-t-2 border-dashed border-muted-foreground/60" />
+              {previousLabel}
+            </li>
           )}
-        </div>
-        <div className={styles.switches}>
-          <Switch
-            label="Measure"
-            value={metric}
-            options={[
-              ...(currency ? [{ value: "sales" as const, label: "Sales" }] : []),
-              { value: "orders" as const, label: "Orders" },
-              { value: "units" as const, label: "Units" }
-            ]}
-            onChange={setMetric}
-          />
-        </div>
+        </ul>
+        <Segmented
+          label="Measure"
+          value={metric}
+          options={[
+            ...(currency ? [{ value: "sales" as const, label: "Sales" }] : []),
+            { value: "orders" as const, label: "Orders" },
+            { value: "units" as const, label: "Units" }
+          ]}
+          onChange={setMetric}
+        />
       </div>
-      <div className={styles.chartGrow}>
+      <div className="min-h-64 w-full flex-1">
         <AreaChart
           data={data}
           responsive
           style={{ width: "100%", height: "100%" }}
-          margin={{ top: 8, right: 4, bottom: 0, left: 0 }}
+          margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
           aria-hidden
         >
           <defs>
             {shown.map((source) => (
               <linearGradient key={source} id={`fill-${source}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={sourceSeries[source].color} stopOpacity={0.16} />
-                <stop offset="100%" stopColor={sourceSeries[source].color} stopOpacity={0.01} />
+                <stop offset="0%" stopColor={sourceSeries[source].color} stopOpacity={0.12} />
+                <stop offset="100%" stopColor={sourceSeries[source].color} stopOpacity={0} />
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid {...grid} />
-          <XAxis dataKey="label" {...axis} minTickGap={24} />
+          <CartesianGrid vertical={false} stroke={vars.color.border} />
+          <XAxis dataKey="label" {...axis} minTickGap={40} />
           <YAxis
             {...axis}
-            width={metric === "sales" ? 56 : 44}
+            width={metric === "sales" ? 44 : 36}
+            tickCount={4}
             allowDecimals={false}
-            tickFormatter={(value: number) => (metric === "sales" ? format(value) : compactNumber(value))}
+            tickFormatter={axisLabel(metric, currency)}
           />
           <Tooltip
-            cursor={cursor}
-            content={<ChartTooltip titleOf={(point: Point) => point.title} format={describe} />}
+            cursor={{ stroke: vars.color.border, strokeWidth: 1 }}
+            content={<ChartTooltip points={data} format={describe} />}
           />
+          {/* Straight segments between points, so a line never overshoots a value or loops back. */}
           {compared &&
             shown.map((source) => (
               <Area
                 key={`previous:${source}`}
-                type="monotone"
+                type="linear"
                 dataKey={`previous:${source}`}
                 name={`${sourceSeries[source].label}, ${previousLabel.toLowerCase()}`}
                 stroke={sourceSeries[source].color}
-                strokeOpacity={0.45}
-                strokeWidth={1.5}
-                strokeDasharray="4 4"
+                strokeOpacity={0.35}
+                strokeWidth={1}
+                strokeDasharray="3 3"
                 fill="none"
+                dot={false}
                 activeDot={false}
                 connectNulls={false}
                 isAnimationActive={false}
@@ -305,12 +310,14 @@ export function SalesTrend({
           {shown.map((source) => (
             <Area
               key={source}
-              type="monotone"
+              type="linear"
               dataKey={source}
               name={sourceSeries[source].label}
               stroke={sourceSeries[source].color}
               strokeWidth={2}
+              strokeLinejoin="round"
               fill={`url(#fill-${source})`}
+              dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: vars.color.card }}
               connectNulls={false}
               isAnimationActive={false}
@@ -318,7 +325,7 @@ export function SalesTrend({
           ))}
         </AreaChart>
       </div>
-      <table className={srOnly}>
+      <table className="sr-only">
         <caption>
           {{ orders: "Orders", units: "Units sold", sales: "Sales" }[metric]} by {step}
         </caption>
@@ -344,16 +351,12 @@ export function SalesTrend({
               <th scope="row">{point.label}</th>
               {shown.map((source) => {
                 const value = point[source]
-                return <td key={source}>{value === null || value === undefined ? "No data" : format(value)}</td>
+                return <td key={source}>{isPresent(value) ? format(value) : "No data"}</td>
               })}
               {compared &&
                 shown.map((source) => {
                   const value = point[`previous:${source}`]
-                  return (
-                    <td key={`previous:${source}`}>
-                      {value === null || value === undefined ? "No data" : format(value)}
-                    </td>
-                  )
+                  return <td key={`previous:${source}`}>{isPresent(value) ? format(value) : "No data"}</td>
                 })}
             </tr>
           ))}
@@ -363,30 +366,41 @@ export function SalesTrend({
   )
 }
 
-// A small trend line for a KPI tile. The tile's own text carries the numbers, so the line is decorative.
-export function Sparkline({ values }: { values: (number | null)[] }) {
-  if (values.filter((value) => value !== null).length < 2) {
+// A KPI tile's trend: a quiet line with a faint wash under it, the tile's full width. The tile's own text carries the
+// numbers, so the line is decorative. `id` names the wash, unique on the page.
+export function Sparkline({ id, values }: { id: string; values: (number | null)[] }) {
+  if (values.filter(isPresent).length < 2) {
     return null
   }
+  const color = vars.color.mutedForeground
   return (
-    <div className={styles.sparkline} aria-hidden>
-      <LineChart
+    <div className="h-10 w-full" aria-hidden>
+      <AreaChart
         data={values.map((value, index) => ({ index, value }))}
         responsive
         style={{ width: "100%", height: "100%" }}
-        margin={{ top: 4, right: 2, bottom: 4, left: 2 }}
+        margin={{ top: 2, right: 1, bottom: 0, left: 1 }}
       >
+        <defs>
+          <linearGradient id={`spark-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.14} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <YAxis hide domain={["dataMin", "dataMax"]} />
-        <Line
-          type="monotone"
+        <Area
+          type="linear"
           dataKey="value"
-          stroke={vars.color.chart1}
-          strokeWidth={2}
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          fill={`url(#spark-${id})`}
           dot={false}
+          activeDot={false}
           connectNulls
           isAnimationActive={false}
         />
-      </LineChart>
+      </AreaChart>
     </div>
   )
 }
@@ -400,29 +414,39 @@ export function CoverChart({
   buckets: { key: string; label: string; items: number; href: string | null }[]
 }) {
   const largest = Math.max(1, ...buckets.map((bucket) => bucket.items))
+  const row = "grid grid-cols-[7rem_minmax(0,1fr)_3rem] items-center gap-3 rounded-md px-2 py-1.5 text-sm"
   return (
-    <ul className={styles.coverRows}>
+    <ul className="-mx-2 flex flex-col gap-0.5">
       {buckets.map((bucket) => {
         const content = (
           <>
-            <span className={styles.coverLabel}>{bucket.label}</span>
-            <span className={styles.coverTrack} aria-hidden>
-              <span className={styles.coverFill} style={{ width: `${(bucket.items / largest) * 100}%` }} />
+            <span className="truncate">{bucket.label}</span>
+            <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
+              <span
+                className="block h-full min-w-0.5 rounded-full bg-chart-1"
+                style={{ width: `${(bucket.items / largest) * 100}%` }}
+              />
             </span>
-            <span className={styles.coverCount}>
+            <span className="text-right font-medium tabular-nums">
               {formatNumber(bucket.items)}
-              <span className={srOnly}>{bucket.items === 1 ? " item" : " items"}</span>
+              <span className="sr-only">{bucket.items === 1 ? " item" : " items"}</span>
             </span>
           </>
         )
         return (
           <li key={bucket.key}>
             {bucket.href ? (
-              <Link href={bucket.href} className={styles.coverRow}>
+              <Link
+                href={bucket.href}
+                className={cn(
+                  row,
+                  "transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+                )}
+              >
                 {content}
               </Link>
             ) : (
-              <span className={styles.coverRow}>{content}</span>
+              <span className={cn(row, "text-muted-foreground")}>{content}</span>
             )}
           </li>
         )

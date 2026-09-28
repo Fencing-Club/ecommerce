@@ -367,7 +367,7 @@ describe("standard product labels", () => {
     const line = randomUUID()
     const amazonBound = await order([item(line, variantA)], "amazon")
     expect(await lineLabels(amazonBound)).toEqual([
-      { itemId: line, state: "missing", problem: "Its FNSKU is looked up when the PO is sent" }
+      { itemId: line, state: "missing", problem: "Its FNSKU is looked up when the purchase order is sent" }
     ])
   })
 })
@@ -398,7 +398,9 @@ describe("deleting draft POs", () => {
 
     const sent = await order([item(randomUUID(), variantA)])
     await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, sent.id))
-    await expect(deleteDraftOrder(actor(buyerId, "buyer"), sent.id)).rejects.toThrow("Only draft POs can be deleted")
+    await expect(deleteDraftOrder(actor(buyerId, "buyer"), sent.id)).rejects.toThrow(
+      "Only draft purchase orders can be deleted"
+    )
     await expect(deleteDraftOrder(actor(supplierOrgId, "supplier"), sent.id)).rejects.toThrow(
       "A buyer workspace is required"
     )

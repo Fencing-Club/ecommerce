@@ -1,22 +1,18 @@
 "use client"
 
-import { Plus } from "lucide-react"
+import { Ellipsis, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
+import { Card } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Spinner } from "@/components/ui/spinner"
 import { useActionForm } from "@/hooks/useActionForm"
+import { errorMessage, useActionMutation } from "@/lib/api"
 import { ActionForm } from "./actions"
 import { FormInput, FormNumber, FormSelect } from "./form-controls"
-import * as styles from "./monthly-costs.css"
-import { sx } from "@/styles/sprinkles.css"
 
 const day = z.union([z.iso.date(), z.literal("")])
 const schema = z
@@ -32,19 +28,108 @@ const schema = z
     path: ["endsOn"]
   })
 
+// A cost as the list shows it: its amount a month, and which channel it's for and when it's paid, such as
+// "Amazon, since Jan 5, 2026".
+type MonthlyCostRow = { id: string; name: string; amount: string; details: string }
+
+// The workspace's monthly costs as one list, with Add in the card's header and Remove in each cost's menu.
+export function MonthlyCosts({
+  costs,
+  currency,
+  owner
+}: {
+  costs: MonthlyCostRow[]
+  // New costs are in the currency the Overview reports in.
+  currency: string
+  // Only the owner adds and removes costs.
+  owner: boolean
+}) {
+  let count = "No monthly costs"
+  if (costs.length) {
+    count = `${costs.length} ${costs.length === 1 ? "cost" : "costs"}`
+  }
+  return (
+    <Card className="gap-0 py-0">
+      <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
+        <p className="text-sm text-muted-foreground">{count}</p>
+        {owner && <AddMonthlyCost currency={currency} />}
+      </div>
+      {costs.length > 0 && (
+        <ul className="divide-y border-t">
+          {costs.map((cost) => (
+            <MonthlyCostItem key={cost.id} cost={cost} owner={owner} />
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
+
+function MonthlyCostItem({ cost, owner }: { cost: MonthlyCostRow; owner: boolean }) {
+  const router = useRouter()
+  const [run] = useActionMutation()
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState("")
+
+  async function remove() {
+    setPending(true)
+    setError("")
+    try {
+      await run({ action: "monthlyCost.delete", data: { id: cost.id } }).unwrap()
+      router.refresh()
+    } catch (e) {
+      setError(errorMessage(e, "Couldn't remove this cost"))
+      setPending(false)
+    }
+  }
+
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="truncate font-medium">{cost.name}</p>
+        <p className="text-xs text-muted-foreground">{cost.details}</p>
+        {error && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+      <p className="shrink-0 text-right tabular-nums">{cost.amount}</p>
+      {owner &&
+        (pending ? (
+          <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${cost.name}`}>
+            <Spinner />
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${cost.name}`} />}
+            >
+              <Ellipsis />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ))}
+    </li>
+  )
+}
+
 // The button that opens the monthly cost form in a dialog.
-export function AddMonthlyCost({ currency }: { currency: string }) {
+function AddMonthlyCost({ currency }: { currency: string }) {
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <Plus data-icon="inline-start" />
         Add cost
       </DialogTrigger>
-      <DialogContent className={styles.dialog}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add monthly cost</DialogTitle>
-          <DialogDescription>A cost you pay every month, such as an app billed to a card.</DialogDescription>
         </DialogHeader>
         <MonthlyCostForm currency={currency} onSuccess={() => setOpen(false)} />
       </DialogContent>
@@ -52,7 +137,8 @@ export function AddMonthlyCost({ currency }: { currency: string }) {
   )
 }
 
-// Adds a cost paid every month, in the currency the Overview reports in.
+// Adds a cost paid every month, in the currency the Overview reports in. Left empty, the dates cover all the sales
+// history and every month since.
 function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess: () => void }) {
   const { form, submit } = useActionForm({
     schema,
@@ -76,28 +162,22 @@ function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess:
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Add cost" dialog>
-      <div className={sx({ display: "grid", gap: 3, gridTemplateColumns: { sm: "2" } })}>
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormInput name="name" required label="Name" placeholder="Marketplace Connect" />
-        <FormNumber name="amount" required label={`Amount per month (${currency})`} scale={100} min={0} step="0.01" />
+        <FormNumber name="amount" required label={`Amount a month (${currency})`} scale={100} min={0} step="0.01" />
       </div>
       <FormSelect
         name="channel"
-        label="Paid for"
+        label="Channel"
         options={[
-          { value: "", label: "The whole business" },
+          { value: "", label: "All channels" },
           { value: "amazon", label: "Amazon" },
           { value: "shopify", label: "Shopify" }
         ]}
-        description="The Overview counts it for all channels, and for this channel when you filter by it."
       />
-      <div className={sx({ display: "grid", gap: 3, gridTemplateColumns: { sm: "2" } })}>
-        <FormInput
-          name="startsOn"
-          label="Paid since"
-          type="date"
-          description="Leave it empty if you've paid it for as long as your sales history."
-        />
-        <FormInput name="endsOn" label="Paid until" type="date" description="Leave it empty while you still pay it." />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormInput name="startsOn" label="Paid since" type="date" />
+        <FormInput name="endsOn" label="Paid until" type="date" />
       </div>
     </ActionForm>
   )

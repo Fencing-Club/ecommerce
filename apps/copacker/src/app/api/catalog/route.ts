@@ -58,7 +58,8 @@ export async function GET(request: Request) {
         ...item,
         amazonAsin: "",
         fnsku: "",
-        amazonError: "Amazon product lookup is unavailable. Check the connection and retry before creating the PO."
+        amazonError:
+          "Amazon product lookup is unavailable. Check the connection and retry before creating the purchase order."
       }))
     )
   }

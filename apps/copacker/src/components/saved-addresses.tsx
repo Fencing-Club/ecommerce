@@ -1,36 +1,28 @@
 "use client"
 
 import type { Address } from "@repo/aisle"
-import { MapPin, Pencil, Plus, Trash2, Truck, Warehouse } from "lucide-react"
+import { Ellipsis, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { Card } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { type ContactKind, contactKindLabels } from "@/lib/contacts"
 import { formatPhone, phoneHref } from "@/lib/phone"
-import { FormError } from "./actions"
-import { EmptyState } from "./common"
 import { ContactForm } from "./settings-forms"
-import * as styles from "./saved-addresses.css"
-import { sx } from "@/styles/sprinkles.css"
 
 type Contact = { id: string; name: string; kind: ContactKind; address: Address; shopifyLocationId: string | null }
 type ShopifyLocation = { id: string; name: string }
 
-const icons = { delivery: Warehouse, pickup: MapPin, forwarder: Truck }
+// A taller, wider dialog that scrolls when the address form exceeds the viewport.
+const dialog = "max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl"
 
+// The workspace's saved addresses as one list, with Add in the card's header and each address's Edit and Remove in
+// its menu.
 export function SavedAddresses({
   contacts,
   supplier = false,
@@ -41,50 +33,35 @@ export function SavedAddresses({
   locations?: ShopifyLocation[]
 }) {
   const [open, setOpen] = useState(false)
+  let count = supplier ? "No pickup addresses" : "No addresses"
+  if (contacts.length) {
+    count = `${contacts.length} ${contacts.length === 1 ? "address" : "addresses"}`
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{supplier ? "Pickup addresses" : "Saved addresses"}</CardTitle>
-        <CardDescription>
-          {supplier ? "Locations where Amazon or a carrier can collect your cartons." : "Where POs can be delivered."}
-        </CardDescription>
-        <CardAction>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button variant="outline" />}>
-              <Plus data-icon="inline-start" />
-              Add address
-            </DialogTrigger>
-            <DialogContent className={styles.dialog}>
-              <DialogHeader>
-                <DialogTitle>Add address</DialogTitle>
-                <DialogDescription>
-                  {supplier ? "Save a pickup location to reuse on shipments." : "Save a delivery address."}
-                </DialogDescription>
-              </DialogHeader>
-              <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        {contacts.length ? (
-          <ItemGroup className={styles.list}>
-            {contacts.map((contact) => (
-              <SavedAddress key={contact.id} contact={contact} supplier={supplier} locations={locations} />
-            ))}
-          </ItemGroup>
-        ) : (
-          <EmptyState
-            title="No saved addresses yet"
-            description={
-              supplier
-                ? "Add your pickup locations so they're ready when you prepare a shipment."
-                : "Add your delivery addresses so they're ready for your POs."
-            }
-          />
-        )}
-      </CardContent>
+    <Card className="gap-0 py-0">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <p className="text-sm text-muted-foreground">{count}</p>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger render={<Button variant="outline" size="sm" />}>
+            <Plus data-icon="inline-start" />
+            Add address
+          </DialogTrigger>
+          <DialogContent className={dialog}>
+            <DialogHeader>
+              <DialogTitle>Add address</DialogTitle>
+            </DialogHeader>
+            <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
+      {contacts.length > 0 && (
+        <ul className="divide-y border-t">
+          {contacts.map((contact) => (
+            <SavedAddress key={contact.id} contact={contact} supplier={supplier} locations={locations} />
+          ))}
+        </ul>
+      )}
     </Card>
   )
 }
@@ -103,9 +80,22 @@ function SavedAddress({
   const [editing, setEditing] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  const label = contactKindLabels[contact.kind]
-  const Icon = icons[contact.kind]
   const { address } = contact
+  // A supplier's addresses are all pickups, and everyone else's deliveries; only another kind needs saying.
+  const usual: ContactKind = supplier ? "pickup" : "delivery"
+  const street = [
+    address.addressLine1,
+    address.addressLine2,
+    address.city,
+    [address.stateOrRegion, address.postalCode].filter(Boolean).join(" "),
+    address.countryCode
+  ]
+    .filter(Boolean)
+    .join(", ")
+  const location =
+    contact.kind === "delivery" && contact.shopifyLocationId
+      ? (locations.find((candidate) => candidate.id === contact.shopifyLocationId)?.name ?? "a Shopify location")
+      : null
 
   async function remove() {
     setPending(true)
@@ -120,81 +110,71 @@ function SavedAddress({
   }
 
   return (
-    <div className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-      <Item variant="outline" className={styles.item}>
-        <ItemMedia variant="icon">
-          <Icon />
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>
-            {contact.name}
-            <Badge variant="secondary">{label}</Badge>
-          </ItemTitle>
-          <ItemDescription className={styles.unclamped}>
-            {[address.name, address.addressLine1, address.addressLine2, address.city, address.countryCode]
-              .filter(Boolean)
-              .join(", ")}
-          </ItemDescription>
-          {(address.phoneNumber || address.email) && (
-            <ItemDescription className={styles.contactLinks}>
-              {address.phoneNumber && (
-                <a className={sx({ fontVariantNumeric: "tabular" })} href={phoneHref(address.phoneNumber)}>
-                  {formatPhone(address.phoneNumber)}
-                </a>
-              )}
-              {address.email && <a href={`mailto:${address.email}`}>{address.email}</a>}
-            </ItemDescription>
+    <li className="flex items-start gap-3 px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="flex flex-wrap items-center gap-2 font-medium">
+          {contact.name}
+          {contact.kind !== usual && <Badge variant="secondary">{contactKindLabels[contact.kind]}</Badge>}
+        </p>
+        <p className="text-muted-foreground">{street}</p>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+          <span>{address.name}</span>
+          {address.phoneNumber && (
+            <a className="tabular-nums hover:text-foreground hover:underline" href={phoneHref(address.phoneNumber)}>
+              {formatPhone(address.phoneNumber)}
+            </a>
           )}
-          {contact.kind === "delivery" && contact.shopifyLocationId && (
-            <ItemDescription>
-              Stock arrives at{" "}
-              {locations.find((location) => location.id === contact.shopifyLocationId)?.name ?? "a Shopify location"}
-            </ItemDescription>
+          {address.email && (
+            <a className="hover:text-foreground hover:underline" href={`mailto:${address.email}`}>
+              {address.email}
+            </a>
           )}
-          {supplier && contact.kind === "pickup" && !address.phoneNumber && (
-            <ItemDescription className={styles.warning}>
-              Add a phone number to use this address on shipments.
-            </ItemDescription>
-          )}
-          {!supplier && contact.kind === "pickup" && (
-            <ItemDescription className={styles.warning}>
-              Pickup addresses now come from your supplier&apos;s workspace. Remove this once they&apos;ve added it.
-            </ItemDescription>
-          )}
-        </ItemContent>
-        <ItemActions>
-          <Dialog open={editing} onOpenChange={setEditing}>
-            <DialogTrigger render={<Button size="icon-sm" variant="ghost" aria-label={`Edit ${contact.name}`} />}>
-              <Pencil />
-            </DialogTrigger>
-            <DialogContent className={styles.dialog}>
-              <DialogHeader>
-                <DialogTitle>Edit address</DialogTitle>
-                <DialogDescription>
-                  Changes apply to future shipments. Shipments already submitted keep their pickup details.
-                </DialogDescription>
-              </DialogHeader>
-              <ContactForm
-                contact={contact}
-                supplier={supplier}
-                locations={locations}
-                onSuccess={() => setEditing(false)}
-              />
-            </DialogContent>
-          </Dialog>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label={`Remove ${contact.name}`}
-            disabled={pending}
-            aria-busy={pending}
-            onClick={remove}
+        </p>
+        {location && <p className="text-xs text-muted-foreground">Stock arrives at {location}</p>}
+        {supplier && contact.kind === "pickup" && !address.phoneNumber && (
+          <p className="text-xs text-destructive">Add a phone number to use it on shipments</p>
+        )}
+        {!supplier && contact.kind === "pickup" && (
+          <p className="text-xs text-destructive">Your supplier keeps pickups now, remove this once they’ve added it</p>
+        )}
+        {error && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+      {pending ? (
+        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${contact.name}`}>
+          <Spinner />
+        </Button>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${contact.name}`} />}
           >
-            {pending ? <Spinner /> : <Trash2 />}
-          </Button>
-        </ItemActions>
-      </Item>
-      <FormError message={error} />
-    </div>
+            <Ellipsis />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuItem onClick={() => setEditing(true)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+              Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent className={dialog}>
+          <DialogHeader>
+            <DialogTitle>Edit address</DialogTitle>
+          </DialogHeader>
+          <ContactForm
+            contact={contact}
+            supplier={supplier}
+            locations={locations}
+            onSuccess={() => setEditing(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </li>
   )
 }

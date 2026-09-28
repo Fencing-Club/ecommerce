@@ -261,6 +261,8 @@ export const contacts = pgTable("contacts", {
   shopifyLocationId: text(),
   // For a freight forwarder's address the buyer saved, the forwarder it belongs to.
   forwarderId: uuid().references(() => forwarders.id),
+  // For a pickup address the buyer saved for a supplier that hasn't joined, the supplier it belongs to.
+  supplierId: uuid().references(() => suppliers.id),
   createdAt: createdAt()
 })
 export const connections = pgTable(

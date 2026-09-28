@@ -3,9 +3,10 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+// `framed={false}` drops the table's own border, for a table that sits edge to edge inside a card.
+function Table({ className, framed = true, ...props }: React.ComponentProps<"table"> & { framed?: boolean }) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto rounded-lg border">
+    <div data-slot="table-container" className={cn("relative w-full overflow-x-auto", framed && "rounded-lg border")}>
       <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   )

@@ -36,13 +36,20 @@ same property on one element with both. Where a component is on Tailwind, keep i
 | `@/styles/tokens`         | Build-time helpers for vanilla-extract: `space(4)`, `alpha(color, 50)`, `fontSize.sm`.       |
 | `@/styles/sprinkles.css`  | `sx()`: typed layout and text utilities with `sm`/`md`/`lg`/`xl` responsive values.          |
 | `@/styles/global.css`     | The reset and base element styles. Imported before `globals.css` in the root layout.         |
-| `@/styles/utilities.css`  | `srOnly` for visually hidden text in vanilla-extract code; Tailwind code uses `sr-only`.     |
 
 ## Tables
 
 Tables use the shadcn `Table`, which frames itself with a rounded border and a muted header band, like shadcn's data
-table. Statuses are outline badges with an icon (`CircleCheck` in `text-success`, `CircleAlert` in
-`text-destructive`, `Clock` while open) rather than filled colors. Numbers are right-aligned with `tabular-nums`.
-Columns that only matter on a wide screen hide with container queries (`hidden @4xl:table-cell` inside an
-`@container`), and on a phone a table can stack each row (`@max-md:block` on the table and body, `@max-md:flex` on
-rows) instead of scrolling sideways. See Restock and Orders.
+table. A table that sits inside a card runs edge to edge instead: `<Table framed={false}>` in a card with
+`gap-0 overflow-hidden py-0`, under a header with `border-b`. Never put a framed table inside a card. Numbers are
+right-aligned with `tabular-nums`, and a value that doesn't apply is `—`. A row that opens a record is clickable as a
+whole (`LinkRow`, or a link stretched over the row) while its own link stays for keyboard and screen readers.
+Per-row actions live in a trailing ⋯ menu. Columns that only matter on a wide screen hide with container queries
+(`hidden @4xl:table-cell` inside an `@container`), and on a phone a table can stack each row (`@max-md:block` on the
+table and body, `@max-md:flex` on rows) instead of scrolling sideways. See Restock and Orders.
+
+## Statuses
+
+Every status renders through `Status` (a known status string) or `StatusBadge` (a tone and a label) from
+`@/components/common`: a lightly tinted pill with a dot or icon, in one of five tones: neutral (idle), info (in
+progress), success (done), warning (needs action) and destructive (failed or lost). Don't style badges by hand.

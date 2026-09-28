@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Pencil, Plus, Send } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
@@ -24,14 +24,24 @@ import { FormInput, FormNumber } from "./form-controls"
 import { SupplierForm } from "./settings-forms"
 import { sx } from "@/styles/sprinkles.css"
 
-export function InviteSupplier() {
-  const [open, setOpen] = useState(false)
+export function InviteSupplier({
+  open: shown,
+  onOpenChange
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [own, setOwn] = useState(false)
+  const open = shown ?? own
+  const setOpen = onOpenChange ?? setOwn
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>
-        <Plus data-icon="inline-start" />
-        Add supplier
-      </DialogTrigger>
+      {shown === undefined && (
+        <DialogTrigger render={<Button />}>
+          <Plus data-icon="inline-start" />
+          Add supplier
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a supplier</DialogTitle>
@@ -61,6 +71,9 @@ type SupplierContact = {
   phoneNumber: string | null
 }
 
+// Opened from a partner's row, or its menu.
+type Controlled = { open: boolean; onOpenChange: (open: boolean) => void }
+
 // A supplier's name, and the days from ordering until stock arrives, which restock uses for their products.
 export function EditSupplier({
   id,
@@ -69,8 +82,10 @@ export function EditSupplier({
   leadTimeDays,
   defaultLeadTimeDays,
   contact,
-  joined
-}: {
+  joined,
+  open,
+  onOpenChange: setOpen
+}: Controlled & {
   id: string
   name: string
   shopifySupplierName: string | null
@@ -83,7 +98,6 @@ export function EditSupplier({
 }) {
   const router = useRouter()
   const [run] = useActionMutation()
-  const [open, setOpen] = useState(false)
   const form = useForm<z.input<typeof supplierSchema>, unknown, z.output<typeof supplierSchema>>({
     resolver: zodResolver(supplierSchema, { error: formErrorMap }),
     values: {
@@ -119,17 +133,21 @@ export function EditSupplier({
     }
   })
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={`Edit ${name}`} />}>
-        <Pencil data-icon="inline-start" />
-        Edit
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        // Closing without saving drops the changes.
+        if (!next) {
+          form.reset()
+        }
+      }}
+    >
       <DialogContent>
         <FormProvider {...form}>
           <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
             <DialogHeader>
-              <DialogTitle>Edit supplier</DialogTitle>
-              <DialogDescription>Name, contact details and lead times.</DialogDescription>
+              <DialogTitle>Edit {name}</DialogTitle>
             </DialogHeader>
             <FormInput name="name" required label="Name" autoComplete="organization" />
             <FormInput
@@ -153,7 +171,7 @@ export function EditSupplier({
             <FormNumber
               name="leadTimeDays"
               label="Lead time (days)"
-              description={`From PO to sellable stock. Empty means ${defaultLeadTimeDays}.`}
+              description={`From purchase order to sellable stock. Empty means ${defaultLeadTimeDays}.`}
               min={1}
               max={730}
               step={1}
@@ -175,10 +193,15 @@ export function EditSupplier({
 const inviteSchema = z.object({ email: z.email().max(254) })
 
 // Invites a supplier that hasn't joined to its own workspace, where it's notified of POs and provides their documents.
-export function InviteSupplierByEmail({ id, name, email }: { id: string; name: string; email: string | null }) {
+export function InviteSupplierByEmail({
+  id,
+  name,
+  email,
+  open,
+  onOpenChange: setOpen
+}: Controlled & { id: string; name: string; email: string | null }) {
   const router = useRouter()
   const [run] = useActionMutation()
-  const [open, setOpen] = useState(false)
   const form = useForm<z.input<typeof inviteSchema>, unknown, z.output<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema, { error: formErrorMap }),
     values: { email: email ?? "" }
@@ -193,18 +216,22 @@ export function InviteSupplierByEmail({ id, name, email }: { id: string; name: s
     }
   })
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={`Invite ${name}`} />}>
-        <Send data-icon="inline-start" />
-        Invite
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) {
+          form.reset()
+        }
+      }}
+    >
       <DialogContent>
         <FormProvider {...form}>
           <form onSubmit={submit} noValidate className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
             <DialogHeader>
               <DialogTitle>Invite {name}</DialogTitle>
               <DialogDescription>
-                They’ll see the POs you share and get emailed when one needs documents.
+                They’ll see the purchase orders you share and get emailed when one needs documents.
               </DialogDescription>
             </DialogHeader>
             <FormInput name="email" required label="Supplier email" type="email" autoComplete="email" />

@@ -10,7 +10,7 @@ const headers = { "Cache-Control": "private, no-store" }
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
-    return Response.json({ error: "PO not found" }, { status: 404, headers })
+    return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
   }
   const s = await session()
   try {
@@ -28,6 +28,6 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     })
   } catch (error) {
     unstable_rethrow(error)
-    return Response.json({ error: "The PO couldn’t be created. Try again." }, { status: 500, headers })
+    return Response.json({ error: "The purchase order couldn’t be created. Try again." }, { status: 500, headers })
   }
 }

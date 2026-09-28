@@ -10,14 +10,14 @@ const headers = { "Cache-Control": "private, no-store" }
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
-    return Response.json({ error: "PO not found" }, { status: 404, headers })
+    return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
   }
   const s = await session()
   try {
     const { order } = await accessibleOrder(s, id.data)
     const file = await warningLabelFile(order.data.items)
     if (!file) {
-      return Response.json({ error: "No line on this PO needs warning labels" }, { status: 404, headers })
+      return Response.json({ error: "No line on this purchase order needs warning labels" }, { status: 404, headers })
     }
     return new Response(Buffer.from(file.bytes), {
       headers: {

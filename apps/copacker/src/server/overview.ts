@@ -1,5 +1,5 @@
 import { orderTotal, type OrderInput } from "@repo/aisle"
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {
   connections,
@@ -457,8 +457,8 @@ export function attentionItems(input: {
     items.push({
       key: "stockouts",
       tone: "critical",
-      title: `${plural(input.restock.stockouts, "item is", "items are")} out of stock or will run out before a reorder arrives`,
-      detail: "Reorder now to limit the days they can't sell.",
+      title: `${plural(input.restock.stockouts, "item runs", "items run")} out before a reorder arrives`,
+      detail: "Reorder now to limit lost sales",
       href: "/restock?status=order",
       action: "Plan restock"
     })
@@ -468,7 +468,7 @@ export function attentionItems(input: {
       key: "shipment-problems",
       tone: "critical",
       title: `${plural(input.shipments.problems, "shipment needs", "shipments need")} attention`,
-      detail: "Something went wrong while creating the shipment with Amazon.",
+      detail: "Amazon shipment creation failed",
       href: "/shipments",
       action: "View shipments"
     })
@@ -477,8 +477,8 @@ export function attentionItems(input: {
     items.push({
       key: "shipments-waiting",
       tone: "warning",
-      title: `${plural(input.shipments.waiting, "shipment is", "shipments are")} waiting for your approval or labels`,
-      detail: "Your supplier can't ship until you respond.",
+      title: `${plural(input.shipments.waiting, "shipment needs", "shipments need")} approval or labels`,
+      detail: "Your supplier is waiting to ship",
       href: "/shipments",
       action: "View shipments"
     })
@@ -488,7 +488,7 @@ export function attentionItems(input: {
       key: "reorders",
       tone: "warning",
       title: `${plural(input.restock.reorders, "item is", "items are")} due for a reorder`,
-      detail: "They have enough stock for now, but not through the next lead time.",
+      detail: "Order now to stay in stock",
       href: "/restock?status=order",
       action: "Plan restock"
     })
@@ -512,8 +512,8 @@ export function attentionItems(input: {
       items.push({
         key: `sync-${sync.source}`,
         tone: "warning",
-        title: `The last ${name} order sync failed`,
-        detail: "Sales and restock use the orders copied before it.",
+        title: `${name} order sync failed`,
+        detail: "Sales and restock may miss recent orders",
         href: "/sales",
         action: "View orders"
       })
@@ -522,7 +522,7 @@ export function attentionItems(input: {
         key: `sync-${sync.source}`,
         tone: "info",
         title: `${name} orders haven't synced in ${Math.floor((input.now.getTime() - sync.coveredTo.getTime()) / day)} days`,
-        detail: "Sync them so sales and restock include recent orders.",
+        detail: "Sync them to include recent orders",
         href: "/sales",
         action: "View orders"
       })
@@ -531,9 +531,9 @@ export function attentionItems(input: {
       items.push({
         key: `fees-${sync.source}`,
         tone: "warning",
-        title: `Reconnect ${name} to include shipping labels and ${name} charges`,
-        detail: "Gross profit leaves them out until Copacker can read your payouts.",
-        href: "/settings",
+        title: `Reconnect ${name} to include its charges`,
+        detail: "Gross profit leaves them out",
+        href: "/settings#integrations",
         action: "Open settings"
       })
     } else if (sync.feesErrorCode) {
@@ -543,8 +543,8 @@ export function attentionItems(input: {
         title: sync.source === "amazon" ? "Amazon fees couldn't be copied" : "Shopify charges couldn't be copied",
         detail:
           sync.source === "amazon"
-            ? "Margins leave out Amazon's fees until the next order sync copies them."
-            : "Gross profit leaves out shipping labels and Shopify charges until the next order sync copies them.",
+            ? "Margins leave them out until the next sync"
+            : "Gross profit leaves them out until the next sync",
         href: "/sales",
         action: "View orders"
       })
@@ -553,8 +553,8 @@ export function attentionItems(input: {
       items.push({
         key: `prices-${sync.source}`,
         tone: "info",
-        title: `Sync ${name} orders again to copy their prices`,
-        detail: `${plural(sync.unpriced, "order", "orders")} in this period ${sync.unpriced === 1 ? "has" : "have"} no price, so sales and margins leave ${sync.unpriced === 1 ? "it" : "them"} out.`,
+        title: `Sync ${name} orders again for prices`,
+        detail: `${plural(sync.unpriced, "order", "orders")} in this period ${sync.unpriced === 1 ? "has" : "have"} no price`,
         href: "/sales",
         action: "View orders"
       })
@@ -568,8 +568,8 @@ export function attentionItems(input: {
     items.push({
       key: "stock-failed",
       tone: "warning",
-      title: "The last stock sync failed",
-      detail: "Stock and restock use the counts from before it.",
+      title: "Stock sync failed",
+      detail: "Stock counts may be out of date",
       href: "/products",
       action: "View products"
     })
@@ -578,7 +578,7 @@ export function attentionItems(input: {
       key: "stock-stale",
       tone: "info",
       title: "Stock hasn't synced in over 2 days",
-      detail: "Sync it so stock counts are current.",
+      detail: "Sync it to update stock counts",
       href: "/products",
       action: "View products"
     })
@@ -587,9 +587,9 @@ export function attentionItems(input: {
     items.push({
       key: "shopify-history",
       tone: "info",
-      title: "Shopify shares only the last 60 days of orders",
-      detail: "Reconnect Shopify with access to all orders to see two years.",
-      href: "/settings",
+      title: "Shopify shares only 60 days of orders",
+      detail: "Reconnect with access to all orders",
+      href: "/settings#integrations",
       action: "Open settings"
     })
   }
@@ -597,8 +597,8 @@ export function attentionItems(input: {
     items.push({
       key: "drafts",
       tone: "info",
-      title: `${plural(input.drafts, "draft purchase order hasn't", "draft purchase orders haven't")} been sent`,
-      detail: "Send them when you're ready for your supplier to start.",
+      title: plural(input.drafts, "purchase order is still a draft", "purchase orders are still drafts"),
+      detail: "Send them when you're ready",
       href: "/orders",
       action: "View purchase orders"
     })
@@ -615,51 +615,43 @@ export function setupSteps(input: {
   stockSynced: boolean
   inStock: number
   uncosted: number
-  suppliers: number
 }): SetupStep[] {
   const allCopied = input.connected.length > 0 && input.connected.every((source) => input.ordersCopied.includes(source))
   return [
     {
       key: "shopify",
       title: "Connect Shopify",
-      detail: "Your catalog, stock, costs and store orders.",
-      href: "/settings",
+      detail: "Catalog, stock, costs and orders",
+      href: "/settings#integrations",
       done: input.connected.includes("shopify")
     },
     {
       key: "amazon",
       title: "Connect Amazon",
-      detail: "Amazon orders, FBA and AWD stock, and fees.",
-      href: "/settings",
+      detail: "Orders, FBA and AWD stock, and fees",
+      href: "/settings#integrations",
       done: input.connected.includes("amazon")
     },
     {
       key: "orders",
       title: "Copy your orders",
-      detail: "Sales, trends and restock read the copied orders.",
+      detail: "Sales, trends and restock",
       href: "/sales",
       done: allCopied
     },
     {
       key: "stock",
       title: "Sync your stock",
-      detail: "Stock by channel, days of cover and restock.",
+      detail: "Stock, days of cover and restock",
       href: "/products",
       done: input.stockSynced
     },
     {
       key: "costs",
       title: "Add unit costs in Shopify",
-      detail: "Stock value, reorder estimates and margins need them.",
+      detail: "Stock value, reorder costs and margins",
       href: "/products",
       done: input.inStock > 0 && input.uncosted === 0
-    },
-    {
-      key: "supplier",
-      title: "Invite a supplier",
-      detail: "Send purchase orders and track shipments together.",
-      href: "/suppliers",
-      done: input.suppliers > 0
     }
   ]
 }
@@ -799,7 +791,6 @@ export async function overview(
     deliveries,
     shipmentRows,
     stock,
-    supplierRows,
     markups,
     otherMarketplaces,
     platformLines,
@@ -832,7 +823,13 @@ export async function overview(
       .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
       .from(events)
       .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
+      .where(
+        and(
+          eq(orders.buyerOrgId, orgId),
+          // Events recorded before purchase orders were spelled out say "PO submitted to supplier".
+          inArray(events.message, ["Purchase order submitted to supplier", "PO submitted to supplier"])
+        )
+      )
       .groupBy(events.orderId),
     db()
       .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
@@ -852,10 +849,6 @@ export async function overview(
       })
       .from(stockSnapshots)
       .where(eq(stockSnapshots.orgId, orgId)),
-    db()
-      .select({ id: suppliers.id, removedAt: suppliers.removedAt })
-      .from(suppliers)
-      .where(eq(suppliers.buyerOrgId, orgId)),
     landedMarkupsFor(orgId),
     shopifyWithoutAmazon
       ? otherMarketplaceOrders(orgId, shopifyWithoutAmazon.externalId, window.current.from, window.current.to)
@@ -1013,8 +1006,7 @@ export async function overview(
         stockSources.length > 0 &&
         stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
       inStock: everyChannel.unitsOnHand,
-      uncosted: everyChannel.uncosted,
-      suppliers: supplierRows.filter((row) => !row.removedAt).length
+      uncosted: everyChannel.uncosted
     }),
     sales: {
       sources,

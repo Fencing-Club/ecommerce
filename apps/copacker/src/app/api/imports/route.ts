@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const shop = linked.find((c) => c.provider === "shopify"),
       amazon = linked.find((c) => c.provider === "amazon")
     if (!shop) {
-      throw new Error("Connect Shopify before importing a PO")
+      throw new Error("Connect Shopify before importing a purchase order")
     }
     if (
       !process.env.OPENROUTER_API_KEY ||

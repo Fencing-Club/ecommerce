@@ -1,25 +1,17 @@
 "use client"
 
-import { Download, Tags } from "lucide-react"
+import { ChevronDown, Download, Search, Tags } from "lucide-react"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from "@/components/ui/sheet"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { api, errorMessage } from "@/lib/api"
-import type { ProductLabel } from "@/lib/product-label"
+import { type ProductLabel, productLabels } from "@/lib/product-label"
 import { FormError } from "./actions"
-import * as styles from "./product-label-bulk.css"
 
 type Choice = { productId: string; title: string; variations: number; productLabel: ProductLabel }
 
@@ -63,6 +55,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   const query = search.trim().toLocaleLowerCase()
   const shown = query ? choices.filter((choice) => choice.title.toLocaleLowerCase().includes(query)) : choices
   const allShown = shown.length > 0 && shown.every((choice) => selected.includes(choice.productId))
+  const someShown = shown.some((choice) => selected.includes(choice.productId))
   const busy = assigning || downloading
 
   function toggle(productId: string, checked: boolean) {
@@ -74,9 +67,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
     setStatus("")
     try {
       const { updated } = await assign({ productIds: selected, productLabel }).unwrap()
-      setStatus(
-        `${updated} ${updated === 1 ? "product" : "products"} set to ${labelNames[productLabel].toLowerCase()}.`
-      )
+      setStatus(`${updated} ${updated === 1 ? "product" : "products"} set to ${labelNames[productLabel].toLowerCase()}`)
       void refetch()
       onChanged()
     } catch (e) {
@@ -106,8 +97,8 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
       const skipped = Number(response.headers.get("x-skipped-labels") ?? 0)
       setStatus(
         skipped
-          ? `Downloaded. ${skipped} ${skipped === 1 ? "variation has" : "variations have"} no label yet and ${skipped === 1 ? "was" : "were"} left out.`
-          : "Downloaded."
+          ? `Downloaded, left out ${skipped} ${skipped === 1 ? "variation" : "variations"} without a label`
+          : "Downloaded"
       )
     } catch (e) {
       setError(errorMessage(e, "The labels couldn’t be made. Try again."))
@@ -133,111 +124,101 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
         <Tags data-icon="inline-start" />
         Manage labels
       </SheetTrigger>
-      <SheetContent>
-        <div className={styles.panel}>
-          <SheetHeader>
-            <SheetTitle>Manage labels</SheetTitle>
-            <SheetDescription>
-              Choose products to set their label type or download all their labels as one PDF. Use Uploaded label for
-              products whose labels show more, such as size measurements on uniforms.
-            </SheetDescription>
-          </SheetHeader>
-          <div className={styles.body}>
-            <Field>
-              <FieldLabel htmlFor="label-products-search">Search products</FieldLabel>
-              <Input
-                id="label-products-search"
-                type="search"
-                placeholder="Product name"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </Field>
-            {isLoading ? (
-              <p className={styles.detail}>Loading products…</p>
-            ) : (
-              <>
-                <Field orientation="horizontal">
-                  <Checkbox
-                    id="label-products-all"
-                    checked={allShown}
-                    disabled={!shown.length}
-                    onCheckedChange={(checked) =>
-                      setSelected((current) =>
-                        checked
-                          ? [...new Set([...current, ...shown.map((choice) => choice.productId)])]
-                          : current.filter((id) => !shown.some((choice) => choice.productId === id))
-                      )
-                    }
-                  />
-                  <FieldLabel htmlFor="label-products-all">
-                    Select all {shown.length} {query ? "matching" : ""} {shown.length === 1 ? "product" : "products"}
-                  </FieldLabel>
-                </Field>
-                <ul className={styles.list} aria-label="Products">
-                  {shown.map((choice) => {
-                    const id = `label-product-${choice.productId}`
-                    return (
-                      <li key={choice.productId} className={styles.row}>
-                        <Checkbox
-                          id={id}
-                          checked={selected.includes(choice.productId)}
-                          onCheckedChange={(checked) => toggle(choice.productId, checked)}
-                        />
-                        <label htmlFor={id} className={styles.name}>
-                          <span className={styles.title}>{choice.title}</span>
-                          <span className={styles.detail}>
-                            {choice.variations === 1 ? "1 variation" : `${choice.variations} variations`}
-                          </span>
-                        </label>
-                        <Badge variant={choice.productLabel === "uploaded" ? "secondary" : "outline"}>
-                          {labelNames[choice.productLabel]}
-                        </Badge>
-                      </li>
-                    )
-                  })}
-                </ul>
-                {!shown.length && <p className={styles.detail}>No products match.</p>}
-              </>
-            )}
-          </div>
-          <SheetFooter className={styles.footer}>
-            <p className={styles.detail} aria-live="polite">
-              {status || `${selected.length} ${selected.length === 1 ? "product" : "products"} selected`}
+      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b">
+          <SheetTitle>Manage labels</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col gap-3 border-b p-4">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              aria-label="Search products"
+              placeholder="Search products"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </InputGroup>
+          <Field orientation="horizontal">
+            <Checkbox
+              id="label-products-all"
+              checked={allShown}
+              indeterminate={someShown && !allShown}
+              disabled={isLoading || !shown.length}
+              onCheckedChange={(checked) =>
+                setSelected((current) =>
+                  checked
+                    ? [...new Set([...current, ...shown.map((choice) => choice.productId)])]
+                    : current.filter((id) => !shown.some((choice) => choice.productId === id))
+                )
+              }
+            />
+            <FieldLabel htmlFor="label-products-all" className="font-normal">
+              Select all {shown.length}
+              {query ? " matching" : ""}
+            </FieldLabel>
+          </Field>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {isLoading && <p className="p-4 text-sm text-muted-foreground">Loading products…</p>}
+          {!isLoading && !shown.length && <p className="p-4 text-sm text-muted-foreground">No products match</p>}
+          {!isLoading && shown.length > 0 && (
+            <ul aria-label="Products" className="divide-y">
+              {shown.map((choice) => {
+                const id = `label-product-${choice.productId}`
+                return (
+                  <li key={choice.productId} className="flex items-center gap-3 px-4 py-2.5">
+                    <Checkbox
+                      id={id}
+                      checked={selected.includes(choice.productId)}
+                      onCheckedChange={(checked) => toggle(choice.productId, checked)}
+                    />
+                    <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-sm font-medium [overflow-wrap:anywhere]">{choice.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {choice.variations === 1 ? "1 variation" : `${choice.variations} variations`}
+                      </span>
+                    </label>
+                    <Badge variant={choice.productLabel === "uploaded" ? "secondary" : "outline"}>
+                      {labelNames[choice.productLabel]}
+                    </Badge>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+        <SheetFooter className="border-t">
+          <FormError message={error} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              {status || `${selected.length} selected`}
             </p>
-            <FormError message={error} />
-            <div className={styles.actions}>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!selected.length || busy}
-                onClick={() => void setLabel("uploaded")}
-              >
-                Use uploaded labels
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!selected.length || busy}
-                onClick={() => void setLabel("standard")}
-              >
-                Use standard labels
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!selected.length || busy}
-                onClick={() => void setLabel("none")}
-              >
-                No labels
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button type="button" variant="outline" disabled={!selected.length || busy} />}
+                >
+                  Set label type
+                  <ChevronDown data-icon="inline-end" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {productLabels.map((productLabel) => (
+                    <DropdownMenuItem key={productLabel} onClick={() => void setLabel(productLabel)}>
+                      {labelNames[productLabel]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button type="button" disabled={!selected.length || busy} onClick={() => void download()}>
                 <Download data-icon="inline-start" />
                 {downloading ? "Making labels…" : "Download labels"}
               </Button>
             </div>
-          </SheetFooter>
-        </div>
+          </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   )

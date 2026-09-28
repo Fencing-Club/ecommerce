@@ -1,9 +1,9 @@
 "use client"
 
-import { CheckCircle2, UploadCloud } from "lucide-react"
+import { CircleCheck, UploadCloud } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Sheet,
@@ -15,10 +15,10 @@ import {
   SheetTrigger
 } from "@/components/ui/sheet"
 import { errorMessage } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
 import { WarningNote } from "./common"
 import { useUploadBarcodeMutation } from "./product-barcodes"
-import * as styles from "./bulk-barcode-upload.css"
 
 // One chosen file and what happened to it. A file whose SKU matched no single variation can be retried with a SKU.
 type Result =
@@ -31,12 +31,14 @@ function targetLabel(target: BarcodeTarget) {
   return target.sku ? `${name} (${target.sku})` : name
 }
 
+const isPdf = (file: File) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+
 function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed" }>; onRetry: (sku: string) => void }) {
   const [sku, setSku] = useState("")
   const id = `retry-${result.file.name}`
   return (
     <form
-      className={styles.retry}
+      className="mt-1 flex items-end gap-2"
       onSubmit={(event) => {
         event.preventDefault()
         if (sku.trim()) {
@@ -45,10 +47,12 @@ function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed"
       }}
     >
       <Field>
-        <FieldLabel htmlFor={id}>SKU for {result.file.name}</FieldLabel>
+        <FieldLabel htmlFor={id} className="text-xs font-normal text-muted-foreground">
+          SKU for {result.file.name}
+        </FieldLabel>
         <Input id={id} value={sku} onChange={(event) => setSku(event.target.value)} autoComplete="off" />
       </Field>
-      <Button type="submit" variant="outline" size="sm" disabled={!sku.trim()}>
+      <Button type="submit" variant="outline" disabled={!sku.trim()}>
         Save
       </Button>
     </form>
@@ -57,15 +61,15 @@ function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed"
 
 function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string) => void }) {
   return (
-    <li className={styles.result}>
-      <span className={styles.fileName}>{result.file.name}</span>
-      {result.status === "waiting" && <span className={styles.detail}>Waiting</span>}
-      {result.status === "uploading" && <span className={styles.detail}>Uploading…</span>}
+    <li className="flex flex-col gap-1 px-3 py-2.5">
+      <span className="text-sm font-medium [overflow-wrap:anywhere]">{result.file.name}</span>
+      {result.status === "waiting" && <span className="text-xs text-muted-foreground">Waiting</span>}
+      {result.status === "uploading" && <span className="text-xs text-muted-foreground">Uploading…</span>}
       {result.status === "saved" && (
-        <span className={styles.saved}>
-          <CheckCircle2 aria-hidden="true" />
+        <span className="inline-flex items-start gap-1 text-xs">
+          <CircleCheck className="mt-px size-3.5 shrink-0 text-success" aria-hidden="true" />
           <span>
-            {result.replaced ? "Replaced the barcode for " : "Saved for "}
+            {result.replaced ? "Replaced for " : "Saved for "}
             {targetLabel(result.target)}
           </span>
         </span>
@@ -86,10 +90,15 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
   const [files, setFiles] = useState<File[]>([])
   const [results, setResults] = useState<Result[]>([])
   const [running, setRunning] = useState(false)
+  const [dragging, setDragging] = useState(false)
   // Changing it clears the file picker once its files are uploaded.
   const [picker, setPicker] = useState(0)
   const [upload] = useUploadBarcodeMutation()
 
+  const choose = (chosen: File[]) => {
+    setFiles(chosen.filter(isPdf))
+    setResults([])
+  }
   const update = (index: number, result: Result) =>
     setResults((current) => current.map((item, at) => (at === index ? result : item)))
 
@@ -163,61 +172,65 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
         <UploadCloud data-icon="inline-start" />
         Upload barcodes
       </SheetTrigger>
-      <SheetContent>
-        <div className={styles.panel}>
-          <SheetHeader>
-            <SheetTitle>Upload barcodes</SheetTitle>
-            <SheetDescription>
-              Name each one-page PDF after its variation&apos;s SKU, such as ABC-123.pdf. A barcode replaces the
-              variation&apos;s saved one. POs that already have a label keep theirs.
-            </SheetDescription>
-          </SheetHeader>
-          <div className={styles.body}>
-            <Field>
-              <FieldLabel htmlFor="bulk-barcodes">Barcode PDFs</FieldLabel>
-              <Input
-                key={picker}
-                id="bulk-barcodes"
-                type="file"
-                accept="application/pdf"
-                multiple
-                disabled={running}
-                onChange={(event) => {
-                  setFiles([...(event.target.files ?? [])])
-                  setResults([])
-                }}
-              />
-              <FieldDescription>
-                {files.length
-                  ? `${files.length} ${files.length === 1 ? "file" : "files"} chosen.`
-                  : "Up to 32 MB each."}
-              </FieldDescription>
-            </Field>
-            {results.length > 0 && (
-              <>
-                <p className={styles.detail} aria-live="polite">
-                  {running
-                    ? `Uploading ${Math.min(done + 1, results.length)} of ${results.length}…`
-                    : `${results.length - failed} of ${results.length} saved.${failed ? " Check the files below." : ""}`}
-                </p>
-                <ul className={styles.results} aria-label="Upload results">
-                  {results.map((result, index) => (
-                    <ResultRow
-                      key={`${result.file.name}-${index}`}
-                      result={result}
-                      onRetry={(sku) => void retry(index, sku)}
-                    />
-                  ))}
-                </ul>
-              </>
+      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+        <SheetHeader className="border-b">
+          <SheetTitle>Upload barcodes</SheetTitle>
+          <SheetDescription>Name each PDF after its SKU, such as ABC-123.pdf</SheetDescription>
+        </SheetHeader>
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+          {/* The file input covers the whole zone, so a click opens the picker and dropped files land in it. */}
+          <div
+            className={cn(
+              "relative flex flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors hover:bg-muted/50 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
+              dragging && "border-ring bg-muted/50",
+              running && "opacity-50"
             )}
+          >
+            <UploadCloud className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
+            <span className="font-medium">
+              {files.length
+                ? `${files.length} ${files.length === 1 ? "PDF" : "PDFs"} chosen`
+                : "Choose PDFs or drop them here"}
+            </span>
+            <span className="text-xs text-muted-foreground">Up to 32 MB each</span>
+            <input
+              key={picker}
+              type="file"
+              accept="application/pdf"
+              multiple
+              disabled={running}
+              aria-label="Barcode PDFs"
+              className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-default"
+              onDragEnter={() => setDragging(true)}
+              onDragLeave={() => setDragging(false)}
+              onDrop={() => setDragging(false)}
+              onChange={(event) => choose([...(event.target.files ?? [])])}
+            />
           </div>
-          <SheetFooter>
-            <Button type="button" disabled={running || !files.length} onClick={() => void start()}>
-              {running ? "Uploading…" : uploadLabel}
-            </Button>
-          </SheetFooter>
+          {results.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground" aria-live="polite">
+                {running
+                  ? `Uploading ${Math.min(done + 1, results.length)} of ${results.length}…`
+                  : `${results.length - failed} of ${results.length} saved`}
+              </p>
+              <ul className="divide-y rounded-lg border" aria-label="Upload results">
+                {results.map((result, index) => (
+                  <ResultRow
+                    key={`${result.file.name}-${index}`}
+                    result={result}
+                    onRetry={(sku) => void retry(index, sku)}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+        <SheetFooter className="border-t sm:flex-row sm:justify-end">
+          <Button type="button" disabled={running || !files.length} onClick={() => void start()}>
+            {running ? "Uploading…" : uploadLabel}
+          </Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   )

@@ -90,7 +90,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
   input.items = input.items.map((item) => {
     const source = catalog.find((v) => v?.id === item.variantId)
     if (!source?.sku) {
-      throw new Error("Every PO item must have a Shopify SKU")
+      throw new Error("Every item on the purchase order must have a Shopify SKU")
     }
     const identity = identities?.get(source.sku)
     if (source.asin?.value && identity?.asin && source.asin.value !== identity.asin) {
@@ -188,7 +188,7 @@ export async function checkOrder(
     (amazonSellerId !== null &&
       !accounts.some((account) => account.provider === "amazon" && account.externalId === amazonSellerId))
   ) {
-    throw new Error("The connected merchant account changed. Refresh before saving this PO")
+    throw new Error("The connected merchant account changed. Refresh before saving this purchase order")
   }
   const [supplier] = await tx
     .select({ id: suppliers.id, supplierOrgId: suppliers.supplierOrgId })
@@ -236,7 +236,7 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
     .returning()
   await tx
     .insert(orderRevisions)
-    .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "PO created" })
+    .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "Purchase order created" })
   return order!
 }
 // Saves changes to a draft PO as its next revision. A sent PO changes through its shipments instead.
@@ -246,13 +246,13 @@ export async function updateDraftOrder(s: Session, id: string, raw: unknown, exp
   await db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "draft") {
-      throw new Error("Only a draft PO can be edited")
+      throw new Error("Only a draft purchase order can be edited")
     }
     if (order.revision !== expectedRevision) {
-      throw new Error("This PO has changed. Refresh before saving")
+      throw new Error("This purchase order has changed. Refresh before saving")
     }
     if (order.shopifyDomain !== prepared.shopifyDomain) {
-      throw new Error("The connected Shopify store changed. Create a new PO instead")
+      throw new Error("The connected Shopify store changed. Create a new purchase order instead")
     }
     await checkOrder(tx, s, prepared)
     const revision = order.revision + 1
@@ -268,7 +268,7 @@ export async function updateDraftOrder(s: Session, id: string, raw: unknown, exp
       .where(eq(orders.id, id))
     await tx
       .insert(orderRevisions)
-      .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "PO edited" })
+      .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "Purchase order edited" })
   })
 }
 export async function createOrder(s: Session, raw: unknown) {
@@ -286,7 +286,9 @@ async function missingAmazonIdentities(s: Session, id: string) {
   }
   const amazon = await amazonAccount(s.org.id)
   if (!amazon) {
-    throw new Error("Connect Amazon in Settings before sending this PO. Amazon needs each item's ASIN and FNSKU.")
+    throw new Error(
+      "Connect Amazon in Settings before sending this purchase order. Amazon needs each item's ASIN and FNSKU."
+    )
   }
   const identities = await amazonIdentities(
     s.org.id,
@@ -299,7 +301,7 @@ async function missingAmazonIdentities(s: Session, id: string) {
   })
   if (unlisted.length) {
     throw new Error(
-      `Amazon has no matching FBA listing for ${unlisted.map((item) => item.buyerSku).join(", ")}. Check the SKUs on Amazon, then send the PO.`
+      `Amazon has no matching FBA listing for ${unlisted.map((item) => item.buyerSku).join(", ")}. Check the SKUs on Amazon, then send the purchase order.`
     )
   }
   return { sellerId: amazon.externalId, identities, revision: order.revision }
@@ -339,10 +341,12 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       order.revision !== expectedRevision ||
       (completed && completed.revision !== order.revision)
     ) {
-      throw new Error("This PO has changed. Refresh before submitting")
+      throw new Error("This purchase order has changed. Refresh before submitting")
     }
     if (order.data.destination !== "amazon" && order.data.destination !== "warehouse") {
-      throw new Error("POs can go to Amazon or your own locations for now. Save other destinations as drafts")
+      throw new Error(
+        "Purchase orders can go to Amazon or your own locations for now. Save other destinations as drafts"
+      )
     }
     if (supplier.removedAt) {
       throw new Error("This supplier was removed. Choose another supplier or add them again")
@@ -389,7 +393,9 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     await tx.insert(events).values({
       orderId: id,
       actor: s.user.id,
-      message: supplier.supplierOrgId ? "PO submitted to supplier" : "PO sent; share its documents with the supplier"
+      message: supplier.supplierOrgId
+        ? "Purchase order submitted to supplier"
+        : "Purchase order sent; share its documents with the supplier"
     })
     return { shipmentId: shipment!.id }
   })
@@ -416,7 +422,7 @@ export async function newShipment(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted") {
-      throw new Error("Submit the PO before creating a shipment")
+      throw new Error("Submit the purchase order before creating a shipment")
     }
     await refusePendingChanges(tx, orderId)
     const existing = await tx
@@ -432,7 +438,7 @@ export async function newShipment(s: Session, orderId: string) {
     }
     const reserved = reservedPieces(existing)
     if (order.data.items.every((item) => (reserved[item.id] ?? 0) >= item.pieces)) {
-      throw new Error("All PO quantities are already assigned to shipments")
+      throw new Error("All quantities on the purchase order are already assigned to shipments")
     }
     const [shipment] = await tx
       .insert(shipments)
@@ -480,7 +486,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
       status = "approval"
       message =
         s.org.kind === "buyer"
-          ? "Invoice entered with changes to the PO"
+          ? "Invoice entered with changes to the purchase order"
           : "Supplier submitted invoice changes for approval"
     } else if (amazon) {
       status = "queued"
@@ -584,7 +590,9 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       shipment.revision !== expectedRevision ||
       shipment.orderRevision !== order.revision
     ) {
-      throw new Error("The PO or invoice has changed. Ask the supplier to resubmit against the latest PO")
+      throw new Error(
+        "The purchase order or invoice has changed. Ask the supplier to resubmit against the latest revision"
+      )
     }
     const data = approveChanges(order.data, shipment.packing),
       revision = order.revision + 1
@@ -634,7 +642,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
     await tx.insert(events).values({
       orderId: order.id,
       actor: s.user.id,
-      message: `Invoice changes approved; PO revision ${revision} published`
+      message: `Invoice changes approved; purchase order revision ${revision} published`
     })
   })
 }
@@ -693,7 +701,7 @@ export async function savePacking(
     const { order } = await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || shipment.revision !== expectedRevision || order.revision !== expectedOrderRevision) {
-      throw new Error("The PO or packing draft has changed. Refresh before saving")
+      throw new Error("The purchase order or packing draft has changed. Refresh before saving")
     }
     if (
       !["packing", "correction"].includes(shipment.status) ||
@@ -707,7 +715,7 @@ export async function savePacking(
       draft.cartons?.some((carton) => carton.items?.some((item) => item.itemId && !itemIds.has(item.itemId))) ||
       draft.changes?.some((change) => !itemIds.has(change.itemId))
     ) {
-      throw new Error("Draft contains a product that is not on this PO")
+      throw new Error("Draft contains a product that is not on this purchase order")
     }
     const revision = shipment.revision + 1
     await tx
@@ -774,11 +782,11 @@ export async function deleteDraftOrder(s: Session, id: string) {
   const files = await db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "draft") {
-      throw new Error("Only draft POs can be deleted. Close a sent PO instead")
+      throw new Error("Only draft purchase orders can be deleted. Close a sent one instead")
     }
     const [shipment] = await tx.select({ id: shipments.id }).from(shipments).where(eq(shipments.orderId, id))
     if (shipment) {
-      throw new Error("This PO has shipments, so it can't be deleted")
+      throw new Error("This purchase order has shipments, so it can't be deleted")
     }
     const removed = await tx
       .delete(documents)
@@ -803,21 +811,25 @@ export async function closeOrder(s: Session, id: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "submitted") {
-      throw new Error(order.status === "closed" ? "This PO is already closed" : "Send the PO before closing it")
+      throw new Error(
+        order.status === "closed"
+          ? "This purchase order is already closed"
+          : "Send the purchase order before closing it"
+      )
     }
     const rows = await tx.select().from(shipments).where(eq(shipments.orderId, id)).for("update")
     const busy = rows.filter(
       (row) => inProgress.has(row.status) || (row.status === "packing" && row.operation !== "none")
     )
     if (busy.length) {
-      throw new Error("A shipment for this PO is still in progress. Finish or cancel it before closing the PO")
+      throw new Error("A shipment for this purchase order is still in progress. Finish or cancel it first")
     }
     await tx
       .update(shipments)
       .set({ status: "cancelled", packingDraft: null, updatedAt: new Date() })
       .where(and(eq(shipments.orderId, id), eq(shipments.status, "packing")))
     await tx.update(orders).set({ status: "closed", updatedAt: new Date() }).where(eq(orders.id, id))
-    await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "PO closed" })
+    await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "Purchase order closed" })
   })
 }
 

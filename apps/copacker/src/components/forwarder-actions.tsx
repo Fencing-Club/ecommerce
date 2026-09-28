@@ -1,7 +1,6 @@
 "use client"
 
-import { type Address, addressSchema } from "@repo/aisle"
-import { MapPinPlus, Pencil, Plus, Send } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { z } from "zod"
@@ -28,7 +27,6 @@ import {
 import { useActionForm } from "@/hooks/useActionForm"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { ActionForm, FormError } from "./actions"
-import { AddressFields, emptyAddress } from "./address-fields"
 import { FormInput } from "./form-controls"
 
 const addSchema = z.object({
@@ -37,8 +35,16 @@ const addSchema = z.object({
 })
 
 // Adds a freight forwarder. With an email, it's invited to join and keep its own addresses.
-export function AddForwarder() {
-  const [open, setOpen] = useState(false)
+export function AddForwarder({
+  open: shown,
+  onOpenChange
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [own, setOwn] = useState(false)
+  const open = shown ?? own
+  const setOpen = onOpenChange ?? setOwn
   const { form, submit } = useActionForm({
     schema: addSchema,
     action: "forwarder.create",
@@ -47,14 +53,16 @@ export function AddForwarder() {
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>
-        <Plus data-icon="inline-start" />
-        Add forwarder
-      </DialogTrigger>
+      {shown === undefined && (
+        <DialogTrigger render={<Button />}>
+          <Plus data-icon="inline-start" />
+          Add forwarder
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a forwarder</DialogTitle>
-          <DialogDescription>A freight forwarder your POs can ship to.</DialogDescription>
+          <DialogDescription>A freight forwarder your purchase orders can ship to.</DialogDescription>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Add forwarder" dialog>
           <FormInput
@@ -80,9 +88,20 @@ export function AddForwarder() {
 
 const inviteSchema = z.object({ email: z.email().max(254) })
 
-// Invites a forwarder to keep its own addresses in Copacker.
-export function InviteForwarder({ id, name, email }: { id: string; name: string; email: string | null }) {
-  const [open, setOpen] = useState(false)
+// Invites a forwarder to keep its own addresses in Copacker. Opened from the forwarder's menu.
+export function InviteForwarder({
+  id,
+  name,
+  email,
+  open,
+  onOpenChange: setOpen
+}: {
+  id: string
+  name: string
+  email: string | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const { form, submit } = useActionForm({
     schema: inviteSchema,
     action: "forwarder.invite",
@@ -91,15 +110,19 @@ export function InviteForwarder({ id, name, email }: { id: string; name: string;
     onSuccess: () => setOpen(false)
   })
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={`Invite ${name}`} />}>
-        <Send data-icon="inline-start" />
-        Invite
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) {
+          form.reset()
+        }
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite {name}</DialogTitle>
-          <DialogDescription>They’ll keep their own warehouse addresses for your POs.</DialogDescription>
+          <DialogDescription>They’ll keep their own warehouse addresses for your purchase orders.</DialogDescription>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Send invitation" dialog>
           <FormInput name="email" required label="Email" type="email" autoComplete="email" />
@@ -167,7 +190,7 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Remove {name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            New POs can’t ship to them. POs already sent keep their address.
+            New purchase orders can’t ship to them. Purchase orders already sent keep their address.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
@@ -179,53 +202,5 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
-}
-
-const addressFormSchema = z.object({ name: z.string().trim().min(1).max(100), address: addressSchema })
-
-// Adds or edits one of a forwarder's addresses, for a forwarder that hasn't joined.
-export function ForwarderAddress({
-  forwarderId,
-  forwarderName,
-  contact
-}: {
-  forwarderId: string
-  forwarderName: string
-  contact?: { id: string; name: string; address: Address }
-}) {
-  const [open, setOpen] = useState(false)
-  const { form, submit } = useActionForm({
-    schema: addressFormSchema,
-    action: "forwarder.address",
-    defaultValues: contact ? { name: contact.name, address: contact.address } : { name: "", address: emptyAddress },
-    toPayload: (values) => ({ ...values, forwarderId, ...(contact && { id: contact.id }) }),
-    onSuccess: () => setOpen(false),
-    keepSaved: Boolean(contact)
-  })
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant={contact ? "ghost" : "outline"}
-            size="sm"
-            aria-label={contact ? `Edit ${contact.name}` : `Add an address for ${forwarderName}`}
-          />
-        }
-      >
-        {contact ? <Pencil /> : <MapPinPlus data-icon="inline-start" />}
-        {!contact && "Add address"}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{contact ? "Edit address" : `Add an address for ${forwarderName}`}</DialogTitle>
-        </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"} dialog>
-          <FormInput name="name" required label="Address name" placeholder="Yiwu warehouse" />
-          <AddressFields path="address" />
-        </ActionForm>
-      </DialogContent>
-    </Dialog>
   )
 }

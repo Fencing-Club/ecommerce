@@ -3,12 +3,13 @@
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { api, errorMessage } from "@/lib/api"
 import type { ProductLabel } from "@/lib/product-label"
+import { cn } from "@/lib/utils"
 import type { BarcodeTarget, ProductBarcode } from "@/server/product-barcodes"
-import { FormError } from "./actions"
 import { WarningNote } from "./common"
-import * as styles from "./inventory-products.css"
 
 const barcodesApi = api.injectEndpoints({
   overrideExisting: true,
@@ -49,21 +50,60 @@ async function fetchLabel(variantId: string) {
   return { blob: await response.blob(), name }
 }
 
-// What a PO line for this variation gets as its product label.
+// What a PO line for this variation gets as its product label. Without an FNSKU, the standard label shows the SKU.
 function LabelSource({ variation, productLabel }: { variation: BarcodeVariation; productLabel: ProductLabel }) {
   if (variation.barcode) {
-    return <span className={styles.detail}>Uploaded: {variation.barcode.name}</span>
+    return <>Uploaded, {variation.barcode.name}</>
   }
   if (productLabel === "uploaded") {
-    return <WarningNote>No label uploaded</WarningNote>
+    return <WarningNote>Label missing</WarningNote>
   }
+  const fnsku = variation.fnsku ? `FNSKU ${variation.fnsku}` : null
   if (productLabel === "none") {
-    return <span className={styles.detail}>No label, except on POs to Amazon</span>
+    return <>{fnsku ? `Amazon only, ${fnsku}` : "Amazon only"}</>
   }
+  return <>{`Standard, ${fnsku ?? "SKU barcode"}`}</>
+}
+
+// A small ghost icon button with its name in a tooltip.
+function IconAction({
+  tip,
+  label,
+  busy = false,
+  expanded,
+  disabled,
+  onClick,
+  children
+}: {
+  tip: string
+  label: string
+  busy?: boolean
+  expanded?: boolean
+  disabled?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
   return (
-    <span className={styles.detail}>
-      {variation.fnsku ? `Standard label, FNSKU ${variation.fnsku}` : "Standard label"}
-    </span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={label}
+            aria-expanded={expanded}
+            aria-busy={busy || undefined}
+            disabled={disabled}
+            onClick={onClick}
+          />
+        }
+      >
+        {busy ? <Spinner /> : children}
+      </TooltipTrigger>
+      <TooltipContent>{tip}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -89,11 +129,6 @@ function BarcodeRow({
   const verb = barcode ? "Replace" : "Upload"
   // There's a label to show when one was uploaded, or the standard label applies. Its FNSKU is looked up if needed.
   const viewable = barcode !== null || productLabel !== "uploaded"
-
-  let previewText = preview ? "Hide" : "Preview"
-  if (loading === "preview") {
-    previewText = "Loading…"
-  }
 
   function closePreview() {
     if (preview) {
@@ -163,12 +198,16 @@ function BarcodeRow({
   }
 
   return (
-    <li className={styles.barcode}>
-      <div className={styles.barcodeInfo}>
-        <span className={styles.title}>{label}</span>
-        <LabelSource variation={variation} productLabel={productLabel} />
-      </div>
-      <div className={styles.barcodeActions}>
+    <li className="flex flex-col gap-2 py-2 pr-2 pl-3">
+      <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {variation.title && <span className="text-sm font-medium [overflow-wrap:anywhere]">{variation.title}</span>}
+          <span
+            className={cn("text-muted-foreground [overflow-wrap:anywhere]", variation.title ? "text-xs" : "text-sm")}
+          >
+            <LabelSource variation={variation} productLabel={productLabel} />
+          </span>
+        </div>
         <input
           ref={input}
           type="file"
@@ -183,79 +222,69 @@ function BarcodeRow({
             }
           }}
         />
-        {viewable && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={loading !== null}
-            aria-expanded={preview !== null}
-            aria-label={`${preview ? "Hide" : "Preview"} label for ${label}`}
-            onClick={() => void show()}
-          >
-            {preview ? <EyeOff data-icon="inline-start" /> : <Eye data-icon="inline-start" />}
-            {previewText}
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="xs"
-          disabled={uploading || removing}
-          aria-label={`${verb} label for ${label}`}
-          onClick={() => input.current?.click()}
-        >
-          <Upload data-icon="inline-start" />
-          {uploading ? "Uploading…" : verb}
-        </Button>
-        {viewable && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={loading !== null}
-            aria-label={`Download label for ${label}`}
-            onClick={() => void download()}
-          >
-            <Download data-icon="inline-start" />
-            {loading === "download" ? "Downloading…" : "Download"}
-          </Button>
-        )}
-        {barcode && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
+        <div className="flex shrink-0 items-center">
+          {viewable && (
+            <IconAction
+              tip={preview ? "Hide preview" : "Preview"}
+              label={`${preview ? "Hide" : "Preview"} label for ${label}`}
+              busy={loading === "preview"}
+              expanded={preview !== null}
+              disabled={loading !== null}
+              onClick={() => void show()}
+            >
+              {preview ? <EyeOff /> : <Eye />}
+            </IconAction>
+          )}
+          {viewable && (
+            <IconAction
+              tip="Download"
+              label={`Download label for ${label}`}
+              busy={loading === "download"}
+              disabled={loading !== null}
+              onClick={() => void download()}
+            >
+              <Download />
+            </IconAction>
+          )}
+          <IconAction
+            tip={verb}
+            label={`${verb} label for ${label}`}
+            busy={uploading}
             disabled={uploading || removing}
-            aria-label={`Remove uploaded label for ${label}`}
-            onClick={() => void clear()}
+            onClick={() => input.current?.click()}
           >
-            <Trash2 data-icon="inline-start" />
-            Remove
-          </Button>
-        )}
+            <Upload />
+          </IconAction>
+          {barcode && (
+            <IconAction
+              tip="Remove"
+              label={`Remove uploaded label for ${label}`}
+              busy={removing}
+              disabled={uploading || removing}
+              onClick={() => void clear()}
+            >
+              <Trash2 />
+            </IconAction>
+          )}
+        </div>
       </div>
       {preview && (
-        <iframe src={`${preview}#toolbar=0&view=FitH`} title={`Label for ${label}`} className={styles.preview} />
+        <iframe
+          src={`${preview}#toolbar=0&view=FitH`}
+          title={`Label for ${label}`}
+          className="h-72 w-full rounded-md border bg-muted"
+        />
       )}
       {error && (
-        <div className={styles.barcodeError}>
-          <FormError message={error} />
-        </div>
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
       )}
     </li>
   )
 }
 
-const labelHelp: Record<ProductLabel, string> = {
-  standard:
-    "New POs include each variation’s label for your supplier to print: an uploaded one-page PDF, or else the standard label with its Amazon FNSKU (or Shopify SKU without Amazon) and Shopify title. Uploads are saved right away.",
-  uploaded:
-    "Upload a one-page PDF label for each variation, such as one with its size measurements. New POs include it for your supplier to print. Uploads are saved right away.",
-  none: "POs to your locations or a forwarder skip labels. POs to Amazon get the standard FNSKU label, or an uploaded one."
-}
-
-// Each variation's product label. Uploads save right away, separately from the rest of the product's details.
+// Each variation's product label. Uploads save right away, apart from the rest of the product's details.
 export function ProductBarcodes({
   productTitle,
   productLabel,
@@ -268,22 +297,16 @@ export function ProductBarcodes({
   onChanged: () => void
 }) {
   return (
-    <section className={styles.barcodes} aria-labelledby="barcodes">
-      <h3 id="barcodes" className={styles.title}>
-        Labels
-      </h3>
-      <p className={styles.detail}>{labelHelp[productLabel]}</p>
-      <ul className={styles.barcodeList}>
-        {variations.map((variation) => (
-          <BarcodeRow
-            key={variation.variantId}
-            variation={variation}
-            label={variation.title ?? productTitle}
-            productLabel={productLabel}
-            onChanged={onChanged}
-          />
-        ))}
-      </ul>
-    </section>
+    <ul aria-label="Labels" className="divide-y rounded-lg border">
+      {variations.map((variation) => (
+        <BarcodeRow
+          key={variation.variantId}
+          variation={variation}
+          label={variation.title ?? productTitle}
+          productLabel={productLabel}
+          onChanged={onChanged}
+        />
+      ))}
+    </ul>
   )
 }

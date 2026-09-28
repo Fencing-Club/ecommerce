@@ -25,7 +25,7 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
     // Serialize replacement with user uploads and preserve previous versions as outdated.
     const [order] = await tx.select().from(orders).where(eq(orders.id, input.orderId)).for("update")
     if (!order) {
-      throw new Error("PO is unavailable")
+      throw new Error("Purchase order is unavailable")
     }
     let outdated = input.outdated ?? 0
     if (input.shipmentId) {
@@ -99,7 +99,7 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
     .innerJoin(suppliers, eq(suppliers.id, order.supplierId))
     .where(eq(organizations.id, order.buyerOrgId))
   if (!row) {
-    throw new Error("PO is unavailable")
+    throw new Error("Purchase order is unavailable")
   }
   const { destination } = data
   // With a stop on the way, the supplier ships to the forwarder there, which sends the goods on.
@@ -164,7 +164,7 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
 export async function generatePo(orderId: string, revision?: number) {
   const [order] = await db().select().from(orders).where(eq(orders.id, orderId))
   if (!order) {
-    throw new Error("PO is unavailable")
+    throw new Error("Purchase order is unavailable")
   }
   const targetRevision = revision ?? order.revision
   const [historical] = await db()
@@ -172,7 +172,7 @@ export async function generatePo(orderId: string, revision?: number) {
     .from(orderRevisions)
     .where(and(eq(orderRevisions.orderId, orderId), eq(orderRevisions.revision, targetRevision)))
   if (!historical) {
-    throw new Error("PO revision is unavailable")
+    throw new Error("Purchase order revision is unavailable")
   }
   const bytes = await purchaseOrderPdf({
     order: historical.data,

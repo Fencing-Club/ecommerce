@@ -151,6 +151,7 @@ import {
   receiveShipment,
   updateDraftOrder
 } from "../src/server/orders"
+import { listPartners } from "../src/server/partners"
 import {
   assignProductSupplier,
   lineDefaultsFor,
@@ -174,6 +175,7 @@ import {
 import { hash } from "../src/server/security"
 import { shopifyOrderTags, untaggedShopifyOrders } from "../src/server/shopify-tags"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
+import { saveSupplierAddress, supplierPickupAddresses } from "../src/server/supplier-addresses"
 import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
@@ -2111,7 +2113,7 @@ describe("leg holders shipping the goods on", () => {
     context.actor = forwarderActor
     expect(
       await (await post("shipment.forward", { ...forward, freight: { amountMinor: 900, currency: "CNY" } })).json()
-    ).toEqual({ error: "Enter the freight in USD, the PO's currency" })
+    ).toEqual({ error: "Enter the freight in USD, the purchase order's currency" })
     expect((await post("shipment.forward", forward)).status).toBe(200)
     const [shipped] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, id))
     expect(shipped).toMatchObject({ status: "forwarded", forwarderCarrier: "DHL", forwarderReference: "1234567890" })
@@ -2482,7 +2484,7 @@ describe("document upload and packet release", () => {
     })
     const result = await uploadPdf("product_label")
     expect(result.status).toBe(400)
-    expect(await result.json()).toMatchObject({ error: "PO changed during upload. Try again" })
+    expect(await result.json()).toMatchObject({ error: "The purchase order changed during upload. Try again" })
     expect(await database.select().from(tables.documents)).toHaveLength(0)
   })
   it("preserves an existing product label when a shipment is released during its replacement", async () => {
@@ -3461,7 +3463,7 @@ describe("fluid packing handoff", () => {
     expect(checked.canSubmit).toBe(false)
     expect(checked.issues).toContainEqual(expect.objectContaining({ code: "po_changed" }))
     expect((await orderWorkflow(supplier, orderId)).shipments[0]?.canSubmit).toBe(false)
-    await expect(submitPacking(supplier, prepared.id, undefined, 2)).rejects.toThrow("PO changed")
+    await expect(submitPacking(supplier, prepared.id, undefined, 2)).rejects.toThrow("purchase order changed")
     await savePacking(supplier, prepared.id, prepared.packing, 2, 2)
     await submitPacking(supplier, prepared.id, undefined, 3)
     expect((await database.select().from(tables.shipments))[0]).toMatchObject({ status: "queued", orderRevision: 2 })
@@ -3489,7 +3491,7 @@ describe("fluid packing handoff", () => {
     const prepared = await preparation()
     await expect(
       savePacking(supplier, prepared.id, { cartons: [{ items: [{ itemId: randomUUID(), pieces: 10 }] }] }, 1, 1)
-    ).rejects.toThrow("not on this PO")
+    ).rejects.toThrow("not on this purchase order")
     const workflow = await orderWorkflow(supplier, orderId)
     expect(workflow.documents).toHaveLength(1)
     expect(workflow.documents[0]).not.toHaveProperty("objectKey")
@@ -4597,7 +4599,7 @@ describe("draft PO edits", () => {
       .select()
       .from(tables.orderRevisions)
       .where(eq(tables.orderRevisions.orderId, created.id))
-    expect(revisions.map((row) => row.reason).toSorted()).toEqual(["PO created", "PO edited"])
+    expect(revisions.map((row) => row.reason).toSorted()).toEqual(["Purchase order created", "Purchase order edited"])
     // A stale revision, or a PO that's been sent, can't be edited.
     await expect(updateDraftOrder(buyer, created.id, orderData, 1)).rejects.toThrow("changed")
     await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, created.id))
@@ -4661,6 +4663,134 @@ describe("freight forwarders", () => {
       saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Warehouse", address })
     ).rejects.toThrow("removed")
     expect(await forwarderAddresses(buyerId)).toEqual([])
+  })
+})
+
+describe("supplier pickup addresses", () => {
+  const unicId = randomUUID()
+  // As the shipment page has the supplier that hasn't joined.
+  const unic = { id: unicId, buyerOrgId: buyerId, supplierOrgId: null }
+  const address = {
+    name: "Lisa Yao",
+    addressLine1: "1000 Siji Road",
+    addressLine2: "",
+    city: "Yiwu",
+    stateOrRegion: "Zhejiang",
+    postalCode: "322000",
+    countryCode: "CN",
+    phoneNumber: "+8613800000000",
+    email: ""
+  }
+  const save = (data: Record<string, unknown>) =>
+    action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "supplier.address", data })
+      })
+    )
+  const saved = () => database.select().from(tables.contacts).where(eq(tables.contacts.supplierId, unicId))
+
+  beforeEach(async () => {
+    await database.insert(tables.suppliers).values({ id: unicId, buyerOrgId: buyerId, name: "Unic" })
+  })
+
+  it("lets the buyer's owner save, edit and remove a pickup address for a supplier that hasn't joined", async () => {
+    const created = await save({ supplierId: unicId, name: "Factory", address })
+    const [row] = await saved()
+    expect(await created.json()).toEqual({ id: row!.id })
+    expect(row).toMatchObject({ orgId: buyerId, kind: "pickup", name: "Factory", address })
+
+    // Amazon needs a phone number to schedule the pickup.
+    const noPhone = await save({ supplierId: unicId, name: "Warehouse", address: { ...address, phoneNumber: "" } })
+    expect(noPhone.status).toBe(400)
+    expect(await noPhone.json()).toEqual({ error: expect.stringContaining("Add a pickup phone number") })
+
+    const edited = await save({
+      supplierId: unicId,
+      id: row!.id,
+      name: "Main factory",
+      address: { ...address, city: "Jinhua" }
+    })
+    expect(edited.status).toBe(200)
+    // The supplier's shipments offer the saved address for pickup.
+    expect(await supplierPickupAddresses(unic)).toMatchObject([
+      { id: row!.id, name: "Main factory", address: { ...address, city: "Jinhua" } }
+    ])
+
+    expect((await save({ supplierId: unicId, id: row!.id, remove: true })).status).toBe(200)
+    expect(await saved()).toEqual([])
+    expect(await supplierPickupAddresses(unic)).toEqual([])
+    expect(await (await save({ supplierId: unicId, id: row!.id, remove: true })).json()).toEqual({
+      error: "This address was already removed"
+    })
+  })
+
+  it("keeps a supplier's pickup addresses to its own buyer's owners", async () => {
+    await saveSupplierAddress(buyerId, { supplierId: unicId, name: "Factory", address })
+    const [row] = await saved()
+
+    // Another buyer can't add one, or change or remove this one, even through a supplier of its own.
+    const theirs = randomUUID()
+    await database.insert(tables.suppliers).values({ id: theirs, buyerOrgId: otherId, name: "Unic" })
+    context.actor = actor("buyer", otherId)
+    expect(await (await save({ supplierId: unicId, name: "Theirs", address })).json()).toEqual({
+      error: "This supplier was removed"
+    })
+    expect(await (await save({ supplierId: theirs, id: row!.id, name: "Theirs", address })).json()).toEqual({
+      error: "This address was removed"
+    })
+    expect(await (await save({ supplierId: theirs, id: row!.id, remove: true })).json()).toEqual({
+      error: "This address was already removed"
+    })
+
+    // Nor can a member of the buyer's workspace who isn't an owner, or a supplier.
+    context.actor = { ...buyer, role: "member" }
+    const member = await save({ supplierId: unicId, id: row!.id, remove: true })
+    expect(member.status).toBe(400)
+    expect(await member.json()).toEqual({ error: expect.stringContaining("Only workspace owners") })
+    // The workspace's own address actions don't reach a partner's addresses either.
+    const generic = (name: string, data: Record<string, unknown>) =>
+      action(
+        new Request("http://localhost:3000/api/action", {
+          method: "POST",
+          headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+          body: JSON.stringify({ action: name, data })
+        })
+      )
+    expect((await generic("contact.delete", { id: row!.id })).status).toBe(404)
+    expect((await generic("contact.update", { id: row!.id, name: "Mine", kind: "delivery", address })).status).toBe(404)
+    expect(await saved()).toMatchObject([{ id: row!.id, kind: "pickup", name: "Factory" }])
+    context.actor = supplier
+    expect(await (await save({ supplierId: unicId, name: "Dock", address })).json()).toEqual({
+      error: "A buyer workspace is required"
+    })
+    expect(await saved()).toMatchObject([{ id: row!.id, orgId: buyerId, name: "Factory", address }])
+
+    // Once the buyer removes the supplier, its addresses can't change.
+    await database.update(tables.suppliers).set({ removedAt: new Date() }).where(eq(tables.suppliers.id, unicId))
+    await expect(saveSupplierAddress(buyerId, { supplierId: unicId, name: "Dock", address })).rejects.toThrow(
+      "This supplier was removed"
+    )
+  })
+
+  it("leaves a joined supplier's pickup addresses to the supplier", async () => {
+    const response = await save({ supplierId: supplierLinkId, name: "Factory", address })
+    expect(await response.json()).toEqual({ error: "Supplier keeps its own pickup addresses now that it has joined" })
+
+    // Its shipments and its partner row show the supplier's own pickup addresses, not ones the buyer saved for it.
+    await database.insert(tables.contacts).values([
+      { orgId: supplierId, kind: "pickup", name: "Own dock", address },
+      { orgId: buyerId, kind: "pickup", supplierId: supplierLinkId, name: "Saved before joining", address }
+    ])
+    await saveSupplierAddress(buyerId, { supplierId: unicId, name: "Factory", address })
+    const joined = { id: supplierLinkId, buyerOrgId: buyerId, supplierOrgId: supplierId }
+    expect((await supplierPickupAddresses(joined)).map((row) => row.name)).toEqual(["Own dock"])
+    const partners = (await listPartners(buyerId)).flatMap((row) => (row.type === "supplier" ? [row.supplier] : []))
+    expect(partners.map((row) => [row.name, row.addresses.map((contact) => contact.name)])).toEqual([
+      ["Supplier", ["Own dock"]],
+      ["Unic", ["Factory"]]
+    ])
   })
 })
 

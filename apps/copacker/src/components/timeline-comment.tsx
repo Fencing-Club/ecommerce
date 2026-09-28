@@ -23,7 +23,7 @@ export function TimelineComment({ orderId }: { orderId: string }) {
         <Textarea
           {...field}
           aria-label="Comment"
-          placeholder="Leave a comment..."
+          placeholder="Leave a comment…"
           className="min-h-16 resize-none border-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
           onKeyDown={(event) => {
             if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -32,7 +32,13 @@ export function TimelineComment({ orderId }: { orderId: string }) {
           }}
         />
         <div className="flex justify-end border-t bg-muted/50 px-2 py-1.5">
-          <SubmitButton type="submit" size="sm" pending={form.formState.isSubmitting} disabled={!field.value.trim()}>
+          <SubmitButton
+            type="submit"
+            variant="outline"
+            size="sm"
+            pending={form.formState.isSubmitting}
+            disabled={!field.value.trim()}
+          >
             Post
           </SubmitButton>
         </div>

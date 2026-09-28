@@ -1,15 +1,9 @@
 // Number and money formats for summaries and charts. Money is in minor units, as Copacker stores it.
 
 const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
-const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 })
 
 export function formatNumber(value: number) {
   return whole.format(value)
-}
-
-// 1,284 stays exact; 12,900 becomes 12.9K.
-export function compactNumber(value: number) {
-  return Math.abs(value) < 10000 ? whole.format(value) : compact.format(value)
 }
 
 export function compactMoney(minor: number, currency: string) {

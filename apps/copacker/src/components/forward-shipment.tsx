@@ -15,7 +15,7 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
 import { FormError, SubmitButton } from "./actions"
-import { FormInput, FormNumber } from "./form-controls"
+import { FormInput, FormMoney } from "./form-controls"
 
 const schema = z.object({
   carrier: z.string().trim().min(1, "Enter the carrier").max(100),
@@ -50,17 +50,10 @@ export function ForwardShipment({ shipmentId, currency }: { shipmentId: string; 
             <form onSubmit={submit} noValidate className="flex flex-col gap-4">
               <DialogHeader>
                 <DialogTitle>Mark shipped</DialogTitle>
-                <DialogDescription>The freight cost is added to the PO’s landed costs.</DialogDescription>
+                <DialogDescription>The freight cost is added to the purchase order’s landed costs.</DialogDescription>
               </DialogHeader>
               <FieldGroup className="gap-4">
-                <FormNumber
-                  name="amount"
-                  required
-                  label={`Freight cost (${currency})`}
-                  scale={100}
-                  step={0.01}
-                  min={0}
-                />
+                <FormMoney name="amount" required label="Freight cost" currency={currency} />
                 <FormInput name="carrier" required label="Carrier" placeholder="Maersk" />
                 <FormInput name="reference" required label="Tracking or booking number" />
               </FieldGroup>

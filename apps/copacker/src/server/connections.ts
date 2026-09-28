@@ -72,14 +72,14 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
 export async function shopifyFor(orgId: string, expectedDomain?: string) {
   const c = await connection(orgId, "shopify")
   if (expectedDomain && c.externalId !== expectedDomain) {
-    throw new Error("Reconnect the Shopify store originally selected for this PO")
+    throw new Error("Reconnect the Shopify store originally selected for this purchase order")
   }
   return new Shopify(c.externalId, c.token)
 }
 export async function amazonFor(orgId: string, expectedSellerId?: string | null) {
   const c = await connection(orgId, "amazon")
   if (expectedSellerId && c.externalId !== expectedSellerId) {
-    throw new Error("Reconnect the Amazon account originally selected for this PO")
+    throw new Error("Reconnect the Amazon account originally selected for this purchase order")
   }
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
     throw new Error("Amazon developer credentials are not configured")

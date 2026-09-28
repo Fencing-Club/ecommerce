@@ -8,7 +8,7 @@ Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` befor
 
 ## External setup
 
-1. WorkOS: create an AuthKit application. Register `<APP_URL>/callback`, login URI `<APP_URL>/login`, and sign-out URI `<APP_URL>`. Users authenticate in WorkOS; Copacker's database owns workspace memberships and per-order supplier sharing.
+1. WorkOS: create an AuthKit application. Register `<APP_URL>/callback`, login URI `<APP_URL>/login`, sign-out URI `<APP_URL>` and password reset URL `<APP_URL>/reset-password`. Copacker draws its own sign-in pages against the WorkOS API ([Sign-in and getting started](auth.md)); Copacker's database owns workspace memberships and per-order supplier sharing.
 2. Shopify: use a public-distribution merchant app for unrelated merchants. Register `<APP_URL>/api/connections/shopify`. Required scopes: read_products, write_products, read_inventory, write_inventory. Existing private Aisle client-credentials authorization cannot onboard unrelated stores. Supplier SKU remains the merchant-owned PRODUCTVARIANT `custom.supplier_sku` field already used by Aisle.
 3. Amazon: register a public SP-API application with the AWD role and Listings access. Register `<APP_URL>/api/connections/amazon`; Amazon requires an HTTPS redirect, so test on a deployed environment rather than localhost. While the app is a draft, set `AMAZON_APP_DRAFT=true` so the consent link requests `version=beta`. Use US marketplace authorization for the first release. Tokens are encrypted per buyer organization.
 4. Email: configure Resend API key and a verified sender using EMAIL_API_KEY / EMAIL_FROM. The worker sends invitations, attached POs, and label-ready notifications. No production supplier emails are sent during development.
@@ -40,7 +40,7 @@ The Fencing Club packages were copied from the current Agency working tree, excl
 
 ## Saved addresses and product details
 
-Buyers save delivery addresses (their own locations) and freight forwarders. Suppliers save pickup addresses in their own workspace, and packing offers the supplier's pickup addresses; a supplier without a workspace types the address in.
+Buyers save delivery addresses (their own locations) and freight forwarders. Suppliers save pickup addresses in their own workspace; for a supplier without a workspace, the buyer saves them on the Partners page. Packing offers the supplier's pickup addresses, or another address typed in.
 
 Product details Copacker keeps itself (a default description and preparation per Shopify product) are edited from Inventory and prefill new PO lines. Everything else about a product comes from Shopify or Amazon.
 

@@ -1,27 +1,25 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
-import { CheckCircle2 } from "lucide-react"
+import { CircleCheck, CircleDashed } from "lucide-react"
 import type { Metadata } from "next"
-import { ActionButton } from "@/components/actions"
 import { AmazonSelfAuthorize } from "@/components/amazon-self-authorize"
 import { PageHeader } from "@/components/common"
 import { DisconnectButton } from "@/components/disconnect-button"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
-import { TextField } from "@/components/form-fields"
-import { InfoTip } from "@/components/info-tip"
-import { InventoryLocations } from "@/components/inventory-locations"
-import { AddMonthlyCost } from "@/components/monthly-costs"
+import { RequiredMark } from "@/components/form-controls"
+import { DetailRow, InventoryLocations } from "@/components/inventory-locations"
+import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
 import { SavedAddresses } from "@/components/saved-addresses"
 import { RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { FieldGroup } from "@/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { db } from "@/db"
 import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
-import { cn } from "@/lib/utils"
 import { session } from "@/server/auth"
 import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
 import { readLocationMappings } from "@/server/inventory-location-settings"
@@ -31,32 +29,26 @@ import { restockSettings } from "@/server/restock-report"
 import { salesHistoryDays } from "@/server/sales-orders"
 import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
-import { pushToBottom } from "./page.css"
-import { sx } from "@/styles/sprinkles.css"
-import { srOnly } from "@/styles/utilities.css"
 
 export const metadata: Metadata = { title: "Settings" }
 
-const providers = [
-  {
-    id: "shopify" as const,
-    title: "Shopify",
-    action: "Shopify",
-    description: "Connect your catalog, supplier SKUs, and product costs."
-  },
-  {
-    id: "amazon" as const,
-    title: "Amazon",
-    action: "Amazon",
-    description: "Connect the seller account used to create US AWD shipments."
-  }
-]
+// What connecting each store brings.
+const providers = {
+  shopify: { name: "Shopify", description: "Catalog, stock, sales and costs" },
+  amazon: { name: "Amazon", description: "Sales, stock and AWD shipments" }
+} as const
 
+type Provider = keyof typeof providers
+
+// The person's own profile first, then the workspace's settings, each as a section: its title and a short description
+// on the left, its cards on the right, stacked on smaller screens.
 export default async function Settings() {
   const s = await session()
   // The viewer's computer's zone, as their browser last reported it.
   const computerZone = await storeTimeZone({ timeZone: null })
   const buyer = s.org.kind === "buyer"
+  const supplier = s.org.kind === "supplier"
+  const owner = s.role === "owner"
   const restock = restockSettings(s.org)
   const [linked, saved, [profile], costs, currency] = await Promise.all([
     db()
@@ -74,233 +66,156 @@ export default async function Settings() {
   const [shopName, amazon, orderTags, copyingTags] = await Promise.all([
     shopifyAccount ? shopifyStoreName(s.org.id, shopifyAccount.externalId) : null,
     amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null,
-    buyer && shopifyAccount && s.role === "owner" ? shopifyOrderTags(s.org.id) : [],
-    buyer && shopifyAccount && s.role === "owner" ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
+    buyer && shopifyAccount && owner ? shopifyOrderTags(s.org.id) : [],
+    buyer && shopifyAccount && owner ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
-  const storeNames = { shopify: shopName, amazon: amazon?.name ?? null }
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
   const amazonDraft = process.env.AMAZON_APP_DRAFT === "true"
   // Delivery addresses can be linked to one of the store's own Shopify locations.
-  const ownLocations =
-    s.org.kind === "buyer"
-      ? (await readLocationMappings(s)).locations
-          .filter((location) => location.classification === "merchant")
-          .map((location) => ({ id: location.locationId, name: location.name }))
-      : []
+  const ownLocations = buyer
+    ? (await readLocationMappings(s)).locations
+        .filter((location) => location.classification === "merchant")
+        .map((location) => ({ id: location.locationId, name: location.name }))
+    : []
 
   const [person] = await db().select().from(profiles).where(eq(profiles.userId, s.user.id))
   return (
     <>
-      <PageHeader title="Workspace settings" />
+      <PageHeader title="Settings" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your profile</CardTitle>
-          <CardDescription>{s.user.email}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="flex w-full max-w-5xl flex-col divide-y">
+        <Section id="profile" title="Profile" description={s.user.email}>
           <ProfileForm
             profile={{
               firstName: person?.firstName ?? "",
               lastName: person?.lastName ?? "",
               position: person?.position ?? "",
               company: person?.company || s.org.name,
-              ...(buyer && s.role === "owner" && { website: profile?.website ?? "" })
+              ...(buyer && owner && { website: profile?.website ?? "" })
             }}
           />
-        </CardContent>
-      </Card>
+        </Section>
 
-      {s.org.kind === "buyer" && (
-        <div className={sx({ display: "grid", gap: 6, gridTemplateColumns: { md: "2" } })}>
-          {providers.map((provider) => {
-            const connection = linked.find((c) => c.provider === provider.id)
-            return (
-              <Card key={provider.id}>
-                <CardHeader>
-                  <CardTitle>{provider.title}</CardTitle>
-                  <CardDescription>
-                    {connection ? (storeNames[provider.id] ?? connection.externalId) : provider.description}
-                  </CardDescription>
-                  {connection && (
-                    <CardAction>
-                      <Badge variant="outline">
-                        <CheckCircle2 data-icon="inline-start" />
-                        Connected
-                      </Badge>
-                    </CardAction>
-                  )}
-                </CardHeader>
-                {s.role === "owner" && connection && (
-                  <>
+        {buyer && (
+          <Section id="integrations" title="Integrations" description="Stores Copacker syncs with">
+            {shopifyAccount ? (
+              <ConnectedCard
+                provider="shopify"
+                account={account(shopName, shopifyAccount.externalId)}
+                externalId={shopifyAccount.externalId}
+                owner={owner}
+              >
+                <InventoryLocations />
+                <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
+              </ConnectedCard>
+            ) : (
+              <NotConnectedCard provider="shopify" owner={owner}>
+                <form action="/api/connections/shopify">
+                  <Card>
+                    <IntegrationHeader provider="shopify" />
                     <CardContent>
-                      {provider.id === "shopify" && (
-                        <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
-                          <InventoryLocations />
-                          <ExcludedOrderTags
-                            tags={s.org.excludedShopifyTags}
-                            suggestions={orderTags}
-                            copying={copyingTags}
-                          />
-                        </div>
-                      )}
-                      {provider.id === "amazon" && (
-                        <section className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-                          <h3 className={sx({ text: "sm", fontWeight: "medium" })}>Marketplaces</h3>
-                          {amazon ? (
-                            <ul className={sx({ display: "flex", flexDirection: "column", gap: 1, text: "sm" })}>
-                              {amazon.marketplaces.map((label) => (
-                                <li key={label}>{label}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className={sx({ text: "sm", color: "muted" })}>
-                              Amazon didn’t say which marketplaces you sell in. Try again later.
-                            </p>
-                          )}
-                        </section>
-                      )}
+                      <Field>
+                        <FieldLabel htmlFor="shop">
+                          <span>
+                            Shopify store
+                            <RequiredMark />
+                          </span>
+                        </FieldLabel>
+                        <Input id="shop" name="shop" placeholder="your-store.myshopify.com" required />
+                        <FieldDescription>Admin link or myshopify.com domain</FieldDescription>
+                      </Field>
                     </CardContent>
-                    <CardFooter className={cn(pushToBottom, sx({ justifyContent: "space-between", gap: 3 }))}>
-                      <span className={sx({ text: "xs", color: "muted", minWidth: 0 })}>{connection.externalId}</span>
-                      <DisconnectButton provider={provider.id} account={connection.externalId} />
+                    <CardFooter className="justify-end">
+                      <Button type="submit">Connect Shopify</Button>
                     </CardFooter>
-                  </>
-                )}
-                {s.role === "owner" && !connection && (
-                  <CardContent className={pushToBottom}>
-                    <form action={`/api/connections/${provider.id}`}>
-                      <FieldGroup>
-                        {provider.id === "shopify" && (
-                          <TextField
-                            label="Shopify store"
-                            name="shop"
-                            placeholder="your-store.myshopify.com"
-                            description="Paste your Shopify admin link or enter your myshopify.com domain."
-                            required
-                          />
-                        )}
-                        <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
-                          {provider.id === "amazon" && amazonDraft ? (
-                            <AmazonSelfAuthorize />
-                          ) : (
-                            <Button type="submit">Connect {provider.action}</Button>
-                          )}
-                        </div>
-                      </FieldGroup>
-                    </form>
-                  </CardContent>
-                )}
-              </Card>
-            )
-          })}
-        </div>
-      )}
+                  </Card>
+                </form>
+              </NotConnectedCard>
+            )}
+            {amazonAccount ? (
+              <ConnectedCard
+                provider="amazon"
+                account={account(amazon?.name ?? null, amazonAccount.externalId)}
+                externalId={amazonAccount.externalId}
+                owner={owner}
+              >
+                <DetailRow title="Marketplaces">
+                  {amazon ? amazon.marketplaces.join(", ") || "—" : "Couldn’t load from Amazon"}
+                </DetailRow>
+              </ConnectedCard>
+            ) : (
+              <NotConnectedCard provider="amazon" owner={owner}>
+                <Card>
+                  <IntegrationHeader provider="amazon" />
+                  <CardFooter className="justify-end">
+                    {amazonDraft ? (
+                      <AmazonSelfAuthorize />
+                    ) : (
+                      <form action="/api/connections/amazon">
+                        <Button type="submit">Connect Amazon</Button>
+                      </form>
+                    )}
+                  </CardFooter>
+                </Card>
+              </NotConnectedCard>
+            )}
+          </Section>
+        )}
 
-      {s.org.kind === "buyer" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5">
-              Store time zone
-              <InfoTip label="About the store time zone">
-                The Overview counts days and months from midnight here. Unless you choose one, it uses your computer’s.
-              </InfoTip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {s.role === "owner" ? (
+        {buyer && (
+          <Section id="restock" title="Restock" description="Used by Restock and the Overview">
+            {owner ? (
+              <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
+            ) : (
+              <Values
+                values={[
+                  { label: "Sales period", value: `${restock.days} days` },
+                  { label: "Lead time", value: `${restock.leadTimeDays} days` }
+                ]}
+              />
+            )}
+          </Section>
+        )}
+
+        {buyer && (
+          <Section id="time-zone" title="Time zone" description="For days and months on the Overview">
+            {owner ? (
               <TimeZoneForm
                 timeZone={s.org.timeZone}
                 computerZone={computerZone}
                 zones={timeZones().map((zone) => ({ value: zone, label: timeZoneLabel(zone) }))}
               />
             ) : (
-              <p>{timeZoneLabel(s.org.timeZone ?? computerZone)}</p>
+              <Values
+                values={[
+                  {
+                    label: "Store time zone",
+                    value: s.org.timeZone ? timeZoneLabel(s.org.timeZone) : `Automatic, ${timeZoneLabel(computerZone)}`
+                  }
+                ]}
+              />
             )}
-          </CardContent>
-        </Card>
-      )}
+          </Section>
+        )}
 
-      {buyer && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5">
-              Restock
-              <InfoTip label="About restock settings">
-                Restock starts from these, and the Overview uses them for days of cover and stockout losses.
-              </InfoTip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {s.role === "owner" ? (
-              <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
-            ) : (
-              <p>
-                {restock.days}-day sales period, {restock.leadTimeDays}-day lead time
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        {buyer && (
+          <Section id="monthly-costs" title="Monthly costs" description="Costs Shopify and Amazon don’t report">
+            <MonthlyCosts
+              costs={costs.map((cost) => ({
+                id: cost.id,
+                name: cost.name,
+                amount: money(cost.amountMinor, cost.currency),
+                details: costDetails(cost)
+              }))}
+              currency={currency}
+              owner={owner}
+            />
+          </Section>
+        )}
 
-      {buyer && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5">
-              Monthly costs
-              <InfoTip label="About monthly costs">
-                Costs Shopify and Amazon don’t report, such as apps billed to a card. The Overview takes them off gross
-                profit.
-              </InfoTip>
-            </CardTitle>
-            {s.role === "owner" && (
-              <CardAction>
-                <AddMonthlyCost currency={currency} />
-              </CardAction>
-            )}
-          </CardHeader>
-          <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-            {costs.length > 0 ? (
-              <ul className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-                {costs.map((cost) => (
-                  <li
-                    key={cost.id}
-                    className={sx({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 3 })}
-                  >
-                    <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
-                      <span className={sx({ text: "sm", fontWeight: "medium" })}>{cost.name}</span>
-                      <span className={sx({ text: "xs", color: "muted" })}>{costDetails(cost)}</span>
-                    </span>
-                    <span className={sx({ display: "flex", alignItems: "center", gap: 3 })}>
-                      <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
-                        {money(cost.amountMinor, cost.currency)} a month
-                      </span>
-                      {s.role === "owner" && (
-                        <ActionButton action="monthlyCost.delete" data={{ id: cost.id }} variant="outline" size="sm">
-                          Remove<span className={srOnly}> {cost.name}</span>
-                        </ActionButton>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={sx({ text: "sm", color: "muted" })}>No monthly costs yet.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {s.org.kind === "supplier" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-1.5">
-              Supplier profile
-              <InfoTip label="About your supplier profile">Buyers working with you see these details.</InfoTip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {s.role === "owner" ? (
+        {supplier && (
+          <Section id="supplier-profile" title="Supplier profile" description="Contact details buyers see">
+            {owner ? (
               <SupplierProfileForm
                 contactName={profile?.contactName ?? ""}
                 contactEmail={profile?.contactEmail ?? ""}
@@ -308,24 +223,159 @@ export default async function Settings() {
                 website={profile?.website ?? ""}
               />
             ) : (
-              <p>
-                {[profile?.contactName, profile?.contactEmail, profile?.phoneNumber, profile?.website]
-                  .filter(Boolean)
-                  .join(", ") || "No contact details saved"}
-              </p>
+              <Values
+                values={[
+                  { label: "Contact name", value: profile?.contactName || "—" },
+                  { label: "Contact email", value: profile?.contactEmail || "—" },
+                  { label: "Phone", value: profile?.phoneNumber || "—" },
+                  { label: "Website", value: profile?.website || "—" }
+                ]}
+              />
             )}
-          </CardContent>
-        </Card>
-      )}
+          </Section>
+        )}
 
-      <SavedAddresses
-        // Addresses saved for a forwarder live on the Forwarders page. Older forwarder addresses, saved before
-        // forwarders had their own page, stay here to copy over and delete.
-        contacts={saved.filter((contact) => contact.kind !== "forwarder" || !contact.forwarderId)}
-        supplier={s.org.kind === "supplier"}
-        locations={ownLocations}
-      />
+        <Section
+          id="addresses"
+          title={supplier ? "Pickup addresses" : "Addresses"}
+          description={supplier ? "Where carriers collect your cartons" : "Where purchase orders are delivered"}
+        >
+          <SavedAddresses
+            // Addresses saved for a forwarder or a supplier live with that partner on the Partners page. Older
+            // forwarder addresses, saved before forwarders had their own page, stay here to copy over and delete.
+            contacts={saved.filter(
+              (contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId)
+            )}
+            supplier={supplier}
+            locations={ownLocations}
+          />
+        </Section>
+      </div>
     </>
+  )
+}
+
+function Section({
+  id,
+  title,
+  description,
+  children
+}: {
+  id: string
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="grid scroll-mt-20 gap-4 py-8 first:pt-0 last:pb-0 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-10"
+    >
+      <div className="flex min-w-0 flex-col gap-1">
+        <h2 id={`${id}-title`} className="font-semibold">
+          {title}
+        </h2>
+        <p className="text-sm break-words text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex min-w-0 flex-col gap-4">{children}</div>
+    </section>
+  )
+}
+
+// A store's name and account id, once when they're the same: "Fencing Club, fencing-club.myshopify.com".
+function account(name: string | null, externalId: string) {
+  return name && name !== externalId ? `${name}, ${externalId}` : externalId
+}
+
+function IntegrationHeader({ provider, children }: { provider: Provider; children?: React.ReactNode }) {
+  return (
+    <CardHeader>
+      <CardTitle>{providers[provider].name}</CardTitle>
+      <CardDescription>{providers[provider].description}</CardDescription>
+      {children && <CardAction>{children}</CardAction>}
+    </CardHeader>
+  )
+}
+
+// A connected store: its account and status, the settings the owner can change, and Disconnect.
+function ConnectedCard({
+  provider,
+  account: name,
+  externalId,
+  owner,
+  children
+}: {
+  provider: Provider
+  account: string
+  externalId: string
+  owner: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{providers[provider].name}</CardTitle>
+        <CardDescription className="break-words">{name}</CardDescription>
+        <CardAction>
+          <Badge variant="outline">
+            <CircleCheck data-icon="inline-start" className="text-success" />
+            Connected
+          </Badge>
+        </CardAction>
+      </CardHeader>
+      {owner && (
+        <>
+          <CardContent className="flex flex-col divide-y">{children}</CardContent>
+          <CardFooter className="justify-end">
+            <DisconnectButton provider={provider} account={externalId} />
+          </CardFooter>
+        </>
+      )}
+    </Card>
+  )
+}
+
+// A store that isn't connected: the owner's connect card, or for everyone else, that it isn't connected.
+function NotConnectedCard({
+  provider,
+  owner,
+  children
+}: {
+  provider: Provider
+  owner: boolean
+  children: React.ReactNode
+}) {
+  if (owner) {
+    return children
+  }
+  return (
+    <Card>
+      <IntegrationHeader provider={provider}>
+        <Badge variant="outline">
+          <CircleDashed data-icon="inline-start" />
+          Not connected
+        </Badge>
+      </IntegrationHeader>
+    </Card>
+  )
+}
+
+// Settings only the owner changes, as the rest of the team sees them.
+function Values({ values }: { values: Array<{ label: string; value: string }> }) {
+  return (
+    <Card>
+      <CardContent>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {values.map(({ label, value }) => (
+            <div key={label} className="flex min-w-0 flex-col gap-1">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-medium break-words">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -338,7 +388,7 @@ function costDetails(cost: MonthlyCost) {
       year: "numeric",
       timeZone: "UTC"
     })
-  const channel = cost.channel ? monthlyCostChannels[cost.channel] : "The whole business"
+  const channel = cost.channel ? monthlyCostChannels[cost.channel] : "All channels"
   if (cost.startsOn && cost.endsOn) {
     return `${channel}, ${date(cost.startsOn)} to ${date(cost.endsOn)}`
   }

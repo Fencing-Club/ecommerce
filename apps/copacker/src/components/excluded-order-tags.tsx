@@ -1,6 +1,5 @@
 "use client"
 
-import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -16,10 +15,11 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
+import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
-import * as styles from "./inventory-locations.css"
 
 // Shopify order tags whose orders Copacker leaves out, shown in the Shopify connection card like its locations.
 export function ExcludedOrderTags({
@@ -33,13 +33,22 @@ export function ExcludedOrderTags({
   copying: boolean
 }) {
   return (
-    <section className={styles.section}>
-      <div className={styles.heading}>
-        <h3 className={styles.title}>Excluded order tags</h3>
-        <EditTags tags={tags} suggestions={suggestions} />
-      </div>
+    <DetailRow
+      title={
+        <>
+          Excluded order tags
+          {copying && (
+            <output title="Syncing tags from Shopify" className="inline-flex">
+              <Spinner className="size-3.5 text-muted-foreground" />
+              <span className="sr-only">Syncing tags from Shopify</span>
+            </output>
+          )}
+        </>
+      }
+      action={<EditTags tags={tags} suggestions={suggestions} />}
+    >
       {tags.length > 0 ? (
-        <ul className={styles.tags}>
+        <ul className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
             <li key={tag}>
               <Badge variant="secondary">{tag}</Badge>
@@ -47,10 +56,9 @@ export function ExcludedOrderTags({
           ))}
         </ul>
       ) : (
-        <p className={styles.detail}>None</p>
+        <p>None</p>
       )}
-      {copying && <p className={styles.detail}>Copying tags from Shopify…</p>}
-    </section>
+    </DetailRow>
   )
 }
 
@@ -85,12 +93,11 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
       }}
     >
       <DialogTrigger render={<Button variant="outline" size="sm" aria-label="Edit excluded order tags" />}>
-        <Pencil data-icon="inline-start" />
         Edit
       </DialogTrigger>
       {/* Typing goes straight into the tags, not to the first chip's remove button. */}
       <DialogContent initialFocus={input}>
-        <form onSubmit={submit} className={styles.form}>
+        <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Excluded order tags</DialogTitle>
             <DialogDescription>Shopify orders with these tags aren’t counted.</DialogDescription>
@@ -105,7 +112,7 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
               placeholder="Add a tag"
               inputRef={input}
             />
-            <FieldDescription>Use * as a wildcard, like amazon*.</FieldDescription>
+            <FieldDescription>Use * as a wildcard, like amazon*</FieldDescription>
           </Field>
           <FormError message={error} />
           <DialogFooter>

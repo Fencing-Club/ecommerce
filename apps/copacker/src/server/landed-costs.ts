@@ -1,5 +1,5 @@
 import { orderTotal, type OrderInput } from "@repo/aisle"
-import { and, asc, eq, ne, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { events, landedCosts, orders } from "@/db/schema"
@@ -118,7 +118,13 @@ export async function landedMarkupsFor(orgId: string) {
       .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
       .from(events)
       .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(and(eq(orders.buyerOrgId, orgId), eq(events.message, "PO submitted to supplier")))
+      .where(
+        and(
+          eq(orders.buyerOrgId, orgId),
+          // Events recorded before purchase orders were spelled out say "PO submitted to supplier".
+          inArray(events.message, ["Purchase order submitted to supplier", "PO submitted to supplier"])
+        )
+      )
       .groupBy(events.orderId),
     amazonFreightByOrder(orgId)
   ])

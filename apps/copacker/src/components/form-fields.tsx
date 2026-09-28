@@ -1,51 +1,50 @@
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import * as styles from "./form-fields.css"
+"use client"
 
-type Option = { value: string; label: string; disabled?: boolean }
+import { Field, FieldDescription } from "@/components/ui/field"
+import { FormLabel, SelectControl } from "./form-controls"
 
-export function TextField({
-  label,
-  name,
-  id = name,
-  description,
-  ...props
-}: React.ComponentProps<typeof Input> & { label: string; description?: React.ReactNode }) {
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input id={id} name={name} {...props} />
-      {description && <FieldDescription>{description}</FieldDescription>}
-    </Field>
-  )
-}
-
+// A select for a plain form, outside React Hook Form.
 export function SelectField({
   label,
   id,
+  name,
   options,
   placeholder,
   description,
-  ...props
-}: Omit<React.ComponentProps<"select">, "size"> & {
+  required,
+  disabled,
+  value,
+  defaultValue,
+  onChange
+}: {
   label: string
   id: string
-  options: Option[]
+  // Submits the value with the form.
+  name?: string
+  options: Array<{ value: string; label: string; disabled?: boolean }>
   placeholder?: string
   description?: React.ReactNode
+  required?: boolean
+  disabled?: boolean
+  value?: string
+  defaultValue?: string
+  // Called with the chosen value as `target.value`, like a native select's change event.
+  onChange?: (event: { target: { value: string } }) => void
 }) {
   return (
     <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <NativeSelect id={id} className={styles.fullWidth} {...props}>
-        {placeholder !== undefined && <NativeSelectOption value="">{placeholder}</NativeSelectOption>}
-        {options.map((option) => (
-          <NativeSelectOption key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+      <FormLabel htmlFor={id} label={label} required={required} />
+      <SelectControl
+        id={id}
+        name={name}
+        options={options}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={(next) => onChange?.({ target: { value: next ?? "" } })}
+      />
       {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   )

@@ -72,7 +72,7 @@ export function priceInMinorUnits(value: string) {
   const [whole, fraction = ""] = value.split(".")
   const result = Number(whole) * 100 + Number(fraction.padEnd(2, "0"))
   if (!Number.isSafeInteger(result) || result > 100000000) {
-    throw new Error("Price exceeds the PO limit")
+    throw new Error("Price exceeds the purchase order limit")
   }
   return result
 }

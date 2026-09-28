@@ -1,32 +1,43 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { amazonNetworkNames, amazonNetworks, prepCategories } from "@repo/aisle"
-import { Pencil, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { amazonNetworkNames, amazonNetworks, type PrepCategory, prepCategories } from "@repo/aisle"
+import { ImageOff, Plus, Trash2 } from "lucide-react"
+import Image from "next/image"
+import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle,
-  SheetTrigger
+  SheetTitle
 } from "@/components/ui/sheet"
 import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
 import { formErrorMap } from "@/lib/form-errors"
 import { prepOptions } from "@/lib/prep"
-import { productLabels } from "@/lib/product-label"
+import { type ProductLabel, productLabels } from "@/lib/product-label"
+import { cn } from "@/lib/utils"
 import type { ProductDefaults } from "@/server/product-defaults"
-import { FormError } from "./actions"
+import { FormError, SubmitButton } from "./actions"
 import { FormCheckbox, FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
 import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
-import { type DetailsVariation, VariationDetails } from "./variation-details"
-import * as styles from "./inventory-products.css"
+import {
+  sameVariation,
+  useSaveVariationDetailsMutation,
+  VariationDetails,
+  type VariationFields,
+  variationInput,
+  variationSchema,
+  variationValues
+} from "./variation-details"
 
 const detailsApi = api.injectEndpoints({
   overrideExisting: true,
@@ -41,30 +52,140 @@ const detailsApi = api.injectEndpoints({
   })
 })
 
+// New PO lines get a sealed polybag when the product has no preparation of its own, so that's what an unset one shows.
+const defaultPrep: PrepCategory = "POLYBAGGING"
+// An empty supplier leaves restock to find one: from Shopify, the last PO, or a supplier catalog.
+const automaticSupplier = { value: "", label: "Automatic" }
+const networkOptions = amazonNetworks.map((network) => ({ value: network, label: amazonNetworkNames[network] }))
+const labelOptions = [
+  { value: "standard", label: "Standard label" },
+  { value: "uploaded", label: "Uploaded label" },
+  { value: "none", label: "No label" }
+]
+const labelHints: Record<ProductLabel, string> = {
+  standard: "FNSKU barcode, or the SKU without Amazon",
+  uploaded: "A one-page PDF for each variation",
+  none: "Purchase orders to Amazon still get the FNSKU label"
+}
+const wholeNumber = "Enter a whole number"
+
 const schema = z.object({
-  description: z.string().trim().max(2000),
-  // Empty means no default; new PO lines then start with a sealed polybag.
-  prepCategory: z.enum(prepCategories).or(z.literal("")),
-  minimumOrder: z.number().int().min(1).max(1000000).optional(),
-  caseQuantity: z.number().int().min(1).max(100000).optional(),
-  // Empty means not chosen; restock then uses the last PO or the supplier's catalog.
   supplierId: z.string(),
-  productLabel: z.enum(productLabels),
-  suffocationWarning: z.boolean(),
+  minimumOrder: z.number().int(wholeNumber).min(1).max(1000000).optional(),
   amazonNetwork: z.enum(amazonNetworks),
-  casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10)
+  prepCategory: z.enum(prepCategories),
+  suffocationWarning: z.boolean(),
+  description: z.string().trim().max(2000),
+  caseQuantity: z.number().int(wholeNumber).min(1).max(100000).optional(),
+  casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10),
+  productLabel: z.enum(productLabels),
+  variations: z.array(variationSchema)
 })
+type Values = z.input<typeof schema>
+type Output = z.output<typeof schema>
+type Details = Omit<ProductDefaults, "revision">
 
-type Variation = BarcodeVariation & DetailsVariation
+export type EditableProduct = {
+  productId: string
+  title: string
+  imageUrl: string | null
+  defaults: ProductDefaults
+  variants: (BarcodeVariation & VariationFields & { sku: string | null })[]
+}
 
-function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
-  const packs = useFieldArray<z.input<typeof schema>, "casePacks">({ name: "casePacks" })
+// A product's Shopify photo, or a placeholder. Shopify's CDN already serves a thumbnail, so Next's optimizer is skipped.
+export function ProductImage({ url, small = false }: { url: string | null; small?: boolean }) {
+  const size = small ? "size-8" : "size-10"
+  if (!url) {
+    return (
+      <span
+        aria-hidden="true"
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground [&_svg]:size-4",
+          size
+        )}
+      >
+        <ImageOff />
+      </span>
+    )
+  }
+  const pixels = small ? 32 : 40
   return (
-    <section className={styles.casePacks} aria-labelledby="case-packs">
-      <div className={styles.casePacksHeading}>
-        <h3 id="case-packs" className={styles.title}>
-          Case packs
-        </h3>
+    <Image
+      src={url}
+      alt=""
+      width={pixels}
+      height={pixels}
+      unoptimized
+      className={cn("shrink-0 rounded-md border bg-muted object-cover", size)}
+    />
+  )
+}
+
+function formValues({ defaults, variants }: EditableProduct): Values {
+  return {
+    supplierId: defaults.supplierId ?? "",
+    minimumOrder: defaults.minimumOrder ?? undefined,
+    amazonNetwork: defaults.amazonNetwork,
+    prepCategory: defaults.prepCategory ?? defaultPrep,
+    suffocationWarning: defaults.suffocationWarning,
+    description: defaults.description,
+    caseQuantity: defaults.caseQuantity ?? undefined,
+    casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined })),
+    productLabel: defaults.productLabel,
+    variations: variants.map(variationValues)
+  }
+}
+
+function details(values: Output, saved: ProductDefaults): Details {
+  return {
+    description: values.description,
+    // Leaving an unset preparation on sealed polybag keeps it unset.
+    prepCategory: values.prepCategory === defaultPrep && saved.prepCategory === null ? null : values.prepCategory,
+    casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
+    caseQuantity: values.caseQuantity ?? null,
+    minimumOrder: values.minimumOrder ?? null,
+    supplierId: values.supplierId || null,
+    productLabel: values.productLabel,
+    suffocationWarning: values.suffocationWarning,
+    amazonNetwork: values.amazonNetwork
+  }
+}
+
+// The same string for the same details, whatever order their keys arrived in.
+function detailsKey(input: Details) {
+  return JSON.stringify([
+    input.description,
+    input.prepCategory,
+    input.caseQuantity,
+    input.minimumOrder,
+    input.supplierId,
+    input.productLabel,
+    input.suffocationWarning,
+    input.amazonNetwork,
+    input.casePacks.map((pack) => [pack.name, pack.units, pack.lengthCm, pack.widthCm, pack.heightCm, pack.weightKg])
+  ])
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const id = useId()
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-4">
+      <h3 id={id} className="text-sm font-semibold">
+        {title}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+function CasePacks() {
+  const packs = useFieldArray<Values, "casePacks">({ name: "casePacks" })
+  const caseQuantity = useWatch<Values, "caseQuantity">({ name: "caseQuantity" })
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-medium">Case packs</h4>
         <Button
           type="button"
           variant="outline"
@@ -73,7 +194,7 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
           onClick={() =>
             packs.append({
               name: packs.fields.length ? `Case ${packs.fields.length + 1}` : "Standard case",
-              units: suggestedUnits ?? 1,
+              units: caseQuantity ?? 1,
               lengthCm: 0,
               widthCm: 0,
               heightCm: 0
@@ -84,179 +205,227 @@ function CasePacks({ suggestedUnits }: { suggestedUnits: number | null }) {
           Add case pack
         </Button>
       </div>
-      <p className={styles.detail}>
-        How the supplier packs this product into cartons. The first is the default, and restock rounds orders up to it.
-      </p>
       {packs.fields.map((field, index) => (
-        <fieldset key={field.id} className={styles.casePack}>
-          <legend className={styles.srOnlyLegend}>Case pack {index + 1}</legend>
-          <FormInput name={`casePacks.${index}.name`} required label="Name" className={styles.casePackName} />
+        <fieldset key={field.id} className="grid grid-cols-2 gap-3 rounded-lg border p-3 sm:grid-cols-4">
+          <legend className="sr-only">Case pack {index + 1}</legend>
+          <FormInput name={`casePacks.${index}.name`} required label="Name" className="col-span-2" />
           <FormNumber name={`casePacks.${index}.units`} required label="Units per case" min={1} step={1} />
+          <div className="flex items-center justify-end gap-2 self-start">
+            {/* Restock rounds orders up to the first case pack. */}
+            {index === 0 && packs.fields.length > 1 && <Badge variant="secondary">Default</Badge>}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={`Remove case pack ${index + 1}`}
+              onClick={() => packs.remove(index)}
+            >
+              <Trash2 />
+            </Button>
+          </div>
           <FormNumber name={`casePacks.${index}.lengthCm`} required label="Length (cm)" min={0} step={0.1} />
           <FormNumber name={`casePacks.${index}.widthCm`} required label="Width (cm)" min={0} step={0.1} />
           <FormNumber name={`casePacks.${index}.heightCm`} required label="Height (cm)" min={0} step={0.1} />
           <FormNumber name={`casePacks.${index}.weightKg`} label="Weight (kg)" min={0} step={0.01} />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={styles.casePackRemove}
-            aria-label={`Remove case pack ${index + 1}`}
-            onClick={() => packs.remove(index)}
-          >
-            <Trash2 data-icon="inline-start" />
-            Remove
-          </Button>
         </fieldset>
       ))}
-    </section>
+    </div>
   )
 }
 
-// Edits the product details Copacker keeps, and its variations' supplier SKUs, ASINs, minimum stock and barcodes.
-// Titles, SKUs, photos and costs come from Shopify, so they are edited there.
-export function ProductDetails({
-  productId,
-  title,
-  defaults,
-  variants,
-  onSaved
+function DetailsForm({
+  product,
+  onSaved,
+  onDone
 }: {
-  productId: string
-  title: string
-  defaults: ProductDefaults
-  variants: Variation[]
+  product: EditableProduct
   onSaved: () => void
+  onDone: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [save] = detailsApi.useSaveProductDefaultsMutation()
-  const { data: suppliers = [] } = useSuppliersQuery(undefined, { skip: !open })
-  const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
+  const { productId, title, defaults, variants } = product
+  const [saveProduct] = detailsApi.useSaveProductDefaultsMutation()
+  const [saveVariation] = useSaveVariationDetailsMutation()
+  const { data: suppliers = [], isLoading: loadingSuppliers } = useSuppliersQuery()
+  const form = useForm<Values, unknown, Output>({
     resolver: zodResolver(schema, { error: formErrorMap }),
-    values: {
-      description: defaults.description,
-      prepCategory: defaults.prepCategory ?? "",
-      minimumOrder: defaults.minimumOrder ?? undefined,
-      caseQuantity: defaults.caseQuantity ?? undefined,
-      supplierId: defaults.supplierId ?? "",
-      productLabel: defaults.productLabel,
-      suffocationWarning: defaults.suffocationWarning,
-      amazonNetwork: defaults.amazonNetwork,
-      casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined }))
-    }
+    defaultValues: formValues(product)
   })
   const productLabel = useWatch({ control: form.control, name: "productLabel" })
+  // What the server holds, so saving again after a failure sends only what didn't save.
+  const [saved, setSaved] = useState(() => ({
+    revision: defaults.revision,
+    details: detailsKey(defaults),
+    variations: new Map(variants.map((variant) => [variant.variantId, variationInput(variationValues(variant))]))
+  }))
+  const only = variants.length === 1 && variants[0]?.title === null ? variants[0] : null
+
+  // Saves the product's details, then each changed variation. A failure stops there and keeps the panel open.
   const submit = form.handleSubmit(async (values) => {
-    try {
-      await save({
-        productId,
-        description: values.description,
-        prepCategory: values.prepCategory || null,
-        minimumOrder: values.minimumOrder ?? null,
-        caseQuantity: values.caseQuantity ?? null,
-        supplierId: values.supplierId || null,
-        productLabel: values.productLabel,
-        suffocationWarning: values.suffocationWarning,
-        amazonNetwork: values.amazonNetwork,
-        casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
-        expectedRevision: defaults.revision
-      }).unwrap()
-      setOpen(false)
+    const next = { ...saved, variations: new Map(saved.variations) }
+    let changed = false
+    const fail = (message: string) => {
+      setSaved(next)
+      form.setError("root.server", { message })
+      if (changed) {
+        onSaved()
+      }
+    }
+    const input = details(values, defaults)
+    if (detailsKey(input) !== next.details) {
+      try {
+        const result = await saveProduct({ productId, ...input, expectedRevision: next.revision }).unwrap()
+        next.revision = result.revision
+        next.details = detailsKey(input)
+        changed = true
+      } catch (error) {
+        fail(errorMessage(error))
+        return
+      }
+    }
+    for (const variation of values.variations) {
+      const fields = variationInput(variation)
+      const before = next.variations.get(variation.variantId)
+      if (before && sameVariation(before, fields)) {
+        continue
+      }
+      try {
+        await saveVariation({ variantId: variation.variantId, ...fields }).unwrap()
+        next.variations.set(variation.variantId, fields)
+        changed = true
+      } catch (error) {
+        const name = variants.find((variant) => variant.variantId === variation.variantId)?.title
+        fail(name ? `${name}: ${errorMessage(error)}` : errorMessage(error))
+        return
+      }
+    }
+    onDone()
+    if (changed) {
       onSaved()
-    } catch (error) {
-      form.setError("root.server", { message: errorMessage(error) })
     }
   })
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="outline" size="xs" aria-label={`Edit ${title}`} />}>
-        <Pencil data-icon="inline-start" />
-        Edit
-      </SheetTrigger>
-      <SheetContent>
-        <FormProvider {...form}>
-          <form onSubmit={submit} noValidate className={styles.detailsForm}>
-            <SheetHeader>
-              <SheetTitle>{title}</SheetTitle>
-              <SheetDescription>
-                Details Copacker keeps for this product. Titles, SKUs, photos, costs and other Shopify fields are edited
-                in Shopify.
-              </SheetDescription>
-            </SheetHeader>
-            <div className={styles.locationSettings}>
-              <FormTextarea
-                name="description"
-                label="Default product description"
-                description="Added to this product’s PO lines for your supplier, such as materials or labeling notes."
-                rows={5}
-              />
-              <FormSelect
-                name="prepCategory"
-                label="Default preparation"
-                placeholder="Not set (sealed polybag)"
-                options={prepOptions}
-              />
-              <FormSelect
-                name="amazonNetwork"
-                required
-                label="Amazon warehouse"
-                description="Where this product's cartons go on POs to Amazon. AWD US cartons hold one SKU each."
-                options={amazonNetworks.map((network) => ({ value: network, label: amazonNetworkNames[network] }))}
-              />
-              <FormCheckbox
-                name="suffocationWarning"
-                label="Suffocation warning label"
-                description="New PO lines ask the supplier to put one on each polybag."
-              />
+    <FormProvider {...form}>
+      <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
+        <SheetHeader className="flex-row items-center gap-3 border-b pr-12">
+          <ProductImage url={product.imageUrl} />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <SheetTitle className="line-clamp-2">{title}</SheetTitle>
+            <SheetDescription className="text-xs">
+              {only ? (only.sku ?? "No SKU") : `${variants.length} variations`}
+            </SheetDescription>
+          </div>
+        </SheetHeader>
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
+          <Section title="Purchasing">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormSelect
                 name="supplierId"
                 label="Supplier"
-                description="Restock groups this product under this supplier and uses their lead time."
-                placeholder="Not set"
-                options={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))}
+                options={[
+                  automaticSupplier,
+                  ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
+                ]}
+                placeholder={loadingSuppliers ? "Loading…" : "—"}
               />
-              <FormNumber
-                name="minimumOrder"
-                label="Minimum order quantity"
-                description="The fewest units worth ordering. Restock never suggests less."
-                min={1}
-                step={1}
-              />
+              {only && <FormInput name="variations.0.supplierSku" label="Supplier SKU" maxLength={255} />}
+              <FormNumber name="minimumOrder" label="Minimum order quantity" min={1} step={1} />
+              {only && <FormNumber name="variations.0.storeStockTarget" label="Warehouse minimum" min={0} step={1} />}
+            </div>
+          </Section>
+          <Separator />
+          <Section title="Amazon">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormSelect name="amazonNetwork" required label="Amazon warehouse" options={networkOptions} />
+              {only && <FormInput name="variations.0.asin" label="ASIN" maxLength={255} />}
+              {only && (
+                <FormNumber
+                  name="variations.0.amazonStockTarget"
+                  label="Amazon minimum"
+                  description="0 keeps it off Amazon"
+                  min={0}
+                  step={1}
+                />
+              )}
+            </div>
+          </Section>
+          <Separator />
+          <Section title="Packing">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormSelect name="prepCategory" required label="Preparation" options={prepOptions} />
               <FormNumber
                 name="caseQuantity"
                 label="Case quantity"
-                description="Units per case. Restock rounds up to it when there’s no case pack."
+                description="Used without a case pack"
                 min={1}
                 step={1}
               />
-              <CasePacks suggestedUnits={defaults.caseQuantity} />
+            </div>
+            <FormCheckbox name="suffocationWarning" label="Suffocation warning label" />
+            <FormTextarea name="description" label="Instructions" placeholder="Handling or labeling exceptions" />
+            <CasePacks />
+          </Section>
+          <Separator />
+          <Section title="Labels">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormSelect
                 name="productLabel"
                 required
                 label="Product label"
-                description="Standard prints the FNSKU or SKU barcode. Uploaded is your own PDF. POs to Amazon always get a label."
-                options={[
-                  { value: "standard", label: "Standard label" },
-                  { value: "uploaded", label: "Uploaded label" },
-                  { value: "none", label: "No label" }
-                ]}
+                description={labelHints[productLabel]}
+                options={labelOptions}
               />
-              <VariationDetails productTitle={title} variations={variants} onChanged={onSaved} />
-              <ProductBarcodes
-                productTitle={title}
-                productLabel={productLabel}
-                variations={variants}
-                onChanged={onSaved}
-              />
-              <FormError message={form.formState.errors.root?.server?.message} />
             </div>
-            <SheetFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Saving…" : "Save"}
-              </Button>
-            </SheetFooter>
-          </form>
-        </FormProvider>
+            <ProductBarcodes
+              productTitle={title}
+              productLabel={productLabel}
+              variations={variants}
+              onChanged={onSaved}
+            />
+          </Section>
+          {!only && (
+            <>
+              <Separator />
+              <Section title="Variations">
+                <VariationDetails productTitle={title} variations={variants} />
+              </Section>
+            </>
+          )}
+        </div>
+        <SheetFooter className="border-t">
+          <FormError message={form.formState.errors.root?.server?.message} />
+          <div className="flex justify-end gap-2">
+            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
+            <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+              Save
+            </SubmitButton>
+          </div>
+        </SheetFooter>
+      </form>
+    </FormProvider>
+  )
+}
+
+// The details Copacker keeps for a product and its variations, in one side panel with one Save. Titles, SKUs, photos
+// and costs come from Shopify, so they're edited there. Label uploads save right away.
+export function ProductDetails({
+  product,
+  open,
+  onOpenChange,
+  onSaved
+}: {
+  product: EditableProduct | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSaved: () => void
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
+        {product && (
+          <DetailsForm key={product.productId} product={product} onSaved={onSaved} onDone={() => onOpenChange(false)} />
+        )}
       </SheetContent>
     </Sheet>
   )

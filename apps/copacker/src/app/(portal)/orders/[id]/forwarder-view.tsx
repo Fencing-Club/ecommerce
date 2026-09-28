@@ -5,7 +5,7 @@ import { DocumentList, PageBreadcrumb, Status, formatDestination } from "@/compo
 import { ForwardShipment } from "@/components/forward-shipment"
 import { RoutePill } from "@/components/route-pill"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
 import type { forwarderOrders } from "@/server/access"
@@ -103,7 +103,7 @@ export async function ForwarderView({ row }: { row: Awaited<ReturnType<typeof fo
           {shipmentRows.length ? (
             <ul>
               {shipmentRows.map((shipment, index) => (
-                <li key={shipment.id} className="flex items-center gap-3 border-t px-4 py-2.5">
+                <li key={shipment.id} className="flex items-center gap-3 border-t px-3 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-medium">
                       Shipment {index + 1}
@@ -122,17 +122,19 @@ export async function ForwarderView({ row }: { row: Awaited<ReturnType<typeof fo
               ))}
             </ul>
           ) : (
-            <p className="px-4 pb-4 text-muted-foreground">No shipments yet.</p>
+            <p className="px-3 pb-3 text-muted-foreground">No shipments yet.</p>
           )}
         </Card>
 
         {visible.length > 0 && (
-          <section aria-labelledby="documents" className="flex flex-col gap-3">
-            <h2 id="documents" className="font-semibold">
-              Documents
-            </h2>
-            <DocumentList documents={visible} />
-          </section>
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DocumentList documents={visible} />
+            </CardContent>
+          </Card>
         )}
       </div>
     </>

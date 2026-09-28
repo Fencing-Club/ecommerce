@@ -18,18 +18,20 @@ import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
+// What stops when each account is disconnected.
 const providers = {
   shopify: {
     name: "Shopify",
-    effect:
-      "Copacker will stop reading your catalog and won’t update product costs. Existing purchase orders stay as they are."
+    effect: (account: string) => `Copacker stops syncing products, stock, sales and costs with ${account}.`
   },
   amazon: {
     name: "Amazon",
-    effect: "Copacker won’t be able to create or check AWD shipments. Existing purchase orders stay as they are."
+    effect: (account: string) =>
+      `Copacker stops reading sales and stock from ${account} and can’t create AWD shipments.`
   }
 }
 
+// A quiet, red Disconnect that asks first.
 export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon"; account: string }) {
   const router = useRouter()
   const [run] = useActionMutation()
@@ -54,13 +56,20 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="outline" />}>Disconnect</AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive aria-expanded:bg-destructive/10 aria-expanded:text-destructive dark:hover:bg-destructive/20"
+          />
+        }
+      >
+        Disconnect
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Disconnect {name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This removes Copacker’s access to {account}. {effect} You can connect again at any time.
-          </AlertDialogDescription>
+          <AlertDialogDescription>{effect(account)} Purchase orders stay as they are.</AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>

@@ -473,7 +473,7 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
     }
     const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
     if (!code) {
-      return { itemId: item.id, state: "missing", problem: "Its FNSKU is looked up when the PO is sent" }
+      return { itemId: item.id, state: "missing", problem: "Its FNSKU is looked up when the purchase order is sent" }
     }
     return {
       itemId: item.id,
@@ -531,7 +531,7 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   const { order } = await accessibleOrder(s, orderId)
   const label = (await lineLabels(order)).find((row) => row.itemId === itemId)
   if (!label) {
-    throw new ProductBarcodeError("This line isn't on the PO", 404)
+    throw new ProductBarcodeError("This line isn't on the purchase order", 404)
   }
   if (label.state === "none") {
     throw new ProductBarcodeError("This product doesn't need a label", 404)
@@ -553,7 +553,7 @@ export async function orderLabelsPdf(s: Session, orderId: string) {
     files.push({ itemId: "", ...warnings })
   }
   if (!files.length) {
-    throw new ProductBarcodeError("This PO has no product labels", 404)
+    throw new ProductBarcodeError("This purchase order has no product labels", 404)
   }
   return {
     name: labelFileName(`${order.data.reference} product labels`),

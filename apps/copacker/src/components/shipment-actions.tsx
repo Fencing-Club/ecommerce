@@ -1,12 +1,14 @@
 "use client"
 
 import { ChevronDown } from "lucide-react"
+import { FormProvider } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
-import { ActionForm } from "./actions"
+import { ActionForm, FormError, SubmitButton } from "./actions"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
 import * as styles from "./shipment-actions.css"
 
@@ -19,14 +21,25 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
     defaultValues: { updateCost: false },
     toPayload: (values) => ({ id, revision, ...values })
   })
+  // Laid out like ActionForm, whose button waits for a change: approving needs none.
   return (
-    <ActionForm form={form} onSubmit={submit} label="Approve changes and create shipment">
-      <FormCheckbox
-        name="updateCost"
-        label="Also update Shopify unit costs"
-        description="Pack sizes are applied automatically. Currencies must match."
-      />
-    </ActionForm>
+    <FormProvider {...form}>
+      <form onSubmit={submit} noValidate>
+        <FieldGroup>
+          <FormCheckbox
+            name="updateCost"
+            label="Also update Shopify unit costs"
+            description="Shopify costs must be in the purchase order’s currency"
+          />
+          <FormError message={form.formState.errors.root?.server?.message} />
+          <div>
+            <SubmitButton type="submit" pending={form.formState.isSubmitting}>
+              Approve changes
+            </SubmitButton>
+          </div>
+        </FieldGroup>
+      </form>
+    </FormProvider>
   )
 }
 
@@ -41,12 +54,7 @@ export function ReleaseLabels({ id, revision }: { id: string; revision: number }
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Release labels to supplier">
-      <FormInput
-        name="bookingReference"
-        required
-        label="Amazon transport booking reference"
-        description="Every carton needs a shipping label, and every product needs a unit label before release."
-      />
+      <FormInput name="bookingReference" required label="Amazon transport booking reference" />
     </ActionForm>
   )
 }
@@ -75,7 +83,7 @@ export function CorrectionForm({ id }: { id: string }) {
               name="reason"
               required
               label="What needs to change?"
-              description="Existing shipment documents will be marked outdated. Confirmed Amazon shipments need buyer resolution before a replacement can be created."
+              description="This shipment’s documents become outdated"
             />
           </ActionForm>
         </CardContent>
@@ -114,7 +122,6 @@ export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {
         required
         label={fba ? "Existing FBA inbound plan ID" : "Existing Amazon AWD order ID"}
         placeholder={fba ? "wf" : "STAR-"}
-        description="Copacker verifies that the order belongs to this shipment before continuing."
       />
     </ActionForm>
   )

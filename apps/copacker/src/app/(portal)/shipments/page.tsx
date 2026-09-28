@@ -1,3 +1,4 @@
+import { amazonNetworkNames } from "@repo/aisle"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { AlertTriangle, ExternalLink } from "lucide-react"
 import type { Metadata } from "next"
@@ -6,16 +7,16 @@ import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status } from "@/components/common"
 import { TabLinks } from "@/components/tab-links"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, shipments } from "@/db/schema"
+import { shortDate } from "@/lib/format"
 import { visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
-import { rowLink } from "../portal.css"
-import { sx } from "@/styles/sprinkles.css"
+import { shipmentDestinations } from "./destination"
 
 export const metadata: Metadata = { title: "Shipments" }
 
@@ -32,6 +33,22 @@ const amazonShipments = unstable_cache(
   ["amazon-shipments"],
   { revalidate: 120 }
 )
+
+// A row opens its shipment: the link is stretched over the whole row.
+const rowLink =
+  "font-medium outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+// On a phone each row stacks to its shipment and status; wider tables add the destination, the supplier, then the
+// ready date. Cartons stay beside the status from a phone's width up.
+const columns = {
+  row: "relative @max-md:flex @max-md:items-start @max-md:gap-x-3 @max-md:px-4 @max-md:py-3",
+  shipment: "@max-md:min-w-0 @max-md:flex-1 @max-md:p-0",
+  detail: "text-xs whitespace-normal text-muted-foreground",
+  destination: "hidden @2xl:table-cell",
+  supplier: "hidden @3xl:table-cell",
+  cartons: "text-right tabular-nums @max-md:hidden",
+  ready: "hidden pl-6 tabular-nums @4xl:table-cell",
+  status: "@max-md:p-0"
+}
 
 // The list's tabs, kept in the URL: active shipments by default. Amazon calls a received shipment closed.
 const views = [
@@ -52,20 +69,34 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
   const current = views.find((tab) => tab.view === requested) ?? views[0]
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
   const s = await session()
+  const isBuyer = s.org.kind === "buyer"
   const rows = await visibleOrders(s)
   const ids = rows.map((r) => r.order.id)
   const list = ids.length
     ? await db().select().from(shipments).where(inArray(shipments.orderId, ids)).orderBy(desc(shipments.createdAt))
     : []
-  const listed = list.filter((shipment) => inView(shipment.status))
-
+  const destination = await shipmentDestinations(rows.map((row) => row.order.data))
+  const shown = list.flatMap((shipment) => {
+    const row = rows.find((candidate) => candidate.order.id === shipment.orderId)
+    if (!row) {
+      return []
+    }
+    // A PO's shipments are numbered oldest first.
+    const number =
+      list
+        .filter((other) => other.orderId === shipment.orderId)
+        .toReversed()
+        .indexOf(shipment) + 1
+    return inView(shipment.status) ? [{ shipment, order: row.order, supplier: row.supplier, number }] : []
+  })
+  const count = (...states: string[]) => list.filter((shipment) => states.includes(shipment.status)).length
   // Every shipment in the buyer's Amazon account follows the purchase order shipments, except those a purchase order
   // shipment already shows. The supplier can't see the buyer's Amazon account.
   let amazon: AmazonShipment[] = []
   // Every Amazon shipment the tabs choose from.
   let amazonAll = 0
   let amazonFailed = false
-  if (s.org.kind === "buyer") {
+  if (isBuyer) {
     try {
       const linked = new Set(list.flatMap((shipment) => shipment.amazonShipmentId?.split(", ") ?? []))
       const unlinked = ((await amazonShipments(s.org.id)) ?? []).filter((row) => !linked.has(row.shipmentId))
@@ -90,21 +121,12 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
       {/* Counts only help once there is something to count. */}
       {list.length > 0 && (
         <StatGrid>
+          <StatCard label="Packing" value={count("packing")} />
           <StatCard
-            label="In preparation"
-            value={list.filter((x) => x.status === "packing").length}
-            caption="Supplier is preparing cartons"
+            label={isBuyer ? "Action needed" : "Waiting on buyer"}
+            value={count("approval", "waiting_labels")}
           />
-          <StatCard
-            label="Waiting on buyer"
-            value={list.filter((x) => ["approval", "waiting_labels"].includes(x.status)).length}
-            caption="Approvals or shipping labels needed"
-          />
-          <StatCard
-            label="Ready for pickup"
-            value={list.filter((x) => x.status === "ready").length}
-            caption="Documents released to supplier"
-          />
+          <StatCard label="Ready for pickup" value={count("ready")} />
         </StatGrid>
       )}
 
@@ -116,81 +138,94 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <TabLinks
-              label="Shipment status"
-              tabs={views.map((tab) => ({
-                label: tab.label,
-                href: tab.view ? `/shipments?view=${tab.view}` : "/shipments",
-                current: tab === current
-              }))}
-            />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {(listed.length > 0 || amazon.length > 0) && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Shipment</TableHead>
-                  <TableHead className={sx({ textAlign: "right" })}>Cartons</TableHead>
-                  <TableHead>Ready date</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {listed.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell>
-                      <Link className={rowLink} href={`/shipments/${shipment.id}`}>
-                        {shipment.amazonShipmentId ??
-                          rows.find((r) => r.order.id === shipment.orderId)?.order.data.reference}
-                      </Link>
-                    </TableCell>
-                    <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                      {shipment.packing?.cartons.length ?? 0}
-                    </TableCell>
-                    <TableCell className={sx({ color: "muted" })}>{shipment.packing?.readyDate ?? "Pending"}</TableCell>
-                    <TableCell>
-                      <Status status={shipment.status} />
-                    </TableCell>
+      {list.length > 0 || amazonAll > 0 ? (
+        <div className="flex flex-col gap-3">
+          <TabLinks
+            label="Shipment status"
+            tabs={views.map((tab) => ({
+              label: tab.label,
+              href: tab.view ? `/shipments?view=${tab.view}` : "/shipments",
+              current: tab === current
+            }))}
+          />
+          {shown.length || amazon.length ? (
+            <div className="@container">
+              <Table className="@max-md:block">
+                <TableHeader className="@max-md:hidden">
+                  <TableRow>
+                    <TableHead>Shipment</TableHead>
+                    {isBuyer && <TableHead className={columns.supplier}>Supplier</TableHead>}
+                    <TableHead className={columns.destination}>Destination</TableHead>
+                    <TableHead className={columns.cartons}>Cartons</TableHead>
+                    <TableHead className={columns.ready}>Ready date</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-                {amazon.map((row) => (
-                  <TableRow key={row.shipmentId}>
-                    <TableCell>
-                      {/* Made in Seller Central or elsewhere, so it opens there. */}
-                      <a className={rowLink} href={row.url} target="_blank" rel="noreferrer">
-                        {row.shipmentId}
-                        <ExternalLink aria-hidden="true" className={sx({ size: 3 })} />
-                        <span className="sr-only"> (opens in Seller Central)</span>
-                      </a>
-                      {row.name && <p className={sx({ text: "xs", color: "muted" })}>{row.name}</p>}
-                    </TableCell>
-                    <TableCell className={sx({ textAlign: "right" })}>—</TableCell>
-                    <TableCell className={sx({ color: "muted" })}>—</TableCell>
-                    <TableCell>
-                      <Status status={row.status.toLowerCase()} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody className="@max-md:block">
+                  {shown.map(({ shipment, order, supplier, number }) => {
+                    const cartons = shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
+                    const ready = shipment.packingDraft?.readyDate || shipment.packing?.readyDate
+                    return (
+                      <TableRow key={shipment.id} className={columns.row}>
+                        <TableCell className={columns.shipment}>
+                          <Link href={`/shipments/${shipment.id}`} className={rowLink}>
+                            {order.data.reference}
+                          </Link>
+                          <p className={columns.detail}>
+                            {[`Shipment ${number}`, shipment.amazonShipmentId].filter(Boolean).join(", ")}
+                          </p>
+                        </TableCell>
+                        {isBuyer && <TableCell className={columns.supplier}>{supplier.name}</TableCell>}
+                        <TableCell className={columns.destination}>
+                          {destination(order.data, shipment.amazonNetwork)}
+                        </TableCell>
+                        <TableCell className={columns.cartons}>{cartons || "—"}</TableCell>
+                        <TableCell className={columns.ready}>{ready ? shortDate(ready) : "—"}</TableCell>
+                        <TableCell className={columns.status}>
+                          <Status status={shipment.status} />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                  {amazon.map((row) => (
+                    <TableRow key={row.shipmentId} className={columns.row}>
+                      <TableCell className={columns.shipment}>
+                        {/* Made in Seller Central or elsewhere, so it opens there. */}
+                        <a
+                          href={row.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`${rowLink} inline-flex items-center gap-1`}
+                        >
+                          {row.shipmentId}
+                          <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
+                          <span className="sr-only"> (opens in Seller Central)</span>
+                        </a>
+                        {row.name && <p className={columns.detail}>{row.name}</p>}
+                      </TableCell>
+                      <TableCell className={columns.supplier}>—</TableCell>
+                      <TableCell className={columns.destination}>Amazon {amazonNetworkNames[row.network]}</TableCell>
+                      <TableCell className={columns.cartons}>—</TableCell>
+                      <TableCell className={columns.ready}>—</TableCell>
+                      <TableCell className={columns.status}>
+                        <Status status={row.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="py-6 text-center text-sm text-muted-foreground">{current.empty}</p>
           )}
-          {!listed.length &&
-            !amazon.length &&
-            (list.length || amazonAll ? (
-              <p className={sx({ text: "sm", color: "muted" })}>{current.empty}</p>
-            ) : (
-              <EmptyState
-                title="No shipments yet"
-                description="Open a submitted purchase order to prepare the first shipment."
-              />
-            ))}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <EmptyState title="No shipments yet" description="Start one from a sent purchase order">
+          <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
+            View purchase orders
+          </Button>
+        </EmptyState>
+      )}
     </>
   )
 }

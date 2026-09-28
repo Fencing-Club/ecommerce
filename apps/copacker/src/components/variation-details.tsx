@@ -1,16 +1,25 @@
 "use client"
 
-import { useId, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useId } from "react"
+import { useController } from "react-hook-form"
+import { z } from "zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { api, errorMessage } from "@/lib/api"
-import { FormError } from "./actions"
-import * as styles from "./inventory-products.css"
+import { api } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
-type Details = {
+// What Copacker keeps for a variation: its supplier SKU, ASIN, and the least stock to keep at Amazon and at the buyer's
+// own locations. No minimum means none; an Amazon minimum of 0 means the variation isn't stocked there.
+export type VariationFields = {
   supplierSku: string | null
   asin: string | null
+  amazonStockTarget: number | null
+  storeStockTarget: number | null
+}
+// What's sent to save them. Empty text clears a value.
+type VariationInput = {
+  supplierSku: string
+  asin: string
   amazonStockTarget: number | null
   storeStockTarget: number | null
 }
@@ -18,162 +27,156 @@ type Details = {
 const variationDetailsApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
-    saveVariationDetails: build.mutation<Details, Partial<Details> & { variantId: string }>({
+    saveVariationDetails: build.mutation<VariationFields, VariationInput & { variantId: string }>({
       query: (body) => ({ url: "inventory/variant-fields", method: "PATCH", body }),
-      // Restock matches supplier catalogs on the supplier SKU and aims for the stock targets.
+      // Restock matches supplier catalogs on the supplier SKU and aims for the stock minimums.
       invalidatesTags: ["Restock"]
     })
   })
 })
 
-export type DetailsVariation = Details & { variantId: string; title: string | null }
+export const { useSaveVariationDetailsMutation } = variationDetailsApi
 
-// A whole number of units, or empty for none.
-const units = (text: string) => (text.trim() === "" ? null : Number(text))
-const shown = (value: number | null) => (value === null ? "" : String(value))
+const text = z.string().trim().max(255)
+const minimum = z.number("Enter a whole number").int("Enter a whole number").min(0).max(1000000).optional()
+export const variationSchema = z.object({
+  variantId: z.string(),
+  supplierSku: text,
+  asin: text,
+  amazonStockTarget: minimum,
+  storeStockTarget: minimum
+})
+type VariationValues = z.output<typeof variationSchema>
 
-function VariationRow({
-  variation,
-  label,
-  onChanged
-}: {
-  variation: DetailsVariation
-  label: string
-  onChanged: () => void
-}) {
-  const id = useId()
-  const [save, { isLoading: saving }] = variationDetailsApi.useSaveVariationDetailsMutation()
-  const initial = {
+// A variation's saved fields as the product form's values.
+export function variationValues(variation: VariationFields & { variantId: string }): VariationValues {
+  return {
+    variantId: variation.variantId,
     supplierSku: variation.supplierSku ?? "",
     asin: variation.asin ?? "",
-    amazonStockTarget: shown(variation.amazonStockTarget),
-    storeStockTarget: shown(variation.storeStockTarget)
+    amazonStockTarget: variation.amazonStockTarget ?? undefined,
+    storeStockTarget: variation.storeStockTarget ?? undefined
   }
-  // What's saved, updated on save so the row doesn't wait for the page to reload.
-  const [saved, setSaved] = useState(initial)
-  const [values, setValues] = useState(initial)
-  const [error, setError] = useState("")
-  const [done, setDone] = useState(false)
-  const changed = (Object.keys(values) as (keyof typeof values)[]).some(
-    (key) => values[key].trim() !== saved[key].trim()
-  )
-  const invalid = [values.amazonStockTarget, values.storeStockTarget].some(
-    (text) => text.trim() !== "" && !/^\d+$/.test(text.trim())
-  )
+}
 
-  async function submit() {
-    if (!changed || saving) {
-      return
-    }
-    if (invalid) {
-      setError("Enter whole numbers of units, or leave them empty.")
-      return
-    }
-    setError("")
-    try {
-      const result = await save({
-        variantId: variation.variantId,
-        supplierSku: values.supplierSku,
-        asin: values.asin,
-        amazonStockTarget: units(values.amazonStockTarget),
-        storeStockTarget: units(values.storeStockTarget)
-      }).unwrap()
-      const next = {
-        supplierSku: result.supplierSku ?? "",
-        asin: result.asin ?? "",
-        amazonStockTarget: shown(result.amazonStockTarget),
-        storeStockTarget: shown(result.storeStockTarget)
-      }
-      setSaved(next)
-      setValues(next)
-      setDone(true)
-      onChanged()
-    } catch (e) {
-      setError(errorMessage(e, "The details couldn't be saved. Try again."))
-    }
+export function variationInput(values: VariationValues): VariationInput {
+  return {
+    supplierSku: values.supplierSku,
+    asin: values.asin,
+    amazonStockTarget: values.amazonStockTarget ?? null,
+    storeStockTarget: values.storeStockTarget ?? null
   }
+}
 
-  const field = (key: keyof typeof values, name: string, numeric = false) => (
-    <div className={styles.variationField}>
-      <Label htmlFor={`${id}-${key}`} className={styles.detail}>
-        {name}
-        <span className={styles.srOnlyLegend}> for {label}</span>
-      </Label>
-      <Input
-        id={`${id}-${key}`}
-        value={values[key]}
-        maxLength={255}
-        autoComplete="off"
-        placeholder="Not set"
-        inputMode={numeric ? "numeric" : undefined}
-        aria-invalid={error ? true : undefined}
-        onChange={(event) => {
-          setValues({ ...values, [key]: event.target.value })
-          setDone(false)
-        }}
-        onKeyDown={(event) => {
-          // Saves this row rather than submitting the panel's form.
-          if (event.key === "Enter") {
-            event.preventDefault()
-            void submit()
-          }
-        }}
-      />
-    </div>
-  )
-
+export function sameVariation(a: VariationInput, b: VariationInput) {
   return (
-    <li className={styles.variation}>
-      <div className={styles.variationHeading}>
-        <span className={styles.title}>{label}</span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!changed || saving}
-          aria-label={`Save details for ${label}`}
-          onClick={() => void submit()}
-        >
-          {saving ? "Saving…" : "Save"}
-        </Button>
-      </div>
-      <div className={styles.variationFields}>
-        {field("supplierSku", "Supplier SKU")}
-        {field("asin", "ASIN")}
-        {field("amazonStockTarget", "Amazon minimum", true)}
-        {field("storeStockTarget", "Warehouse minimum", true)}
-      </div>
-      <output className={styles.detail}>{done && !changed ? "Saved" : ""}</output>
-      <FormError message={error} />
-    </li>
+    a.supplierSku === b.supplierSku &&
+    a.asin === b.asin &&
+    a.amazonStockTarget === b.amazonStockTarget &&
+    a.storeStockTarget === b.storeStockTarget
   )
 }
 
-// Each variation's supplier SKU, ASIN and minimum stock. Each row saves on its own, apart from the product's details.
+// Wide enough, each variation's fields share its row under one set of column headings; narrower, every field keeps
+// its own label.
+const columns = "@lg:grid-cols-[minmax(0,1fr)_repeat(4,6.5rem)]"
+
+// Whole units from a number field, or nothing while it's empty.
+function units(input: HTMLInputElement) {
+  return input.value === "" ? undefined : input.valueAsNumber
+}
+
+function Cell({
+  name,
+  label,
+  variation,
+  numeric = false
+}: {
+  name: string
+  label: string
+  variation: string
+  numeric?: boolean
+}) {
+  const id = useId()
+  const {
+    field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
+    fieldState
+  } = useController({ name })
+  let value: string | number = typeof fieldValue === "string" ? fieldValue : ""
+  if (numeric) {
+    value = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue : ""
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <Label htmlFor={id} className="text-xs font-normal text-muted-foreground @lg:sr-only">
+        {label}
+        <span className="sr-only"> for {variation}</span>
+      </Label>
+      <Input
+        id={id}
+        ref={ref}
+        name={fieldName}
+        value={value}
+        onBlur={onBlur}
+        onChange={(event) => onChange(numeric ? units(event.target) : event.target.value)}
+        type={numeric ? "number" : "text"}
+        inputMode={numeric ? "numeric" : undefined}
+        min={numeric ? 0 : undefined}
+        step={numeric ? 1 : undefined}
+        maxLength={numeric ? undefined : 255}
+        placeholder={numeric ? "—" : undefined}
+        autoComplete="off"
+        aria-invalid={fieldState.invalid}
+        className={cn(numeric && "text-right tabular-nums")}
+      />
+      {fieldState.error?.message && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+    </div>
+  )
+}
+
+// Each variation's supplier SKU, ASIN and stock minimums, bound to the product form and saved with it.
 export function VariationDetails({
   productTitle,
-  variations,
-  onChanged
+  variations
 }: {
   productTitle: string
-  variations: DetailsVariation[]
-  onChanged: () => void
+  variations: { variantId: string; title: string | null }[]
 }) {
   return (
-    <section className={styles.variations} aria-labelledby="variation-details">
-      <h3 id="variation-details" className={styles.title}>
-        Variations
-      </h3>
-      <ul className={styles.variationList}>
-        {variations.map((variation) => (
-          <VariationRow
-            key={variation.variantId}
-            variation={variation}
-            label={variation.title ?? productTitle}
-            onChanged={onChanged}
-          />
-        ))}
+    <div className="@container">
+      <div
+        aria-hidden="true"
+        className={cn("hidden gap-2 px-3 pb-1.5 text-xs font-medium text-muted-foreground @lg:grid", columns)}
+      >
+        <span>Variation</span>
+        <span>Supplier SKU</span>
+        <span>ASIN</span>
+        <span className="text-right" title="0 keeps it off Amazon">
+          Amazon min
+        </span>
+        <span className="text-right">Warehouse min</span>
+      </div>
+      <ul className="divide-y rounded-lg border">
+        {variations.map((variation, index) => {
+          const label = variation.title ?? productTitle
+          return (
+            <li key={variation.variantId} className={cn("grid gap-2 p-3 @lg:items-start @lg:py-2", columns)}>
+              <span className="text-sm font-medium [overflow-wrap:anywhere] @lg:pt-1.5">{label}</span>
+              <div className="grid grid-cols-2 gap-2 @lg:contents">
+                <Cell name={`variations.${index}.supplierSku`} label="Supplier SKU" variation={label} />
+                <Cell name={`variations.${index}.asin`} label="ASIN" variation={label} />
+                <Cell name={`variations.${index}.amazonStockTarget`} label="Amazon minimum" variation={label} numeric />
+                <Cell
+                  name={`variations.${index}.storeStockTarget`}
+                  label="Warehouse minimum"
+                  variation={label}
+                  numeric
+                />
+              </div>
+            </li>
+          )
+        })}
       </ul>
-    </section>
+    </div>
   )
 }

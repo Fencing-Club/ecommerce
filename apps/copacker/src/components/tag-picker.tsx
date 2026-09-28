@@ -4,7 +4,6 @@ import { Plus, X } from "lucide-react"
 import { type RefObject, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import * as styles from "./tag-picker.css"
 
 const shownSuggestions = 8
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
@@ -43,26 +42,30 @@ export function TagPicker({
     .slice(0, shownSuggestions)
   return (
     <>
-      {/* Clicking the box's empty space types into it, as with a text input. */}
+      {/* Looks like a text input, with the chosen tags as chips before the typing area. Clicking the box's empty
+          space types into it, as with a text input. */}
       {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-      <div className={styles.box} onClick={() => input.current?.focus()}>
+      <div
+        className="flex min-h-8 w-full cursor-text flex-wrap items-center gap-1 rounded-lg border border-input bg-transparent px-1.5 py-1 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+        onClick={() => input.current?.focus()}
+      >
         {value.map((tag) => (
-          <Badge key={tag} variant="secondary" className={styles.chip}>
+          <Badge key={tag} variant="secondary" className="gap-0.5 pr-0.5">
             {tag}
             <button
               type="button"
-              className={styles.remove}
+              className="inline-flex cursor-pointer rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Remove ${tag}`}
               onClick={() => onChange(value.filter((chosen) => chosen !== tag))}
             >
-              <X size={12} aria-hidden="true" />
+              <X className="size-3" aria-hidden="true" />
             </button>
           </Badge>
         ))}
         <input
           ref={input}
           id={id}
-          className={styles.input}
+          className="h-6 min-w-24 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
           value={draft}
           placeholder={value.length ? undefined : placeholder}
           onChange={(event) => {
@@ -85,7 +88,7 @@ export function TagPicker({
         />
       </div>
       {matches.length > 0 && (
-        <div className={styles.suggestions}>
+        <div className="flex flex-wrap gap-1">
           {matches.map((tag) => (
             <Button key={tag} type="button" variant="outline" size="xs" onClick={() => add(tag)}>
               <Plus data-icon="inline-start" />

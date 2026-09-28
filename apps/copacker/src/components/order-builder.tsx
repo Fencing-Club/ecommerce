@@ -406,7 +406,7 @@ export function OrderBuilder({
               <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
                 <AlertTriangle className="size-3.5" />
                 Amazon needs a phone number at this stop for pickup.
-                <Link href="/forwarders" className="underline underline-offset-2">
+                <Link href="/partners?type=forwarder" className="underline underline-offset-2">
                   Add one
                 </Link>
               </p>

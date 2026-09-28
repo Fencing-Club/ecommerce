@@ -56,6 +56,7 @@ import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { appUrl, token, hash } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
+import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
@@ -285,6 +286,12 @@ export async function POST(request: Request) {
       await setWorkspace(input.orgId)
       return Response.json({ redirect: "/orders" })
     }
+    // Adds or edits a pickup address for a supplier that hasn't joined, or with `remove`, deletes it.
+    if (action === "supplier.address") {
+      requireBuyer(s)
+      requireOwner(s)
+      return Response.json(await (data.remove === true ? removeSupplierAddress : saveSupplierAddress)(s.org.id, data))
+    }
     if (action === "contact.create") {
       const input = z
         .object({
@@ -392,10 +399,19 @@ export async function POST(request: Request) {
             : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
         )
       }
+      // Only the workspace's own addresses: a partner's addresses change through the partner's actions, which check
+      // the owner role.
       const updated = await db()
         .update(contacts)
         .set(input)
-        .where(and(eq(contacts.id, id()), eq(contacts.orgId, s.org.id)))
+        .where(
+          and(
+            eq(contacts.id, id()),
+            eq(contacts.orgId, s.org.id),
+            isNull(contacts.supplierId),
+            isNull(contacts.forwarderId)
+          )
+        )
         .returning({ id: contacts.id })
       if (!updated.length) {
         return Response.json({ error: "This address was removed. Refresh the page and try again" }, { status: 404 })
@@ -418,7 +434,14 @@ export async function POST(request: Request) {
     if (action === "contact.delete") {
       const deleted = await db()
         .delete(contacts)
-        .where(and(eq(contacts.id, id()), eq(contacts.orgId, s.org.id)))
+        .where(
+          and(
+            eq(contacts.id, id()),
+            eq(contacts.orgId, s.org.id),
+            isNull(contacts.supplierId),
+            isNull(contacts.forwarderId)
+          )
+        )
         .returning({ id: contacts.id })
       if (!deleted.length) {
         return Response.json({ error: "This address was already removed" }, { status: 404 })

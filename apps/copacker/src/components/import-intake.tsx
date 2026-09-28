@@ -1,13 +1,15 @@
 "use client"
 
+import { Ellipsis, FileText } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api, errorMessage } from "@/lib/api"
-import { FormError } from "./actions"
-import { sx } from "@/styles/sprinkles.css"
+import { FormError, SubmitButton } from "./actions"
+import { StatusBadge, type StatusTone } from "./common"
+import { FileDropzone } from "./file-dropzone"
 
 type ImportSummary = { id: string; filename: string; status: string; revision: number; createdAt: string }
 const importsApi = api.injectEndpoints({
@@ -21,13 +23,17 @@ const importsApi = api.injectEndpoints({
     })
   })
 })
-const statusNames: Record<string, string> = {
-  queued: "Waiting to process",
-  running: "Reading and matching products",
-  review: "Ready for review",
-  failed: "Needs attention",
-  cancelled: "Cancelled",
-  saved: "Saved as draft"
+
+// The imports route takes one PDF of up to 10 MB and 50 pages.
+const maxBytes = 10 * 1024 * 1024
+
+const statuses: Record<string, { label: string; tone: StatusTone }> = {
+  queued: { label: "Waiting", tone: "info" },
+  running: { label: "Reading", tone: "info" },
+  review: { label: "Ready for review", tone: "warning" },
+  failed: { label: "Failed", tone: "destructive" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+  saved: { label: "Saved as draft", tone: "success" }
 }
 
 export function ImportIntake() {
@@ -35,32 +41,29 @@ export function ImportIntake() {
   const [start, upload] = importsApi.useStartImportMutation()
   const [change, changing] = importsApi.useChangeImportMutation()
   const [file, setFile] = useState<File | null>(null)
+  // Why the last import didn't start, and why the last retry or cancel failed.
   const [error, setError] = useState<string | null>(null)
+  const [changeError, setChangeError] = useState<string | null>(null)
   async function update(id: string, method: "POST" | "DELETE") {
-    setError(null)
+    setChangeError(null)
     try {
       await change({ id, method }).unwrap()
       await imports.refetch()
     } catch (failure) {
-      setError(errorMessage(failure))
+      setChangeError(errorMessage(failure))
     }
   }
   return (
-    <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
+    <>
       <Card>
         <CardHeader>
-          <CardTitle>Import a purchase order or invoice</CardTitle>
-          <CardDescription>
-            Upload a PDF of up to 10 MB and 50 pages. Importing prepares a proposal for review. It does not email your
-            supplier or create a shipment.
-          </CardDescription>
+          <CardTitle>Purchase order or invoice</CardTitle>
         </CardHeader>
         <CardContent>
           <form
-            className={sx({ display: "flex", flexDirection: "column", gap: 4 })}
+            className="flex flex-col items-start gap-4"
             onSubmit={async (event) => {
               event.preventDefault()
-              const form = event.currentTarget
               if (!file) {
                 return
               }
@@ -70,68 +73,112 @@ export function ImportIntake() {
               try {
                 await start(body).unwrap()
                 setFile(null)
-                form.reset()
                 await imports.refetch()
               } catch (failure) {
                 setError(errorMessage(failure))
               }
             }}
           >
-            <label htmlFor="import-document">Purchase order or invoice PDF</label>
-            <Input
-              id="import-document"
-              type="file"
+            <FileDropzone
               accept="application/pdf,.pdf"
-              required
+              maxBytes={maxBytes}
+              hint="Up to 10 MB and 50 pages"
+              file={file}
+              onFileChange={(next) => {
+                setFile(next)
+                setError(null)
+              }}
               disabled={upload.isLoading}
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              error={error ?? undefined}
             />
-            <Button type="submit" disabled={!file || upload.isLoading}>
-              {upload.isLoading ? "Uploading document…" : "Import document"}
-            </Button>
+            <SubmitButton type="submit" pending={upload.isLoading} disabled={!file}>
+              Import
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
-      {error && <FormError message={error} />}
       <Card>
         <CardHeader>
-          <CardTitle>Document imports</CardTitle>
-          <CardDescription>
-            Imports continue in the background. You can return to this page to check progress.
-          </CardDescription>
+          <CardTitle>Imports</CardTitle>
         </CardHeader>
-        <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
+        <CardContent className="flex flex-col gap-4">
           {imports.isError && <FormError message={errorMessage(imports.error)} />}
-          {imports.isLoading && <output>Loading imports…</output>}
-          {imports.data?.items.length === 0 && <p>No documents imported yet.</p>}
-          {imports.data?.items.map((item) => (
-            <div key={item.id} className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-              <strong>{item.filename}</strong>
-              <output>{statusNames[item.status] ?? item.status}</output>
-              <div className={sx({ display: "flex", gap: 2 })}>
-                {["review", "saved"].includes(item.status) && (
-                  <Link href={`/orders/import/${item.id}`}>
-                    {item.status === "saved" ? "Open draft" : "Review proposal"}
-                  </Link>
-                )}
-                <Link href={`/api/imports/${item.id}/source`} target="_blank" rel="noreferrer">
-                  View source PDF
-                </Link>
-                {item.status === "failed" && (
-                  <Button variant="outline" disabled={changing.isLoading} onClick={() => update(item.id, "POST")}>
-                    Retry import
-                  </Button>
-                )}
-                {!["saved", "cancelled"].includes(item.status) && (
-                  <Button variant="outline" disabled={changing.isLoading} onClick={() => update(item.id, "DELETE")}>
-                    Cancel import
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+          <FormError message={changeError ?? undefined} />
+          {imports.isLoading && <p className="text-sm text-muted-foreground">Loading imports…</p>}
+          {imports.data?.items.length === 0 && <p className="text-sm text-muted-foreground">No imports yet</p>}
+          {Boolean(imports.data?.items.length) && (
+            <ul className="divide-y">
+              {imports.data?.items.map((item) => {
+                const status: { label: string; tone: StatusTone } = statuses[item.status] ?? {
+                  label: item.status,
+                  tone: "neutral"
+                }
+                return (
+                  <li key={item.id} className="flex items-center gap-3 py-2.5">
+                    <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      <span className="max-w-full truncate text-sm font-medium sm:flex-1" title={item.filename}>
+                        {item.filename}
+                      </span>
+                      <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                    </div>
+                    {["review", "saved"].includes(item.status) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        nativeButton={false}
+                        render={<Link href={`/orders/import/${item.id}`} />}
+                      >
+                        {item.status === "saved" ? "Open draft" : "Review"}
+                      </Button>
+                    )}
+                    {item.status === "failed" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={changing.isLoading}
+                        onClick={() => update(item.id, "POST")}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${item.filename}`} />}
+                      >
+                        <Ellipsis />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem
+                          render={
+                            <a
+                              href={`/api/imports/${item.id}/source`}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="View PDF"
+                            />
+                          }
+                        >
+                          View PDF
+                        </DropdownMenuItem>
+                        {!["saved", "cancelled"].includes(item.status) && (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={changing.isLoading}
+                            onClick={() => update(item.id, "DELETE")}
+                          >
+                            Cancel import
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </CardContent>
       </Card>
-    </div>
+    </>
   )
 }

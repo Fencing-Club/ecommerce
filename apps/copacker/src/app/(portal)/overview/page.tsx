@@ -3,38 +3,36 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { EmptyState, PageHeader } from "@/components/common"
-import { OverviewDashboard, OverviewSkeleton } from "@/components/overview"
-import { ChannelFilter } from "@/components/overview-filter"
+import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "@/components/overview"
 import { SetupChecklist } from "@/components/overview-sections"
-import { PeriodPicker } from "@/components/period-picker"
 import { SupplierOverview } from "@/components/supplier/overview"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { type Session, session } from "@/server/auth"
-import { overview } from "@/server/overview"
+import { type Overview, overview } from "@/server/overview"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { supplierOverview } from "@/server/supplier-overview"
-import * as styles from "@/components/overview.css"
 
 export const metadata: Metadata = { title: "Overview" }
 
 type Query = Record<string, string | string[] | undefined>
 
-async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) {
+async function load(org: Session["org"], query: Query) {
   const channel = typeof query.channel === "string" ? query.channel : null
-  const data = await overview({ ...org, timeZone: await storeTimeZone(org) }, { channel, period: query })
+  return overview({ ...org, timeZone: await storeTimeZone(org) }, { channel, period: query })
+}
+
+async function Dashboard({ data: pending }: { data: Promise<Overview> }) {
+  const data = await pending
   if (!data.connected.length) {
     return (
-      <div className={styles.page}>
+      <div className="flex flex-col gap-6">
         <SetupChecklist steps={data.setup} />
         <Card>
           <CardContent>
-            <EmptyState
-              title="Connect your stores to see your overview"
-              description="Connect Shopify and Amazon to bring sales, stock and restock together here."
-            >
-              <Button nativeButton={false} render={<Link href="/settings" />}>
-                Connect your accounts
+            <EmptyState title="No stores connected" description="Connect Shopify or Amazon to see your overview">
+              <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
+                Connect stores
               </Button>
             </EmptyState>
           </CardContent>
@@ -42,17 +40,7 @@ async function Dashboard({ org, query }: { org: Session["org"]; query: Query }) 
       </div>
     )
   }
-  return (
-    <div className={styles.page}>
-      <div className={styles.toolbar}>
-        <div className={styles.filters}>
-          <PeriodPicker period={data.period} />
-          {data.channels.length > 1 && <ChannelFilter channels={data.channels} value={data.channel?.key ?? ""} />}
-        </div>
-      </div>
-      <OverviewDashboard data={data} />
-    </div>
-  )
+  return <OverviewDashboard data={data} />
 }
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
@@ -69,11 +57,18 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     redirect("/orders")
   }
   const query = await searchParams
+  // Loaded once, for the filters beside the title and the cards below.
+  const data = load(s.org, query)
+  const key = JSON.stringify(query)
   return (
     <>
-      <PageHeader title="Overview" />
-      <Suspense key={JSON.stringify(query)} fallback={<OverviewSkeleton />}>
-        <Dashboard org={s.org} query={query} />
+      <PageHeader title="Overview">
+        <Suspense key={key} fallback={<OverviewFiltersSkeleton />}>
+          <OverviewFilters data={data} />
+        </Suspense>
+      </PageHeader>
+      <Suspense key={key} fallback={<OverviewSkeleton />}>
+        <Dashboard data={data} />
       </Suspense>
     </>
   )

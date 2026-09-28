@@ -257,7 +257,7 @@ export async function purchaseOrderPdf(input: {
     heading: input.buyer,
     order,
     facts: [
-      ["PO number", revision > 1 ? `${order.reference} (rev. ${revision})` : order.reference],
+      ["Purchase order", revision > 1 ? `${order.reference} (rev. ${revision})` : order.reference],
       ["Date", longDate(input.issued)],
       ...(order.dueDate ? [["Required by", longDate(order.dueDate)] as [string, string]] : [])
     ],
@@ -424,7 +424,7 @@ export async function packingListPdf(input: {
   const { at, content, right, bold, regular, muted, draw, line, wrap, ensure } = kit
   const pieces = packing.cartons.reduce((sum, carton) => sum + carton.items.reduce((n, item) => n + item.pieces, 0), 0)
   kit.facts([
-    ["PO number", order.reference],
+    ["Purchase order", order.reference],
     ["Shipment", input.shipmentId.length > 16 ? input.shipmentId.slice(0, 8).toUpperCase() : input.shipmentId],
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", `${packing.cartons.length}, ${pieces.toLocaleString("en-US")} pieces`]
@@ -502,7 +502,7 @@ export async function checklistPdf(input: { order: OrderInput; packing: Packing;
   const included = new Set(packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   const items = order.items.filter((item) => included.has(item.id))
   kit.facts([
-    ["PO number", order.reference],
+    ["Purchase order", order.reference],
     ["Destination", destinationName({ destination: order.destination, items })],
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", String(packing.cartons.length)]

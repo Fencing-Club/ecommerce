@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { sx } from "@/styles/sprinkles.css"
 
-export function ShipmentProgress({ processing, message }: { processing: boolean; message: string }) {
+// Refreshes the page while Amazon creates the shipment, and says what happens next when the page doesn't show it.
+export function ShipmentProgress({ processing, message }: { processing: boolean; message?: string }) {
   const router = useRouter()
   useEffect(() => {
     if (!processing) {
@@ -17,5 +17,5 @@ export function ShipmentProgress({ processing, message }: { processing: boolean;
     }, 5000)
     return () => clearInterval(timer)
   }, [processing, router])
-  return <output className={sx({ text: "sm", color: "muted" })}>{message}</output>
+  return message ? <output className="text-sm text-muted-foreground">{message}</output> : null
 }

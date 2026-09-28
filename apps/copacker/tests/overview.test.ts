@@ -364,11 +364,10 @@ describe("attentionItems", () => {
       "stock-stale",
       "drafts"
     ])
-    expect(items[0]?.title).toBe("2 items are out of stock or will run out before a reorder arrives")
+    expect(items[0]?.title).toBe("2 items run out before a reorder arrives")
     expect(items.find((item) => item.key === "sync-shopify")?.title).toBe("Shopify orders haven't synced in 5 days")
-    expect(items.find((item) => item.key === "prices-shopify")?.detail).toBe(
-      "12 orders in this period have no price, so sales and margins leave them out."
-    )
+    expect(items.find((item) => item.key === "prices-shopify")?.detail).toBe("12 orders in this period have no price")
+    expect(items.find((item) => item.key === "drafts")?.title).toBe("1 purchase order is still a draft")
   })
 })
 
@@ -379,16 +378,14 @@ describe("setupSteps", () => {
       ordersCopied: ["shopify"],
       stockSynced: true,
       inStock: 10,
-      uncosted: 2,
-      suppliers: 1
+      uncosted: 2
     })
     expect(Object.fromEntries(steps.map((step) => [step.key, step.done]))).toEqual({
       shopify: true,
       amazon: false,
       orders: true,
       stock: true,
-      costs: false,
-      supplier: true
+      costs: false
     })
   })
 })

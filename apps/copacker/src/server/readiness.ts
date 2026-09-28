@@ -79,7 +79,7 @@ export function packingReadiness(
   if (shipment.orderRevision !== orderRevision) {
     issues.push({
       code: "po_changed",
-      message: "The PO changed. Review the latest PO and save the packing draft before submitting"
+      message: "The purchase order changed. Review it and save the packing draft before submitting"
     })
   }
   if (!["packing", "correction"].includes(shipment.status) || shipment.operation !== "none" || shipment.amazonOrderId) {

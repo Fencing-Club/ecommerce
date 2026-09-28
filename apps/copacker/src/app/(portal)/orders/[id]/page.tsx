@@ -8,8 +8,7 @@ import { z } from "zod"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageBreadcrumb, Status, WarningNote, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
-import { InfoTip } from "@/components/info-tip"
-import { LandedCostForm } from "@/components/landed-costs"
+import { LandedCosts } from "@/components/landed-costs"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
 import { PoTimeline } from "@/components/po-timeline"
 import { RoutePill } from "@/components/route-pill"
@@ -30,8 +29,6 @@ import { lineLabels } from "@/server/product-barcodes"
 import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
 import { ForwarderView } from "./forwarder-view"
-import { sx } from "@/styles/sprinkles.css"
-import { srOnly } from "@/styles/utilities.css"
 
 export const metadata: Metadata = { title: "Purchase order" }
 
@@ -43,7 +40,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   }
   const { order, supplier } = await accessibleOrder(s, id)
   const [shipmentRows, history, revisions] = await Promise.all([
-    db().select().from(shipments).where(eq(shipments.orderId, id)),
+    // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
+    db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
     db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
     db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision))
   ])
@@ -160,7 +158,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <div className="flex items-center gap-2">
           {order.status === "draft" && buyer && (
             <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-              {supplier.supplierOrgId ? "Submit to supplier" : "Send PO"}
+              {supplier.supplierOrgId ? "Submit to supplier" : "Send purchase order"}
             </ActionButton>
           )}
           {s.org.kind === "supplier" &&
@@ -194,7 +192,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <InfoIcon />
           <AlertTitle>{supplier.name} isn’t on Copacker</AlertTitle>
           <AlertDescription>
-            Email them the PO yourself, then enter their cartons and invoice on the shipment.
+            Email them the purchase order yourself, then enter their cartons and invoice on the shipment.
           </AlertDescription>
         </Alert>
       )}
@@ -325,10 +323,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             {shipmentRows.length ? (
               <ul>
                 {shipmentRows.map((shipment, index) => (
-                  <li key={shipment.id} className="flex items-center gap-3 border-t pr-4">
+                  <li key={shipment.id} className="flex items-center gap-3 border-t pr-3">
                     <Link
                       href={`/shipments/${shipment.id}`}
-                      className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
                     >
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="font-medium">
@@ -350,24 +348,26 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 ))}
               </ul>
             ) : (
-              <p className="px-4 pb-4 text-muted-foreground">
-                {order.status === "draft" ? "Shipments start once the PO is sent." : "No shipments yet."}
+              <p className="px-3 pb-3 text-muted-foreground">
+                {order.status === "draft" ? "Shipments start once the purchase order is sent." : "No shipments yet."}
               </p>
             )}
           </Card>
 
           {documentGroups.length > 0 && (
-            <section aria-labelledby="documents" className="flex flex-col gap-3">
-              <h2 id="documents" className="font-semibold">
-                Documents
-              </h2>
-              {documentGroups.map((group) => (
-                <div key={group.key} className="flex flex-col gap-2">
-                  {group.title && <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>}
-                  <DocumentList documents={group.documents} />
-                </div>
-              ))}
-            </section>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Documents</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                {documentGroups.map((group) => (
+                  <div key={group.key} className="flex flex-col gap-2">
+                    {group.title && <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>}
+                    <DocumentList documents={group.documents} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           )}
           <PoTimeline
             orderId={id}
@@ -416,97 +416,26 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
                 {order.data.readyDate && <Detail label="Ready" value={order.data.readyDate} />}
                 <Detail label="Currency" value={currency} />
-                <Detail label="Note to supplier" value={order.data.notes || "None"} />
+                <Detail label="Note to supplier" value={order.data.notes || "—"} />
               </dl>
             </CardContent>
           </Card>
 
           {s.org.kind === "buyer" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-1.5">
-                  Landed costs
-                  <InfoTip label="About landed costs">
-                    Freight, duty and other costs of getting these goods to you, added to unit costs on the Overview.
-                    Amazon’s freight for this PO’s shipments is added automatically. Only your team sees them.
-                  </InfoTip>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                {landed.length + freight.length > 0 && (
-                  <ul className={sx({ display: "flex", flexDirection: "column", gap: 2 })}>
-                    {freight.map((row) => (
-                      <li
-                        key={row.reference}
-                        className={sx({
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 3
-                        })}
-                      >
-                        <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
-                          <span className={sx({ text: "sm", fontWeight: "medium" })}>Amazon inbound freight</span>
-                          <span className={sx({ text: "xs", color: "muted" })}>
-                            Shipment {row.reference}, from Amazon’s charges
-                          </span>
-                        </span>
-                        <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
-                          {money(row.freightMinor, currency)}
-                        </span>
-                      </li>
-                    ))}
-                    {landed.map((cost) => (
-                      <li
-                        key={cost.id}
-                        className={sx({
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 3
-                        })}
-                      >
-                        <span className={sx({ display: "flex", flexDirection: "column", minWidth: 0 })}>
-                          <span className={sx({ text: "sm", fontWeight: "medium" })}>{landedCostKinds[cost.kind]}</span>
-                          {cost.description && (
-                            <span className={sx({ text: "xs", color: "muted" })}>{cost.description}</span>
-                          )}
-                        </span>
-                        <span className={sx({ display: "flex", alignItems: "center", gap: 3 })}>
-                          <span className={sx({ text: "sm", fontVariantNumeric: "tabular" })}>
-                            {money(cost.amountMinor, currency)}
-                          </span>
-                          <ActionButton action="landedCost.delete" data={{ id: cost.id }} variant="outline" size="sm">
-                            Remove<span className={srOnly}> {landedCostKinds[cost.kind].toLowerCase()} cost</span>
-                          </ActionButton>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <dl
-                  className={sx({
-                    display: "grid",
-                    gridTemplateColumns: "labelValue",
-                    columnGap: 4,
-                    rowGap: 2,
-                    text: "sm"
-                  })}
-                >
-                  <Info label="Supplier total" value={money(orderTotal(order.data), currency)} />
-                  <Info label="Landed costs" value={money(landedTotal, currency)} />
-                  <Info label="Landed total" value={money(orderTotal(order.data) + landedTotal, currency)} />
-                  {markup !== null && landedTotal > 0 && (
-                    <Info
-                      label="Markup"
-                      value={`${new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(markup)} on product cost`}
-                    />
-                  )}
-                </dl>
-                <Separator />
-                <LandedCostForm orderId={id} currency={currency} />
-              </CardContent>
-            </Card>
+            <LandedCosts
+              orderId={id}
+              currency={currency}
+              supplierTotal={orderTotal(order.data)}
+              landedTotal={landedTotal}
+              markup={markup}
+              freight={freight.map((row) => ({ reference: row.reference, amount: row.freightMinor }))}
+              costs={landed.map((cost) => ({
+                id: cost.id,
+                kind: landedCostKinds[cost.kind],
+                description: cost.description,
+                amount: cost.amountMinor
+              }))}
+            />
           )}
         </aside>
       </div>
@@ -532,14 +461,5 @@ function Detail({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="whitespace-pre-line">{value}</dd>
     </div>
-  )
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <dt className={sx({ color: "muted" })}>{label}</dt>
-      <dd className={sx({ textAlign: "right", fontWeight: "medium" })}>{value}</dd>
-    </>
   )
 }

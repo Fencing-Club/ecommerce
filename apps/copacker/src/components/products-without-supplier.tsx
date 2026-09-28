@@ -1,19 +1,15 @@
 "use client"
 
-import { AlertTriangle, ChevronRight, ImageOff } from "lucide-react"
-import Image from "next/image"
+import Link from "next/link"
 import { useState } from "react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { IssuePanel } from "@/components/inventory-products"
+import { ProductImage } from "@/components/product-details"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
 import type { ProductWithoutSupplier } from "@/server/product-suppliers"
-import * as styles from "./products-without-supplier.css"
-import { srOnly } from "@/styles/utilities.css"
 
 const productSuppliersApi = api.injectEndpoints({
   overrideExisting: true,
@@ -42,133 +38,127 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
   }
   const chosen = products.filter((product) => ticked.has(product.productId)).map((product) => product.productId)
   const allTicked = chosen.length === products.length
+  const options = suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
+  let assignLabel = "Assign"
+  if (result.isLoading) {
+    assignLabel = "Assigning…"
+  } else if (chosen.length) {
+    assignLabel = `Assign to ${chosen.length} ${chosen.length === 1 ? "product" : "products"}`
+  }
   return (
-    <Alert>
-      <AlertTriangle />
-      <AlertTitle>
-        {products.length} {products.length === 1 ? "product has" : "products have"} no supplier in Shopify
-      </AlertTitle>
-      <AlertDescription>
-        <p>Restock only suggests products with a supplier. Choose one here.</p>
-        <Collapsible className={styles.list}>
-          <CollapsibleTrigger className={styles.trigger}>
-            <ChevronRight className={styles.chevron} aria-hidden="true" />
-            Show products
-          </CollapsibleTrigger>
-          <CollapsibleContent className={styles.list}>
-            {suppliers.length ? (
-              <div className={styles.assign}>
-                <Field className={styles.select}>
-                  <FieldLabel htmlFor="unassigned-supplier">Supplier for the ticked products</FieldLabel>
-                  <NativeSelect
-                    id="unassigned-supplier"
-                    value={supplierId}
-                    onChange={(event) => setSupplierId(event.target.value)}
-                  >
-                    <NativeSelectOption value="">Choose a supplier</NativeSelectOption>
-                    {suppliers.map((supplier) => (
-                      <NativeSelectOption key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-                </Field>
-                <Button
-                  disabled={!supplierId || !chosen.length || result.isLoading}
-                  onClick={async () => {
-                    try {
-                      await assign({ productIds: chosen, supplierId }).unwrap()
-                      setTicked(new Set())
-                    } catch {
-                      // RTK Query keeps the failure for the message below.
-                    }
-                  }}
-                >
-                  {result.isLoading
-                    ? "Assigning…"
-                    : `Assign ${chosen.length} ${chosen.length === 1 ? "product" : "products"}`}
-                </Button>
-                {result.isError && (
-                  <p role="alert" className={styles.problem}>
-                    {errorMessage(result.error, "The supplier couldn’t be saved. Try again.")}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p>Invite a supplier on the Suppliers page first.</p>
-            )}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Checkbox
-                      checked={allTicked}
-                      indeterminate={chosen.length > 0 && !allTicked}
-                      onCheckedChange={(checked) =>
-                        setTicked(checked ? new Set(products.map((product) => product.productId)) : new Set())
-                      }
-                      aria-label="Tick all products"
-                    />
-                  </TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKUs</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.productId}>
-                    <TableCell>
-                      <Checkbox
-                        checked={ticked.has(product.productId)}
-                        onCheckedChange={(checked) =>
-                          setTicked((current) => {
-                            const next = new Set(current)
-                            if (checked) {
-                              next.add(product.productId)
-                            } else {
-                              next.delete(product.productId)
-                            }
-                            return next
-                          })
-                        }
-                        aria-label={`Tick ${product.title}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span className={styles.name}>
-                        {product.imageUrl ? (
-                          <Image
-                            src={product.imageUrl}
-                            alt=""
-                            width={32}
-                            height={32}
-                            unoptimized
-                            className={styles.thumb}
-                          />
-                        ) : (
-                          <span className={styles.placeholder} aria-hidden="true">
-                            <ImageOff />
-                          </span>
-                        )}
-                        {product.title}
-                      </span>
-                    </TableCell>
-                    <TableCell className={styles.skus}>
-                      {product.skus.slice(0, 3).join(", ")}
-                      {product.skus.length > 3 && ` and ${product.skus.length - 3} more`}
-                      {!product.skus.length && (
-                        <>
-                          None<span className={srOnly}> set in Shopify</span>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
+    <IssuePanel
+      title={`${products.length} ${products.length === 1 ? "product has" : "products have"} no supplier`}
+      hint="Restock skips them"
+    >
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        {suppliers.length ? (
+          <>
+            <Select items={options} value={supplierId || null} onValueChange={(value) => setSupplierId(value ?? "")}>
+              <SelectTrigger size="sm" aria-label="Supplier for the selected products" className="w-56">
+                <SelectValue>
+                  {(value: string | null) =>
+                    options.find((option) => option.value === value)?.label ?? "Choose a supplier"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
                 ))}
-              </TableBody>
-            </Table>
-          </CollapsibleContent>
-        </Collapsible>
-      </AlertDescription>
-    </Alert>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              disabled={!supplierId || !chosen.length || result.isLoading}
+              onClick={async () => {
+                try {
+                  await assign({ productIds: chosen, supplierId }).unwrap()
+                  setTicked(new Set())
+                } catch {
+                  // RTK Query keeps the failure for the message below.
+                }
+              }}
+            >
+              {assignLabel}
+            </Button>
+            {result.isError && (
+              <p role="alert" className="basis-full text-sm text-destructive">
+                {errorMessage(result.error, "The supplier couldn’t be saved. Try again.")}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Add a supplier in{" "}
+            <Link href="/partners" className="text-foreground underline underline-offset-4">
+              Partners
+            </Link>{" "}
+            first
+          </p>
+        )}
+      </div>
+      <Table framed={false}>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10 pl-4">
+              <Checkbox
+                checked={allTicked}
+                indeterminate={chosen.length > 0 && !allTicked}
+                onCheckedChange={(checked) =>
+                  setTicked(checked ? new Set(products.map((product) => product.productId)) : new Set())
+                }
+                aria-label="Select all products"
+              />
+            </TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead className="pr-4">SKUs</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.map((product) => (
+            <TableRow key={product.productId}>
+              <TableCell className="w-10 pl-4">
+                <Checkbox
+                  checked={ticked.has(product.productId)}
+                  onCheckedChange={(checked) =>
+                    setTicked((current) => {
+                      const next = new Set(current)
+                      if (checked) {
+                        next.add(product.productId)
+                      } else {
+                        next.delete(product.productId)
+                      }
+                      return next
+                    })
+                  }
+                  aria-label={`Select ${product.title}`}
+                />
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                <span className="flex items-center gap-3">
+                  <ProductImage url={product.imageUrl} small />
+                  <span className="font-medium [overflow-wrap:anywhere]">{product.title}</span>
+                </span>
+              </TableCell>
+              <TableCell className="pr-4 text-xs whitespace-normal text-muted-foreground">
+                {product.skus.length ? (
+                  <>
+                    {product.skus.slice(0, 3).join(", ")}
+                    {product.skus.length > 3 && ` and ${product.skus.length - 3} more`}
+                  </>
+                ) : (
+                  <>
+                    <span aria-hidden="true">—</span>
+                    <span className="sr-only">None set in Shopify</span>
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </IssuePanel>
   )
 }

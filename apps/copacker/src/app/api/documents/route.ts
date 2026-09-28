@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }
     const itemId = kind === "product_label" ? z.uuid().parse(form.get("itemId")) : null
     if (itemId && !order.data.items.some((i) => i.id === itemId)) {
-      throw new Error("Product is not on this PO")
+      throw new Error("Product is not on this purchase order")
     }
     const uploads: Array<{ data: Uint8Array; cartonId: string | null; name: string }> = []
     if (kind === "shipping_label") {
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     await db().transaction(async (tx) => {
       const { order: fresh } = await accessibleOrder(s, orderId, tx, true)
       if (fresh.revision !== order.revision) {
-        throw new Error("PO changed during upload. Try again")
+        throw new Error("The purchase order changed during upload. Try again")
       }
       if (kind === "product_label") {
         const existing = await tx.select().from(shipments).where(eq(shipments.orderId, orderId))

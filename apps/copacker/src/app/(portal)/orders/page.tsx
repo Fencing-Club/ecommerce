@@ -1,25 +1,26 @@
-import { money, orderTotal } from "@repo/aisle"
 import { and, eq, isNull } from "drizzle-orm"
-import { Plus } from "lucide-react"
+import { FileUp, Plus } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
-import { EmptyState, PageHeader, StatCard, StatGrid, Status, formatDestination } from "@/components/common"
+import { EmptyState, PageHeader, StatCard, StatGrid } from "@/components/common"
+import { OrderList } from "@/components/order-list"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
 import { forwarderOrders, visibleOrders } from "@/server/access"
 import { session } from "@/server/auth"
 import { supplierOrders } from "@/server/supplier-workspace"
-import { rowLink } from "../portal.css"
-import { sx } from "@/styles/sprinkles.css"
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await session()).org.kind === "supplier" ? "Orders" : "Purchase orders" }
 }
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function OrdersPage({
+  searchParams
+}: {
+  searchParams: Promise<{ status?: string; tab?: string }>
+}) {
   const s = await session()
   if (s.org.kind === "supplier") {
     const [orders, { tab }] = await Promise.all([supplierOrders(s.org.id), searchParams])
@@ -58,13 +59,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   if (!shopify) {
     nextStep = {
       description: "Connect Shopify so purchase orders can use your catalog, then invite your supplier.",
-      href: "/settings",
+      href: "/settings#integrations",
       action: "Connect Shopify"
     }
   } else if (!supplierLink) {
     nextStep = {
       description: "Invite your supplier, then create your first purchase order.",
-      href: "/suppliers",
+      href: "/partners",
       action: "Invite a supplier"
     }
   }
@@ -73,68 +74,36 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Purchase orders">
         {isBuyer && (
-          <Button nativeButton={false} render={<Link href="/orders/new" />}>
-            <Plus data-icon="inline-start" />
-            Create purchase order
-          </Button>
+          <>
+            <Button variant="outline" nativeButton={false} render={<Link href="/orders/import" />}>
+              <FileUp data-icon="inline-start" />
+              Import
+            </Button>
+            <Button nativeButton={false} render={<Link href="/orders/new" />}>
+              <Plus data-icon="inline-start" />
+              Create purchase order
+            </Button>
+          </>
         )}
       </PageHeader>
 
       {/* Counts only help once there is something to count. */}
       {rows.length > 0 && (
         <StatGrid>
-          <StatCard
-            label="Open orders"
-            value={rows.filter((r) => r.order.status !== "closed").length}
-            caption="Across your suppliers"
-          />
-          <StatCard
-            label="With suppliers"
-            value={rows.filter((r) => r.order.status === "submitted").length}
-            caption="Submitted and in progress"
-          />
-          <StatCard
-            label="Drafts"
-            value={rows.filter((r) => r.order.status === "draft").length}
-            caption="Ready when you are"
-          />
+          <StatCard label="Open orders" value={rows.filter((r) => r.order.status !== "closed").length} />
+          <StatCard label="With suppliers" value={rows.filter((r) => r.order.status === "submitted").length} />
+          <StatCard label="Drafts" value={rows.filter((r) => r.order.status === "draft").length} />
         </StatGrid>
       )}
 
       {rows.length ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Purchase order</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead>Destination</TableHead>
-              <TableHead>Status</TableHead>
-              {showValue && <TableHead className={sx({ textAlign: "right" })}>Value</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map(({ order, supplier }) => (
-              <TableRow key={order.id}>
-                <TableCell>
-                  <Link className={rowLink} href={`/orders/${order.id}`}>
-                    {order.data.reference}
-                  </Link>
-                  <p className={sx({ text: "xs", color: "muted" })}>{order.data.items.length} products</p>
-                </TableCell>
-                <TableCell>{supplier.name}</TableCell>
-                <TableCell className={sx({ color: "muted" })}>{formatDestination(order.data.destination)}</TableCell>
-                <TableCell>
-                  <Status status={order.status} />
-                </TableCell>
-                {showValue && (
-                  <TableCell className={sx({ textAlign: "right", fontVariantNumeric: "tabular" })}>
-                    {money(orderTotal(order.data), order.data.currency)}
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <OrderList
+          rows={rows}
+          status={(await searchParams).status}
+          showValue={showValue}
+          drafts={isBuyer}
+          timeZone={s.org.timeZone ?? undefined}
+        />
       ) : (
         <EmptyState
           title="Your next shipment starts here"

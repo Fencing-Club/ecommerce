@@ -2,24 +2,25 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Address, type OrderInput, type PackingDraft, packingSchema } from "@repo/aisle"
-import { Copy, Plus, Trash2 } from "lucide-react"
+import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
+import { useEffect, useId, useState } from "react"
+import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
+import { objectKeys } from "ts-extras"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { formErrorMap } from "@/lib/form-errors"
+import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { EmptyState } from "./common"
-import { FormInput, FormNumber, FormSelect } from "./form-controls"
+import { FormInput, FormMoney, FormNumber, FormSelect } from "./form-controls"
 import { SelectField } from "./form-fields"
+import { AddressSummary, type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { Upload } from "./upload"
-import * as styles from "./packing-form.css"
-import { sx } from "@/styles/sprinkles.css"
 
 type Values = z.input<typeof packingSchema>
 
@@ -34,7 +35,7 @@ const cartonDimensions = [
   { key: "length", label: "Length (cm)" },
   { key: "width", label: "Width (cm)" },
   { key: "height", label: "Height (cm)" },
-  { key: "weight", label: "Gross weight (kg)" }
+  { key: "weight", label: "Weight (kg)" }
 ] as const
 
 const checkResult = z.object({
@@ -42,6 +43,39 @@ const checkResult = z.object({
   requiresApproval: z.boolean(),
   issues: z.array(z.object({ message: z.string(), field: z.string().optional(), cartonId: z.string().optional() }))
 })
+
+// On a wide card the product and carton rows line up under one row of column names, so each field's own label is
+// only read out. On a narrow card every field keeps its label.
+const invoiceColumns = "@3xl/invoice:grid-cols-[minmax(0,1fr)_6rem_minmax(0,12rem)_minmax(0,10rem)]"
+const invoiceLabel = "@3xl/invoice:[&>[data-slot=field-label]]:sr-only"
+const cartonColumns = {
+  // With several products, each carton says which it holds.
+  products: "@4xl/cartons:grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,1fr))_minmax(0,3fr)_minmax(0,1fr)_auto]",
+  product: "@4xl/cartons:grid-cols-[minmax(0,1.3fr)_repeat(5,minmax(0,1fr))_minmax(0,3fr)]"
+}
+const cartonLabel = "@4xl/cartons:[&>[data-slot=field-label]]:sr-only"
+
+const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`
+const productName = (item: { name: string; variant: string }) =>
+  [item.name, item.variant === "Default Title" ? "" : item.variant].filter(Boolean).join(" / ")
+
+// Which saved address a pickup address is, while it's unchanged.
+const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
+  addresses.find(({ address }) => objectKeys(emptyAddress).every((key) => (address[key] ?? "") === (origin[key] ?? "")))
+
+// Enter in a field would submit the packing list, which can create the Amazon shipment, so only the Submit button
+// submits. Buttons still press and text areas still start a new line, and a dialog opened from here keeps its own
+// Enter: its fields belong to its own form.
+function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
+  if (
+    event.key === "Enter" &&
+    !event.nativeEvent.isComposing &&
+    event.target instanceof HTMLInputElement &&
+    event.target.form === event.currentTarget
+  ) {
+    event.preventDefault()
+  }
+}
 
 export function PackingForm({
   orderId,
@@ -53,7 +87,8 @@ export function PackingForm({
   initial,
   invoices,
   addresses,
-  enteringFor
+  enteringFor,
+  addAddressTo
 }: {
   orderId: string
   shipmentId: string
@@ -63,24 +98,34 @@ export function PackingForm({
   order: OrderInput
   initial: PackingDraft | null
   invoices: Array<{ id: string; name: string }>
-  addresses: Array<{ id: string; name: string; address: Address }>
-  // The supplier's name when the buyer enters its details for it, because it isn't on Copacker.
+  // The supplier's saved pickup addresses.
+  addresses: PartnerAddress[]
+  // The supplier's name when the buyer fills this in for it, which the copy then speaks to. Unset for the supplier.
   enteringFor?: string
+  // The supplier that hasn't joined, when the buyer's owner fills this in for it and can save addresses to it.
+  addAddressTo?: { id: string; name: string }
 }) {
   const router = useRouter()
   const [run] = useActionMutation()
+  const formId = useId()
   const [savedRevision, setSavedRevision] = useState(revision)
   const [notice, setNotice] = useState("")
   const [serverError, setServerError] = useState("")
-  const [working, setWorking] = useState(false)
-  const [addressId, setAddressId] = useState("")
+  const [working, setWorking] = useState<"save" | "check" | "submit" | null>(null)
   const firstItem = order.items[0]!.id
+  const multipleProducts = order.items.length > 1
+  // A packing list without a pickup address yet starts from the supplier's only saved one.
+  const noOrigin = objectKeys(emptyAddress).every((key) => !initial?.origin?.[key])
+  const startAddress =
+    noOrigin && addresses.length === 1 ? addresses[0] : savedAddress(addresses, initial?.origin ?? {})
+  // The saved address the cartons leave from, or "" for one typed in.
+  const [pickup, setPickup] = useState(startAddress?.id ?? "")
 
   const form = useForm<Values, unknown, z.output<typeof packingSchema>>({
     resolver: zodResolver(packingSchema, { error: formErrorMap }),
     defaultValues: {
       readyDate: initial?.readyDate ?? "",
-      origin: { ...emptyAddress, ...initial?.origin },
+      origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
       invoiceDocumentId: initial?.invoiceDocumentId ?? "",
       cartons: (initial?.cartons ?? []).map((carton) => ({
         cartonId: carton.cartonId ?? "",
@@ -103,6 +148,21 @@ export function PackingForm({
   const cartons = useFieldArray({ control: form.control, name: "cartons" })
   const cartonValues = useWatch({ control: form.control, name: "cartons" }) ?? []
   const pieces = cartonValues.reduce((n, c) => n + (c?.items?.[0]?.pieces || 0), 0)
+  const packed = (itemId: string) =>
+    cartonValues.reduce((n, c) => {
+      const content = c?.items?.[0]
+      return n + (content?.itemId === itemId ? content.pieces || 0 : 0)
+    }, 0)
+  const cartonsError = form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message
+
+  // A lone uploaded invoice is the one these cartons ship with.
+  const invoiceId = useWatch({ control: form.control, name: "invoiceDocumentId" })
+  const onlyInvoice = invoices.length === 1 ? invoices[0]?.id : undefined
+  useEffect(() => {
+    if (onlyInvoice && !invoiceId) {
+      form.setValue("invoiceDocumentId", onlyInvoice, { shouldDirty: true, shouldValidate: true })
+    }
+  }, [onlyInvoice, invoiceId, form])
 
   // Drafts save whatever is entered; check and submit only run after the form passes packingSchema.
   async function saveDraft(draft: Values) {
@@ -117,199 +177,243 @@ export function PackingForm({
   }
 
   async function perform(mode: "save" | "check" | "submit", values: Values) {
-    setWorking(true)
+    setWorking(mode)
     setServerError("")
     setNotice("")
     try {
       const nextRevision = await saveDraft(values)
-      setNotice("Packing draft saved. You can leave and return later.")
+      setNotice("Draft saved")
       if (mode === "save") {
         return
       }
       const checked = checkResult.parse(await run({ action: "shipment.check", data: { id: shipmentId } }).unwrap())
       if (!checked.canSubmit) {
         setServerError(
-          checked.issues.map((issue) => `${issue.cartonId ?? issue.field ?? "Packing"}: ${issue.message}`).join("\n")
+          checked.issues
+            .map((issue) => (issue.cartonId ? `Carton ${issue.cartonId}: ${issue.message}` : issue.message))
+            .join("\n")
         )
         return
       }
       if (mode === "check") {
-        setNotice(
-          checked.requiresApproval
-            ? "Packing checked. Invoice changes will go to the buyer for approval."
-            : "Packing checked. Ready to submit."
-        )
+        // The buyer's own changes apply at once; a supplier's wait for the buyer.
+        let approval = "changes go to the buyer for approval"
+        if (enteringFor) {
+          approval = "changes update the purchase order"
+        }
+        setNotice(checked.requiresApproval ? `Ready to submit, ${approval}` : "Ready to submit")
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
       router.refresh()
     } catch (error) {
-      setServerError(errorMessage(error, "Could not save packing"))
+      setServerError(errorMessage(error, "Couldn’t save the packing list"))
     } finally {
-      setWorking(false)
+      setWorking(null)
     }
   }
 
   const validated = (mode: "check" | "submit") =>
     form.handleSubmit(
       () => perform(mode, form.getValues()),
-      () => setServerError("Fix the highlighted fields, then try again.")
+      (errors) => {
+        // A saved address that doesn't pass, such as one without a phone number, opens its fields to fix here.
+        if (errors.origin) {
+          setPickup("")
+        }
+        setServerError("Fix the highlighted fields")
+      }
     )
 
-  function applySavedAddress(id: string) {
-    setAddressId(id)
-    const saved = addresses.find((a) => a.id === id)
-    if (saved) {
-      form.setValue("origin", { ...emptyAddress, ...saved.address }, { shouldDirty: true, shouldValidate: true })
-    }
+  function addCarton() {
+    cartons.append({
+      cartonId: "",
+      length: blank,
+      width: blank,
+      height: blank,
+      weight: blank,
+      items: [{ itemId: firstItem, pieces: blank }]
+    })
   }
 
   return (
-    <div className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
-      <Upload orderId={orderId} shipmentId={shipmentId} kind="invoice" />
-      <FormProvider {...form}>
-        <form onSubmit={validated("submit")} noValidate>
-          <fieldset disabled={working} className={sx({ display: "flex", flexDirection: "column", gap: 6 })}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoice details</CardTitle>
-                <CardDescription>
-                  {enteringFor
-                    ? `From ${enteringFor}’s invoice.`
-                    : "Enter the prices and supplier SKUs from your official invoice. Changes go to the buyer for approval."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FieldGroup>
-                  <FormSelect
-                    name="invoiceDocumentId"
-                    required
-                    label="Uploaded commercial invoice"
-                    placeholder="Choose uploaded invoice"
-                    options={invoices.map((d) => ({ value: d.id, label: d.name }))}
-                  />
-                  {order.items.map((item, index) => (
-                    <div key={item.id} className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                      <FieldSeparator />
-                      <div
-                        className={sx({
-                          display: "grid",
-                          gap: 4,
-                          gridTemplateColumns: { sm: "itemPriceSku" },
-                          alignItems: { sm: "flex-start" }
-                        })}
-                      >
-                        <div className={sx({ display: "flex", flexDirection: "column", gap: 1 })}>
-                          <p className={sx({ text: "sm", fontWeight: "medium" })}>
-                            {[item.name, item.variant === "Default Title" ? "" : item.variant]
-                              .filter(Boolean)
-                              .join(" / ")}
-                          </p>
-                          <p className={sx({ text: "xs", color: "muted" })}>SKU {item.buyerSku}</p>
-                          <p className={sx({ text: "xs", color: "muted" })}>
-                            {availablePieces[item.id] ?? 0} pieces available on this PO
-                          </p>
-                        </div>
-                        {item.components?.length ? (
-                          <div className={sx({ text: "sm" })}>
-                            <p className={sx({ fontWeight: "medium" })}>Supplier components per sellable unit</p>
-                            {item.components.map((component) => (
-                              <p key={component.variantId} className={sx({ color: "muted" })}>
-                                {component.quantity} × {component.buyerSku || "Shopify component"}, supplier SKU{" "}
-                                {component.supplierSku || "missing"}
-                              </p>
-                            ))}
-                          </div>
-                        ) : (
-                          <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" />
-                        )}
-                        <FormNumber
-                          name={`changes.${index}.unitPrice`}
-                          required
-                          label={`Price per piece (${order.currency})`}
-                          min={0}
-                          step={0.01}
-                          scale={100}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </FieldGroup>
-              </CardContent>
-            </Card>
+    <FormProvider {...form}>
+      {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
+      <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6">
+        {/* Outside the packing form element: the upload is a form of its own. */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Commercial invoice</CardTitle>
+            <CardDescription>
+              {enteringFor ? `${enteringFor}’s invoice for these cartons` : "Your invoice for these cartons"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            <Upload orderId={orderId} shipmentId={shipmentId} kind="invoice" label={null} />
+            <FormSelect
+              name="invoiceDocumentId"
+              required
+              label="Invoice file"
+              placeholder={invoices.length ? "Choose an invoice" : "Upload an invoice first"}
+              options={invoices.map((d) => ({ value: d.id, label: d.name }))}
+              className="sm:max-w-sm"
+            />
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Pickup details</CardTitle>
-                <CardDescription>
-                  {enteringFor
-                    ? `When and where ${enteringFor}’s cartons will be ready.`
-                    : "Tell the buyer when the cartons will be ready. The buyer books transportation, and Amazon coordinates pickup with this contact."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FieldGroup>
-                  <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2" } })}>
-                    <FormInput name="readyDate" required label="Ready for pickup" type="date" />
-                    {addresses.length > 0 && (
-                      <SelectField
-                        label="Use a saved address"
-                        id="savedAddress"
-                        value={addressId}
-                        onChange={(e) => applySavedAddress(e.target.value)}
-                        placeholder="Enter a new address"
-                        options={addresses.map((a) => ({ value: a.id, label: a.name }))}
-                      />
-                    )}
-                  </div>
-                  <AddressFields path="origin" requirePhone />
-                </FieldGroup>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Cartons</CardTitle>
-                <CardDescription>
-                  Use the numbers printed on your cartons. Dimensions in cm, gross weight in kg.
-                </CardDescription>
-                <CardAction>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      cartons.append({
-                        cartonId: "",
-                        length: blank,
-                        width: blank,
-                        height: blank,
-                        weight: blank,
-                        items: [{ itemId: firstItem, pieces: blank }]
-                      })
-                    }
-                  >
-                    <Plus data-icon="inline-start" />
-                    Add carton
-                  </Button>
-                </CardAction>
-              </CardHeader>
-              <CardContent className={sx({ display: "flex", flexDirection: "column", gap: 4 })}>
-                {cartons.fields.length === 0 && (
-                  <EmptyState
-                    title="No cartons yet"
-                    description="Add your first carton, then duplicate identical cartons to save time."
-                  />
+        {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        <form
+          id={formId}
+          onSubmit={validated("submit")}
+          onKeyDown={keepEnterFromSubmitting}
+          noValidate
+          className="flex flex-col gap-6"
+        >
+          <Card className="gap-0 overflow-hidden py-0">
+            <CardHeader className="border-b p-4">
+              <CardTitle>Invoice details</CardTitle>
+              <CardDescription>
+                {enteringFor ? "Changes update the purchase order" : "Changes go to the buyer for approval"}
+              </CardDescription>
+            </CardHeader>
+            <div className="@container/invoice">
+              <div
+                aria-hidden
+                className={cn(
+                  "hidden gap-x-4 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground @3xl/invoice:grid",
+                  invoiceColumns
                 )}
-                {cartons.fields.map((carton, index) => (
-                  <Card key={carton.id} size="sm" className={styles.cartonCard}>
-                    <CardHeader>
-                      <CardTitle>Carton {cartonValues[index]?.cartonId || index + 1}</CardTitle>
-                      <CardAction className={sx({ display: "flex", gap: 1 })}>
+              >
+                <span>Product</span>
+                <span className="text-right">Packed</span>
+                <span>Supplier SKU</span>
+                <span>Price per piece</span>
+              </div>
+              {order.items.map((item, index) => {
+                const available = availablePieces[item.id] ?? 0
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "grid grid-cols-2 items-start gap-x-4 gap-y-3 border-b px-4 py-3 last:border-b-0",
+                      invoiceColumns
+                    )}
+                  >
+                    <div className="col-span-2 min-w-0 @3xl/invoice:col-span-1 @3xl/invoice:pt-1.5">
+                      <p className="font-medium">{productName(item)}</p>
+                      <p className="text-xs text-muted-foreground">{item.buyerSku}</p>
+                    </div>
+                    <p
+                      className={cn(
+                        "col-span-2 tabular-nums @3xl/invoice:col-span-1 @3xl/invoice:pt-1.5 @3xl/invoice:text-right",
+                        packed(item.id) > available && "text-destructive"
+                      )}
+                    >
+                      <span className="text-muted-foreground @3xl/invoice:sr-only">Packed </span>
+                      {packed(item.id)} of {available}
+                    </p>
+                    {item.components?.length ? (
+                      <div className="flex flex-col gap-1 @3xl/invoice:pt-1.5">
+                        <p className="font-medium @3xl/invoice:sr-only">Supplier SKU</p>
+                        {item.components.map((component) => (
+                          <p key={component.variantId}>
+                            {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" className={invoiceLabel} />
+                    )}
+                    <FormMoney
+                      name={`changes.${index}.unitPrice`}
+                      required
+                      label="Price per piece"
+                      currency={order.currency}
+                      className={invoiceLabel}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          <PickupCard addresses={addresses} addAddressTo={addAddressTo} pickup={pickup} onPickupChange={setPickup} />
+
+          <Card className="gap-0 overflow-hidden py-0">
+            <CardHeader className="border-b p-4">
+              <CardTitle>Cartons</CardTitle>
+            </CardHeader>
+            {cartons.fields.length ? (
+              <div className="@container/cartons">
+                <div
+                  aria-hidden
+                  className={cn(
+                    "hidden gap-x-3 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground @4xl/cartons:grid",
+                    multipleProducts ? cartonColumns.products : cartonColumns.product
+                  )}
+                >
+                  <span>Carton number</span>
+                  {cartonDimensions.map((field) => (
+                    <span key={field.key}>{field.label}</span>
+                  ))}
+                  {multipleProducts && <span>Product</span>}
+                  <span>Pieces</span>
+                  <span />
+                </div>
+                {cartons.fields.map((carton, index) => {
+                  const name = cartonValues[index]?.cartonId || index + 1
+                  return (
+                    <div
+                      key={carton.id}
+                      className={cn(
+                        "grid grid-flow-row-dense grid-cols-2 items-start gap-3 border-b px-4 py-3",
+                        multipleProducts ? cartonColumns.products : cartonColumns.product
+                      )}
+                    >
+                      <FormInput
+                        name={`cartons.${index}.cartonId`}
+                        required
+                        label="Carton number"
+                        className={cartonLabel}
+                      />
+                      {cartonDimensions.map((field) => (
+                        <FormNumber
+                          key={field.key}
+                          name={`cartons.${index}.${field.key}`}
+                          label={field.label}
+                          required
+                          min={0}
+                          step="any"
+                          className={cartonLabel}
+                        />
+                      ))}
+                      {multipleProducts && (
+                        <FormSelect
+                          name={`cartons.${index}.items.0.itemId`}
+                          required
+                          label="Product"
+                          options={order.items.map((item) => ({
+                            value: item.id,
+                            label: `${productName(item)} / ${item.buyerSku}`
+                          }))}
+                          className={cn("col-span-2 @4xl/cartons:col-span-1", cartonLabel)}
+                        />
+                      )}
+                      <FormNumber
+                        name={`cartons.${index}.items.0.pieces`}
+                        required
+                        label="Pieces"
+                        min={1}
+                        step={1}
+                        className={cartonLabel}
+                      />
+                      <div className="col-span-2 flex justify-end gap-1 @4xl/cartons:col-span-1 @4xl/cartons:pt-0.5">
                         <Button
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Duplicate carton ${index + 1}`}
+                          aria-label={`Duplicate carton ${name}`}
                           onClick={() =>
                             cartons.append({ ...structuredClone(form.getValues(`cartons.${index}`)), cartonId: "" })
                           }
@@ -320,87 +424,176 @@ export function PackingForm({
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Remove carton ${index + 1}`}
+                          aria-label={`Remove carton ${name}`}
                           onClick={() => cartons.remove(index)}
                         >
                           <Trash2 />
                         </Button>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                      <FieldGroup>
-                        <div className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "2", lg: "5" } })}>
-                          <FormInput name={`cartons.${index}.cartonId`} required label="Supplier carton number" />
-                          {cartonDimensions.map((field) => (
-                            <FormNumber
-                              key={field.key}
-                              name={`cartons.${index}.${field.key}`}
-                              label={field.label}
-                              required
-                              min={0}
-                              step="any"
-                            />
-                          ))}
-                        </div>
-                        <div
-                          className={sx({ display: "grid", gap: 4, gridTemplateColumns: { sm: "fieldWithPieces" } })}
-                        >
-                          <FormSelect
-                            name={`cartons.${index}.items.0.itemId`}
-                            required
-                            label="Product (one SKU per AWD carton)"
-                            options={order.items.map((item) => ({
-                              value: item.id,
-                              label: `${item.name} / ${item.variant} / ${item.buyerSku}`
-                            }))}
-                          />
-                          <FormNumber
-                            name={`cartons.${index}.items.0.pieces`}
-                            required
-                            label="Pieces in carton"
-                            min={1}
-                            step={1}
-                          />
-                        </div>
-                      </FieldGroup>
-                    </CardContent>
-                  </Card>
-                ))}
-                <FormError
-                  message={form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message}
-                />
-              </CardContent>
-            </Card>
-
-            <FormError message={serverError} />
-            <div
-              className={sx({
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 4
-              })}
-            >
-              <p className={sx({ text: "sm", color: "muted" })}>
-                {cartons.fields.length} cartons, {pieces} pieces
-              </p>
-              <div className={sx({ display: "flex", flexWrap: "wrap", gap: 2 })}>
-                <Button type="button" variant="outline" onClick={() => void perform("save", form.getValues())}>
-                  Save draft
-                </Button>
-                <Button type="button" variant="outline" onClick={() => void validated("check")()}>
-                  Check packing
-                </Button>
-                <SubmitButton type="submit" pending={working} disabled={!cartons.fields.length}>
-                  Submit packing list
-                </SubmitButton>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="px-4 py-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={addCarton}>
+                    <Plus data-icon="inline-start" />
+                    Add carton
+                  </Button>
+                </div>
               </div>
-            </div>
-            {notice && <output className={sx({ text: "sm", color: "muted" })}>{notice}</output>}
-          </fieldset>
+            ) : (
+              <EmptyState title="No cartons yet" description="Add a carton, then duplicate identical ones">
+                <Button type="button" variant="outline" onClick={addCarton}>
+                  <Plus data-icon="inline-start" />
+                  Add carton
+                </Button>
+              </EmptyState>
+            )}
+            {cartonsError && (
+              <div className="px-4 pb-4">
+                <FormError message={cartonsError} />
+              </div>
+            )}
+          </Card>
         </form>
-      </FormProvider>
-    </div>
+
+        <div className="sticky bottom-4 z-10 flex flex-col gap-3 rounded-xl bg-card p-3 text-sm shadow-lg ring-1 ring-foreground/10">
+          {serverError && (
+            <div className="max-h-48 overflow-y-auto">
+              <FormError message={serverError} />
+            </div>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-col px-1">
+              <p className="font-medium tabular-nums">
+                {plural(cartons.fields.length, "carton")}, {plural(pieces, "piece")}
+              </p>
+              {notice && <output className="text-xs text-muted-foreground">{notice}</output>}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton
+                type="button"
+                variant="ghost"
+                pending={working === "save"}
+                onClick={() => void perform("save", form.getValues())}
+              >
+                Save draft
+              </SubmitButton>
+              <SubmitButton
+                type="button"
+                variant="outline"
+                pending={working === "check"}
+                onClick={() => void validated("check")()}
+              >
+                Check packing
+              </SubmitButton>
+              <SubmitButton
+                type="submit"
+                form={formId}
+                pending={working === "submit"}
+                disabled={!cartons.fields.length}
+              >
+                Submit packing list
+              </SubmitButton>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </FormProvider>
+  )
+}
+
+// When the cartons are ready and where they're collected: one of the supplier's saved pickup addresses, shown in brief,
+// or one typed in. Either way the packing list keeps the address itself, as its origin.
+function PickupCard({
+  addresses,
+  addAddressTo,
+  pickup,
+  onPickupChange
+}: {
+  addresses: PartnerAddress[]
+  addAddressTo?: { id: string; name: string }
+  pickup: string
+  onPickupChange: (id: string) => void
+}) {
+  const form = useFormContext<Values>()
+  const selectId = useId()
+  const [adding, setAdding] = useState(false)
+  // Addresses added here, until the refreshed page lists them.
+  const [added, setAdded] = useState<PartnerAddress[]>([])
+  // The address typed in, kept while a saved one is chosen.
+  const [typed, setTyped] = useState<Values["origin"]>(emptyAddress)
+  const origin = useWatch({ control: form.control, name: "origin" })
+  const { errors } = useFormState({ control: form.control, name: "origin" })
+  const saved = [...addresses, ...added.filter((address) => !addresses.some((row) => row.id === address.id))]
+  const chosen = saved.find((address) => address.id === pickup)
+
+  function choose(next: PartnerAddress | undefined) {
+    if (!chosen) {
+      setTyped(form.getValues("origin"))
+    }
+    form.clearErrors("origin")
+    form.setValue("origin", { ...emptyAddress, ...(next ? next.address : typed) }, { shouldDirty: true })
+    onPickupChange(next?.id ?? "")
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Pickup</CardTitle>
+        {addAddressTo && (
+          <CardAction>
+            <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+              <MapPinPlus data-icon="inline-start" />
+              Add address
+            </Button>
+            <PartnerAddressDialog
+              partner={{ kind: "supplier", ...addAddressTo }}
+              // What's typed here becomes the new address's starting point.
+              draft={chosen ? undefined : origin}
+              open={adding}
+              onOpenChange={setAdding}
+              onSaved={({ id, name, address }) => {
+                if (id) {
+                  setAdded((list) => [...list, { id, name, address }])
+                  choose({ id, name, address })
+                }
+              }}
+            />
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {saved.length > 0 && (
+              <SelectField
+                label="Pickup address"
+                id={selectId}
+                value={chosen?.id ?? ""}
+                onChange={(event) => {
+                  const next = saved.find((address) => address.id === event.target.value)
+                  if (next || chosen) {
+                    choose(next)
+                  }
+                }}
+                options={[
+                  ...saved.map((address) => ({ value: address.id, label: address.name })),
+                  { value: "", label: "Other address" }
+                ]}
+              />
+            )}
+            <FormInput name="readyDate" required label="Ready for pickup" type="date" />
+          </div>
+          {chosen && !errors.origin ? (
+            <AddressSummary address={origin} className="rounded-lg bg-muted/50 p-3" />
+          ) : (
+            <>
+              <FieldSeparator />
+              <AddressFields path="origin" requirePhone />
+            </>
+          )}
+        </FieldGroup>
+      </CardContent>
+    </Card>
   )
 }

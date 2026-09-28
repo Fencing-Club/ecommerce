@@ -3,8 +3,6 @@ import { alpha, fontSize, focusRing, media, space } from "@/styles/tokens"
 import { pop } from "@/styles/animations.css"
 import { vars } from "@/styles/theme.css"
 
-export const controls = style({ display: "flex", flexWrap: "wrap", alignItems: "center", gap: space(2) })
-
 export const positioner = style({ isolation: "isolate", zIndex: 50, outline: "none" })
 
 export const popup = style([
@@ -65,19 +63,6 @@ export const presetHeading = style([
 export const panel = style({ display: "flex", flexDirection: "column", gap: space(3), padding: space(3) })
 
 export const dates = style({ display: "flex", alignItems: "center", gap: space(2) })
-
-export const dateInput = style({
-  flex: 1,
-  minWidth: 0,
-  height: space(9),
-  padding: `0 ${space(2.5)}`,
-  border: `1px solid ${vars.color.input}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: "transparent",
-  color: vars.color.foreground,
-  ...fontSize.sm,
-  selectors: { "&:focus-visible": focusRing }
-})
 
 export const arrow = style({ flexShrink: 0, width: space(4), height: space(4), color: vars.color.mutedForeground })
 

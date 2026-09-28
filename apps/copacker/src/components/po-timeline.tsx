@@ -61,7 +61,7 @@ export function PoTimeline({
     return groups
   }, [])
   return (
-    <section aria-labelledby="timeline" className="flex flex-col gap-4">
+    <section aria-labelledby="timeline" className="flex flex-col gap-4 text-sm">
       <h2 id="timeline" className="font-semibold">
         Timeline
       </h2>
@@ -124,16 +124,26 @@ export function PoTimeline({
   )
 }
 
+// Events recorded before purchase orders were spelled out read "PO sent" or "PO created"; show them the way new
+// events read. People's comments are left as written.
+function spelledOut(message: string) {
+  return message
+    .replace(/^POs\b/, "Purchase orders")
+    .replace(/^PO\b(?!-)/, "Purchase order")
+    .replace(/\bPOs\b/g, "purchase orders")
+    .replace(/\bPO\b(?!-)/g, "purchase order")
+}
+
 // An event's text; a revision opens to show the lines it had.
 function EventText({ entry }: { entry: TimelineEntry }) {
   if (!entry.revision) {
-    return <p className="min-w-0 flex-1">{entry.message}</p>
+    return <p className="min-w-0 flex-1">{spelledOut(entry.message)}</p>
   }
   const { revision } = entry
   return (
     <Collapsible className="min-w-0 flex-1">
       <CollapsibleTrigger className="group flex items-center gap-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-        {entry.message}
+        {spelledOut(entry.message)}
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-panel-open:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent>

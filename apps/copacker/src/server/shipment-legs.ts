@@ -106,7 +106,7 @@ export async function forwardShipment(s: Session, raw: unknown) {
       throw new Error("The supplier hasn't shipped these goods yet")
     }
     if (input.freight.currency !== order.data.currency) {
-      throw new Error(`Enter the freight in ${order.data.currency}, the PO's currency`)
+      throw new Error(`Enter the freight in ${order.data.currency}, the purchase order's currency`)
     }
     await tx
       .update(shipments)
