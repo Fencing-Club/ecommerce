@@ -52,9 +52,10 @@ parts live in `apps/copacker/src/components/marketing/`:
   the client's own docs as of September 2026. For those sign-ins to work unaided, the server's OAuth needs dynamic
   client registration or client metadata documents, `iss` in its authorization response, loopback redirects on any
   port, and refresh tokens (`offline_access`), or ChatGPT signs people out when the first token expires.
-- The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), in the segment
-  `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed out, so it checks the address, turns
-  away bots that fill in a hidden field, and slows down more than five signups from one address in ten minutes.
+- The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), with the full access key in
+  `MAILING_LIST_API_KEY`, in the segment `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed
+  out, so it checks the address, turns away bots that fill in a hidden field, and slows down more than five signups
+  from one address in ten minutes.
 - The privacy policy and terms are written from what the code does: the stores Copacker reads (and that it keeps no
   customer's name, email address, phone number or address), the providers that run it, its cookies and its AI import.
   Amazon's, Amazon Ads' and eBay's developer programs read the policy's marketplace data section. When a data flow

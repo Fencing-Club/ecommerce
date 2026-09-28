@@ -37,6 +37,13 @@ describe("joinMailingList", () => {
     })
   })
 
+  it("uses the mailing list's own key over the one the app sends email with", async () => {
+    vi.stubEnv("MAILING_LIST_API_KEY", "re_full")
+    fetchMock.mockResolvedValue(Response.json({ object: "contact", id: "contact-1" }))
+    await joinMailingList("ana@example.com")
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer re_full")
+  })
+
   it("adds the contact without a segment when none is set", async () => {
     vi.stubEnv("MAILING_LIST_SEGMENT_ID", "")
     fetchMock.mockResolvedValue(Response.json({ object: "contact", id: "contact-1" }))
