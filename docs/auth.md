@@ -28,11 +28,12 @@ browser had open, or else the first. `next` survives every step, and only ever p
 
 Local and production share the WorkOS staging environment. In its dashboard:
 
-- **Redirects:** `<APP_URL>/callback` for each environment, and the sign-out redirect `<APP_URL>`.
-- **Password reset email:** turn off WorkOS's own reset email once Copacker's sender domain is verified in Resend, so
-  only Copacker's goes out. Until then both are sent, and Copacker's reaches only the Resend account's owner while the
-  sender is `resend.dev`. Set the **Password reset URL** to
-  `https://copacker-production.up.railway.app/reset-password` meanwhile, so WorkOS's email opens Copacker's page too.
+- **Redirects** (Applications → the application → Redirects): `<APP_URL>/callback` for each environment, the sign-out
+  redirect `<APP_URL>`, and the **Password reset URL** `https://copacker-production.up.railway.app/reset-password`, so
+  WorkOS's own reset email opens Copacker's page too.
+- **Password reset email** (Emails → Configuration): turn off WorkOS's own once Copacker's sender domain is verified in
+  Resend, so only Copacker's goes out. Until then both are sent, and Copacker's reaches only the Resend account's owner
+  while the sender is `resend.dev`.
 - **Authentication:** email and password, and Google and Microsoft OAuth. Staging uses WorkOS's demo OAuth
   credentials; a production WorkOS environment needs Copacker's own Google and Microsoft apps.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.
