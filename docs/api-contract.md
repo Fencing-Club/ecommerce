@@ -140,13 +140,13 @@ Optional query parameters:
 | Parameter | Meaning |
 | --- | --- |
 | `supplierId` | Exact buyer-owned supplier UUID; unknown or unrelated IDs return an empty page. |
-| `destination` | `amazon`, `warehouse`, or `forwarder`. |
+| `destination` | `amazon` or `warehouse`. |
 | `limit` | Orders per page, integer 1–50, default 20. |
 | `cursor` | Last order UUID returned as `nextCursor`; omit on the first page. |
 
 Unknown parameters, duplicate parameters and invalid values return 400. Orders use immutable ID ascending order, not creation time. Keep filters unchanged between pages; restart without a cursor after changing filters. Each page reads orders and assignments in one repeatable-read transaction. Pages are not a frozen export: later submissions or closures can change subsequent results. A cursor remains usable if its order is closed or removed. `nextCursor: null` means no further matches were present when that page was read.
 
-Each order includes `id`, `reference`, `revision`, `destination`, nullable `forwarderId`, supplier `id`/`name`, pinned `shopifyDomain`/`amazonSellerId`, and `items`. Each item includes the workflow coverage fields plus `variantId`, `supplierSku`, `asin`, `fnsku`, and `piecesPerSet`. Product identity is store plus variant, never SKU alone. No cross-order totals, price conversion, warehouse availability or receipt inference is performed.
+Each order includes `id`, `reference`, `revision`, `destination`, nullable `forwarderId` (the forwarder of its stop on the way), supplier `id`/`name`, pinned `shopifyDomain`/`amazonSellerId`, and `items`. Each item includes the workflow coverage fields plus `variantId`, `supplierSku`, `asin`, `fnsku`, and `piecesPerSet`. Product identity is store plus variant, never SKU alone. No cross-order totals, price conversion, warehouse availability or receipt inference is performed.
 
 For example, a 160-piece PO with 40 pieces reported collected and another 60 in an uncertain Amazon create has this quantity fragment:
 
@@ -201,7 +201,7 @@ Release requires current packing-list/checklist PDFs, a unique SSCC and current 
 
 ### Save a reviewed import
 
-`POST /api/imports/{id}/save` accepts `{revision, reviewed: true, supplierId, destination, forwarderId?, reference, dueDate, notes?}` and returns `{id, redirect: "/orders/{id}"}`. Save proposal corrections with PATCH first and use its returned revision. All rows require resolved variants, positive whole-piece quantities, valid set conversion and prices representable in minor currency units. Known line and document totals must reconcile with products and signed adjustments.
+`POST /api/imports/{id}/save` accepts `{revision, reviewed: true, supplierId, destination, deliveryId?, via?, reference, dueDate, notes?}` and returns `{id, redirect: "/orders/{id}"}`. Save proposal corrections with PATCH first and use its returned revision. All rows require resolved variants, positive whole-piece quantities, valid set conversion and prices representable in minor currency units. Known line and document totals must reconcile with products and signed adjustments.
 
 The server re-fetches canonical Shopify and Amazon identities and rejects changed merchant connections. The import and newly created draft PO are linked in one transaction. Repeated saves of the same completed import return the existing PO even when providers are unavailable. Saving sends no email and creates no Amazon shipment. Source SKU remains extraction evidence; it never replaces the canonical buyer or supplier SKU.
 
@@ -244,12 +244,14 @@ New POs get their labels when the PO is created or imported, and again after it 
 
 ### Amazon networks
 
-`destination` is `amazon`, `warehouse` or `forwarder`. On a PO to Amazon each line has `amazonNetwork`, `fba` (default) or
+`destination` is `amazon` or `warehouse`. A freight forwarder is never a destination, only a stop on the way to
+either: `via` is `{forwarderId, addressId}`, one of the buyer's forwarder addresses. On a PO to Amazon each line has `amazonNetwork`, `fba` (default) or
 `awd_us`, defaulted from the product's `amazonNetwork` setting (`product_defaults.amazonNetwork`; `PATCH
 /api/inventory/product-defaults` keeps it when left out). Shipments carry `amazonNetwork` once queued; see
 [amazon-inbound.md](amazon-inbound.md) for packing rules and how a submission splits into one shipment per network.
 Migration `0028_amazon_networks` converted earlier POs: `amazon` and `awd_us` became `amazon` with AWD US lines, `fba`
-became `amazon` with FBA lines.
+became `amazon` with FBA lines. Migration `0040_forwarder_stops` turned POs to a forwarder into POs to Amazon with
+that forwarder address as their stop.
 
 ### Suffocation warning labels
 

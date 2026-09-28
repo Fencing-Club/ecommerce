@@ -11,9 +11,10 @@ export const prepCategories = [
   "HANG_GARMENT"
 ] as const
 export type PrepCategory = (typeof prepCategories)[number]
-// Where a PO ships: Amazon, one of the buyer's own locations (a saved delivery address), or a freight forwarder. A PO to
-// Amazon sends each line to its own Amazon network, so one PO can become several Amazon shipments.
-export const destinationSchema = z.enum(["amazon", "forwarder", "warehouse"])
+// Where a PO ships: Amazon, or one of the buyer's own locations (a saved delivery address). A PO to Amazon sends each
+// line to its own Amazon network, so one PO can become several Amazon shipments. A freight forwarder is never where a
+// PO ends, only a stop on the way.
+export const destinationSchema = z.enum(["amazon", "warehouse"])
 // Amazon's inbound networks a PO line can go to: FBA, or AWD in the US. Each has its own carton rules, and each
 // network's cartons become their own shipment.
 export const amazonNetworks = ["fba", "awd_us"] as const
@@ -149,11 +150,10 @@ export const orderInputSchema = z
     supplierId: z.uuid(),
     reference: z.string().trim().min(1).max(80),
     destination: destinationSchema,
-    // For a PO to a freight forwarder, the forwarder; deliveryId is then one of its addresses.
-    forwarderId: z.uuid().optional(),
+    // For a PO to one of the buyer's locations, its delivery address.
     deliveryId: z.uuid().optional(),
-    // A freight forwarder the goods pass through on the way to the destination, such as a consolidator in China
-    // before Amazon AWD: the forwarder and the address the supplier ships to.
+    // A freight forwarder the goods stop at on the way to Amazon or the buyer's location, such as a consolidator in
+    // China: the forwarder and the address the supplier ships to.
     via: z.object({ forwarderId: z.uuid(), addressId: z.uuid() }).optional(),
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
     // When the buyer needs the goods, as the purchase order's "Required by".
@@ -184,12 +184,6 @@ export const orderInputSchema = z
         message: "Purchase order total must be a nonnegative safe integer",
         path: ["adjustments"]
       })
-    }
-    if (order.via && (order.destination === "forwarder" || order.destination === "warehouse")) {
-      ctx.addIssue({ code: "custom", message: "Ship to the forwarder directly instead", path: ["via"] })
-    }
-    if (order.destination === "forwarder" && (!order.forwarderId || !order.deliveryId)) {
-      ctx.addIssue({ code: "custom", message: "Choose a forwarder address", path: ["deliveryId"] })
     }
     if (order.destination === "warehouse" && !order.deliveryId) {
       ctx.addIssue({ code: "custom", message: "Choose a delivery address", path: ["deliveryId"] })
@@ -301,9 +295,6 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   // Amazon's carton and labeling rules apply only to Amazon shipments, by each carton's network; the buyer's own
   // locations accept any cartons.
   const amazon = order.destination === "amazon"
-  if (!amazon && order.destination !== "warehouse") {
-    issues.push({ message: "Shipments currently go to Amazon or your own locations" })
-  }
   for (const carton of packing.cartons) {
     const add = (message: string) => issues.push({ cartonId: carton.cartonId, message })
     if (cartonIds.has(carton.cartonId.toLowerCase())) {

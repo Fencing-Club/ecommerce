@@ -2,7 +2,7 @@
 
 ## Agreed product
 
-Copacker is a multi-organization buyer/supplier portal. WorkOS authenticates users; database memberships and explicit buyer/supplier relationships authorize every record. Supplier organizations can work with multiple buyers. One PO has one destination. Partial shipments reserve quantities independently. Initial route: supplier to AWD USA; AWD China, FBA, and forwarders remain destination types but cannot create Amazon shipments until their implementation is verified.
+Copacker is a multi-organization buyer/supplier portal. WorkOS authenticates users; database memberships and explicit buyer/supplier relationships authorize every record. Supplier organizations can work with multiple buyers. One PO has one destination. Partial shipments reserve quantities independently. Initial route: supplier to AWD USA; AWD China and FBA remain destination types but cannot create Amazon shipments until their implementation is verified. A freight forwarder is only a stop on the way (`via`) to Amazon or the buyer's own location, never a destination.
 
 PO quantities and prices are per individual piece. Pack size explicitly converts pieces to Amazon sellable units. Suppliers may propose supplier SKU and price changes, never buyer SKU/product identity changes. Commercial changes require buyer approval, update the PO, retain previous revisions, and sync approved supplier SKU to Shopify variant custom.supplier_sku. Shopify unit cost writeback is an explicit buyer choice with currency and pack conversion checks. An official commercial invoice PDF is mandatory.
 

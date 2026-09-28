@@ -75,7 +75,7 @@ export async function GET(request: Request) {
             reference: order.data.reference,
             revision: order.revision,
             destination: order.data.destination,
-            forwarderId: order.data.forwarderId ?? null,
+            forwarderId: order.data.via?.forwarderId ?? null,
             supplier: { id: order.supplierId, name: supplierName },
             shopifyDomain: order.shopifyDomain,
             amazonSellerId: order.amazonSellerId,

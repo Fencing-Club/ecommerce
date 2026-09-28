@@ -59,8 +59,7 @@ import { DateInput, FormCheckbox, FormInput, FormLabel, FormSelect, FormTextarea
 
 const destinations = [
   { value: "amazon", label: "Amazon" },
-  { value: "warehouse", label: "Your location" },
-  { value: "forwarder", label: "Freight forwarder" }
+  { value: "warehouse", label: "Your location" }
 ]
 // Which of Amazon's networks a line goes to, when the PO ships to Amazon.
 const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
@@ -127,7 +126,7 @@ export function OrderBuilder({
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations, with the Shopify location stock arrives at.
   deliveries?: Array<{ id: string; name: string; shopifyLocationId?: string | null }>
-  // Where POs to freight forwarders can ship: each forwarder's addresses, and whether Amazon could pick up there.
+  // The forwarders' addresses a PO can stop at on the way, and whether Amazon could pick up there.
   forwarderAddresses?: Array<{ addressId: string; forwarderId: string; label: string; hasPhone?: boolean }>
   // Lines added before the builder opens, such as a reorder from Restock.
   initialItems?: ReturnType<typeof orderLine>[]
@@ -175,29 +174,13 @@ export function OrderBuilder({
   const deliveryId = useWatch({ control: form.control, name: "deliveryId" })
   const via = useWatch({ control: form.control, name: "via" })
   const [addingStop, setAddingStop] = useState(false)
-  // The address list depends on the destination, and a forwarder address names its forwarder, so both follow the
-  // chosen destination and address. A stop on the way only suits a destination further on, such as Amazon.
+  // A delivery address is one of the buyer's locations, so another destination clears it. A stop on the way suits
+  // either destination and stays.
   useEffect(() => {
-    let choices: string[] = []
-    if (destination === "forwarder") {
-      choices = forwarderAddresses.map((row) => row.addressId)
-    } else if (destination === "warehouse") {
-      choices = deliveries.map((row) => row.id)
-    }
-    if (deliveryId && !choices.includes(deliveryId)) {
+    if (deliveryId && (destination !== "warehouse" || !deliveries.some((row) => row.id === deliveryId))) {
       form.setValue("deliveryId", undefined)
     }
-    const forwarderId =
-      destination === "forwarder"
-        ? forwarderAddresses.find((row) => row.addressId === deliveryId)?.forwarderId
-        : undefined
-    if (form.getValues("forwarderId") !== forwarderId) {
-      form.setValue("forwarderId", forwarderId)
-    }
-    if ((destination === "forwarder" || destination === "warehouse") && form.getValues("via")) {
-      form.setValue("via", undefined)
-    }
-  }, [destination, deliveryId, deliveries, forwarderAddresses, form])
+  }, [destination, deliveryId, deliveries, form])
   const supplierId = useWatch({ control: form.control, name: "supplierId" }) ?? ""
   const itemsError = form.formState.errors.items
   const lookupGroups = items.map((item) =>
@@ -386,15 +369,7 @@ export function OrderBuilder({
                   options={deliveries.map((row) => ({ value: row.id, label: row.name }))}
                 />
               )}
-              {destination === "forwarder" && (
-                <RoutePicker
-                  name="deliveryId"
-                  label="Forwarder address"
-                  placeholder={forwarderAddresses.length ? "Choose address" : "Add a forwarder first"}
-                  options={forwarderAddresses.map((row) => ({ value: row.addressId, label: row.label }))}
-                />
-              )}
-              {!via && !addingStop && destination !== "forwarder" && destination !== "warehouse" && (
+              {!via && !addingStop && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -408,15 +383,17 @@ export function OrderBuilder({
                 </Button>
               )}
             </div>
-            {via && forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
-              <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
-                <AlertTriangle className="size-3.5" />
-                Amazon needs a phone number at this stop for pickup.
-                <PageLink href="/partners?type=forwarder" className="underline underline-offset-2">
-                  Add one
-                </PageLink>
-              </p>
-            )}
+            {via &&
+              destination === "amazon" &&
+              forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
+                <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
+                  <AlertTriangle className="size-3.5" />
+                  Amazon needs a phone number at this stop for pickup.
+                  <PageLink href="/partners?type=forwarder" className="underline underline-offset-2">
+                    Add one
+                  </PageLink>
+                </p>
+              )}
 
             <div className="overflow-x-auto border-t">
               <table className="w-full text-sm">
@@ -695,7 +672,7 @@ function Stop({
   const { setValue, control } = useFormContext<OrderInput>()
   const via = useWatch({ control, name: "via" })
   return (
-    <span className="flex items-center">
+    <span className="flex min-w-0 items-center">
       <PillSelect
         label="Stop on the way"
         icon={<Warehouse />}

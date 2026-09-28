@@ -242,7 +242,6 @@ export function EmptyState({
 
 const destinationNames: Record<string, string> = {
   amazon: "Amazon",
-  forwarder: "your freight forwarder",
   warehouse: "your location"
 }
 

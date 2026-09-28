@@ -3,6 +3,7 @@ import { and, asc, eq, inArray } from "drizzle-orm"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
+import { AddressSummary } from "@/components/partner-address"
 import { RoutePill } from "@/components/route-pill"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,9 +25,10 @@ const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
   "shipping_label"
 ]
 
-// What a freight forwarder sees of a PO whose goods pass through it: the route, what's coming and in how many cartons,
-// and the shipping documents. No prices; the commercial invoice carries what customs needs. The cards are the buyer's
-// purchase order page's, less its costs and history.
+// What a freight forwarder sees of a PO whose goods pass through it: the route, with the address to ship on to when
+// that's the buyer's own location, what's coming and in how many cartons, and the shipping documents. No prices; the
+// commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
+// history.
 export async function ForwarderView({
   row,
   editable
@@ -45,9 +47,17 @@ export async function ForwarderView({
   ])
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
   const places = addressIds.length
-    ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
+    ? await db()
+        .select({ id: contacts.id, name: contacts.name, address: contacts.address })
+        .from(contacts)
+        .where(inArray(contacts.id, addressIds))
     : []
   const place = (addressId: string | undefined) => places.find((candidate) => candidate.id === addressId)?.name
+  // The buyer's location the forwarder ships the goods on to, when they don't go on to Amazon.
+  const onward =
+    order.data.destination === "warehouse"
+      ? places.find((candidate) => candidate.id === order.data.deliveryId)
+      : undefined
   // Carton and shipping labels come once the buyer releases the shipment, as for the supplier.
   const visible = docs.filter((doc) => {
     if (doc.kind !== "carton_label" && doc.kind !== "shipping_label") {
@@ -100,6 +110,7 @@ export async function ForwarderView({
               {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
             </RoutePill>
           </div>
+          {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
           <Table framed={false} className={edgeTable}>
             <TableHeader>
               <TableRow>

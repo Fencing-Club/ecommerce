@@ -281,6 +281,13 @@
       "when": 1790570766049,
       "tag": "0039_member_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790573496665,
+      "tag": "0040_forwarder_stops",
+      "breakpoints": true
     }
   ]
 }

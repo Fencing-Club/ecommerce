@@ -190,7 +190,7 @@ export function PartnerAddressSheet({
 }) {
   const [adding, setAdding] = useState(false)
   const supplier = partner.kind === "supplier"
-  let description = supplier ? "Pickup addresses" : "Stops on the way to Amazon"
+  let description = supplier ? "Pickup addresses" : "Stops on the way to Amazon or your warehouse"
   if (joined) {
     description = supplier ? "Keeps its own pickup addresses on Copacker" : "Keeps its own addresses on Copacker"
   }

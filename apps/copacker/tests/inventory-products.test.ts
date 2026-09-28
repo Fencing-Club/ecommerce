@@ -167,7 +167,7 @@ describe("on order", () => {
     id: string,
     reference: string,
     items: ReturnType<typeof item>[],
-    destination: "amazon" | "forwarder" = "amazon"
+    destination: "amazon" | "warehouse" = "amazon"
   ) => ({ id, data: { reference, destination, items } })
 
   it("counts sellable units per variant and totals them per product with each PO once", () => {
@@ -208,7 +208,7 @@ describe("on order", () => {
   })
 
   it("shows units only at the location the PO will stock", () => {
-    const onOrder = onOrderByVariant([order("a", "PO-1", [item(1, 10)]), order("b", "PO-2", [item(1, 4)], "forwarder")])
+    const onOrder = onOrderByVariant([order("a", "PO-1", [item(1, 10)]), order("b", "PO-2", [item(1, 4)], "warehouse")])
     const pooled = withAmazonStock(rows, null, [
       {
         sellerSku: "sku-1",
@@ -224,7 +224,7 @@ describe("on order", () => {
       groupInventory(pooled, { onOrder, classifications: counted, locationId }).find(
         (product) => product.title === "Pro-grip glove"
       )?.onOrder.units
-    // AWD-bound stock appears at the AWD pool; forwarder stock has no location yet.
+    // AWD-bound stock appears at the AWD pool; a PO to a delivery address that isn't linked has no location.
     expect(units()).toBe(14)
     expect(units("amazon:awd")).toBe(10)
     expect(units("gid://shopify/Location/1")).toBe(0)

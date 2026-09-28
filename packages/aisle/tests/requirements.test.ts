@@ -33,7 +33,6 @@ describe("PO instructions", () => {
     expect(destinationRequirements(awd).join(" ")).toContain("one SKU per carton")
     expect(destinationRequirements(order([line()])).join(" ")).toContain("mixed SKUs are allowed")
     expect(destinationRequirements({ ...awd, destination: "warehouse" })).toEqual([])
-    expect(destinationRequirements({ ...awd, destination: "forwarder" })).toEqual([])
   })
 
   it("states shared preparation once, and each line's own steps on the line", () => {

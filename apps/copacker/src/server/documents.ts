@@ -94,25 +94,25 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   if (!row) {
     throw new Error("Purchase order is unavailable")
   }
-  const { destination } = data
-  // With a stop on the way, the supplier ships to the forwarder there, which sends the goods on.
-  const forwarderId = data.via?.forwarderId ?? data.forwarderId
-  const deliveryId = data.via?.addressId ?? data.deliveryId
-  // A forwarder's address is the buyer's until the forwarder joins, then the forwarder's own.
-  const [forwarder] =
-    (destination === "forwarder" || data.via) && forwarderId
-      ? await db()
-          .select()
-          .from(forwarders)
-          .where(and(eq(forwarders.id, forwarderId), eq(forwarders.buyerOrgId, order.buyerOrgId)))
-      : []
+  const { destination, via } = data
+  // With a stop on the way, the supplier ships to the forwarder's address there, and the forwarder sends the goods on
+  // to Amazon or the buyer's location. A forwarder's address is the buyer's until the forwarder joins, then its own.
+  const [forwarder] = via
+    ? await db()
+        .select()
+        .from(forwarders)
+        .where(and(eq(forwarders.id, via.forwarderId), eq(forwarders.buyerOrgId, order.buyerOrgId)))
+    : []
   const addressOwners = [order.buyerOrgId, ...(forwarder?.forwarderOrgId ? [forwarder.forwarderOrgId] : [])]
-  const [[delivery], [buyerProfile], [supplierProfile]] = await Promise.all([
-    deliveryId && (destination === "warehouse" || forwarder)
+  const location = destination === "warehouse" ? data.deliveryId : undefined
+  const shipToId = via ? forwarder && via.addressId : location
+  const addressIds = [shipToId, location].filter((id) => id !== undefined)
+  const [places, [buyerProfile], [supplierProfile]] = await Promise.all([
+    addressIds.length
       ? db()
-          .select({ name: contacts.name, address: contacts.address })
+          .select({ id: contacts.id, name: contacts.name, address: contacts.address })
           .from(contacts)
-          .where(and(eq(contacts.id, deliveryId), inArray(contacts.orgId, addressOwners)))
+          .where(and(inArray(contacts.id, addressIds), inArray(contacts.orgId, addressOwners)))
       : Promise.resolve([]),
     db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, order.buyerOrgId)),
     row.supplier.supplierOrgId
@@ -121,6 +121,9 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   ])
   // A joined supplier keeps its own contact details; until then, the buyer's notes on it.
   const supplierContact = row.supplier.supplierOrgId ? supplierProfile : row.supplier
+  const delivery = places.find((place) => place.id === shipToId)
+  // After a stop, the buyer's location the goods go on to, if that's where they end.
+  const onward = via && places.find((place) => place.id === location)
   return {
     buyer: {
       name: row.buyer.name,
@@ -145,8 +148,9 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
       ? {
           name: forwarder ? `${forwarder.name}, ${delivery.name}` : delivery.name,
           lines: [
-            // Where the forwarder sends the goods on: the Amazon networks of the lines, such as "Amazon FBA".
-            ...(data.via ? [`Then to ${destinationName(data)}`] : []),
+            // Where the forwarder sends the goods on: the buyer's location, such as "Fencing Club, Warehouse", or the
+            // lines' Amazon networks, such as "Amazon FBA".
+            ...(via ? [`Then to ${onward ? `${row.buyer.name}, ${onward.name}` : destinationName(data)}`] : []),
             ...addressLines(delivery.address),
             contactLine(delivery.address.name, delivery.address.email, delivery.address.phoneNumber)
           ].filter(Boolean)

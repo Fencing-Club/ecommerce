@@ -5,10 +5,10 @@ import { db, type Transaction } from "@/db"
 import { documents, events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
 import type { Session } from "./auth"
 
-// The forwarder a PO's goods pass through, if any: the stop on the way to Amazon, or the forwarder a PO is sent to.
-// Its leg comes after the supplier's: the forwarder ships the goods on once they've arrived.
-export function forwarderLeg(order: Pick<OrderInput, "destination" | "forwarderId" | "via">) {
-  return order.via?.forwarderId ?? (order.destination === "forwarder" ? order.forwarderId : undefined) ?? null
+// The forwarder a PO's goods pass through, if any: its stop on the way to Amazon or the buyer's location. Its leg comes
+// after the supplier's: the forwarder ships the goods on once they've arrived.
+export function forwarderLeg(order: Pick<OrderInput, "via">) {
+  return order.via?.forwarderId ?? null
 }
 
 // A shipment and its PO, locked, for a leg holder to move on.

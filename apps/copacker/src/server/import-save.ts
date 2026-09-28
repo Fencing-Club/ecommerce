@@ -14,9 +14,10 @@ const saveSchema = z
     reviewed: z.literal(true),
     supplierId: z.uuid(),
     destination: destinationSchema,
-    forwarderId: z.uuid().optional(),
-    // The forwarder's address, for a PO to a freight forwarder.
+    // The delivery address, for a PO to one of the buyer's locations.
     deliveryId: z.uuid().optional(),
+    // A forwarder's address to stop at on the way.
+    via: orderInputSchema.shape.via,
     reference: z.string().trim().min(1).max(80),
     dueDate: z.iso.date(),
     notes: z.string().max(8000).default("")

@@ -35,7 +35,7 @@ const cartonRules: Record<AmazonNetwork, string> = {
 
 // Rules the cartons and units follow because of where they go: for a PO to Amazon, each network's carton rules and
 // Amazon's unit labeling. Amazon checks them on arrival and charges for, or refuses, what doesn't comply; the buyer's own
-// location and forwarders have none of their own.
+// locations have none of their own.
 export function destinationRequirements(order: Pick<OrderInput, "destination" | "items">): string[] {
   const networks = orderNetworks(order)
   if (!networks.length) {
@@ -58,7 +58,7 @@ export function destinationName(order: Pick<OrderInput, "destination" | "items">
   if (networks.length) {
     return `Amazon ${networks.map((network) => amazonNetworkNames[network]).join(" and ")}`
   }
-  return order.destination === "forwarder" ? "Freight forwarder" : "Buyer's location"
+  return "Buyer's location"
 }
 
 // The preparation every line of a PO shares, stated once for the whole PO instead of on each line.

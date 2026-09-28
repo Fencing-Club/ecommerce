@@ -212,12 +212,6 @@ export async function checkOrder(
       throw new Error("Choose one of your delivery addresses")
     }
   }
-  if (
-    input.destination === "forwarder" &&
-    !(await forwarderAddress(s.org.id, input.forwarderId!, input.deliveryId!, tx))
-  ) {
-    throw new Error("Choose one of your forwarders' addresses")
-  }
   if (input.via && !(await forwarderAddress(s.org.id, input.via.forwarderId, input.via.addressId, tx))) {
     throw new Error("Choose one of your forwarders' addresses for the stop on the way")
   }
@@ -343,11 +337,6 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       (completed && completed.revision !== order.revision)
     ) {
       throw new Error("This purchase order has changed. Refresh before submitting")
-    }
-    if (order.data.destination !== "amazon" && order.data.destination !== "warehouse") {
-      throw new Error(
-        "Purchase orders can go to Amazon or your own locations for now. Save other destinations as drafts"
-      )
     }
     if (supplier.removedAt) {
       throw new Error("This supplier was removed. Choose another supplier or add them again")

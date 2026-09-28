@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Status } from "@/components/common"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
-import { contacts, forwarders, type orders } from "@/db/schema"
+import { contacts, type orders } from "@/db/schema"
 import { LinkRow } from "./link-row"
 import { TabLinks } from "./tab-links"
 
@@ -19,35 +19,19 @@ const tabs = [
   { status: "closed", label: "Closed", empty: "No closed purchase orders" }
 ] as const
 
-// Where each PO ships, by name, as its page's route shows it: Amazon's networks, such as Amazon FBA, the delivery
-// address, or the forwarder and its address.
+// Where each PO ends up, by name, as its page's route shows it: Amazon's networks, such as Amazon FBA, or the delivery
+// address.
 async function destinations(list: OrderInput[]) {
   const addressIds = [
     ...new Set(list.flatMap((data) => (data.destination !== "amazon" && data.deliveryId ? [data.deliveryId] : [])))
   ]
-  const forwarderIds = [
-    ...new Set(list.flatMap((data) => (data.destination === "forwarder" && data.forwarderId ? [data.forwarderId] : [])))
-  ]
-  const [addresses, forwarderNames] = await Promise.all([
-    addressIds.length
-      ? db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
-      : [],
-    forwarderIds.length
-      ? db()
-          .select({ id: forwarders.id, name: forwarders.name })
-          .from(forwarders)
-          .where(inArray(forwarders.id, forwarderIds))
-      : []
-  ])
-  return (data: OrderInput) => {
-    if (data.destination === "amazon") {
-      return destinationName(data)
-    }
-    const forwarder =
-      data.destination === "forwarder" && forwarderNames.find((row) => row.id === data.forwarderId)?.name
-    const address = addresses.find((row) => row.id === data.deliveryId)?.name
-    return [forwarder, address].filter(Boolean).join(", ") || "—"
-  }
+  const addresses = addressIds.length
+    ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
+    : []
+  return (data: OrderInput) =>
+    data.destination === "amazon"
+      ? destinationName(data)
+      : (addresses.find((row) => row.id === data.deliveryId)?.name ?? "—")
 }
 
 // "Sep 27", with the year when it isn't this year, in the workspace's time zone.

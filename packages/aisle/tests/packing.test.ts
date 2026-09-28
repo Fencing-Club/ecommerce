@@ -94,18 +94,15 @@ describe("Supplier piece and carton contract", () => {
   it("requires a delivery address for the buyer's own location", () => {
     expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)
   })
-  it("stops at a forwarder on the way only to a destination further on", () => {
+  it("stops at a forwarder on the way to Amazon or the buyer's own location, never ends there", () => {
     const via = { forwarderId: randomUUID(), addressId: randomUUID() }
     expect(orderInputSchema.safeParse({ ...order, via }).success).toBe(true)
     expect(
-      orderInputSchema.safeParse({
-        ...order,
-        destination: "forwarder",
-        forwarderId: via.forwarderId,
-        deliveryId: via.addressId,
-        via
-      }).success
-    ).toBe(false)
+      orderInputSchema.safeParse({ ...order, destination: "warehouse", deliveryId: randomUUID(), via }).success
+    ).toBe(true)
+    expect(orderInputSchema.safeParse({ ...order, destination: "forwarder", deliveryId: via.addressId }).success).toBe(
+      false
+    )
   })
   it("uses the exact 50-pound boundary", () => {
     const p = structuredClone(packing)

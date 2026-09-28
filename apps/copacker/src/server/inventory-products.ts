@@ -74,7 +74,7 @@ function totals(items: Quantities[]): Quantities {
 const nothingOnOrder: OnOrder = { units: 0, orders: [] }
 
 // Where a PO's stock will appear: for a PO to Amazon, the FBA or AWD pool of each line's network, or the Shopify
-// location a delivery address is linked to. Forwarders count only toward "All locations".
+// location a delivery address is linked to. A delivery address that isn't linked counts only toward "All locations".
 const networkPools: Record<AmazonNetwork, string> = { fba: "amazon:fba", awd_us: "amazon:awd" }
 export function receivingLocations(
   order: Pick<OrderInput, "destination" | "deliveryId"> & { items: Pick<OrderItem, "amazonNetwork">[] },
@@ -83,7 +83,7 @@ export function receivingLocations(
   if (order.destination === "amazon") {
     return [...new Set(order.items.map((item) => networkPools[item.amazonNetwork]))]
   }
-  const linked = order.destination === "warehouse" && order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
+  const linked = order.deliveryId ? deliveryLocations.get(order.deliveryId) : null
   return linked ? [linked] : []
 }
 

@@ -293,7 +293,7 @@ export async function POST(request: Request) {
         throw new Error(
           s.org.kind === "supplier"
             ? "Supplier workspaces can save pickup addresses only"
-            : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
+            : "Save delivery addresses here. Forwarders' addresses are on the Partners page"
         )
       }
       await db()
@@ -377,7 +377,7 @@ export async function POST(request: Request) {
         throw new Error(
           s.org.kind === "supplier"
             ? "Supplier workspaces can save pickup addresses only"
-            : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
+            : "Save delivery addresses here. Forwarders' addresses are on the Partners page"
         )
       }
       // Only the workspace's own addresses: a partner's addresses change through the partner's actions, which need
