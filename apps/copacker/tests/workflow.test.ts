@@ -127,6 +127,7 @@ import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/rout
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
 import { profileFor } from "../src/server/auth"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
+import { startFirstSync } from "../src/server/first-sync"
 import {
   acceptForwarderInvitation,
   createForwarder,
@@ -175,6 +176,7 @@ import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
 import {
   listSalesOrders,
+  orderSyncProgress,
   requestSalesSync,
   salesHistoryDays,
   salesSyncStatus,
@@ -4139,6 +4141,33 @@ describe("stored sales orders", () => {
     expect(extended.chunks.at(-1)!.from.getTime()).toBe(end - 729 * 86400000)
     // A stored range entirely before the history start is replaced.
     expect(syncChunks(now, { coveredFrom: new Date(0), coveredTo: new Date(86400000) }).fresh).toBe(true)
+  })
+  it("starts a new store's orders and each of its stock sources, and reports how much history is copied", async () => {
+    await startFirstSync(buyer.org, "amazon")
+    await startFirstSync(buyer.org, "amazon")
+    const queued = await database.select({ kind: tables.jobs.kind }).from(tables.jobs)
+    expect(queued.map((job) => job.kind).toSorted()).toEqual(["sales", "stock", "stock"])
+    const snapshots = await database.select().from(tables.stockSnapshots)
+    expect(snapshots.map((row) => [row.source, row.status]).toSorted()).toEqual([
+      ["awd", "queued"],
+      ["fba", "queued"]
+    ])
+    const amazon = (await salesSyncStatus(buyerId)).find((state) => state.source === "amazon")
+    expect(amazon).toMatchObject({ status: "queued", progress: 0 })
+  })
+  it("measures a first sync's progress by the history copied, and has none for later syncs", () => {
+    const day = 86400000
+    const now = Date.now()
+    const copying = (days: number) => ({
+      status: "running",
+      coveredFrom: new Date(now - days * day),
+      coveredTo: new Date(now)
+    })
+    expect(orderSyncProgress({ status: "queued", coveredFrom: null, coveredTo: null }, 60)).toBe(0)
+    expect(orderSyncProgress(copying(15), 60)).toBe(0.25)
+    // A later sync already has the history.
+    expect(orderSyncProgress(copying(60), 60)).toBeNull()
+    expect(orderSyncProgress({ ...copying(15), status: "idle" }, 60)).toBeNull()
   })
   it("copies orders, lists them and computes demand without asking Amazon again", async () => {
     amazonOrders([amazonOrder("111-1", daysAgo(10), 2), amazonOrder("111-2", daysAgo(100), 3)])

@@ -227,17 +227,20 @@ export function StatGrid({ children }: { children: React.ReactNode }) {
 export function EmptyState({
   title,
   description,
+  media,
   children
 }: {
   title: string
   description: string
+  // In place of the empty box, such as a spinner while the first sync runs.
+  media?: React.ReactNode
   children?: React.ReactNode
 }) {
   return (
     <Empty className="gap-4 py-10">
       <EmptyHeader className="gap-1">
         <EmptyMedia className="text-muted-foreground">
-          <PackageOpen aria-hidden className="size-5" />
+          {media ?? <PackageOpen aria-hidden className="size-5" />}
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>

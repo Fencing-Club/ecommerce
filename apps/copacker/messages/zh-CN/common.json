@@ -86,7 +86,8 @@
     "syncing": "正在同步…",
     "syncNow": "立即同步",
     "reconnect": "重新连接",
-    "synced": "同步于 <time></time>"
+    "synced": "同步于 <time></time>",
+    "syncingProgress": "正在同步… {progress, number, percent}"
   },
   "disconnect": {
     "disconnect": "断开连接",

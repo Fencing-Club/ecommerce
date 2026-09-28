@@ -86,7 +86,8 @@
     "syncing": "Синхронізація…",
     "syncNow": "Синхронізувати",
     "reconnect": "Підключити повторно",
-    "synced": "Синхронізовано <time></time>"
+    "synced": "Синхронізовано <time></time>",
+    "syncingProgress": "Синхронізація… {progress, number, percent}"
   },
   "disconnect": {
     "disconnect": "Відключити",

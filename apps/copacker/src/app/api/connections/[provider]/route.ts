@@ -8,6 +8,7 @@ import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireAdmin, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
+import { startFirstSync } from "@/server/first-sync"
 import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
@@ -145,5 +146,6 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   } else {
     await queueAmazonSubscription(s.org.id, randomUUID())
   }
-  return Response.redirect(`${site}/settings?connected=${provider}`)
+  await startFirstSync(s.org, provider)
+  return Response.redirect(`${site}/settings?connected=${provider}#integrations`)
 }

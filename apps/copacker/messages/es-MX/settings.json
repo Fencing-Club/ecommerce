@@ -120,6 +120,12 @@
       "connect": "Conectar",
       "merchantToken": "Token de comerciante",
       "refreshToken": "Token de actualización"
+    },
+    "sync": {
+      "orders": "Sincronizando pedidos",
+      "ordersProgress": "Sincronizando pedidos: {progress, number, percent}",
+      "stock": "Sincronizando inventario",
+      "failed": "Falló la última sincronización"
     }
   },
   "excludedTags": {

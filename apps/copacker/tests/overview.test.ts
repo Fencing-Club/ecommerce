@@ -390,6 +390,24 @@ describe("setupSteps", () => {
   })
 })
 
+describe("setupSteps while syncing", () => {
+  it("keeps a step open while its first sync runs, with the orders' progress", () => {
+    const steps = setupSteps({
+      connected: ["amazon"],
+      ordersCopied: ["amazon"],
+      stockSynced: false,
+      ordersSyncing: { progress: 0.4 },
+      stockSyncing: true,
+      inStock: 0,
+      uncosted: 0
+    })
+    const byKey = Object.fromEntries(steps.map((step) => [step.key, step]))
+    expect(byKey.orders).toMatchObject({ done: false, syncing: { progress: 0.4 } })
+    expect(byKey.stock).toMatchObject({ done: false, syncing: { progress: null } })
+    expect(byKey.amazon).not.toHaveProperty("syncing")
+  })
+})
+
 describe("margins and trends", () => {
   const index = catalogIndex([
     {

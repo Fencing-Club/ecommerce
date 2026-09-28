@@ -63,6 +63,8 @@
     "connect": "Підключіть Shopify або Amazon",
     "noStore": "Немає підключеного магазину",
     "askAdminToConnect": "Попросіть адміністратора підключити магазин",
-    "goToSettings": "Перейти до налаштувань"
+    "goToSettings": "Перейти до налаштувань",
+    "syncing": "Синхронізуємо ваші замовлення",
+    "copied": "Скопійовано {progress, number, percent}"
   }
 }

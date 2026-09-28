@@ -86,7 +86,8 @@
     "syncing": "Wird synchronisiert…",
     "syncNow": "Jetzt synchronisieren",
     "reconnect": "Erneut verbinden",
-    "synced": "Synchronisiert <time></time>"
+    "synced": "Synchronisiert <time></time>",
+    "syncingProgress": "Wird synchronisiert… {progress, number, percent}"
   },
   "disconnect": {
     "disconnect": "Trennen",

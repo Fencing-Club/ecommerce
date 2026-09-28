@@ -22,7 +22,9 @@
     "noStoreHint": "Connectez Shopify ou Amazon pour voir vos produits",
     "noStoreAskAdmin": "Demandez à un administrateur d’en connecter une",
     "noProducts": "Aucun produit pour l’instant",
-    "noProductsHint": "Ils apparaissent après la première synchronisation"
+    "noProductsHint": "Ils apparaissent après la première synchronisation",
+    "syncingProducts": "Synchronisation de vos produits",
+    "syncingProductsHint": "Ils apparaissent à la fin de la synchronisation"
   },
   "locations": {
     "title": "Emplacements de stock",

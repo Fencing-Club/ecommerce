@@ -63,6 +63,8 @@
     "connect": "Shopify یا Amazon منسلک کریں",
     "noStore": "کوئی اسٹور منسلک نہیں",
     "askAdminToConnect": "کسی ایڈمن سے ایک اسٹور منسلک کرنے کو کہیں",
-    "goToSettings": "سیٹنگز پر جائیں"
+    "goToSettings": "سیٹنگز پر جائیں",
+    "syncing": "آپ کے آرڈر سنک ہو رہے ہیں",
+    "copied": "{progress, number, percent} کاپی ہوا"
   }
 }

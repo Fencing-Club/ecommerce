@@ -8,10 +8,11 @@ import { useState } from "react"
 import { useCan, useIsAdmin } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
@@ -19,7 +20,7 @@ import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
 import { DetailRow } from "./inventory-locations"
 import { SalesStatus } from "./sales-status"
-import { SyncedAt, SyncMenu } from "./sync-menu"
+import { SyncedAt, SyncMenu, SyncProgress } from "./sync-menu"
 
 type SyncState = {
   source: SalesSource
@@ -29,6 +30,8 @@ type SyncState = {
   coveredFrom: string | null
   coveredTo: string | null
   finishedAt: string | null
+  // How much of a first sync's order history is copied, from 0 to 1.
+  progress: number | null
   orders: number
   recent: { orders: number; units: number }
 }
@@ -89,7 +92,7 @@ function SourceSummary({ state }: { state: SyncState }) {
   const syncedAt = state.finishedAt ?? state.coveredTo
   let detail: React.ReactNode = t("notSynced")
   if (active) {
-    detail = t("syncing")
+    detail = <SyncProgress progress={state.progress} />
   } else if (state.status === "failed") {
     detail = (
       <span className="text-destructive">
@@ -124,6 +127,15 @@ function SourceSummary({ state }: { state: SyncState }) {
   )
 }
 
+// A store's order sync, polled while its page is open.
+export function useOrderSync(source: SalesSource) {
+  const { currentData } = salesApi.useSalesStatusQuery(undefined, {
+    pollingInterval: 5000,
+    skipPollingIfUnfocused: true
+  })
+  return currentData?.sources.find((item) => item.source === source)
+}
+
 // A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
 export function OrdersSyncRow({ source }: { source: SalesSource }) {
   const t = useTranslations("sales.sync")
@@ -149,7 +161,7 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
   if (isLoading) {
     text = t("loading")
   } else if (syncing) {
-    text = t("syncing")
+    text = <SyncProgress progress={state?.progress} />
   } else if (mutation.isError) {
     text = <span className="text-destructive">{errorMessage(mutation.error, t("couldNotStart"))}</span>
   } else if (state?.status === "failed") {
@@ -334,6 +346,9 @@ function OrderList({
     syncKey
   })
   const total = data?.total ?? 0
+  // A source whose sync is running, preferring one that's copying its history for the first time.
+  const running = sources.filter((state) => state.status === "queued" || state.status === "running")
+  const firstSync = running.find((state) => state.progress !== null) ?? running[0]
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const sourceItems = [
     { value: "all", label: t("allSources") },
@@ -354,6 +369,21 @@ function OrderList({
           <Skeleton key={index} className="h-9 w-full" />
         ))}
       </div>
+    )
+  } else if (total === 0 && !q && firstSync) {
+    // The first sync is still copying: the orders appear here period by period.
+    body = (
+      <Empty className="py-12">
+        <EmptyHeader>
+          <EmptyMedia className="text-muted-foreground">
+            <Spinner className="size-5" />
+          </EmptyMedia>
+          <EmptyTitle>{t("syncing")}</EmptyTitle>
+          {typeof firstSync.progress === "number" && (
+            <EmptyDescription>{t("copied", { progress: firstSync.progress })}</EmptyDescription>
+          )}
+        </EmptyHeader>
+      </Empty>
     )
   } else if (total === 0) {
     body = (

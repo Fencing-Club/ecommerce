@@ -63,6 +63,8 @@
     "connect": "Shopify या Amazon कनेक्ट करें",
     "noStore": "कोई स्टोर कनेक्ट नहीं है",
     "askAdminToConnect": "किसी एडमिन से एक स्टोर कनेक्ट करने को कहें",
-    "goToSettings": "सेटिंग्स पर जाएं"
+    "goToSettings": "सेटिंग्स पर जाएं",
+    "syncing": "आपके ऑर्डर सिंक हो रहे हैं",
+    "copied": "{progress, number, percent} कॉपी हुआ"
   }
 }

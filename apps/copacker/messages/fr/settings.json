@@ -120,6 +120,12 @@
       "connect": "Connecter",
       "merchantToken": "Jeton marchand",
       "refreshToken": "Jeton d’actualisation"
+    },
+    "sync": {
+      "orders": "Synchronisation des commandes",
+      "ordersProgress": "Synchronisation des commandes : {progress, number, percent}",
+      "stock": "Synchronisation du stock",
+      "failed": "Échec de la dernière synchronisation"
     }
   },
   "excludedTags": {

@@ -10,6 +10,7 @@ import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { DetailRow } from "./inventory-locations"
@@ -88,6 +89,14 @@ function sourceState(statuses: Status[]) {
     loading: statuses.some(isPending),
     unavailable: statuses.some((status) => status.isError)
   }
+}
+
+// A store's inventory sync, all its parts together: whether one is running, what went wrong, when it last synced.
+export function useStockSync(provider: Source["provider"]) {
+  const selections: readonly Selection[] = sources.find((item) => item.provider === provider)!.selections
+  const first = useSelection(selections[0]!, true)
+  const second = useSelection(selections[1] ?? selections[0]!, selections.length > 1)
+  return sourceState(selections.length > 1 ? [first, second] : [first])
 }
 
 // A store's inventory sync in its Settings: when it last synced or what went wrong, with Sync now and Reconnect.
@@ -180,6 +189,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   // A finished sync of any part changes this, which reloads the product list.
   const syncKey = all.map((status) => status.currentData?.observedAt ?? "").join("|")
   const anySynced = all.some((status) => status.currentData?.observedAt)
+  const syncing = sourceState(all).active
   return (
     <div className="flex flex-col gap-4">
       {connected.map(({ source, statuses }) => (
@@ -193,7 +203,16 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
         </>
       )}
       {!anySynced && all.some(isPending) && <ProductsSkeleton />}
-      {!anySynced && !all.some(isPending) && (
+      {!anySynced && !all.some(isPending) && syncing && (
+        <Card>
+          <EmptyState
+            title={t("syncingProducts")}
+            description={t("syncingProductsHint")}
+            media={<Spinner className="size-5" />}
+          />
+        </Card>
+      )}
+      {!anySynced && !all.some(isPending) && !syncing && (
         <Card>
           <EmptyState title={t("noProducts")} description={t("noProductsHint")} />
         </Card>

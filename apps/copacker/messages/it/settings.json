@@ -120,6 +120,12 @@
       "connect": "Collega",
       "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
+    },
+    "sync": {
+      "orders": "Sincronizzazione ordini",
+      "ordersProgress": "Sincronizzazione ordini: {progress, number, percent}",
+      "stock": "Sincronizzazione inventario",
+      "failed": "Ultima sincronizzazione non riuscita"
     }
   },
   "excludedTags": {

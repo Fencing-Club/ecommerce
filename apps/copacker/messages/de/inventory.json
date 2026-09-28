@@ -22,7 +22,9 @@
     "noStoreHint": "Verbinden Sie Shopify oder Amazon, um Ihre Produkte zu sehen",
     "noStoreAskAdmin": "Bitten Sie einen Admin, einen zu verbinden",
     "noProducts": "Noch keine Produkte",
-    "noProductsHint": "Sie erscheinen nach der ersten Synchronisierung"
+    "noProductsHint": "Sie erscheinen nach der ersten Synchronisierung",
+    "syncingProducts": "Produkte werden synchronisiert",
+    "syncingProductsHint": "Sie erscheinen, sobald die Synchronisierung fertig ist"
   },
   "locations": {
     "title": "Bestandsstandorte",

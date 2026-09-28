@@ -86,7 +86,8 @@
     "syncing": "Syncing…",
     "syncNow": "Sync now",
     "reconnect": "Reconnect",
-    "synced": "Synced <time></time>"
+    "synced": "Synced <time></time>",
+    "syncingProgress": "Syncing… {progress, number, percent}"
   },
   "disconnect": {
     "disconnect": "Disconnect",

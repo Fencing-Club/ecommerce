@@ -120,6 +120,12 @@
       "connect": "Connect",
       "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
+    },
+    "sync": {
+      "orders": "Syncing orders",
+      "ordersProgress": "Syncing orders {progress, number, percent}",
+      "stock": "Syncing inventory",
+      "failed": "Last sync failed"
     }
   },
   "excludedTags": {

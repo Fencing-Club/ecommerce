@@ -97,6 +97,28 @@ export async function amazonSellerAccount(sellerId: string, amazon: Pick<Amazon,
   return account
 }
 
+// How far back a source's orders are copied. Without read_all_orders Shopify shares only the last 60 days.
+export function historyDaysFor(source: SalesSource, scopes: string) {
+  return source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
+}
+
+// How much of a running first sync's history is copied, from 0 to 1, or null when no sync is copying history. A
+// first sync reads from the newest orders back, so its stored range grows toward the history start; a later sync
+// already has the history, so it has no progress to show.
+export function orderSyncProgress(
+  sync: { status: string; coveredFrom: Date | null; coveredTo: Date | null },
+  historyDays: number
+) {
+  if (sync.status !== "queued" && sync.status !== "running") {
+    return null
+  }
+  const copied =
+    sync.coveredFrom && sync.coveredTo
+      ? (sync.coveredTo.getTime() - sync.coveredFrom.getTime()) / (historyDays * day)
+      : 0
+  return copied >= 0.99 ? null : Math.max(0, copied)
+}
+
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
 export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: SalesSource) {
   if (org.kind !== "buyer") {
@@ -248,9 +270,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
   let searches = 0
   try {
     const { scopes } = await connection(orgId, source)
-    // Without read_all_orders Shopify shares only the last 60 days.
-    const historyDays =
-      source === "shopify" && !scopes.split(/[,\s]+/).includes("read_all_orders") ? 60 : salesHistoryDays
+    const historyDays = historyDaysFor(source, scopes)
     const version = dataVersionFor(source, scopes)
     const planned = resume ? null : syncChunks(Date.now(), sync, historyDays, version)
     const chunks =
@@ -448,7 +468,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
   const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))} and ${countedOrder(sql`${salesOrders.data}`)}`
   const [accounts, syncs, stored, recent] = await Promise.all([
     db()
-      .select({ provider: connections.provider, externalId: connections.externalId })
+      .select({ provider: connections.provider, externalId: connections.externalId, scopes: connections.scopes })
       .from(connections)
       .where(eq(connections.orgId, orgId)),
     db().select().from(salesSyncs).where(eq(salesSyncs.orgId, orgId)),
@@ -492,6 +512,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
         coveredFrom: sync?.coveredFrom?.toISOString() ?? null,
         coveredTo: sync?.coveredTo?.toISOString() ?? null,
         finishedAt: sync?.finishedAt?.toISOString() ?? null,
+        progress: sync ? orderSyncProgress(sync, historyDaysFor(source, account.scopes)) : null,
         orders: orders?.orders ?? 0,
         // Orders and units in the last 30 days.
         recent: { orders: last30.length, units: last30.reduce((sum, order) => sum + order.units, 0) }

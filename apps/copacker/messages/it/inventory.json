@@ -22,7 +22,9 @@
     "noStoreHint": "Collega Shopify o Amazon per vedere i tuoi prodotti",
     "noStoreAskAdmin": "Chiedi a un amministratore di collegarne uno",
     "noProducts": "Ancora nessun prodotto",
-    "noProductsHint": "Compaiono dopo la prima sincronizzazione"
+    "noProductsHint": "Compaiono dopo la prima sincronizzazione",
+    "syncingProducts": "Sincronizzazione dei prodotti",
+    "syncingProductsHint": "Compaiono al termine della sincronizzazione"
   },
   "locations": {
     "title": "Sedi dell’inventario",

@@ -43,7 +43,15 @@ import {
 import { periodStockouts, restockAllChannels } from "./restock-page"
 import type { RestockLine } from "./restock-plan"
 import { restockSettings } from "./restock-report"
-import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
+import {
+  customerDataVersion,
+  hasCustomerScope,
+  historyDaysFor,
+  orderSyncProgress,
+  salesDataVersion,
+  type SalesSource,
+  salesSources
+} from "./sales-orders"
 import { excludedShopifyTags } from "./shopify-tags"
 import { type ServerText, serverText, serverTextInEnglish } from "./text"
 
@@ -619,7 +627,15 @@ export function attentionItems(
   return items.toSorted((a, b) => tones[a.tone] - tones[b.tone])
 }
 
-export type SetupStep = { key: string; title: string; detail: string; href: string; done: boolean }
+// A step whose first sync is running says so, with how much of the order history is copied when that's known.
+export type SetupStep = {
+  key: string
+  title: string
+  detail: string
+  href: string
+  done: boolean
+  syncing?: { progress: number | null }
+}
 
 // The steps that make the Overview complete, in the order a new buyer takes them.
 export function setupSteps(
@@ -627,6 +643,9 @@ export function setupSteps(
     connected: SalesSource[]
     ordersCopied: SalesSource[]
     stockSynced: boolean
+    // A first order sync's progress (null when it isn't known yet), and whether a first stock sync is running.
+    ordersSyncing?: { progress: number | null } | null
+    stockSyncing?: boolean
     inStock: number
     uncosted: number
   },
@@ -653,14 +672,16 @@ export function setupSteps(
       title: t("overview.setup.orders"),
       detail: t("overview.setup.ordersDetail"),
       href: "/sales",
-      done: allCopied
+      done: allCopied && !input.ordersSyncing,
+      ...(input.ordersSyncing ? { syncing: input.ordersSyncing } : {})
     },
     {
       key: "stock",
       title: t("overview.setup.stock"),
       detail: t("overview.setup.stockDetail"),
       href: "/products",
-      done: input.stockSynced
+      done: input.stockSynced,
+      ...(input.stockSyncing && !input.stockSynced ? { syncing: { progress: null } } : {})
     },
     {
       key: "costs",
@@ -670,6 +691,29 @@ export function setupSteps(
       done: input.inStock > 0 && input.uncosted === 0
     }
   ]
+}
+
+// The first order syncs still copying history, as one progress: the average of theirs. A source that has synced
+// before is set up, even while a later sync copies older history.
+function firstSyncProgress(
+  syncs: {
+    source: SalesSource
+    status: string
+    coveredFrom: Date | null
+    coveredTo: Date | null
+    finishedAt: Date | null
+  }[],
+  connected: { provider: string; scopes: string }[]
+) {
+  const running = syncs.flatMap((sync) => {
+    if (sync.finishedAt) {
+      return []
+    }
+    const account = connected.find((row) => row.provider === sync.source)
+    const progress = account ? orderSyncProgress(sync, historyDaysFor(sync.source, account.scopes)) : null
+    return progress === null ? [] : [progress]
+  })
+  return running.length ? { progress: running.reduce((sum, value) => sum + value, 0) / running.length } : null
 }
 
 // Restock for every channel is the slowest part of the page, so it's kept for a few minutes while nothing it reads
@@ -1020,6 +1064,8 @@ export async function overview(
         stockSynced:
           stockSources.length > 0 &&
           stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
+        ordersSyncing: firstSyncProgress(current, connected),
+        stockSyncing: stock.some((row) => row.status === "queued" || row.status === "running"),
         inStock: everyChannel.unitsOnHand,
         uncosted: everyChannel.uncosted
       },

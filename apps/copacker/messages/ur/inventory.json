@@ -22,7 +22,9 @@
     "noStoreHint": "اپنے پروڈکٹس دیکھنے کے لیے Shopify یا Amazon منسلک کریں",
     "noStoreAskAdmin": "کسی ایڈمن سے اسٹور منسلک کرنے کو کہیں",
     "noProducts": "ابھی کوئی پروڈکٹ نہیں",
-    "noProductsHint": "یہ پہلے سنک کے بعد نظر آئیں گے"
+    "noProductsHint": "یہ پہلے سنک کے بعد نظر آئیں گے",
+    "syncingProducts": "آپ کے پروڈکٹس سنک ہو رہے ہیں",
+    "syncingProductsHint": "سنک مکمل ہونے پر یہ نظر آئیں گے"
   },
   "locations": {
     "title": "انوینٹری لوکیشنز",

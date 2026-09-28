@@ -37,6 +37,7 @@ import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/con
 import { deleteAccount, deleteWorkspace } from "@/server/deletion"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
+import { startFirstSync } from "@/server/first-sync"
 import {
   createForwarder,
   inviteForwarder,
@@ -414,6 +415,7 @@ export async function POST(request: Request) {
       requireBuyer(s)
       const connected = await connectAmazonSelfAuthorized(s.org.id, data)
       await queueAmazonSubscription(s.org.id, randomUUID())
+      await startFirstSync(s.org, "amazon")
       return Response.json({ ok: true, ...connected })
     }
     if (action === "connection.delete") {

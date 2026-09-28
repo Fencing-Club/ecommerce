@@ -31,7 +31,10 @@ import { cn } from "@/lib/utils"
 import { AmazonSelfAuthorize } from "./amazon-self-authorize"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
+import { useStockSync } from "./inventory-sync"
+import { useOrderSync } from "./sales-orders"
 import { StoreLogo } from "./store-logos"
+import { SyncedAt, SyncProgress } from "./sync-menu"
 
 type Store = "shopify" | "amazon" | "ebay"
 type Connection = { account: string; externalId: string }
@@ -174,7 +177,12 @@ function Connected({
           {t("connected")}
         </Badge>
       }
-      footer={<span className="truncate text-muted-foreground">{connection.account}</span>}
+      footer={
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-muted-foreground">{connection.account}</span>
+          <StoreSync store={store} />
+        </span>
+      }
     />
   )
   if (!admin) {
@@ -200,6 +208,35 @@ function Connected({
       </SheetContent>
     </Sheet>
   )
+}
+
+// A connected store's sync under its account: orders first (with how much history is copied), then inventory, then
+// when it last synced or that the last sync failed. Its Settings rows say why and have Sync now.
+function StoreSync({ store }: { store: "shopify" | "amazon" }) {
+  const t = useTranslations("settings.integrations.sync")
+  const orders = useOrderSync(store)
+  const stock = useStockSync(store)
+  const ordersActive = orders?.status === "queued" || orders?.status === "running"
+  const syncedAt = orders?.finishedAt ?? orders?.coveredTo
+  let text: React.ReactNode = null
+  if (ordersActive) {
+    text = (
+      <SyncProgress>
+        {typeof orders.progress === "number" ? t("ordersProgress", { progress: orders.progress }) : t("orders")}
+      </SyncProgress>
+    )
+  } else if (stock.active) {
+    text = <SyncProgress>{t("stock")}</SyncProgress>
+  } else if (orders?.status === "failed" || stock.problem) {
+    text = <span className="text-destructive">{t("failed")}</span>
+  } else if (syncedAt) {
+    text = <SyncedAt at={syncedAt} />
+  }
+  return text ? (
+    <span className="truncate text-xs text-muted-foreground" aria-live="polite">
+      {text}
+    </span>
+  ) : null
 }
 
 // Shopify's card asks for the store's address in a dialog, then goes to Shopify to approve Copacker.

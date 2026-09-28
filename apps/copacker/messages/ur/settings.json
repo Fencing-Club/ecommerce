@@ -120,6 +120,12 @@
       "connect": "منسلک کریں",
       "merchantToken": "مرچنٹ ٹوکن",
       "refreshToken": "ریفریش ٹوکن"
+    },
+    "sync": {
+      "orders": "آرڈر سنک ہو رہے ہیں",
+      "ordersProgress": "آرڈر سنک ہو رہے ہیں: {progress, number, percent}",
+      "stock": "انوینٹری سنک ہو رہی ہے",
+      "failed": "پچھلا سنک ناکام رہا"
     }
   },
   "excludedTags": {

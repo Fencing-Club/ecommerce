@@ -63,6 +63,8 @@
     "connect": "Connect Shopify or Amazon",
     "noStore": "No store connected",
     "askAdminToConnect": "Ask an admin to connect one",
-    "goToSettings": "Go to settings"
+    "goToSettings": "Go to settings",
+    "syncing": "Syncing your orders",
+    "copied": "{progress, number, percent} copied"
   }
 }

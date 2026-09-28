@@ -17,6 +17,7 @@ import { Status } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { rangeLabel } from "@/lib/date-range"
@@ -26,6 +27,7 @@ import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overvie
 import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
+import { RefreshWhile } from "./refresh-while"
 
 type MoneyList = readonly { currency: string; minor: number }[]
 
@@ -235,9 +237,12 @@ const tableCardHeader = "border-b pt-4"
 
 export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
   const t = useTranslations("overview.setup")
+  const tSync = useTranslations("common.sync")
   const done = steps.filter((step) => step.done).length
   return (
     <Card>
+      {/* A first sync ticks its step off when it finishes, so the page reloads while one runs. */}
+      <RefreshWhile active={steps.some((step) => step.syncing)} />
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction className="text-sm text-muted-foreground tabular-nums">
@@ -265,12 +270,24 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                   href={step.href}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
-                  <Circle className="size-4 shrink-0 text-muted-foreground/60" aria-hidden />
+                  {step.syncing ? (
+                    <Spinner className="size-4 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <Circle className="size-4 shrink-0 text-muted-foreground/60" aria-hidden />
+                  )}
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-sm font-medium">{step.title}</span>
-                    <span className="truncate text-xs text-muted-foreground" title={step.detail}>
-                      {step.detail}
-                    </span>
+                    {step.syncing ? (
+                      <span className="truncate text-xs text-muted-foreground" aria-live="polite">
+                        {typeof step.syncing.progress === "number"
+                          ? tSync("syncingProgress", { progress: step.syncing.progress })
+                          : tSync("syncing")}
+                      </span>
+                    ) : (
+                      <span className="truncate text-xs text-muted-foreground" title={step.detail}>
+                        {step.detail}
+                      </span>
+                    )}
                   </span>
                   <ChevronRight className="ms-auto size-4 rtl:rotate-180 shrink-0 text-muted-foreground" aria-hidden />
                 </PageLink>

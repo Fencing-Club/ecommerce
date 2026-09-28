@@ -120,6 +120,12 @@
       "connect": "कनेक्ट करें",
       "merchantToken": "मर्चेंट टोकन",
       "refreshToken": "रीफ़्रेश टोकन"
+    },
+    "sync": {
+      "orders": "ऑर्डर सिंक हो रहे हैं",
+      "ordersProgress": "ऑर्डर सिंक हो रहे हैं: {progress, number, percent}",
+      "stock": "इन्वेंटरी सिंक हो रही है",
+      "failed": "पिछला सिंक विफल रहा"
     }
   },
   "excludedTags": {

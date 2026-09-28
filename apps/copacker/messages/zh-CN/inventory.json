@@ -22,7 +22,9 @@
     "noStoreHint": "连接 Shopify 或 Amazon 以查看你的产品",
     "noStoreAskAdmin": "请管理员连接店铺",
     "noProducts": "暂无产品",
-    "noProductsHint": "首次同步后会显示在这里"
+    "noProductsHint": "首次同步后会显示在这里",
+    "syncingProducts": "正在同步你的产品",
+    "syncingProductsHint": "同步完成后会显示在这里"
   },
   "locations": {
     "title": "库存地点",

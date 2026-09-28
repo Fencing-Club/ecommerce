@@ -86,7 +86,8 @@
     "syncing": "सिंक हो रहा है…",
     "syncNow": "अभी सिंक करें",
     "reconnect": "फिर से कनेक्ट करें",
-    "synced": "<time></time> सिंक हुआ"
+    "synced": "<time></time> सिंक हुआ",
+    "syncingProgress": "सिंक हो रहा है… {progress, number, percent}"
   },
   "disconnect": {
     "disconnect": "डिस्कनेक्ट करें",

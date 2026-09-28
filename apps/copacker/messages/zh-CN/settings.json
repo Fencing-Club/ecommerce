@@ -120,6 +120,12 @@
       "connect": "连接",
       "merchantToken": "商家令牌",
       "refreshToken": "刷新令牌"
+    },
+    "sync": {
+      "orders": "正在同步订单",
+      "ordersProgress": "正在同步订单：{progress, number, percent}",
+      "stock": "正在同步库存",
+      "failed": "上次同步失败"
     }
   },
   "excludedTags": {

@@ -120,6 +120,12 @@
       "connect": "Підключити",
       "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
+    },
+    "sync": {
+      "orders": "Синхронізація замовлень",
+      "ordersProgress": "Синхронізація замовлень: {progress, number, percent}",
+      "stock": "Синхронізація запасів",
+      "failed": "Остання синхронізація не вдалася"
     }
   },
   "excludedTags": {
