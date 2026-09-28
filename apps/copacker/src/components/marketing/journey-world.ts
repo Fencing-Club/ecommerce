@@ -187,7 +187,11 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
   } catch {
     renderer = make(false)
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, handheld ? 1.5 : 2))
+  // The drawing buffer's budget, in pixels, as well as its pixel ratio. A phone showing the desktop site lays the page
+  // out several times taller than its screen, and at its full pixel ratio the buffer outgrows its GPU.
+  const budget = handheld ? 1.6e6 : 8.5e6
+  const pixels = (width: number, height: number) =>
+    Math.min(devicePixelRatio || 1, handheld ? 1.5 : 2, Math.sqrt(budget / (width * height)))
   renderer.setClearColor(0x000000, 0)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
@@ -1508,6 +1512,7 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
       size.width = Math.max(1, width)
       size.height = Math.max(1, height)
       size.focus = focus
+      renderer.setPixelRatio(pixels(size.width, size.height))
       renderer.setSize(size.width, size.height, false)
     },
     frame,
