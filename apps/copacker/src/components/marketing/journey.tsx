@@ -126,7 +126,7 @@ const notes: Note[] = [
     kind: "card",
     shown: [[0.015, 0.1]],
     content: (
-      <Card>
+      <Card className="w-72">
         <div className="flex items-center gap-2">
           <FileText className="size-4 text-muted-foreground" />
           <span className="font-semibold">Purchase order 1043</span>
@@ -278,9 +278,10 @@ const notes: Note[] = [
   {
     place: "factory",
     kind: "pin",
+    // Not while the purchase order's card, which names the supplier, or AWD's card is up: on a phone they'd cover it.
     shown: [
-      [0, 0.1],
-      [0.3, 0.5],
+      [0, 0.015],
+      [0.3, 0.475],
       [0.96, 1]
     ],
     content: "Shenzhen Metalworks"
@@ -383,15 +384,18 @@ export function Journey() {
           pin.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
           pin.dataset.shown = String(note.shown.some(([from, to]) => played >= from && played <= to))
           // A card slides sideways along the top of its stem, and down below the site's header, to stay whole on
-          // screen.
-          const card = pin.firstElementChild
-          if (note.kind === "card" && card instanceof HTMLElement) {
-            widths[i] ||= card.offsetWidth
-            heights[i] ||= card.offsetHeight
+          // screen; a pin slides in from the screen's edges.
+          const label = pin.firstElementChild
+          if (label instanceof HTMLElement) {
+            widths[i] ||= label.offsetWidth
+            heights[i] ||= label.offsetHeight
             const half = (widths[i] ?? 0) / 2
-            const centered = Math.max(clear + half, Math.min(canvas.clientWidth - 16 - half, x))
-            card.style.marginLeft = `${(centered - x).toFixed(1)}px`
-            card.style.marginBottom = `${Math.min(0, y - 12 - (heights[i] ?? 0) - 76).toFixed(1)}px`
+            const left = (note.kind === "card" ? clear : 16) + half
+            const centered = Math.max(left, Math.min(canvas.clientWidth - 16 - half, x))
+            label.style.marginLeft = `${(centered - x).toFixed(1)}px`
+            if (note.kind === "card") {
+              label.style.marginBottom = `${Math.min(0, y - 12 - (heights[i] ?? 0) - 76).toFixed(1)}px`
+            }
           }
         }
       }
