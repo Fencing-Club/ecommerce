@@ -9,13 +9,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // The browser's cookies, as next/headers hands them to the server.
 const jar = vi.hoisted(() => new Map<string, string>())
+// The host the request came in on, when a test sets one.
+const request = vi.hoisted(() => ({ host: "" }))
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (name: string) => (jar.has(name) ? { name, value: jar.get(name) } : undefined),
     set: (name: string, value: string) => void jar.set(name, value),
     delete: (name: string) => void jar.delete(name)
   }),
-  headers: async () => new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.1", "user-agent": "vitest" })
+  headers: async () =>
+    new Headers({
+      "x-forwarded-for": "203.0.113.9, 10.0.0.1",
+      "user-agent": "vitest",
+      ...(request.host && { host: request.host })
+    })
 }))
 const saveSession = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<void>>())
 vi.mock("@workos-inc/authkit-nextjs", () => ({ saveSession, withAuth: vi.fn<() => void>() }))
@@ -71,6 +78,7 @@ beforeEach(() => {
   vi.stubEnv("APP_URL", "https://copacker.example")
   vi.stubEnv("NEXT_PUBLIC_WORKOS_REDIRECT_URI", "https://copacker.example/callback")
   jar.clear()
+  request.host = ""
   workspaces.rows = []
   vi.spyOn(console, "error").mockImplementation(() => undefined)
 })
@@ -333,6 +341,16 @@ describe("Google and Microsoft", () => {
       expect.objectContaining({ code: "code-1", codeVerifier: "verifier-1" })
     )
     expect(saveSession).toHaveBeenCalledWith(session, "https://copacker.example")
+  })
+
+  it("comes back to staging when sign-in starts there", async () => {
+    vi.stubEnv("APP_ALIAS_URLS", "https://staging.copacker.example")
+    request.host = "staging.copacker.example"
+    client.getAuthorizationUrlWithPKCE.mockResolvedValue({ url: "u", state: "state-1", codeVerifier: "verifier-1" })
+    await authorizationUrl({ provider: "google" }, "/orders")
+    expect(client.getAuthorizationUrlWithPKCE).toHaveBeenCalledWith(
+      expect.objectContaining({ redirectUri: "https://staging.copacker.example/callback" })
+    )
   })
 
   it("turns away a state it didn't send, or a return with no sign-in started", async () => {

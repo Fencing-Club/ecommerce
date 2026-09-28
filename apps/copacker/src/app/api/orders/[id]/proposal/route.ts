@@ -2,13 +2,13 @@ import { z } from "zod"
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
 import { proposeChanges } from "@/server/order-proposals"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 const input = z.object({ revision: z.number().int().positive(), proposal: z.unknown() })
 
 // The supplier sends its changes to a PO for the buyer to approve.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

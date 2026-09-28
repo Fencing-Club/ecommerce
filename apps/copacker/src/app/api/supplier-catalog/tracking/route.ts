@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 const trackingInput = z.strictObject({
   id: z.uuid(),
@@ -14,7 +14,7 @@ const trackingInput = z.strictObject({
 
 // Turns stock counting on or off for a product, or lets POs order it past what's on hand, from the Inventory page.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

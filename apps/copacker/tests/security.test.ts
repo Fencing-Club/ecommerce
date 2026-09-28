@@ -1,7 +1,7 @@
 import { randomBytes, createHmac } from "node:crypto"
 import { PDFDocument, PDFName, PDFString } from "pdf-lib"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { encrypt, decrypt, returnPath, verifyShopifyHmac } from "../src/server/security"
+import { encrypt, decrypt, isAppOrigin, returnPath, siteUrlFor, verifyShopifyHmac } from "../src/server/security"
 import { validatePdf } from "../src/server/storage"
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -36,6 +36,30 @@ describe("Connection and document boundaries", () => {
       pdf.context.obj({ S: "JavaScript", JS: PDFString.of("app.alert('bad')") })
     )
     await expect(validatePdf(await pdf.save())).rejects.toThrow("active content")
+  })
+})
+describe("The app's addresses", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+  it("accepts requests from APP_URL and its aliases only", () => {
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("APP_ALIAS_URLS", "https://staging.copacker.example/, not a url")
+    expect(isAppOrigin("https://copacker.example")).toBe(true)
+    expect(isAppOrigin("https://staging.copacker.example")).toBe(true)
+    expect(isAppOrigin("https://evil.example")).toBe(false)
+    expect(isAppOrigin("http://copacker.example")).toBe(false)
+    expect(isAppOrigin(null)).toBe(false)
+  })
+  it("returns to the address a request came in on, or else APP_URL", () => {
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("APP_ALIAS_URLS", "https://staging.copacker.example")
+    expect(siteUrlFor(new Headers({ host: "staging.copacker.example" }))).toBe("https://staging.copacker.example")
+    expect(siteUrlFor(new Headers({ "x-forwarded-host": "staging.copacker.example", host: "10.0.0.1:3000" }))).toBe(
+      "https://staging.copacker.example"
+    )
+    expect(siteUrlFor(new Headers({ host: "evil.example" }))).toBe("https://copacker.example")
+    expect(siteUrlFor(new Headers())).toBe("https://copacker.example")
   })
 })
 describe("Sign-in return path", () => {

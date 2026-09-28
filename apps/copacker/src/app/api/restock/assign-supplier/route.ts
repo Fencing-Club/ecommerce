@@ -1,12 +1,12 @@
 import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { ProductDefaultsError, assignProductSupplier } from "@/server/product-defaults"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 // Sets the supplier for several products at once, from restock.
 export async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()

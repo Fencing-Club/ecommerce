@@ -5,7 +5,7 @@ import { suppliers } from "@/db/schema"
 import type { ProductImage } from "@/lib/supplier-product"
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { getFile, putFile } from "@/server/storage"
 
 const maxBytes = 10 * 1024 * 1024
@@ -24,7 +24,7 @@ const keyPattern = /^supplier-images\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|g
 
 // Stores a product photo a supplier uploads. The product keeps it once the product is saved.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

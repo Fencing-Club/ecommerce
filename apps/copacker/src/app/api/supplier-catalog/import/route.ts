@@ -5,7 +5,7 @@ import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
 import { commitImport, previewImport } from "@/server/product-import"
 import { readSheet } from "@/server/product-sheet"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { putFile } from "@/server/storage"
 
 const maxBytes = 5 * 1024 * 1024
@@ -17,7 +17,7 @@ const types = {
 // Imports a filled-in product template, CSV or Excel: first a preview of what would change, then the import itself,
 // which the preview's hash guards against changes made in between. Each file is imported once.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

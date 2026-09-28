@@ -6,7 +6,7 @@ import {
   saveProductBarcode,
   variantIdSchema
 } from "@/server/product-barcodes"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 const headers = { "Cache-Control": "private, no-store" }
 
@@ -23,7 +23,7 @@ function variantFrom(request: Request) {
 
 // Uploads a variation's barcode label: form fields variantId and file, a one-page PDF.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()

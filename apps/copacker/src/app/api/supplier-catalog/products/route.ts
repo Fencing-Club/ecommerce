@@ -1,11 +1,11 @@
 import { requireAccess, session } from "@/server/auth"
 import { AccessError } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { saveProduct } from "@/server/supplier-products"
 
 // Creates or saves a product and its variants from the product page.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

@@ -7,7 +7,7 @@ import { connections, oauthStates } from "@/db/schema"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireAdmin, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
-import { appUrl, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
+import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
 export async function GET(request: Request, context: { params: Promise<{ provider: string }> }) {
@@ -17,7 +17,8 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   const provider = z.enum(["shopify", "amazon"]).parse((await context.params).provider)
   const url = new URL(request.url),
     isCallback = url.searchParams.has("state")
-  const callback = `${appUrl()}/api/connections/${provider}`
+  const site = siteUrlFor(request.headers)
+  const callback = `${site}/api/connections/${provider}`
   if (!isCallback) {
     const state = token(),
       shop =
@@ -143,5 +144,5 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   } else {
     await queueAmazonSubscription(s.org.id, randomUUID())
   }
-  return Response.redirect(`${appUrl()}/settings?connected=${provider}`)
+  return Response.redirect(`${site}/settings?connected=${provider}`)
 }

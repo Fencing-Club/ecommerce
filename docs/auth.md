@@ -28,9 +28,10 @@ browser had open, or else the first. `next` survives every step, and only ever p
 
 Local and production share the WorkOS staging environment. In its dashboard:
 
-- **Redirects** (Applications → the application → Redirects): `<APP_URL>/callback` for each environment, the sign-out
-  redirect `<APP_URL>`, and the **Password reset URL** `https://copacker-production.up.railway.app/reset-password`, so
-  WorkOS's own reset email opens Copacker's page too.
+- **Redirects** (Applications → the application → Redirects): `/callback` on every address the app answers on
+  (`APP_URL` and each of `APP_ALIAS_URLS`), each of those addresses as a sign-out redirect, and the **Password reset
+  URL** `https://copacker.ai/reset-password`, so WorkOS's own reset email opens Copacker's page too. Sign-in returns
+  to the address it started on, so `staging.copacker.ai` keeps its own session.
 - **Password reset email** (Emails → Configuration): turn off WorkOS's own once Copacker's sender domain is verified in
   Resend, so only Copacker's goes out. Until then both are sent, and Copacker's reaches only the Resend account's owner
   while the sender is `resend.dev`.

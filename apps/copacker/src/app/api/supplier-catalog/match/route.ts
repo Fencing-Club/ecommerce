@@ -5,7 +5,7 @@ import { suppliers } from "@/db/schema"
 import { requireAccess, requireBuyer, session } from "@/server/auth"
 import { customerProducts } from "@/server/catalogs"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
 
@@ -17,7 +17,7 @@ const inputSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

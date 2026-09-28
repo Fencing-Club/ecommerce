@@ -1,11 +1,11 @@
 import { requireAccess, session } from "@/server/auth"
 import { saveCatalog } from "@/server/catalogs"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 // Creates or saves a catalog from its form.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

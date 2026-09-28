@@ -1,14 +1,14 @@
 import { z } from "zod"
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { setProductsActive } from "@/server/supplier-products"
 
 const statusInput = z.strictObject({ ids: z.array(z.uuid()).min(1).max(5000), active: z.boolean() })
 
 // Archives or restores the products selected on the Products page. Archived products can't be ordered.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

@@ -27,6 +27,7 @@ import {
 import { workspaceCookie } from "./auth"
 import { sendEmail } from "./email"
 import { appUrl, decrypt, encrypt, returnPath } from "./security"
+import { siteUrl } from "./site"
 import { workos, workosClientId } from "./workos"
 
 // Copacker's own sign-in pages talk to WorkOS directly: email and password, a code emailed to confirm a new address,
@@ -303,7 +304,7 @@ export async function requestPasswordReset(raw: unknown) {
     }
     throw explain(error)
   }
-  const link = `${appUrl()}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
+  const link = `${await siteUrl()}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
   try {
     await sendEmail({
       to: reset.email,
@@ -345,8 +346,9 @@ export async function hasAccount(address: string) {
   return data.length > 0
 }
 
-function redirectUri() {
-  return process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || `${appUrl()}/callback`
+// WorkOS returns to the address sign-in started on, so its session cookie lands there.
+async function redirectUri() {
+  return `${await siteUrl()}/callback`
 }
 
 // Starts an OAuth round trip, with Google or Microsoft or the company's single sign-on, and returns the address to
@@ -358,7 +360,7 @@ export async function authorizationUrl(
 ) {
   const { url, state, codeVerifier } = await workos().userManagement.getAuthorizationUrlWithPKCE({
     clientId: workosClientId(),
-    redirectUri: redirectUri(),
+    redirectUri: await redirectUri(),
     ...("provider" in via ? { provider: oauthProviders[via.provider].provider } : { connectionId: via.connectionId }),
     ...(loginHint && { loginHint })
   })

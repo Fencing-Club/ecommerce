@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { ProductBarcodeError, productsLabelsPdf } from "@/server/product-barcodes"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 const headers = { "Cache-Control": "private, no-store" }
 
@@ -15,7 +15,7 @@ const inputSchema = z.strictObject({
 // Labels for every variation of the chosen products as one PDF, one sheet each. X-Skipped-Labels counts the
 // variations left out because they have no label yet.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()

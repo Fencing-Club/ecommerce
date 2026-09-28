@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 const stockInput = z.strictObject({
   counts: z
@@ -16,7 +16,7 @@ const stockInput = z.strictObject({
 // Saves the on hand counts changed on the Inventory page, all or none. A count replaces what was there, so it needs no
 // revision: the supplier counted what's on the shelf now.
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {

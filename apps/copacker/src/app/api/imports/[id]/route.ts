@@ -5,7 +5,7 @@ import { jobs, poImports } from "@/db/schema"
 import { session, requireBuyer, requirePage } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return row ? Response.json(row) : Response.json({ error: "Import not found" }, { status: 404 })
 }
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   const s = await session()
@@ -63,7 +63,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   const s = await session()
@@ -137,7 +137,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   const s = await session()

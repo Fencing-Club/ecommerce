@@ -3,7 +3,7 @@
 # Local development uses the separate "Copacker Dev" app, which this file doesn't configure.
 client_id = "2903380b0f1a61a045fab751fae12106"
 name = "Copacker"
-application_url = "https://copacker-production.up.railway.app"
+application_url = "https://copacker.ai"
 embedded = false
 
 [access_scopes]
@@ -13,6 +13,8 @@ use_legacy_install_flow = true
 
 [auth]
 redirect_urls = [
+  "https://copacker.ai/api/connections/shopify",
+  "https://staging.copacker.ai/api/connections/shopify",
   "https://copacker-production.up.railway.app/api/connections/shopify",
   "http://localhost:3000/api/connections/shopify"
 ]

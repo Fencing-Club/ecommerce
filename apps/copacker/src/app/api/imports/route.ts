@@ -4,7 +4,7 @@ import { PDFDocument } from "pdf-lib"
 import { db } from "@/db"
 import { connections, jobs, poImports } from "@/db/schema"
 import { session, requireBuyer, requirePage } from "@/server/auth"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function GET() {
@@ -26,7 +26,7 @@ export async function GET() {
   return Response.json({ items })
 }
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   const s = await session()

@@ -1,10 +1,10 @@
 import { requireAccess, session } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
 import { saveImportedOrder } from "@/server/import-save"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   const s = await session()

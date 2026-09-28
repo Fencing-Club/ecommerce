@@ -8,11 +8,11 @@ import { accessibleOrder } from "@/server/access"
 import { session, requireAccess, requireBuyer } from "@/server/auth"
 import { failureStatus } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
-import { appUrl } from "@/server/security"
+import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid origin" }, { status: 403 })
   }
   const s = await session()

@@ -41,6 +41,25 @@ export function appUrl() {
   const value = process.env.APP_URL ?? "http://localhost:3000"
   return new URL(value).origin
 }
+// Every address the app answers on: APP_URL, which emails and page metadata link to, then any in APP_ALIAS_URLS
+// (comma-separated), such as staging.copacker.ai while it runs on the production service.
+export function appUrls() {
+  const aliases = (process.env.APP_ALIAS_URLS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => URL.canParse(value))
+    .map((value) => new URL(value).origin)
+  return [appUrl(), ...aliases]
+}
+// Whether a request's Origin header is one of the app's own addresses.
+export function isAppOrigin(origin: string | null) {
+  return origin !== null && appUrls().includes(origin)
+}
+// The app's address a request came in on, so sign-in and connections return there; APP_URL for any other host.
+export function siteUrlFor(requestHeaders: Headers) {
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host")
+  return appUrls().find((url) => new URL(url).host === host) ?? appUrl()
+}
 // The page to open once WorkOS returns from signing out, such as an invitation for another email. WorkOS only returns
 // to the sign-out redirects set in its dashboard, so the page waits in this cookie for the proxy.
 export const resumeCookie = "copacker-resume"

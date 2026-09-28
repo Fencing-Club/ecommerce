@@ -52,7 +52,7 @@ import { linesMissingLabels } from "@/server/product-barcodes"
 import { saveProfile } from "@/server/profile"
 import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
-import { appUrl, token, hash } from "@/server/security"
+import { token, hash, isAppOrigin } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
@@ -76,7 +76,7 @@ const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>(
   ["auth.resetPassword", resetPassword]
 ])
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== appUrl()) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {
