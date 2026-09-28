@@ -30,6 +30,8 @@
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "apps/copacker": {
+      "entry": [".storybook/mocks/*.ts"],
+      "ignore": [".storybook/public/**"],
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "apps/video": {

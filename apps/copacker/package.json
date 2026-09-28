@@ -3,8 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#*": [
+      "./*",
+      "./*.ts",
+      "./*.tsx"
+    ]
+  },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
+    "storybook": "storybook dev --port 6006 --no-open",
+    "build-storybook": "storybook build",
     "build": "next build",
     "lint": "oxlint --max-warnings=0",
     "check:types": "tsc --noEmit",
@@ -60,6 +69,9 @@
     "@electric-sql/pglite": "^0.5.8",
     "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@storybook/addon-a11y": "10.6.0",
+    "@storybook/addon-vitest": "10.6.0",
+    "@storybook/nextjs-vite": "10.6.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "catalog:",
     "@types/pg": "^8.15.0",
@@ -67,12 +79,20 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.186.0",
     "@vanilla-extract/next-plugin": "^2.5.2",
+    "@vanilla-extract/vite-plugin": "^5.2.6",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
     "@vitest/coverage-v8": "^4.1.10",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.31.9",
+    "msw": "^2.15.0",
+    "msw-storybook-addon": "^3.0.3",
+    "playwright": "1.63.0",
+    "storybook": "10.6.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.0",
     "typescript": "catalog:",
+    "vite": "^8.3.0",
     "vitest": "^4.1.10"
   }
 }

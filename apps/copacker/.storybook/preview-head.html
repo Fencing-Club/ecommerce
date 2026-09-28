@@ -1,0 +1,19 @@
+<!-- The app's fonts: Geist, with Devanagari and Nastaliq letters for Hindi and Urdu, as the root layout loads them. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&family=Noto+Nastaliq+Urdu:wght@400..700&family=Noto+Sans+Devanagari:wght@100..900&display=swap"
+/>
+<style>
+  :root {
+    --font-geist-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+  }
+  :root:lang(hi) {
+    --font-geist-sans: "Geist", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  }
+  :root:lang(ur) {
+    --font-geist-sans: "Geist", "Noto Nastaliq Urdu", ui-sans-serif, system-ui, sans-serif;
+  }
+</style>

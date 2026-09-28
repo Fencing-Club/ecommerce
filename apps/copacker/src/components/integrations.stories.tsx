@@ -1,0 +1,250 @@
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import preview from "#.storybook/preview"
+import {
+  type ActionRequest,
+  amazonAccount,
+  ebayAccount,
+  recordActions,
+  salesSync,
+  shopifyAccount,
+  stockSync,
+  storeSyncHandlers
+} from "@/stories/fixtures/logistics"
+import { Integrations } from "./integrations"
+
+const sent: ActionRequest[] = []
+// The Shopify address a valid Connect form sends to Shopify's approval, kept instead of leaving the story.
+const connectShopify = fn()
+
+const shopify = { account: `Harbor Goods, ${shopifyAccount}`, externalId: shopifyAccount }
+const amazon = { account: `Harbor Goods US, ${amazonAccount}`, externalId: amazonAccount }
+const ebay = { account: ebayAccount, externalId: ebayAccount }
+
+const meta = preview.meta({
+  component: Integrations,
+  args: {
+    admin: true,
+    amazonDraft: false,
+    ebayAvailable: false,
+    shopify: null,
+    amazon: null,
+    ebay: null,
+    shopifySettings: <p>Shopify sync settings</p>,
+    amazonSettings: <p>Amazon sync settings</p>,
+    ebaySettings: <p>eBay sync settings</p>
+  },
+  beforeEach: ({ msw }) => {
+    sent.length = 0
+    msw.use(recordActions(sent), ...storeSyncHandlers())
+    // A form that passed its checks goes to Shopify; the story keeps it here instead.
+    const submitted = (event: SubmitEvent) => {
+      if (!event.defaultPrevented && event.target instanceof HTMLFormElement) {
+        event.preventDefault()
+        connectShopify(event.target.action, new FormData(event.target).get("shop"))
+      }
+    }
+    window.addEventListener("submit", submitted)
+    return () => window.removeEventListener("submit", submitted)
+  }
+})
+
+// Without Copacker's eBay keys, eBay is coming.
+export const NothingConnected = meta.story({
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
+    await expect(canvas.getByRole("link", { name: /^Amazon/ })).toHaveAttribute("href", "/api/connections/amazon")
+    await expect(canvas.getByText("eBay")).toBeVisible()
+    await expect(canvas.getByText("Coming soon")).toBeVisible()
+    await expect(canvas.getByText("Orders, inventory, expenses, shipments")).toBeVisible()
+    await expect(canvas.queryByRole("link", { name: /^eBay/ })).toBeNull()
+  }
+})
+
+// With Copacker's eBay keys, eBay's card goes to its sign-in and consent page.
+export const EbayAvailable = meta.story({
+  args: { ebayAvailable: true },
+  play: async ({ canvas }) => {
+    const card = canvas.getByRole("link", { name: /^eBay/ })
+    await expect(card).toHaveAttribute("href", "/api/connections/ebay")
+    await expect(card).toHaveTextContent("Orders, expenses")
+    await expect(card).toHaveTextContent("Connect")
+    await expect(canvas.queryByText("Coming soon")).toBeNull()
+  }
+})
+
+// A member sees eBay isn't connected, without connecting it.
+export const EbayAvailableMember = meta.story({
+  args: { admin: false, ebayAvailable: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Not connected")).toHaveLength(3)
+    await expect(canvas.queryByRole("link")).toBeNull()
+  }
+})
+
+// A connected eBay account opens its settings: its orders only, since eBay sells the stock Shopify tracks.
+export const EbayConnected = meta.story({
+  args: { ebayAvailable: true, ebay },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(ebayAccount)).toBeVisible()
+    await expect(await canvas.findByText(/^Synced/)).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "eBay settings" }))
+    const sheet = await screen.findByRole("dialog", { name: "eBay" })
+    await expect(within(sheet).getByText("eBay sync settings")).toBeInTheDocument()
+    await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
+    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect eBay?" })
+    await expect(confirm).toHaveTextContent(`Copacker stops reading sales from ${ebayAccount}.`)
+    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect" }))
+    await waitFor(() => expect(sent).toEqual([{ action: "connection.delete", data: { provider: "ebay" } }]))
+  }
+})
+
+export const EbayConnectedMember = meta.story({
+  args: { admin: false, ebayAvailable: true, ebay },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Connected")).toBeVisible()
+    await expect(canvas.getByText(ebayAccount)).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: "eBay settings" })).toBeNull()
+  }
+})
+
+// eBay's card says while its orders sync, and when the last sync failed; it has no inventory sync.
+export const EbaySyncing = meta.story({
+  args: { ebayAvailable: true, ebay },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      ...storeSyncHandlers({
+        sales: [salesSync("ebay", { status: "running", progress: null, finishedAt: null })],
+        stock: { shopify: stockSync({ refresh: { status: "running", errorCode: null } }) }
+      })
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Syncing orders")).toBeVisible()
+    await expect(canvas.queryByText("Syncing inventory")).toBeNull()
+  }
+})
+
+export const EbaySyncFailed = meta.story({
+  args: { ebayAvailable: true, ebay },
+  beforeEach: ({ msw }) => {
+    msw.use(...storeSyncHandlers({ sales: [salesSync("ebay", { status: "failed", errorCode: "reconnect" })] }))
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Last sync failed")).toBeVisible()
+  }
+})
+
+// Shopify's card asks for the store's address and checks it before going to Shopify.
+export const ConnectShopify = meta.story({
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^Shopify/ }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Shopify" })
+    await expect(dialog).toHaveTextContent("Admin link or myshopify.com domain")
+    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    await expect(
+      await within(dialog).findByText("Enter your store’s admin link or myshopify.com domain")
+    ).toBeInTheDocument()
+    const store = within(dialog).getByRole("textbox", { name: "Store" })
+    await userEvent.type(store, "harbor goods")
+    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    await expect(within(dialog).getByRole("textbox", { name: "Store" })).toHaveAttribute("aria-invalid", "true")
+    await expect(connectShopify).not.toHaveBeenCalled()
+    // Typing clears the error; an admin link is read as its store.
+    await userEvent.clear(store)
+    await expect(within(dialog).queryByText(/Enter your store/)).toBeNull()
+    await userEvent.type(store, "https://admin.shopify.com/store/harbor-goods/products")
+    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    await expect(connectShopify).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/connections\/shopify$/),
+      "https://admin.shopify.com/store/harbor-goods/products"
+    )
+  }
+})
+
+// While Copacker's Amazon app is a draft, Amazon connects with a token the seller pastes.
+export const AmazonDraft = meta.story({
+  args: { amazonDraft: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("link", { name: /^Amazon/ })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: /^Amazon/ }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(dialog).toHaveTextContent("Solution Provider Portal")
+  }
+})
+
+// Members see which stores aren't connected, without connecting them.
+export const MemberNothingConnected = meta.story({
+  args: { admin: false },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Not connected")).toHaveLength(2)
+    await expect(canvas.queryByRole("button")).toBeNull()
+    await expect(canvas.queryByRole("link")).toBeNull()
+  }
+})
+
+export const Connected = meta.story({
+  args: { shopify, amazon },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Connected")).toHaveLength(2)
+    await expect(canvas.getByText(`Harbor Goods, ${shopifyAccount}`)).toBeVisible()
+    await expect(await canvas.findAllByText(/^Synced/)).toHaveLength(2)
+    await userEvent.click(canvas.getByRole("button", { name: "Shopify settings" }))
+    const sheet = await screen.findByRole("dialog", { name: "Shopify" })
+    await expect(within(sheet).getByText("Shopify sync settings")).toBeInTheDocument()
+    await expect(within(sheet).queryByText("Amazon sync settings")).toBeNull()
+  }
+})
+
+export const Disconnect = meta.story({
+  args: { shopify, amazon },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
+    const sheet = await screen.findByRole("dialog", { name: "Amazon" })
+    await userEvent.click(within(sheet).getByRole("button", { name: "Disconnect" }))
+    const confirm = await screen.findByRole("alertdialog", { name: "Disconnect Amazon?" })
+    await expect(confirm).toHaveTextContent(`Copacker stops reading sales and stock from ${amazonAccount}`)
+    await userEvent.click(within(confirm).getByRole("button", { name: "Disconnect" }))
+    await waitFor(() => expect(sent).toEqual([{ action: "connection.delete", data: { provider: "amazon" } }]))
+  }
+})
+
+// A member sees a connected store's account and sync, without its settings.
+export const MemberConnected = meta.story({
+  args: { admin: false, shopify, amazon: null },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Connected")).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: "Shopify settings" })).toBeNull()
+    await expect(canvas.getByText("Not connected")).toBeVisible()
+  }
+})
+
+// A store's card says while its orders or stock sync, and when the last sync failed.
+export const Syncing = meta.story({
+  args: { shopify, amazon },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      ...storeSyncHandlers({
+        sales: [
+          salesSync("shopify", { status: "running", progress: 0.4, finishedAt: null }),
+          salesSync("amazon", { status: "failed", errorCode: "provider_unavailable" })
+        ]
+      })
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Syncing orders 40%")).toBeVisible()
+    await expect(await canvas.findByText("Last sync failed")).toBeVisible()
+  }
+})
+
+export const SyncingStock = meta.story({
+  args: { shopify, amazon: null },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      ...storeSyncHandlers({ stock: { shopify: stockSync({ refresh: { status: "running", errorCode: null } }) } })
+    )
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Syncing inventory")).toBeVisible()
+  }
+})

@@ -1,0 +1,144 @@
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
+import { HttpResponse } from "msw"
+import { getTranslations } from "next-intl/server"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import preview from "#.storybook/preview"
+import { OrderBuilder } from "@/components/order-builder"
+import type { suppliers } from "@/db/schema"
+import type { orderLine } from "@/lib/order-lines"
+import type { ForwarderAddress } from "@/server/forwarders"
+import { deliveryId, supplierId } from "@/stories/fixtures/orders"
+import {
+  actionHandler,
+  catalogMatches,
+  deliveries,
+  forwarding,
+  order,
+  orderId,
+  productHandlers,
+  supplierRecord
+} from "@/stories/fixtures/purchase-orders"
+import { pageStory } from "@/stories/server"
+
+type Args = {
+  // The URL's search parameters, which Restock and Reorder links set.
+  params: { destination?: string; supplierId?: string; locationId?: string }
+  // What the page reads: the buyer's suppliers, the lines made from ?variant=…, the variations that still need a label,
+  // the forwarders' addresses and the delivery addresses.
+  suppliers: Array<typeof suppliers.$inferSelect>
+  initialItems: Array<ReturnType<typeof orderLine>>
+  needsBarcode: string[]
+  forwarding: ForwarderAddress[]
+  deliveries: typeof deliveries
+}
+
+// The new purchase order page (page.tsx) with what its queries would return.
+async function NewOrder({
+  params,
+  suppliers: rows,
+  initialItems,
+  needsBarcode,
+  forwarding: stops,
+  deliveries: addresses
+}: Args) {
+  const t = await getTranslations("orders")
+  const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
+  const linked = addresses.filter((delivery) => delivery.shopifyLocationId === params.locationId)
+  return (
+    <OrderBuilder
+      title={t("builder.newTitle")}
+      parents={[{ label: t("index.title"), href: "/orders" }]}
+      suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
+      deliveries={addresses}
+      forwarderAddresses={stops.map((row) => ({
+        addressId: row.addressId,
+        forwarderId: row.forwarderId,
+        label: `${row.forwarderName}, ${row.addressName}`,
+        hasPhone: Boolean(row.address.phoneNumber)
+      }))}
+      initialItems={initialItems}
+      needsBarcodeVariantIds={needsBarcode}
+      initialDestination={initialDestination}
+      initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
+      initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
+    />
+  )
+}
+
+const actions = fn()
+const [tote, apron] = order.items
+
+const meta = preview.meta({
+  title: "Pages/Purchase orders/New",
+  ...pageStory("/orders/new", NewOrder),
+  args: {
+    params: {},
+    suppliers: [
+      supplierRecord(),
+      supplierRecord({ id: "3c9e2b1a-6d4f-4a8b-9c2e-1f0a5b7d9e04", name: "Northwind Textiles" })
+    ],
+    initialItems: [],
+    needsBarcode: [],
+    forwarding,
+    deliveries
+  },
+  beforeEach: ({ msw }) => {
+    msw.use(
+      ...productHandlers(),
+      catalogMatches(),
+      actionHandler(actions, () => HttpResponse.json({ ok: true, redirect: `/orders/${orderId}` }))
+    )
+  }
+})
+
+export const Blank = meta.story({
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "New purchase order" })).toBeVisible()
+    await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveTextContent("Choose supplier")
+    await expect(canvas.getByRole("combobox", { name: "Destination" })).toHaveTextContent("Amazon")
+    await expect(canvas.getByText("No products")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
+  }
+})
+
+// Reordering from Restock: its lines, for the supplier it grouped them under, to the one address at its location.
+export const FromRestock = meta.story({
+  args: {
+    params: { destination: "warehouse", supplierId, locationId: "gid://shopify/Location/1" },
+    initialItems: [tote!, apron!],
+    needsBarcode: [apron!.variantId]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveTextContent("Lotus Manufacturing")
+    await expect(canvas.getByRole("combobox", { name: "Destination" })).toHaveTextContent("Your location")
+    await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Oakland warehouse")
+    await expect(canvas.getByText("2 variants (360 units)")).toBeVisible()
+    await expect(canvas.getByText("Needs an uploaded label")).toBeVisible()
+
+    await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1047")
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await expect(actions).toHaveBeenCalledWith({
+      action: "order.create",
+      data: expect.objectContaining({ reference: "PO-1047", supplierId, destination: "warehouse", deliveryId })
+    })
+  }
+})
+
+// A supplier that isn't the buyer's is ignored, and a location with no address leaves the address to choose.
+export const UnknownLinks = meta.story({
+  args: {
+    params: {
+      destination: "warehouse",
+      supplierId: "3c9e2b1a-6d4f-4a8b-9c2e-1f0a5b7d9eff",
+      locationId: "gid://shopify/Location/9"
+    }
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveTextContent("Choose supplier")
+    await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Choose address")
+    await userEvent.click(canvas.getByRole("combobox", { name: "Delivery address" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Portland studio" }))
+    await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Portland studio")
+  }
+})

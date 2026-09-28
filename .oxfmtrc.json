@@ -25,6 +25,7 @@
     "pnpm-lock.yaml",
     "packages/fc-theme/**",
     "packages/fc-theme-base/**",
-    "**/.next/**"
+    "**/.next/**",
+    "**/mockServiceWorker.js"
   ]
 }

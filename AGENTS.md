@@ -16,6 +16,9 @@ Quick reference:
   type helpers; narrow with type guards, not `as`.
 - **Product copy:** validate every customer-facing string with Fluent Agent MCP when available. Never use `·`, `•`, or
   another dot glyph as a visual separator.
+- **Storybook:** every page and component has sibling `*.stories.tsx` with `play` tests
+  (`pnpm --filter copacker storybook`); `tests/stories.test.ts` fails on a missing one. See
+  [docs/storybook.md](docs/storybook.md).
 - **UX acceptance:** verify every UX change through the integrated browser before calling it complete. Component tests
   alone are not sufficient.
 

@@ -44,6 +44,8 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
+      # Storybook's play functions run in Chromium through Vitest.
+      - run: pnpm --filter copacker exec playwright install --with-deps chromium-headless-shell
       - run: pnpm verify
       # Only Copacker is deployed; the Docker build on Railway builds it again, so this is the pull request's check.
       - run: pnpm turbo run build --filter=copacker

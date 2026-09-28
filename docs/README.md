@@ -15,6 +15,7 @@
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
 - [Styling](styling.md)
+- [Storybook: stories and play tests](storybook.md)
 - [Localization](localization.md)
 - [Preferred stack](tech-stack.md)
 - [Video: the Copacker ad in Remotion](video.md)

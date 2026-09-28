@@ -1,0 +1,65 @@
+import { expect, userEvent, within } from "storybook/test"
+import preview from "#.storybook/preview"
+import { AuthShell } from "@/components/auth/auth-shell"
+import { ForgotPassword } from "@/components/auth/password-reset"
+import { actionRecorder, errors, failWith, skipAnimations } from "@/stories/fixtures/auth"
+import { serverStory } from "@/stories/server"
+
+const actions = actionRecorder()
+
+// The forgot-password page (page.tsx) in the auth layout, with the query's `email`. The layout's AppProviders is the
+// story frame's own providers.
+async function ForgotPasswordPage({ email }: { email?: string }) {
+  return (
+    <AuthShell>
+      <ForgotPassword email={email} />
+    </AuthShell>
+  )
+}
+
+const meta = preview.meta({
+  title: "Pages/Auth/Forgot password",
+  ...serverStory(ForgotPasswordPage),
+  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/forgot-password" } } },
+  beforeEach: ({ msw }) => {
+    msw.use(actions.handler())
+    return skipAnimations()
+  }
+})
+
+export const Default = meta.story({
+  play: async ({ canvas }) => {
+    const main = within(canvas.getByRole("main"))
+    await expect(main.getByRole("heading", { level: 1, name: "Reset your password" })).toBeVisible()
+    await expect(main.getByLabelText("Email")).toHaveValue("")
+    await expect(main.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login")
+    await userEvent.type(main.getByLabelText("Email"), "alex@example")
+    await userEvent.click(main.getByRole("button", { name: "Send reset link" }))
+    await expect(await main.findByText("Enter an email address")).toBeVisible()
+    await expect(actions.sent).toHaveLength(0)
+  }
+})
+
+// ?email=… from the sign-in page's link: sending it says the link is on its way.
+export const WithEmail = meta.story({
+  args: { email: "alex@example.com" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByLabelText("Email")).toHaveValue("alex@example.com")
+    await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))
+    await expect(await canvas.findByRole("heading", { level: 1, name: "Check your email" })).toBeVisible()
+    await expect(actions.sent).toEqual([{ action: "auth.forgotPassword", data: { email: "alex@example.com" } }])
+    await expect(canvas.getByRole("button", { name: "Back to sign in" })).toHaveAttribute("href", "/login")
+  }
+})
+
+export const Fails = meta.story({
+  args: { email: "alex@example.com" },
+  beforeEach: ({ msw }) => {
+    msw.use(actions.handler(failWith(errors.generic)))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Send reset link" }))
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(errors.generic)
+    await expect(canvas.getByRole("heading", { level: 1, name: "Reset your password" })).toBeVisible()
+  }
+})

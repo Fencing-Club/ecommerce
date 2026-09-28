@@ -66,6 +66,8 @@ needs a human discussion**, not a silent add.
 - Verify every new or changed UX feature in the integrated browser before considering it complete. Exercise the customer
   workflow, inspect the rendered result at desktop and mobile sizes, and check keyboard and accessible-name behavior.
   Unit or component tests do not replace this browser acceptance check.
+- Every Copacker page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or
+  update them with the change. See [docs/storybook.md](../docs/storybook.md).
 
 ## Gotchas
 

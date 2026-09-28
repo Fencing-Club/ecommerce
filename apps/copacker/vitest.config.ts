@@ -1,17 +1,44 @@
 import { fileURLToPath } from "node:url"
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin"
+import { playwright } from "@vitest/browser-playwright"
 import { defineConfig } from "vitest/config"
+
+const dirname = fileURLToPath(new URL(".", import.meta.url))
+
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
-    environment: "node",
-    include: ["tests/**/*.test.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
-      include: ["src/server/**/*.ts", "src/app/api/**/*.ts"],
-      exclude: ["src/server/worker.ts"]
-    }
+      include: ["src/server/**/*.ts", "src/app/api/**/*.ts", "src/components/**/*.tsx"],
+      exclude: ["src/server/worker.ts", "src/**/*.stories.tsx"]
+    },
+    projects: [
+      {
+        extends: true,
+        test: { name: "unit", environment: "node", include: ["tests/**/*.test.ts"], sequence: { groupOrder: 0 } }
+      },
+      // Every story renders in Chromium and runs its play function, after the unit tests: run side by side, the browser
+      // starves the unit tests' databases and their setup times out.
+      {
+        extends: true,
+        plugins: [storybookTest({ configDir: `${dirname}.storybook` })],
+        test: {
+          name: "storybook",
+          sequence: { groupOrder: 1 },
+          // A story that waits on an animation or a mocked response can miss its moment on a busy machine.
+          retry: 2,
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium" }]
+          }
+        }
+      }
+    ]
   }
 })
