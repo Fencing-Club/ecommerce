@@ -13,8 +13,8 @@ import {
   Warehouse
 } from "lucide-react"
 
-// A buyer's store pages, then purchasing from suppliers. A supplier's sales to its customers, then what it sells.
-// Settings sit on their own at the bottom.
+// Overview on its own at the top, then a buyer's store pages and purchasing from suppliers, or a supplier's sales to
+// its customers and what it sells. Settings sit on their own at the bottom.
 export const navigationGroups = [
   { key: "home", label: null },
   { key: "store", label: "Store" },
@@ -25,7 +25,7 @@ export const navigationGroups = [
 ] as const
 
 const navigation = [
-  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "store", buyerOnly: true },
+  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "home", buyerOnly: true },
   { view: "sales", label: "Orders", icon: Receipt, group: "store", buyerOnly: true },
   { view: "products", label: "Products", icon: Box, group: "store", buyerOnly: true },
   { view: "restock", label: "Restock", icon: PackagePlus, group: "store", buyerOnly: true },
@@ -46,10 +46,7 @@ const navigation = [
 // profile in Settings.
 export function navigationFor(kind: string) {
   if (kind === "forwarder") {
-    return [
-      { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing" as const },
-      ...navigation.filter((item) => item.view === "settings")
-    ]
+    return navigation.filter((item) => (item.view === "orders" && item.buyerOnly) || item.view === "settings")
   }
   return navigation.filter(
     (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
