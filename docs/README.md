@@ -6,6 +6,7 @@
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
+- [App header: search and notifications](app-header.md)
 - [Local development and launch](operations.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [TypeScript conventions](typescript.md)

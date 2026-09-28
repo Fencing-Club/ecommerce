@@ -16,7 +16,14 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect(`/profile?next=${encodeURIComponent(back)}`)
   }
   return (
-    <Shell name={s.org.name} email={s.user.email} kind={s.org.kind} active={s.org.id} workspaces={s.workspaces}>
+    <Shell
+      name={s.org.name}
+      userName={s.user.name}
+      email={s.user.email}
+      kind={s.org.kind}
+      active={s.org.id}
+      workspaces={s.workspaces}
+    >
       <SystemTimeZone />
       <WorkspaceWatch id={s.org.id} />
       {children}

@@ -3,12 +3,9 @@ import { cookies } from "next/headers"
 import Link from "next/link"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
-import { AppSidebar, type AppSidebarProps, CurrentSection } from "./app-sidebar"
-import * as styles from "./shell.css"
-import { sx } from "@/styles/sprinkles.css"
+import { AppSidebar, type AppSidebarProps } from "./app-sidebar"
+import { SiteHeader } from "./site-header"
 
 export async function Shell({
   children,
@@ -18,45 +15,36 @@ export async function Shell({
   const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false"
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar {...sidebar} view={view} />
-      <SidebarInset>
-        <header className={styles.header}>
-          <SidebarTrigger className={styles.trigger} />
-          <Separator orientation="vertical" className={styles.separator} />
-          <CurrentSection preview={sidebar.preview} view={view} kind={sidebar.kind} />
-        </header>
-        <div
-          id="main-content"
-          className={cn(
-            styles.main,
-            sx({
-              display: "flex",
-              width: "full",
-              maxWidth: "7xl",
-              flex: 1,
-              flexDirection: "column",
-              gap: 6,
-              padding: { base: 4, md: 6, lg: 8 }
-            })
-          )}
-        >
-          {sidebar.preview && (
-            <Alert role="note">
-              <FlaskConical />
-              <AlertTitle>Design preview</AlertTitle>
-              <AlertDescription>This page uses sample data. No accounts are connected.</AlertDescription>
-              <AlertAction>
-                <Button size="sm" nativeButton={false} render={<Link href="/login" />}>
-                  Get started
-                  <ArrowUpRight data-icon="inline-end" />
-                </Button>
-              </AlertAction>
-            </Alert>
-          )}
-          {children}
-        </div>
-      </SidebarInset>
+    // The app header spans the top of the window, with the sidebar and the page under it.
+    <SidebarProvider defaultOpen={defaultOpen} className="flex-col [--header-height:calc(--spacing(14))]">
+      <SiteHeader kind={sidebar.kind} preview={sidebar.preview ?? false} />
+      <div className="flex flex-1">
+        <AppSidebar {...sidebar} view={view} />
+        <SidebarInset>
+          {/* The sidebar's collapse button starts the page's first row, beside its breadcrumb or title; everything
+              else spans the page. minWidth 0 lets a wide table scroll inside its container instead of stretching it. */}
+          <div
+            id="main-content"
+            className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] content-start items-center gap-x-2 gap-y-6 p-4 *:col-span-full md:p-6 lg:p-8 [&>[data-sidebar=trigger]]:col-span-1 [&>[data-sidebar=trigger]+*]:col-span-1"
+          >
+            {sidebar.preview && (
+              <Alert role="note">
+                <FlaskConical />
+                <AlertTitle>Design preview</AlertTitle>
+                <AlertDescription>This page uses sample data. No accounts are connected.</AlertDescription>
+                <AlertAction>
+                  <Button size="sm" nativeButton={false} render={<Link href="/login" />}>
+                    Get started
+                    <ArrowUpRight data-icon="inline-end" />
+                  </Button>
+                </AlertAction>
+              </Alert>
+            )}
+            <SidebarTrigger className="-ml-1.5" />
+            {children}
+          </div>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   )
 }

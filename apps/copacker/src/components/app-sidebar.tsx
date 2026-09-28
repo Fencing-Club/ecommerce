@@ -1,27 +1,6 @@
 "use client"
 
-import {
-  Box,
-  Check,
-  ChevronsUpDown,
-  ClipboardList,
-  LayoutDashboard,
-  LogOut,
-  Monitor,
-  Moon,
-  PackagePlus,
-  Palette,
-  Receipt,
-  Settings,
-  Ship,
-  Sun,
-  Truck,
-  Users,
-  BookOpen,
-  Building2,
-  Tag,
-  Warehouse
-} from "lucide-react"
+import { Check, ChevronsUpDown, LogOut, Monitor, Moon, Palette, Sun } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "@/components/theme-provider"
@@ -56,86 +35,22 @@ import {
 } from "@/components/ui/sidebar"
 import { announceWorkspace } from "@/components/workspace-watch"
 import { useActionMutation } from "@/lib/api"
+import { hrefFor, navigationFor, navigationGroups } from "@/lib/navigation"
 import * as styles from "./app-sidebar.css"
 import { sx } from "@/styles/sprinkles.css"
 
 type Workspace = { id: string; name: string }
 
 export type AppSidebarProps = {
+  // The workspace's name, shown until the workspace list has it.
   name: string
+  // The signed-in person's name; their email shows until they give one.
+  userName: string | null
   email: string
   kind: string
   active: string
   workspaces: Workspace[]
   preview?: boolean
-}
-
-// A buyer's store pages, then purchasing from suppliers. A supplier's sales to its customers, then what it
-// sells. Settings sit on their own at the bottom.
-const groups = [
-  { key: "home", label: null },
-  { key: "store", label: "Store" },
-  { key: "purchasing", label: "Purchasing" },
-  { key: "sales", label: "Sales" },
-  { key: "catalog", label: "Products" },
-  { key: "workspace", label: null }
-] as const
-
-const navigation = [
-  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "store", buyerOnly: true },
-  { view: "sales", label: "Orders", icon: Receipt, group: "store", buyerOnly: true },
-  { view: "products", label: "Products", icon: Box, group: "store", buyerOnly: true },
-  { view: "restock", label: "Restock", icon: PackagePlus, group: "store", buyerOnly: true },
-  { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing", buyerOnly: true },
-  { view: "shipments", label: "Shipments", icon: Truck, group: "purchasing", buyerOnly: true },
-  { view: "suppliers", label: "Suppliers", icon: Users, group: "purchasing", buyerOnly: true },
-  { view: "forwarders", label: "Forwarders", icon: Ship, group: "purchasing", buyerOnly: true },
-  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "home", supplierOnly: true },
-  { view: "orders", label: "Orders", icon: ClipboardList, group: "sales", supplierOnly: true },
-  { view: "shipments", label: "Shipments", icon: Truck, group: "sales", supplierOnly: true },
-  { view: "customers", label: "Customers", icon: Building2, group: "sales", supplierOnly: true },
-  { view: "products", label: "Products", icon: Tag, group: "catalog", supplierOnly: true },
-  { view: "inventory", label: "Inventory", icon: Warehouse, group: "catalog", supplierOnly: true },
-  { view: "catalogs", label: "Catalogs", icon: BookOpen, group: "catalog", supplierOnly: true },
-  { view: "settings", label: "Settings", icon: Settings, group: "workspace" }
-] satisfies Array<{ view: string; group: (typeof groups)[number]["key"] } & Record<string, unknown>>
-
-// A forwarder's workspace sees the POs coming through it, and keeps its addresses and profile in Settings.
-function navigationFor(kind: string) {
-  if (kind === "forwarder") {
-    return [
-      { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing" as const },
-      ...navigation.filter((item) => item.view === "settings")
-    ]
-  }
-  return navigation.filter(
-    (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
-  )
-}
-
-function hrefFor(view: string, preview: boolean) {
-  return preview ? `/preview?view=${view}` : `/${view}`
-}
-
-export function CurrentSection({ preview = false, view, kind }: { preview?: boolean; view?: string; kind: string }) {
-  const pathname = usePathname()
-  const items = navigationFor(kind)
-  const current = preview
-    ? items.find((item) => item.view === (view ?? "orders"))
-    : items.find((item) => pathname.startsWith(`/${item.view}`))
-  return (
-    <span
-      className={sx({
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        text: "sm",
-        fontWeight: "medium"
-      })}
-    >
-      {current?.label ?? "Copacker"}
-    </span>
-  )
 }
 
 function initials(name: string) {
@@ -149,6 +64,7 @@ function initials(name: string) {
 
 export function AppSidebar({
   name,
+  userName,
   email,
   kind,
   active,
@@ -161,12 +77,13 @@ export function AppSidebar({
   const { setOpenMobile } = useSidebar()
 
   return (
-    <Sidebar collapsible="icon">
+    // On a computer the sidebar starts under the app header; on a phone it's a sheet over everything.
+    <Sidebar collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader>
         <WorkspaceSwitcher kind={kind} active={active} workspaces={workspaces} fallbackName={name} preview={preview} />
       </SidebarHeader>
       <SidebarContent>
-        {groups.map((group) => {
+        {navigationGroups.map((group) => {
           const items = navigationFor(kind).filter((item) => item.group === group.key)
           if (!items.length) {
             return null
@@ -195,7 +112,7 @@ export function AppSidebar({
         })}
       </SidebarContent>
       <SidebarFooter>
-        <UserMenu name={name} email={email} preview={preview} />
+        <UserMenu name={userName ?? email} email={email} preview={preview} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
@@ -230,11 +147,12 @@ function WorkspaceSwitcher({
     window.location.assign("/")
   }
 
-  const logo = (
+  // Copacker's own logo is in the app header, so the workspace shows its initials.
+  const label = (
     <>
-      <div className={styles.logo}>
-        <Box className={sx({ size: 4 })} />
-      </div>
+      <Avatar className="rounded-md after:rounded-md">
+        <AvatarFallback className="rounded-md text-xs font-medium text-foreground">{initials(current)}</AvatarFallback>
+      </Avatar>
       <div className={sx({ display: "grid", flex: 1, textAlign: "left", text: "sm", lineHeight: "tight" })}>
         <span
           className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "medium" })}
@@ -261,7 +179,7 @@ function WorkspaceSwitcher({
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" render={<div />}>
-            {logo}
+            {label}
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -273,7 +191,7 @@ function WorkspaceSwitcher({
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className={styles.menuTrigger} />}>
-            {logo}
+            {label}
             <ChevronsUpDown className={styles.trailingIcon} />
           </DropdownMenuTrigger>
           <DropdownMenuContent

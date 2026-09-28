@@ -44,6 +44,7 @@ export default async function Preview({ searchParams }: { searchParams: Promise<
   return (
     <Shell
       name="Fencing Club"
+      userName="Sample buyer"
       email="Workspace preview"
       kind="buyer"
       active="preview"

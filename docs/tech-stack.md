@@ -79,6 +79,7 @@ For building command-line tools.
   tokens). ◻️ **@fluentui/react-charting** for Fluent surfaces.
 - ✅ **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
   architecture. Copacker uses shadcn's own components on Base UI, added with the shadcn CLI. See [Styling](styling.md).
+- ✅ **cmdk** — command menus, through shadcn's `Command`. Copacker's header search (Ctrl+K) uses it.
 - ✅ **@vanilla-extract/css** + **sprinkles** — Copacker's page styles from before Tailwind, which keep working next
   to it.
 

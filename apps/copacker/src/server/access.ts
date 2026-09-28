@@ -5,6 +5,14 @@ import { forwarders, orders, suppliers } from "@/db/schema"
 import type { Session } from "./auth"
 import { forwarderLeg } from "./shipment-legs"
 
+// The POs a buyer or supplier workspace can open: every one of a buyer's own, and a supplier's sent ones for as long as
+// the buyer keeps it on. The query must join suppliers on the PO's supplier.
+export function orderVisibleTo(s: Session) {
+  return s.org.kind === "buyer"
+    ? eq(orders.buyerOrgId, s.org.id)
+    : and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), ne(orders.status, "draft"))
+}
+
 export async function accessibleOrder(
   s: Session,
   id: string,
@@ -15,14 +23,7 @@ export async function accessibleOrder(
     .select({ order: orders, supplier: suppliers })
     .from(orders)
     .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-    .where(
-      and(
-        eq(orders.id, id),
-        s.org.kind === "buyer"
-          ? eq(orders.buyerOrgId, s.org.id)
-          : and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), ne(orders.status, "draft"))
-      )
-    )
+    .where(and(eq(orders.id, id), orderVisibleTo(s)))
   const [row] = lock ? await query.for("update", { of: orders }) : await query
   if (!row) {
     notFound()
@@ -34,11 +35,7 @@ export async function visibleOrders(s: Session) {
     .select({ order: orders, supplier: suppliers })
     .from(orders)
     .innerJoin(suppliers, eq(suppliers.id, orders.supplierId))
-    .where(
-      s.org.kind === "buyer"
-        ? eq(orders.buyerOrgId, s.org.id)
-        : and(eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt), ne(orders.status, "draft"))
-    )
+    .where(orderVisibleTo(s))
     .orderBy(orders.createdAt)
 }
 

@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { SalesOrderSummary } from "@/server/sales-orders"
+import type { SearchIndex } from "@/server/search"
 import type { LineDefaults } from "./order-lines"
 
 export type ActionResult = { ok?: boolean; error?: string; redirect?: string; id?: string } & Record<string, unknown>
@@ -44,11 +46,23 @@ export const api = createApi({
     }),
     uploadDocument: build.mutation<ActionResult, FormData>({
       query: (body) => ({ url: "documents", method: "POST", body })
+    }),
+    // What the header's search looks through, and the sales orders it finds as the Orders page's search does.
+    search: build.query<SearchIndex, void>({ query: () => "search" }),
+    salesSearch: build.query<{ orders: SalesOrderSummary[] }, string>({
+      query: (q) => ({ url: "sales/orders", params: { q } })
     })
   })
 })
 
-export const { useActionMutation, useLazyCatalogQuery, useSuppliersQuery, useUploadDocumentMutation } = api
+export const {
+  useActionMutation,
+  useLazyCatalogQuery,
+  useSalesSearchQuery,
+  useSearchQuery,
+  useSuppliersQuery,
+  useUploadDocumentMutation
+} = api
 
 export function errorMessage(error: unknown, fallback = "Something went wrong. Try again.") {
   if (typeof error === "object" && error !== null) {

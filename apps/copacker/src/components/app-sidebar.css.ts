@@ -2,18 +2,6 @@ import { style } from "@vanilla-extract/css"
 import { fontSize, space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
-export const logo = style({
-  display: "flex",
-  aspectRatio: "1 / 1",
-  width: space(8),
-  height: space(8),
-  alignItems: "center",
-  justifyContent: "center",
-  borderRadius: vars.radius.lg,
-  backgroundColor: vars.color.sidebarPrimary,
-  color: vars.color.sidebarPrimaryForeground
-})
-
 // Keeps the menu trigger highlighted while its dropdown is open.
 export const menuTrigger = style({
   selectors: {
