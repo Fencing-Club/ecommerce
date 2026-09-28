@@ -146,8 +146,8 @@
   "planner": {
     "days": "{count, plural, one {# giorno} other {# giorni}}",
     "inDays": "{count, plural, one {Tra # giorno} other {Tra # giorni}}",
-    "inStock": "{sku}, {count, number} in giacenza",
-    "soldADay": "Venduti al giorno",
+    "inStock": "{count, number} in giacenza",
+    "soldADay": "Vendite al giorno",
     "captionLate": "Giacenza di {product} nei prossimi {horizon} giorni. Senza riordino si esaurisce tra {out, plural, one {# giorno} other {# giorni}}. Ordinando oggi, {units, number} unità arrivano dopo l’esaurimento, con circa {lost} di vendite perse.",
     "captionInTime": "Giacenza di {product} nei prossimi {horizon} giorni. Senza riordino si esaurisce tra {out, plural, one {# giorno} other {# giorni}}. Ordinando tra {orderBy, plural, one {# giorno} other {# giorni}}, {units, number} unità arrivano prima dell’esaurimento.",
     "unitsInStock": "Unità in giacenza",

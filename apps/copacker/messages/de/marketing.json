@@ -146,8 +146,8 @@
   "planner": {
     "days": "{count, plural, one {# Tag} other {# Tage}}",
     "inDays": "{count, plural, one {In # Tag} other {In # Tagen}}",
-    "inStock": "{sku}, {count, number} auf Lager",
-    "soldADay": "Verkauft pro Tag",
+    "inStock": "{count, number} auf Lager",
+    "soldADay": "Verkäufe pro Tag",
     "captionLate": "Lagerbestand von {product} in den nächsten {horizon} Tagen. Ohne Nachbestellung ist er in {out, plural, one {# Tag} other {# Tagen}} aufgebraucht. Heute bestellt, treffen {units, number} Einheiten erst danach ein, und rund {lost} Umsatz gehen verloren.",
     "captionInTime": "Lagerbestand von {product} in den nächsten {horizon} Tagen. Ohne Nachbestellung ist er in {out, plural, one {# Tag} other {# Tagen}} aufgebraucht. Bestellt in {orderBy, plural, one {# Tag} other {# Tagen}}, treffen {units, number} Einheiten rechtzeitig ein.",
     "unitsInStock": "Einheiten auf Lager",

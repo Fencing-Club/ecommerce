@@ -146,7 +146,7 @@
   "planner": {
     "days": "{count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
     "inDays": "{count, plural, one {Через # день} few {Через # дні} many {Через # днів} other {Через # дня}}",
-    "inStock": "{sku}, у наявності {count, number}",
+    "inStock": "У наявності {count, number}",
     "soldADay": "Продажі за день",
     "captionLate": "Залишок товару {product} на найближчі {horizon} дн. Без поповнення він закінчиться через {out, plural, one {# день} few {# дні} many {# днів} other {# дня}}. Якщо замовити сьогодні, {units, number} од. надійдуть уже після того, як запас вичерпається, і ви втратите приблизно {lost} продажів.",
     "captionInTime": "Залишок товару {product} на найближчі {horizon} дн. Без поповнення він закінчиться через {out, plural, one {# день} few {# дні} many {# днів} other {# дня}}. Якщо замовити через {orderBy, plural, one {# день} few {# дні} many {# днів} other {# дня}}, {units, number} од. надійдуть до того, як запас вичерпається.",

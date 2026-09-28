@@ -146,7 +146,7 @@
   "planner": {
     "days": "{count, plural, one {# jour} other {# jours}}",
     "inDays": "{count, plural, one {Dans # jour} other {Dans # jours}}",
-    "inStock": "{sku}, {count, number} en stock",
+    "inStock": "{count, number} en stock",
     "soldADay": "Ventes par jour",
     "captionLate": "Stock de {product} sur les {horizon} prochains jours. Sans réassort, il est épuisé dans {out, plural, one {# jour} other {# jours}}. Commandées aujourd’hui, {units, number} unités arrivent après la rupture, soit environ {lost} de ventes perdues.",
     "captionInTime": "Stock de {product} sur les {horizon} prochains jours. Sans réassort, il est épuisé dans {out, plural, one {# jour} other {# jours}}. Commandées dans {orderBy, plural, one {# jour} other {# jours}}, {units, number} unités arrivent avant la rupture.",

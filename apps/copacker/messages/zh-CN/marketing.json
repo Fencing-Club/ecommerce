@@ -146,7 +146,7 @@
   "planner": {
     "days": "{count, plural, other {# 天}}",
     "inDays": "{count, plural, other {# 天后}}",
-    "inStock": "{sku}，库存 {count, number}",
+    "inStock": "库存 {count, number}",
     "soldADay": "日销量",
     "captionLate": "{product}未来 {horizon} 天的库存量。不补货的话，{out, plural, other {# 天}}后断货。今天下单，{units, number} 件会在断货后才到，损失约 {lost} 的销售额。",
     "captionInTime": "{product}未来 {horizon} 天的库存量。不补货的话，{out, plural, other {# 天}}后断货。{orderBy, plural, other {# 天}}内下单，{units, number} 件会在断货前到货。",

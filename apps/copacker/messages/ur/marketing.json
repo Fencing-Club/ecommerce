@@ -146,7 +146,7 @@
   "planner": {
     "days": "{count, plural, one {# دن} other {# دن}}",
     "inDays": "{count, plural, one {# دن میں} other {# دنوں میں}}",
-    "inStock": "{sku}، {count, number} اسٹاک میں",
+    "inStock": "{count, number} اسٹاک میں",
     "soldADay": "روزانہ فروخت",
     "captionLate": "اگلے {horizon} دنوں میں {product} کا اسٹاک۔ دوبارہ آرڈر کے بغیر یہ {out, plural, one {# دن} other {# دنوں}} میں ختم ہو جائے گا۔ آج آرڈر کرنے پر {units, number} یونٹس اس کے ختم ہونے کے بعد پہنچیں گے، اور تقریباً {lost} کی سیلز ضائع ہو گی۔",
     "captionInTime": "اگلے {horizon} دنوں میں {product} کا اسٹاک۔ دوبارہ آرڈر کے بغیر یہ {out, plural, one {# دن} other {# دنوں}} میں ختم ہو جائے گا۔ {orderBy, plural, one {# دن} other {# دنوں}} میں آرڈر کرنے پر {units, number} یونٹس اس کے ختم ہونے سے پہلے پہنچ جائیں گے۔",

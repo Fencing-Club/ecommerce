@@ -23,7 +23,7 @@ const hand = Caveat({ subsets: ["latin"], preload: false })
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
 type Inputs = { lead: number; amazon: number; shopify: number; ebay: number; rush: number }
 
-const product = { name: "Steel Bottle 32 oz", sku: "SM-3201", stock: 10200, price: 32, casePack: 24 }
+const product = { name: "Steel Bottle 32 oz", stock: 10200, price: 32, casePack: 24 }
 const stores: Store[] = [
   { key: "amazon", name: "Amazon", perDay: 63 },
   { key: "shopify", name: "Shopify", perDay: 24 },
@@ -271,13 +271,11 @@ export function Planner() {
           </span>
           <span className="flex flex-col leading-tight">
             <span className="font-semibold">{product.name}</span>
-            <span className="text-sm text-muted-foreground">
-              {t("inStock", { sku: product.sku, count: product.stock })}
-            </span>
+            <span className="text-sm text-muted-foreground">{t("inStock", { count: product.stock })}</span>
           </span>
         </span>
         <div className="flex flex-wrap items-center gap-2 sm:ms-auto">
-          <span className="me-1 text-sm text-muted-foreground">{t("soldADay")}</span>
+          <span className="me-1 w-full text-sm text-muted-foreground sm:w-auto">{t("soldADay")}</span>
           {stores.map((store) => (
             <button
               key={store.key}

@@ -146,7 +146,7 @@
   "planner": {
     "days": "{count, plural, one {# día} other {# días}}",
     "inDays": "{count, plural, one {En # día} other {En # días}}",
-    "inStock": "{sku}, {count, number} en existencia",
+    "inStock": "{count, number} en existencia",
     "soldADay": "Ventas por día",
     "captionLate": "Existencias de {product} en los próximos {horizon} días. Sin volver a pedir, se agota en {out, plural, one {# día} other {# días}}. Si pides hoy, {units, number} unidades llegan después de que se agote, con una pérdida de cerca de {lost} en ventas.",
     "captionInTime": "Existencias de {product} en los próximos {horizon} días. Sin volver a pedir, se agota en {out, plural, one {# día} other {# días}}. Si pides en {orderBy, plural, one {# día} other {# días}}, {units, number} unidades llegan antes de que se agote.",
