@@ -89,6 +89,21 @@ Dev's `AMAZON_CLIENT_ID`, `AMAZON_CLIENT_SECRET` and `AMAZON_APPLICATION_ID`. Ne
 `AMAZON_NOTIFICATIONS_QUEUE_URL` to the production queue: the local worker would take production's notifications. To
 test notifications locally, create a separate queue and let Aisle Dev subscribe to it.
 
+## eBay
+
+The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
+`AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
+without a support ticket, so local development shares it through its own redirect URL name; a refresh token works from
+any environment with the same keys. Local development never registers a notification destination, so it can't take
+production's events.
+
+- eBay disables a new production keyset until it has a marketplace account deletion endpoint (Alerts & Notifications
+  in the developer portal). The endpoint is `https://<APP_URL>/api/webhooks/ebay`: a GET with `challenge_code`
+  answers with the SHA-256 of the code, `EBAY_VERIFICATION_TOKEN` and the endpoint URL, and a POST notice is
+  acknowledged with 204. Copacker stores nothing from eBay yet, so a deletion notice only logs an
+  `ebay_notification` event.
+- The redirect URL name (RuName) settings under User Tokens only appear once the keyset is compliant.
+
 ## Daily reconciliation and failures
 
 - Each worker makes sure a `reconcile:<date>` job is queued for 07:00 UTC; the job key keeps it to one run a day. It
