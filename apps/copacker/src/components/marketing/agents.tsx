@@ -1,3 +1,6 @@
+"use client"
+
+import { useMediaQuery } from "@mantine/hooks"
 import { Bot, Box, Check } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
@@ -6,7 +9,8 @@ import { Ticker } from "./ticker"
 
 // Agents working through Copacker over MCP: yours on the left, running a restock, and your partners' on the right,
 // posting their updates, with requests and answers pulsing along the links. The motion is SVG animation; with reduced
-// motion the pulses stay put and the steps show only the first.
+// motion the pulses stay put and the steps show only the first. It's a picture, described in one line for screen
+// readers. A phone scrolls it sideways, so there it takes focus too, for the keyboard to scroll it.
 
 const stage = { width: 1200, height: 520 }
 const hub = { x: 600, y: 260 }
@@ -37,6 +41,7 @@ const card =
   "absolute rounded-2xl bg-[oklch(0.21_0.006_285)] p-5 shadow-[0_30px_60px_-24px_rgb(0_0_0/0.9)] ring-1 ring-white/12"
 
 export function Agents() {
+  const wide = useMediaQuery("(min-width: 48rem)")
   const t = useTranslations("marketing.agentsDiagram")
   const format = useFormatter()
   const messages = {
@@ -46,7 +51,11 @@ export function Agents() {
     })
   }
   return (
-    <div className="-mx-6 overflow-x-auto px-6 pb-2 [scrollbar-width:none] md:mx-0 md:overflow-visible md:px-0">
+    <figure
+      tabIndex={wide ? undefined : 0}
+      className="-mx-6 overflow-x-auto px-6 pb-2 outline-none [scrollbar-width:none] focus-visible:ring-3 focus-visible:ring-white/40 focus-visible:ring-inset md:mx-0 md:overflow-visible md:px-0"
+    >
+      <figcaption className="sr-only">{t("caption")}</figcaption>
       <div className="min-w-[46rem] md:min-w-0">
         <Scaled width={stage.width} height={stage.height}>
           <div aria-hidden className="relative select-none" style={stage}>
@@ -150,6 +159,6 @@ export function Agents() {
           </div>
         </Scaled>
       </div>
-    </div>
+    </figure>
   )
 }

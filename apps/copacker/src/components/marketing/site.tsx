@@ -12,6 +12,8 @@ import { Bar } from "./bar"
 // The two grounds: the paper, and the ink of the stages set into it.
 export const paper = "light bg-(--paper) text-foreground [color-scheme:light]"
 export const stage = "dark bg-(--ink) text-foreground [color-scheme:dark]"
+// Secondary text. The theme's muted gray is set for white, and on the warmer paper it falls short of AA contrast.
+export const quiet = "text-foreground/60"
 // Copacker's orange, lit from above, as the ad's end card has it.
 export const lit = "bg-[linear-gradient(180deg,#ffb27a_0%,#ff7a2e_45%,#f54a00_100%)] bg-clip-text text-transparent"
 // Rises into place as the page loads, after its animation delay.
@@ -97,11 +99,11 @@ function Footer() {
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>
-          <p className="max-w-xs text-muted-foreground">{t("footer.tagline")}</p>
+          <p className={cn("max-w-xs", quiet)}>{t("footer.tagline")}</p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title} className="flex flex-col gap-3 text-sm">
-            <span className="text-muted-foreground">{column.title}</span>
+            <span className={quiet}>{column.title}</span>
             {column.links.map(([href = "/", label]) =>
               href.startsWith("/#") ? (
                 <a key={href} href={href} className="w-fit text-foreground/80 hover:text-foreground">
@@ -116,7 +118,12 @@ function Footer() {
           </nav>
         ))}
       </div>
-      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-foreground/10 px-6 py-6 text-xs text-muted-foreground">
+      <div
+        className={cn(
+          "mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-foreground/10 px-6 py-6 text-xs",
+          quiet
+        )}
+      >
         <span>© {new Date().getFullYear()} Copacker</span>
         <span>copacker.ai</span>
       </div>

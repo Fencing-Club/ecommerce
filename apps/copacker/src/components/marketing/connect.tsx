@@ -74,20 +74,24 @@ function Terminal() {
   const at = useTyping(started)
   const prompt = <span className="text-[#ff8f45] select-none">$ </span>
   return (
-    <div
+    <figure
       ref={ref}
-      className="overflow-hidden rounded-2xl bg-[#0b0a09] shadow-[0_30px_60px_-30px_rgb(0_0_0/0.9)] ring-1 ring-white/10"
+      className="overflow-hidden rounded-2xl bg-[#0b0a09] shadow-[0_30px_60px_-30px_rgb(0_0_0/0.9)] ring-1 ring-white/10 has-focus-visible:ring-3 has-focus-visible:ring-white/40"
     >
+      <figcaption className="sr-only">{t("session")}</figcaption>
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
         {[0, 1, 2].map((dot) => (
           <span key={dot} className="size-2.5 rounded-full bg-white/15" />
         ))}
-        <span className="ms-2 text-xs text-white/40">copacker</span>
+        <span className="ms-2 text-xs text-white/50">copacker</span>
       </div>
       <pre
         dir="ltr"
-        aria-label={t("session")}
-        className="min-h-[21.5rem] overflow-x-auto p-5 font-mono text-[0.8125rem] leading-6 text-white/85 [scrollbar-width:none]"
+        // The session's longest lines run past a narrow terminal, so it scrolls sideways, and takes focus so the
+        // keyboard can scroll it too.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className="min-h-[21.5rem] overflow-x-auto p-5 font-mono text-[0.8125rem] leading-6 text-white/85 outline-none [scrollbar-width:none]"
       >
         {session.map((line, i) => {
           if (i > at.line || (i === at.line && !("command" in line))) {
@@ -116,7 +120,7 @@ function Terminal() {
           </span>
         )}
       </pre>
-    </div>
+    </figure>
   )
 }
 
@@ -193,10 +197,12 @@ function Agents() {
   )
 }
 
+// One column that can shrink below the terminal's longest line, so on a phone the terminal scrolls instead of widening
+// both cards past the screen.
 export function Connect() {
   const t = useTranslations("marketing.connect")
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Agents />
       <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
         <div className="flex flex-col gap-3">

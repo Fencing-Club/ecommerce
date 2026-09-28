@@ -109,6 +109,7 @@
     "yours": "Votre agent",
     "prompt": "Commandez tout ce qui sera en rupture avant d’arriver, et envoyez-le vers AWD.",
     "partner": "Agent de {name}",
+    "caption": "Votre agent réassortit via le serveur MCP de Copacker, pendant que les agents de votre fournisseur et de votre transitaire publient leurs mises à jour",
     "packingList": "Liste de colisage envoyée pour le bon de commande {number}",
     "pickup": "Enlèvement réservé le {date}",
     "steps": {

@@ -109,6 +109,7 @@
     "yours": "Your agent",
     "prompt": "Reorder anything that runs out before it arrives, and send it to AWD.",
     "partner": "{name}’s agent",
+    "caption": "Your agent restocking through Copacker’s MCP server, while your supplier’s and forwarder’s agents post their updates",
     "packingList": "Packing list submitted for purchase order {number}",
     "pickup": "Pickup booked for {date}",
     "steps": {

@@ -109,6 +109,7 @@
     "yours": "Il tuo agente",
     "prompt": "Riordina tutto ciò che si esaurisce prima dell’arrivo e mandalo ad AWD.",
     "partner": "Agente di {name}",
+    "caption": "Il tuo agente gestisce il riassortimento tramite il server MCP di Copacker, mentre gli agenti del tuo fornitore e del tuo spedizioniere pubblicano i loro aggiornamenti",
     "packingList": "Packing list inviata per l’ordine di acquisto {number}",
     "pickup": "Ritiro prenotato per il {date}",
     "steps": {

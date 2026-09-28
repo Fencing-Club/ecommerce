@@ -109,6 +109,7 @@
     "yours": "你的智能体",
     "prompt": "把到货前会断货的产品都补上，发往 AWD。",
     "partner": "{name} 的智能体",
+    "caption": "你的智能体通过 Copacker 的 MCP 服务器补货，同时你的供应商和货代的智能体发布各自的最新进展",
     "packingList": "已提交采购订单 {number} 的装箱单",
     "pickup": "已预约 {date} 提货",
     "steps": {

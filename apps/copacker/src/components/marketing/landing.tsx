@@ -10,7 +10,7 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
-import { GetStarted, lit, rise, Site, stage } from "./site"
+import { GetStarted, lit, quiet, rise, Site, stage } from "./site"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
@@ -97,7 +97,7 @@ function Hero() {
             <GetStarted />
             <Film />
           </div>
-          <p className={cn("mt-4 text-sm text-white/40", rise)} style={{ animationDelay: "800ms" }}>
+          <p className={cn("mt-4 text-sm text-white/50", rise)} style={{ animationDelay: "800ms" }}>
             {site("free")}
           </p>
         </div>
@@ -142,7 +142,7 @@ function Section({
         >
           {title}
         </h2>
-        <p className="text-lg text-pretty text-muted-foreground">{text}</p>
+        <p className={cn("text-lg text-pretty", quiet)}>{text}</p>
       </div>
       <div className="mt-16 sm:mt-20">{children}</div>
     </section>

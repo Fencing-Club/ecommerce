@@ -109,6 +109,7 @@
     "yours": "Tu agente",
     "prompt": "Vuelve a pedir todo lo que se agote antes de que llegue y envíalo a AWD.",
     "partner": "Agente de {name}",
+    "caption": "Tu agente reabasteciendo a través del servidor MCP de Copacker, mientras los agentes de tu proveedor y de tu agente de carga publican sus novedades",
     "packingList": "Lista de empaque enviada para la orden de compra {number}",
     "pickup": "Recolección agendada para el {date}",
     "steps": {

@@ -60,7 +60,7 @@ function Sent({ email, onAnother }: { email: string; onAnother: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
   return (
-    <div className="flex flex-col items-center px-6 py-16 text-center sm:py-20">
+    <div className="col-start-1 row-start-1 flex flex-col items-center justify-center px-6 py-16 text-center sm:py-20">
       <Parcel />
       <h2 ref={heading} tabIndex={-1} className="mt-8 text-3xl font-semibold tracking-tight outline-none">
         {t("sent")}
@@ -81,6 +81,15 @@ export function ContactForm() {
     defaultValues: blank
   })
   const [sent, setSent] = useState<string | null>(null)
+  // "Send another" brings the form back with focus on its first choice, rather than dropping it to the page.
+  const formElement = useRef<HTMLFormElement>(null)
+  const again = useRef(false)
+  useEffect(() => {
+    if (!sent && again.current) {
+      again.current = false
+      formElement.current?.querySelector<HTMLInputElement>("input[type=radio]:checked")?.focus()
+    }
+  }, [sent])
   const submit = form.handleSubmit(async (values, event) => {
     const website = event?.target instanceof HTMLFormElement ? new FormData(event.target).get("website") : ""
     const response = await fetch("/api/contact", {
@@ -100,104 +109,110 @@ export function ContactForm() {
   })
   const problem = form.formState.errors.root?.server?.message
 
+  // Once it's sent, the form stays in its place, hidden, under the message that says so, so the card keeps its height.
   return (
-    <div className="light overflow-hidden rounded-[1.75rem] bg-background text-foreground shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_50px_120px_-40px_rgb(40_20_5/0.5)]">
-      {sent ? (
+    <div className="light grid grid-cols-1 overflow-hidden rounded-[1.75rem] bg-background text-foreground shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_50px_120px_-40px_rgb(40_20_5/0.5)]">
+      <FormProvider {...form}>
+        <form
+          ref={formElement}
+          onSubmit={submit}
+          noValidate
+          className={cn("col-start-1 row-start-1 grid lg:grid-cols-[19rem_minmax(0,1fr)]", sent && "invisible")}
+        >
+          <fieldset className="border-b bg-muted/40 p-6 sm:p-8 lg:border-e lg:border-b-0">
+            <legend className="float-start mb-4 w-full text-sm font-medium">{t("topic")}</legend>
+            <Controller
+              name="topic"
+              control={form.control}
+              render={({ field }) => (
+                <div className="clear-both grid grid-cols-2 gap-2 lg:grid-cols-1">
+                  {contactTopics.map((topic) => {
+                    const { icon: Icon, key } = topics[topic]
+                    const chosen = field.value === topic
+                    return (
+                      <label
+                        key={topic}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-xl border bg-background px-3 py-2.5 text-sm transition-[border-color,box-shadow,background-color] has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                          chosen
+                            ? "border-primary/50 shadow-[0_0_0_3px_rgb(245_74_0/0.12)]"
+                            : "border-border hover:border-foreground/20"
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name={field.name}
+                          value={topic}
+                          checked={chosen}
+                          onChange={() => field.onChange(topic)}
+                          className="sr-only"
+                        />
+                        <span
+                          className={cn(
+                            "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                            chosen ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="font-medium">{t(`topics.${key}`)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            />
+          </fieldset>
+          <div className="flex flex-col gap-5 p-6 sm:p-8">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormInput name="name" required label={t("name")} autoComplete="name" />
+              <FormInput name="email" required label={t("email")} type="email" autoComplete="email" />
+            </div>
+            <FormInput name="company" label={t("company")} autoComplete="organization" />
+            <FormTextarea
+              name="message"
+              required
+              label={t("message")}
+              rows={6}
+              className="flex-1 [&_textarea]:min-h-44"
+            />
+            {/* A field people never see, for telling bots apart. */}
+            <input
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden
+              className="absolute -left-[9999px] size-px opacity-0"
+            />
+            <div className="flex flex-wrap items-center justify-end gap-4">
+              {problem && (
+                <p role="alert" className="me-auto text-sm text-destructive">
+                  {problem}
+                </p>
+              )}
+              <Button
+                type="submit"
+                size="lg"
+                disabled={form.formState.isSubmitting}
+                className="h-11 gap-2 rounded-xl px-5 text-[0.9375rem]"
+              >
+                {form.formState.isSubmitting ? t("sending") : t("send")}
+                <ArrowRight className="rtl:rotate-180" />
+              </Button>
+            </div>
+          </div>
+        </form>
+      </FormProvider>
+      {sent && (
         <Sent
           email={sent}
           onAnother={() => {
+            again.current = true
             setSent(null)
             form.reset(blank)
           }}
         />
-      ) : (
-        <FormProvider {...form}>
-          <form onSubmit={submit} noValidate className="grid lg:grid-cols-[19rem_minmax(0,1fr)]">
-            <fieldset className="border-b bg-muted/40 p-6 sm:p-8 lg:border-e lg:border-b-0">
-              <legend className="float-start mb-4 w-full text-sm font-medium">{t("topic")}</legend>
-              <Controller
-                name="topic"
-                control={form.control}
-                render={({ field }) => (
-                  <div className="clear-both grid grid-cols-2 gap-2 lg:grid-cols-1">
-                    {contactTopics.map((topic) => {
-                      const { icon: Icon, key } = topics[topic]
-                      const chosen = field.value === topic
-                      return (
-                        <label
-                          key={topic}
-                          className={cn(
-                            "flex cursor-pointer items-center gap-3 rounded-xl border bg-background px-3 py-2.5 text-sm transition-[border-color,box-shadow,background-color] has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                            chosen
-                              ? "border-primary/50 shadow-[0_0_0_3px_rgb(245_74_0/0.12)]"
-                              : "border-border hover:border-foreground/20"
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name={field.name}
-                            value={topic}
-                            checked={chosen}
-                            onChange={() => field.onChange(topic)}
-                            className="sr-only"
-                          />
-                          <span
-                            className={cn(
-                              "flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                              chosen ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            <Icon className="size-4" />
-                          </span>
-                          <span className="font-medium">{t(`topics.${key}`)}</span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              />
-            </fieldset>
-            <div className="flex flex-col gap-5 p-6 sm:p-8">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <FormInput name="name" required label={t("name")} autoComplete="name" />
-                <FormInput name="email" required label={t("email")} type="email" autoComplete="email" />
-              </div>
-              <FormInput name="company" label={t("company")} autoComplete="organization" />
-              <FormTextarea
-                name="message"
-                required
-                label={t("message")}
-                rows={6}
-                className="flex-1 [&_textarea]:min-h-44"
-              />
-              {/* A field people never see, for telling bots apart. */}
-              <input
-                name="website"
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden
-                className="absolute -left-[9999px] size-px opacity-0"
-              />
-              <div className="flex flex-wrap items-center justify-end gap-4">
-                {problem && (
-                  <p role="alert" className="me-auto text-sm text-destructive">
-                    {problem}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={form.formState.isSubmitting}
-                  className="h-11 gap-2 rounded-xl px-5 text-[0.9375rem]"
-                >
-                  {form.formState.isSubmitting ? t("sending") : t("send")}
-                  <ArrowRight className="rtl:rotate-180" />
-                </Button>
-              </div>
-            </div>
-          </form>
-        </FormProvider>
       )}
     </div>
   )

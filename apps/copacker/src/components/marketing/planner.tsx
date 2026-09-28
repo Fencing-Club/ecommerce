@@ -2,7 +2,7 @@
 
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { Caveat } from "next/font/google"
 import { useEffect, useRef, useState } from "react"
 import { Label } from "@/components/ui/label"
@@ -14,8 +14,9 @@ import { cn } from "@/lib/utils"
 // holiday rush ahead. Copacker works back from the day it would run out, through the supplier's lead time, to the day
 // to order and how much. Changing the lead time, the stores or the rush glides everything to its new place.
 
-// The hand the chart's note is written in.
-const hand = Caveat({ subsets: ["latin"] })
+// The hand the chart's note is written in. It's only for the note, well down the page, so it loads when the note needs
+// it rather than being preloaded with the page's own fonts.
+const hand = Caveat({ subsets: ["latin"], preload: false })
 
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
 type Inputs = { lead: number; amazon: number; shopify: number; ebay: number; rush: number }
@@ -174,6 +175,7 @@ const anchor = (day: number) => {
 export function Planner() {
   const t = useTranslations("marketing.planner")
   const format = useFormatter()
+  const locale = useLocale()
   const days = (value: number) => t("days", { count: Math.round(value) })
   const inDays = (value: number) => t("inDays", { count: Math.round(value) })
   const money = (value: number) =>
@@ -523,6 +525,9 @@ export function Planner() {
             min={20}
             max={120}
             step={5}
+            // Read out as "60 days", like the value beside it, in the page's language.
+            format={{ style: "unit", unit: "day", unitDisplay: "long" }}
+            locale={locale}
             className="max-w-sm [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-primary [&_[data-slot=slider-thumb]]:shadow-md [&_[data-slot=slider-track]]:h-1.5"
           />
           <span className="w-16 shrink-0 text-sm tabular-nums">{days(inputs.lead)}</span>

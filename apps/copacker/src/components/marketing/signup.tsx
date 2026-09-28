@@ -3,10 +3,25 @@
 import { ArrowRight, Check } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+
+// Takes the form's place once it's sent, and its focus with it, so the confirmation is read out rather than lost.
+function Subscribed() {
+  const t = useTranslations("marketing.signup")
+  const ref = useRef<HTMLOutputElement>(null)
+  useEffect(() => ref.current?.focus(), [])
+  return (
+    <output ref={ref} tabIndex={-1} className="flex h-12 items-center gap-3 text-lg font-medium outline-none">
+      <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#f54a00]">
+        <Check className="size-5" strokeWidth={3} />
+      </span>
+      {t("done")}
+    </output>
+  )
+}
 
 // The page's close: a signup for product news, on the orange stage, with the way in for anyone ready now.
 export function Signup() {
@@ -45,12 +60,7 @@ export function Signup() {
       </div>
       <div className="flex flex-col gap-4">
         {state === "done" ? (
-          <output className="flex h-12 items-center gap-3 text-lg font-medium">
-            <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#f54a00]">
-              <Check className="size-5" strokeWidth={3} />
-            </span>
-            {t("done")}
-          </output>
+          <Subscribed />
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
             <label htmlFor="signup-email" className="sr-only">

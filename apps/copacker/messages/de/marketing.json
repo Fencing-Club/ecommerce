@@ -109,6 +109,7 @@
     "yours": "Ihr Agent",
     "prompt": "Bestell alles nach, was vor dem Eintreffen ausgeht, und schick es an AWD.",
     "partner": "Agent von {name}",
+    "caption": "Ihr Agent füllt über den MCP-Server von Copacker Nachschub auf, während die Agenten Ihres Lieferanten und Ihres Spediteurs ihre Updates melden",
     "packingList": "Packliste für Bestellung {number} gesendet",
     "pickup": "Abholung für {date} gebucht",
     "steps": {
