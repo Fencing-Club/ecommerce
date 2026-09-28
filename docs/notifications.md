@@ -39,11 +39,17 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
 - Cut over from HTTPS webhooks on 2026-09-27. Tag changes on order #9103 were traced through EventBridge, the queue
   and the worker to the stored order, and the HTTPS subscriptions and `/api/webhooks/shopify` route were then removed.
 - Releasing `shopify.app.toml`: the Shopify CLI signed in with an account is refused for this app ("You are not a
-  member of the requested organization"), because the app belongs to the store's organization. Deploy with the app's
-  automation token instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
+  member of the requested organization"), because the app belongs to the store's organization. Signing in again, with
+  any account, doesn't help: andrew@fencing.club is a member, and the Dev Dashboard works for it. The CLI's first
+  request goes to App Management's global endpoint (`/app_management/unstable/graphql.json`), which can't place this
+  account in an organization, so it refuses everything past the app's ID. The same token works on the organization's
+  endpoint (`/app_management/unstable/organizations/104739197/graphql.json`). Deploy with the app's automation token
+  instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
   `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
   `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
-  Dashboard before releasing it. Version copacker-8 (2026-09-27) added the `read_fulfillments` scope, which a
+  Dashboard before releasing it. Version copacker-9 (2026-09-28) set the app URL to `https://copacker.ai` and
+  allowed redirects from `copacker.ai` and `staging.copacker.ai`; it was released through the organization's endpoint
+  (`appVersionCreate` with every module of the active version, then `appReleaseCreate`). Version copacker-8 (2026-09-27) added the `read_fulfillments` scope, which a
   store approves by reconnecting. Version copacker-7 (2026-09-27) added the privacy topics; copacker-6 added the
   `read_shopify_payments_accounts`, `read_shopify_payments_payouts` and `read_customers` scopes, which a store
   approves by reconnecting.

@@ -1,5 +1,8 @@
-# Configuration for the production Shopify app "Copacker" (Dev Dashboard app 428016009217). Release changes with
-# `shopify app deploy --config shopify.app.toml` from apps/copacker; each release becomes a new app version.
+# Configuration for the production Shopify app "Copacker" (Dev Dashboard app 428016009217). Release changes from
+# apps/copacker with the app's automation token, never a signed-in account, which Shopify refuses for this app
+# ("You are not a member of the requested organization") however often you sign in again; see docs/notifications.md:
+#   SHOPIFY_APP_AUTOMATION_TOKEN=<from .env> shopify app deploy --config shopify.app.toml --no-release
+# Each release becomes a new app version.
 # Local development uses the separate "Copacker Dev" app, which this file doesn't configure.
 client_id = "2903380b0f1a61a045fab751fae12106"
 name = "Copacker"
