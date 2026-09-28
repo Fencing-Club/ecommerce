@@ -100,12 +100,19 @@ notification of a new order starts another, and the daily reconciliation reads t
   `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
   without a support ticket, so local development shares its keys. A refresh token works from any environment with the
   same keys. eBay only returns sign-in to an HTTPS address, so a seller connects through a deployed environment;
-  local development reads the orders a deployed one would, but can't complete sign-in on `http://localhost`.
+  local development can't complete sign-in on `http://localhost`.
 - Copacker needs `EBAY_CLIENT_ID` (App ID), `EBAY_CLIENT_SECRET` (Cert ID) and `EBAY_RU_NAME` (the redirect URL
   name). Without all three, Settings shows eBay as coming soon.
-- The RuName is `Andrew_Craswell-AndrewCr-Copack-gjttg` (display title Copacker, OAuth enabled). Its accepted URL is
-  `https://copacker.ai/api/connections/ebay`, its declined URL `https://copacker.ai/settings#integrations`, and its
-  privacy policy `https://copacker.ai/privacy`. Sign-in asks for `sell.fulfillment.readonly` (orders),
+- Each environment has its own RuName on the one keyset:
+  - Production: `Andrew_Craswell-AndrewCr-Copack-gjttg` (display title Copacker), returning to
+    `https://copacker.ai/api/connections/ebay`, declined to `https://copacker.ai/settings#integrations`.
+  - Staging: `Andrew_Craswell-AndrewCr-Copack-vwdjyakxd`, returning to
+    `https://staging.copacker.ai/api/connections/ebay`, declined to `https://staging.copacker.ai/settings#integrations`.
+  The portal's "OAuth Enabled" choice (one RuName at a time) only picks the RuName its own token tool uses; eBay's
+  sign-in accepts any of the keyset's RuNames. Production's stays selected.
+- Staging has the keys and its RuName but not `EBAY_VERIFICATION_TOKEN` or `EBAY_EVENT_BUS`, so it never registers a
+  destination or subscribes: notifications go to production only, and staging's orders come from Sync now and the
+  daily reconciliation. Sign-in asks for `sell.fulfillment.readonly` (orders),
   `commerce.identity.readonly` (the seller's user ID and username) and `commerce.notification.subscription`.
 - A connection is stored under the seller's immutable eBay user ID; Settings shows their username. The refresh token
   lasts about 18 months; after that the order sync fails with `reconnect` and Settings offers Reconnect.
@@ -119,7 +126,9 @@ notification of a new order starts another, and the daily reconciliation reads t
   kept: no username, address or tax details.
 - Sales are each line's price less the seller's promotions (no shipping or tax); fees are eBay's
   `totalMarketplaceFee`. eBay orders appear on the Orders page, the Overview (their own chart series) and in gross
-  profit, with each line matched to a product by its custom label (SKU).
+  profit, with each line matched to a product by its custom label (SKU). The Overview's channel filter lists eBay:
+  its sales, fees and charges are eBay's, and its stock, restock and POs are those of the location eBay orders count
+  at (below).
 - Restock counts eBay units at the Shopify location that shipped the most of the store's own orders over the sales
   period, since eBay doesn't say where an order shipped from. A line without a SKU can't be placed and is reported
   with the eBay source's gaps.

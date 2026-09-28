@@ -356,6 +356,8 @@ export async function restockAllChannels(orgId: string, days: number, leadTimeDa
     // The days each item sold, by source, for counting stockout days over another period (see periodStockouts).
     saleDays: inputs.demand.sources.map(({ source, saleDays }) => ({ source, saleDays })),
     // The Shopify catalog behind the lines: costs, prices and bundle components by variant.
-    catalog: inputs.context.rows
+    catalog: inputs.context.rows,
+    // The Shopify location eBay orders count at (see ebayLocation), or null without one.
+    ebayLocationId: inputs.ebayLocationId
   }
 }

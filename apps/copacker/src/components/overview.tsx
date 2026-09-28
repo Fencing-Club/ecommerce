@@ -278,7 +278,7 @@ function SalesByChannel({ data }: { data: Overview }) {
   const { sales } = data
   const hasOrders = sales.daily.some((row) => sales.sources.some((source) => row[source] !== null))
   // A Shopify location shows the orders shipped from it.
-  const location = data.channel && !data.channel.key.startsWith("amazon") ? data.channel.label : null
+  const location = data.channel?.key.startsWith("shopify:") ? data.channel.label : null
   const others = sales.otherMarketplaceOrders
   return (
     <Card>
@@ -318,8 +318,8 @@ function SalesByChannel({ data }: { data: Overview }) {
 export function OverviewDashboard({ data }: { data: Overview }) {
   const t = useTranslations("overview.sections")
   const { sales, restock, purchasing } = data
-  // Restock and stock links use the restock channel: Amazon for any Amazon marketplace.
-  const channel = data.channel?.key.startsWith("amazon") ? "amazon" : (data.channel?.key ?? null)
+  // Restock and stock links use the restock channel: Amazon for any Amazon marketplace, eBay's location for eBay.
+  const channel = data.restockChannel
   // Restock links open on the chosen channel.
   const attention = data.attention.map((item) =>
     channel && item.href.startsWith("/restock")

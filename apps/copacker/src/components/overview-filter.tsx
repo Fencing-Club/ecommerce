@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // Every channel together, which the URL leaves out.
 const all = "all"
 
-// Chooses the channel every card on the Overview shows: all of them, Amazon, or one Shopify location.
+// Chooses the channel every card on the Overview shows: all of them, Amazon, one Shopify location, or eBay.
 export function ChannelFilter({
   channels,
   value
@@ -20,7 +20,7 @@ export function ChannelFilter({
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const shopifyLocations = channels.filter((channel) => !channel.key.startsWith("amazon")).length
+  const shopifyLocations = channels.filter((channel) => channel.key.startsWith("shopify:")).length
   const items = [
     { value: all, label: t("all") },
     ...channels.map((channel) => ({
@@ -68,7 +68,7 @@ function channelName(
   shopifyLocations: number,
   location: (name: string) => string
 ) {
-  if (channel.key.startsWith("amazon")) {
+  if (!channel.key.startsWith("shopify:")) {
     return channel.label
   }
   return shopifyLocations > 1 ? location(channel.label) : "Shopify"

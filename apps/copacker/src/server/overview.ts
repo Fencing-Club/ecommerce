@@ -761,7 +761,7 @@ async function cachedRestock(orgId: string, now: number, settings: { days: numbe
 }
 
 // Everything the Overview shows for a buyer, for every channel or one of them (a restock channel key: "amazon" or
-// "shopify:<location>").
+// "shopify:<location>", an Amazon marketplace such as "amazon:ca", or "ebay").
 export async function overview(
   // `timeZone` is the store's: the one set in Settings, or else the viewer's computer's (see storeTimeZone).
   // `restockSalesDays` and `restockLeadTimeDays` are the workspace's restock settings (null uses the defaults).
@@ -794,27 +794,43 @@ export async function overview(
   ])
   // Amazon can also be narrowed to one marketplace ("amazon:ca"), when it sells in more than one. Its stock is shared,
   // so stock and POs stay Amazon's; sales, fees and charges are the marketplace's.
-  const channelOptions = restock.channels.flatMap((channel) => [
-    { key: channel.key, label: channel.label },
-    ...(channel.key === "amazon" && marketplaces.length > 1
-      ? marketplaces.map((marketplace) => ({
-          key: `amazon:${marketplace.code}`,
-          label: t("overview.marketplace", { code: marketplace.code })
-        }))
-      : [])
-  ])
+  // eBay is a channel of its own once connected. It sells from the stock at the Shopify location its orders count at,
+  // so its stock and POs are that location's; its sales, fees and charges are eBay's.
+  const channelOptions = [
+    ...restock.channels.flatMap((channel) => [
+      { key: channel.key, label: channel.label },
+      ...(channel.key === "amazon" && marketplaces.length > 1
+        ? marketplaces.map((marketplace) => ({
+            key: `amazon:${marketplace.code}`,
+            label: t("overview.marketplace", { code: marketplace.code })
+          }))
+        : [])
+    ]),
+    ...(accounts.some((account) => account.provider === "ebay") ? [{ key: "ebay", label: "eBay" }] : [])
+  ]
   const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
-  // The restock channel the choice belongs to: Amazon for any Amazon marketplace.
-  const restockKey = selected?.key.startsWith("amazon") ? "amazon" : (selected?.key ?? null)
+  const ebaySelected = selected?.key === "ebay"
+  const ebayStock = restock.ebayLocationId ? `shopify:${restock.ebayLocationId}` : null
+  // The restock channel the choice belongs to: Amazon for any Amazon marketplace, and eBay's location for eBay.
+  let restockKey: string | null = selected?.key ?? null
+  if (selected?.key.startsWith("amazon")) {
+    restockKey = "amazon"
+  } else if (ebaySelected) {
+    restockKey = ebayStock
+  }
   const marketplaceId = selected?.key.startsWith("amazon:")
     ? (marketplaces.find((marketplace) => `amazon:${marketplace.code}` === selected.key)?.id ?? null)
     : null
   let channelSource: SalesSource | null = null
-  if (restockKey) {
+  if (ebaySelected) {
+    channelSource = "ebay"
+  } else if (restockKey) {
     channelSource = restockKey === "amazon" ? "amazon" : "shopify"
   }
   // A Shopify location shows the Shopify orders shipped from it.
   const locationId = selected?.key.startsWith("shopify:") ? selected.key.slice("shopify:".length) : null
+  // Where the chosen channel's stock is received: the Shopify location, or eBay's.
+  const stockLocationId = restockKey?.startsWith("shopify:") ? restockKey.slice("shopify:".length) : null
   // With Amazon connected, its orders come from Amazon, not from the copies Shopify's Amazon channel keeps.
   const amazonConnected = accounts.some((account) => account.provider === "amazon")
   const excludedTags = await excludedShopifyTags(orgId)
@@ -980,7 +996,10 @@ export async function overview(
   const trending = movers(itemRows, index, comparable, t)
   const priceOf = sellingPrices(priceRows, index)
 
-  const scopedChannels = restock.channels.filter((channel) => !restockKey || channel.key === restockKey)
+  // eBay without a location of its own to count at has no stock to show.
+  const scopedChannels = restock.channels.filter(
+    (channel) => (!restockKey && !ebaySelected) || channel.key === restockKey
+  )
   // Stockouts over the page's period, so the sales they cost match the other figures.
   const periodOut = await periodStockouts(orgId, restock, window.current)
   const landedCost = (line: RestockLine) => index.unitCost(index.byVariant.get(line.variantId) ?? null)
@@ -1012,7 +1031,7 @@ export async function overview(
     if (restockKey === "amazon") {
       return order.data.destination === "amazon"
     }
-    return receivingLocations(order.data, deliveryLocations).includes(locationId!)
+    return stockLocationId !== null && receivingLocations(order.data, deliveryLocations).includes(stockLocationId)
   })
   const orderIds = new Set(scopedOrders.map((order) => order.id))
   const sentAt = new Map(sent.map((row) => [row.orderId, row.at]))
@@ -1046,6 +1065,8 @@ export async function overview(
     connected: accounts.map((account) => account.provider),
     channels: channelOptions,
     channel: selected,
+    // The restock channel the chosen channel's stock and POs belong to ("amazon" or "shopify:<location>").
+    restockChannel: restockKey,
     period: {
       key: period.key,
       label: period.label,
