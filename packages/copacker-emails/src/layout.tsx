@@ -155,13 +155,14 @@ export type EmailCopy = {
 }
 
 // Every Copacker email: the hero on the dark band, then on the white card its details, one button and a quiet note,
-// and a footer that says why it came.
+// and a footer that says why it came, with a way to stop them for the emails people can stop.
 export function Layout({
   action,
   appUrl,
   children,
   copy,
-  lang
+  lang,
+  unsubscribe
 }: {
   action?: { label: string; href: string }
   // Copacker's origin, such as https://copacker.example, which serves the mark.
@@ -170,9 +171,13 @@ export function Layout({
   copy: EmailCopy
   // The language the email is written in, such as "de".
   lang: string
+  // Where the reader stops this kind of email, and what the link says.
+  unsubscribe?: { label: string; href: string }
 }) {
+  // Urdu and the other right-to-left languages lay the email out from the right.
+  const rtl = ["ar", "fa", "he", "ur"].includes(lang.split("-")[0] ?? "")
   return (
-    <Html lang={lang}>
+    <Html dir={rtl ? "rtl" : "ltr"} lang={lang}>
       <Head>
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <meta content="light dark" name="color-scheme" />
@@ -232,6 +237,20 @@ export function Layout({
               >
                 {copy.reason}
               </Text>
+              {unsubscribe ? (
+                <Text
+                  className="cp-muted"
+                  style={{ color: color.muted, fontFamily: font, fontSize: 12, lineHeight: "18px", margin: "6px 0 0" }}
+                >
+                  <Link
+                    className="cp-muted"
+                    href={unsubscribe.href}
+                    style={{ color: color.muted, textDecoration: "underline" }}
+                  >
+                    {unsubscribe.label}
+                  </Link>
+                </Text>
+              ) : null}
             </Section>
           </Container>
         </Frame>

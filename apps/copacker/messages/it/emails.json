@@ -108,5 +108,19 @@
     "expiresMinutes": "Il link scade tra {count, plural, one {# minuto} other {# minuti}}. Se non hai chiesto di reimpostare la password, puoi ignorare questa email; la tua password resta invariata.",
     "expiresHours": "Il link scade tra {count, plural, one {# ora} other {# ore}}. Se non hai chiesto di reimpostare la password, puoi ignorare questa email; la tua password resta invariata.",
     "reason": "Qualcuno ha chiesto di reimpostare la password di {email} su Copacker."
+  },
+  "waitlistWelcome": {
+    "subject": "Sei nella lista d’attesa di Copacker",
+    "eyebrow": "Accesso in anteprima",
+    "heading": "Sei in lista",
+    "lead": "Stiamo facendo entrare pochi team alla volta, e ti scriveremo quando si libera il tuo posto.",
+    "preview": "Ti scriveremo quando si libera il tuo posto.",
+    "step1": "Quando si libera il tuo posto, ti invieremo un link per configurare il tuo workspace.",
+    "step2": "Collega Amazon, Shopify ed eBay, e Copacker prevede le scorte di ogni prodotto.",
+    "step3": "Riordina con un clic e segui ogni ordine di acquisto fino a FBA, AWD o al tuo magazzino.",
+    "action": "Scopri come funziona",
+    "note": "Domande nel frattempo? Rispondi a questa email.",
+    "reason": "Sei entrato nella lista d’attesa di Copacker con {email}.",
+    "unsubscribe": "Annulla l’iscrizione"
   }
 }

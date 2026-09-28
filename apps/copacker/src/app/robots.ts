@@ -17,7 +17,9 @@ const closed = [
   "/reset-password",
   "/callback",
   "/logout",
-  "/setup"
+  "/setup",
+  // Each mailing list address's own unsubscribe link.
+  "/unsubscribe"
 ]
 
 // Rendered per request, like the pages, so the sitemap's address is the deployed one rather than the build's.

@@ -325,5 +325,17 @@
       "writeMessage": "Rédigez votre message",
       "tooLong": "5 000 caractères maximum"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "Se désabonner",
+    "title": "Vous désabonner des e-mails de Copacker ?",
+    "text": "{email} ne recevra plus les nouvelles de la liste d’attente ni les actualités du produit.",
+    "action": "Se désabonner",
+    "doneTitle": "Vous êtes désabonné.",
+    "doneText": "Nous n’écrirons plus à {email} au sujet de la liste d’attente ou des actualités du produit.",
+    "invalidTitle": "Ce lien ne fonctionne pas.",
+    "invalidText": "Rouvrez le lien de désabonnement depuis votre e-mail.",
+    "home": "Retour à Copacker",
+    "failed": "Impossible de vous désabonner. Réessayez dans un instant."
   }
 }

@@ -325,5 +325,17 @@
       "writeMessage": "Escribe tu mensaje",
       "tooLong": "Máximo 5,000 caracteres"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "Cancelar suscripción",
+    "title": "¿Dejar de recibir los correos de Copacker?",
+    "text": "{email} dejará de recibir novedades de la lista de espera y del producto.",
+    "action": "Cancelar suscripción",
+    "doneTitle": "Cancelaste tu suscripción.",
+    "doneText": "No volveremos a escribir a {email} sobre la lista de espera ni sobre novedades del producto.",
+    "invalidTitle": "Este enlace no funciona.",
+    "invalidText": "Vuelve a abrir el enlace para cancelar la suscripción desde tu correo.",
+    "home": "Volver a Copacker",
+    "failed": "No pudimos cancelar tu suscripción. Inténtalo de nuevo en un momento."
   }
 }

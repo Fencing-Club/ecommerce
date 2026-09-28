@@ -325,5 +325,17 @@
       "writeMessage": "Schreiben Sie Ihre Nachricht",
       "tooLong": "Maximal 5.000 Zeichen"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "Abmelden",
+    "title": "Von den E-Mails von Copacker abmelden?",
+    "text": "{email} bekommt keine Neuigkeiten mehr zur Warteliste und zum Produkt.",
+    "action": "Abmelden",
+    "doneTitle": "Sie sind abgemeldet.",
+    "doneText": "Wir schreiben {email} nicht mehr zur Warteliste oder zu Produktneuigkeiten.",
+    "invalidTitle": "Dieser Link funktioniert nicht.",
+    "invalidText": "Öffnen Sie den Abmeldelink in Ihrer E-Mail noch einmal.",
+    "home": "Zurück zu Copacker",
+    "failed": "Abmelden hat nicht geklappt. Versuchen Sie es gleich noch einmal."
   }
 }

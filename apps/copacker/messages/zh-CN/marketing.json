@@ -325,5 +325,17 @@
       "writeMessage": "请填写留言内容",
       "tooLong": "请控制在 5,000 字以内"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "退订",
+    "title": "退订 Copacker 的邮件？",
+    "text": "{email} 将不再收到候补名单通知和产品新闻。",
+    "action": "退订",
+    "doneTitle": "你已退订。",
+    "doneText": "我们不会再向 {email} 发送候补名单或产品新闻的邮件。",
+    "invalidTitle": "这个链接无法使用。",
+    "invalidText": "请重新打开邮件中的退订链接。",
+    "home": "返回 Copacker",
+    "failed": "未能为你退订。请稍后再试。"
   }
 }

@@ -325,5 +325,17 @@
       "writeMessage": "Write your message",
       "tooLong": "Keep it under 5,000 characters"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "Unsubscribe",
+    "title": "Unsubscribe from Copacker’s emails?",
+    "text": "{email} will stop getting waitlist updates and product news.",
+    "action": "Unsubscribe",
+    "doneTitle": "You’re unsubscribed.",
+    "doneText": "We won’t email {email} about the waitlist or product news again.",
+    "invalidTitle": "This link doesn’t work.",
+    "invalidText": "Open the unsubscribe link in your email again.",
+    "home": "Back to Copacker",
+    "failed": "Couldn’t unsubscribe you. Try again in a moment."
   }
 }

@@ -325,5 +325,17 @@
       "writeMessage": "Scrivi il tuo messaggio",
       "tooLong": "Massimo 5.000 caratteri"
     }
+  },
+  "unsubscribe": {
+    "metaTitle": "Annulla l’iscrizione",
+    "title": "Annullare l’iscrizione alle email di Copacker?",
+    "text": "{email} non riceverà più aggiornamenti sulla lista d’attesa e novità sul prodotto.",
+    "action": "Annulla l’iscrizione",
+    "doneTitle": "Iscrizione annullata.",
+    "doneText": "Non scriveremo più a {email} sulla lista d’attesa o sulle novità del prodotto.",
+    "invalidTitle": "Questo link non funziona.",
+    "invalidText": "Apri di nuovo il link per annullare l’iscrizione dalla tua email.",
+    "home": "Torna a Copacker",
+    "failed": "Non siamo riusciti ad annullare l’iscrizione. Riprova tra un momento."
   }
 }

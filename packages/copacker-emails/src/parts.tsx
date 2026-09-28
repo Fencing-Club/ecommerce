@@ -149,7 +149,8 @@ export function Steps({ steps }: { steps: ReadonlyArray<ReactNode> }) {
         {steps.map((step, index) => (
           // The steps are fixed copy in a fixed order, so their position is their key.
           <tr key={index}>
-            <td style={{ padding: "0 12px 12px 0", verticalAlign: "top", width: 24 }}>
+            {/* The gap sits on both sides of the step's words, so it falls between number and words either way round. */}
+            <td style={{ padding: "0 0 12px", verticalAlign: "top", width: 24 }}>
               <Text
                 style={{
                   backgroundColor: color.brand,
@@ -175,7 +176,7 @@ export function Steps({ steps }: { steps: ReadonlyArray<ReactNode> }) {
                 fontFamily: font,
                 fontSize: 15,
                 lineHeight: "24px",
-                padding: "0 0 12px",
+                padding: "0 12px 12px",
                 verticalAlign: "top"
               }}
             >
