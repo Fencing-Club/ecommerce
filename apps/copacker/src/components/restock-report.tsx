@@ -1,6 +1,6 @@
 "use client"
 
-import { useDebouncedValue, useLocalStorage } from "@mantine/hooks"
+import { useDebouncedValue, useLocalStorage, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
 import { money } from "@repo/aisle"
 import {
@@ -15,7 +15,6 @@ import {
   ImageOff,
   PackageCheck,
   PackageOpen,
-  RefreshCw,
   Search,
   TrendingDown,
   Warehouse,
@@ -1227,6 +1226,13 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
     setShownKey(settledKey)
   }
   const result = restockApi.useRestockPlanQuery(shownKey ? (JSON.parse(shownKey) as Request) : skipToken)
+  // Changing a setting recalculates. Stock and sales that sync while the page stays open come in when the window is
+  // back in focus after a few minutes.
+  useWindowEvent("focus", () => {
+    if (shownKey && !result.isFetching && Date.now() - (result.fulfilledTimeStamp ?? 0) > 5 * 60 * 1000) {
+      void result.refetch()
+    }
+  })
   const calculating = !result.currentData && (result.isFetching || (request !== null && !result.isError))
   return (
     <div className="flex flex-col gap-6">
@@ -1284,15 +1290,6 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
             value={leadTimeText}
             onChange={setLeadTimeText}
           />
-          <Button
-            variant="outline"
-            className="ml-auto"
-            disabled={result.isFetching || !shownKey}
-            onClick={() => void result.refetch()}
-          >
-            <RefreshCw data-icon="inline-start" className={cn(result.isFetching && "animate-spin")} />
-            Recalculate
-          </Button>
         </div>
         {calculating && <p className="text-sm text-muted-foreground">Calculating…</p>}
         {result.currentData && <ResultSummary report={result.currentData} />}
