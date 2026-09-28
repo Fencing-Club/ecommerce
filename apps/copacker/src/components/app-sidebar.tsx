@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/sidebar"
 import { announceWorkspace } from "@/components/workspace-watch"
 import { useActionMutation } from "@/lib/api"
-import { hrefFor, navigationFor, navigationGroups } from "@/lib/navigation"
+import { navigationFor, navigationGroups } from "@/lib/navigation"
 import * as styles from "./app-sidebar.css"
 import { sx } from "@/styles/sprinkles.css"
 
@@ -50,7 +50,6 @@ export type AppSidebarProps = {
   kind: string
   active: string
   workspaces: Workspace[]
-  preview?: boolean
 }
 
 function initials(name: string) {
@@ -62,25 +61,16 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-export function AppSidebar({
-  name,
-  userName,
-  email,
-  kind,
-  active,
-  workspaces,
-  preview = false,
-  view
-}: AppSidebarProps & { view?: string }) {
+export function AppSidebar({ name, userName, email, kind, active, workspaces }: AppSidebarProps) {
   const pathname = usePathname()
-  const isActive = (item: string) => (preview ? (view ?? "orders") === item : pathname.startsWith(`/${item}`))
+  const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
 
   return (
     // On a computer the sidebar starts under the app header; on a phone it's a sheet over everything.
     <Sidebar collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader>
-        <WorkspaceSwitcher kind={kind} active={active} workspaces={workspaces} fallbackName={name} preview={preview} />
+        <WorkspaceSwitcher kind={kind} active={active} workspaces={workspaces} fallbackName={name} />
       </SidebarHeader>
       <SidebarContent>
         {navigationGroups.map((group) => {
@@ -98,7 +88,7 @@ export function AppSidebar({
                       <SidebarMenuButton
                         isActive={isActive(item.view)}
                         tooltip={item.label}
-                        render={<Link href={hrefFor(item.view, preview)} onClick={() => setOpenMobile(false)} />}
+                        render={<Link href={`/${item.view}`} onClick={() => setOpenMobile(false)} />}
                       >
                         <item.icon />
                         <span>{item.label}</span>
@@ -112,7 +102,7 @@ export function AppSidebar({
         })}
       </SidebarContent>
       <SidebarFooter>
-        <UserMenu name={userName ?? email} email={email} preview={preview} />
+        <UserMenu name={userName ?? email} email={email} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
@@ -123,22 +113,17 @@ function WorkspaceSwitcher({
   kind,
   active,
   workspaces,
-  fallbackName,
-  preview
+  fallbackName
 }: {
   kind: string
   active: string
   workspaces: Workspace[]
   fallbackName: string
-  preview: boolean
 }) {
   const [run] = useActionMutation()
   const { isMobile } = useSidebar()
   const current = workspaces.find((workspace) => workspace.id === active)?.name ?? fallbackName
-  let subtitle = { supplier: "Supplier workspace", forwarder: "Forwarder workspace" }[kind] ?? "Buyer workspace"
-  if (preview) {
-    subtitle = "Design preview"
-  }
+  const subtitle = { supplier: "Supplier workspace", forwarder: "Forwarder workspace" }[kind] ?? "Buyer workspace"
 
   async function switchTo(id: string) {
     await run({ action: "workspace.switch", data: { id } }).unwrap()
@@ -173,18 +158,6 @@ function WorkspaceSwitcher({
       </div>
     </>
   )
-
-  if (preview) {
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton size="lg" render={<div />}>
-            {label}
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    )
-  }
 
   return (
     <SidebarMenu>
@@ -229,7 +202,7 @@ function WorkspaceSwitcher({
   )
 }
 
-function UserMenu({ name, email, preview }: { name: string; email: string; preview: boolean }) {
+function UserMenu({ name, email }: { name: string; email: string }) {
   const { isMobile } = useSidebar()
   const identity = (
     <>
@@ -256,18 +229,6 @@ function UserMenu({ name, email, preview }: { name: string; email: string; previ
       </div>
     </>
   )
-
-  if (preview) {
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton size="lg" render={<div />}>
-            {identity}
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    )
-  }
 
   return (
     <SidebarMenu>

@@ -5,8 +5,8 @@ and the page under it, like Shopify's admin.
 
 - **Top left:** Copacker's logo and name, and nothing else. The sidebar's collapse button starts the page's first row
   instead, beside its breadcrumb or title (`components/shell.tsx`).
-- **Middle:** the search (`components/search-command.tsx`), a cmdk command menu. The header's outer columns always
-  match, so the search bar stays centered in the window and shrinks as it narrows. Below 30rem it becomes a button
+- **Middle:** the search (`components/search-command.tsx`), a cmdk command menu. With room, it's centered in the
+  window. Narrower, it fills the space between the logo and the bell with equal gaps. Below 30rem it becomes a button
   beside the notifications.
 - **Right:** notifications (`components/notifications-menu.tsx`). Only the bell and an empty dropdown exist for now;
   Novu will deliver notifications later, so don't build a notification engine in Copacker.

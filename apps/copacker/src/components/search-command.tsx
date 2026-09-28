@@ -13,7 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Spinner } from "@/components/ui/spinner"
 import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
-import { hrefFor, navigationFor } from "@/lib/navigation"
+import { navigationFor } from "@/lib/navigation"
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5
@@ -36,7 +36,7 @@ function best<T>(items: readonly T[], words: (item: T) => string[], query: strin
 // The search in the app header, like Shopify's: clicking it, or Ctrl+K (⌘K on a Mac) from anywhere, opens a panel over
 // the bar with the text box where the bar was and results under it. The bar shrinks with the window and becomes a
 // button on a phone.
-export function SearchCommand({ kind, preview }: { kind: string; preview: boolean }) {
+export function SearchCommand({ kind }: { kind: string }) {
   const [open, setOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -81,7 +81,7 @@ export function SearchCommand({ kind, preview }: { kind: string; preview: boolea
             initialFocus={input}
             className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] rounded-xl shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           >
-            <SearchResults kind={kind} preview={preview} input={input} onSelect={go} />
+            <SearchResults kind={kind} input={input} onSelect={go} />
             {/* A modal popover only keeps focus inside when it has a close button. */}
             <PopoverPrimitive.Close className="sr-only">Close</PopoverPrimitive.Close>
           </PopoverPrimitive.Popup>
@@ -97,12 +97,10 @@ export function SearchCommand({ kind, preview }: { kind: string; preview: boolea
 // searched on the server as the Orders page searches them, once typing pauses.
 function SearchResults({
   kind,
-  preview,
   input,
   onSelect
 }: {
   kind: string
-  preview: boolean
   input: React.RefObject<HTMLInputElement | null>
   onSelect: (href: string) => void
 }) {
@@ -111,9 +109,8 @@ function SearchResults({
   const [typed] = useDebouncedValue(query.slice(0, 100), 250)
   // The highlighted result and the search it was picked in; a new search highlights its best result.
   const [picked, setPicked] = useState({ value: "", query: "" })
-  // The design preview has no workspace to search.
-  const index = useSearchQuery(undefined, { skip: preview, refetchOnMountOrArgChange: 30 })
-  const sales = useSalesSearchQuery(typed, { skip: preview || kind !== "buyer" || typed.length < 2 })
+  const index = useSearchQuery(undefined, { refetchOnMountOrArgChange: 30 })
+  const sales = useSalesSearchQuery(typed, { skip: kind !== "buyer" || typed.length < 2 })
   const data = index.data
   const pages = query ? best(navigationFor(kind), (page) => [page.label], query) : navigationFor(kind)
   const salesOrders = query && typed === query ? (sales.data?.orders ?? []).slice(0, shown) : []
@@ -137,7 +134,7 @@ function SearchResults({
   ]
   const highlighted = picked.query === query && values.includes(picked.value) ? picked.value : (values[0] ?? "")
   // Sales orders are on their way until typing pauses and the server answers.
-  const searchingSales = kind === "buyer" && !preview && query.length >= 2 && (typed !== query || sales.isFetching)
+  const searchingSales = kind === "buyer" && query.length >= 2 && (typed !== query || sales.isFetching)
   const loading = index.isLoading || searchingSales
 
   return (
@@ -148,11 +145,7 @@ function SearchResults({
         {pages.length > 0 && (
           <CommandGroup heading="Pages">
             {pages.map((page) => (
-              <CommandItem
-                key={page.view}
-                value={`page:${page.view}`}
-                onSelect={() => onSelect(hrefFor(page.view, preview))}
-              >
+              <CommandItem key={page.view} value={`page:${page.view}`} onSelect={() => onSelect(`/${page.view}`)}>
                 <page.icon />
                 {page.label}
               </CommandItem>

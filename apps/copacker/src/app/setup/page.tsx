@@ -1,9 +1,7 @@
-import { ArrowUpRight, Box, Info } from "lucide-react"
+import { Box, Info } from "lucide-react"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { brandTile, centeredPage, mutedBackground } from "../shell.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -32,12 +30,6 @@ export default function Setup() {
             </AlertDescription>
           </Alert>
         </CardContent>
-        <CardFooter>
-          <Button nativeButton={false} render={<Link href="/preview" />}>
-            Explore the design preview
-            <ArrowUpRight data-icon="inline-end" />
-          </Button>
-        </CardFooter>
       </Card>
     </main>
   )

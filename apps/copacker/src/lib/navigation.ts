@@ -55,8 +55,3 @@ export function navigationFor(kind: string) {
     (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
   )
 }
-
-// The design preview shows every page at /preview with sample data.
-export function hrefFor(view: string, preview: boolean) {
-  return preview ? `/preview?view=${view}` : `/${view}`
-}
