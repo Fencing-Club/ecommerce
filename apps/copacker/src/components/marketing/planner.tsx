@@ -422,7 +422,7 @@ export function Planner() {
                   <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
                     Restock
                   </text>
-                  <text x={noteRight} y={noteTop + noteSize * 1.7} style={{ fontWeight: 700 }}>
+                  <text x={noteRight} y={noteTop + noteSize * 1.7} className="fill-success" style={{ fontWeight: 700 }}>
                     +{result.units.toLocaleString("en-US")} units
                   </text>
                 </g>
