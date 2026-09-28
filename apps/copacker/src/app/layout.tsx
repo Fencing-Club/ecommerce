@@ -2,11 +2,10 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components"
 import type { Metadata } from "next"
 import { getLocale, getTranslations } from "next-intl/server"
 import { Geist, Geist_Mono, Noto_Nastaliq_Urdu, Noto_Sans_Devanagari } from "next/font/google"
-import Script from "next/script"
 import { LocalizationProvider } from "@/components/localization-provider"
 import { Providers } from "@/components/providers"
+import { ThemeScript } from "@/components/theme-provider"
 import { direction, type Locale } from "@/i18n/locales"
-import { themeScript } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 import "@/styles/global.css"
 import "./globals.css"
@@ -47,9 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <body>
-        <Script id="theme" strategy="beforeInteractive">
-          {themeScript}
-        </Script>
+        <ThemeScript />
         <a className={skipLink} href="#main-content">
           {t("skipToContent")}
         </a>
