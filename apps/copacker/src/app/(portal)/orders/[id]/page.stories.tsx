@@ -80,7 +80,7 @@ type Args = {
   labels: LineLabel[]
   // The forwarder on the way, and the route's addresses.
   leg?: { name: string; forwarderOrgId: string | null }
-  places: Array<{ id: string; name: string; forwarder: string | null }>
+  places: Array<{ id: string; name: string }>
 }
 
 // The purchase order page (page.tsx) with what its queries would return.
@@ -106,7 +106,7 @@ async function OrderPage(args: Args) {
   const seesShipments = can(s, "shipments")
   const editsShipments = can(s, "shipments", "edit")
   const prices = can(s, "prices")
-  const { order, supplier, shipments: shipmentRows, workflow, proposals, landed, labels, leg } = args
+  const { order, supplier, shipments: shipmentRows, workflow, proposals, landed, labels } = args
   const status =
     kind === "supplier" && order.status !== "closed" ? (shipmentRows.at(-1)?.status ?? order.status) : order.status
   const proposal =
@@ -166,18 +166,15 @@ async function OrderPage(args: Args) {
     return documents.length ? [{ ...group, documents }] : []
   })
   const prep = sharedPrep(order.data)
-  const via = forwarderLeg(order.data) && order.data.via && leg?.name
+  const leg = forwarderLeg(order.data) ? args.leg : undefined
   const text = await requirementTranslator()
   const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
     text.requirement
   )
   const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
   const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
-  const place = (addressId: string | undefined) => {
-    const row = args.places.find((candidate) => candidate.id === addressId)
-    return row && [row.forwarder, row.name].filter(Boolean).join(", ")
-  }
-  const stop = order.data.via && (place(order.data.via.addressId) ?? via)
+  const place = (addressId: string | undefined) => args.places.find((candidate) => candidate.id === addressId)?.name
+  const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   const day = (value: string) =>
     format.dateTime(new Date(`${value}T00:00:00Z`), {
       month: "short",
@@ -682,7 +679,7 @@ const meta = preview.meta({
       },
       { itemId: basket!.id, state: "none" }
     ],
-    places: [{ id: deliveryId, name: "Oakland warehouse", forwarder: null }]
+    places: [{ id: deliveryId, name: "Oakland warehouse" }]
   } satisfies Args,
   beforeEach: ({ msw }) => {
     msw.use(
@@ -790,23 +787,25 @@ export const ChangesProposed = meta.story({
   }
 })
 
-// Shipped through a forwarder that isn't on Copacker: the buyer ships its leg on.
+// PO-1042 by way of Bayline Freight's Ningbo warehouse, all of it shipped by the supplier.
+const forwarded = {
+  order: orderRecord({ data: { ...orderData, via: { forwarderId, addressId: stopId } } }),
+  shipments: [shipped],
+  workflow: {
+    items: orderData.items.map((item) => ({ itemId: item.id, remainingPieces: 0 })),
+    shipments: [{ editable: false }],
+    documents: []
+  },
+  places: [
+    { id: deliveryId, name: "Oakland warehouse" },
+    { id: stopId, name: "Ningbo warehouse" }
+  ]
+} satisfies Partial<Args>
+
+// Shipped through a forwarder that isn't on Copacker, to an address the buyer saved for it: the buyer ships its leg on.
 export const ShipOnFromForwarder = meta.story({
   ...page("buyer"),
-  args: {
-    order: orderRecord({ data: { ...orderData, via: { forwarderId, addressId: stopId } } }),
-    shipments: [shipped],
-    workflow: {
-      items: orderData.items.map((item) => ({ itemId: item.id, remainingPieces: 0 })),
-      shipments: [{ editable: false }],
-      documents: []
-    },
-    leg: { name: "Bayline Freight", forwarderOrgId: null },
-    places: [
-      { id: deliveryId, name: "Oakland warehouse", forwarder: null },
-      { id: stopId, name: "Ningbo warehouse", forwarder: "Bayline Freight" }
-    ]
-  },
+  args: { ...forwarded, leg: { name: "Bayline Freight", forwarderOrgId: null } },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Bayline Freight, Ningbo warehouse")).toBeVisible()
     await expect(canvas.getByText("FBA17XK2, 3 cartons")).toBeVisible()
@@ -815,6 +814,18 @@ export const ShipOnFromForwarder = meta.story({
     await expect(canvas.getAllByText("0 to ship")).toHaveLength(3)
     await userEvent.click(canvas.getByRole("button", { name: "Mark shipped" }))
     await expect(await screen.findByRole("dialog", { name: "Mark shipped" })).toBeInTheDocument()
+  }
+})
+
+// Shipped through a forwarder that has joined Copacker, to one of its own addresses: the stop still goes by the
+// forwarder's name, and the forwarder ships its leg on itself.
+export const JoinedForwarder = meta.story({
+  ...page("buyer"),
+  args: { ...forwarded, leg: { name: "Bayline Freight", forwarderOrgId: workspaces.forwarder.id } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Bayline Freight, Ningbo warehouse")).toBeVisible()
+    await expect(canvas.getByText("Oakland warehouse")).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
   }
 })
 

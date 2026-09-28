@@ -173,7 +173,6 @@ export default async function OrderPage({ params }: Props) {
         .where(eq(forwarders.id, legId))
         .then((rows) => rows[0])
     : undefined
-  const via = order.data.via && leg?.name
   const text = await requirementTranslator()
   const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
     text.requirement
@@ -181,20 +180,15 @@ export default async function OrderPage({ params }: Props) {
 
   const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
   const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
-  // The route's names: the forwarder stop and the delivery address, each with its forwarder when it has one.
+  // The route's names: the forwarder stop and the delivery address.
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
   const places = addressIds.length
-    ? await db()
-        .select({ id: contacts.id, name: contacts.name, forwarder: forwarders.name })
-        .from(contacts)
-        .leftJoin(forwarders, eq(forwarders.id, contacts.forwarderId))
-        .where(inArray(contacts.id, addressIds))
+    ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
     : []
-  const place = (addressId: string | undefined) => {
-    const row = places.find((candidate) => candidate.id === addressId)
-    return row && [row.forwarder, row.name].filter(Boolean).join(", ")
-  }
-  const stop = order.data.via && (place(order.data.via.addressId) ?? via)
+  const place = (addressId: string | undefined) => places.find((candidate) => candidate.id === addressId)?.name
+  // The stop goes by the PO's forwarder and its address there, such as "Yiwu Logistics, Yiwu warehouse": an address the
+  // buyer saved for the forwarder, or the forwarder's own once it has joined.
+  const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   // A calendar day, such as the date the PO is required by, the same wherever it's read.
   const day = (value: string) =>
     format.dateTime(new Date(`${value}T00:00:00Z`), {
