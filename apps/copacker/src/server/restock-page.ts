@@ -10,7 +10,8 @@ import { type ProductDefaults, readProductDefaults } from "./product-defaults"
 import { restockPlan, type RestockSupplier } from "./restock-plan"
 import { dayRange } from "./restock-report"
 import { resolveRestockSupplier } from "./restock-supplier"
-import { restockDemand } from "./sales-orders"
+import type { DemandRow } from "./sales-attribution"
+import { restockDemand, type SalesSource } from "./sales-orders"
 import { stockoutDays } from "./stock-days"
 
 const days = z.number().int().min(dayRange.min).max(dayRange.max)
@@ -155,7 +156,7 @@ async function channelStockouts(
   channel: z.infer<typeof restockInputSchema>["channel"],
   catalog: { variantId: string; buyerSku: string | null }[],
   sources: {
-    source: "shopify" | "amazon"
+    source: SalesSource
     window: { from: string; to: string } | null
     saleDays: ReadonlyMap<string, ReadonlySet<string>>
   }[]
@@ -217,7 +218,32 @@ async function restockInputs(orgId: string, days: number) {
     ),
     supplierLookup(orgId, context.rows, productDefaults)
   ])
-  return { orgId, days, context, productDefaults, demand, lookup }
+  const merchant = inventoryLocations(context.rows, context.classifications)
+    .filter((location) => location.classification === "merchant")
+    .map((location) => location.id)
+  return {
+    orgId,
+    days,
+    context,
+    productDefaults,
+    demand,
+    lookup,
+    ebayLocationId: demand.ebaySales ? ebayLocation(demand.shopifySales?.rows ?? [], merchant) : null
+  }
+}
+
+// The Shopify location eBay orders count at. eBay doesn't say where an order shipped from, so its orders count where
+// the store ships most of its own: the counted location that shipped the most Shopify units over the sales period, or
+// the only one there is.
+export function ebayLocation(shopifyRows: readonly DemandRow[], merchantLocations: readonly string[]) {
+  const shipped = new Map<string, number>()
+  for (const row of shopifyRows) {
+    if (row.pool === "shopify" && row.locationId && merchantLocations.includes(row.locationId)) {
+      shipped.set(row.locationId, (shipped.get(row.locationId) ?? 0) + row.fulfilledUnits)
+    }
+  }
+  const busiest = [...shipped].toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0]
+  return busiest ?? (merchantLocations.length === 1 ? merchantLocations[0]! : null)
 }
 
 async function channelPlan(
@@ -234,6 +260,8 @@ async function channelPlan(
     onOrder: context.onOrder,
     shopifySales: demand.shopifySales,
     amazonSales: demand.amazonSales,
+    ebaySales: demand.ebaySales,
+    ebayLocationId: inputs.ebayLocationId,
     fbaRows: context.fbaRows,
     awdRows: context.awdRows,
     salesDays: inputs.days,
@@ -276,7 +304,10 @@ export async function restockReport(s: Session, raw: unknown) {
       line.externalSupplier === null &&
       (line.status === "stockout" || line.status === "reorder")
   ).length
-  const salesSource = channel.kind === "amazon" ? "amazon" : "shopify"
+  const salesSources: SalesSource[] =
+    channel.kind === "amazon"
+      ? ["amazon"]
+      : ["shopify", ...(channel.locationId === inputs.ebayLocationId ? (["ebay"] as const) : [])]
   return {
     days: input.days,
     leadTimeDays: input.leadTimeDays,
@@ -286,7 +317,7 @@ export async function restockReport(s: Session, raw: unknown) {
     needsSupplier,
     suppliers: inputs.lookup.list,
     sources: inputs.demand.sources
-      .filter((source) => source.source === salesSource)
+      .filter((source) => salesSources.includes(source.source))
       .map(({ saleDays: _saleDays, ...source }) => source),
     lines
   }

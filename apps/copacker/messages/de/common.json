@@ -94,6 +94,7 @@
     "title": "{name} trennen?",
     "shopifyEffect": "Copacker synchronisiert keine Produkte, Lagerbestände, Umsätze und Kosten mehr mit {account}. Bestellungen bleiben unverändert.",
     "amazonEffect": "Copacker liest keine Umsätze und Lagerbestände mehr aus {account} und kann keine AWD-Sendungen erstellen. Bestellungen bleiben unverändert.",
+    "ebayEffect": "Copacker liest keine Umsätze mehr aus {account}. Bestellungen bleiben unverändert.",
     "failed": "{name} konnte nicht getrennt werden",
     "cancel": "Abbrechen"
   },

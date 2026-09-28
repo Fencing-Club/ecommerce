@@ -99,7 +99,7 @@
     "stores": {
       "shopify": "Produkte, Bestand, Aufträge, Ausgaben",
       "amazon": "Aufträge, Bestand, Ausgaben, Sendungen",
-      "ebay": "Aufträge, Bestand"
+      "ebay": "Aufträge, Ausgaben"
     },
     "comingSoon": "Demnächst",
     "connect": "Verbinden",

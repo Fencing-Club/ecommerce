@@ -13,12 +13,13 @@ import type { DailySales, SourceDay } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
 import { vars } from "@/styles/theme.css"
 
-// Each source keeps its color everywhere: Amazon first, then Shopify.
+// Each source keeps its color everywhere: Amazon first, then Shopify, then eBay.
 export const sourceSeries: Record<SalesSource, { label: string; color: string }> = {
   amazon: { label: "Amazon", color: vars.color.chart1 },
-  shopify: { label: "Shopify", color: vars.color.chart2 }
+  shopify: { label: "Shopify", color: vars.color.chart2 },
+  ebay: { label: "eBay", color: vars.color.chart3 }
 }
-const sourceOrder: SalesSource[] = ["amazon", "shopify"]
+const sourceOrder: SalesSource[] = ["amazon", "shopify", "ebay"]
 
 // Recessive axes: no rules or tick marks, small muted labels.
 const axis = {

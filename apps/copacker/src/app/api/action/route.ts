@@ -421,7 +421,7 @@ export async function POST(request: Request) {
     if (action === "connection.delete") {
       requireAdmin(s)
       requireBuyer(s)
-      const provider = z.enum(["amazon", "shopify"]).parse(data.provider)
+      const provider = z.enum(["amazon", "shopify", "ebay"]).parse(data.provider)
       return Response.json({ ok: true, ...(await disconnect(s.org.id, provider)) })
     }
     if (action === "contact.delete") {

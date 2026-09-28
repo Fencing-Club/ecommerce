@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { amazonFor, shopifyFor } from "./connections"
+import { amazonFor, ebayFor, shopifyFor } from "./connections"
 import { amazonMarketplaces } from "./overview-sales"
 import { amazonSellerAccount } from "./sales-orders"
 
@@ -31,6 +31,24 @@ export async function shopifyStoreName(orgId: string, domain: string, now = Date
   } catch (error) {
     console.warn("Couldn't read the Shopify store name", error)
     return domain
+  }
+}
+
+const ebayUsernames = new Map<string, { name: string; at: number }>()
+
+// The eBay seller's username (Copacker keeps their immutable user ID), or null when eBay can't be reached.
+export async function ebayUsername(orgId: string, userId: string, now = Date.now()) {
+  const cached = ebayUsernames.get(userId)
+  if (cached && now - cached.at < 6 * 3600000) {
+    return cached.name
+  }
+  try {
+    const { username } = await (await ebayFor(orgId, userId)).user()
+    ebayUsernames.set(userId, { name: username, at: now })
+    return username
+  } catch (error) {
+    console.warn("Couldn't read the eBay username", error)
+    return null
   }
 }
 

@@ -2,7 +2,8 @@ import { createHash } from "node:crypto"
 import { z } from "zod"
 import { appUrl } from "./security"
 
-// eBay sends its notifications to this address: the account deletion endpoint registered in the developer portal.
+// eBay sends its notifications to this address: the account deletion endpoint registered in the developer portal, and
+// the destination sellers' order notifications are delivered to.
 export function ebayEndpoint() {
   return `${appUrl()}/api/webhooks/ebay`
 }
@@ -21,8 +22,3 @@ export function ebayVerificationToken() {
 export function ebayChallengeResponse(challengeCode: string, verificationToken: string, endpoint = ebayEndpoint()) {
   return createHash("sha256").update(challengeCode).update(verificationToken).update(endpoint).digest("hex")
 }
-
-export const ebayNotificationSchema = z.object({
-  metadata: z.object({ topic: z.string() }),
-  notification: z.object({ notificationId: z.string() })
-})

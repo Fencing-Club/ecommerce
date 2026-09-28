@@ -94,6 +94,7 @@
     "title": "Déconnecter {name} ?",
     "shopifyEffect": "Copacker ne synchronisera plus les produits, le stock, les ventes et les coûts avec {account}. Les bons de commande restent inchangés.",
     "amazonEffect": "Copacker ne lira plus les ventes ni le stock de {account} et ne pourra plus créer d’expéditions AWD. Les bons de commande restent inchangés.",
+    "ebayEffect": "Copacker ne lira plus les ventes de {account}. Les bons de commande restent inchangés.",
     "failed": "Impossible de déconnecter {name}",
     "cancel": "Annuler"
   },

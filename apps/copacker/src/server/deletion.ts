@@ -176,7 +176,7 @@ async function disconnectStores(orgId: string) {
     .from(connections)
     .where(eq(connections.orgId, orgId))
   for (const { provider } of linked) {
-    if (provider === "shopify" || provider === "amazon") {
+    if (provider === "shopify" || provider === "amazon" || provider === "ebay") {
       await disconnect(orgId, provider).catch((error: unknown) =>
         console.error(`Couldn’t disconnect ${provider} for ${orgId}`, error)
       )

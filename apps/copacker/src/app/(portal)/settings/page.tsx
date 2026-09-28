@@ -21,7 +21,8 @@ import { systemLocale } from "@/i18n/request"
 import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
-import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
+import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
+import { ebayApp } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
@@ -65,9 +66,11 @@ export default async function Settings() {
 
   const shopifyAccount = linked.find((c) => c.provider === "shopify")
   const amazonAccount = linked.find((c) => c.provider === "amazon")
-  const [shopName, amazon, orderTags, copyingTags] = await Promise.all([
+  const ebayAccount = linked.find((c) => c.provider === "ebay")
+  const [shopName, amazon, ebayName, orderTags, copyingTags] = await Promise.all([
     shopifyAccount ? shopifyStoreName(s.org.id, shopifyAccount.externalId) : null,
     amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null,
+    ebayAccount ? ebayUsername(s.org.id, ebayAccount.externalId) : null,
     buyer && shopifyAccount && admin ? shopifyOrderTags(s.org.id) : [],
     buyer && shopifyAccount && admin ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
@@ -129,6 +132,7 @@ export default async function Settings() {
             <Integrations
               admin={admin}
               amazonDraft={amazonDraft}
+              ebayAvailable={ebayApp() !== null}
               shopify={
                 shopifyAccount
                   ? { account: account(shopName, shopifyAccount.externalId), externalId: shopifyAccount.externalId }
@@ -150,6 +154,12 @@ export default async function Settings() {
                   <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
                 </>
               }
+              ebay={
+                ebayAccount
+                  ? { account: ebayName ?? ebayAccount.externalId, externalId: ebayName ?? ebayAccount.externalId }
+                  : null
+              }
+              ebaySettings={<OrdersSyncRow source="ebay" />}
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />

@@ -56,6 +56,7 @@ function line(overrides: Partial<RestockLine>): RestockLine {
     sold: 10,
     soldAlone: null,
     soldInBundles: null,
+    soldOnEbay: null,
     salesDays: 56,
     stockoutDays: 0,
     rateDays: 56,

@@ -3,7 +3,9 @@ import {
   type AmazonSale,
   collectAmazonSales,
   collectAmazonSalesReport,
+  collectEbaySales,
   collectShopifySales,
+  type EbaySale,
   collectShopifySalesBulk,
   type ShopifySale,
   shopifyPaymentFees
@@ -18,14 +20,14 @@ import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncInboundShipments } from "./amazon-shipments"
 import type { Session } from "./auth"
-import { amazonFor, connection, shopifyFor } from "./connections"
+import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { ReconnectRequiredError } from "./errors"
 import { syncExchangeRates } from "./exchange-rates"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
-import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
+import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
 import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
 import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
@@ -33,7 +35,7 @@ import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
 
-export const salesSources = ["shopify", "amazon"] as const
+export const salesSources = ["shopify", "amazon", "ebay"] as const
 export type SalesSource = (typeof salesSources)[number]
 
 // How far back orders are kept, how much recent history each sync reads again (shipments and cancellations arrive
@@ -52,6 +54,7 @@ const shopifyTagsVersion = 5
 export const customerDataVersion = 6
 // Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
 export const amazonDataVersion = 4
+export const ebayDataVersion = 1
 
 export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
 
@@ -60,6 +63,9 @@ export function dataVersionFor(source: SalesSource, scopes: string) {
   if (source === "amazon") {
     return amazonDataVersion
   }
+  if (source === "ebay") {
+    return ebayDataVersion
+  }
   return hasCustomerScope(scopes) ? customerDataVersion : shopifyTagsVersion
 }
 const refreshDays = 30
@@ -67,6 +73,8 @@ const chunkDays = 14
 const day = 86400000
 
 export class SalesSyncError extends LocalizedError {}
+
+const sourceNames: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
 // The marketplaces each seller's orders are read from, kept for a few hours: they rarely change, and Amazon allows few
 // requests for them.
@@ -275,7 +283,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
     const planned = resume ? null : syncChunks(Date.now(), sync, historyDays, version)
     const chunks =
       resume?.remaining.map((chunk) => ({ from: new Date(chunk.from), to: new Date(chunk.to) })) ?? planned!.chunks
-    type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale }
+    type Stored = { orderId: string; orderedAt: Date; data: ShopifySale | AmazonSale | EbaySale }
     let read: (window: { from: string; to: string }) => Promise<Stored[]>
     // Amazon also copies daily FBA stock, so restock can leave out days an item was out of stock, and its fees.
     let afterOrders: (() => Promise<void>) | null = null
@@ -308,6 +316,21 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
         ).map((order) => ({
           orderId: order.id,
           orderedAt: new Date(order.createdAt),
+          data: order
+        }))
+    } else if (source === "ebay") {
+      const client = await ebayFor(orgId, account)
+      // Orders in another currency are converted at each day's rate.
+      afterOrders = () =>
+        syncExchangeRates(orgId).then(
+          () => undefined,
+          (error: unknown) =>
+            console.error(JSON.stringify({ event: "exchange_rates_failed", orgId, error: describeError(error) }))
+        )
+      read = async (window) =>
+        (await collectEbaySales(client, window, assertOwned)).map((order) => ({
+          orderId: order.orderId,
+          orderedAt: new Date(order.creationDate),
           data: order
         }))
     } else {
@@ -398,7 +421,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
       }
       await assertOwned()
       logLine(
-        `Copied ${orders.length} ${source === "shopify" ? "Shopify" : "Amazon"} orders, ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)} (period ${index + 1} of ${chunks.length})`
+        `Copied ${orders.length} ${sourceNames[source]} orders, ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)} (period ${index + 1} of ${chunks.length})`
       )
       covered = covered
         ? {
@@ -565,14 +588,19 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
   // Orders with an excluded tag, such as Shopify's copies of Amazon orders, aren't Shopify demand.
   const excluded = await excludedShopifyTags(orgId)
   const orders = rows.map((row) => row.data).filter((order) => !hasExcludedTag(order, excluded))
-  const demand =
-    source === "shopify"
-      ? attributeShopifySales(
-          orders.filter((order) => "lines" in order),
-          await effectiveLocationClassifications(orgId, account.externalId)
-        )
-      : attributeAmazonSales(orders.filter((order) => "orderItems" in order))
-  // The days each item sold (by variant on Shopify, by seller SKU on Amazon): it was in stock somewhere on those days.
+  let demand
+  if (source === "shopify") {
+    demand = attributeShopifySales(
+      orders.filter((order) => "lines" in order),
+      await effectiveLocationClassifications(orgId, account.externalId)
+    )
+  } else if (source === "ebay") {
+    demand = attributeEbaySales(orders.filter((order) => "lineItems" in order))
+  } else {
+    demand = attributeAmazonSales(orders.filter((order) => "orderItems" in order))
+  }
+  // The days each item sold (by variant on Shopify, by seller SKU on Amazon and eBay): it was in stock somewhere on
+  // those days.
   const saleDays = new Map<string, Set<string>>()
   const sold = (key: string | null | undefined, at: string) => {
     if (key) {
@@ -585,6 +613,10 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
     if ("lines" in order) {
       for (const line of order.lines) {
         sold(line.variant?.id, new Date(order.createdAt).toISOString())
+      }
+    } else if ("lineItems" in order) {
+      for (const line of order.lineItems) {
+        sold(line.sku, new Date(order.creationDate).toISOString())
       }
     } else {
       for (const item of order.orderItems) {
@@ -608,7 +640,7 @@ export type SalesOrderSummary = {
   status: string
   // The Amazon order this one replaces, when it's a replacement sent free.
   replacementOf?: string | null
-  // The order in Shopify admin or Seller Central.
+  // The order in Shopify admin, Seller Central or eBay's Seller Hub.
   url: string
   // Net product sales (after discounts, before tax and shipping), or null when the order was copied without prices.
   sales: { minor: number; currency: string } | null
@@ -626,10 +658,20 @@ function shopifyFees(data: ShopifySale) {
   return fees && currency ? { minor: fees.minor, currency } : null
 }
 
-export function orderSales(data: ShopifySale | AmazonSale): { minor: number; currency: string } | null {
+export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: number; currency: string } | null {
   let total = 0,
     currency: string | null = null
-  if ("lines" in data) {
+  if ("lineItems" in data) {
+    // eBay lines at their price less the seller's promotions on them.
+    for (const line of data.lineItems) {
+      currency ??= line.lineItemCost.currency
+      const discount = (line.appliedPromotions ?? []).reduce(
+        (sum, promotion) => sum + Math.abs(Number(promotion.discountAmount?.value ?? 0)),
+        0
+      )
+      total += Number(line.lineItemCost.value) - discount
+    }
+  } else if ("lines" in data) {
     for (const line of data.lines) {
       const price = line.originalUnitPriceSet?.shopMoney
       if (!price) {
@@ -677,6 +719,13 @@ const shopifyChannels: Record<string, ServerKey> = {
   shopify_draft_order: "salesChannels.draftOrder"
 }
 
+// eBay's fulfillment statuses, named as Shopify's are.
+const ebayStatuses: Record<string, string> = {
+  NOT_STARTED: "Unfulfilled",
+  IN_PROGRESS: "Partially fulfilled",
+  FULFILLED: "Fulfilled"
+}
+
 // Amazon reports statuses such as PARTIALLY_SHIPPED; shown as words.
 function words(value: string) {
   const text = value.replaceAll("_", " ").toLocaleLowerCase()
@@ -688,7 +737,7 @@ function words(value: string) {
 export function summarizeSalesOrder(
   source: SalesSource,
   orderedAt: Date,
-  data: ShopifySale | AmazonSale,
+  data: ShopifySale | AmazonSale | EbaySale,
   account: string,
   t: ServerText = serverTextInEnglish
 ): SalesOrderSummary {
@@ -766,6 +815,26 @@ export function summarizeSalesOrder(
       // Posted with Amazon's transactions; the Orders page adds them.
       fees: null,
       url: `https://sellercentral.amazon.com/orders-v3/order/${encodeURIComponent(data.orderId)}`
+    }
+  }
+  if (source === "ebay" && "lineItems" in data) {
+    const fee = data.totalMarketplaceFee
+    return {
+      source,
+      orderId: data.orderId,
+      number: data.salesRecordReference ?? data.orderId,
+      orderedAt: orderedAt.toISOString(),
+      units: data.lineItems.reduce((sum, line) => sum + line.quantity, 0),
+      items: data.lineItems.map((line) => ({
+        sku: line.sku?.trim() || null,
+        name: line.title ?? null,
+        quantity: line.quantity
+      })),
+      channel: "eBay",
+      status: ebayStatuses[data.orderFulfillmentStatus] ?? words(data.orderFulfillmentStatus),
+      sales: orderSales(data),
+      fees: fee ? { minor: Math.round(Number(fee.value) * 100), currency: fee.currency } : null,
+      url: `https://www.ebay.com/sh/ord/details?orderid=${encodeURIComponent(data.orderId)}`
     }
   }
   throw new Error("Stored order doesn't match its source")
@@ -880,10 +949,10 @@ export async function listSalesOrders(
           prices
             ? sql`${salesOrders.data}::text ilike ${pattern}`
             : sql`(concat_ws(' ', ${salesOrders.orderId}, ${salesOrders.data}->>'name') ilike ${pattern}
-                or exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems')) l
-                  where concat_ws(' ', l->>'sku', l->'product'->>'sellerSku') ilike ${pattern}))`,
+                or exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems', ${salesOrders.data}->'lineItems')) l
+                  where concat_ws(' ', l->>'sku', l->'product'->>'sellerSku', l->>'title') ilike ${pattern}))`,
           titled && (titled.variantIds.length || titled.skus.length)
-            ? sql`exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems')) l
+            ? sql`exists (select 1 from jsonb_array_elements(coalesce(${salesOrders.data}->'lines', ${salesOrders.data}->'orderItems', ${salesOrders.data}->'lineItems')) l
                 where l->'variant'->>'id' in ${listed(titled.variantIds)}
                   or l->'lineItemGroup'->>'variantId' in ${listed(titled.variantIds)}
                   or l->>'sku' in ${listed(titled.skus)}
@@ -947,8 +1016,12 @@ export async function listSalesOrders(
           ...order,
           items: order.items.map((item) => ({
             ...item,
+            // The catalog's name, or the one the order came with (eBay lines carry their listing's title).
             name:
-              (item.variantId && names.byVariant.get(item.variantId)) ?? (item.sku && names.bySku.get(item.sku)) ?? null
+              (item.variantId && names.byVariant.get(item.variantId)) ||
+              (item.sku && names.bySku.get(item.sku)) ||
+              item.name ||
+              null
           }))
         }))
       : orders,
@@ -962,6 +1035,7 @@ type SourceSales = { rows: DemandRow[]; gaps: DemandGap[] }
 export async function restockDemand(orgId: string, providers: string[], days: number) {
   let shopifySales: SourceSales | null = null
   let amazonSales: SourceSales | null = null
+  let ebaySales: SourceSales | null = null
   const sources = []
   for (const source of salesSources) {
     if (!providers.includes(source)) {
@@ -971,6 +1045,8 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
       const result = await storedDemand(orgId, source, days)
       if (source === "shopify") {
         shopifySales = result
+      } else if (source === "ebay") {
+        ebaySales = result
       } else {
         amazonSales = result
       }
@@ -999,5 +1075,5 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
       })
     }
   }
-  return { shopifySales, amazonSales, sources }
+  return { shopifySales, amazonSales, ebaySales, sources }
 }

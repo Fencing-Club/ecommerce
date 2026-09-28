@@ -99,7 +99,7 @@
     "stores": {
       "shopify": "Products, inventory, orders, expenses",
       "amazon": "Orders, inventory, expenses, shipments",
-      "ebay": "Orders, inventory"
+      "ebay": "Orders, expenses"
     },
     "comingSoon": "Coming soon",
     "connect": "Connect",

@@ -20,6 +20,7 @@
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.1136.0",
     "@aws-sdk/client-s3": "^3.1000.0",
     "@aws-sdk/client-sqs": "^3.1136.0",
     "@base-ui/react": "^1.8.0",

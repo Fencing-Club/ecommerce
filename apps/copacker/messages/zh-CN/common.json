@@ -94,6 +94,7 @@
     "title": "断开与 {name} 的连接？",
     "shopifyEffect": "Copacker 将停止与 {account} 同步产品、库存量、销售和成本。采购订单保持不变。",
     "amazonEffect": "Copacker 将停止从 {account} 读取销售和库存量数据，并且无法创建 AWD 货件。采购订单保持不变。",
+    "ebayEffect": "Copacker 将停止从 {account} 读取销售数据。采购订单保持不变。",
     "failed": "无法断开与 {name} 的连接",
     "cancel": "取消"
   },

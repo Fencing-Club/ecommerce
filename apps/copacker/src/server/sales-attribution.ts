@@ -1,10 +1,11 @@
-import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
 
 export type DemandRow = {
   variantId: string | null
   buyerSku: string | null
   locationId: string | null
-  pool: "shopify" | "fba" | "fbm_unassigned"
+  // eBay orders ship from the buyer's own stock, but eBay doesn't say from which location; restock places them.
+  pool: "shopify" | "fba" | "fbm_unassigned" | "ebay"
   // The bundle variant these units were sold in, when the customer bought a bundle rather than the item itself.
   // Amazon reports the listing sold, so its bundle sales appear under the bundle's own SKU instead.
   bundleVariantId: string | null
@@ -135,6 +136,39 @@ export function attributeShopifySales(orders: ShopifySale[], locations: Readonly
     throw new Error("Excluded quantity exceeds the supported range")
   }
   return { rows: [...rows.values()], gaps, excludedFulfilledUnits, attributionComplete: gaps.length === 0 }
+}
+
+// eBay demand by the seller's custom label (the SKU). Every unit ordered counts, shipped or not: eBay orders ship from
+// the buyer's own stock, so an unshipped one leaves it soon. Cancelled orders aren't copied.
+export function attributeEbaySales(orders: EbaySale[]) {
+  const rows = new Map<string, DemandRow>(),
+    gaps: DemandGap[] = []
+  for (const order of orders) {
+    for (const line of order.lineItems) {
+      const buyerSku = line.sku?.trim() || null
+      if (!buyerSku) {
+        gaps.push({
+          orderId: order.orderId,
+          variantId: null,
+          buyerSku: null,
+          sourceName: "ebay",
+          locationId: null,
+          reason: "product_unmapped",
+          units: line.quantity
+        })
+        continue
+      }
+      add(rows, {
+        variantId: null,
+        buyerSku,
+        locationId: null,
+        pool: "ebay",
+        bundleVariantId: null,
+        fulfilledUnits: line.quantity
+      })
+    }
+  }
+  return { rows: [...rows.values()], gaps, attributionComplete: gaps.length === 0 }
 }
 
 export function attributeAmazonSales(orders: AmazonSale[]) {

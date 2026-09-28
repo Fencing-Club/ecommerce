@@ -1,8 +1,8 @@
-# Shopify webhooks and Amazon notifications
+# Shopify webhooks, Amazon notifications and eBay notifications
 
-Copacker learns about order and stock changes as they happen: Shopify and Amazon both deliver events to SQS queues
-that the worker reads, so events wait through outages instead of depending on Copacker answering. A daily
-reconciliation reads everything again to catch anything missed.
+Copacker learns about order and stock changes as they happen: Shopify, Amazon and eBay deliver events to SQS queues
+that the worker reads (eBay's through Copacker's web service), so events wait through outages instead of depending on
+Copacker answering. A daily reconciliation reads everything again to catch anything missed.
 
 ## Shopify events through Amazon EventBridge
 
@@ -91,18 +91,67 @@ test notifications locally, create a separate queue and let Aisle Dev subscribe 
 
 ## eBay
 
-The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
-`AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
-without a support ticket, so local development shares it through its own redirect URL name; a refresh token works from
-any environment with the same keys. Local development never registers a notification destination, so it can't take
-production's events.
+Copacker reads a seller's eBay orders the way it reads Amazon's and Shopify's: a sync copies two years of orders, a
+notification of a new order starts another, and the daily reconciliation reads the recent orders again.
 
-- eBay disables a new production keyset until it has a marketplace account deletion endpoint (Alerts & Notifications
-  in the developer portal). The endpoint is `https://<APP_URL>/api/webhooks/ebay`: a GET with `challenge_code`
-  answers with the SHA-256 of the code, `EBAY_VERIFICATION_TOKEN` and the endpoint URL, and a POST notice is
-  acknowledged with 204. Copacker stores nothing from eBay yet, so a deletion notice only logs an
-  `ebay_notification` event.
-- The redirect URL name (RuName) settings under User Tokens only appear once the keyset is compliant.
+### Keys and signing in
+
+- The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
+  `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
+  without a support ticket, so local development shares it through its own redirect URL name (RuName). A refresh
+  token works from any environment with the same keys.
+- Copacker needs `EBAY_CLIENT_ID` (App ID), `EBAY_CLIENT_SECRET` (Cert ID) and `EBAY_RU_NAME` (the redirect URL
+  name). Without all three, Settings shows eBay as coming soon.
+- The RuName's accepted URL is `https://<APP_URL>/api/connections/ebay`; its declined URL is
+  `https://<APP_URL>/settings#integrations`. Sign-in asks for `sell.fulfillment.readonly` (orders),
+  `commerce.identity.readonly` (the seller's user ID and username) and `commerce.notification.subscription`.
+- A connection is stored under the seller's immutable eBay user ID; Settings shows their username. The refresh token
+  lasts about 18 months; after that the order sync fails with `reconnect` and Settings offers Reconnect.
+- Owners and admins of a buyer workspace connect and disconnect eBay, as with the other stores. eBay has no revocation
+  call, so Disconnect only forgets the token.
+
+### Orders
+
+- Orders come from the Fulfillment API (`getOrders`, by creation date, two weeks at a time). Cancelled orders aren't
+  copied, and a sync reads the last 30 days again, so an order cancelled later disappears. Nothing about the buyer is
+  kept: no username, address or tax details.
+- Sales are each line's price less the seller's promotions (no shipping or tax); fees are eBay's
+  `totalMarketplaceFee`. eBay orders appear on the Orders page, the Overview (their own chart series) and in gross
+  profit, with each line matched to a product by its custom label (SKU).
+- Restock counts eBay units at the Shopify location that shipped the most of the store's own orders over the sales
+  period, since eBay doesn't say where an order shipped from. A line without a SKU can't be placed and is reported
+  with the eBay source's gaps.
+- Shopify's eBay sales channel copies eBay orders into Shopify, tagged `eBay` and `eBay-US` (source `ebay`). With eBay
+  connected, add `eBay` to the excluded Shopify order tags in Settings so each sale counts once.
+
+### Notifications
+
+eBay delivers notifications only to HTTPS, so they come to Copacker's web service, which sends them on through
+EventBridge to a queue the worker reads.
+
+- `/api/webhooks/ebay` answers eBay's endpoint check (a GET with `challenge_code`: the SHA-256 of the code,
+  `EBAY_VERIFICATION_TOKEN` and the endpoint URL) and checks each POST against eBay's signature (the
+  `X-EBAY-SIGNATURE` header, ECDSA, the key read with the app's token and kept for an hour). A notification that
+  fails the check gets 412. One that can't be checked (no keys, or eBay won't hand over its key) gets 503 so eBay
+  sends it again, except an account deletion notice, which is acknowledged.
+- A checked notification goes to EventBridge as source `copacker.ebay` on the bus named by `EBAY_EVENT_BUS` (the
+  account's `default` bus). Without `EBAY_EVENT_BUS` (local development) the route queues its work directly.
+- On the default bus in account `316338643347`, `us-east-1`, rule `copacker-ebay-to-sqs` forwards source
+  `copacker.ebay` to the SQS queue `copacker-ebay-events`. The queue only accepts messages from that rule. A message
+  that fails five times moves to `copacker-ebay-events-dlq`, which keeps it for 14 days.
+- The web service sends as IAM user `copacker-web`, which can only put events on the default bus. The worker reads the
+  queue as `copacker-worker` (policy `read-amazon-notifications` covers it) with `EBAY_EVENTS_QUEUE_URL`.
+- When a seller connects, and daily, a job makes sure the app's notification destination points at the webhook (the
+  same address and verification token as the account deletion endpoint) and subscribes the seller to
+  `ORDER_CONFIRMATION`, turning a subscription eBay disabled back on. Confirmed orders are gathered into five-minute
+  periods, and each period starts one order sync three minutes after it ends. Local development skips subscribing:
+  eBay only delivers to public HTTPS addresses.
+- An account deletion notice for a connected seller erases their connection, orders and order syncs from every
+  workspace. Copacker keeps nothing about buyers, so a buyer's notice changes nothing.
+- eBay keeps a new production keyset disabled until the account deletion endpoint is set in the developer portal
+  (Alerts & Notifications). The redirect URL name settings under User Tokens only appear once the keyset is compliant.
+  As of 2026-09-28 production answers the endpoint check; the endpoint and token are waiting to be entered in the
+  portal.
 
 ## Daily reconciliation and failures
 

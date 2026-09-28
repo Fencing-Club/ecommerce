@@ -1,4 +1,4 @@
-import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
 import { eq, type SQL, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { organizations, salesOrders, salesSyncs } from "@/db/schema"
@@ -27,8 +27,8 @@ const tagPattern = (tag: string) =>
       .join(".*")}$`
   )
 
-// Whether a stored order's data (a jsonb expression) has a tag matching any of the (lower-cased) tags. Amazon orders,
-// and Shopify orders copied before tags were read, have none.
+// Whether a stored order's data (a jsonb expression) has a tag matching any of the (lower-cased) tags. Amazon and eBay
+// orders, and Shopify orders copied before tags were read, have none.
 export function taggedWith(data: SQL, tags: readonly string[]) {
   return tags.length
     ? sql`exists (select 1 from jsonb_array_elements_text(coalesce(${data}->'tags', '[]'::jsonb)) tag
@@ -39,7 +39,7 @@ export function taggedWith(data: SQL, tags: readonly string[]) {
     : sql`false`
 }
 
-export function hasExcludedTag(data: ShopifySale | AmazonSale, tags: readonly string[]) {
+export function hasExcludedTag(data: ShopifySale | AmazonSale | EbaySale, tags: readonly string[]) {
   const patterns = tags.map(tagPattern)
   return (
     "lines" in data &&

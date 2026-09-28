@@ -41,10 +41,12 @@ export type RestockLine = {
   externalSupplier: string | null
   status: RestockStatus
   blocked: BlockReason[]
-  // Units sold in the sales period; on Shopify, split into sold alone and sold inside bundles.
+  // Units sold in the sales period; on Shopify, split into sold alone and sold inside bundles, and the eBay units counted
+  // at this location.
   sold: number | null
   soldAlone: number | null
   soldInBundles: number | null
+  soldOnEbay: number | null
   salesDays: number
   // Days of the sales period the item was out of stock, and the days the sales rate is measured over.
   stockoutDays: number
@@ -110,6 +112,9 @@ export function restockPlan(input: {
   onOrder: ReadonlyMap<string, PendingOrder[]>
   shopifySales: Sales
   amazonSales: Sales
+  // eBay demand by SKU, counted at the Shopify location eBay orders ship from (see ebayLocation).
+  ebaySales?: Sales
+  ebayLocationId?: string | null
   fbaRows: FbaRow[] | null
   awdRows: AwdRow[] | null
   salesDays: number
@@ -151,6 +156,18 @@ export function restockPlan(input: {
         [])
       : []
   const split = bundleSales(catalog, shopifyRows).variants
+  // eBay orders name the SKU sold, which places them only when exactly one variation carries it. A line without a SKU
+  // can't be placed anywhere; it's reported with the source's gaps rather than holding up every variation here.
+  const ebayHere = channel.kind === "shopify" && channel.locationId === input.ebayLocationId ? input.ebaySales : null
+  const ebaySold = (sku: string | null) => {
+    if (!ebayHere) {
+      return 0
+    }
+    const units = sku
+      ? ebayHere.rows.filter((row) => row.buyerSku === sku).reduce((total, row) => total + row.fulfilledUnits, 0)
+      : 0
+    return units > 0 && skuCount.get(sku!) !== 1 ? null : units
+  }
   // A sales gap without product identity could belong to any variation, so demand is unknown everywhere.
   const sales = channel.kind === "amazon" ? input.amazonSales : input.shopifySales
   const unidentifiedGap = sales?.gaps.some((gap) => !gap.variantId && !gap.buyerSku) ?? false
@@ -189,10 +206,17 @@ export function restockPlan(input: {
         // Shopify's Fencing Club stock target: the least to keep at the store's own location.
         targetStock = row?.storeStockTarget ?? null
         targetWhere = level.locationName
-        if (sales && !unidentifiedGap && !sales.gaps.some((gap) => gap.variantId === variant.variantId)) {
-          sold = shopifyRows
-            .filter((demand) => demand.variantId === variant.variantId)
-            .reduce((total, demand) => total + demand.fulfilledUnits, 0)
+        const onEbay = ebaySold(variant.sku)
+        if (
+          sales &&
+          !unidentifiedGap &&
+          onEbay !== null &&
+          !sales.gaps.some((gap) => gap.variantId === variant.variantId)
+        ) {
+          sold =
+            shopifyRows
+              .filter((demand) => demand.variantId === variant.variantId)
+              .reduce((total, demand) => total + demand.fulfilledUnits, 0) + onEbay
         }
       } else {
         const sku = variant.sku
@@ -300,6 +324,7 @@ export function restockPlan(input: {
         sold,
         soldAlone: channel.kind === "shopify" ? (split.get(variant.variantId)?.soldAlone ?? 0) : null,
         soldInBundles: channel.kind === "shopify" ? (split.get(variant.variantId)?.soldInBundles ?? 0) : null,
+        soldOnEbay: ebayHere ? ebaySold(variant.sku) : null,
         salesDays: input.salesDays,
         stockoutDays,
         rateDays,

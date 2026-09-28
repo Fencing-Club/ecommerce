@@ -23,7 +23,8 @@ export async function syncExchangeRates(orgId: string, now = new Date(), fetcher
       union select distinct currency from shopify_balance_transactions where "orgId" = ${orgId}
       union select distinct currency from monthly_costs where "orgId" = ${orgId}
       union select distinct coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',
-        jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}')
+        jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}',
+        o.data #>> '{lineItems,0,lineItemCost,currency}')
         from sales_orders o where o."orgId" = ${orgId} and o."orderedAt" >= ${new Date(now.getTime() - 30 * day)}
     ) currencies where currency is not null and currency <> 'USD'`)
   const wanted = (result as unknown as { rows: { currency: string }[] }).rows.map((row) => row.currency)

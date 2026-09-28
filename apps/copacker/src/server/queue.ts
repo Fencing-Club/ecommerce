@@ -2,6 +2,7 @@ import { and, eq, sql, lt, lte, inArray } from "drizzle-orm"
 import { db } from "../db/index"
 import { jobs, shipments } from "../db/schema"
 import { amazonEventJob, amazonSubscribeJob } from "./amazon-notifications"
+import { ebayEventJob, ebaySubscribeJob } from "./ebay-events"
 import { importJob } from "./import-job"
 import { amazonJob, emailJob, shopifyJob, PollAgain } from "./job-handlers"
 import { logLine } from "./log"
@@ -89,6 +90,10 @@ export async function runNextJob() {
       await amazonEventJob(job.payload, assertOwned)
     } else if (job.kind === "amazon-subscribe") {
       await amazonSubscribeJob(job.payload, assertOwned)
+    } else if (job.kind === "ebay-event") {
+      await ebayEventJob(job.payload)
+    } else if (job.kind === "ebay-subscribe") {
+      await ebaySubscribeJob(job.payload, assertOwned)
     } else if (job.kind === "reconcile") {
       await reconcileJob(job.payload, assertOwned)
     } else {

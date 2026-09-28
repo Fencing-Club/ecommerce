@@ -20,10 +20,10 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
-const names = { shopify: "Shopify", amazon: "Amazon" }
+const names = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 
 // A quiet, red Disconnect that asks first.
-export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon"; account: string }) {
+export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon" | "ebay"; account: string }) {
   const t = useTranslations("common.disconnect")
   const router = useRouter()
   const [run] = useActionMutation()
@@ -63,9 +63,7 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
         <AlertDialogHeader>
           <AlertDialogTitle>{t("title", { name })}</AlertDialogTitle>
           {/* What stops when each account is disconnected. */}
-          <AlertDialogDescription>
-            {provider === "shopify" ? t("shopifyEffect", { account }) : t("amazonEffect", { account })}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t(`${provider}Effect`, { account })}</AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>

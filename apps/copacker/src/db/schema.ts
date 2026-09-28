@@ -8,7 +8,7 @@ import {
 } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
-import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
 import { sql } from "drizzle-orm"
 import {
@@ -279,7 +279,7 @@ export const connections = pgTable(
     orgId: uuid()
       .notNull()
       .references(() => organizations.id),
-    provider: text({ enum: ["amazon", "shopify"] }).notNull(),
+    provider: text({ enum: ["amazon", "shopify", "ebay"] }).notNull(),
     externalId: text().notNull(),
     encryptedToken: text().notNull(),
     scopes: text().notNull().default(""),
@@ -522,6 +522,8 @@ export const jobs = pgTable(
         "shopify-compliance",
         "amazon-event",
         "amazon-subscribe",
+        "ebay-event",
+        "ebay-subscribe",
         "reconcile"
       ]
     }).notNull(),
@@ -683,7 +685,7 @@ export const productBarcodes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.orgId, t.shopifyDomain, t.variantId] })]
 )
-// Sales orders copied from Shopify and Amazon, as their readers return them, so restock can read any period quickly.
+// Sales orders copied from Shopify, Amazon and eBay, as their readers return them, so restock can read any period quickly.
 export const salesOrders = pgTable(
   "sales_orders",
   {
@@ -691,11 +693,11 @@ export const salesOrders = pgTable(
     orgId: uuid()
       .notNull()
       .references(() => organizations.id),
-    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    source: text({ enum: ["shopify", "amazon", "ebay"] }).notNull(),
     externalAccountId: text().notNull(),
     orderId: text().notNull(),
     orderedAt: timestamp({ withTimezone: true }).notNull(),
-    data: jsonb().$type<ShopifySale | AmazonSale>().notNull(),
+    data: jsonb().$type<ShopifySale | AmazonSale | EbaySale>().notNull(),
     syncedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (t) => [
@@ -710,7 +712,7 @@ export const salesSyncs = pgTable(
     orgId: uuid()
       .notNull()
       .references(() => organizations.id),
-    source: text({ enum: ["shopify", "amazon"] }).notNull(),
+    source: text({ enum: ["shopify", "amazon", "ebay"] }).notNull(),
     externalAccountId: text().notNull(),
     status: text({ enum: ["idle", "queued", "running", "failed"] })
       .notNull()

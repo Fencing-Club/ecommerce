@@ -99,7 +99,7 @@
     "stores": {
       "shopify": "Prodotti, inventario, ordini, spese",
       "amazon": "Ordini, inventario, spese, spedizioni",
-      "ebay": "Ordini, inventario"
+      "ebay": "Ordini, spese"
     },
     "comingSoon": "Presto disponibile",
     "connect": "Collega",

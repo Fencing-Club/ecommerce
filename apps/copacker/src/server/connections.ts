@@ -1,4 +1,5 @@
 import { Amazon } from "@repo/aisle/amazon"
+import { Ebay } from "@repo/aisle/ebay"
 import { Shopify } from "@repo/aisle/shopify"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
@@ -31,7 +32,9 @@ const savedToken = z.object({
   refreshExpiresAt: z.number().optional()
 })
 
-export async function connection(orgId: string, provider: "amazon" | "shopify") {
+export type Provider = "amazon" | "shopify" | "ebay"
+
+export async function connection(orgId: string, provider: Provider) {
   return db().transaction(async (tx) => {
     const [row] = await tx
       .select()
@@ -67,6 +70,10 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
         .set({ encryptedToken: encrypt(JSON.stringify(stored), `${orgId}:${provider}`) })
         .where(eq(connections.id, row.id))
     }
+    // An eBay refresh token lasts about 18 months; after that only signing in again renews it.
+    if (provider === "ebay" && stored.refreshExpiresAt && stored.refreshExpiresAt < Date.now()) {
+      throw new ReconnectRequiredError("Reconnect eBay to renew seller authorization")
+    }
     return { ...row, token: stored.token }
   })
 }
@@ -91,6 +98,24 @@ export async function amazonFor(orgId: string, expectedSellerId?: string | null)
     refreshToken: c.token
   })
 }
+// Copacker's eBay app: its keys and the redirect URL name (RuName) sign-in returns through. Null when not configured.
+export function ebayApp() {
+  const { EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, EBAY_RU_NAME } = process.env
+  return EBAY_CLIENT_ID && EBAY_CLIENT_SECRET && EBAY_RU_NAME
+    ? { clientId: EBAY_CLIENT_ID, clientSecret: EBAY_CLIENT_SECRET, ruName: EBAY_RU_NAME }
+    : null
+}
+export async function ebayFor(orgId: string, expectedUserId?: string) {
+  const c = await connection(orgId, "ebay")
+  if (expectedUserId && c.externalId !== expectedUserId) {
+    throw new LocalizedError("reconnectEbay")
+  }
+  const app = ebayApp()
+  if (!app) {
+    throw new Error("eBay developer credentials are not configured")
+  }
+  return new Ebay({ clientId: app.clientId, clientSecret: app.clientSecret, refreshToken: c.token })
+}
 // Copacker's own Amazon app, for grantless operations such as managing notification destinations.
 export function amazonApp(scope: string) {
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
@@ -103,7 +128,7 @@ export function amazonApp(scope: string) {
   })
 }
 // Returns whether the provider confirmed the revocation. Local credentials are always removed.
-export async function disconnect(orgId: string, provider: "amazon" | "shopify") {
+export async function disconnect(orgId: string, provider: Provider) {
   let revoked = false
   if (provider === "shopify") {
     try {

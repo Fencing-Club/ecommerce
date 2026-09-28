@@ -10,7 +10,8 @@ import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from
 
 // Money here is net product sales: what customers paid for the products, after discounts, without tax, shipping or
 // tips. Shopify lines count at their current quantity (removed and refunded units are gone), with their share of
-// line and order discounts; Amazon items count their ITEM proceeds less any DISCOUNT.
+// line and order discounts; Amazon items count their ITEM proceeds less any DISCOUNT; eBay lines count their price less
+// the seller's promotions.
 
 // One Shopify order line's sales, in the store's currency (null when the line has no price copied).
 const lineRevenue =
@@ -39,9 +40,15 @@ const amazonFreeOrder = sql`(${amazonReplacement(sql`o.data`)} or (exists (selec
     and t."totalMinor" <> 0)))`
 const itemPriced = sql`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
   or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`
+// One eBay order line's sales: its price less the seller's promotions on it. eBay prices every line.
+const ebayLineRevenue = sql.raw(`((ebay->'lineItemCost'->>'value')::numeric
+  - coalesce((select sum(abs((p->'discountAmount'->>'value')::numeric))
+    from jsonb_array_elements(coalesce(ebay->'appliedPromotions', '[]'::jsonb)) p), 0))`)
 
 const orderUnits = sql.raw(`case when o.source = 'amazon' then
   (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(o.data->'orderItems') item)
+when o.source = 'ebay' then
+  (select coalesce(sum((ebay->>'quantity')::int), 0) from jsonb_array_elements(o.data->'lineItems') ebay)
 else
   (select coalesce(sum((line->>'currentQuantity')::int), 0) from jsonb_array_elements(o.data->'lines') line
     where jsonb_typeof(line->'lineItemGroup') is distinct from 'object')
@@ -53,16 +60,20 @@ else
 end`)
 const orderRevenue = sql`case when o.source = 'amazon' then
   (select sum(${itemRevenue}) from jsonb_array_elements(o.data->'orderItems') item)
+when o.source = 'ebay' then
+  (select coalesce(sum(${ebayLineRevenue}), 0) from jsonb_array_elements(o.data->'lineItems') ebay)
 else
   (select coalesce(sum(${lineRevenue}), 0) from jsonb_array_elements(o.data->'lines') line)
 end`
 const orderPriced = sql`case when o.source = 'amazon' then
   not exists (select 1 from jsonb_array_elements(o.data->'orderItems') item where not ${itemPriced})
+when o.source = 'ebay' then true
 else
   not exists (select 1 from jsonb_array_elements(o.data->'lines') line where not ${linePriced})
 end`
 const orderCurrency = sql.raw(`coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',
-  jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}')`)
+  jsonb_path_query_first(o.data, '$.orderItems[*].proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}',
+  o.data #>> '{lineItems,0,lineItemCost,currency}')`)
 
 // A connected account, optionally narrowed to the Shopify orders shipped from one location. `excludedTags` leaves out
 // Shopify orders with those tags (Settings), such as the copies Shopify's Amazon sales channel keeps of Amazon orders.
@@ -179,7 +190,7 @@ export async function salesByDay(orgId: string, accounts: Account[], since: Date
 
 export type ItemRow = {
   source: SalesSource
-  // A Shopify variant ID (the bundle's, for a bundle sale) or an Amazon seller SKU.
+  // A Shopify variant ID (the bundle's, for a bundle sale), or an Amazon or eBay seller SKU.
   key: string
   period: "current" | "previous"
   units: number
@@ -220,6 +231,11 @@ export async function salesByItem(
         jsonb_path_query_first(item, '$.proceeds.breakdowns[*].subtotal.currencyCode') #>> '{}'
       from sales_orders o, jsonb_array_elements(o.data->'orderItems') item
       where o.source = 'amazon' and ${scope}
+      union all
+      select o."orderId", o.source, ${period}, o."orderedAt", nullif(trim(ebay->>'sku'), ''), ebay->>'lineItemId',
+        (ebay->>'quantity')::int, ${ebayLineRevenue}, ${orderPriced}, ebay->'lineItemCost'->>'currency'
+      from sales_orders o, jsonb_array_elements(o.data->'lineItems') ebay
+      where o.source = 'ebay' and ${scope}
     ), lines as (
       select raw.*, fx_rate(raw.currency, ${currency}, raw.at) as rate from raw
     ), grouped as (
@@ -307,6 +323,8 @@ export type OrderFees = { orderId: string; revenueMinor: number | null; feesMino
 const amazonOrderFee = sql.raw(`(select sum(t."feesMinor") from amazon_transactions t
   where t."orgId" = o."orgId" and t."externalAccountId" = o."externalAccountId" and t."orderId" = o."orderId"
     and t.type = 'Shipment' and not coalesce(t.data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]')`)
+// eBay's fees on an order, as eBay reports them with the order.
+const ebayOrderFee = sql.raw(`round((o.data->'totalMarketplaceFee'->>'value')::numeric * 100)`)
 // Shopify Payments' fees on an order, with their tax, from its successful payments (null when copied without them).
 const shopifyOrderFee = sql.raw(`case when o.data ? 'transactions' then
   (select coalesce(sum(round(((fee->'amount'->>'amount')::numeric + (fee->'taxAmount'->>'amount')::numeric) * 100)), 0)
@@ -317,7 +335,12 @@ end`)
 // Each order from one account in a period, with its sales (null without prices) and the platform's fees on it, in
 // `currency`. The fees are converted at the same rate as the order's sales.
 export async function orderFees(orgId: string, account: Account, from: Date, to: Date, currency: string) {
-  const fee = account.provider === "amazon" ? amazonOrderFee : shopifyOrderFee
+  const fees: Record<SalesSource, typeof amazonOrderFee> = {
+    amazon: amazonOrderFee,
+    shopify: shopifyOrderFee,
+    ebay: ebayOrderFee
+  }
+  const fee = fees[account.provider]
   const sales = converted(currency)
   const result = await db().execute(sql`
     select o."orderId" as "orderId",
@@ -388,7 +411,7 @@ export function dailySales(
         unpriced: (row?.orders ?? 0) - (row?.priced ?? 0)
       }
     }
-    series.push({ date, shopify: cell("shopify"), amazon: cell("amazon") })
+    series.push({ date, shopify: cell("shopify"), amazon: cell("amazon"), ebay: cell("ebay") })
   }
   return series
 }
@@ -437,7 +460,7 @@ type CatalogRow = {
   bundle?: { components?: { variantId: string; quantity: number }[] | null }
 }
 
-// Looks up catalog details by Shopify variant or Amazon seller SKU. An Amazon SKU matches a variant only when
+// Looks up catalog details by Shopify variant, or by Amazon or eBay seller SKU. A SKU matches a variant only when
 // exactly one variant carries it.
 // `markups` are landed markups by variant (freight, duty and charges as a share of the supplier's price); a unit's cost
 // includes its markup when one is known.
@@ -483,7 +506,7 @@ export function catalogIndex(catalog: readonly CatalogRow[], markups: ReadonlyMa
 }
 
 // Gross profit over the current period: sales less the cost of the units sold and each platform's fees (Amazon's
-// fees, Shopify Payments' processing fees). Only items with a unit cost in the sales currency count; the sales left
+// fees, Shopify Payments' processing fees, eBay's fees). Only items with a unit cost in the sales currency count; the sales left
 // out are reported so the page can say so.
 export function grossProfit(
   items: ItemRow[],
@@ -507,7 +530,7 @@ export function grossProfit(
     costed = 0,
     cost = 0,
     freight = 0
-  const costedBySource: Record<SalesSource, number> = { shopify: 0, amazon: 0 }
+  const costedBySource: Record<SalesSource, number> = { shopify: 0, amazon: 0, ebay: 0 }
   for (const item of current) {
     if (item.currency !== currency) {
       continue
@@ -528,7 +551,7 @@ export function grossProfit(
   }
   // Fees follow the sales they're charged on, so only the costed share of each platform's sales carries its fees.
   let feesMinor = 0
-  for (const source of ["shopify", "amazon"] as const) {
+  for (const source of ["shopify", "amazon", "ebay"] as const) {
     const platform = fees[source]
     if (platform && platform.revenueMinor > 0) {
       feesMinor += Math.round(platform.feesMinor * Math.min(1, costedBySource[source] / platform.revenueMinor))
@@ -585,9 +608,9 @@ export function movers(
     const id = row?.variantId ?? `${item.source}:${item.key}`
     const entry = byItem.get(id) ?? {
       id,
-      product: row?.productTitle ?? (item.source === "amazon" ? item.key : t("unknownProduct")),
+      product: row?.productTitle ?? (item.source === "shopify" ? t("unknownProduct") : item.key),
       variant: row?.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null,
-      sku: row?.buyerSku ?? (item.source === "amazon" ? item.key : null),
+      sku: row?.buyerSku ?? (item.source === "shopify" ? null : item.key),
       imageUrl: row?.imageUrl ?? null,
       current: 0,
       previous: 0
@@ -714,7 +737,7 @@ export async function platformCharges(
           currency
         })
       }
-    } else if (!account.locationId) {
+    } else if (account.provider === "shopify" && !account.locationId) {
       const result = await db().execute(sql`
         select case when type like 'SHIPPING%' then 'shopify-labels'
             when type like '%BILLING_DEBIT%' then 'shopify-bill'

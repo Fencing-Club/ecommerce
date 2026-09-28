@@ -99,7 +99,7 @@
     "stores": {
       "shopify": "Produits, stock, commandes, dépenses",
       "amazon": "Commandes, stock, dépenses, expéditions",
-      "ebay": "Commandes, stock"
+      "ebay": "Commandes, dépenses"
     },
     "comingSoon": "Bientôt disponible",
     "connect": "Connecter",

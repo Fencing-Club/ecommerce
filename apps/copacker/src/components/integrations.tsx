@@ -46,23 +46,29 @@ const tile = "flex h-full w-full flex-col items-start gap-4 rounded-xl border bg
 const clickable =
   "cursor-pointer transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
-// Every store as a card. Connecting starts from its card: Amazon's consent page, or Shopify's store address in a
-// dialog. A connected store's card opens its settings and Disconnect; eBay is coming.
+// Every store as a card. Connecting starts from its card: Amazon's and eBay's consent pages, or Shopify's store address
+// in a dialog. A connected store's card opens its settings and Disconnect. eBay is coming until Copacker has its keys.
 export function Integrations({
   admin,
   amazonDraft,
+  ebayAvailable,
   shopify,
   amazon,
+  ebay,
   shopifySettings,
-  amazonSettings
+  amazonSettings,
+  ebaySettings
 }: {
   admin: boolean
   // While Copacker's Amazon app is a draft, Amazon connects with a self-authorization token instead.
   amazonDraft: boolean
+  ebayAvailable: boolean
   shopify: Connection | null
   amazon: Connection | null
+  ebay: Connection | null
   shopifySettings: React.ReactNode
   amazonSettings: React.ReactNode
+  ebaySettings: React.ReactNode
 }) {
   const t = useTranslations("settings.integrations")
   let shopifyCard = <NotConnected store="shopify" />
@@ -96,14 +102,33 @@ export function Integrations({
       </a>
     )
   }
+  let ebayCard = (
+    <div className={tile}>
+      <TileBody store="ebay" badge={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
+    </div>
+  )
+  if (ebay) {
+    ebayCard = (
+      <Connected store="ebay" connection={ebay} admin={admin}>
+        {ebaySettings}
+      </Connected>
+    )
+  } else if (ebayAvailable && admin) {
+    // eBay's sign-in and consent page, which comes back to Settings.
+    ebayCard = (
+      <a href="/api/connections/ebay" className={cn(tile, clickable)}>
+        <TileBody store="ebay" footer={<ConnectLabel />} />
+      </a>
+    )
+  } else if (ebayAvailable) {
+    ebayCard = <NotConnected store="ebay" />
+  }
   return (
     <div className="@container">
       <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
         {shopifyCard}
         {amazonCard}
-        <div className={tile}>
-          <TileBody store="ebay" badge={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
-        </div>
+        {ebayCard}
       </div>
     </div>
   )
@@ -162,7 +187,7 @@ function Connected({
   admin,
   children
 }: {
-  store: "shopify" | "amazon"
+  store: Store
   connection: Connection
   admin: boolean
   children: React.ReactNode
@@ -212,10 +237,17 @@ function Connected({
 
 // A connected store's sync under its account: orders first (with how much history is copied), then inventory, then
 // when it last synced or that the last sync failed. Its Settings rows say why and have Sync now.
-function StoreSync({ store }: { store: "shopify" | "amazon" }) {
+function StoreSync({ store }: { store: Store }) {
+  return store === "ebay" ? <SyncLine store={store} stock={noStock} /> : <StockSync store={store} />
+}
+// eBay sells from the stock Shopify tracks, so it has no inventory sync of its own.
+const noStock = { active: false, problem: null }
+function StockSync({ store }: { store: "shopify" | "amazon" }) {
+  return <SyncLine store={store} stock={useStockSync(store)} />
+}
+function SyncLine({ store, stock }: { store: Store; stock: { active: boolean; problem: unknown } }) {
   const t = useTranslations("settings.integrations.sync")
   const orders = useOrderSync(store)
-  const stock = useStockSync(store)
   const ordersActive = orders?.status === "queued" || orders?.status === "running"
   const syncedAt = orders?.finishedAt ?? orders?.coveredTo
   let text: React.ReactNode = null

@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl"
 import { StatusBadge, type StatusTone } from "@/components/common"
 
-// Shopify's and Amazon's order statuses on the shared status tones: shipped is done, waiting to ship needs action,
+// Shopify's, Amazon's and eBay's order statuses on the shared status tones: shipped is done, waiting to ship needs action,
 // cancelled is lost, and anything else (such as Amazon's Pending) is neutral. The Orders page and the header's search
 // both show them this way.
 const orderTones = new Map<string, StatusTone>([

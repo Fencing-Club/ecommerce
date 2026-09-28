@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto"
+import { Ebay, ebayAuthorizeUrl, exchangeEbayCode } from "@repo/aisle/ebay"
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
 import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
@@ -6,7 +7,8 @@ import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireAdmin, requireBuyer } from "@/server/auth"
-import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
+import { ebayApp, shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
+import { queueEbaySubscription } from "@/server/ebay-events"
 import { errorResponse } from "@/server/errors"
 import { startFirstSync } from "@/server/first-sync"
 import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
@@ -16,7 +18,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   const s = await session()
   requireAdmin(s)
   requireBuyer(s)
-  const provider = z.enum(["shopify", "amazon"]).parse((await context.params).provider)
+  const provider = z.enum(["shopify", "amazon", "ebay"]).parse((await context.params).provider)
   const url = new URL(request.url),
     isCallback = url.searchParams.has("state")
   const site = siteUrlFor(request.headers)
@@ -38,6 +40,13 @@ export async function GET(request: Request, context: { params: Promise<{ provide
         redirect_uri: callback,
         state
       }).toString()
+    } else if (provider === "ebay") {
+      const app = ebayApp()
+      if (!app) {
+        return Response.json({ error: "eBay developer app is not configured" }, { status: 503 })
+      }
+      // eBay returns to the accepted URL set on the redirect URL name (RuName), which points here.
+      target = ebayAuthorizeUrl(app.clientId, app.ruName, state)
     } else {
       if (!process.env.AMAZON_APPLICATION_ID || !process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
         return Response.json({ error: "Amazon developer app is not configured" }, { status: 503 })
@@ -112,6 +121,23 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     const result = shopifyTokenResponse.parse(await response.json())
     credential = storedShopifyToken(result)
     scopes = result.scope ?? ""
+  } else if (provider === "ebay") {
+    const app = ebayApp()
+    if (!app) {
+      return Response.json({ error: "eBay developer app is not configured" }, { status: 503 })
+    }
+    let token: Awaited<ReturnType<typeof exchangeEbayCode>>
+    try {
+      token = await exchangeEbayCode(app, app.ruName, z.string().min(1).parse(url.searchParams.get("code")))
+      // The seller's immutable user ID identifies the account; their username can change.
+      externalId = (await new Ebay({ ...app, refreshToken: token.refreshToken }).user()).userId
+    } catch {
+      return errorResponse("ebayConnectionFailed", 400)
+    }
+    credential = {
+      token: token.refreshToken,
+      ...(token.refreshTokenExpiresAt ? { refreshExpiresAt: token.refreshTokenExpiresAt.getTime() } : {})
+    }
   } else {
     externalId = z
       .string()
@@ -143,6 +169,8 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     })
   if (provider === "shopify") {
     await queueShopifySubscription(s.org.id, randomUUID())
+  } else if (provider === "ebay") {
+    await queueEbaySubscription(s.org.id, randomUUID())
   } else {
     await queueAmazonSubscription(s.org.id, randomUUID())
   }

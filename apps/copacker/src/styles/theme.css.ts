@@ -30,9 +30,11 @@ export const vars = createGlobalThemeContract(
       sidebarAccentForeground: "sidebar-accent-foreground",
       sidebarBorder: "sidebar-border",
       sidebarRing: "sidebar-ring",
-      // Chart series, in fixed order: Amazon, then Shopify. Validated for color vision deficiency on the card surface.
+      // Chart series, in fixed order: Amazon, Shopify, then eBay. Amazon's and Shopify's were validated for color vision
+      // deficiency on the card surface; eBay's is the Okabe-Ito reddish purple, which stays apart from both.
       chart1: "chart-1",
       chart2: "chart-2",
+      chart3: "chart-3",
       // Status marks and positive-change text. Always paired with an icon or label.
       success: "success",
       warning: "warning"
@@ -77,6 +79,7 @@ const light = {
   sidebarRing: "oklch(0.75 0.183 55.934)",
   chart1: "#2a78d6",
   chart2: "#eb6834",
+  chart3: "#b14f9a",
   success: "#006300",
   warning: "#fab219"
 }
@@ -131,6 +134,7 @@ createGlobalTheme(".dark", vars.color, {
   sidebarRing: "oklch(0.408 0.123 38.172)",
   chart1: "#3987e5",
   chart2: "#d95926",
+  chart3: "#cf6fb9",
   success: "#0ca30c",
   warning: "#fab219"
 })

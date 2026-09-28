@@ -54,10 +54,10 @@ const salesApi = api.injectEndpoints({
   })
 })
 
-const titles: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon" }
+const titles: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" }
 const pageSize = 50
 
-const isSource = (value: unknown): value is SalesSource => value === "shopify" || value === "amazon"
+const isSource = (value: unknown): value is SalesSource => value === "shopify" || value === "amazon" || value === "ebay"
 
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
@@ -178,7 +178,7 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
     reconnect =
       source === "shopify"
         ? `/api/connections/shopify?shop=${encodeURIComponent(state.externalAccountId)}`
-        : "/api/connections/amazon"
+        : `/api/connections/${source}`
   }
   return (
     <DetailRow

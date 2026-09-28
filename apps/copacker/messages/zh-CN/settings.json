@@ -99,7 +99,7 @@
     "stores": {
       "shopify": "产品、库存、订单、费用",
       "amazon": "订单、库存、费用、货件",
-      "ebay": "订单、库存"
+      "ebay": "订单、费用"
     },
     "comingSoon": "即将推出",
     "connect": "连接",
