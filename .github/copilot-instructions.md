@@ -24,9 +24,11 @@ type-check deferred per-package via Turbo + `knip` once over the whole graph) th
 global; lint and type-check are per-package; knip is root-only.
 
 Git hooks (lefthook): **pre-commit** runs `oxlint --fix` + `oxfmt` on staged files; **pre-push** runs
-`pnpm check:types`. Do not bypass them with `--no-verify` unless the user explicitly authorizes it for a failure wholly
-caused by unrelated project work. That exception does not waive focused verification for the files being committed, and
-the commit handoff must record the unrelated blocker and the checks run directly.
+`pnpm check:types`. The pre-commit tools run via `node node_modules/...`, not `pnpm`, so lefthook can split any number
+of staged files into command lines Windows accepts; keep it that way. Do not bypass them with `--no-verify` unless the
+user explicitly authorizes it for a failure wholly caused by unrelated project work. That exception does not waive
+focused verification for the files being committed, and the commit handoff must record the unrelated blocker and the
+checks run directly.
 
 ## Workspace layout
 
