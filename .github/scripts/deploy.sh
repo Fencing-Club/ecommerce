@@ -21,13 +21,27 @@ fi
 echo "Railway token scope: $scope"
 
 newest() {
-  railway deployment list --service "$1" --limit 1 --json | node -e '
-    let input = ""
-    process.stdin.on("data", (chunk) => (input += chunk)).on("end", () => {
-      const [deployment] = JSON.parse(input)
-      // read needs the newline, or it fails and set -e ends the script.
-      console.log(deployment ? `${deployment.id} ${deployment.status}` : "none NONE")
-    })'
+  # Railway's API sometimes answers with an empty body ("error decoding response body"), so ask again a few times
+  # before giving up, rather than failing a deploy that went fine.
+  local answer
+  for _ in 1 2 3 4 5 6; do
+    answer=$(railway deployment list --service "$1" --limit 1 --json 2>/dev/null | node -e '
+      let input = ""
+      process.stdin.on("data", (chunk) => (input += chunk)).on("end", () => {
+        try {
+          const [deployment] = JSON.parse(input)
+          console.log(deployment ? `${deployment.id} ${deployment.status}` : "none NONE")
+        } catch {}
+      })' || true)
+    if [ -n "$answer" ]; then
+      # read needs the newline, or it fails and set -e ends the script.
+      echo "$answer"
+      return 0
+    fi
+    sleep 5
+  done
+  echo "::error::Railway didn't list $1's deployments" >&2
+  return 1
 }
 
 deploy() {
