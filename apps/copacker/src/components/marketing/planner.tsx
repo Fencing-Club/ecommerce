@@ -16,7 +16,8 @@ import { usePageIdle } from "./use-page-idle"
 // to order and how much. Changing the lead time, the stores or the rush glides everything to its new place.
 
 // The hand the chart's note is written in. It's only for the note, well down the page and hidden until the chart is
-// seen, so the note takes it on once the page is idle, and the font loads then rather than with the page's first paint.
+// seen, so the note takes it on once the page is idle, and the font loads then, through a preload, rather than with the
+// page's first paint.
 const hand = Caveat({ subsets: ["latin"], preload: false })
 
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
@@ -186,7 +187,6 @@ export function Planner() {
   const [inputs, setInputs] = useState<Inputs>({ lead: 60, amazon: 1, shopify: 1, ebay: 1, rush: 1 })
   const shown = useGlide(inputs)
   const figure = useRef<HTMLDivElement>(null)
-  const idle = usePageIdle()
   const [seen, setSeen] = useState(false)
   useEffect(() => {
     const element = figure.current
@@ -214,6 +214,10 @@ export function Planner() {
   const y = (units: number) => chart.bottom - (clamp(units, 0, most) / most) * (chart.bottom - chart.top)
   const result = plan(shown)
   const final = plan(inputs)
+  const idle = usePageIdle({
+    family: hand.style.fontFamily,
+    text: `${t("restock")} ${t("restockUnits", { count: final.units })}`
+  })
   const stock = (day: number) => product.stock - result.soldBy(day)
   const samples = Array.from({ length: horizon + 1 }, (_, day) => day)
   const without = path(samples.map((day) => [x(day), y(stock(day))]))

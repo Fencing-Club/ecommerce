@@ -202,9 +202,10 @@ function Agents() {
 // both cards past the screen.
 export function Connect() {
   const t = useTranslations("marketing.connect")
-  // The code is set in Geist Mono, which is fetched only once the page is idle: this is far down the page, and the
-  // font would otherwise load with the page's first paint. Until then the code uses the computer's own monospace.
-  const idle = usePageIdle()
+  // The code is set in Geist Mono, which is fetched only once the page is idle, through a preload: this is far down the
+  // page, and the font would otherwise load with the page's first paint. Until then the code uses the computer's own
+  // monospace. The code is all ASCII.
+  const idle = usePageIdle({ family: "Geist Mono", text: "a" })
   return (
     <div
       className={cn(
