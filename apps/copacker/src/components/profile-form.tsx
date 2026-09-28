@@ -4,7 +4,8 @@ import { useTranslations } from "next-intl"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
 import { isPosition, personSchema, positionKeys, positions, websiteSchema } from "@/lib/onboarding"
-import { FormInput, FormSelect } from "./form-controls"
+import { FormInput } from "./form-controls"
+import { FormSelect } from "./form-select"
 import { SettingsForm } from "./settings-forms"
 
 const schema = personSchema.extend({

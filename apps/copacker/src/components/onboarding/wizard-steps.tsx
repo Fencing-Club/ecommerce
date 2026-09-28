@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
 import { objectKeys } from "ts-extras"
 import { AddressFields } from "@/components/address-fields"
-import { FormInput, FormSelect } from "@/components/form-controls"
+import { FormInput } from "@/components/form-controls"
+import { FormSelect } from "@/components/form-select"
 import {
   Field,
   FieldContent,

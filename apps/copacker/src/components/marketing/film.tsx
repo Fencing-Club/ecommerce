@@ -2,47 +2,49 @@
 
 import { Play } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { whenPageIdle } from "./use-page-idle"
 
-// The ad, played in a dialog. The film is served from the copacker-media R2 bucket, loads only once it's opened, and has
-// its captions burned in. The button is drawn for a dark stage; `className` restyles it for another.
+// The dialog, with Base UI's focus trap, scroll lock and portal, arrives once the page is idle, or on the first click if
+// that comes sooner, so the first view doesn't download it.
+const FilmDialog = lazy(() => import("./film-dialog").then(({ FilmDialog: dialog }) => ({ default: dialog })))
+
+// The button that plays the ad, in a dialog (./film-dialog). The button is drawn for a dark stage; `className` restyles it
+// for another.
 export function Film({ className }: { className?: string }) {
   const t = useTranslations("marketing.film")
+  const button = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState(false)
+  const [wanted, setWanted] = useState(false)
+  useEffect(() => whenPageIdle(() => setWanted(true)), [])
   return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            size="lg"
-            className={cn(
-              "h-11 gap-2 rounded-xl border-white/15 bg-white/[0.04] px-5 text-[0.9375rem] text-white hover:bg-white/10",
-              className
-            )}
-          />
-        }
+    <>
+      <Button
+        ref={button}
+        variant="outline"
+        size="lg"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          setWanted(true)
+          setOpen(true)
+        }}
+        className={cn(
+          "h-11 gap-2 rounded-xl border-white/15 bg-white/[0.04] px-5 text-[0.9375rem] text-white hover:bg-white/10",
+          className
+        )}
       >
         <Play className="fill-current" />
         {t("watch")}
         <span className="tabular-nums opacity-60">1:45</span>
-      </DialogTrigger>
-      <DialogContent className="dark gap-0 overflow-hidden rounded-2xl bg-black p-0 ring-white/15 sm:max-w-5xl">
-        <DialogTitle className="sr-only">{t("title")}</DialogTitle>
-        {/* The captions are part of the picture, so there's no separate track. */}
-        {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          aria-label={t("title")}
-          className="aspect-video w-full bg-black"
-          src="https://media.copacker.ai/film-924d480a.mp4"
-          poster="/marketing/film.jpg"
-          controls
-          autoPlay
-          playsInline
-          preload="none"
-        />
-      </DialogContent>
-    </Dialog>
+      </Button>
+      {wanted && (
+        <Suspense>
+          <FilmDialog open={open} onOpenChange={setOpen} returnTo={button} />
+        </Suspense>
+      )}
+    </>
   )
 }

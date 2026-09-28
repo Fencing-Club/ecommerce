@@ -56,7 +56,8 @@ import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddProductsDialog, type StockAt } from "./add-products-dialog"
-import { DateInput, FormCheckbox, FormInput, FormLabel, FormSelect, FormTextarea } from "./form-controls"
+import { DateInput, FormCheckbox, FormInput, FormLabel, FormTextarea } from "./form-controls"
+import { FormSelect } from "./form-select"
 
 // Where a purchase order can go, each labeled under orders.builder.destinations.
 const destinations = ["amazon", "warehouse"] as const

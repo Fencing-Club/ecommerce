@@ -34,7 +34,8 @@ import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
 import { ActionForm, FormError, SubmitButton } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
-import { FormInput, FormNumber, FormSelect } from "./form-controls"
+import { FormInput, FormNumber } from "./form-controls"
+import { FormSelect } from "./form-select"
 
 type FormLayoutProps<Values extends FieldValues> = {
   form: UseFormReturn<Values, unknown, FieldValues>

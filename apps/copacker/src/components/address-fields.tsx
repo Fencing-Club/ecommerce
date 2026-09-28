@@ -5,7 +5,8 @@ import { useId } from "react"
 import { useController } from "react-hook-form"
 import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { countriesIn } from "@/lib/countries"
-import { FormInput, FormLabel, SelectControl } from "./form-controls"
+import { FormInput, FormLabel } from "./form-controls"
+import { SelectControl } from "./form-select"
 
 export const emptyAddress = {
   name: "",

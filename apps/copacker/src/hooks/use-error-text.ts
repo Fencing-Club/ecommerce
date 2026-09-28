@@ -1,7 +1,7 @@
 "use client"
 
 import { useMessages, useTranslations } from "next-intl"
-import { errorMessage } from "@/lib/api"
+import { errorMessage } from "@/lib/error-message"
 import { formErrorMapFor, isMessageKey } from "@/lib/form-errors"
 
 // Shows a message in the person's language when it's the full key of one, such as "orders.builder.chooseSupplier"

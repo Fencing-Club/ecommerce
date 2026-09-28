@@ -38,7 +38,8 @@ import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
 import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
 import { ActionForm, FormError } from "./actions"
-import { FormInput, SelectControl } from "./form-controls"
+import { FormInput } from "./form-controls"
+import { SelectControl } from "./form-select"
 
 type Member = { userId: string; email: string; name: string; role: Role; access: Access }
 // `expires` is the day the link stops working, such as "Oct 4".

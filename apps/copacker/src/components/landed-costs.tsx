@@ -25,7 +25,8 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { ActionForm, FormError } from "./actions"
-import { FormInput, FormMoney, FormSelect } from "./form-controls"
+import { FormInput, FormMoney } from "./form-controls"
+import { FormSelect } from "./form-select"
 import { InfoTip } from "./info-tip"
 
 const schema = z.object({

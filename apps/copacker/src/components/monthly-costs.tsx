@@ -14,7 +14,8 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
 import { ActionForm } from "./actions"
-import { FormInput, FormMoney, FormSelect } from "./form-controls"
+import { FormInput, FormMoney } from "./form-controls"
+import { FormSelect } from "./form-select"
 
 const day = z.union([z.iso.date(), z.literal("")])
 const schema = z

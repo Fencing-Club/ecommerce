@@ -1,7 +1,8 @@
 "use client"
 
 import { Field, FieldDescription } from "@/components/ui/field"
-import { FormLabel, SelectControl } from "./form-controls"
+import { FormLabel } from "./form-controls"
+import { SelectControl } from "./form-select"
 
 // A select for a plain form, outside React Hook Form.
 export function SelectField({

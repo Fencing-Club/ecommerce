@@ -29,7 +29,8 @@ import { productLabels } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError, SubmitButton } from "./actions"
-import { FormCheckbox, FormInput, FormNumber, FormSelect, FormTextarea } from "./form-controls"
+import { FormCheckbox, FormInput, FormNumber, FormTextarea } from "./form-controls"
+import { FormSelect } from "./form-select"
 import { type BarcodeVariation, ProductBarcodes } from "./product-barcodes"
 import {
   sameVariation,
