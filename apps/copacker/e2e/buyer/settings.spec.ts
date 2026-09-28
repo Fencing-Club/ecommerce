@@ -264,12 +264,17 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   const shopify = integrations.getByRole("button", { name: "Shopify settings" })
   await expect(shopify).toContainText("Connected")
   await expect(shopify).toContainText("copacker-demo.myshopify.com")
-  // Amazon offers Connect, and eBay isn't available yet. Neither is clicked.
-  await expect(integrations.getByRole("link", { name: /^Amazon .*Connect$/ })).toHaveAttribute(
-    "href",
-    "/api/connections/amazon"
-  )
-  await expect(integrations.getByText("Coming soon")).toBeVisible()
+  // Amazon and eBay offer Connect; neither is clicked. Without their apps configured, as locally and in CI, Amazon's
+  // goes to Seller Central's consent and eBay isn't available yet. Staging's draft Amazon app connects in a dialog.
+  const amazon = /^Amazon .*Connect$/
+  if (deployed) {
+    await expect(
+      integrations.getByRole("link", { name: amazon }).or(integrations.getByRole("button", { name: amazon }))
+    ).toBeVisible()
+  } else {
+    await expect(integrations.getByRole("link", { name: amazon })).toHaveAttribute("href", "/api/connections/amazon")
+    await expect(integrations.getByText("Coming soon")).toBeVisible()
+  }
 
   await shopify.click()
   const sheet = page.getByRole("dialog", { name: "Shopify" })

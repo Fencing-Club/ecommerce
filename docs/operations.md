@@ -76,8 +76,9 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
 - Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
   (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
   signs in with.
-- Staging's web service pre-deploy command is `pnpm --filter copacker predeploy && pnpm --filter copacker db:seed:e2e`
-  (set in Railway), so every staging deploy starts the end-to-end workspaces over. Production's only migrates.
+- Staging's web service pre-deploy command is `sh -c "pnpm --filter copacker predeploy && pnpm --filter copacker
+  db:seed:e2e"` (set in Railway), so every staging deploy starts the end-to-end workspaces over. Railway doesn't run the
+  command in a shell, so without `sh -c` the `&&` reaches pnpm as arguments. Production's only migrates.
 - Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`) and
   `PRODUCTION_DATABASE_VOLUME_INSTANCE`, the production Postgres volume that the promote backs up.
 - Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
