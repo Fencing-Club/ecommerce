@@ -46,7 +46,7 @@ describe("startPreview", () => {
 
     expect(written).toContain("Previewing against")
     const invocation = spawned.mock.calls[0]!
-    const options = (typeof invocation[1] === "object" ? invocation[1] : invocation[2]) as {
+    const options = (Array.isArray(invocation[1]) ? invocation[2] : invocation[1]) as {
       env: NodeJS.ProcessEnv
     }
     expect(options.env.SHOPIFY_EMAILS_VALUES).toMatch(/\.fixtures[\\/]order\.json$/)
@@ -60,7 +60,7 @@ describe("startPreview", () => {
 
     expect(written).toContain("the samples answer")
     const invocation = spawned.mock.calls[0]!
-    const options = (typeof invocation[1] === "object" ? invocation[1] : invocation[2]) as {
+    const options = (Array.isArray(invocation[1]) ? invocation[2] : invocation[1]) as {
       env: NodeJS.ProcessEnv
     }
     expect(options.env).toBe(process.env)
