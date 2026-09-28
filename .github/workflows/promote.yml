@@ -32,17 +32,6 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm install --global @railway/cli
-      # Migrations only go forward, so take a backup to restore from if one goes wrong.
-      - name: Back up the production database
-        run: |
-          token=$(printf "%s" "$RAILWAY_TOKEN" | tr -d "[:space:]")
-          response=$(curl -fsS https://backboard.railway.com/graphql/v2 \
-            -H "Project-Access-Token: $token" -H "Content-Type: application/json" \
-            -d '{"query":"mutation($id: String!) { volumeInstanceBackupCreate(volumeInstanceId: $id) { workflowId } }","variables":{"id":"${{ vars.PRODUCTION_DATABASE_VOLUME_INSTANCE }}"}}')
-          if [ -z "$(jq -r '.data.volumeInstanceBackupCreate.workflowId // empty' <<< "$response")" ]; then
-            echo "::error::Backup failed: $response"
-            exit 1
-          fi
       - run: bash .github/scripts/deploy.sh "${{ steps.staging.outputs.sha }}" "${{ vars.PRODUCTION_URL }}"
       # Production holds real data, so only the read-only, signed-out specs run against it.
       - run: npm install --global pnpm@11.9.0

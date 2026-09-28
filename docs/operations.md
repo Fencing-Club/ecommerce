@@ -70,8 +70,8 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 Every push to `codex/copacker` runs CI (`pnpm verify`, Copacker's build, every migration on an empty Postgres 18, and
 the [end-to-end suite](e2e.md)). When they pass, the `deploy-staging` job deploys that commit to Railway's staging
 environment and runs the end-to-end suite against it. To release to production, run the **Promote to production**
-workflow in GitHub Actions. It releases the commit staging serves, after taking a backup of the production database,
-and then runs the signed-out smoke specs against production.
+workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs against
+production.
 
 Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
 pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
@@ -83,13 +83,13 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
 - Staging's web service pre-deploy command is `sh -c "pnpm --filter copacker predeploy && pnpm --filter copacker
   db:seed:e2e"` (set in Railway), so every staging deploy starts the end-to-end workspaces over. Railway doesn't run the
   command in a shell, so without `sh -c` the `&&` reaches pnpm as arguments. Production's only migrates.
-- Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`) and
-  `PRODUCTION_DATABASE_VOLUME_INSTANCE`, the production Postgres volume that the promote backs up.
+- Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`).
 - Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
   forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in
   one release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to
-  undo a migration, write a new one, or restore the backup the promote took.
-- Production Postgres also has Railway's daily (6 days) and weekly (27 days) backups.
+  undo a migration, write a new one, or restore one of Railway's scheduled backups of production Postgres: daily (kept 6
+  days) and weekly (27 days). The promote used to take a manual backup too, but manual backups never expire, and
+  Railway allows 10 per volume, scheduled ones included, so they stopped releases on 2026-09-28.
 - CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change.
 - Deploying by hand with `railway up` still works; prefer the workflows so the health check reports the commit.
 
