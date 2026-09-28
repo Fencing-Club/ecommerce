@@ -40,15 +40,23 @@ const amazonFreeOrder = sql`(${amazonReplacement(sql`o.data`)} or (exists (selec
     and t."totalMinor" <> 0)))`
 const itemPriced = sql`(coalesce(jsonb_typeof(item->'proceeds'->'breakdowns'), '') = 'array'
   or (item->>'quantityOrdered')::int = 0 or ${amazonFreeOrder})`
-// One eBay order line's sales: its price less the seller's promotions on it. eBay prices every line.
-const ebayLineRevenue = sql.raw(`((ebay->'lineItemCost'->>'value')::numeric
+// One eBay order line's price less the seller's promotions on it, and what was refunded on it. eBay prices every line.
+const ebayLinePrice = `((ebay->'lineItemCost'->>'value')::numeric
   - coalesce((select sum(abs((p->'discountAmount'->>'value')::numeric))
-    from jsonb_array_elements(coalesce(ebay->'appliedPromotions', '[]'::jsonb)) p), 0))`)
+    from jsonb_array_elements(coalesce(ebay->'appliedPromotions', '[]'::jsonb)) p), 0))`
+const ebayLineRefunded = `coalesce((select sum(abs((r->'amount'->>'value')::numeric))
+    from jsonb_array_elements(coalesce(ebay->'refunds', '[]'::jsonb)) r), 0)`
+// A line refunded in full, or in an order eBay refunded in full, has no sales or units left (see ebayLineSales).
+const ebayLineGone = `(o.data->>'orderPaymentStatus' = 'FULLY_REFUNDED'
+  or (${ebayLinePrice} > 0 and ${ebayLineRefunded} >= ${ebayLinePrice}))`
+const ebayLineRevenue = sql.raw(`(case when ${ebayLineGone} then 0
+  else greatest(0, ${ebayLinePrice} - ${ebayLineRefunded}) end)`)
+const ebayLineUnits = `(case when ${ebayLineGone} then 0 else (ebay->>'quantity')::int end)`
 
 const orderUnits = sql.raw(`case when o.source = 'amazon' then
   (select coalesce(sum((item->>'quantityOrdered')::int), 0) from jsonb_array_elements(o.data->'orderItems') item)
 when o.source = 'ebay' then
-  (select coalesce(sum((ebay->>'quantity')::int), 0) from jsonb_array_elements(o.data->'lineItems') ebay)
+  (select coalesce(sum(${ebayLineUnits}), 0) from jsonb_array_elements(o.data->'lineItems') ebay)
 else
   (select coalesce(sum((line->>'currentQuantity')::int), 0) from jsonb_array_elements(o.data->'lines') line
     where jsonb_typeof(line->'lineItemGroup') is distinct from 'object')
@@ -233,7 +241,7 @@ export async function salesByItem(
       where o.source = 'amazon' and ${scope}
       union all
       select o."orderId", o.source, ${period}, o."orderedAt", nullif(trim(ebay->>'sku'), ''), ebay->>'lineItemId',
-        (ebay->>'quantity')::int, ${ebayLineRevenue}, ${orderPriced}, ebay->'lineItemCost'->>'currency'
+        ${sql.raw(ebayLineUnits)}, ${ebayLineRevenue}, ${orderPriced}, ebay->'lineItemCost'->>'currency'
       from sales_orders o, jsonb_array_elements(o.data->'lineItems') ebay
       where o.source = 'ebay' and ${scope}
     ), lines as (

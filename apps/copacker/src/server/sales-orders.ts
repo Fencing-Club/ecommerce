@@ -658,18 +658,26 @@ function shopifyFees(data: ShopifySale) {
   return fees && currency ? { minor: fees.minor, currency } : null
 }
 
+// An eBay line as it counts: its price less the seller's promotions and what was refunded on it, and its units unless
+// it was refunded in full. As with Shopify's removed and refunded units, a refunded sale is gone; eBay marks an order
+// refunded in full as FULLY_REFUNDED, even when the refund was made on the order rather than its lines.
+export function ebayLineSales(order: Pick<EbaySale, "orderPaymentStatus">, line: EbaySale["lineItems"][number]) {
+  const amount = (value: string | undefined) => Math.abs(Number(value ?? 0))
+  const price =
+    Number(line.lineItemCost.value) -
+    (line.appliedPromotions ?? []).reduce((sum, promotion) => sum + amount(promotion.discountAmount?.value), 0)
+  const refunded = (line.refunds ?? []).reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  const whole = order.orderPaymentStatus === "FULLY_REFUNDED" || (price > 0 && refunded >= price)
+  return { units: whole ? 0 : line.quantity, sales: whole ? 0 : Math.max(0, price - refunded) }
+}
+
 export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: number; currency: string } | null {
   let total = 0,
     currency: string | null = null
   if ("lineItems" in data) {
-    // eBay lines at their price less the seller's promotions on them.
     for (const line of data.lineItems) {
       currency ??= line.lineItemCost.currency
-      const discount = (line.appliedPromotions ?? []).reduce(
-        (sum, promotion) => sum + Math.abs(Number(promotion.discountAmount?.value ?? 0)),
-        0
-      )
-      total += Number(line.lineItemCost.value) - discount
+      total += ebayLineSales(data, line).sales
     }
   } else if ("lines" in data) {
     for (const line of data.lines) {
@@ -824,12 +832,12 @@ export function summarizeSalesOrder(
       orderId: data.orderId,
       number: data.salesRecordReference ?? data.orderId,
       orderedAt: orderedAt.toISOString(),
-      units: data.lineItems.reduce((sum, line) => sum + line.quantity, 0),
-      items: data.lineItems.map((line) => ({
-        sku: line.sku?.trim() || null,
-        name: line.title ?? null,
-        quantity: line.quantity
-      })),
+      units: data.lineItems.reduce((sum, line) => sum + ebayLineSales(data, line).units, 0),
+      // Lines refunded in full are gone, as Shopify's removed lines are.
+      items: data.lineItems.flatMap((line) => {
+        const { units } = ebayLineSales(data, line)
+        return units > 0 ? [{ sku: line.sku?.trim() || null, name: line.title ?? null, quantity: units }] : []
+      }),
       channel: "eBay",
       status: ebayStatuses[data.orderFulfillmentStatus] ?? words(data.orderFulfillmentStatus),
       sales: orderSales(data),
