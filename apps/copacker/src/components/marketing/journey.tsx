@@ -385,7 +385,7 @@ export function Journey() {
           pin.dataset.shown = String(note.shown.some(([from, to]) => played >= from && played <= to))
           // A card slides sideways along the top of its stem, and down below the site's header, to stay whole on
           // screen; a pin slides in from the screen's edges.
-          const label = pin.firstElementChild
+          const label = pin.lastElementChild
           if (label instanceof HTMLElement) {
             widths[i] ||= label.offsetWidth
             heights[i] ||= label.offsetHeight
@@ -514,12 +514,13 @@ export function Journey() {
             >
               {note.kind === "card" ? (
                 <>
-                  <div className="absolute bottom-3 left-1/2 origin-bottom -translate-x-1/2 transition-[opacity,scale,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=false]/note:translate-y-2 group-data-[shown=false]/note:scale-95 group-data-[shown=false]/note:opacity-0">
-                    {note.content}
-                  </div>
+                  {/* The card comes after its stem, so when it slides down over its place it hides the stem. */}
                   {!note.spot && (
                     <span className="absolute bottom-0 left-0 h-3 w-px -translate-x-1/2 bg-foreground/25 transition-opacity duration-500 group-data-[shown=false]/note:opacity-0" />
                   )}
+                  <div className="absolute bottom-3 left-1/2 origin-bottom -translate-x-1/2 transition-[opacity,scale,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=false]/note:translate-y-2 group-data-[shown=false]/note:scale-95 group-data-[shown=false]/note:opacity-0">
+                    {note.content}
+                  </div>
                 </>
               ) : (
                 <span className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#26221f] px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white shadow-lg transition-[opacity,translate] duration-500 group-data-[shown=false]/note:translate-y-1 group-data-[shown=false]/note:opacity-0">
