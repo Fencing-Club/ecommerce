@@ -1,11 +1,12 @@
 name: CI
 on:
   push:
-    branches: [main]
+    branches: [codex/copacker]
   pull_request:
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push replaces a pull request's run, but never cuts off a deploy halfway.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 jobs:
@@ -32,3 +33,29 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
       - run: pnpm build
+      # Every migration applies to an empty Postgres 18, as it will on staging and production.
+      - run: |
+          psql "$TEST_DATABASE_URL" -c "CREATE DATABASE copacker_migrate"
+          pnpm --filter copacker db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_migrate
+
+  deploy-staging:
+    needs: verify
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --global @railway/cli
+      - run: bash .github/scripts/deploy.sh "$GITHUB_SHA" "${{ vars.STAGING_URL }}"

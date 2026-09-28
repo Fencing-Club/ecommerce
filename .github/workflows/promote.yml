@@ -1,0 +1,45 @@
+name: Promote to production
+# Run by hand once staging looks right. It releases the commit staging is serving, so production only ever gets
+# a commit that passed CI and deployed to staging.
+on:
+  workflow_dispatch:
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+    steps:
+      - name: Find the commit staging serves
+        id: staging
+        run: |
+          sha=$(curl -fsS "${{ vars.STAGING_URL }}/api/health" | jq -r '.commit // empty')
+          if [ -z "$sha" ]; then
+            echo "::error::Staging doesn't report a commit"
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Promoting $sha" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.staging.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --global @railway/cli
+      # Migrations only go forward, so take a backup to restore from if one goes wrong.
+      - name: Back up the production database
+        run: |
+          response=$(curl -fsS https://backboard.railway.com/graphql/v2 \
+            -H "Project-Access-Token: $RAILWAY_TOKEN" -H "Content-Type: application/json" \
+            -d '{"query":"mutation($id: String!) { volumeInstanceBackupCreate(volumeInstanceId: $id) { workflowId } }","variables":{"id":"${{ vars.PRODUCTION_DATABASE_VOLUME_INSTANCE }}"}}')
+          if [ -z "$(jq -r '.data.volumeInstanceBackupCreate.workflowId // empty' <<< "$response")" ]; then
+            echo "::error::Backup failed: $response"
+            exit 1
+          fi
+      - run: bash .github/scripts/deploy.sh "${{ steps.staging.outputs.sha }}" "${{ vars.PRODUCTION_URL }}"

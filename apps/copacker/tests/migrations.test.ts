@@ -49,6 +49,19 @@ describe("migrations", () => {
     expect(problems).toEqual([])
   })
 
+  // The migrator runs only the entries made after the last one a database applied, so a migration numbered after
+  // another but made before it would be skipped without an error. Regenerate it rather than renumbering it.
+  it("are numbered in the order they were made", () => {
+    const problems = journal.entries.flatMap((entry, index) => {
+      const previous = journal.entries[index - 1]
+      return [
+        ...(entry.idx === index ? [] : [`${entry.tag} is numbered ${entry.idx}, not ${index}`]),
+        ...(previous && entry.when <= previous.when ? [`${entry.tag} was made before ${previous.tag}`] : [])
+      ]
+    })
+    expect(problems).toEqual([])
+  })
+
   it("cover every schema change", async () => {
     const latest = journal.entries.at(-1)
     const snapshot = JSON.parse(

@@ -23,9 +23,32 @@ Amazon create is checkpointed before the network request. If its response is los
 
 Failed notification and Shopify write jobs remain visible for an owner to retry after fixing configuration. Shopify cost updates require equal currencies and use supplier piece price multiplied by the sellable pack size. No estimated exchange rate or hidden freight allocation is applied.
 
+## Releases
+
+Every push to `codex/copacker` runs CI (`pnpm verify`, the build, and every migration on an empty Postgres 18). When
+it passes, the `deploy-staging` job deploys that commit to Railway's staging environment. To release to production,
+run the **Promote to production** workflow in GitHub Actions. It releases the commit staging serves, after taking a
+backup of the production database.
+
+Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
+pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
+`/api/health` to report the commit. Deploys to one environment never overlap, and a newer push doesn't cancel one.
+
+- Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
+  (Project settings, Tokens).
+- Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`) and
+  `PRODUCTION_DATABASE_VOLUME_INSTANCE`, the production Postgres volume that the promote backs up.
+- Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
+  forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in
+  one release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to
+  undo a migration, write a new one, or restore the backup the promote took.
+- Production Postgres also has Railway's daily (6 days) and weekly (27 days) backups.
+- Deploying by hand with `railway up` still works (see [Infrastructure](#infrastructure)); prefer the workflows so the
+  health check reports the commit.
+
 ## Infrastructure
 
-Railway project `copacker`: d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6. Production: 3fdd8f47-c9ad-44c5-b554-78b64818b4e5. Postgres: aef82310-c9f9-4472-a2bb-e19949723c31. Web: 79da7d29-d1d6-4aa7-9fef-709dbf2b9619. Private documents bucket: 868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2. Project name identifies the deployed app; repository name is ecommerce.
+Railway project `copacker`: d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6. Production: 3fdd8f47-c9ad-44c5-b554-78b64818b4e5. Staging: b822ecad-68dd-4f4f-89e0-d9db00485545. Postgres: aef82310-c9f9-4472-a2bb-e19949723c31. Web: 79da7d29-d1d6-4aa7-9fef-709dbf2b9619. Private documents bucket: 868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2. Project name identifies the deployed app; repository name is ecommerce.
 
 Domain: `copacker.ai` is registered with Cloudflare Registrar (auto-renews every two years) and uses Cloudflare DNS. `copacker.ai` and `staging.copacker.ai` are proxied CNAMEs to the web service (staging runs on production, through `APP_ALIAS_URLS`, until a staging environment exists), each with a `_railway-verify` TXT record. `www` redirects to the root with a Cloudflare redirect rule. SSL/TLS is set to Full; Railway does not work with Full (Strict). The landing film is in the `copacker-media` R2 bucket, served at `https://media.copacker.ai/film.mp4`; [Landing page](landing-page.md#assets) says how to replace it.
 
@@ -39,8 +62,13 @@ Still to do after the move to `copacker.ai` (2026-09-28):
   and `CONTACT_EMAIL` is a personal Gmail. Verify `copacker.ai` in Resend (its DNS records go in Cloudflare), move
   `EMAIL_FROM` to an `@copacker.ai` address, and route incoming `@copacker.ai` mail (Cloudflare Email Routing) before
   pointing `CONTACT_EMAIL` at it. Then turn off WorkOS's own password reset email ([Auth](auth.md#workos-settings)).
-- Staging: `staging.copacker.ai` is the production service and database under another address, so anything done there
-  is real. Give it its own Railway environment, then drop it from `APP_ALIAS_URLS` and point its DNS record there.
+- Staging: the Railway environment `staging` (2026-09-28) was duplicated from production. It has its own Postgres,
+  documents bucket, `TOKEN_ENCRYPTION_KEY` and `WORKOS_COOKIE_PASSWORD`, and uses the local development apps (Copacker
+  Dev, Aisle Dev), so connecting a store there never rotates production's tokens. WorkOS stays on the staging
+  environment for both. It reads no SQS queues until it has its own: production's would be drained by its worker.
+  Still to do: move `staging.copacker.ai` from the production service to staging's and drop it from production's
+  `APP_ALIAS_URLS`; add the staging redirects to Copacker Dev and Aisle Dev; create staging's Shopify EventBridge
+  source and queues.
 
 Worker: `08c1edb8-c309-4fe4-b71e-14b54065a0fc`, start command `pnpm --filter copacker worker`. The web domain is `https://copacker.ai` (`APP_URL`); `https://copacker-production.up.railway.app` still reaches the service directly, port 3000, healthcheck `/api/health`. WorkOS currently uses staging credentials; the Railway environment name does not imply production AuthKit readiness. On 2026-09-28, Google sign-in, a signed-in API request and a Shopify reconnect of the Fencing Club store passed on both `https://copacker.ai` and `https://staging.copacker.ai`.
 
