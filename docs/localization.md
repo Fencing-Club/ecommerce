@@ -21,6 +21,10 @@ text. Worker jobs and emails have no request: use `translatorFor(profile.locale)
 Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
 Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
 
+Every page preloads Geist's Latin face. Ukrainian, Hindi and Urdu pages also preload one file for their script
+(Geist's Cyrillic, Noto Sans Devanagari, Noto Nastaliq Urdu) from `src/styles/fonts/`, which the root layout names
+first in the page's font stack, so their text doesn't move when the font arrives.
+
 Urdu is set in Noto Nastaliq Urdu, whose letters rise and hang far past the line Latin text sits on. `globals.css`
 gives Urdu's body sizes taller lines, and a headline with a tight `leading-[…]` adds `urdu:leading-[1.6]
 urdu:tracking-normal` (the `urdu:` variant is also in `globals.css`). Text clipped to its box, such as `lit`'s gradient,
