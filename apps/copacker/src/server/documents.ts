@@ -240,7 +240,7 @@ export async function generateInvoice(orderId: string, shipmentId: string, revis
     .from(orderRevisions)
     .where(and(eq(orderRevisions.orderId, orderId), eq(orderRevisions.revision, revision)))
   if (!order || !historical) {
-    throw new Error("PO revision is unavailable")
+    throw new Error("Purchase order revision is unavailable")
   }
   const parties = await documentParties(order, historical.data)
   const [link] = await db()

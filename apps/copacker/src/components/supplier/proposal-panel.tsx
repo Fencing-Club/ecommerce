@@ -62,7 +62,7 @@ function describe(proposal: { status: "pending" | "declined"; reason: string | n
     return proposal.reason ? `Declined: ${proposal.reason}` : "Declined by the customer."
   }
   return viewer === "buyer"
-    ? "Approving publishes a new PO revision with their commercial invoice."
+    ? "Approving publishes a new purchase order revision with their commercial invoice."
     : "Waiting for the customer to approve."
 }
 
@@ -232,7 +232,7 @@ export function ProposalPanel({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Decline the changes?</DialogTitle>
-            <DialogDescription>The PO stays as it is. {supplierName} sees your reason.</DialogDescription>
+            <DialogDescription>The purchase order stays as it is. {supplierName} sees your reason.</DialogDescription>
           </DialogHeader>
           <Field>
             <FieldLabel htmlFor="decline-reason">Reason</FieldLabel>

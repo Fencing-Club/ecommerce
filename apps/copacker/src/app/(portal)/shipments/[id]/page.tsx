@@ -32,7 +32,7 @@ import { sx } from "@/styles/sprinkles.css"
 // What the shipment waits on: changes the customer hasn't answered, or its next step.
 function shipmentMessage(next: string, enteringFor: string | null, awaitingChanges: boolean) {
   if (awaitingChanges) {
-    return "Changes to the PO are waiting for approval"
+    return "Changes to the purchase order are waiting for approval"
   }
   return enteringFor ? `Enter ${enteringFor}’s cartons and invoice` : next
 }
@@ -119,11 +119,12 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           <Clock />
           <AlertTitle>Changes waiting for approval</AlertTitle>
           <AlertDescription>
-            Packing opens once {isBuyer ? "you answer" : "the customer answers"} the proposed changes on the PO.
+            Packing opens once {isBuyer ? "you answer" : "the customer answers"} the proposed changes on the purchase
+            order.
           </AlertDescription>
           <AlertAction>
             <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
-              View PO
+              View purchase order
             </Button>
           </AlertAction>
         </Alert>

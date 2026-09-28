@@ -4719,7 +4719,7 @@ describe("supplier proposals", () => {
       status: "declined",
       reason: "Too expensive"
     })
-    await expect(proposeChanges(supplier, orderId, change(), 2)).rejects.toThrow("This PO has changed")
+    await expect(proposeChanges(supplier, orderId, change(), 2)).rejects.toThrow("This purchase order has changed")
     const unchanged = {
       lines: orderData.items.map((item) => ({
         itemId: item.id,

@@ -158,14 +158,14 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted" || order.revision !== expectedRevision) {
-      throw new Error("This PO has changed. Refresh and try again")
+      throw new Error("This purchase order has changed. Refresh and try again")
     }
     if (!(await changeable(tx, orderId))) {
-      throw new Error("A shipment is already packed, so this PO can't change")
+      throw new Error("A shipment is already packed, so this purchase order can't change")
     }
     const ids = proposal.lines.flatMap((line) => (line.itemId ? [line.itemId] : []))
     if (new Set(ids).size !== ids.length || ids.some((id) => !order.data.items.some((item) => item.id === id))) {
-      throw new Error("This PO has changed. Refresh and try again")
+      throw new Error("This purchase order has changed. Refresh and try again")
     }
     for (const line of proposal.lines) {
       const item = order.data.items.find((candidate) => candidate.id === line.itemId)
@@ -184,7 +184,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
         throw new Error(`Add only your active products: ${missing.join(", ")}`)
       }
       if (new Set(skus).size !== skus.length || order.data.items.some((item) => skus.includes(item.supplierSku))) {
-        throw new Error("A product is on the PO twice. Change its quantity instead")
+        throw new Error("A product is on the purchase order twice. Change its quantity instead")
       }
     }
     const changes = proposalChanges(order.data, proposal)
@@ -235,7 +235,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
 async function pendingFor(tx: Transaction, s: Session, proposalId: string) {
   const [proposal] = await tx.select().from(orderProposals).where(eq(orderProposals.id, proposalId)).for("update")
   if (!proposal || proposal.status !== "pending") {
-    throw new Error("These changes were already answered. Refresh to see the PO")
+    throw new Error("These changes were already answered. Refresh to see the purchase order")
   }
   const { order, supplier } = await accessibleOrder(s, proposal.orderId, tx, true)
   return { proposal, order, supplier }
@@ -278,7 +278,7 @@ export async function approveProposal(s: Session, proposalId: string) {
   requireBuyer(s)
   const [proposal] = await db().select().from(orderProposals).where(eq(orderProposals.id, proposalId))
   if (!proposal || proposal.status !== "pending") {
-    throw new Error("These changes were already answered. Refresh to see the PO")
+    throw new Error("These changes were already answered. Refresh to see the purchase order")
   }
   const { order } = await accessibleOrder(s, proposal.orderId)
   const added = proposal.data.lines.filter((line) => !line.itemId)
@@ -336,7 +336,9 @@ export async function approveProposal(s: Session, proposalId: string) {
       locked.status !== "submitted" ||
       !(await changeable(tx, locked.id))
     ) {
-      throw new Error("The PO changed since the supplier proposed this. Ask them to send their changes again")
+      throw new Error(
+        "The purchase order changed since the supplier proposed this. Ask them to send their changes again"
+      )
     }
     await checkOrder(tx, s, prepared, { stock: false })
     const revision = locked.revision + 1
@@ -371,7 +373,7 @@ export async function approveProposal(s: Session, proposalId: string) {
     await tx.insert(events).values({
       orderId: locked.id,
       actor: s.user.id,
-      message: `Supplier's changes approved; PO revision ${revision} published`
+      message: `Supplier's changes approved; purchase order revision ${revision} published`
     })
     return { orderId: locked.id, revision, shipmentIds: open.map((row) => row.id) }
   })

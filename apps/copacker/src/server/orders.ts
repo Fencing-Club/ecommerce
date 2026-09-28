@@ -409,7 +409,7 @@ async function refusePendingChanges(tx: Transaction, orderId: string) {
     .from(orderProposals)
     .where(and(eq(orderProposals.orderId, orderId), eq(orderProposals.status, "pending")))
   if (pending) {
-    throw new Error("Changes to this PO are waiting for approval. Pack once they're answered")
+    throw new Error("Changes to this purchase order are waiting for approval. Pack once they're answered")
   }
 }
 export async function newShipment(s: Session, orderId: string) {
