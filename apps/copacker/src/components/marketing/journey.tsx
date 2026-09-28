@@ -639,10 +639,12 @@ export function Journey() {
                 )}
               >
                 <div className="overflow-hidden">
+                  {/* The latest document's tint is a layer that fades, so the compositor can fade it without repainting. */}
                   <div
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors duration-700",
-                      i === saved - 1 && "bg-primary/[0.07]"
+                      "relative isolate flex items-center gap-2.5 rounded-lg px-2 py-1.5",
+                      "before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-primary/[0.07] before:opacity-0 before:transition-opacity before:duration-700",
+                      i === saved - 1 && "before:opacity-100"
                     )}
                   >
                     <FileText className="size-4 shrink-0 text-muted-foreground" />

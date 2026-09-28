@@ -33,12 +33,16 @@ export function Bar({ tone, children }: { tone: "dark" | "light"; children: Reac
       removeEventListener("resize", request)
     }
   }, [])
+  // Each tone's ground is its own layer under the bar, and changing tone cross-fades them, since the compositor can fade
+  // a layer's opacity but has to repaint a changing background or shadow.
   return (
     <header
       ref={ref}
       className={cn(
-        "sticky top-0 z-40 text-foreground backdrop-blur-xl transition-[background-color,box-shadow] duration-500",
-        dark ? "dark bg-(--ink)/60" : "light bg-(--paper)/80 shadow-[0_1px_0_rgb(0_0_0/0.06)]"
+        "sticky top-0 z-40 text-foreground backdrop-blur-xl",
+        "before:absolute before:inset-0 before:-z-10 before:bg-(--ink)/60 before:transition-opacity before:duration-500",
+        "after:absolute after:inset-0 after:-z-10 after:bg-(--paper)/80 after:shadow-[0_1px_0_rgb(0_0_0/0.06)] after:transition-opacity after:duration-500",
+        dark ? "dark after:opacity-0" : "light before:opacity-0"
       )}
     >
       {children}

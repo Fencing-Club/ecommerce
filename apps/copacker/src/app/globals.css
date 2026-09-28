@@ -52,6 +52,27 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* tw-animate-css's animate-in and animate-out also animate filter: blur(), even at no blur, and a filter animation
+   can't run on the compositor. Nothing here blurs in or out, so these replace them with only opacity and transform. */
+@theme inline {
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+        scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1))
+        rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+  @keyframes exit {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+        scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1))
+        rotate(var(--tw-exit-rotate, 0));
+    }
+  }
+}
+
 /* The sign-in panel's cards drift, and its shipment's current leg runs. */
 @theme {
   --animate-float: float 9s ease-in-out infinite;

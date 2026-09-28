@@ -39,11 +39,13 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
   )
 }
 
+// A hidden panel doesn't animate, so a page of closed panels doesn't play a close animation for each as it loads. A
+// closing panel isn't hidden until its animation ends, so it still slides shut.
 function AccordionContent({ className, children, ...props }: AccordionPrimitive.Panel.Props) {
   return (
     <AccordionPrimitive.Panel
       data-slot="accordion-content"
-      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up motion-reduce:animate-none!"
+      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up [&[hidden]]:animate-none motion-reduce:animate-none!"
       {...props}
     >
       <div
