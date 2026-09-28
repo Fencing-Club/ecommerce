@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { unstable_cache } from "next/cache"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status } from "@/components/common"
+import { TabLinks } from "@/components/tab-links"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -32,22 +33,44 @@ const amazonShipments = unstable_cache(
   { revalidate: 120 }
 )
 
-export default async function ShipmentsPage() {
+// The list's tabs, kept in the URL: active shipments by default. Amazon calls a received shipment closed.
+const views = [
+  { view: undefined, label: "Active", empty: "No active shipments" },
+  { view: "received", label: "Received", empty: "No received shipments" },
+  { view: "cancelled", label: "Cancelled", empty: "No cancelled shipments" },
+  { view: "all", label: "All", empty: "No shipments" }
+] as const
+function stage(status: string) {
+  if (["received", "CLOSED"].includes(status)) {
+    return "received"
+  }
+  return ["cancelled", "CANCELLED"].includes(status) ? "cancelled" : undefined
+}
+
+export default async function ShipmentsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const requested = (await searchParams).view
+  const current = views.find((tab) => tab.view === requested) ?? views[0]
+  const inView = (status: string) => current.view === "all" || stage(status) === current.view
   const s = await session()
   const rows = await visibleOrders(s)
   const ids = rows.map((r) => r.order.id)
   const list = ids.length
     ? await db().select().from(shipments).where(inArray(shipments.orderId, ids)).orderBy(desc(shipments.createdAt))
     : []
+  const listed = list.filter((shipment) => inView(shipment.status))
 
   // Every shipment in the buyer's Amazon account follows the purchase order shipments, except those a purchase order
   // shipment already shows. The supplier can't see the buyer's Amazon account.
   let amazon: AmazonShipment[] = []
+  // Every Amazon shipment the tabs choose from.
+  let amazonAll = 0
   let amazonFailed = false
   if (s.org.kind === "buyer") {
     try {
       const linked = new Set(list.flatMap((shipment) => shipment.amazonShipmentId?.split(", ") ?? []))
-      amazon = ((await amazonShipments(s.org.id)) ?? []).filter((row) => !linked.has(row.shipmentId))
+      const unlinked = ((await amazonShipments(s.org.id)) ?? []).filter((row) => !linked.has(row.shipmentId))
+      amazonAll = unlinked.length
+      amazon = unlinked.filter((row) => inView(row.status))
     } catch (error) {
       console.error(
         JSON.stringify({
@@ -95,10 +118,19 @@ export default async function ShipmentsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All shipments</CardTitle>
+          <CardTitle>
+            <TabLinks
+              label="Shipment status"
+              tabs={views.map((tab) => ({
+                label: tab.label,
+                href: tab.view ? `/shipments?view=${tab.view}` : "/shipments",
+                current: tab === current
+              }))}
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {list.length || amazon.length ? (
+          {(listed.length > 0 || amazon.length > 0) && (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -109,7 +141,7 @@ export default async function ShipmentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((shipment) => (
+                {listed.map((shipment) => (
                   <TableRow key={shipment.id}>
                     <TableCell>
                       <Link className={rowLink} href={`/shipments/${shipment.id}`}>
@@ -146,12 +178,17 @@ export default async function ShipmentsPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <EmptyState
-              title="No shipments yet"
-              description="Open a submitted purchase order to prepare the first shipment."
-            />
           )}
+          {!listed.length &&
+            !amazon.length &&
+            (list.length || amazonAll ? (
+              <p className={sx({ text: "sm", color: "muted" })}>{current.empty}</p>
+            ) : (
+              <EmptyState
+                title="No shipments yet"
+                description="Open a submitted purchase order to prepare the first shipment."
+              />
+            ))}
         </CardContent>
       </Card>
     </>
