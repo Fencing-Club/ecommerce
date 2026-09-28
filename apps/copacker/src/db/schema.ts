@@ -841,7 +841,7 @@ export const monthlyCosts = pgTable(
     amountMinor: integer().notNull(),
     currency: text().notNull(),
     // The channel it's paid for, or null for the whole business.
-    channel: text({ enum: ["amazon", "shopify"] }),
+    channel: text({ enum: ["amazon", "shopify", "ebay"] }),
     // The first and last days it's paid; null for since before the sales history and for ongoing.
     startsOn: date({ mode: "string" }),
     endsOn: date({ mode: "string" }),

@@ -163,7 +163,7 @@
   },
   "monthlyCosts": {
     "title": "月度费用",
-    "description": "Shopify 和 Amazon 未报告的费用",
+    "description": "其他地方未报告的每月费用",
     "count": "{count, plural, =0 {无月度费用} other {# 项费用}}",
     "allChannels": "所有渠道",
     "between": "{channel}，{start} 至 {end}",

@@ -163,7 +163,7 @@
   },
   "monthlyCosts": {
     "title": "Costi mensili",
-    "description": "Costi che Shopify e Amazon non riportano",
+    "description": "Spese mensili non riportate altrove",
     "count": "{count, plural, =0 {Nessun costo mensile} one {# costo} other {# costi}}",
     "allChannels": "Tutti i canali",
     "between": "{channel}, dal {start} al {end}",

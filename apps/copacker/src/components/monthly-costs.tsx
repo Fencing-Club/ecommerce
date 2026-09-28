@@ -26,7 +26,7 @@ const schema = z
       .int()
       .min(1, "settings.monthlyCosts.enterAmount")
       .max(100000000),
-    channel: z.enum(["", "amazon", "shopify"]),
+    channel: z.enum(["", "amazon", "shopify", "ebay"]),
     startsOn: day,
     endsOn: day
   })
@@ -180,7 +180,8 @@ function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess:
         options={[
           { value: "", label: t("allChannels") },
           { value: "amazon", label: "Amazon" },
-          { value: "shopify", label: "Shopify" }
+          { value: "shopify", label: "Shopify" },
+          { value: "ebay", label: "eBay" }
         ]}
       />
       <div className="grid gap-4 sm:grid-cols-2">

@@ -54,7 +54,8 @@ const shopifyTagsVersion = 5
 export const customerDataVersion = 6
 // Amazon discounts split by what they were for (item or shipping); older history comes from Amazon's order reports.
 export const amazonDataVersion = 4
-export const ebayDataVersion = 1
+// 2: eBay orders' refunds made on the order rather than a line.
+export const ebayDataVersion = 2
 
 export const hasCustomerScope = (scopes: string) => scopes.split(/[,\s]+/).includes("read_customers")
 
@@ -671,6 +672,18 @@ export function ebayLineSales(order: Pick<EbaySale, "orderPaymentStatus">, line:
   return { units: whole ? 0 : line.quantity, sales: whole ? 0 : Math.max(0, price - refunded) }
 }
 
+// What eBay refunded on an order beyond the refunds it lists on its lines, such as a partial refund of the whole order.
+export function ebayOrderRefund(order: Pick<EbaySale, "paymentSummary" | "lineItems">) {
+  const amount = (value: string | undefined) => Math.abs(Number(value ?? 0))
+  const refunded = (order.paymentSummary?.refunds ?? [])
+    .filter((refund) => refund.refundStatus === "REFUNDED")
+    .reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  const onLines = order.lineItems
+    .flatMap((line) => line.refunds ?? [])
+    .reduce((sum, refund) => sum + amount(refund.amount?.value), 0)
+  return Math.max(0, refunded - onLines)
+}
+
 export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: number; currency: string } | null {
   let total = 0,
     currency: string | null = null
@@ -679,6 +692,9 @@ export function orderSales(data: ShopifySale | AmazonSale | EbaySale): { minor: 
       currency ??= line.lineItemCost.currency
       total += ebayLineSales(data, line).sales
     }
+    // A refund of the order as a whole comes off its sales too, but never below nothing. It may include shipping or
+    // tax refunded, which eBay doesn't separate.
+    total = Math.max(0, total - ebayOrderRefund(data))
   } else if ("lines" in data) {
     for (const line of data.lines) {
       const price = line.originalUnitPriceSet?.shopMoney

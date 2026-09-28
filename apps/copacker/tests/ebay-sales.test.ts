@@ -359,6 +359,49 @@ describe("eBay sales figures", () => {
   })
 })
 
+describe("eBay refunds made on the order", () => {
+  it("take what eBay refunded beyond its lines off the order and, in proportion, off each item", async () => {
+    const order = {
+      ...sale("12-9", daysAgo(1), [
+        {
+          quantity: 1,
+          lineItemCost: { value: "40.00", currency: "USD" },
+          refunds: [{ amount: { value: "10.00", currency: "USD" } }]
+        },
+        { lineItemId: "g", sku: "GLOVE-L", quantity: 2, lineItemCost: { value: "70.00", currency: "USD" } }
+      ]),
+      orderPaymentStatus: "PARTIALLY_REFUNDED",
+      paymentSummary: {
+        refunds: [
+          // The line's refund, which eBay lists here too, and a refund of $20 on the order.
+          { amount: { value: "10.00", currency: "USD" }, refundStatus: "REFUNDED" },
+          { amount: { value: "20.00", currency: "USD" }, refundStatus: "REFUNDED" },
+          { amount: { value: "15.00", currency: "USD" }, refundStatus: "PENDING" }
+        ]
+      }
+    }
+    // $30 + $70 of line sales, less the $20 refunded on the order.
+    expect(orderSales(order)).toEqual({ minor: 8000, currency: "USD" })
+    await database.insert(tables.salesOrders).values({
+      orgId,
+      source: "ebay",
+      externalAccountId: seller,
+      orderId: order.orderId,
+      orderedAt: new Date(order.creationDate),
+      data: order
+    })
+    const account = { provider: "ebay" as const, externalId: seller }
+    const days = await salesByDay(orgId, [account], new Date(Date.now() - 7 * day), "UTC", "USD")
+    expect(days.reduce((sum, row) => sum + row.revenueMinor, 0)).toBe(8000)
+    const bounds = { from: new Date(Date.now() - 7 * day), to: new Date(Date.now() + day) }
+    const items = await salesByItem(orgId, [account], { current: bounds, previous: null }, "USD")
+    expect(items.map((item) => [item.key, item.units, item.revenueMinor]).toSorted()).toEqual([
+      ["GLOVE-L", 2, 5600],
+      ["MASK-M", 1, 2400]
+    ])
+  })
+})
+
 describe("eBay demand in restock", () => {
   const location = (id: number) => `gid://shopify/Location/${id}`
   const shipped = (locationId: string, fulfilledUnits: number) => ({

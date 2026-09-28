@@ -11,7 +11,7 @@ function requireBuyer(s: Session) {
   }
 }
 
-export const monthlyCostChannels = { amazon: "Amazon", shopify: "Shopify" } as const
+export const monthlyCostChannels = { amazon: "Amazon", shopify: "Shopify", ebay: "eBay" } as const
 
 const day = z.iso.date()
 export const monthlyCostInputSchema = z
@@ -20,7 +20,7 @@ export const monthlyCostInputSchema = z
     // In minor units of `currency`.
     amount: z.number().int().min(1).max(100000000),
     currency: z.string().regex(/^[A-Z]{3}$/),
-    channel: z.enum(["amazon", "shopify"]).nullable().default(null),
+    channel: z.enum(["amazon", "shopify", "ebay"]).nullable().default(null),
     startsOn: day.nullable().default(null),
     endsOn: day.nullable().default(null)
   })

@@ -163,7 +163,7 @@
   },
   "monthlyCosts": {
     "title": "मासिक खर्च",
-    "description": "वे खर्च जो Shopify और Amazon रिपोर्ट नहीं करते",
+    "description": "मासिक खर्च जो कहीं और रिपोर्ट नहीं होते",
     "count": "{count, plural, =0 {कोई मासिक खर्च नहीं} one {# खर्च} other {# खर्च}}",
     "allChannels": "सभी चैनल",
     "between": "{channel}, {start} से {end} तक",

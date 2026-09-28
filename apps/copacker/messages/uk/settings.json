@@ -163,7 +163,7 @@
   },
   "monthlyCosts": {
     "title": "Щомісячні витрати",
-    "description": "Витрати, про які Shopify та Amazon не звітують",
+    "description": "Щомісячні витрати, які більше ніде не відображаються",
     "count": "{count, plural, =0 {Немає щомісячних витрат} one {# витрата} few {# витрати} many {# витрат} other {# витрати}}",
     "allChannels": "Усі канали",
     "between": "{channel}, з {start} до {end}",

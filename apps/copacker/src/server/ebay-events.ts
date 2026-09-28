@@ -201,9 +201,18 @@ export async function ebaySubscribeJob(payload: Record<string, unknown>, assertO
   const app = ebayApp()
   const verificationToken = ebayVerificationToken()
   const endpoint = ebayEndpoint()
-  // eBay only delivers to public HTTPS addresses, so local development can't subscribe; syncs still copy orders.
-  if (!app || !verificationToken || !endpoint.startsWith("https://") || new URL(endpoint).hostname === "localhost") {
-    console.warn(JSON.stringify({ event: "ebay_notifications_skipped", orgId, reason: "no public endpoint" }))
+  // eBay only delivers to public HTTPS addresses, so local development can't subscribe, and an environment without the
+  // verification token (such as staging) leaves notifications to production. Syncs still copy orders.
+  let skipped: string | null = null
+  if (!app) {
+    skipped = "no eBay keys"
+  } else if (!verificationToken) {
+    skipped = "no verification token"
+  } else if (!endpoint.startsWith("https://") || new URL(endpoint).hostname === "localhost") {
+    skipped = "no public endpoint"
+  }
+  if (skipped || !app || !verificationToken) {
+    console.warn(JSON.stringify({ event: "ebay_notifications_skipped", orgId, reason: skipped }))
     return
   }
   const [account] = await db()

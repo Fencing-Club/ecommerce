@@ -49,8 +49,19 @@ const ebayLineRefunded = `coalesce((select sum(abs((r->'amount'->>'value')::nume
 // A line refunded in full, or in an order eBay refunded in full, has no sales or units left (see ebayLineSales).
 const ebayLineGone = `(o.data->>'orderPaymentStatus' = 'FULLY_REFUNDED'
   or (${ebayLinePrice} > 0 and ${ebayLineRefunded} >= ${ebayLinePrice}))`
-const ebayLineRevenue = sql.raw(`(case when ${ebayLineGone} then 0
-  else greatest(0, ${ebayLinePrice} - ${ebayLineRefunded}) end)`)
+const ebayLineSales = `(case when ${ebayLineGone} then 0
+  else greatest(0, ${ebayLinePrice} - ${ebayLineRefunded}) end)`
+// The order's lines' sales, and what eBay refunded on the order beyond its lines (see ebayOrderRefund), which comes
+// off each line in proportion to its sales.
+const ebayOrderLines = `(select coalesce(sum(${ebayLineSales}), 0) from jsonb_array_elements(o.data->'lineItems') ebay)`
+const ebayOrderRefund = `greatest(0, coalesce((select sum(abs((r->'amount'->>'value')::numeric))
+    from jsonb_array_elements(coalesce(o.data->'paymentSummary'->'refunds', '[]'::jsonb)) r
+    where r->>'refundStatus' = 'REFUNDED'), 0)
+  - coalesce((select sum(abs((lr->'amount'->>'value')::numeric))
+    from jsonb_array_elements(coalesce(o.data->'lineItems', '[]'::jsonb)) li,
+      jsonb_array_elements(coalesce(li->'refunds', '[]'::jsonb)) lr), 0))`
+const ebayLineRevenue = sql.raw(`(${ebayLineSales} * (case when ${ebayOrderLines} > 0
+  then greatest(0, 1 - ${ebayOrderRefund} / ${ebayOrderLines}) else 1 end))`)
 const ebayLineUnits = `(case when ${ebayLineGone} then 0 else (ebay->>'quantity')::int end)`
 
 const orderUnits = sql.raw(`case when o.source = 'amazon' then
@@ -69,7 +80,7 @@ end`)
 const orderRevenue = sql`case when o.source = 'amazon' then
   (select sum(${itemRevenue}) from jsonb_array_elements(o.data->'orderItems') item)
 when o.source = 'ebay' then
-  (select coalesce(sum(${ebayLineRevenue}), 0) from jsonb_array_elements(o.data->'lineItems') ebay)
+  ${sql.raw(`greatest(0, ${ebayOrderLines} - ${ebayOrderRefund})`)}
 else
   (select coalesce(sum(${lineRevenue}), 0) from jsonb_array_elements(o.data->'lines') line)
 end`

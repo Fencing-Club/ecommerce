@@ -570,6 +570,16 @@ const ebaySale = z.object({
   salesRecordReference: z.string().optional(),
   // eBay's fees on the order.
   totalMarketplaceFee: ebayMoney.optional(),
+  // Every refund on the order, including those eBay also lists on its lines. Optional because orders stored before
+  // refunds were copied lack them.
+  paymentSummary: z
+    .object({
+      refunds: z
+        .array(z.object({ amount: ebayMoney.optional(), refundStatus: z.string().optional() }))
+        .max(50)
+        .optional()
+    })
+    .optional(),
   lineItems: z.array(ebayLine).max(1000)
 })
 export type EbaySale = z.infer<typeof ebaySale>

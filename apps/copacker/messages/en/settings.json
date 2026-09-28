@@ -163,7 +163,7 @@
   },
   "monthlyCosts": {
     "title": "Monthly costs",
-    "description": "Costs Shopify and Amazon don’t report",
+    "description": "Monthly expenses not reported anywhere else",
     "count": "{count, plural, =0 {No monthly costs} one {# cost} other {# costs}}",
     "allChannels": "All channels",
     "between": "{channel}, {start} to {end}",
