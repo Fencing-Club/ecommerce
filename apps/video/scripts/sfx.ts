@@ -9,7 +9,8 @@ const random = seeded(4471)
 const sound = (length: number, sample: (t: number) => number) =>
   Float32Array.from({ length: Math.round(length * rate) }, (_, i) => sample(i / rate))
 
-const tone = (frequency: number, decay: number) => (t: number) => Math.sin(2 * Math.PI * frequency * t) * Math.exp(-t / decay)
+const tone = (frequency: number, decay: number) => (t: number) =>
+  Math.sin(2 * Math.PI * frequency * t) * Math.exp(-t / decay)
 
 // Air rushing past: noise through a bandpass that sweeps up (or down) as it swells and fades.
 const whoosh = (length: number, rising = true) => {
@@ -73,8 +74,11 @@ const pan = () => (random() - 0.5) * 1.2
 
 // The hook: each line lands with a thump, the emails ping, the sheets swish, Amazon's rules slam and the errors
 // glitch. The freeze is left silent.
-const { hook, reveal, forecast, reorder, amazon, handoffs, agents, recap, end } = moments
+const { hook, reveal, forecast, reorder, amazon, handoffs, agents, recap, outcome, end } = moments
 play(whoosh(1.2, false), at("hook", 0), 0.2)
+for (const time of hook.open) {
+  play(ping, at("hook", time), 0.2, pan(), 0.1)
+}
 for (const line of hook.lines.slice(1)) {
   play(thump, at("hook", line), 0.5)
 }
@@ -106,8 +110,7 @@ const sectionIn = (section: Section, window: number) => {
   play(whoosh(0.6), at(section, 0), 0.35)
   play(whoosh(0.3), at(section, window), 0.25, 0.3)
 }
-const sectionOut = (section: Section, time: number) =>
-  play(whoosh(0.45, false), at(section, time), 0.3, -0.3)
+const sectionOut = (section: Section, time: number) => play(whoosh(0.45, false), at(section, time), 0.3, -0.3)
 const press = (section: Section, time: number, success: boolean) => {
   play(click, at(section, time), 0.45)
   if (success) {
@@ -131,6 +134,11 @@ ticks("forecast", forecast.rows)
 play(whoosh(0.5), at("forecast", forecast.zoom), 0.3)
 ticks("forecast", forecast.maths)
 play(chime, at("forecast", forecast.answer), 0.3, 0, 0.3)
+play(whoosh(0.6), at("forecast", forecast.season - 0.3), 0.35)
+play(glitch, at("forecast", forecast.runsOut), 0.2)
+play(thump, at("forecast", forecast.lost), 0.35)
+play(pop, at("forecast", forecast.orderBy), 0.3, -0.3)
+play(chime, at("forecast", forecast.arrives), 0.28, 0.3, 0.3)
 sectionOut("forecast", forecast.out)
 
 sectionIn("reorder", reorder.window)
@@ -149,8 +157,11 @@ for (const time of amazon.labels) {
   play(pop, at("amazon", time), 0.2, pan())
 }
 play(whoosh(0.5), at("amazon", amazon.split), 0.35)
-play(pop, at("amazon", amazon.fba), 0.3, -0.4)
-play(pop, at("amazon", amazon.awd), 0.3, 0.4)
+play(pop, at("amazon", amazon.fba), 0.3, -0.5)
+play(pop, at("amazon", amazon.awd), 0.3, 0)
+play(whoosh(0.5, false), at("amazon", amazon.reflow), 0.16)
+play(pop, at("amazon", amazon.offshore), 0.34, 0.5)
+play(shimmer, at("amazon", amazon.offshore), 0.2, 0.5, 0.25)
 play(whoosh(0.4, false), at("amazon", amazon.fees), 0.25)
 sectionOut("amazon", amazon.out)
 
@@ -164,6 +175,7 @@ ticks("handoffs", handoffs.checklist, 0.18)
 press("handoffs", handoffs.download, false)
 play(pop, at("handoffs", handoffs.download + 0.2), 0.3)
 play(whoosh(0.5), at("handoffs", handoffs.forwarder), 0.3)
+play(whoosh(0.5), at("handoffs", handoffs.buyer), 0.3)
 press("handoffs", handoffs.shipped, true)
 ticks("handoffs", handoffs.documents, 0.14)
 sectionOut("handoffs", handoffs.out)
@@ -184,8 +196,15 @@ for (const time of recap.cuts) {
   play(whoosh(0.25, false), at("recap", time) - 0.12, 0.3)
   play(thump, at("recap", time), 0.4)
 }
+// The outcome's chart swings in and chimes as it comes up fully stocked.
+play(whoosh(0.6), at("outcome", outcome.chart), 0.3)
+play(chime, at("outcome", outcome.stocked), 0.3, 0, 0.3)
+
+// The logo lands, the line and the call to action arrive, and the final chord sparkles.
 play(shimmer, at("end", end.logo), 0.3, 0, 0.35)
 play(whoosh(0.4), at("end", end.tagline), 0.2)
+play(pop, at("end", end.cta), 0.3)
+play(shimmer, at("end", end.final), 0.25, 0, 0.35)
 
 mix(out, reverb(sends, 0.8, 0.4), 0.8)
 master(out, 0.8)

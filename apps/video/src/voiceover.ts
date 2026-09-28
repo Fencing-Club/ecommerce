@@ -18,6 +18,10 @@ export const voiceover = {
     caption: "It tells you what to restock, when to order, and exactly how much.",
     spoken: "It tells you what to restock, when to order, and exactly how much."
   },
+  stockout: {
+    caption: "It even predicts what a stockout would cost you, and when to order to beat your busy season.",
+    spoken: "It even predicts what a stockout would cost you, and when to order to beat your busy season."
+  },
   order: {
     caption: "One click turns a restock into a purchase order for your supplier.",
     spoken: "One click turns a restock into a purchase order for your supplier."
@@ -31,8 +35,10 @@ export const voiceover = {
     spoken: "Shipping to Amazon? Co-packer creates the shipment for you, and prints every label."
   },
   split: {
-    caption: "It even splits your inventory between FBA and AWD, so you pay less to store it.",
-    spoken: "It even splits your inventory between F.B.A. and A.W.D., so you pay less to store it."
+    caption:
+      "It splits your inventory between FBA and AWD, including AWD warehouses in China and Vietnam, where storage costs even less.",
+    spoken:
+      "It splits your inventory between F.B.A. and A.W.D., including A.W.D. warehouses in China and Vietnam, where storage costs even less."
   },
   handoffs: {
     caption: "Suppliers, forwarders, and warehouses all work from the same record.",
@@ -43,7 +49,8 @@ export const voiceover = {
     spoken: "They download labels, check the requirements, and post updates. No more chasing email threads."
   },
   agents: {
-    caption: "And it's AI-native. Copacker connects to your agents over MCP, so they can plan, order, and ship right alongside you.",
+    caption:
+      "And it's AI-native. Copacker connects to your agents over MCP, so they can plan, order, and ship right alongside you.",
     spoken:
       "And it's A.I.-native. Co-packer connects to your agents over M.C.P., so they can plan, order, and ship right alongside you."
   },
