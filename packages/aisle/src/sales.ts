@@ -1,5 +1,6 @@
 import { z } from "zod"
 import type { Amazon } from "./amazon"
+import type { Ebay } from "./ebay"
 import type { Shopify } from "./shopify"
 
 const quantity = z.number().int().nonnegative().safe()
@@ -532,6 +533,90 @@ async function searchAmazonSales(
     }
     unique(token, tokens)
     query.set("paginationToken", token)
+  }
+  return result
+}
+
+// eBay orders as the Fulfillment API lists them, without the buyer: no username, address or tax details are copied.
+const ebayMoney = z.object({ value: decimal, currency: z.string().length(3) })
+const ebayLine = z.object({
+  lineItemId: id,
+  legacyItemId: z.string().optional(),
+  legacyVariationId: z.string().optional(),
+  // The seller's custom label, which is the SKU when the listing has one.
+  sku: z.string().optional(),
+  title: z.string().max(500).optional(),
+  quantity,
+  // The price of the whole line before discounts, and the seller's promotions taken off it.
+  lineItemCost: ebayMoney,
+  appliedPromotions: z
+    .array(z.object({ discountAmount: ebayMoney.optional() }))
+    .max(50)
+    .optional(),
+  lineItemFulfillmentStatus: z.string().optional(),
+  refunds: z
+    .array(z.object({ amount: ebayMoney.optional() }))
+    .max(50)
+    .optional()
+})
+const ebaySale = z.object({
+  orderId: id,
+  creationDate: z.iso.datetime({ offset: true }),
+  lastModifiedDate: z.iso.datetime({ offset: true }).optional(),
+  orderFulfillmentStatus: z.string(),
+  orderPaymentStatus: z.string().optional(),
+  cancelStatus: z.object({ cancelState: z.string(), cancelledDate: z.string().optional() }).optional(),
+  // The seller's sales record number, shown in Seller Hub.
+  salesRecordReference: z.string().optional(),
+  // eBay's fees on the order.
+  totalMarketplaceFee: ebayMoney.optional(),
+  lineItems: z.array(ebayLine).max(1000)
+})
+export type EbaySale = z.infer<typeof ebaySale>
+// Orders placed in the window. Cancelled orders are left out, as Shopify's are.
+export async function collectEbaySales(
+  client: Pick<Ebay, "request">,
+  input: SalesWindow,
+  assertActive?: () => Promise<void>
+) {
+  const window = salesWindowSchema.parse(input)
+  const read = collection(assertActive)
+  const result: EbaySale[] = [],
+    ids = new Set<string>()
+  const limit = 200
+  for (let offset = 0; ; offset += limit) {
+    const query = new URLSearchParams({
+      filter: `creationdate:[${window.from}..${window.to}]`,
+      limit: String(limit),
+      offset: String(offset)
+    })
+    const page = z
+      .object({ orders: z.array(ebaySale).max(limit).optional(), total: quantity })
+      .parse(await read(() => client.request("GET", `/sell/fulfillment/v1/order?${query}`)))
+    const orders = page.orders ?? []
+    for (const order of orders) {
+      unique(order.orderId, ids)
+      if (ids.size > 10000) {
+        throw new Error("Sales order limit reached")
+      }
+      // eBay's end boundary is inclusive; the window is half-open, as it is for the other sources.
+      if (Date.parse(order.creationDate) === Date.parse(window.to)) {
+        continue
+      }
+      if (!within(order.creationDate, window)) {
+        throw new Error("eBay returned an order outside the sales window")
+      }
+      const lineIds = new Set<string>()
+      for (const line of order.lineItems) {
+        unique(line.lineItemId, lineIds)
+      }
+      if (order.cancelStatus?.cancelState !== "CANCELED") {
+        result.push(order)
+      }
+    }
+    if (orders.length < limit || offset + orders.length >= page.total) {
+      break
+    }
   }
   return result
 }

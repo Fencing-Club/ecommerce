@@ -12,7 +12,8 @@
     "./ledger": "./src/ledger.ts",
     "./documents": "./src/documents.ts",
     "./product-labels": "./src/product-labels.ts",
-    "./requirements": "./src/requirements.ts"
+    "./requirements": "./src/requirements.ts",
+    "./ebay": "./src/ebay.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
