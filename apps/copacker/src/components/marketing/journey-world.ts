@@ -1,13 +1,13 @@
 import * as THREE from "three"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
 
-// The journey's world: a paper diorama of one purchase order's trip, from the supplier's factory to Amazon and the
-// seller's own warehouse, built from rounded blocks and played by the page's scroll. `frame` poses the whole scene for
-// a point on the trip, 0 to 1, and a time for the idle motion (the water, the smoke, the belt, the ship's bob). Nothing
-// carries over from one frame to the next, so the trip scrubs both ways. The beats line up with the chapters, notes and
-// documents in ./journey.
+// The journey's world: a paper diorama of one purchase order's trip, from the supplier's factory through customs to
+// Amazon and the seller's own warehouse, built from rounded blocks and played by the page's scroll. `frame` poses the
+// whole scene for a point on the trip, 0 to 1, and a time for the idle motion (the water, the smoke, the belt, the
+// ship's bob). Nothing carries over from one frame to the next, so the trip scrubs both ways. The beats line up with
+// the chapters, notes and documents in ./journey.
 //
-// The ground runs along x: the supplier's side (x -25 to 0), the sea (0 to 34), then the destination (34 to 58). z runs
+// The ground runs along x: the supplier's side (x -25 to 0), the sea (0 to 34), then the destination (34 to 65). z runs
 // toward the viewer, and y is up, with the ground at 0.
 
 export type Place =
@@ -20,6 +20,7 @@ export type Place =
   | "china"
   | "quay"
   | "ship"
+  | "customs"
   | "fba"
   | "yours"
 
@@ -149,13 +150,22 @@ const beat = {
   amazonDrive: [0.43, 0.47],
   awd: [0.47, 0.5],
   lift: [0.5, 0.56],
-  sail: [0.57, 0.73],
-  unloadFirst: [0.75, 0.785],
-  unloadSecond: [0.785, 0.82],
-  toFba: [0.83, 0.87],
-  fbaDrop: [0.87, 0.89],
-  toYours: [0.89, 0.93],
-  yoursDrop: [0.93, 0.955]
+  sail: [0.57, 0.69],
+  // At the other end the crane unloads both containers onto the forwarder's truck, which leaves the seller's at
+  // customs and waits at the barrier. Once customs releases the order, FedEx loads the seller's cartons at the customs
+  // dock, and the forwarder takes Amazon's container to FBA and drives off. FedEx follows, to the seller's warehouse.
+  unloadFirst: [0.7, 0.73],
+  unloadSecond: [0.73, 0.76],
+  toCustoms: [0.765, 0.78],
+  customsDrop: [0.782, 0.8],
+  release: [0.805, 0.815],
+  pickup: [0.818, 0.842],
+  toFba: [0.82, 0.845],
+  fbaDrop: [0.845, 0.865],
+  away: [0.865, 0.89],
+  fedexOut: [0.845, 0.865],
+  toYours: [0.87, 0.915],
+  yoursDrop: [0.92, 0.945]
 } satisfies Record<string, [number, number]>
 const during = (p: number, [from, to]: [number, number]) => span(p, from, to)
 
@@ -263,18 +273,20 @@ export function createWorld(canvas: HTMLCanvasElement): World {
 
   // ---------------------------------------------------------------------------------------------------- The ground
   put(block(25, 1.6, 20, matte.land, 0.5), -12.5, -1.6, 0)
-  put(block(24, 1.6, 20, matte.land, 0.5), 46, -1.6, 0)
+  put(block(31, 1.6, 20, matte.land, 0.5), 49.5, -1.6, 0)
   put(block(34.6, 1.22, 19.4, paint(palette.seaBed), 0.3), 17, -1.6, 0)
   put(block(1.2, 0.08, 19.2, matte.quay, 0.03), -0.7, 0, 0)
   put(block(1.2, 0.08, 19.2, matte.quay, 0.03), 34.7, 0, 0)
   put(block(23.4, 0.05, 1.8, matte.road, 0.02), -13, 0, 3)
   put(block(1.8, 0.05, 6.1, matte.road, 0.02), -8, 0, -0.95)
-  put(block(22.4, 0.05, 1.8, matte.road, 0.02), 46.4, 0, 3)
-  for (const x of [42, 51.5]) {
+  put(block(29.4, 0.05, 1.8, matte.road, 0.02), 49.9, 0, 3)
+  for (const x of [50.5, 60]) {
     put(block(2.4, 0.05, 1.3, matte.road, 0.02), x, 0, 1.55)
   }
+  // The yard in front of customs, a little lower than the road so the two never flicker where they meet.
+  put(block(7.4, 0.04, 4.3, matte.road, 0.02), 41.8, 0, -0.1)
   // Dashes down the middle of the roads.
-  const dashes = [-23, -20, -17, -14, -11, -5, -2, 37, 40, 43, 46, 49, 52, 55]
+  const dashes = [-23, -20, -17, -14, -11, -5, -2, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64]
   const lines = new THREE.InstancedMesh(keep(rounded(0.7, 0.02, 0.12, 0.01)), matte.white, dashes.length)
   for (const [i, x] of dashes.entries()) {
     lines.setMatrixAt(i, new THREE.Matrix4().makeTranslation(x, 0.05, 3))
@@ -282,13 +294,59 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   lines.receiveShadow = true
   scene.add(lines)
 
-  // The sea's surface, a faceted sheet that the waves move.
+  // The sea: a sheet of soft waves, pale by the quays and deeper out in the middle, with foam lapping at the quays and
+  // round the ship's hull, and slow glints of light drifting over it. Its color is worked out for every point of it from
+  // where the point is on the board.
   const waterGeometry = keep(new THREE.PlaneGeometry(34, 19.2, 68, 38))
   waterGeometry.rotateX(-Math.PI / 2)
-  const water = new THREE.Mesh(
-    waterGeometry,
-    paint(palette.sea, { roughness: 0.3, metalness: 0.05, flatShading: true, transparent: true, opacity: 0.94 })
-  )
+  const sea = {
+    tide: { value: 0 },
+    hull: { value: new THREE.Vector2(5.8, 3) },
+    shallow: { value: new THREE.Color("#c3e3e8") },
+    deep: { value: new THREE.Color("#79adbf") }
+  }
+  const seaMaterial = paint(palette.sea, { roughness: 0.4 })
+  seaMaterial.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, sea)
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 seaPoint;")
+      .replace("#include <fog_vertex>", "#include <fog_vertex>\nseaPoint = (modelMatrix * vec4(transformed, 1.0)).xyz;")
+    // The glints are contour lines of a slowly drifting noise, stretched along the sea, which reads as lines of
+    // ripples rather than a pattern.
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        varying vec3 seaPoint;
+        uniform float tide;
+        uniform vec2 hull;
+        uniform vec3 shallow;
+        uniform vec3 deep;
+        float seaHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float seaNoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(seaHash(i), seaHash(i + vec2(1.0, 0.0)), u.x), mix(seaHash(i + vec2(0.0, 1.0)), seaHash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }`
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        float shore = min(seaPoint.x, 34.0 - seaPoint.x);
+        diffuseColor.rgb = mix(shallow, deep, smoothstep(0.4, 9.0, shore));
+        vec2 drift = seaPoint.xz * vec2(0.22, 0.6) + vec2(tide * 0.05, tide * 0.02);
+        float swell = seaNoise(drift) * 0.65 + seaNoise(drift * 2.3 + 7.0) * 0.35;
+        float ripple = 1.0 - smoothstep(0.0, 0.045, abs(fract(swell * 3.0) - 0.5));
+        diffuseColor.rgb = mix(diffuseColor.rgb, shallow, 0.35 * ripple * smoothstep(0.6, 3.0, shore));
+        float lap = 0.5 + 0.14 * sin(seaPoint.z * 2.3 + tide * 1.7);
+        float foam = 1.0 - smoothstep(lap - 0.3, lap, shore);
+        float ring = length((seaPoint.xz - hull) / vec2(6.1, 1.75));
+        foam = max(foam, 0.5 * smoothstep(0.9, 1.0, ring) * (1.0 - smoothstep(1.0, 1.16, ring)));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), 0.85 * foam);`
+      )
+  }
+  const water = new THREE.Mesh(waterGeometry, seaMaterial)
   water.receiveShadow = true
   put(water, 17, -0.32, 0)
   const waterBase = Float32Array.from(waterGeometry.attributes.position?.array ?? [])
@@ -312,7 +370,10 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   }
   factory.add(at(cylinder(0.32, 2.4, matte.orange), 3.05, 2.8, -1.3))
   factory.add(at(cylinder(0.36, 0.22, matte.ink), 3.05, 5.2, -1.3))
-  factory.add(at(block(1.5, 1.8, 0.12, matte.orange, 0.03), -3.1, 0, 2.3))
+  // The door rolls up, showing the dark inside, to take the purchase order in and to let the units out.
+  factory.add(at(block(1.36, 1.72, 0.03, matte.ink, 0.01), -3.1, 0, 2.315))
+  const factoryDoor = at(block(1.5, 1.8, 0.12, matte.orange, 0.03), -3.1, 0, 2.3)
+  factory.add(factoryDoor)
   const glow = paint(palette.glass, { roughness: 0.35, emissive: "#ff9a45", emissiveIntensity: 0 })
   for (const x of [-0.8, 0.8, 2.4]) {
     factory.add(at(block(0.85, 0.7, 0.08, glow, 0.02), x, 1.5, 2.3))
@@ -386,10 +447,10 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     return door
   }
   const chinaDoor = warehouse(-8, -6.2, 6.4)
-  const fbaDoor = warehouse(42, -1.2, 6)
+  const fbaDoor = warehouse(50.5, -1.2, 6)
 
   // The seller's own warehouse: smaller, with a pitched roof, a roll-up door and its name over it.
-  const yours = put(new THREE.Group(), 51.5, 0, -1.2)
+  const yours = put(new THREE.Group(), 60, 0, -1.2)
   yours.add(block(5.6, 2.3, 4, matte.cream, 0.12))
   const gable = new THREE.Shape()
   gable.moveTo(-3, 0)
@@ -401,6 +462,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   yours.add(at(solid(roofGeometry, matte.roof), 0, 2.3, 0))
   const yoursDoor = paint("#8b847c", { roughness: 0.6, emissive: "#ffb070", emissiveIntensity: 0 })
   yours.add(at(block(2, 1.55, 0.08, yoursDoor, 0.02), -0.9, 0, 2))
+  const yoursDoorX = 60 - 0.9
+  const yoursFront = -1.2 + 2
   const sign = decal(
     keep(
       drawn(512, 96, (context) => {
@@ -419,6 +482,45 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   )
   yours.add(at(sign, 1.3, 1.75, 2.02))
 
+  // ---------------------------------------------------------------------------------------------------- Customs
+  // The port's customs house: a door the seller's container goes in by, and a dock where FedEx backs up to collect its
+  // cartons. Across the road, a booth whose barrier lifts and whose lamp turns green when customs releases the order.
+  const customs = put(new THREE.Group(), 41.8, 0, -4)
+  const customsFront = -4 + 1.8
+  customs.add(block(7, 2.7, 3.6, matte.cream, 0.12))
+  customs.add(at(block(7.24, 0.24, 3.84, matte.roofLight, 0.06), 0, 2.7, 0))
+  customs.add(at(block(6.4, 0.46, 0.08, matte.navy, 0.02), 0, 2.12, 1.8))
+  const customsDoor = paint(palette.glass, { roughness: 0.4, emissive: "#ffb070", emissiveIntensity: 0 })
+  customs.add(at(block(2.6, 1.6, 0.08, customsDoor, 0.02), -1.3, 0, 1.8))
+  customs.add(at(block(1.7, 1.98, 0.08, matte.glass, 0.02), 1.6, 0, 1.8))
+  const customsName = decal(
+    keep(
+      drawn(512, 64, (context) => {
+        context.fillStyle = "#ffffff"
+        context.font = `700 40px ${font}`
+        context.textAlign = "center"
+        context.letterSpacing = "6px"
+        context.fillText("CUSTOMS", 256, 46)
+      })
+    ),
+    3.2,
+    0.4
+  )
+  customs.add(at(customsName, 0, 2.35, 1.85))
+  const booth = put(new THREE.Group(), 46.6, 0, 4.95)
+  booth.add(block(0.9, 1.15, 0.9, matte.white, 0.08))
+  booth.add(at(block(1.1, 0.12, 1.1, matte.navy, 0.04), 0, 1.15, 0))
+  booth.add(at(block(0.6, 0.4, 0.04, matte.glass, 0.01), 0, 0.55, 0.45))
+  const stop = new THREE.Color("#ef4444")
+  const go = new THREE.Color("#22c55e")
+  const signal = paint("#ef4444", { emissive: "#ef4444", emissiveIntensity: 0.9, roughness: 0.4 })
+  booth.add(at(block(0.24, 0.2, 0.24, signal, 0.06), 0, 1.27, 0))
+  // The barrier's arm, striped and hinged at the booth, reaching across the road.
+  const arm = put(new THREE.Group(), 46.6, 0.8, 4.45)
+  for (let i = 0; i < 5; i++) {
+    arm.add(at(block(0.1, 0.1, 0.5, i % 2 ? matte.white : matte.orange, 0.03), 0, -0.05, -0.25 - i * 0.5))
+  }
+
   const tree = (x: number, z: number, scale: number, light: boolean) => {
     const group = put(new THREE.Group(), x, 0, z)
     group.add(cylinder(0.12, 0.7, matte.trunk, 8))
@@ -435,10 +537,12 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     [-13.4, -8.4, 1],
     [-2.6, -6.5, 0.9],
     [38, 7.6, 1],
-    [47, 7.2, 1.2],
-    [56, 7.8, 0.9],
-    [56.2, -6.8, 1],
-    [37, -7.5, 0.9]
+    [49, 7.2, 1.2],
+    [57, 7.8, 0.9],
+    [63.6, 6.8, 1],
+    [63.2, -6.8, 1],
+    [54.8, -7.4, 0.8],
+    [36.6, -7.5, 0.9]
   ]
   for (const [i, [x, z, scale]] of trees.entries()) {
     tree(x, z, scale, i % 2 === 0)
@@ -455,7 +559,7 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   const clouds = [
     { x: -8, z: -3, y: 11, scale: 1.2, speed: 0.35 },
     { x: 20, z: 4, y: 12, scale: 1, speed: 0.28 },
-    { x: 44, z: -5, y: 11.5, scale: 1.1, speed: 0.32 }
+    { x: 50, z: -5, y: 11.5, scale: 1.1, speed: 0.32 }
   ].map((cloud) => {
     const group = put(new THREE.Group(), cloud.x, cloud.y, cloud.z)
     for (const [dx, dy, r] of puffShapes) {
@@ -614,17 +718,20 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   // Filled from the pallet nearest the end of the line.
   const order = [3, 2, 1, 0].flatMap((pallet) => slots.map((_, slot) => ({ pallet, slot })))
   const count = order.length
-  const cartons = new THREE.InstancedMesh(keep(rounded(carton.w, carton.h, carton.d, 0.04)), matte.kraft, count)
-  const tapes = new THREE.InstancedMesh(keep(rounded(0.18, 0.012, carton.d + 0.01, 0.005)), matte.tape, count)
+  // After them, the seller's cartons that FedEx collects from customs, drawn from the same meshes.
+  const parcels = [-0.45, -0.15, 0.15, 0.45]
+  const capacity = count + parcels.length
+  const cartons = new THREE.InstancedMesh(keep(rounded(carton.w, carton.h, carton.d, 0.04)), matte.kraft, capacity)
+  const tapes = new THREE.InstancedMesh(keep(rounded(0.18, 0.012, carton.d + 0.01, 0.005)), matte.tape, capacity)
   const cartonLabels = new THREE.InstancedMesh(
     keep(new THREE.PlaneGeometry(0.3, 0.2)),
     labelMaterial(cartonLabel),
-    count
+    capacity
   )
   const shippingLabels = new THREE.InstancedMesh(
     keep(new THREE.PlaneGeometry(0.24, 0.36)),
     labelMaterial(shippingLabel),
-    count
+    capacity
   )
   for (const mesh of [cartons, tapes, cartonLabels, shippingLabels]) {
     mesh.castShadow = mesh === cartons || mesh === tapes
@@ -708,6 +815,23 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   const pickupTruck = put(truck(2.9))
   const deliveryTruck = put(truck(5.4))
 
+  // FedEx's box truck, which collects the seller's cartons from customs and takes them to its warehouse.
+  const fedexMark = keep(
+    drawn(512, 160, (context) => {
+      context.font = `800 124px ${font}`
+      context.textBaseline = "middle"
+      const fed = context.measureText("Fed").width
+      const x = 256 - (fed + context.measureText("Ex").width) / 2
+      context.fillStyle = "#4d148c"
+      context.fillText("Fed", x, 84)
+      context.fillStyle = "#ff6200"
+      context.fillText("Ex", x + fed, 84)
+    })
+  )
+  const fedexTruck = put(truck(3.2))
+  fedexTruck.add(at(block(3, 1.35, 1.3, matte.white, 0.08), -0.98, 0.46, 0))
+  lettering(fedexTruck, fedexMark, -0.98, 1.14, 1.3, 2.3, 0.72)
+
   // ---------------------------------------------------------------------------------------------------- The port
   // A ship-to-shore crane: legs astride the road, and a boom out over the water along z = 3.
   const crane = (x: number, from: number, to: number) => {
@@ -765,10 +889,12 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   ship.add(at(solid(hull(1, 1.5, 0.12), matte.ink), 0, -0.9, 0))
   ship.add(at(solid(hull(1.012, 0.2, 0), matte.orange), 0, 0.12, 0))
   ship.add(at(solid(hull(0.96, 0.04, 0), paint("#403b36")), 0, 0.71, 0))
-  ship.add(at(block(1.6, 1.9, 2.4, matte.white, 0.1), -4.05, 0.72, 0))
-  ship.add(at(block(1.64, 0.28, 2.44, matte.glass, 0.04), -4.05, 2.2, 0))
-  ship.add(at(block(0.6, 0.9, 0.7, matte.orange, 0.08), -4.45, 2.62, 0))
-  const deck = 0.74
+  // The bridge stands aft of the deck's bays, clear of them, and a deck above the containers.
+  ship.add(at(block(1.4, 2.5, 2.4, matte.white, 0.1), -4.15, 0.72, 0))
+  ship.add(at(block(1.44, 0.28, 2.44, matte.glass, 0.04), -4.15, 2.78, 0))
+  ship.add(at(block(0.56, 0.9, 0.7, matte.orange, 0.08), -4.45, 3.22, 0))
+  const deck = 0.76
+  const bays = [-2.2, 0.15, 2.5] as const
   const bay = (x: number, tier: number, z: number) => new THREE.Vector3(x, deck + tier * 0.98, z)
   const ribs = keep(
     drawn(128, 64, (context) => {
@@ -786,9 +912,9 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   let tone = 0
   // Every bay on deck is full except the one the purchase order's container takes, and the one at the far end that the
   // delivery truck also carries.
-  const loaded = { x: 0, tier: 1, z: 0.5 }
-  const second = { x: 2.35, tier: 1, z: -0.5 }
-  for (const x of [-2.35, 0, 2.35]) {
+  const loaded = { x: bays[1], tier: 1, z: 0.5 }
+  const second = { x: bays[2], tier: 1, z: -0.5 }
+  for (const x of bays) {
     for (const tier of [0, 1]) {
       for (const z of [-0.5, 0.5]) {
         const isLoaded = x === loaded.x && tier === loaded.tier && z === loaded.z
@@ -855,7 +981,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     )
   )
   purchaseOrder.castShadow = true
-  const door = new THREE.Vector3(-22.6, 0.9, -2.9)
+  // Just in front of the factory's door, at its middle.
+  const door = new THREE.Vector3(-22.6, 0.95, -2.99)
 
   // ---------------------------------------------------------------------------------------------------- The camera
   const camTarget = new THREE.Vector3()
@@ -872,11 +999,13 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     { at: 0.47, x: -9.5, z: 0, height: 20 },
     { at: 0.52, x: -2.5, z: 2.5, height: 17 },
     { at: 0.58, x: 4, z: 2.5, height: 18 },
-    { at: 0.73, x: 30, z: 2.5, height: 18 },
-    { at: 0.8, x: 35.5, z: 2.5, height: 17 },
-    { at: 0.88, x: 43, z: 1.4, height: 17 },
-    { at: 0.945, x: 50.5, z: 1.4, height: 17 },
-    { at: 1, x: 16.5, z: 0.5, height: 56 }
+    { at: 0.69, x: 30, z: 2.5, height: 18 },
+    { at: 0.75, x: 37, z: 2, height: 16 },
+    { at: 0.81, x: 42, z: 0, height: 15 },
+    { at: 0.87, x: 48, z: 1.2, height: 17 },
+    { at: 0.935, x: 57, z: 1.2, height: 17 },
+    // The whole board, which is about 92 wide as the camera sees it, with a margin.
+    { at: 1, x: 20, z: 0.5, height: 36, width: 100 }
   ]
   const frameCamera = (p: number) => {
     const next = shots.findIndex((shot) => shot.at >= p)
@@ -888,8 +1017,12 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     const t = a === b ? 1 : smooth(span(p, a.at, b.at))
     camTarget.set(lerp(a.x, b.x, t), 0.6, lerp(a.z, b.z, t))
     const aspect = size.width / size.height
-    // On a narrow screen, pull back far enough to keep the subject's width in view.
-    const height = Math.max(lerp(a.height, b.height, t), (lerp(a.height, b.height, t) * 1.25) / aspect)
+    // On a narrow screen, pull back far enough to keep the subject's width in view: a quarter more than the shot's
+    // height, or what the shot asks for.
+    const height = Math.max(
+      lerp(a.height, b.height, t),
+      lerp(a.width ?? a.height * 1.25, b.width ?? b.height * 1.25, t) / aspect
+    )
     const width = height * aspect
     // The last shot takes in the whole board, centered.
     const focusX = lerp(size.focus.x, 0.5, smooth(span(p, 0.945, 1)))
@@ -926,6 +1059,31 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   const hidden = new THREE.Matrix4().makeScale(0, 0, 0)
   const compose = (target: THREE.Matrix4, x: number, y: number, z: number, heading = 0, s = 1, sy = s) =>
     target.compose(vector.set(x, y, z), quaternion.setFromAxisAngle(up, heading), scale.set(s, sy, s))
+  // Poses carton i with its tape and labels, each label grown to its share of its full size; with no pose, hides it.
+  const setCarton = (i: number, pose?: THREE.Matrix4, labelShown = 1, shippingShown = 1) => {
+    if (!pose) {
+      for (const mesh of [cartons, tapes, cartonLabels, shippingLabels]) {
+        mesh.setMatrixAt(i, hidden)
+      }
+      return
+    }
+    cartons.setMatrixAt(i, pose)
+    tapes.setMatrixAt(i, local.multiplyMatrices(pose, compose(local, 0, carton.h, 0)))
+    cartonLabels.setMatrixAt(
+      i,
+      local.multiplyMatrices(
+        pose,
+        compose(local, -0.19, carton.h * 0.55, carton.d / 2 + 0.004, 0, Math.max(0.0001, labelShown))
+      )
+    )
+    shippingLabels.setMatrixAt(
+      i,
+      local.multiplyMatrices(
+        pose,
+        compose(local, 0.2, carton.h * 0.5, carton.d / 2 + 0.004, 0, Math.max(0.0001, shippingShown))
+      )
+    )
+  }
 
   const amazonIn = route([
     [-28, 3],
@@ -940,11 +1098,20 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     [-14, 3],
     [-1.9, 3]
   ])
+  // The forwarder's truck at the other end: from under the crane to customs, on to FBA, then off the board.
   const deliveryRoute = route([
     [40.3, 3],
-    [42.75, 3],
-    [54.7, 3]
+    [69.5, 3]
   ])
+  const stops = { customs: 43.7 - 40.3, fba: 51.25 - 40.3 }
+  // FedEx's truck: out of the customs dock, onto the road, and along it to the seller's warehouse.
+  const fedexRoute = route([
+    [43.4, 0.43],
+    [43.4, 3],
+    [60.3, 3]
+  ])
+  // Where it waits for the road to clear: a little way along it, behind the forwarder's truck.
+  const onRoad = 3 - 0.43 + 1
 
   // Where each pallet is, and how big: the first two go in Amazon's trailer, the other two in the forwarder's container.
   const palletAt = (i: number, p: number, amazonX: number) => {
@@ -967,16 +1134,30 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     const p = clamp(progress)
     frameCamera(p)
 
-    // The purchase order flies in from above and slips through the factory's door; then its windows light up.
+    // The purchase order drifts down in front of the factory like a dropped sheet, turned to the viewer, then squares
+    // up to the door, which rolls up to take it in and closes behind it; then the windows light up. It stays in front
+    // of the building the whole way, clear of the roof and the belt.
     const flight = during(p, beat.order)
     purchaseOrder.visible = flight > 0 && flight < 1
     if (purchaseOrder.visible) {
-      const k = easeOut(flight)
-      purchaseOrder.position.set(lerp(-29, door.x, k), lerp(9, door.y + 0.4, k) + 2.2 * hop(k), lerp(-8, door.z, k))
-      purchaseOrder.rotation.set(-0.5 + k * 0.5 + Math.sin(k * 6) * 0.25, 0.4 - k * 0.4, Math.sin(k * 5) * 0.3)
-      purchaseOrder.scale.setScalar(k > 0.85 ? (1 - k) / 0.15 : 1)
+      const fall = easeOut(span(flight, 0, 0.72))
+      const slip = ease(span(flight, 0.72, 1))
+      const sway = Math.sin(fall * Math.PI * 2.2) * (1 - fall)
+      purchaseOrder.position.set(
+        lerp(lerp(-20.6, door.x, fall) + sway * 0.9, door.x, slip),
+        lerp(lerp(14, 2.2, fall), door.y, slip),
+        lerp(lerp(-0.4, -1.5, fall), door.z, slip)
+      )
+      purchaseOrder.rotation.set(lerp(-0.57 + sway * 0.3, 0, slip), lerp(0.31, 0, slip), lerp(sway * 0.4, 0, slip))
+      purchaseOrder.scale.setScalar(Math.max(0.0001, pop(span(flight, 0, 0.12)) * lerp(1, 0.14, slip)))
     }
     glow.emissiveIntensity = 1.1 * smooth(during(p, beat.lit))
+    const open = Math.max(
+      smooth(span(p, 0.058, 0.066)) * (1 - smooth(span(p, 0.081, 0.09))),
+      smooth(span(p, 0.1, 0.108)) * (1 - smooth(span(p, 0.128, 0.138)))
+    )
+    factoryDoor.scale.y = 1 - 0.88 * open
+    factoryDoor.position.y = 1.8 * 0.88 * open
 
     // The belt runs while the line works.
     beltTexture.offset.x = -time * 0.35
@@ -1046,10 +1227,7 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       let shippingShown = 1
       if (i === 0) {
         if (p < beat.seal[1] || pallet.scale <= 0.001) {
-          cartons.setMatrixAt(i, hidden)
-          tapes.setMatrixAt(i, hidden)
-          cartonLabels.setMatrixAt(i, hidden)
-          shippingLabels.setMatrixAt(i, hidden)
+          setCarton(i)
           continue
         }
         labelShown = pop(span(p, beat.labels[0], beat.labels[0] + 0.006))
@@ -1077,10 +1255,7 @@ export function createWorld(canvas: HTMLCanvasElement): World {
         const start = beat.rest[0] + ((i - 1) / (count - 1)) * (beat.rest[1] - beat.rest[0] - 0.012)
         const fly = span(p, start, start + 0.012)
         if (fly <= 0 || pallet.scale <= 0.001) {
-          cartons.setMatrixAt(i, hidden)
-          tapes.setMatrixAt(i, hidden)
-          cartonLabels.setMatrixAt(i, hidden)
-          shippingLabels.setMatrixAt(i, hidden)
+          setCarton(i)
           continue
         }
         if (fly < 1) {
@@ -1096,27 +1271,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
           matrix.multiplyMatrices(carrier, local)
         }
       }
-      cartons.setMatrixAt(i, matrix)
-      tapes.setMatrixAt(i, local.multiplyMatrices(matrix, compose(local, 0, carton.h, 0)))
-      cartonLabels.setMatrixAt(
-        i,
-        local.multiplyMatrices(
-          matrix,
-          compose(local, -0.19, carton.h * 0.55, carton.d / 2 + 0.004, 0, Math.max(0.0001, labelShown))
-        )
-      )
-      shippingLabels.setMatrixAt(
-        i,
-        local.multiplyMatrices(
-          matrix,
-          compose(local, 0.2, carton.h * 0.5, carton.d / 2 + 0.004, 0, Math.max(0.0001, shippingShown))
-        )
-      )
+      setCarton(i, matrix, labelShown, shippingShown)
     }
-    cartons.instanceMatrix.needsUpdate = true
-    tapes.instanceMatrix.needsUpdate = true
-    cartonLabels.instanceMatrix.needsUpdate = true
-    shippingLabels.instanceMatrix.needsUpdate = true
     for (const [i, pallet] of pallets.entries()) {
       const spot = palletAt(i, p, amazonArrive.x)
       pallet.mesh.position.set(spot.x, spot.y, spot.z)
@@ -1141,19 +1297,32 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     ship.rotation.set(Math.sin(time * 1.1) * 0.012, 0, Math.sin(time * 0.9) * 0.02 + Math.sin(sail * Math.PI) * 0.01)
     ship.updateMatrixWorld()
     const wakeStrength = Math.sin(Math.PI * sail)
-    wake.position.set(ship.position.x - 8.6, -0.24, 3)
+    wake.position.set(ship.position.x - 8.6, -0.2, 3)
     wake.scale.set(0.5 + wakeStrength * 0.8, 1, 0.6 + wakeStrength * 0.5)
     wakeMaterial.opacity = 0.8 * wakeStrength
 
-    // The delivery truck drops one container at FBA, then takes the other on to the seller's own warehouse.
-    const toFba = during(p, beat.toFba)
-    const toYours = during(p, beat.toYours)
-    const onward = 54.7 - 42.75
-    const delivery = deliveryRoute.at((deliveryRoute.length - onward) * ease(toFba) + onward * ease(toYours))
+    // The forwarder's truck takes both containers from the crane, leaves the seller's at customs and waits at the
+    // barrier. Once customs releases the order, it takes Amazon's container to FBA and drives off the board.
+    const delivery = deliveryRoute.at(
+      stops.customs * ease(during(p, beat.toCustoms)) +
+        (stops.fba - stops.customs) * ease(during(p, beat.toFba)) +
+        (deliveryRoute.length - stops.fba) * ease(during(p, beat.away))
+    )
+    const leaving = 1 - span(delivery.x, 62.5, 64.5)
     deliveryTruck.position.set(delivery.x, 0.05, delivery.z)
     deliveryTruck.rotation.y = delivery.heading
+    deliveryTruck.scale.setScalar(Math.max(0.0001, leaving))
+    deliveryTruck.visible = leaving > 0.001
+    // FedEx's truck waits at the customs dock while the seller's cartons go in, noses out behind the forwarder's
+    // truck, and follows it along the road to the seller's warehouse.
+    const fedex = fedexRoute.at(
+      onRoad * ease(during(p, beat.fedexOut)) + (fedexRoute.length - onRoad) * ease(during(p, beat.toYours))
+    )
+    fedexTruck.position.set(fedex.x, 0.05, fedex.z)
+    fedexTruck.rotation.y = fedex.heading
     pickupTruck.updateMatrixWorld()
     deliveryTruck.updateMatrixWorld()
+    fedexTruck.updateMatrixWorld()
 
     const aboard = (spot: { x: number; tier: number; z: number }) =>
       bay(spot.x, spot.tier, spot.z).applyMatrix4(ship.matrixWorld)
@@ -1183,10 +1352,12 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     } else if (unloadOrdered < 1) {
       orderedAt = swing(aboard(loaded), onDelivery(-3.2), unloadOrdered)
     } else {
+      // Off the truck at customs, across the yard and in through its door.
       orderedAt = onDelivery(-3.2)
-      const into = during(p, beat.yoursDrop)
-      orderedAt.z -= into * 2.2
-      orderedScale = 1 - into
+      const into = during(p, beat.customsDrop)
+      orderedAt.y = lerp(orderedAt.y, 0.06, smooth(span(into, 0, 0.25)))
+      orderedAt.z = lerp(orderedAt.z, customsFront - 0.3, ease(into))
+      orderedScale = 1 - span(into, 0.7, 1)
     }
     if (lift <= 0) {
       hoistOut(-2.4, 4.6)
@@ -1230,16 +1401,63 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     fbaDoor.emissiveIntensity = 1.3 * smooth(span(p, beat.fbaDrop[0] + 0.005, beat.fbaDrop[1] + 0.02))
     yoursDoor.emissiveIntensity = 1.3 * smooth(span(p, beat.yoursDrop[0] + 0.005, beat.yoursDrop[1] + 0.01))
 
-    // Idle life: the waves, the smoke and the clouds.
+    // Customs lets the order go: its lamp turns green and the barrier lifts. The seller's cartons hop out of customs
+    // into FedEx's truck, and out of it again into the seller's warehouse.
+    const released = ease(during(p, beat.release))
+    signal.color.lerpColors(stop, go, released)
+    signal.emissive.copy(signal.color)
+    arm.rotation.x = 1.35 * released
+    customsDoor.emissiveIntensity =
+      1.3 *
+      smooth(span(p, beat.customsDrop[0] + 0.01, beat.customsDrop[1])) *
+      (1 - smooth(span(p, beat.pickup[1], beat.pickup[1] + 0.012)))
+    const bed = new THREE.Vector3(-0.98, 1.3, 0).applyMatrix4(fedexTruck.matrixWorld)
+    for (const [j, offset] of parcels.entries()) {
+      const load = span(p, beat.pickup[0] + j * 0.005, beat.pickup[0] + j * 0.005 + 0.009)
+      const unload = span(p, beat.yoursDrop[0] + j * 0.005, beat.yoursDrop[0] + j * 0.005 + 0.009)
+      const k = unload > 0 ? unload : load
+      if (k <= 0 || k >= 1) {
+        setCarton(count + j)
+        continue
+      }
+      const from =
+        unload > 0 ? { x: bed.x, y: bed.y, z: bed.z } : { x: 40.5 + offset * 2, y: 0.06, z: customsFront + 0.2 }
+      const to =
+        unload > 0 ? { x: yoursDoorX + offset, y: 0.06, z: yoursFront - 0.1 } : { x: bed.x, y: bed.y, z: bed.z }
+      const size = Math.max(0.0001, pop(span(k, 0, 0.2)) * (1 - smooth(span(k, 0.65, 1))))
+      compose(
+        matrix,
+        lerp(from.x, to.x, k),
+        lerp(from.y, to.y, k) + 1.2 * hop(k),
+        lerp(from.z, to.z, k),
+        (1 - k) * 0.6,
+        size
+      )
+      setCarton(count + j, matrix)
+    }
+    cartons.instanceMatrix.needsUpdate = true
+    tapes.instanceMatrix.needsUpdate = true
+    cartonLabels.instanceMatrix.needsUpdate = true
+    shippingLabels.instanceMatrix.needsUpdate = true
+
+    // Idle life: the waves, the smoke and the clouds. The waves' normals follow them, so they shade softly.
     const positions = waterGeometry.attributes.position
     if (positions) {
       for (let i = 0; i < positions.count; i++) {
         const x = waterBase[i * 3] ?? 0
         const z = waterBase[i * 3 + 2] ?? 0
-        positions.setY(i, Math.sin(x * 0.9 + time * 1.2) * 0.05 + Math.sin(z * 1.3 - time * 0.9 + x * 0.3) * 0.04)
+        positions.setY(
+          i,
+          Math.sin(x * 0.8 + time * 1.1) * 0.04 +
+            Math.sin(z * 1.2 - time * 0.9 + x * 0.3) * 0.03 +
+            Math.sin((x + z) * 2.1 + time * 1.6) * 0.012
+        )
       }
       positions.needsUpdate = true
+      waterGeometry.computeVertexNormals()
     }
+    sea.tide.value = time
+    sea.hull.value.set(ship.position.x + 0.2, ship.position.z)
     for (const [i, puff] of puffs.entries()) {
       const age = (time * 0.22 + i / puffs.length) % 1
       puff.position.set(-19.5 + 3.05 + age * 1.4, 5.4 + age * 2.4, -5.4 - 1.3 - age * 0.6)
@@ -1263,8 +1481,9 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     china: () => anchor.set(-8, 3.8, -6.2),
     quay: () => anchor.set(-1.8, 6.9, 3),
     ship: () => anchor.set(ship.position.x - 1, 3.4, 3),
-    fba: () => anchor.set(42, 3.8, -1.2),
-    yours: () => anchor.set(51.5, 3.6, -1.2)
+    customs: () => anchor.set(41.8, 3.4, -4),
+    fba: () => anchor.set(50.5, 3.8, -1.2),
+    yours: () => anchor.set(60, 3.6, -1.2)
   }
 
   return {

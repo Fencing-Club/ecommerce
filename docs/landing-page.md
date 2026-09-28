@@ -14,7 +14,7 @@ Both live in `apps/copacker/src/components/marketing/`:
 | `dot-field.tsx`                  | The hero's WebGL backdrop: points that settle from scattered to ordered, lit around the pointer.    |
 | `tilt.tsx`                       | Leans the hero's product shot back and straightens it as it scrolls in.                             |
 | `planner.tsx`                    | The forecast to play with: lead time, stores and the holiday rush move the reorder date and size.   |
-| `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory to Amazon, as a 3D diorama that scroll plays (three.js).         |
+| `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory through customs to Amazon and you, as a 3D diorama (three.js).  |
 | `agents.tsx`, `ticker.tsx`       | The animated diagram of agents working over MCP, and the lines that take turns in its card.         |
 | `connect.tsx`, `setups.ts`       | The agent picker, with each agent's setup to copy (`copy-button.tsx`), and the CLI's session.       |
 | `signup.tsx`                     | The close: the mailing list signup, which posts to `/api/mailing-list`.                             |
@@ -30,11 +30,14 @@ Both live in `apps/copacker/src/components/marketing/`:
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
   line (FNSKU and choking hazard labels on the units, the box right-sized round them, then the carton and shipping
-  labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage, and the drops at FBA and
-  the seller's own warehouse. The chapters, cards and the order's documents in `journey.tsx` are timed to the same
-  points, so change them together. three.js loads only as the section comes near. The cards follow places in the world
-  (`locate`) or hold a spot on screen. On a phone the trip ends at the warehouses rather than the overview of the whole
-  board.
+  labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage (the bill of lading lands
+  once the container is aboard), customs (the seller's container goes in, the barrier lifts on release, and FedEx loads
+  its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own warehouse. The chapters,
+  cards and the order's documents in `journey.tsx` are timed to the same points, so change them together. three.js
+  loads only as the section comes near. The cards follow places in the world (`locate`) or hold a spot on screen, and
+  slide to stay clear of the screen's edges, the header and the words. The last shot fits the whole board to any
+  screen's shape; on a phone the trip ends at the warehouses instead. The sea's color, glints and foam are drawn per
+  point in a shader patched onto its material (`onBeforeCompile`).
 - Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
   order, and the journey steps from chapter to chapter instead of moving.
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
