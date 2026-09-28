@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto"
 import { db } from "@/db"
 import { supplierCatalogImports } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { commitImport, previewImport } from "@/server/product-import"
 import { readSheet } from "@/server/product-sheet"
 import { appUrl } from "@/server/security"
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     if (s.org.kind !== "supplier") {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
+    requireAccess(s, "products", "edit")
     const form = await request.formData()
     const file = form.get("file")
     const mode = form.get("mode")
@@ -71,6 +73,9 @@ export async function POST(request: Request) {
     })
     return Response.json(result)
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Import failed" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Import failed" },
+      { status: failureStatus(error) }
+    )
   }
 }

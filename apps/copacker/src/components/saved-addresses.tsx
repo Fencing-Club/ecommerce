@@ -26,11 +26,14 @@ const dialog = "max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl"
 export function SavedAddresses({
   contacts,
   supplier = false,
-  locations = []
+  locations = [],
+  admin
 }: {
   contacts: Contact[]
   supplier?: boolean
   locations?: ShopifyLocation[]
+  // Owners and admins add, edit and remove the workspace's addresses; everyone else sees them.
+  admin: boolean
 }) {
   const [open, setOpen] = useState(false)
   let count = supplier ? "No pickup addresses" : "No addresses"
@@ -42,23 +45,25 @@ export function SavedAddresses({
     <Card className="gap-0 py-0">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{count}</p>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button variant="outline" size="sm" />}>
-            <Plus data-icon="inline-start" />
-            Add address
-          </DialogTrigger>
-          <DialogContent className={dialog}>
-            <DialogHeader>
-              <DialogTitle>Add address</DialogTitle>
-            </DialogHeader>
-            <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        {admin && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button variant="outline" size="sm" />}>
+              <Plus data-icon="inline-start" />
+              Add address
+            </DialogTrigger>
+            <DialogContent className={dialog}>
+              <DialogHeader>
+                <DialogTitle>Add address</DialogTitle>
+              </DialogHeader>
+              <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       {contacts.length > 0 && (
         <ul className="divide-y border-t">
           {contacts.map((contact) => (
-            <SavedAddress key={contact.id} contact={contact} supplier={supplier} locations={locations} />
+            <SavedAddress key={contact.id} contact={contact} supplier={supplier} locations={locations} admin={admin} />
           ))}
         </ul>
       )}
@@ -69,11 +74,13 @@ export function SavedAddresses({
 function SavedAddress({
   contact,
   supplier,
-  locations
+  locations,
+  admin
 }: {
   contact: Contact
   supplier: boolean
   locations: ShopifyLocation[]
+  admin: boolean
 }) {
   const router = useRouter()
   const [run] = useActionMutation()
@@ -143,11 +150,12 @@ function SavedAddress({
           </p>
         )}
       </div>
-      {pending ? (
+      {admin && pending && (
         <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${contact.name}`}>
           <Spinner />
         </Button>
-      ) : (
+      )}
+      {admin && !pending && (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${contact.name}`} />}
@@ -162,7 +170,7 @@ function SavedAddress({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      <Dialog open={editing} onOpenChange={setEditing}>
+      <Dialog open={admin && editing} onOpenChange={setEditing}>
         <DialogContent className={dialog}>
           <DialogHeader>
             <DialogTitle>Edit address</DialogTitle>

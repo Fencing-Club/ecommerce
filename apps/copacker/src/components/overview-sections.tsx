@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overview"
+import { IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
 
@@ -36,19 +37,21 @@ export function restockHref(filters: { channel?: string | null; cover?: string; 
   return query ? `/restock?${query}` : "/restock"
 }
 
-// A card header's link to the page with the whole list.
+// A card header's link to the page with the whole list, for someone who can open it.
 export function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      nativeButton={false}
-      render={<Link href={href} />}
-      className="-my-1 -mr-2 text-muted-foreground"
-    >
-      {children}
-      <ChevronRight data-icon="inline-end" />
-    </Button>
+    <IfCanOpen href={href}>
+      <Button
+        variant="ghost"
+        size="sm"
+        nativeButton={false}
+        render={<Link href={href} />}
+        className="-my-1 -mr-2 text-muted-foreground"
+      >
+        {children}
+        <ChevronRight data-icon="inline-end" />
+      </Button>
+    </IfCanOpen>
   )
 }
 
@@ -123,13 +126,13 @@ function Product({
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <Thumbnail url={imageUrl} />
       <div className="flex min-w-0 flex-col">
-        <Link
+        <PageLink
           href={href}
           title={name}
           className="truncate rounded-sm text-sm font-medium outline-none hover:underline hover:underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           {name}
-        </Link>
+        </PageLink>
         {detail && (
           <span title={detail} className="truncate text-xs text-muted-foreground">
             {detail}
@@ -210,7 +213,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                   <span className="sr-only">Done</span>
                 </div>
               ) : (
-                <Link
+                <PageLink
                   href={step.href}
                   className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
@@ -222,7 +225,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                     </span>
                   </span>
                   <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden />
-                </Link>
+                </PageLink>
               )}
             </li>
           ))}
@@ -258,7 +261,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
             const { icon: Icon, className } = toneIcons[item.tone]
             return (
               <li key={item.key}>
-                <Link
+                <PageLink
                   href={item.href}
                   className="group flex items-center gap-3 px-4 py-2.5 transition-colors outline-none hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
                 >
@@ -280,7 +283,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
                     <span className="hidden sm:inline">{item.action}</span>
                     <ChevronRight data-icon="inline-end" />
                   </span>
-                </Link>
+                </PageLink>
               </li>
             )
           })}
@@ -459,7 +462,7 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
         <ul className="-mx-2 flex flex-col divide-y">
           {rows.map((row) => (
             <li key={row.key}>
-              <Link
+              <PageLink
                 href={row.href}
                 className="flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
               >
@@ -470,7 +473,7 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
                 <span className="shrink-0 text-right text-sm font-medium tabular-nums">
                   <Amount value={row.value} />
                 </span>
-              </Link>
+              </PageLink>
             </li>
           ))}
         </ul>
@@ -877,9 +880,12 @@ export function Customers({ customers }: { customers: NonNullable<Overview["sale
         {customers.status === "reconnect" && (
           <p className="text-sm text-muted-foreground">
             Reconnect Shopify in{" "}
-            <Link href="/settings#integrations" className="font-medium text-foreground underline underline-offset-2">
+            <PageLink
+              href="/settings#integrations"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
               Settings
-            </Link>{" "}
+            </PageLink>{" "}
             to count repeat customers
           </p>
         )}

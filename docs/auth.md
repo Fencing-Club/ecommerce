@@ -66,12 +66,13 @@ An invitation link is `/invite?token=…&kind=…`, where `kind` is `invite` (a 
 names the workspace that sent it before anyone signs in, then signs up or signs in with the invited email. Someone
 signed in with another email is asked to sign out, and comes back to the invitation: WorkOS only returns to the sign-out
 redirects in its dashboard, so `/logout` keeps the page in a ten-minute cookie (`copacker-resume`) and the proxy opens it
-when WorkOS returns to `/`. A supplier or forwarder who already owns a workspace of that kind can link it instead of
-making a new one. Accepting always needs the invited, confirmed email.
+when WorkOS returns to `/`. A supplier or forwarder who already runs a workspace of that kind, as its owner or an admin, can link
+it instead of making a new one. Accepting always needs the invited, confirmed email.
 
-Owners invite colleagues in **Settings → Team** (`src/server/team.ts`). Invitations last seven days. Sending one again
-replaces the link and drops the old email if it hasn't gone out yet; cancelling does the same. Owners can remove
-members, but not other owners or themselves.
+The owner and admins invite colleagues in **Settings → Team** (`src/server/team.ts`), as admins or as members with
+the pages chosen for them ([Roles and page access](permissions.md)). Invitations last seven days. Sending one again
+replaces the link and drops the old email if it hasn't gone out yet; cancelling does the same. The owner and admins
+change anyone's access and remove people, but not the owner or themselves.
 
 ## Testing sign-up locally
 

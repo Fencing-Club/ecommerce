@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { blankProduct, ProductEditor } from "@/components/supplier/product-editor"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 
 export const metadata: Metadata = { title: "Add product" }
 
@@ -10,5 +10,6 @@ export default async function NewProductPage() {
   if (s.org.kind !== "supplier") {
     redirect("/products")
   }
+  requirePage(s, "products", "edit")
   return <ProductEditor initial={blankProduct()} />
 }

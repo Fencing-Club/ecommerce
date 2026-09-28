@@ -1,4 +1,4 @@
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { saveVariantFields, VariantFieldsError } from "@/server/product-fields"
 import { appUrl } from "@/server/security"
 
@@ -9,6 +9,7 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products", "edit")
   try {
     return Response.json(await saveVariantFields(s, await request.json()), { headers })
   } catch (error) {

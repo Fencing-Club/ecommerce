@@ -3,7 +3,8 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { suppliers } from "@/db/schema"
 import type { ProductImage } from "@/lib/supplier-product"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 import { getFile, putFile } from "@/server/storage"
 
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
     if (s.org.kind !== "supplier") {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
+    requireAccess(s, "products", "edit")
     const file = (await request.formData()).get("file")
     if (!(file instanceof File)) {
       throw new Error("Choose a photo")
@@ -51,7 +53,10 @@ export async function POST(request: Request) {
     await putFile(image.key, bytes, kind.type)
     return Response.json(image)
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Upload failed" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Upload failed" },
+      { status: failureStatus(error) }
+    )
   }
 }
 

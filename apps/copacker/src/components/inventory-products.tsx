@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
 import { ProductDetails, ProductImage } from "@/components/product-details"
@@ -278,12 +279,12 @@ function Quantities({
             {orders.map((order, index) => (
               <span key={order.id}>
                 {index > 0 && ", "}
-                <Link
+                <PageLink
                   href={`/orders/${order.id}`}
                   className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   {order.reference}
-                </Link>
+                </PageLink>
               </span>
             ))}
           </span>
@@ -327,7 +328,13 @@ function isRowClick(event: React.MouseEvent<HTMLTableRowElement>) {
   )
 }
 
+// Reorder for someone who can make purchase orders, and Edit for someone who can change products.
 function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => void }) {
+  const reorders = useCan("orders", "edit")
+  const editable = useCan("products", "edit")
+  if (!reorders && !editable) {
+    return null
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -343,14 +350,18 @@ function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => vo
         <Ellipsis />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        <DropdownMenuItem render={<Link href={reorderHref(product.variants)} />}>
-          <PackagePlus />
-          Reorder
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onEdit}>
-          <Pencil />
-          Edit
-        </DropdownMenuItem>
+        {reorders && (
+          <DropdownMenuItem render={<Link href={reorderHref(product.variants)} />}>
+            <PackagePlus />
+            Reorder
+          </DropdownMenuItem>
+        )}
+        {editable && (
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -603,6 +614,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
   // The product whose details are open, kept after the panel closes so it can animate out.
   const [editing, setEditing] = useState<ListedProduct | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const editable = useCan("products", "edit")
   const {
     currentData,
     data: previous,
@@ -683,7 +695,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
             />
           )}
           <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-            <BulkBarcodeUpload onChanged={refresh} />
+            {editable && <BulkBarcodeUpload onChanged={refresh} />}
             <ProductLabelBulk onChanged={refresh} />
           </div>
         </div>

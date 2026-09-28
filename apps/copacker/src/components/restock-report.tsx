@@ -24,6 +24,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { Status, StatusBadge, WarningNote } from "@/components/common"
 import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -610,8 +611,13 @@ function LineRows({
 
 // Opens a new PO to the supplier with the selected lines. A supplier only in Shopify is ordered outside Copacker.
 function Reorder({ supplierId, po }: { supplierId: string | null; po: ReturnType<typeof createPoHref> }) {
+  // Reordering makes a purchase order.
+  const reorders = useCan("orders", "edit")
   if (!supplierId) {
     return <span className="text-xs text-muted-foreground">Ordered outside Copacker</span>
+  }
+  if (!reorders) {
+    return null
   }
   return po.count > 0 ? (
     <Button variant="outline" size="sm" nativeButton={false} render={<Link href={po.href} />}>
@@ -815,6 +821,8 @@ function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
 
 // Why nothing is listed. A supplier filter shows only products linked to that supplier, which can be none yet.
 function EmptyResults({ report, searching }: { report: Report; searching: boolean }) {
+  // Suppliers are set on the Products page, by those who can change products.
+  const setsSuppliers = useCan("products", "edit")
   const supplier =
     report.supplier !== "all" && report.lines.length === 0
       ? (report.suppliers.find((row) => row.id === report.supplier)?.name ?? "this supplier")
@@ -839,7 +847,7 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
           <EmptyTitle>{title}</EmptyTitle>
           {searching && <EmptyDescription>Only products with a supplier are listed</EmptyDescription>}
         </EmptyHeader>
-        {(searching || supplier) && (
+        {(searching || supplier) && setsSuppliers && (
           <EmptyContent>
             <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/products" />}>
               Set suppliers
@@ -1084,6 +1092,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
 // The result in a line under the settings, or why the sales it needs couldn't be read; and the products left out
 // for having no supplier.
 function ResultSummary({ report }: { report: Report }) {
+  const setsSuppliers = useCan("products", "edit")
   const errors = report.sources.flatMap(({ source, error }) => (error ? [`${sourceNames[source]}: ${error}`] : []))
   const count = (statuses: RestockStatus[]) => report.lines.filter((line) => statuses.includes(line.status)).length
   const blocked = count(["blocked"])
@@ -1114,7 +1123,7 @@ function ResultSummary({ report }: { report: Report }) {
           </InfoTip>
         </p>
       )}
-      {report.needsSupplier > 0 && (
+      {report.needsSupplier > 0 && setsSuppliers && (
         <WarningNote>
           <Link href="/products" className="underline underline-offset-4 hover:text-muted-foreground">
             Set a supplier

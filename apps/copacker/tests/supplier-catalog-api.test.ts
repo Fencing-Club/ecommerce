@@ -51,6 +51,7 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
       createdAt: new Date()
     },
     role: "owner",
+    access: {},
     workspaces: []
   }
 }

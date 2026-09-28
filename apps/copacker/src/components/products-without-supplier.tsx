@@ -1,7 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
+import { PageLink, useCan } from "@/components/access"
 import { IssuePanel } from "@/components/inventory-products"
 import { ProductImage } from "@/components/product-details"
 import { Button } from "@/components/ui/button"
@@ -33,7 +33,9 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
   const [supplierId, setSupplierId] = useState("")
   const [assign, result] = productSuppliersApi.useAssignSupplierMutation()
-  if (!products.length) {
+  // Assigning suppliers changes products, so the panel is for those who can.
+  const editable = useCan("products", "edit")
+  if (!products.length || !editable) {
     return null
   }
   const chosen = products.filter((product) => ticked.has(product.productId)).map((product) => product.productId)
@@ -92,9 +94,9 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
         ) : (
           <p className="text-sm text-muted-foreground">
             Add a supplier in{" "}
-            <Link href="/partners" className="text-foreground underline underline-offset-4">
+            <PageLink href="/partners" className="text-foreground underline underline-offset-4">
               Partners
-            </Link>{" "}
+            </PageLink>{" "}
             first
           </p>
         )}

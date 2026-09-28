@@ -49,14 +49,14 @@ const clickable =
 // Every store as a card. Connecting starts from its card: Amazon's consent page, or Shopify's store address in a
 // dialog. A connected store's card opens its settings and Disconnect; eBay is coming.
 export function Integrations({
-  owner,
+  admin,
   amazonDraft,
   shopify,
   amazon,
   shopifySettings,
   amazonSettings
 }: {
-  owner: boolean
+  admin: boolean
   // While Copacker's Amazon app is a draft, Amazon connects with a self-authorization token instead.
   amazonDraft: boolean
   shopify: Connection | null
@@ -67,27 +67,27 @@ export function Integrations({
   let shopifyCard = <NotConnected store="shopify" />
   if (shopify) {
     shopifyCard = (
-      <Connected store="shopify" connection={shopify} owner={owner}>
+      <Connected store="shopify" connection={shopify} admin={admin}>
         {shopifySettings}
       </Connected>
     )
-  } else if (owner) {
+  } else if (admin) {
     shopifyCard = <ConnectShopify />
   }
   let amazonCard = <NotConnected store="amazon" />
   if (amazon) {
     amazonCard = (
-      <Connected store="amazon" connection={amazon} owner={owner}>
+      <Connected store="amazon" connection={amazon} admin={admin}>
         {amazonSettings}
       </Connected>
     )
-  } else if (owner && amazonDraft) {
+  } else if (admin && amazonDraft) {
     amazonCard = (
       <AmazonSelfAuthorize className={cn(tile, clickable)}>
         <TileBody store="amazon" footer={<ConnectLabel />} />
       </AmazonSelfAuthorize>
     )
-  } else if (owner) {
+  } else if (admin) {
     // Amazon's consent page, which comes back to Settings.
     amazonCard = (
       <a href="/api/connections/amazon" className={cn(tile, clickable)}>
@@ -134,7 +134,7 @@ function ConnectLabel() {
   )
 }
 
-// Everyone but the owner sees the stores the owner hasn't connected.
+// Members see the stores the owner and admins haven't connected.
 function NotConnected({ store }: { store: Store }) {
   return (
     <div className={tile}>
@@ -151,16 +151,16 @@ function NotConnected({ store }: { store: Store }) {
   )
 }
 
-// A connected store's card, which opens its settings for the owner.
+// A connected store's card, which opens its settings for the owner and admins.
 function Connected({
   store,
   connection,
-  owner,
+  admin,
   children
 }: {
   store: "shopify" | "amazon"
   connection: Connection
-  owner: boolean
+  admin: boolean
   children: React.ReactNode
 }) {
   const body = (
@@ -175,7 +175,7 @@ function Connected({
       footer={<span className="truncate text-muted-foreground">{connection.account}</span>}
     />
   )
-  if (!owner) {
+  if (!admin) {
     return <div className={tile}>{body}</div>
   }
   return (

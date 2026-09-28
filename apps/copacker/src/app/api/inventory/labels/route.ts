@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { ProductBarcodeError, productsLabelsPdf } from "@/server/product-barcodes"
 import { appUrl } from "@/server/security"
 
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products")
   const input = inputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
     return Response.json({ error: "Choose the products to print labels for" }, { status: 400, headers })

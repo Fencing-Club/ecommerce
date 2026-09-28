@@ -133,6 +133,7 @@ function PriceCell({
   variants,
   entries,
   adjustment,
+  readOnly,
   onChange
 }: {
   // The product, with the variant on a variant's row.
@@ -140,6 +141,8 @@ function PriceCell({
   variants: Variant[]
   entries: Map<string, CatalogEntry>
   adjustment: number
+  // Shows the price without the button that changes it.
+  readOnly: boolean
   onChange: (variantIds: string[], priceMinor: number | null) => void
 }) {
   const id = useId()
@@ -165,6 +168,14 @@ function PriceCell({
     currency
   )
   const typed = parseMoney(text)
+  if (readOnly) {
+    return (
+      <span className="tabular-nums">
+        {allFixed && <span className="mr-1.5 text-xs text-muted-foreground">Fixed</span>}
+        {shown ?? <span className="text-muted-foreground">No price</span>}
+      </span>
+    )
+  }
 
   function commit(priceMinor: number | null) {
     onChange(
@@ -250,7 +261,15 @@ function PriceCell({
 
 // A catalog's form, laid out like Shopify's: its title, status and customers; its pricing; and its products, where
 // each variant can have a fixed price, volume pricing and quantity rules of its own.
-export function CatalogEditor({ data }: { data: CatalogEditorData }) {
+export function CatalogEditor({
+  data,
+  readOnly = false
+}: {
+  data: CatalogEditorData
+  // For someone who can only view catalogs: the catalog shows as it's saved, with its searching and paging but nothing
+  // that changes it.
+  readOnly?: boolean
+}) {
   const router = useRouter()
   const { catalog, products, customers } = data
   const [saved, setSaved] = useState(() => ({
@@ -419,6 +438,7 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
         variants={variants}
         entries={entries}
         adjustment={adjustment}
+        readOnly={readOnly}
         onChange={setPrices}
       />
     )
@@ -430,6 +450,9 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
     const summary = rulesSummary(effective.priceBreaks, effective.quantityRules, variant.priceBasis)
     const own = !!entry && (entry.priceBreaks !== null || entry.quantityRules !== null)
     const label = `Quantity rules and volume pricing for ${variant.label ? `${product.title}, ${variant.label}` : product.title}`
+    if (readOnly) {
+      return <span className="text-muted-foreground">{summary || "—"}</span>
+    }
     return (
       <Button
         type="button"
@@ -482,160 +505,166 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
                 <Download />
                 Export to PDF
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setConfirmDelete(true)}>
-                <Trash2 />
-                Delete catalog
-              </DropdownMenuItem>
+              {!readOnly && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={() => setConfirmDelete(true)}>
+                    <Trash2 />
+                    Delete catalog
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
       </PageHeader>
       <div className="flex flex-col gap-4">
-        <Card>
-          <CardContent className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
-              <Field>
-                <FieldLabel htmlFor="catalog-title">
-                  <span>
-                    Title
-                    <span aria-hidden className="text-destructive">
-                      *
+        <fieldset disabled={readOnly} className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+                <Field>
+                  <FieldLabel htmlFor="catalog-title">
+                    <span>
+                      Title
+                      <span aria-hidden className="text-destructive">
+                        *
+                      </span>
                     </span>
-                  </span>
-                </FieldLabel>
-                <InputGroup>
-                  <InputGroupInput
-                    id="catalog-title"
-                    required
-                    maxLength={255}
-                    value={settings.title}
-                    onChange={(event) => change({ title: event.target.value })}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText className="tabular-nums">{settings.title.length}/255</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="catalog-status">Status</FieldLabel>
-                <Select
-                  items={statusOptions}
-                  value={settings.status}
-                  onValueChange={(value) => value && change({ status: value as Status })}
-                >
-                  <SelectTrigger id="catalog-status" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-            <Field>
-              <FieldLabel>Customers</FieldLabel>
-              {customers.length ? (
-                <Combobox
-                  items={customers}
-                  multiple
-                  value={customers.filter((customer) => settings.customerIds.includes(customer.id))}
-                  onValueChange={(value) => change({ customerIds: value.map((customer) => customer.id) })}
-                  itemToStringLabel={(customer) => customer.name}
-                  isItemEqualToValue={(item, value) => item.id === value.id}
-                >
-                  <ComboboxChips ref={anchor}>
-                    <ComboboxValue>
-                      {(value: typeof customers) => (
-                        <>
-                          {value.map((customer) => (
-                            <ComboboxChip key={customer.id}>{customer.name}</ComboboxChip>
-                          ))}
-                          <ComboboxChipsInput
-                            placeholder={value.length ? "" : "Add customers"}
-                            aria-label="Add customers"
-                          />
-                        </>
-                      )}
-                    </ComboboxValue>
-                  </ComboboxChips>
-                  <ComboboxContent anchor={anchor}>
-                    <ComboboxEmpty>No customers found.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(customer: (typeof customers)[number]) => (
-                        <ComboboxItem key={customer.id} value={customer}>
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate">{customer.name}</span>
-                            {customer.otherCatalog && (
-                              <span className="truncate text-xs text-muted-foreground">
-                                Moves from {customer.otherCatalog}
-                              </span>
-                            )}
-                          </span>
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              ) : (
-                <FieldDescription>Customers appear once a buyer adds you as their supplier.</FieldDescription>
-              )}
-              {settings.status !== "active" && settings.customerIds.length > 0 && (
-                <FieldDescription>
-                  Customers see every active product at its own price until the catalog is active.
-                </FieldDescription>
-              )}
-            </Field>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Pricing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Field>
-              <FieldLabel htmlFor="catalog-adjustment">Price adjustment</FieldLabel>
-              {/* One phrase: Decrease by 10%. */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Select
-                  items={directionOptions}
-                  value={settings.direction}
-                  onValueChange={(value) => value && change({ direction: value as Settings["direction"] })}
-                >
-                  <SelectTrigger aria-label="Adjustment direction" className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {directionOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <InputGroup className="w-24">
-                  <InputGroupInput
-                    id="catalog-adjustment"
-                    inputMode="decimal"
-                    value={settings.percent}
-                    aria-invalid={bps === null || undefined}
-                    className="text-right tabular-nums"
-                    onChange={(event) => change({ percent: event.target.value })}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>%</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
+                  </FieldLabel>
+                  <InputGroup>
+                    <InputGroupInput
+                      id="catalog-title"
+                      required
+                      maxLength={255}
+                      value={settings.title}
+                      onChange={(event) => change({ title: event.target.value })}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText className="tabular-nums">{settings.title.length}/255</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="catalog-status">Status</FieldLabel>
+                  <Select
+                    items={statusOptions}
+                    value={settings.status}
+                    onValueChange={(value) => value && change({ status: value as Status })}
+                  >
+                    <SelectTrigger id="catalog-status" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
-              <FieldDescription>{adjustmentHelp(bps, settings.direction)}</FieldDescription>
-            </Field>
-          </CardContent>
-        </Card>
+              <Field>
+                <FieldLabel>Customers</FieldLabel>
+                {customers.length ? (
+                  <Combobox
+                    items={customers}
+                    multiple
+                    value={customers.filter((customer) => settings.customerIds.includes(customer.id))}
+                    onValueChange={(value) => change({ customerIds: value.map((customer) => customer.id) })}
+                    itemToStringLabel={(customer) => customer.name}
+                    isItemEqualToValue={(item, value) => item.id === value.id}
+                  >
+                    <ComboboxChips ref={anchor}>
+                      <ComboboxValue>
+                        {(value: typeof customers) => (
+                          <>
+                            {value.map((customer) => (
+                              <ComboboxChip key={customer.id}>{customer.name}</ComboboxChip>
+                            ))}
+                            <ComboboxChipsInput
+                              placeholder={value.length ? "" : "Add customers"}
+                              aria-label="Add customers"
+                            />
+                          </>
+                        )}
+                      </ComboboxValue>
+                    </ComboboxChips>
+                    <ComboboxContent anchor={anchor}>
+                      <ComboboxEmpty>No customers found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(customer: (typeof customers)[number]) => (
+                          <ComboboxItem key={customer.id} value={customer}>
+                            <span className="flex min-w-0 flex-col">
+                              <span className="truncate">{customer.name}</span>
+                              {customer.otherCatalog && (
+                                <span className="truncate text-xs text-muted-foreground">
+                                  Moves from {customer.otherCatalog}
+                                </span>
+                              )}
+                            </span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                ) : (
+                  <FieldDescription>Customers appear once a buyer adds you as their supplier.</FieldDescription>
+                )}
+                {settings.status !== "active" && settings.customerIds.length > 0 && (
+                  <FieldDescription>
+                    Customers see every active product at its own price until the catalog is active.
+                  </FieldDescription>
+                )}
+              </Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Field>
+                <FieldLabel htmlFor="catalog-adjustment">Price adjustment</FieldLabel>
+                {/* One phrase: Decrease by 10%. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    items={directionOptions}
+                    value={settings.direction}
+                    onValueChange={(value) => value && change({ direction: value as Settings["direction"] })}
+                  >
+                    <SelectTrigger aria-label="Adjustment direction" className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {directionOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <InputGroup className="w-24">
+                    <InputGroupInput
+                      id="catalog-adjustment"
+                      inputMode="decimal"
+                      value={settings.percent}
+                      aria-invalid={bps === null || undefined}
+                      className="text-right tabular-nums"
+                      onChange={(event) => change({ percent: event.target.value })}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>%</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </div>
+                <FieldDescription>{adjustmentHelp(bps, settings.direction)}</FieldDescription>
+              </Field>
+            </CardContent>
+          </Card>
+        </fieldset>
 
         <Card className="@container gap-0 py-0">
           <div className="flex flex-col gap-3 border-b p-4">
@@ -645,6 +674,7 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
                 <div className="flex items-center gap-2 text-sm">
                   <Switch
                     id="catalog-include-new"
+                    disabled={readOnly}
                     checked={settings.includeNewProducts}
                     onCheckedChange={(checked) => change({ includeNewProducts: checked })}
                   />
@@ -714,16 +744,18 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
             <Table framed={false}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10 pl-4">
-                    <Checkbox
-                      aria-label="Select all products on this page"
-                      checked={chosen.length > 0 && chosen.length === rows.length}
-                      indeterminate={chosen.length > 0 && chosen.length < rows.length}
-                      onCheckedChange={(checked) =>
-                        setSelected(checked ? new Set([...selected, ...rows.map((row) => row.id)]) : new Set())
-                      }
-                    />
-                  </TableHead>
+                  {!readOnly && (
+                    <TableHead className="w-10 pl-4">
+                      <Checkbox
+                        aria-label="Select all products on this page"
+                        checked={chosen.length > 0 && chosen.length === rows.length}
+                        indeterminate={chosen.length > 0 && chosen.length < rows.length}
+                        onCheckedChange={(checked) =>
+                          setSelected(checked ? new Set([...selected, ...rows.map((row) => row.id)]) : new Set())
+                        }
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Product</TableHead>
                   <TableHead className={cn("text-right", columns.price)}>Price</TableHead>
                   <TableHead className={columns.rules}>Rules</TableHead>
@@ -736,22 +768,24 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
                   const isIncluded = included(product)
                   return [
                     <TableRow key={product.id} data-state={selected.has(product.id) ? "selected" : undefined}>
-                      <TableCell className="pl-4">
-                        <Checkbox
-                          aria-label={`Select ${product.title}`}
-                          checked={selected.has(product.id)}
-                          onCheckedChange={(checked) => {
-                            const next = new Set(selected)
-                            if (checked) {
-                              next.add(product.id)
-                            } else {
-                              next.delete(product.id)
-                            }
-                            setSelected(next)
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="whitespace-normal">
+                      {!readOnly && (
+                        <TableCell className="pl-4">
+                          <Checkbox
+                            aria-label={`Select ${product.title}`}
+                            checked={selected.has(product.id)}
+                            onCheckedChange={(checked) => {
+                              const next = new Set(selected)
+                              if (checked) {
+                                next.add(product.id)
+                              } else {
+                                next.delete(product.id)
+                              }
+                              setSelected(next)
+                            }}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className={cn("whitespace-normal", readOnly && "pl-4")}>
                         <div className="flex items-center gap-3">
                           <ProductThumb
                             image={product.image}
@@ -803,7 +837,7 @@ export function CatalogEditor({ data }: { data: CatalogEditorData }) {
                     ...(open && !single
                       ? product.variants.map((variant) => (
                           <TableRow key={variant.id} className="bg-muted/20">
-                            <TableCell className="pl-4" />
+                            {!readOnly && <TableCell className="pl-4" />}
                             <TableCell className="pl-6 whitespace-normal @sm:pl-14">
                               <p className={cn(!entries.has(variant.id) && "text-muted-foreground")}>
                                 {variant.label ?? variant.supplierSku}

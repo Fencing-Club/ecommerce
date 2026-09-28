@@ -1,4 +1,6 @@
+import { forbidden } from "next/navigation"
 import { z } from "zod"
+import { can } from "@/lib/access"
 import { session } from "@/server/auth"
 import { inventoryContext } from "@/server/inventory-context"
 import { type AmazonOnlyStock, groupInventory, isCollective, pageSizes } from "@/server/inventory-products"
@@ -56,6 +58,10 @@ export async function GET(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+  }
+  // The Products page, and purchase orders' product picker.
+  if (!can(s, "products") && !can(s, "orders", "edit")) {
+    forbidden()
   }
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
   if (!query.success) {

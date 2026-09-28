@@ -1,5 +1,5 @@
 import { ZodError } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { ProductBarcodeError, productLabelChoices } from "@/server/product-barcodes"
 import { ProductDefaultsError, assignProductLabel } from "@/server/product-defaults"
 import { appUrl } from "@/server/security"
@@ -9,6 +9,7 @@ const headers = { "Cache-Control": "private, no-store" }
 // Every product with its label type, for choosing several at once.
 export async function GET() {
   const s = await session()
+  requirePage(s, "products")
   try {
     return Response.json(await productLabelChoices(s), { headers })
   } catch (error) {
@@ -25,6 +26,7 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products", "edit")
   try {
     return Response.json(await assignProductLabel(s, await request.json()), { headers })
   } catch (error) {

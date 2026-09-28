@@ -4,7 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
-import { session, requireMembership } from "@/server/auth"
+import { session, requireMembership, requirePage } from "@/server/auth"
 import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
@@ -12,6 +12,7 @@ import { getFile } from "@/server/storage"
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
     id = z.uuid().parse((await context.params).id)
+  requirePage(s, "shipments")
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!shipment) {
     return new Response("Shipment not found", { status: 404 })

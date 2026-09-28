@@ -6,7 +6,8 @@ import { TabLinks } from "@/components/tab-links"
 import { Card } from "@/components/ui/card"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { requireBuyer, session } from "@/server/auth"
+import { can } from "@/lib/access"
+import { requireBuyer, requirePage, session } from "@/server/auth"
 import { listPartners, type PartnerForwarder, type PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 
@@ -66,7 +67,8 @@ export default async function PartnersPage({
 }) {
   const s = await session()
   requireBuyer(s)
-  const owner = s.role === "owner"
+  requirePage(s, "partners")
+  const editable = can(s, "partners", "edit")
   const params = await searchParams
   const tab = tabs.find((candidate) => candidate.key === params.type)?.key ?? "all"
   const q = (typeof params.q === "string" ? params.q : "").trim().slice(0, 200)
@@ -91,7 +93,7 @@ export default async function PartnersPage({
 
   return (
     <>
-      <PageHeader title="Partners">{owner && <AddPartner />}</PageHeader>
+      <PageHeader title="Partners">{editable && <AddPartner />}</PageHeader>
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks
@@ -140,7 +142,7 @@ export default async function PartnersPage({
                     <SupplierRow
                       key={`s-${row.id}`}
                       supplier={supplierDetails(row.supplier)}
-                      owner={owner}
+                      editable={editable}
                       showType={showType}
                       defaultLeadTimeDays={defaultLeadTimeDays}
                     />
@@ -148,7 +150,7 @@ export default async function PartnersPage({
                     <ForwarderRow
                       key={`f-${row.id}`}
                       forwarder={forwarderDetails(row.forwarder)}
-                      owner={owner}
+                      editable={editable}
                       showType={showType}
                     />
                   )

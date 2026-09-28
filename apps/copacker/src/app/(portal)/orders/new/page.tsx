@@ -6,7 +6,7 @@ import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
 import { orderLine } from "@/lib/order-lines"
-import { requireBuyer, session } from "@/server/auth"
+import { requireBuyer, requirePage, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
@@ -49,6 +49,7 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
 export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const params = await searchParams
   const rows = await db()
     .select()

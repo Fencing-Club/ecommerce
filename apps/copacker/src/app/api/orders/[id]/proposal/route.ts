@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { proposeChanges } from "@/server/order-proposals"
 import { appUrl } from "@/server/security"
 
@@ -13,11 +14,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { revision, proposal } = input.parse(await request.json())
     const id = z.uuid().parse((await params).id)
-    return Response.json(await proposeChanges(await session(), id, proposal, revision))
+    const s = await session()
+    requireAccess(s, "orders", "edit")
+    return Response.json(await proposeChanges(s, id, proposal, revision))
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Couldn't send the changes" },
-      { status: 400 }
+      { status: failureStatus(error) }
     )
   }
 }

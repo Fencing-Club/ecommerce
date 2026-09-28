@@ -1,9 +1,13 @@
 import { ZodError } from "zod"
-import { session } from "@/server/auth"
+import { requireAdmin, session } from "@/server/auth"
+import { AccessError } from "@/server/errors"
 import { LocationSettingsError, readLocationMappings, saveLocationMapping } from "@/server/inventory-location-settings"
 
 const headers = { "Cache-Control": "private, no-store" }
 function failure(error: unknown) {
+  if (error instanceof AccessError) {
+    return Response.json({ error: error.message }, { status: 403, headers })
+  }
   if (error instanceof LocationSettingsError) {
     return Response.json({ error: error.message }, { status: error.status, headers })
   }
@@ -26,6 +30,8 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
   try {
+    // Which locations count is one of the store's settings.
+    requireAdmin(s)
     return Response.json(await saveLocationMapping(s, await request.json()), { headers })
   } catch (error) {
     return failure(error)

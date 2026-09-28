@@ -8,8 +8,9 @@ import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Button } from "@/components/ui/button"
 import { db } from "@/db"
 import { connections, suppliers } from "@/db/schema"
+import { can, isAdmin } from "@/lib/access"
 import { forwarderOrders, visibleOrders } from "@/server/access"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { supplierOrders } from "@/server/supplier-workspace"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,6 +23,7 @@ export default async function OrdersPage({
   searchParams: Promise<{ status?: string; tab?: string }>
 }) {
   const s = await session()
+  requirePage(s, "orders")
   if (s.org.kind === "supplier") {
     const [orders, { tab }] = await Promise.all([supplierOrders(s.org.id), searchParams])
     return (
@@ -51,29 +53,35 @@ export default async function OrdersPage({
           .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
           .limit(1)
       : []
+  const creates = isBuyer && can(s, "orders", "edit")
   let nextStep = {
     description: "Choose products from your catalog, then send the purchase order to your supplier.",
     href: "/orders/new",
-    action: "Create purchase order"
+    action: "Create purchase order",
+    allowed: creates
   }
   if (!shopify) {
     nextStep = {
       description: "Connect Shopify so purchase orders can use your catalog, then invite your supplier.",
       href: "/settings#integrations",
-      action: "Connect Shopify"
+      action: "Connect Shopify",
+      allowed: isAdmin(s)
     }
   } else if (!supplierLink) {
     nextStep = {
       description: "Invite your supplier, then create your first purchase order.",
       href: "/partners",
-      action: "Invite a supplier"
+      action: "Invite a supplier",
+      allowed: can(s, "partners", "edit")
     }
   }
+  // Someone who can't take the next step just hears there are none yet.
+  const guided = isBuyer && nextStep.allowed
 
   return (
     <>
       <PageHeader title="Purchase orders">
-        {isBuyer && (
+        {creates && (
           <>
             <Button variant="outline" nativeButton={false} render={<Link href="/orders/import" />}>
               <FileUp data-icon="inline-start" />
@@ -106,10 +114,10 @@ export default async function OrdersPage({
         />
       ) : (
         <EmptyState
-          title={isBuyer ? "Your next shipment starts here" : "No purchase orders yet"}
-          description={isBuyer ? nextStep.description : "Purchase orders shipping through you appear here."}
+          title={guided ? "Your next shipment starts here" : "No purchase orders yet"}
+          description={guided ? nextStep.description : emptyDescription(s.org.kind)}
         >
-          {isBuyer && (
+          {guided && (
             <Button nativeButton={false} render={<Link href={nextStep.href} />}>
               {nextStep.action}
             </Button>
@@ -118,4 +126,9 @@ export default async function OrdersPage({
       )}
     </>
   )
+}
+
+// What an empty list holds once there's something in it: a forwarder's are the ones shipping through it.
+function emptyDescription(kind: string) {
+  return kind === "forwarder" ? "Purchase orders shipping through you appear here." : "Purchase orders appear here."
 }

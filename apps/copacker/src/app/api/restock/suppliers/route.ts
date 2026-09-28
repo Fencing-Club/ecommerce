@@ -1,6 +1,8 @@
 import { and, eq, isNull } from "drizzle-orm"
+import { forbidden } from "next/navigation"
 import { db } from "@/db"
 import { suppliers } from "@/db/schema"
+import { can } from "@/lib/access"
 import { session } from "@/server/auth"
 
 // The buyer's suppliers and lead times, for the restock supplier filter.
@@ -9,6 +11,10 @@ export async function GET() {
   const s = await session()
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+  }
+  // The Products page and Restock pick suppliers from it.
+  if (!can(s, "products") && !can(s, "restock")) {
+    forbidden()
   }
   const rows = await db()
     .select({

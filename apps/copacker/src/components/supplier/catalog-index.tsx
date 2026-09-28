@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -30,12 +31,15 @@ function assigned(customers: string[]) {
 export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
   const [tab, setTab] = useState<"all" | CatalogRow["status"]>("all")
   const [query, setQuery] = useState("")
+  const editable = useCan("catalogs", "edit")
   if (!catalogs.length) {
     return (
       <EmptyState title="No catalogs yet" description="Set which products each customer can order, and their prices.">
-        <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
-          Create catalog
-        </Button>
+        {editable && (
+          <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
+            Create catalog
+          </Button>
+        )}
       </EmptyState>
     )
   }

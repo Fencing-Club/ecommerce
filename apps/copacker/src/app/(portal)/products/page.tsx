@@ -10,22 +10,26 @@ import { ProductActions } from "@/components/supplier/product-transfer"
 import { Button } from "@/components/ui/button"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
-import { session } from "@/server/auth"
+import { can } from "@/lib/access"
+import { requirePage, session } from "@/server/auth"
 import { productList } from "@/server/supplier-products"
 
 export const metadata: Metadata = { title: "Products" }
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const s = await session()
+  requirePage(s, "products")
   if (s.org.kind === "supplier") {
     return (
       <>
         <PageHeader title="Products">
           <ProductActions />
-          <Button nativeButton={false} render={<Link href="/products/new" />}>
-            <Plus data-icon="inline-start" />
-            Add product
-          </Button>
+          {can(s, "products", "edit") && (
+            <Button nativeButton={false} render={<Link href="/products/new" />}>
+              <Plus data-icon="inline-start" />
+              Add product
+            </Button>
+          )}
         </PageHeader>
         <ProductIndex products={await productList(s.org.id)} />
       </>

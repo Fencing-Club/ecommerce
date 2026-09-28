@@ -2,11 +2,13 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { profiles, supplierProfiles } from "@/db/schema"
+import { isAdmin } from "@/lib/access"
 import { personSchema, websiteSchema } from "@/lib/onboarding"
 import type { Session } from "./auth"
+import { AccessError } from "./errors"
 
-// The profile the portal asks for before anything else: the person and their company, and for a buyer's owner, the
-// workspace's website.
+// The profile the portal asks for before anything else: the person and their company, and for a buyer's owner or admin,
+// the workspace's website.
 export const profileInputSchema = personSchema.extend({
   company: z.string().trim().min(1, "Enter your company").max(120),
   website: websiteSchema.optional()
@@ -24,9 +26,9 @@ export async function writeProfile(tx: Transaction, userId: string, values: Prof
 
 export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw: unknown) {
   const { website, ...input } = profileInputSchema.parse(raw)
-  // The website is the workspace's, which only its owner changes.
-  if (website !== undefined && (s.org.kind !== "buyer" || s.role !== "owner")) {
-    throw new Error("Only the workspace owner can change its website")
+  // The website is the workspace's, which only its owner and admins change.
+  if (website !== undefined && (s.org.kind !== "buyer" || !isAdmin(s))) {
+    throw new AccessError("Only admins can change the website")
   }
   await db().transaction(async (tx) => {
     await writeProfile(tx, s.user.id, input)

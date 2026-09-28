@@ -1,9 +1,9 @@
 "use client"
 
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
+import { PageLink } from "@/components/access"
 import { PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -444,10 +444,13 @@ function VariantSheet({
 // organization and catalogs on the right.
 export function ProductEditor({
   initial,
-  catalogs = []
+  catalogs = [],
+  readOnly = false
 }: {
   initial: EditorProduct
   catalogs?: Array<{ id: string; title: string; status: "active" | "draft" | "archived" }>
+  // For someone who can only view products: the form shows the product with every field and button turned off.
+  readOnly?: boolean
 }) {
   const router = useRouter()
   const [saved, setSaved] = useState(initial)
@@ -543,7 +546,10 @@ export function ProductEditor({
         badge={saved.id ? <StatusBadge status={saved.status} /> : undefined}
       />
       <div className="@container flex flex-col gap-4">
-        <div className="grid items-start gap-4 @4xl:grid-cols-[minmax(0,1fr)_18rem] @6xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <fieldset
+          disabled={readOnly}
+          className="grid min-w-0 items-start gap-4 @4xl:grid-cols-[minmax(0,1fr)_18rem] @6xl:grid-cols-[minmax(0,1fr)_20rem]"
+        >
           <div className="flex min-w-0 flex-col gap-4">
             <Card>
               <CardContent>
@@ -856,9 +862,9 @@ export function ProductEditor({
                     <ul className="flex flex-col gap-2 text-sm">
                       {catalogs.map((catalog) => (
                         <li key={catalog.id} className="flex items-center justify-between gap-2">
-                          <Link href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
+                          <PageLink href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
                             {catalog.title}
-                          </Link>
+                          </PageLink>
                           {catalog.status !== "active" && <StatusBadge status={catalog.status} />}
                         </li>
                       ))}
@@ -870,7 +876,7 @@ export function ProductEditor({
               </Card>
             )}
           </div>
-        </div>
+        </fieldset>
 
         <SaveBar
           dirty={dirty || !saved.id}

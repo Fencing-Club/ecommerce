@@ -5,7 +5,7 @@ import { z } from "zod"
 import { OrderReviser } from "@/components/supplier/order-reviser"
 import { db } from "@/db"
 import { organizations } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 
@@ -22,6 +22,7 @@ export default async function ReviseOrderPage({ params }: { params: Promise<{ id
   if (s.org.kind !== "supplier") {
     redirect(`/orders/${id}`)
   }
+  requirePage(s, "orders", "edit")
   const { order, latest, changeable, products } = await reviseContext(s, id)
   if (order.status !== "submitted" || !changeable) {
     redirect(`/orders/${id}`)

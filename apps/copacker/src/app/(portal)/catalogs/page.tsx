@@ -5,7 +5,8 @@ import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { CatalogIndex } from "@/components/supplier/catalog-index"
 import { Button } from "@/components/ui/button"
-import { session } from "@/server/auth"
+import { can } from "@/lib/access"
+import { requirePage, session } from "@/server/auth"
 import { catalogList } from "@/server/catalogs"
 
 export const metadata: Metadata = { title: "Catalogs" }
@@ -15,11 +16,12 @@ export default async function CatalogsPage() {
   if (s.org.kind !== "supplier") {
     redirect("/")
   }
+  requirePage(s, "catalogs")
   const catalogs = await catalogList(s.org.id)
   return (
     <>
       <PageHeader title="Catalogs">
-        {catalogs.length > 0 && (
+        {catalogs.length > 0 && can(s, "catalogs", "edit") && (
           <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
             <Plus data-icon="inline-start" />
             Create catalog

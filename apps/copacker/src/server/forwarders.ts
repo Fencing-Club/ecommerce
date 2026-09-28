@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { contacts, forwarders, jobs, memberships, organizations } from "@/db/schema"
+import { isAdmin } from "@/lib/access"
 import { hash, token } from "./security"
 
 const week = 7 * 86400000
@@ -231,8 +232,8 @@ export async function saveForwarderAddress(buyerOrgId: string, raw: unknown) {
     .values({ orgId: buyerOrgId, kind: "forwarder", forwarderId: forwarder.id, ...values })
 }
 
-// Links an invited forwarder to the forwarder workspace its owner chose, in the given transaction (such as the one
-// that creates that workspace) or in its own.
+// Links an invited forwarder to the forwarder workspace its owner or an admin chose, in the given transaction (such as
+// the one that creates that workspace) or in its own.
 export async function acceptForwarderInvitation(
   user: { id: string; email: string; emailVerified: boolean },
   orgId: string,
@@ -248,8 +249,8 @@ export async function acceptForwarderInvitation(
       .from(memberships)
       .innerJoin(organizations, eq(organizations.id, memberships.orgId))
       .where(and(eq(memberships.userId, user.id), eq(memberships.orgId, orgId)))
-    if (workspace?.memberships.role !== "owner" || workspace.organizations.kind !== "forwarder") {
-      throw new Error("Choose a forwarder workspace that you own")
+    if (!workspace || !isAdmin(workspace.memberships) || workspace.organizations.kind !== "forwarder") {
+      throw new Error("Choose a forwarder workspace where you’re an admin")
     }
     const [row] = await tx
       .select()

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { priceList } from "@/server/catalog-export"
 import { priceListPdf, priceListWorkbook } from "@/server/price-list-files"
 
@@ -10,6 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (s.org.kind !== "supplier" || !id.success) {
     return new Response("Catalog not found", { status: 404 })
   }
+  requirePage(s, "catalogs")
   const list = await priceList(s.org.id, s.org.name, id.data)
   if (!list) {
     return new Response("Catalog not found", { status: 404 })

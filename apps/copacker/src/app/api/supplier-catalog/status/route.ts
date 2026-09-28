@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 import { setProductsActive } from "@/server/supplier-products"
 
@@ -12,8 +13,13 @@ export async function POST(request: Request) {
   }
   try {
     const input = statusInput.parse(await request.json())
-    return Response.json({ updated: await setProductsActive(await session(), input.ids, input.active) })
+    const s = await session()
+    requireAccess(s, "products", "edit")
+    return Response.json({ updated: await setProductsActive(s, input.ids, input.active) })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not save" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Could not save" },
+      { status: failureStatus(error) }
+    )
   }
 }

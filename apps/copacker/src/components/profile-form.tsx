@@ -8,7 +8,7 @@ import { SettingsForm } from "./settings-forms"
 
 const schema = personSchema.extend({
   company: z.string().trim().min(1, "Enter your company").max(120),
-  // The workspace's website, printed on its purchase orders. Only its owner sees and changes it.
+  // The workspace's website, printed on its purchase orders. Only its owner and admins see and change it.
   website: websiteSchema.optional()
 })
 

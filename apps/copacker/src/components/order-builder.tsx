@@ -25,6 +25,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { PageLink } from "@/components/access"
 import { PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -411,9 +412,9 @@ export function OrderBuilder({
               <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
                 <AlertTriangle className="size-3.5" />
                 Amazon needs a phone number at this stop for pickup.
-                <Link href="/partners?type=forwarder" className="underline underline-offset-2">
+                <PageLink href="/partners?type=forwarder" className="underline underline-offset-2">
                   Add one
-                </Link>
+                </PageLink>
               </p>
             )}
 

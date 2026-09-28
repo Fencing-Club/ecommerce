@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -157,12 +157,13 @@ export default async function Invitation({
       </AuthPage>
     )
   }
-  // A supplier or forwarder with a workspace of that kind already can bring it; otherwise getting started makes one.
+  // A supplier or forwarder that runs a workspace of that kind already, as its owner or an admin, can bring it;
+  // otherwise getting started makes one.
   const owned = await db()
     .select({ id: organizations.id, name: organizations.name })
     .from(memberships)
     .innerJoin(organizations, eq(organizations.id, memberships.orgId))
-    .where(and(eq(memberships.userId, user.id), eq(memberships.role, "owner"), eq(organizations.kind, kind)))
+    .where(and(eq(memberships.userId, user.id), ne(memberships.role, "member"), eq(organizations.kind, kind)))
     .orderBy(organizations.name)
   if (!owned.length) {
     redirect(setUp)

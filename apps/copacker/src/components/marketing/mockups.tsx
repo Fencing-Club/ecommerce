@@ -18,14 +18,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Kbd } from "@/components/ui/kbd"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { navigationFor, navigationGroups } from "@/lib/navigation"
+import { navigationGroups, pagesFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 // The product as the marketing page shows it: the app's own components, in its light theme, holding a demo buyer's
 // data, the same brand and suppliers as the ad (docs/video.md). The shots are pictures: nothing in them can be focused or
 // clicked, and screen readers get the figure's caption instead.
 
-const nav = navigationFor("buyer")
+const nav = pagesFor("buyer")
 
 // The app's window: the header with search, the sidebar with the buyer's pages, and the page itself.
 function AppFrame({ active, children }: { active: string; children: React.ReactNode }) {

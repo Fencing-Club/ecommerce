@@ -7,6 +7,7 @@ import Image from "next/image"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
+import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -247,6 +248,9 @@ function DetailsForm({
   const [saveProduct] = detailsApi.useSaveProductDefaultsMutation()
   const [saveVariation] = useSaveVariationDetailsMutation()
   const { data: suppliers = [], isLoading: loadingSuppliers } = useSuppliersQuery()
+  // Someone who can only view products sees the details with their fields turned off; labels still preview and
+  // download.
+  const editable = useCan("products", "edit")
   const form = useForm<Values, unknown, Output>({
     resolver: zodResolver(schema, { error: formErrorMap }),
     defaultValues: formValues(product)
@@ -318,73 +322,75 @@ function DetailsForm({
           </div>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
-          <Section title="Purchasing">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect
-                name="supplierId"
-                label="Supplier"
-                options={[
-                  automaticSupplier,
-                  ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
-                ]}
-                placeholder={loadingSuppliers ? "Loading…" : "—"}
-              />
-              {only && (
-                <FormInput
-                  name="variations.0.supplierSku"
-                  label="Supplier SKU"
-                  maxLength={255}
-                  autoComplete="off"
-                  spellCheck={false}
+          <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-6">
+            <Section title="Purchasing">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormSelect
+                  name="supplierId"
+                  label="Supplier"
+                  options={[
+                    automaticSupplier,
+                    ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
+                  ]}
+                  placeholder={loadingSuppliers ? "Loading…" : "—"}
                 />
-              )}
-              <FormNumber name="minimumOrder" label="Minimum order quantity" min={1} step={1} />
-              {only && <FormNumber name="variations.0.storeStockTarget" label="Warehouse minimum" min={0} step={1} />}
-            </div>
-          </Section>
-          <Separator />
-          <Section title="Amazon">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect name="amazonNetwork" required label="Amazon warehouse" options={networkOptions} />
-              {only && (
-                <FormInput
-                  name="variations.0.asin"
-                  label="ASIN"
-                  maxLength={255}
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              )}
-              {only && (
+                {only && (
+                  <FormInput
+                    name="variations.0.supplierSku"
+                    label="Supplier SKU"
+                    maxLength={255}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                )}
+                <FormNumber name="minimumOrder" label="Minimum order quantity" min={1} step={1} />
+                {only && <FormNumber name="variations.0.storeStockTarget" label="Warehouse minimum" min={0} step={1} />}
+              </div>
+            </Section>
+            <Separator />
+            <Section title="Amazon">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormSelect name="amazonNetwork" required label="Amazon warehouse" options={networkOptions} />
+                {only && (
+                  <FormInput
+                    name="variations.0.asin"
+                    label="ASIN"
+                    maxLength={255}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                )}
+                {only && (
+                  <FormNumber
+                    name="variations.0.amazonStockTarget"
+                    label="Amazon minimum"
+                    description="0 keeps it off Amazon"
+                    min={0}
+                    step={1}
+                  />
+                )}
+              </div>
+            </Section>
+            <Separator />
+            <Section title="Packing">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormSelect name="prepCategory" required label="Preparation" options={prepOptions} />
                 <FormNumber
-                  name="variations.0.amazonStockTarget"
-                  label="Amazon minimum"
-                  description="0 keeps it off Amazon"
-                  min={0}
+                  name="caseQuantity"
+                  label="Case quantity"
+                  description="Used without a case pack"
+                  min={1}
                   step={1}
                 />
-              )}
-            </div>
-          </Section>
-          <Separator />
-          <Section title="Packing">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormSelect name="prepCategory" required label="Preparation" options={prepOptions} />
-              <FormNumber
-                name="caseQuantity"
-                label="Case quantity"
-                description="Used without a case pack"
-                min={1}
-                step={1}
-              />
-            </div>
-            <FormCheckbox name="suffocationWarning" label="Suffocation warning label" />
-            <FormTextarea name="description" label="Instructions" placeholder="Handling or labeling exceptions" />
-            <CasePacks />
-          </Section>
-          <Separator />
+              </div>
+              <FormCheckbox name="suffocationWarning" label="Suffocation warning label" />
+              <FormTextarea name="description" label="Instructions" placeholder="Handling or labeling exceptions" />
+              <CasePacks />
+            </Section>
+            <Separator />
+          </fieldset>
           <Section title="Labels">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <fieldset disabled={!editable} className="grid min-w-0 gap-4 sm:grid-cols-2">
               <FormSelect
                 name="productLabel"
                 required
@@ -392,7 +398,7 @@ function DetailsForm({
                 description={labelHints[productLabel]}
                 options={labelOptions}
               />
-            </div>
+            </fieldset>
             <ProductBarcodes
               productTitle={title}
               productLabel={productLabel}
@@ -404,7 +410,9 @@ function DetailsForm({
             <>
               <Separator />
               <Section title="Variations">
-                <VariationDetails productTitle={title} variations={variants} />
+                <fieldset disabled={!editable} className="min-w-0">
+                  <VariationDetails productTitle={title} variations={variants} />
+                </fieldset>
               </Section>
             </>
           )}
@@ -412,10 +420,12 @@ function DetailsForm({
         <SheetFooter className="border-t">
           <FormError message={form.formState.errors.root?.server?.message} />
           <div className="flex justify-end gap-2">
-            <SheetClose render={<Button type="button" variant="outline" />}>Cancel</SheetClose>
-            <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-              Save
-            </SubmitButton>
+            <SheetClose render={<Button type="button" variant="outline" />}>{editable ? "Cancel" : "Close"}</SheetClose>
+            {editable && (
+              <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
+                Save
+              </SubmitButton>
+            )}
           </div>
         </SheetFooter>
       </form>

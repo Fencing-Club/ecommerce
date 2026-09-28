@@ -1,7 +1,7 @@
 import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { accessibleOrder } from "@/server/access"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { generatePo } from "@/server/documents"
 
 const headers = { "Cache-Control": "private, no-store" }
@@ -13,6 +13,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
   }
   const s = await session()
+  requirePage(s, "orders")
   try {
     // Only a workspace that can see the PO gets its document.
     await accessibleOrder(s, id.data)

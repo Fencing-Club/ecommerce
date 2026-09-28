@@ -1,5 +1,5 @@
 import { ZodError } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { RestockInputError, restockReport } from "@/server/restock-page"
 import { appUrl } from "@/server/security"
 
@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
+  requirePage(s, "restock")
   try {
     return Response.json(await restockReport(s, await request.json()), { headers })
   } catch (error) {

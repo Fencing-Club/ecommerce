@@ -19,10 +19,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { db } from "@/db"
 import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
+import { can } from "@/lib/access"
 import { dayDate } from "@/lib/format"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
 import { proposalChanges, proposalState } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
@@ -36,17 +37,23 @@ type Props = { params: Promise<{ id: string }> }
 // title.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [s, { id }] = await Promise.all([session(), params])
+  requirePage(s, "orders")
   const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
   return { title: order.data.reference }
 }
 
 export default async function OrderPage({ params }: Props) {
   const s = await session()
+  requirePage(s, "orders")
   // A malformed or unknown id is a not-found, from forwarderOrder or accessibleOrder.
   const { id } = await params
   if (s.org.kind === "forwarder") {
-    return <ForwarderView row={await forwarderOrder(s, id)} />
+    return <ForwarderView row={await forwarderOrder(s, id)} editable={can(s, "orders", "edit")} />
   }
+  // Someone who can only view purchase orders sees the PO without its buttons; shipments are their own page.
+  const editsOrder = can(s, "orders", "edit")
+  const seesShipments = can(s, "shipments")
+  const editsShipments = can(s, "shipments", "edit")
   const { order, supplier } = await accessibleOrder(s, id)
   const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
@@ -122,7 +129,8 @@ export default async function OrderPage({ params }: Props) {
   const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
   const documentGroups = [
     { key: "order", title: null, shipmentId: null },
-    ...shipmentRows.map((shipment, index) => ({
+    // Shipments' documents are for those who can open shipments.
+    ...(seesShipments ? shipmentRows : []).map((shipment, index) => ({
       key: shipment.id,
       title: `Shipment ${index + 1}`,
       shipmentId: shipment.id
@@ -174,12 +182,13 @@ export default async function OrderPage({ params }: Props) {
         title={order.data.reference}
         badge={<Status status={status} />}
       >
-        {order.status === "draft" && buyer && (
+        {order.status === "draft" && buyer && editsOrder && (
           <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
             {supplier.supplierOrgId ? "Submit to supplier" : "Send purchase order"}
           </ActionButton>
         )}
         {s.org.kind === "supplier" &&
+          editsOrder &&
           order.status === "submitted" &&
           proposals.changeable &&
           proposal?.status !== "pending" && (
@@ -187,16 +196,19 @@ export default async function OrderPage({ params }: Props) {
               Edit order
             </Button>
           )}
-        {order.status === "submitted" && (editable || remaining) && proposal?.status !== "pending" && (
-          <ActionButton action="shipment.create" data={{ id }}>
-            {editable ? "Continue packing" : "Prepare next shipment"}
-          </ActionButton>
-        )}
+        {order.status === "submitted" &&
+          editsShipments &&
+          (editable || remaining) &&
+          proposal?.status !== "pending" && (
+            <ActionButton action="shipment.create" data={{ id }}>
+              {editable ? "Continue packing" : "Prepare next shipment"}
+            </ActionButton>
+          )}
         <OrderMenu
           id={id}
           reference={order.data.reference}
-          draft={order.status === "draft" && buyer}
-          closable={order.status === "submitted" && buyer}
+          draft={order.status === "draft" && buyer && editsOrder}
+          closable={order.status === "submitted" && buyer && editsOrder}
           labels={
             labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
             order.data.items.some((item) => item.suffocationWarning)
@@ -240,7 +252,7 @@ export default async function OrderPage({ params }: Props) {
               <RoutePill icon={<MapPin />}>
                 {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
               </RoutePill>
-              {order.status === "draft" && buyer && (
+              {order.status === "draft" && buyer && editsOrder && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -308,7 +320,7 @@ export default async function OrderPage({ params }: Props) {
                             .join(" / ")}
                           label={labelFor(item.id)}
                           warning={item.suffocationWarning}
-                          editable={order.status === "draft" && buyer}
+                          editable={order.status === "draft" && buyer && editsOrder}
                         />
                       </td>
                     </tr>
@@ -339,12 +351,9 @@ export default async function OrderPage({ params }: Props) {
             </CardHeader>
             {shipmentRows.length ? (
               <ul>
-                {shipmentRows.map((shipment, index) => (
-                  <li key={shipment.id} className="flex items-center gap-3 border-t pr-3">
-                    <Link
-                      href={`/shipments/${shipment.id}`}
-                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
-                    >
+                {shipmentRows.map((shipment, index) => {
+                  const summary = (
+                    <>
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="font-medium">
                           Shipment {index + 1}
@@ -356,13 +365,27 @@ export default async function OrderPage({ params }: Props) {
                         </span>
                       </span>
                       <Status status={shipment.status} />
-                      <ChevronRight className="size-4 text-muted-foreground" />
-                    </Link>
-                    {buyer && shipment.status === "shipped" && leg && !leg.forwarderOrgId && (
-                      <ForwardShipment shipmentId={shipment.id} currency={currency} />
-                    )}
-                  </li>
-                ))}
+                    </>
+                  )
+                  return (
+                    <li key={shipment.id} className="flex items-center gap-3 border-t pr-3">
+                      {seesShipments ? (
+                        <Link
+                          href={`/shipments/${shipment.id}`}
+                          className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
+                        >
+                          {summary}
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </Link>
+                      ) : (
+                        <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">{summary}</div>
+                      )}
+                      {buyer && editsShipments && shipment.status === "shipped" && leg && !leg.forwarderOrgId && (
+                        <ForwardShipment shipmentId={shipment.id} currency={currency} />
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="px-3 pb-3 text-muted-foreground">

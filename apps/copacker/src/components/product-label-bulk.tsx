@@ -2,6 +2,7 @@
 
 import { ChevronDown, Download, Search, Tags } from "lucide-react"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -52,6 +53,8 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
   const [downloading, setDownloading] = useState(false)
   const { data: choices = [], isLoading, refetch } = labelsApi.useProductLabelChoicesQuery(undefined, { skip: !open })
   const [assign, { isLoading: assigning }] = labelsApi.useAssignProductLabelMutation()
+  // Downloading labels only reads products; setting their label type changes them.
+  const editable = useCan("products", "edit")
   const query = search.trim().toLocaleLowerCase()
   const shown = query ? choices.filter((choice) => choice.title.toLocaleLowerCase().includes(query)) : choices
   const allShown = shown.length > 0 && shown.every((choice) => selected.includes(choice.productId))
@@ -197,21 +200,23 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
               {status || `${selected.length} selected`}
             </p>
             <div className="flex flex-wrap gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button type="button" variant="outline" disabled={!selected.length || busy} />}
-                >
-                  Set label type
-                  <ChevronDown data-icon="inline-end" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  {productLabels.map((productLabel) => (
-                    <DropdownMenuItem key={productLabel} onClick={() => void setLabel(productLabel)}>
-                      {labelNames[productLabel]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {editable && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button type="button" variant="outline" disabled={!selected.length || busy} />}
+                  >
+                    Set label type
+                    <ChevronDown data-icon="inline-end" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    {productLabels.map((productLabel) => (
+                      <DropdownMenuItem key={productLabel} onClick={() => void setLabel(productLabel)}>
+                        {labelNames[productLabel]}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <Button type="button" disabled={!selected.length || busy} onClick={() => void download()}>
                 <Download data-icon="inline-start" />
                 {downloading ? "Making labels…" : "Download labels"}

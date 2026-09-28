@@ -15,6 +15,7 @@ import { TeamSettings } from "@/components/team-settings"
 import { Card, CardContent } from "@/components/ui/card"
 import { db } from "@/db"
 import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
+import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
 import { amazonStore, shopifyStoreName } from "@/server/connected-accounts"
@@ -37,7 +38,10 @@ export default async function Settings() {
   const computerZone = await storeTimeZone({ timeZone: null })
   const buyer = s.org.kind === "buyer"
   const supplier = s.org.kind === "supplier"
-  const owner = s.role === "owner"
+  // Owners and admins change the workspace's settings; everyone else sees them as they're set.
+  const admin = isAdmin(s)
+  // Monthly costs feed the Overview's profit, so they're for those who can see it.
+  const finances = buyer && can(s, "overview")
   const restock = restockSettings(s.org)
   const [linked, saved, [profile], costs, currency, team] = await Promise.all([
     db()
@@ -46,8 +50,8 @@ export default async function Settings() {
       .where(eq(connections.orgId, s.org.id)),
     db().select().from(contacts).where(eq(contacts.orgId, s.org.id)),
     db().select().from(supplierProfiles).where(eq(supplierProfiles.orgId, s.org.id)),
-    buyer ? listMonthlyCosts(s.org.id) : Promise.resolve([]),
-    buyer ? reportingCurrency(s.org.id) : Promise.resolve("USD"),
+    finances ? listMonthlyCosts(s.org.id) : Promise.resolve([]),
+    finances ? reportingCurrency(s.org.id) : Promise.resolve("USD"),
     // Invitations expire on a day in the store's time zone, or the viewer's when it's automatic.
     teamOf({ id: s.org.id, timeZone: s.org.timeZone ?? computerZone })
   ])
@@ -57,8 +61,8 @@ export default async function Settings() {
   const [shopName, amazon, orderTags, copyingTags] = await Promise.all([
     shopifyAccount ? shopifyStoreName(s.org.id, shopifyAccount.externalId) : null,
     amazonAccount ? amazonStore(s.org.id, amazonAccount.externalId) : null,
-    buyer && shopifyAccount && owner ? shopifyOrderTags(s.org.id) : [],
-    buyer && shopifyAccount && owner ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
+    buyer && shopifyAccount && admin ? shopifyOrderTags(s.org.id) : [],
+    buyer && shopifyAccount && admin ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
   const amazonDraft = process.env.AMAZON_APP_DRAFT === "true"
@@ -82,19 +86,19 @@ export default async function Settings() {
               lastName: person?.lastName ?? "",
               position: person?.position ?? "",
               company: person?.company || s.org.name,
-              ...(buyer && owner && { website: profile?.website ?? "" })
+              ...(buyer && admin && { website: profile?.website ?? "" })
             }}
           />
         </Section>
 
         <Section id="team" title="Team" description={`People in ${s.org.name}`}>
-          <TeamSettings {...team} owner={owner} you={s.user.id} workspace={s.org.name} />
+          <TeamSettings {...team} admin={admin} you={s.user.id} workspace={s.org.name} kind={s.org.kind} />
         </Section>
 
         {buyer && (
           <Section id="integrations" title="Integrations" description="Stores Copacker syncs with">
             <Integrations
-              owner={owner}
+              admin={admin}
               amazonDraft={amazonDraft}
               shopify={
                 shopifyAccount
@@ -132,7 +136,7 @@ export default async function Settings() {
 
         {buyer && (
           <Section id="restock" title="Restock" description="Used by Restock and the Overview">
-            {owner ? (
+            {admin ? (
               <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
             ) : (
               <Values
@@ -147,7 +151,7 @@ export default async function Settings() {
 
         {buyer && (
           <Section id="time-zone" title="Time zone" description="For days and months on the Overview">
-            {owner ? (
+            {admin ? (
               <TimeZoneForm
                 timeZone={s.org.timeZone}
                 computerZone={computerZone}
@@ -166,7 +170,7 @@ export default async function Settings() {
           </Section>
         )}
 
-        {buyer && (
+        {finances && (
           <Section id="monthly-costs" title="Monthly costs" description="Costs Shopify and Amazon don’t report">
             <MonthlyCosts
               costs={costs.map((cost) => ({
@@ -176,14 +180,14 @@ export default async function Settings() {
                 details: costDetails(cost)
               }))}
               currency={currency}
-              owner={owner}
+              admin={admin}
             />
           </Section>
         )}
 
         {supplier && (
           <Section id="supplier-profile" title="Supplier profile" description="Contact details buyers see">
-            {owner ? (
+            {admin ? (
               <SupplierProfileForm
                 contactName={profile?.contactName ?? ""}
                 contactEmail={profile?.contactEmail ?? ""}
@@ -216,6 +220,7 @@ export default async function Settings() {
             )}
             supplier={supplier}
             locations={ownLocations}
+            admin={admin}
           />
         </Section>
       </div>
@@ -256,7 +261,7 @@ function account(name: string | null, externalId: string) {
   return name && name !== externalId ? `${name}, ${externalId}` : externalId
 }
 
-// Settings only the owner changes, as the rest of the team sees them.
+// Settings only owners and admins change, as the rest of the team sees them.
 function Values({ values }: { values: Array<{ label: string; value: string }> }) {
   return (
     <Card>

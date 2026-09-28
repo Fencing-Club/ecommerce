@@ -2,8 +2,9 @@ import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { suppliers } from "@/db/schema"
-import { requireBuyer, session } from "@/server/auth"
+import { requireAccess, requireBuyer, session } from "@/server/auth"
 import { customerProducts } from "@/server/catalogs"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
@@ -22,6 +23,8 @@ export async function POST(request: Request) {
   try {
     const s = await session()
     requireBuyer(s)
+    // Purchase orders match their lines to the supplier's catalog.
+    requireAccess(s, "orders", "edit")
     const input = inputSchema.parse(await request.json())
     const [supplier] = await db()
       .select({ supplierOrgId: suppliers.supplierOrgId, catalogId: suppliers.catalogId })
@@ -53,6 +56,9 @@ export async function POST(request: Request) {
       }))
     )
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Catalog lookup failed" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Catalog lookup failed" },
+      { status: failureStatus(error) }
+    )
   }
 }

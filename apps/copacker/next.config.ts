@@ -9,7 +9,8 @@ const config: NextConfig = {
   reactCompiler: true,
   transpilePackages: ["@repo/aisle"],
   serverExternalPackages: ["pg", "pdfjs-dist", "yauzl"],
-  experimental: { serverActions: { bodySizeLimit: "34mb" } }
+  // authInterrupts turns on forbidden(), which shows a member the No access page for a page they weren't given.
+  experimental: { serverActions: { bodySizeLimit: "34mb" }, authInterrupts: true }
 }
 
 export default withVanillaExtract(config)

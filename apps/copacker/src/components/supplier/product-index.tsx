@@ -4,6 +4,7 @@ import { money } from "@repo/aisle"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -91,6 +92,8 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Choosing products is for archiving or restoring them, which changes them.
+  const editable = useCan("products", "edit")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -190,24 +193,26 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  aria-label="Select all products on this page"
-                  checked={allChosen}
-                  indeterminate={chosen.length > 0 && !allChosen}
-                  onCheckedChange={(checked) => {
-                    const next = new Set(selected)
-                    for (const product of rows) {
-                      if (checked) {
-                        next.add(product.id)
-                      } else {
-                        next.delete(product.id)
+              {editable && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    aria-label="Select all products on this page"
+                    checked={allChosen}
+                    indeterminate={chosen.length > 0 && !allChosen}
+                    onCheckedChange={(checked) => {
+                      const next = new Set(selected)
+                      for (const product of rows) {
+                        if (checked) {
+                          next.add(product.id)
+                        } else {
+                          next.delete(product.id)
+                        }
                       }
-                    }
-                    setSelected(next)
-                  }}
-                />
-              </TableHead>
+                      setSelected(next)
+                    }}
+                  />
+                </TableHead>
+              )}
               <TableHead>Product</TableHead>
               <TableHead className={columns.status}>Status</TableHead>
               <TableHead className={columns.inventory}>Inventory</TableHead>
@@ -225,21 +230,23 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   className="relative"
                   data-state={selected.has(product.id) ? "selected" : undefined}
                 >
-                  <TableCell className="relative z-10">
-                    <Checkbox
-                      aria-label={`Select ${product.title}`}
-                      checked={selected.has(product.id)}
-                      onCheckedChange={(checked) => {
-                        const next = new Set(selected)
-                        if (checked) {
-                          next.add(product.id)
-                        } else {
-                          next.delete(product.id)
-                        }
-                        setSelected(next)
-                      }}
-                    />
-                  </TableCell>
+                  {editable && (
+                    <TableCell className="relative z-10">
+                      <Checkbox
+                        aria-label={`Select ${product.title}`}
+                        checked={selected.has(product.id)}
+                        onCheckedChange={(checked) => {
+                          const next = new Set(selected)
+                          if (checked) {
+                            next.add(product.id)
+                          } else {
+                            next.delete(product.id)
+                          }
+                          setSelected(next)
+                        }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="whitespace-normal">
                     <div className="flex items-center gap-3">
                       <ProductThumb image={product.images[0] ?? null} className="hidden @sm:flex" />

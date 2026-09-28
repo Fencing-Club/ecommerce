@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
-import { session, requireBuyer } from "@/server/auth"
+import { session, requireBuyer, requirePage } from "@/server/auth"
 import { catalogMatches } from "@/server/catalog-matches"
 import { shopifyFor } from "@/server/connections"
 import { withVariantFields } from "@/server/product-fields"
@@ -10,6 +10,7 @@ import { withVariantFields } from "@/server/product-fields"
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   const search = new URL(request.url).searchParams
   const input = z

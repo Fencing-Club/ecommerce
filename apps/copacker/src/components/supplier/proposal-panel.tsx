@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { useCan } from "@/components/access"
 import { StatusBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -116,6 +117,8 @@ export function ProposalPanel({
   const price = (value: number) => money(value, currency)
   const count = (value: number) => value.toLocaleString("en-US")
   const busy = pending !== null || refreshing
+  // Answering or withdrawing changes the purchase order, which needs Edit access to it.
+  const editable = useCan("orders", "edit")
 
   async function act(action: "approve" | "decline" | "withdraw", body: Record<string, unknown>) {
     setPending(action)
@@ -226,7 +229,7 @@ export function ProposalPanel({
           </dd>
         </dl>
       </div>
-      {!declined && (
+      {!declined && editable && (
         <CardFooter className="flex-wrap justify-end gap-2">
           {error && !declining && (
             <p role="alert" className="mr-auto text-sm text-destructive">

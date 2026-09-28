@@ -13,7 +13,14 @@ import { releasedStates } from "@/server/readiness"
 
 // What a freight forwarder sees of a PO whose goods pass through it: the route, what's coming and in how many cartons,
 // and the shipping documents. No prices; the commercial invoice carries what customs needs.
-export async function ForwarderView({ row }: { row: Awaited<ReturnType<typeof forwarderOrders>>[number] }) {
+export async function ForwarderView({
+  row,
+  editable
+}: {
+  row: Awaited<ReturnType<typeof forwarderOrders>>[number]
+  // Whether the person can move shipments on, with Edit access to purchase orders.
+  editable: boolean
+}) {
   const { order, supplier, forwarder } = row
   const [shipmentRows, docs] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(asc(shipments.createdAt)),
@@ -115,7 +122,7 @@ export async function ForwarderView({ row }: { row: Awaited<ReturnType<typeof fo
                     </span>
                   </span>
                   <Status status={shipment.status} />
-                  {shipment.status === "shipped" && (
+                  {editable && shipment.status === "shipped" && (
                     <ForwardShipment shipmentId={shipment.id} currency={order.data.currency} />
                   )}
                 </li>

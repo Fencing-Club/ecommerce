@@ -1,6 +1,6 @@
 import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { ProductBarcodeError, orderLabelsPdf } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
@@ -12,6 +12,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
   }
   const s = await session()
+  requirePage(s, "orders")
   try {
     const file = await orderLabelsPdf(s, id.data)
     return new Response(Buffer.from(file.bytes), {

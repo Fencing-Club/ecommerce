@@ -19,11 +19,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Upload } from "@/components/upload"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
+import { can } from "@/lib/access"
 import { shortDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { proposalState } from "@/server/order-proposals"
 import { finishedStates, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
@@ -34,6 +35,11 @@ export const metadata: Metadata = { title: "Shipment" }
 
 export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
+  requirePage(s, "shipments")
+  // Someone who can only view shipments sees each step without its buttons; its purchase order is linked for those who
+  // can open it.
+  const editsShipments = can(s, "shipments", "edit")
+  const seesOrder = can(s, "orders")
   // A malformed link is a shipment that doesn't exist.
   const parsed = z.uuid().safeParse((await params).id)
   if (!parsed.success) {
@@ -62,6 +68,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const { latest } = await proposalState(order.id)
   const awaitingChanges = latest?.status === "pending"
   const editable =
+    editsShipments &&
     ["packing", "correction"].includes(shipment.status) &&
     !shipment.amazonOrderId &&
     shipment.operation === "none" &&
@@ -129,8 +136,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         parents={[
-          { label: isBuyer ? "Purchase orders" : "Orders", href: "/orders" },
-          { label: order.data.reference, href: `/orders/${order.id}` }
+          { label: isBuyer ? "Purchase orders" : "Orders", href: seesOrder ? "/orders" : undefined },
+          { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined }
         ]}
         title={title}
         badge={<Status status={shipment.status} />}
@@ -155,7 +162,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           </>
         }
       >
-        {nextAction[step.next.step] || null}
+        {editsShipments ? nextAction[step.next.step] || null : null}
       </PageHeader>
 
       <ShipmentProgress processing={["queued", "creating"].includes(shipment.status)} message={nextStep} />
@@ -175,11 +182,13 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             Packing opens once {isBuyer ? "you answer" : "the customer answers"} the proposed changes on the {orderNoun}
             .
           </AlertDescription>
-          <AlertAction>
-            <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
-              View {orderNoun}
-            </Button>
-          </AlertAction>
+          {seesOrder && (
+            <AlertAction>
+              <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
+                View {orderNoun}
+              </Button>
+            </AlertAction>
+          )}
         </Alert>
       )}
 
@@ -198,7 +207,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           invoice={invoice && { id: invoice.id, name: invoice.name, bytes: invoice.bytes }}
           addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}
           enteringFor={isBuyer ? supplier.name : undefined}
-          addAddressTo={enteringFor && s.role === "owner" ? { id: supplier.id, name: enteringFor } : undefined}
+          addAddressTo={enteringFor && can(s, "partners", "edit") ? { id: supplier.id, name: enteringFor } : undefined}
         />
       ) : (
         <>
@@ -235,11 +244,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                     </Item>
                   ))}
                 </ItemGroup>
-                {isBuyer ? (
-                  <ApproveInvoice id={id} revision={shipment.revision} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">Waiting for the buyer’s approval</p>
-                )}
+                {isBuyer && editsShipments && <ApproveInvoice id={id} revision={shipment.revision} />}
+                {!isBuyer && <p className="text-sm text-muted-foreground">Waiting for the buyer’s approval</p>}
               </CardContent>
             </Card>
           )}
@@ -247,8 +253,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           {shipment.status === "waiting_labels" && (
             <Card>
               <CardHeader>
-                <CardTitle>{isBuyer ? "Shipping labels" : "Waiting for shipping labels"}</CardTitle>
-                {isBuyer && (
+                <CardTitle>{isBuyer && editsShipments ? "Shipping labels" : "Waiting for shipping labels"}</CardTitle>
+                {isBuyer && editsShipments && (
                   <CardDescription>
                     {fba
                       ? "Book transport to Amazon, then upload the shipping labels"
@@ -256,7 +262,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                   </CardDescription>
                 )}
               </CardHeader>
-              {isBuyer && (
+              {isBuyer && editsShipments && (
                 <CardContent className="flex flex-col gap-6">
                   <Upload
                     orderId={order.id}
@@ -390,8 +396,9 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </Card>
           </div>
 
-          {isBuyer && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
-          {!finishedStates.includes(shipment.status) &&
+          {isBuyer && editsShipments && step.next.step === "reconcile" && <ReconcileShipment id={id} fba={fba} />}
+          {editsShipments &&
+            !finishedStates.includes(shipment.status) &&
             shipment.status !== "creating" &&
             step.next.step !== "reconcile" && <CorrectionForm id={id} />}
         </>

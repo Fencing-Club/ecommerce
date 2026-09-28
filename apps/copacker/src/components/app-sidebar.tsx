@@ -36,6 +36,7 @@ import {
 import { announceWorkspace } from "@/components/workspace-watch"
 import { useActionMutation } from "@/lib/api"
 import { navigationFor, navigationGroups } from "@/lib/navigation"
+import { usePermissions } from "./access"
 import * as styles from "./app-sidebar.css"
 import { sx } from "@/styles/sprinkles.css"
 
@@ -65,6 +66,8 @@ export function AppSidebar({ name, userName, email, kind, active, workspaces }: 
   const pathname = usePathname()
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
+  // A member sees only the pages they were given.
+  const navigation = navigationFor(kind, usePermissions())
 
   return (
     // On a computer the sidebar starts under the app header; on a phone it's a sheet over everything.
@@ -74,7 +77,7 @@ export function AppSidebar({ name, userName, email, kind, active, workspaces }: 
       </SidebarHeader>
       <SidebarContent>
         {navigationGroups.map((group) => {
-          const items = navigationFor(kind).filter((item) => item.group === group.key)
+          const items = navigation.filter((item) => item.group === group.key)
           if (!items.length) {
             return null
           }

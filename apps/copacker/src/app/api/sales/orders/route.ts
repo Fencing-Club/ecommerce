@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { listSalesOrders, salesSources } from "@/server/sales-orders"
 
 const inputSchema = z.object({
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
+  requirePage(s, "sales")
   const params = new URL(request.url).searchParams
   const input = inputSchema.safeParse({
     source: params.get("source") || undefined,

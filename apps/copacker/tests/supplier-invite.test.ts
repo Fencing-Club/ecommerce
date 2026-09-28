@@ -53,6 +53,7 @@ function actor(id: string): Session {
       createdAt: new Date()
     },
     role: "owner",
+    access: {},
     workspaces: []
   }
 }

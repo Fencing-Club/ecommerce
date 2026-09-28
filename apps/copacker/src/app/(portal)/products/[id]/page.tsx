@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { type EditorProduct, ProductEditor } from "@/components/supplier/product-editor"
-import { session } from "@/server/auth"
+import { can } from "@/lib/access"
+import { requirePage, session } from "@/server/auth"
 import { productDetail } from "@/server/supplier-products"
 
 export const metadata: Metadata = { title: "Product" }
@@ -12,6 +13,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   if (s.org.kind !== "supplier") {
     redirect("/products")
   }
+  requirePage(s, "products")
   const id = z.uuid().safeParse((await params).id)
   const detail = id.success ? await productDetail(s.org.id, id.data) : null
   if (!detail) {
@@ -48,5 +50,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     }))
   }
   // A new revision remounts the form with what was saved.
-  return <ProductEditor key={group.revision} initial={initial} catalogs={detail.catalogs} />
+  return (
+    <ProductEditor
+      key={group.revision}
+      initial={initial}
+      catalogs={detail.catalogs}
+      readOnly={!can(s, "products", "edit")}
+    />
+  )
 }

@@ -3,6 +3,7 @@
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +26,8 @@ import { Input } from "@/components/ui/input"
 // The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
 export function ProductActions() {
   const [importing, setImporting] = useState(false)
+  // Importing changes products; exporting only reads them.
+  const editable = useCan("products", "edit")
   return (
     <>
       <DropdownMenu>
@@ -32,11 +35,15 @@ export function ProductActions() {
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuItem onClick={() => setImporting(true)}>
-            <Upload />
-            Import products
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {editable && (
+            <>
+              <DropdownMenuItem onClick={() => setImporting(true)}>
+                <Upload />
+                Import products
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem
             render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
           >
@@ -58,7 +65,7 @@ export function ProductActions() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ProductImportDialog open={importing} onOpenChange={setImporting} />
+      {editable && <ProductImportDialog open={importing} onOpenChange={setImporting} />}
     </>
   )
 }

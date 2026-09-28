@@ -24,6 +24,7 @@ import {
   numeric,
   boolean
 } from "drizzle-orm/pg-core"
+import type { Access } from "../lib/access"
 import type { CasePack } from "../lib/case-packs"
 import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../lib/catalog-pricing"
 import { contactKinds } from "../lib/contacts"
@@ -55,9 +56,12 @@ export const memberships = pgTable(
       .references(() => organizations.id),
     userId: text().notNull(),
     email: text().notNull(),
-    role: text({ enum: ["owner", "member"] })
+    // The owner made the workspace. Owners and admins can do everything; members only what `access` gives them.
+    role: text({ enum: ["owner", "admin", "member"] })
       .notNull()
-      .default("member")
+      .default("member"),
+    // A member's pages, each to view or edit, such as { orders: "edit", shipments: "view" }.
+    access: jsonb().$type<Access>().notNull().default({})
   },
   (t) => [primaryKey({ columns: [t.orgId, t.userId] })]
 )
@@ -296,6 +300,11 @@ export const teamInvitations = pgTable("team_invitations", {
     .notNull()
     .references(() => organizations.id),
   email: text().notNull(),
+  // What the colleague can do once they join, as their membership will have it.
+  role: text({ enum: ["admin", "member"] })
+    .notNull()
+    .default("member"),
+  access: jsonb().$type<Access>().notNull().default({}),
   hash: text().notNull().unique(),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   createdAt: createdAt()

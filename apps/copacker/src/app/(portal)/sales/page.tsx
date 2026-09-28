@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { SalesOrders } from "@/components/sales-orders"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 
 export const metadata: Metadata = { title: "Orders" }
 
@@ -15,6 +15,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   if (s.org.kind !== "buyer") {
     redirect("/orders")
   }
+  requirePage(s, "sales")
   return (
     <>
       <PageHeader title="Orders" />

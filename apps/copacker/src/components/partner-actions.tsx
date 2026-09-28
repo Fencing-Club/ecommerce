@@ -188,11 +188,11 @@ function StandingBadge({ standing }: { standing: Standing }) {
   )
 }
 
-// A supplier's row, which opens its details for editing. Its menu opens its pickup addresses, which owners keep for a
-// supplier that hasn't joined, and invites such a supplier.
+// A supplier's row, which opens its details for editing, or its addresses for someone who can only view partners. Its
+// menu opens its pickup addresses, which the buyer keeps for a supplier that hasn't joined, and invites such a supplier.
 export function SupplierRow({
   supplier,
-  owner,
+  editable,
   showType,
   defaultLeadTimeDays
 }: {
@@ -211,14 +211,15 @@ export function SupplierRow({
     }
     addresses: PartnerAddress[]
   }
-  owner: boolean
+  // Whether the person can change partners, with Edit access to Partners.
+  editable: boolean
   showType: boolean
   // The workspace lead time, for a supplier without its own.
   defaultLeadTimeDays: number
 }) {
   const [open, setOpen] = useState<"edit" | "addresses" | "invite" | null>(null)
   const { resend, sending, notice } = useResend("supplier.resend", supplier.id, supplier.email)
-  const invitable = owner && !supplier.joined
+  const invitable = editable && !supplier.joined
   const contactLine = [
     supplier.shopifySupplierName !== supplier.name && supplier.shopifySupplierName,
     supplier.contact.contactName,
@@ -237,13 +238,15 @@ export function SupplierRow({
       sending={sending}
       notice={notice}
       detail={count ? `${leadTime}, ${addressCount(count)}` : leadTime}
-      onOpen={() => setOpen("edit")}
+      onOpen={() => setOpen(editable ? "edit" : "addresses")}
       menu={
         <>
-          <DropdownMenuItem onClick={() => setOpen("edit")}>
-            <Pencil />
-            Edit
-          </DropdownMenuItem>
+          {editable && (
+            <DropdownMenuItem onClick={() => setOpen("edit")}>
+              <Pencil />
+              Edit
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setOpen("addresses")}>
             <MapPin />
             Addresses
@@ -264,21 +267,23 @@ export function SupplierRow({
         </>
       }
     >
-      <EditSupplier
-        id={supplier.id}
-        name={supplier.name}
-        shopifySupplierName={supplier.shopifySupplierName}
-        leadTimeDays={supplier.leadTimeDays}
-        defaultLeadTimeDays={defaultLeadTimeDays}
-        contact={supplier.contact}
-        joined={supplier.joined}
-        open={open === "edit"}
-        onOpenChange={(next) => setOpen(next ? "edit" : null)}
-      />
+      {editable && (
+        <EditSupplier
+          id={supplier.id}
+          name={supplier.name}
+          shopifySupplierName={supplier.shopifySupplierName}
+          leadTimeDays={supplier.leadTimeDays}
+          defaultLeadTimeDays={defaultLeadTimeDays}
+          contact={supplier.contact}
+          joined={supplier.joined}
+          open={open === "edit"}
+          onOpenChange={(next) => setOpen(next ? "edit" : null)}
+        />
+      )}
       <PartnerAddressSheet
         partner={{ kind: "supplier", id: supplier.id, name: supplier.name }}
         joined={supplier.joined}
-        editable={owner && !supplier.joined}
+        editable={editable && !supplier.joined}
         addresses={supplier.addresses}
         open={open === "addresses"}
         onOpenChange={(next) => setOpen(next ? "addresses" : null)}
@@ -296,19 +301,20 @@ export function SupplierRow({
   )
 }
 
-// A forwarder's row, which opens its addresses. Owners invite a forwarder that hasn't joined from its menu.
+// A forwarder's row, which opens its addresses. Someone who can change partners invites a forwarder that hasn't joined
+// from its menu.
 export function ForwarderRow({
   forwarder,
-  owner,
+  editable,
   showType
 }: {
   forwarder: Standing & { id: string; name: string; email: string | null; addresses: PartnerAddress[] }
-  owner: boolean
+  editable: boolean
   showType: boolean
 }) {
   const [open, setOpen] = useState<"addresses" | "invite" | null>(null)
   const { resend, sending, notice } = useResend("forwarder.invite", forwarder.id, forwarder.email)
-  const invitable = owner && !forwarder.joined
+  const invitable = editable && !forwarder.joined
   const count = forwarder.addresses.length
   return (
     <PartnerRow
@@ -345,12 +351,12 @@ export function ForwarderRow({
       <PartnerAddressSheet
         partner={{ kind: "forwarder", id: forwarder.id, name: forwarder.name }}
         joined={forwarder.joined}
-        editable={owner && !forwarder.joined}
+        editable={editable && !forwarder.joined}
         addresses={forwarder.addresses}
         open={open === "addresses"}
         onOpenChange={(next) => setOpen(next ? "addresses" : null)}
       >
-        {owner && (
+        {editable && (
           <>
             <RenameForwarder id={forwarder.id} name={forwarder.name} />
             <RemoveForwarder id={forwarder.id} name={forwarder.name} />

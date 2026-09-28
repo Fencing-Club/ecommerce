@@ -1,5 +1,5 @@
 import { ZodError } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { ProductDefaultsError, saveProductDefaults } from "@/server/product-defaults"
 import { appUrl } from "@/server/security"
 
@@ -10,6 +10,7 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products", "edit")
   try {
     return Response.json(await saveProductDefaults(s, await request.json()), { headers })
   } catch (error) {

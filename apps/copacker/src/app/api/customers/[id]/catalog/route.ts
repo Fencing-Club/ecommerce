@@ -1,6 +1,7 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
 import { assignCatalog } from "@/server/catalogs"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 
 const input = z.strictObject({ catalogId: z.uuid().nullable() })
@@ -12,9 +13,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   try {
     const { catalogId } = input.parse(await request.json())
-    await assignCatalog(await session(), z.uuid().parse((await params).id), catalogId)
+    const s = await session()
+    requireAccess(s, "customers", "edit")
+    await assignCatalog(s, z.uuid().parse((await params).id), catalogId)
     return Response.json({ ok: true })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not save" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Could not save" },
+      { status: failureStatus(error) }
+    )
   }
 }

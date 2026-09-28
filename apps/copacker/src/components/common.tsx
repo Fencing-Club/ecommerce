@@ -128,7 +128,8 @@ export function PageHeader({
   children
 }: {
   title: React.ReactNode
-  parents?: Array<{ label: string; href: string }>
+  // Each links to its page, unless the person can't open it.
+  parents?: Array<{ label: string; href?: string }>
   badge?: React.ReactNode
   description?: React.ReactNode
   children?: React.ReactNode
@@ -141,10 +142,14 @@ export function PageHeader({
             <nav aria-label="Breadcrumb">
               <ol className="flex items-center gap-2 text-sm text-muted-foreground">
                 {parents.map((parent) => (
-                  <li key={parent.href} className="flex items-center gap-2">
-                    <Link href={parent.href} className="rounded-sm hover:text-foreground">
-                      {parent.label}
-                    </Link>
+                  <li key={parent.label} className="flex items-center gap-2">
+                    {parent.href ? (
+                      <Link href={parent.href} className="rounded-sm hover:text-foreground">
+                        {parent.label}
+                      </Link>
+                    ) : (
+                      parent.label
+                    )}
                     <ChevronRight aria-hidden className="size-4 shrink-0" />
                   </li>
                 ))}

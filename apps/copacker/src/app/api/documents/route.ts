@@ -5,7 +5,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
-import { session, requireBuyer } from "@/server/auth"
+import { session, requireAccess, requireBuyer } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
 import { appUrl } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
@@ -25,6 +26,8 @@ export async function POST(request: Request) {
     if (kind !== "invoice") {
       requireBuyer(s)
     }
+    // A line's product label belongs to the purchase order; invoices and shipping labels to its shipments.
+    requireAccess(s, kind === "product_label" ? "orders" : "shipments", "edit")
     const { order } = await accessibleOrder(s, orderId)
     const file = form.get("file")
     if (!(file instanceof File) || file.size > 32 * 1024 * 1024) {
@@ -163,7 +166,7 @@ export async function POST(request: Request) {
             ? error.message
             : "Document upload failed"
       },
-      { status: 400 }
+      { status: failureStatus(error) }
     )
   }
 }

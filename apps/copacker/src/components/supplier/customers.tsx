@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -37,6 +38,8 @@ export function CatalogPicker({
   const [current, setCurrent] = useState(value ?? none)
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
+  // Someone who can only view customers sees each one's catalog without changing it.
+  const editable = useCan("customers", "edit")
   const options = [
     { value: none, label: "No catalog" },
     ...catalogs.map((catalog) => ({
@@ -70,7 +73,12 @@ export function CatalogPicker({
 
   return (
     <div className={className}>
-      <Select items={options} value={current} onValueChange={(next) => next && void choose(next)} disabled={pending}>
+      <Select
+        items={options}
+        value={current}
+        onValueChange={(next) => next && void choose(next)}
+        disabled={pending || !editable}
+      >
         <SelectTrigger aria-label={`Catalog for ${customer}`} className="w-full min-w-44">
           <SelectValue />
         </SelectTrigger>

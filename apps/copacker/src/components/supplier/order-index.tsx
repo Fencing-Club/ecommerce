@@ -3,6 +3,7 @@
 import { money } from "@repo/aisle"
 import Link from "next/link"
 import { useState } from "react"
+import { PageLink } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -94,9 +95,9 @@ export function SupplierOrderIndex({
                 </TableCell>
                 {showCustomer && (
                   <TableCell>
-                    <Link href={`/customers/${order.customerId}`} className="hover:underline">
+                    <PageLink href={`/customers/${order.customerId}`} className="hover:underline">
                       {order.customer}
-                    </Link>
+                    </PageLink>
                   </TableCell>
                 )}
                 <TableCell>

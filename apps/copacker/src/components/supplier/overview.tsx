@@ -1,6 +1,6 @@
 import { money } from "@repo/aisle"
 import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
-import Link from "next/link"
+import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Attention, CardLink } from "@/components/overview-sections"
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { canOpen, type Permissions } from "@/lib/access"
 import { formatDate, formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { AttentionItem } from "@/server/overview"
@@ -167,8 +168,9 @@ const stages = {
 
 // A supplier's Overview, about its supply operations: what needs doing, orders coming in against the period before,
 // where open orders stand, what's ordered most and by whom, and how stock stands against open orders.
-export function SupplierOverview({ data }: { data: Data }) {
-  const todo = tasks(data.attention)
+export function SupplierOverview({ data, permissions }: { data: Data; permissions: Permissions }) {
+  // What needs doing on the pages the person can open.
+  const todo = tasks(data.attention).filter((item) => canOpen(permissions, item.href))
   const comparison = data.period.previousLabel ? data.period.comparisonLabel : null
   const price = (value: number) => money(value, data.currency)
   const pipelineMax = Math.max(...data.pipeline.map((row) => row.pieces), 1)
@@ -235,7 +237,10 @@ export function SupplierOverview({ data }: { data: Data }) {
             <ul className="flex flex-col gap-3">
               {data.pipeline.map((row) => (
                 <li key={row.key}>
-                  <Link href={`/orders?tab=${stages[row.key].tab}`} className="flex flex-col gap-1 hover:opacity-80">
+                  <PageLink
+                    href={`/orders?tab=${stages[row.key].tab}`}
+                    className="flex flex-col gap-1 hover:opacity-80"
+                  >
                     <span className="flex items-baseline justify-between gap-3 text-sm">
                       <span>{stages[row.key].label}</span>
                       <span className="tabular-nums">
@@ -250,7 +255,7 @@ export function SupplierOverview({ data }: { data: Data }) {
                       />
                     </span>
                     <span className="text-xs text-muted-foreground">{plural(row.pieces, "piece")}</span>
-                  </Link>
+                  </PageLink>
                 </li>
               ))}
             </ul>
@@ -270,9 +275,9 @@ export function SupplierOverview({ data }: { data: Data }) {
               rows={data.topProducts.map((row) => ({
                 key: row.sku,
                 label: row.groupId ? (
-                  <Link href={`/products/${row.groupId}`} className="hover:underline">
+                  <PageLink href={`/products/${row.groupId}`} className="hover:underline">
                     {row.title}
-                  </Link>
+                  </PageLink>
                 ) : (
                   row.title
                 ),
@@ -294,9 +299,9 @@ export function SupplierOverview({ data }: { data: Data }) {
               rows={data.topCustomers.map((row) => ({
                 key: row.id,
                 label: (
-                  <Link href={`/customers/${row.id}`} className="hover:underline">
+                  <PageLink href={`/customers/${row.id}`} className="hover:underline">
                     {row.name}
-                  </Link>
+                  </PageLink>
                 ),
                 detail: plural(row.orders, "order"),
                 value: row.value,
@@ -385,9 +390,9 @@ export function SupplierOverview({ data }: { data: Data }) {
               {data.recent.map((order) => (
                 <LinkRow key={order.id} href={`/orders/${order.id}`}>
                   <TableCell>
-                    <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
+                    <PageLink href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
                       {order.reference}
-                    </Link>
+                    </PageLink>
                     <p className="text-xs text-muted-foreground">{formatDate(order.sentAt)}</p>
                   </TableCell>
                   <TableCell className="hidden @lg:table-cell">{order.customer}</TableCell>

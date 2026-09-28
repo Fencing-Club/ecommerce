@@ -10,6 +10,7 @@ import {
   suppliers,
   teamInvitations
 } from "@/db/schema"
+import { isAdmin } from "@/lib/access"
 import { hash } from "./security"
 
 // Who an invitation is for: a colleague joining a workspace, or a buyer's supplier or freight forwarder joining with a
@@ -140,16 +141,17 @@ export async function acceptTeamInvitation(user: Invitee, token: string, tx?: Tr
     if (!row || row.email !== user.email.toLowerCase() || row.expiresAt < new Date()) {
       throw new Error(unavailable)
     }
+    // They join as the invitation made them: an admin, or a member with its pages.
     await tx
       .insert(memberships)
-      .values({ orgId: row.orgId, userId: user.id, email: user.email, role: "member" })
+      .values({ orgId: row.orgId, userId: user.id, email: user.email, role: row.role, access: row.access })
       .onConflictDoNothing()
     await tx.delete(teamInvitations).where(eq(teamInvitations.id, row.id))
     return row.orgId
   })
 }
 
-// Links an invited supplier to the supplier workspace its owner chose.
+// Links an invited supplier to the supplier workspace its owner or an admin chose.
 export async function acceptSupplierInvitation(user: Invitee, orgId: string, invitation: string, tx?: Transaction) {
   requireVerified(user)
   await inTransaction(tx, async (tx) => {
@@ -158,8 +160,8 @@ export async function acceptSupplierInvitation(user: Invitee, orgId: string, inv
       .from(memberships)
       .innerJoin(organizations, eq(organizations.id, memberships.orgId))
       .where(and(eq(memberships.userId, user.id), eq(memberships.orgId, orgId)))
-    if (workspace?.memberships.role !== "owner" || workspace.organizations.kind !== "supplier") {
-      throw new Error("Choose a supplier workspace that you own")
+    if (!workspace || !isAdmin(workspace.memberships) || workspace.organizations.kind !== "supplier") {
+      throw new Error("Choose a supplier workspace where you’re an admin")
     }
     const [supplier] = await tx
       .select()

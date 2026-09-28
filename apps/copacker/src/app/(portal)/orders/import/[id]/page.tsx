@@ -5,7 +5,7 @@ import { z } from "zod"
 import { ImportReview, type ReviewProduct } from "@/components/import-review"
 import { db } from "@/db"
 import { poImports, suppliers } from "@/db/schema"
-import { session, requireBuyer } from "@/server/auth"
+import { requireBuyer, requirePage, session } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
 
@@ -14,6 +14,7 @@ export const metadata: Metadata = { title: "Review import" }
 export default async function ReviewImport({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     notFound()

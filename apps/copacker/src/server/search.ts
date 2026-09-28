@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 import { isPresent } from "ts-extras"
 import { db } from "@/db"
 import { connections, forwarders, orders, shipments, stockSnapshots, supplierProfiles, suppliers } from "@/db/schema"
+import { can } from "@/lib/access"
 import { forwarderOrders, orderVisibleTo } from "./access"
 import type { Session } from "./auth"
 import { isCollective } from "./inventory-products"
@@ -50,16 +51,21 @@ export type SearchIndex = {
 }
 
 // What the app header's search looks through, as the pages listing them show them: the workspace's POs and shipments,
-// newest first, and a buyer's products and partners. The browser matches them as the person types; sales orders are
-// searched on the server instead, as the Orders page searches them.
+// newest first, and a buyer's products and partners, each only for someone who can open its page. The browser matches
+// them as the person types; sales orders are searched on the server instead, as the Orders page searches them.
 export async function searchIndex(s: Session): Promise<SearchIndex> {
   const buyer = s.org.kind === "buyer"
   const [purchasing, products, partners] = await Promise.all([
-    searchPurchasing(s),
-    buyer ? searchProducts(s.org.id) : [],
-    buyer ? searchPartners(s.org.id) : []
+    can(s, "orders") || can(s, "shipments") ? searchPurchasing(s) : { orders: [], shipments: [] },
+    buyer && can(s, "products") ? searchProducts(s.org.id) : [],
+    buyer && can(s, "partners") ? searchPartners(s.org.id) : []
   ])
-  return { ...purchasing, products, partners }
+  return {
+    orders: can(s, "orders") ? purchasing.orders : [],
+    shipments: can(s, "shipments") ? purchasing.shipments : [],
+    products,
+    partners
+  }
 }
 
 async function searchPurchasing(s: Session): Promise<Pick<SearchIndex, "orders" | "shipments">> {

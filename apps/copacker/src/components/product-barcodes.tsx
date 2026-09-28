@@ -2,6 +2,7 @@
 
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
+import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -121,6 +122,8 @@ function BarcodeRow({
   const input = useRef<HTMLInputElement>(null)
   const [upload, { isLoading: uploading }] = barcodesApi.useUploadBarcodeMutation()
   const [remove, { isLoading: removing }] = barcodesApi.useRemoveBarcodeMutation()
+  // Someone who can only view products previews and downloads labels without changing them.
+  const editable = useCan("products", "edit")
   const [error, setError] = useState("")
   // The shown label's object URL, while previewing.
   const [preview, setPreview] = useState<string | null>(null)
@@ -246,16 +249,18 @@ function BarcodeRow({
               <Download />
             </IconAction>
           )}
-          <IconAction
-            tip={verb}
-            label={`${verb} label for ${label}`}
-            busy={uploading}
-            disabled={uploading || removing}
-            onClick={() => input.current?.click()}
-          >
-            <Upload />
-          </IconAction>
-          {barcode && (
+          {editable && (
+            <IconAction
+              tip={verb}
+              label={`${verb} label for ${label}`}
+              busy={uploading}
+              disabled={uploading || removing}
+              onClick={() => input.current?.click()}
+            >
+              <Upload />
+            </IconAction>
+          )}
+          {editable && barcode && (
             <IconAction
               tip="Remove"
               label={`Remove uploaded label for ${label}`}

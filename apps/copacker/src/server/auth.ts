@@ -1,9 +1,12 @@
 import { withAuth } from "@workos-inc/authkit-nextjs"
 import { and, eq } from "drizzle-orm"
 import { cookies, headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { forbidden, redirect } from "next/navigation"
 import { db } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
+import { type AccessLevel, type Area, can, isAdmin, type Permissions } from "@/lib/access"
+import { areaLabel } from "@/lib/navigation"
+import { AccessError } from "@/server/errors"
 import { returnPath } from "@/server/security"
 
 // The workspace this browser has open, until another is chosen.
@@ -65,6 +68,8 @@ export async function session() {
     },
     org: chosen.org,
     role: chosen.member.role,
+    // The pages a member can open, and whether to view or edit each. Owners and admins open everything.
+    access: chosen.member.access,
     workspaces: available.map((row) => row.org)
   }
 }
@@ -98,9 +103,23 @@ export function requireSupplier(s: Session) {
     throw new Error("A supplier workspace is required")
   }
 }
-export function requireOwner(s: Session) {
-  if (s.role !== "owner") {
-    throw new Error("Only workspace owners can manage access and connections")
+// The team, the store connections and the workspace's settings are its owner's and admins'.
+export function requireAdmin(s: Pick<Session, "role">) {
+  if (!isAdmin(s)) {
+    throw new AccessError("Only admins can do this")
+  }
+}
+// For a request: a member without the page, or without edit access to it for a change, is turned away.
+export function requireAccess(s: Permissions & { org: Pick<Session["org"], "kind"> }, area: Area, level: AccessLevel) {
+  if (!can(s, area, level)) {
+    throw new AccessError(`Ask an admin for access to ${areaLabel(s.org.kind, area)}`)
+  }
+}
+// For a page, or a request that only reads: someone without access gets Next's 403, which shows a page as the portal's
+// No access page.
+export function requirePage(s: Permissions, area: Area, level: AccessLevel = "view") {
+  if (!can(s, area, level)) {
+    forbidden()
   }
 }
 export async function requireMembership(userId: string, orgId: string) {

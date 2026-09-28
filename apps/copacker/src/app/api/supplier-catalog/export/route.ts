@@ -1,4 +1,4 @@
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { sheetCsv, sheetRows, sheetWorkbook } from "@/server/product-sheet"
 import { productList } from "@/server/supplier-products"
 
@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   if (s.org.kind !== "supplier") {
     return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
   }
+  requirePage(s, "products")
   const format = new URL(request.url).searchParams.get("format") === "csv" ? "csv" : "xlsx"
   const rows = sheetRows(
     (await productList(s.org.id)).map((product) => ({ ...product, active: product.status === "active" }))

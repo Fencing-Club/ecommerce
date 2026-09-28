@@ -8,6 +8,7 @@
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
+- [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Local development and launch](operations.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)

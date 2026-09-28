@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { AccessProvider } from "@/components/access"
 import { Shell } from "@/components/shell"
 import { SystemTimeZone } from "@/components/system-time-zone"
 import { WorkspaceWatch } from "@/components/workspace-watch"
@@ -16,17 +17,19 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect(`/onboarding?next=${encodeURIComponent(back)}`)
   }
   return (
-    <Shell
-      name={s.org.name}
-      userName={s.user.name}
-      email={s.user.email}
-      kind={s.org.kind}
-      active={s.org.id}
-      workspaces={s.workspaces}
-    >
-      <SystemTimeZone />
-      <WorkspaceWatch id={s.org.id} />
-      {children}
-    </Shell>
+    <AccessProvider permissions={{ role: s.role, access: s.access }}>
+      <Shell
+        name={s.org.name}
+        userName={s.user.name}
+        email={s.user.email}
+        kind={s.org.kind}
+        active={s.org.id}
+        workspaces={s.workspaces}
+      >
+        <SystemTimeZone />
+        <WorkspaceWatch id={s.org.id} />
+        {children}
+      </Shell>
+    </AccessProvider>
   )
 }

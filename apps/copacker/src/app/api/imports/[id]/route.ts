@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { jobs, poImports } from "@/db/schema"
-import { session, requireBuyer } from "@/server/auth"
+import { session, requireBuyer, requirePage } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
 import { appUrl } from "@/server/security"
@@ -10,6 +10,7 @@ import { appUrl } from "@/server/security"
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     return Response.json({ error: "Import not found" }, { status: 404 })
@@ -36,6 +37,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     return Response.json({ error: "Import not found" }, { status: 404 })
@@ -66,6 +68,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     return Response.json({ error: "Import not found" }, { status: 404 })
@@ -139,6 +142,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     return Response.json({ error: "Import not found" }, { status: 404 })

@@ -2,12 +2,13 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
-import { session, requireBuyer, requireMembership } from "@/server/auth"
+import { session, requireBuyer, requireMembership, requirePage } from "@/server/auth"
 import { getFile } from "@/server/storage"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
     return new Response("Not found", { status: 404 })

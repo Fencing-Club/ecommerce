@@ -1,0 +1,130 @@
+import { describe, expect, it, vi } from "vitest"
+import type { Session } from "../src/server/auth"
+
+const context = vi.hoisted(() => ({ actor: null as Session | null }))
+vi.mock("../src/server/auth", async (original) => ({
+  ...(await original<typeof import("../src/server/auth")>()),
+  session: async () => context.actor
+}))
+vi.mock("@/db", () => ({ db: () => null }))
+vi.mock("next/navigation", () => ({
+  forbidden: () => {
+    throw new Error("forbidden")
+  },
+  notFound: () => {
+    throw new Error("not found")
+  },
+  redirect: () => {
+    throw new Error("redirect")
+  }
+}))
+vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+import { POST as action } from "../src/app/api/action/route"
+import { GET as salesOrders } from "../src/app/api/sales/orders/route"
+import { type Access, can, canOpen, pageOf, type Role } from "../src/lib/access"
+import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
+
+function actor(kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}): Session {
+  return {
+    user: { id: "user-tess", email: "tess@example.com", emailVerified: true, name: "Tess Tester" },
+    org: {
+      id: "00000000-0000-4000-8000-000000000001",
+      kind,
+      name: "Test org",
+      workosId: null,
+      timeZone: null,
+      excludedShopifyTags: ["Amazon"],
+      restockSalesDays: null,
+      restockLeadTimeDays: null,
+      createdAt: new Date()
+    },
+    role,
+    access,
+    workspaces: []
+  }
+}
+
+function send(name: string, data: Record<string, unknown>) {
+  return action(
+    new Request("http://localhost:3000/api/action", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify({ action: name, data })
+    })
+  )
+}
+
+describe("page access", () => {
+  it("gives owners and admins every page, and members only theirs", () => {
+    const member = { role: "member" as const, access: { orders: "edit", shipments: "view" } as const }
+    expect(can({ role: "owner", access: {} }, "partners", "edit")).toBe(true)
+    expect(can({ role: "admin", access: {} }, "catalogs", "edit")).toBe(true)
+    expect(can(member, "orders", "edit")).toBe(true)
+    expect(can(member, "shipments")).toBe(true)
+    expect(can(member, "shipments", "edit")).toBe(false)
+    expect(can(member, "partners")).toBe(false)
+  })
+
+  it("reads a link's page, with Settings open to everyone", () => {
+    const member = { role: "member" as const, access: { restock: "view" } as const }
+    expect(pageOf("/restock?status=order")).toBe("restock")
+    expect(pageOf("/orders/0f6c")).toBe("orders")
+    expect(pageOf("/settings#monthly-costs")).toBeUndefined()
+    expect(canOpen(member, "/restock?cover=short")).toBe(true)
+    expect(canOpen(member, "/products")).toBe(false)
+    expect(canOpen(member, "/settings#integrations")).toBe(true)
+  })
+
+  it("shows members only their pages in the sidebar, and lands them on their first", () => {
+    const member = { role: "member" as const, access: { shipments: "edit", inventory: "view" } as const }
+    expect(navigationFor("supplier", member).map((item) => item.view)).toStrictEqual([
+      "shipments",
+      "inventory",
+      "settings"
+    ])
+    expect(homeFor("supplier", member)).toBe("/shipments")
+    expect(homeFor("supplier", { role: "member", access: { orders: "view" } })).toBe("/orders")
+    expect(homeFor("buyer", { role: "member", access: {} })).toBe("/settings")
+    expect(homeFor("buyer", { role: "admin", access: {} })).toBe("/overview")
+    expect(areasFor("forwarder")).toStrictEqual([{ area: "orders", label: "Purchase orders" }])
+  })
+})
+
+describe("the server's checks", () => {
+  it("turns away a member without edit access to a page, naming it", async () => {
+    context.actor = actor("buyer", "member", { orders: "view", partners: "view" })
+    const order = await send("order.create", {})
+    expect(order.status).toBe(403)
+    expect(await order.json()).toEqual({ error: "Ask an admin for access to Purchase orders" })
+    const partner = await send("supplier.create", { name: "Unic" })
+    expect(partner.status).toBe(403)
+    expect(await partner.json()).toEqual({ error: "Ask an admin for access to Partners" })
+    context.actor = actor("supplier", "member", { orders: "edit" })
+    expect(await (await send("shipment.save", {})).json()).toEqual({ error: "Ask an admin for access to Shipments" })
+  })
+
+  it("keeps the team and settings to owners and admins", async () => {
+    context.actor = actor("buyer", "member", { orders: "edit", shipments: "edit", partners: "edit" })
+    for (const [name, data] of [
+      ["team.invite", { email: "lee@club.example", role: "admin" }],
+      ["team.access", { userId: "user-sam", role: "admin" }],
+      ["team.remove", { userId: "user-sam" }],
+      ["contact.create", {}],
+      ["workspace.timeZone", { timeZone: "" }],
+      ["connection.delete", { provider: "shopify" }],
+      ["monthlyCost.create", {}]
+    ] as const) {
+      const response = await send(name, data)
+      expect(response.status).toBe(403)
+      expect(await response.json()).toEqual({ error: "Only admins can do this" })
+    }
+    // An admin gets past the check, to the request's own validation.
+    context.actor = actor("buyer", "admin")
+    expect((await send("team.invite", { email: "not an email", role: "admin" })).status).toBe(400)
+  })
+
+  it("answers a read of a page the member doesn't have with 403", async () => {
+    context.actor = actor("buyer", "member", { orders: "edit" })
+    await expect(salesOrders(new Request("http://localhost:3000/api/sales/orders"))).rejects.toThrow("forbidden")
+  })
+})

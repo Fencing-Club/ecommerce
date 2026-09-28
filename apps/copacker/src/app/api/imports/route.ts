@@ -3,13 +3,14 @@ import { desc, eq } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { db } from "@/db"
 import { connections, jobs, poImports } from "@/db/schema"
-import { session, requireBuyer } from "@/server/auth"
+import { session, requireBuyer, requirePage } from "@/server/auth"
 import { appUrl } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function GET() {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const items = await db()
     .select({
       id: poImports.id,
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
   }
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   if (Number(request.headers.get("content-length") ?? 0) > 11 * 1024 * 1024) {
     return Response.json({ error: "Import PDF must be at most 10 MB" }, { status: 413 })
   }

@@ -1,4 +1,4 @@
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { demandInputSchema, DemandAccessError, readSalesDemand } from "@/server/sales"
 import { appUrl } from "@/server/security"
 
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
+  requirePage(s, "sales")
   const input = demandInputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
     return Response.json({ error: "Choose a sales source and a valid date range" }, { status: 400, headers })

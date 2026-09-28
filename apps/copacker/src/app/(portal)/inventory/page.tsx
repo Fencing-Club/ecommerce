@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { InventoryTable } from "@/components/supplier/inventory"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { inventoryRows } from "@/server/supplier-workspace"
 
 export const metadata: Metadata = { title: "Inventory" }
@@ -12,6 +12,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
   if (s.org.kind !== "supplier") {
     redirect("/products")
   }
+  requirePage(s, "inventory")
   const [rows, { tab }] = await Promise.all([inventoryRows(s.org.id), searchParams])
   return (
     <>

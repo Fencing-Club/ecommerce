@@ -228,6 +228,7 @@ function actor(kind: "buyer" | "supplier", id: string): Session {
       createdAt: new Date()
     },
     role: "owner",
+    access: {},
     workspaces: []
   }
 }
@@ -4571,8 +4572,11 @@ describe("the workspace website on POs", () => {
     expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-")
 
     await expect(saveProfile(supplier, { ...profile, website: "https://supplier.example" })).rejects.toThrow(
-      "Only the workspace owner"
+      "Only admins can change the website"
     )
+    await expect(
+      saveProfile({ ...buyer, role: "member" }, { ...profile, website: "https://buyer.example" })
+    ).rejects.toThrow("Only admins can change the website")
   })
 })
 
@@ -4744,7 +4748,7 @@ describe("supplier pickup addresses", () => {
     })
   })
 
-  it("keeps a supplier's pickup addresses to its own buyer's owners", async () => {
+  it("keeps a supplier's pickup addresses to those who can change its buyer's partners", async () => {
     await saveSupplierAddress(buyerId, { supplierId: unicId, name: "Factory", address })
     const [row] = await saved()
 
@@ -4762,12 +4766,13 @@ describe("supplier pickup addresses", () => {
       error: "This address was already removed"
     })
 
-    // Nor can a member of the buyer's workspace who isn't an owner, or a supplier.
-    context.actor = { ...buyer, role: "member" }
+    // Nor can a member of the buyer's workspace who can only view partners, or a supplier.
+    context.actor = { ...buyer, role: "member", access: { partners: "view" } }
     const member = await save({ supplierId: unicId, id: row!.id, remove: true })
-    expect(member.status).toBe(400)
-    expect(await member.json()).toEqual({ error: expect.stringContaining("Only workspace owners") })
-    // The workspace's own address actions don't reach a partner's addresses either.
+    expect(member.status).toBe(403)
+    expect(await member.json()).toEqual({ error: "Ask an admin for access to Partners" })
+    // The workspace's own address actions don't reach a partner's addresses either, even for its owner.
+    context.actor = buyer
     const generic = (name: string, data: Record<string, unknown>) =>
       action(
         new Request("http://localhost:3000/api/action", {

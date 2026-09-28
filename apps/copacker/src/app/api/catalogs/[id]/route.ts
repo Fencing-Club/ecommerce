@@ -1,6 +1,7 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
 import { deleteCatalog } from "@/server/catalogs"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -8,12 +9,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {
-    await deleteCatalog(await session(), z.uuid().parse((await params).id))
+    const s = await session()
+    requireAccess(s, "catalogs", "edit")
+    await deleteCatalog(s, z.uuid().parse((await params).id))
     return Response.json({ ok: true })
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Could not delete catalog" },
-      { status: 400 }
+      { status: failureStatus(error) }
     )
   }
 }

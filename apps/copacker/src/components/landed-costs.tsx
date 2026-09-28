@@ -5,6 +5,7 @@ import { Ellipsis, Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { z } from "zod"
+import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -52,6 +53,8 @@ export function LandedCosts({
   freight: Array<{ reference: string; amount: number }>
   costs: Array<{ id: string; kind: string; description: string; amount: number }>
 }) {
+  // Adding and removing costs changes the purchase order.
+  const editable = useCan("orders", "edit")
   return (
     <Card size="sm">
       <CardHeader className="items-center">
@@ -62,9 +65,11 @@ export function LandedCosts({
             freight for this purchase order’s shipments is added automatically. Only your team sees them.
           </InfoTip>
         </CardTitle>
-        <CardAction className="row-span-1 self-center">
-          <AddLandedCost orderId={orderId} currency={currency} />
-        </CardAction>
+        {editable && (
+          <CardAction className="row-span-1 self-center">
+            <AddLandedCost orderId={orderId} currency={currency} />
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {freight.length + costs.length > 0 ? (
@@ -82,7 +87,7 @@ export function LandedCosts({
                 </li>
               ))}
               {costs.map((cost) => (
-                <CostRow key={cost.id} cost={cost} currency={currency} />
+                <CostRow key={cost.id} cost={cost} currency={currency} editable={editable} />
               ))}
             </ul>
             <Separator />
@@ -112,13 +117,15 @@ function Total({ label, value, strong = false }: { label: string; value: string;
   )
 }
 
-// A cost recorded on the PO, with a menu to remove it.
+// A cost recorded on the PO, with a menu to remove it for someone who can change the PO.
 function CostRow({
   cost,
-  currency
+  currency,
+  editable
 }: {
   cost: { id: string; kind: string; description: string; amount: number }
   currency: string
+  editable: boolean
 }) {
   const router = useRouter()
   const [run, { isLoading }] = useActionMutation()
@@ -144,27 +151,29 @@ function CostRow({
           {cost.description && <span className="text-xs break-words text-muted-foreground">{cost.description}</span>}
         </span>
         <span className="tabular-nums">{money(cost.amount, currency)}</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={pending}
-                aria-busy={pending}
-                aria-label={`More actions for ${cost.kind.toLowerCase()} cost`}
-              />
-            }
-          >
-            {pending ? <Spinner /> : <Ellipsis />}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
-              <Trash2 />
-              Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {editable && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={pending}
+                  aria-busy={pending}
+                  aria-label={`More actions for ${cost.kind.toLowerCase()} cost`}
+                />
+              }
+            >
+              {pending ? <Spinner /> : <Ellipsis />}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
+                <Trash2 />
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       <FormError message={error} />
     </li>

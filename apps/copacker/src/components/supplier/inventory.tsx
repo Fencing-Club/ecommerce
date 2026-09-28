@@ -1,8 +1,8 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { PageLink, useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -94,11 +94,12 @@ function Toggle({
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [failed, setFailed] = useState(false)
+  const editable = useCan("inventory", "edit")
   return (
     <Switch
       size="sm"
       checked={row[field]}
-      disabled={pending}
+      disabled={pending || !editable}
       aria-label={`${label} for ${row.supplierSku}`}
       aria-invalid={failed}
       onCheckedChange={async (checked) => {
@@ -135,6 +136,8 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
   const [edits, setEdits] = useState<Record<string, string>>({})
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  // Someone who can only view inventory sees each count without a field to change it.
+  const editable = useCan("inventory", "edit")
   const changes = rows.flatMap((row) => {
     const text = edits[row.id]
     const next = text === undefined ? row.onHand : count(text)
@@ -215,9 +218,12 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                     <div className="flex items-center gap-3">
                       <ProductThumb image={row.image} className="hidden size-9 @sm:flex" />
                       <div className="min-w-0">
-                        <Link href={`/products/${row.groupId}`} className="line-clamp-2 font-medium hover:underline">
+                        <PageLink
+                          href={`/products/${row.groupId}`}
+                          className="line-clamp-2 font-medium hover:underline"
+                        >
                           {row.title}
-                        </Link>
+                        </PageLink>
                         <p className="text-xs text-muted-foreground">
                           {row.variant ?? <span className="@2xl:hidden">{row.supplierSku}</span>}
                         </p>
@@ -253,11 +259,13 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                     {row.trackInventory ? available.toLocaleString("en-US") : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {row.trackInventory ? (
+                    {row.trackInventory && editable && (
                       <OnHand row={row} value={edits[row.id]} onChange={(value) => edit(row.id, value)} />
-                    ) : (
-                      <span className="text-muted-foreground">Not tracked</span>
                     )}
+                    {row.trackInventory && !editable && (
+                      <span className="tabular-nums">{row.onHand.toLocaleString("en-US")}</span>
+                    )}
+                    {!row.trackInventory && <span className="text-muted-foreground">Not tracked</span>}
                   </TableCell>
                 </TableRow>
               )

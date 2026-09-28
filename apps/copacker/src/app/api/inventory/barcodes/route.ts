@@ -1,4 +1,4 @@
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import {
   ProductBarcodeError,
   productLabelFile,
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products", "edit")
   if (Number(request.headers.get("content-length") ?? 0) > 34 * 1024 * 1024) {
     return Response.json({ error: "Choose a PDF smaller than 32 MB" }, { status: 400, headers })
   }
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const s = await session()
+  requirePage(s, "products")
   const variantId = variantFrom(request)
   if (!variantId.success) {
     return Response.json({ error: "Choose a product variation" }, { status: 400, headers })
@@ -69,6 +71,7 @@ export async function DELETE(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "products", "edit")
   const variantId = variantFrom(request)
   if (!variantId.success) {
     return Response.json({ error: "Choose a product variation" }, { status: 400, headers })

@@ -36,13 +36,13 @@ type MonthlyCostRow = { id: string; name: string; amount: string; details: strin
 export function MonthlyCosts({
   costs,
   currency,
-  owner
+  admin
 }: {
   costs: MonthlyCostRow[]
   // New costs are in the currency the Overview reports in.
   currency: string
-  // Only the owner adds and removes costs.
-  owner: boolean
+  // Only owners and admins add and remove costs.
+  admin: boolean
 }) {
   let count = "No monthly costs"
   if (costs.length) {
@@ -52,12 +52,12 @@ export function MonthlyCosts({
     <Card className="gap-0 py-0">
       <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
         <p className="text-sm text-muted-foreground">{count}</p>
-        {owner && <AddMonthlyCost currency={currency} />}
+        {admin && <AddMonthlyCost currency={currency} />}
       </div>
       {costs.length > 0 && (
         <ul className="divide-y border-t">
           {costs.map((cost) => (
-            <MonthlyCostItem key={cost.id} cost={cost} owner={owner} />
+            <MonthlyCostItem key={cost.id} cost={cost} admin={admin} />
           ))}
         </ul>
       )}
@@ -65,7 +65,7 @@ export function MonthlyCosts({
   )
 }
 
-function MonthlyCostItem({ cost, owner }: { cost: MonthlyCostRow; owner: boolean }) {
+function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean }) {
   const router = useRouter()
   const [run] = useActionMutation()
   const [pending, setPending] = useState(false)
@@ -95,7 +95,7 @@ function MonthlyCostItem({ cost, owner }: { cost: MonthlyCostRow; owner: boolean
         )}
       </div>
       <p className="shrink-0 text-right tabular-nums">{cost.amount}</p>
-      {owner &&
+      {admin &&
         (pending ? (
           <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${cost.name}`}>
             <Spinner />

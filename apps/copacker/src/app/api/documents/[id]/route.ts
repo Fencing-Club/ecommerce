@@ -4,7 +4,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
-import { type Session, session, requireMembership } from "@/server/auth"
+import { type Session, session, requireMembership, requirePage } from "@/server/auth"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 async function labelsReleased(doc: typeof documents.$inferSelect) {
@@ -22,9 +22,12 @@ async function labelsReleased(doc: typeof documents.$inferSelect) {
 const forwarderKinds = ["invoice", "packing_list", "carton_label", "shipping_label"]
 async function canRead(s: Session, doc: typeof documents.$inferSelect) {
   if (s.org.kind !== "forwarder") {
+    // The purchase order's own documents belong to its page; invoices, packing lists and labels to its shipments.
+    requirePage(s, ["purchase_order", "product_label"].includes(doc.kind) ? "orders" : "shipments")
     await accessibleOrder(s, doc.orderId)
     return
   }
+  requirePage(s, "orders")
   await forwarderOrder(s, doc.orderId)
   if (!forwarderKinds.includes(doc.kind)) {
     notFound()

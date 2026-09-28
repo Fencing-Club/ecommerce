@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { approveProposal, declineProposal, withdrawProposal } from "@/server/order-proposals"
 import { appUrl } from "@/server/security"
 
@@ -18,6 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const body = input.parse(await request.json())
     const id = z.uuid().parse((await params).id)
     const s = await session()
+    requireAccess(s, "orders", "edit")
     if (body.action === "approve") {
       await approveProposal(s, id)
     } else if (body.action === "decline") {
@@ -27,6 +29,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     return Response.json({ ok: true })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Couldn't save" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Couldn't save" },
+      { status: failureStatus(error) }
+    )
   }
 }

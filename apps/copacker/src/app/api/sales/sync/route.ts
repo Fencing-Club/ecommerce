@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { requestSalesSync, SalesSyncError, salesSources } from "@/server/sales-orders"
 import { appUrl } from "@/server/security"
 
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
   }
   const s = await session()
+  requirePage(s, "sales")
   const input = inputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
     return Response.json({ error: "Choose Shopify or Amazon" }, { status: 400, headers })

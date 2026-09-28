@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { connections, organizations, shipments } from "@/db/schema"
+import { can } from "@/lib/access"
 import { shortDate } from "@/lib/format"
 import { visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
 import { shipmentDestinations } from "./destination"
 
@@ -71,6 +72,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
   const current = views.find((tab) => tab.view === requested) ?? views[0]
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
   const s = await session()
+  requirePage(s, "shipments")
   const isBuyer = s.org.kind === "buyer"
   // A supplier's navigation calls purchase orders orders.
   const supplierView = s.org.kind === "supplier"
@@ -251,9 +253,11 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
           title="No shipments yet"
           description={supplierView ? "Start one from an order" : "Start one from a sent purchase order"}
         >
-          <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
-            {supplierView ? "View orders" : "View purchase orders"}
-          </Button>
+          {can(s, "orders") && (
+            <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
+              {supplierView ? "View orders" : "View purchase orders"}
+            </Button>
+          )}
         </EmptyState>
       )}
     </>

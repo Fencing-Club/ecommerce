@@ -1,13 +1,15 @@
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
-import { session, requireBuyer } from "@/server/auth"
+import { session, requireBuyer, requirePage } from "@/server/auth"
 import { shopifyFor, amazonFor, connection } from "@/server/connections"
 import { lineDefaultsFor } from "@/server/product-defaults"
 import { withVariantFields } from "@/server/product-fields"
 export async function GET(request: Request) {
   const s = await session()
   requireBuyer(s)
+  // Purchase orders' product picker reads it.
+  requirePage(s, "orders", "edit")
   const params = new URL(request.url).searchParams
   const query = params.get("q")?.slice(0, 200) ?? ""
   // Variations chosen in the add-products dialog come by ID; a search comes by text.

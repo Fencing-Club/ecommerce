@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
 import { navigationFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
+import { useCan, usePermissions } from "./access"
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5
@@ -119,9 +120,12 @@ function SearchResults({
   // The highlighted result and the search it was picked in; a new search highlights its best result.
   const [picked, setPicked] = useState({ value: "", query: "" })
   const index = useSearchQuery(undefined, { refetchOnMountOrArgChange: 30 })
-  const sales = useSalesSearchQuery(typed, { skip: kind !== "buyer" || typed.length < 2 })
+  // Sales orders are searched for someone who can open the Orders page.
+  const searchesSales = useCan("sales") && kind === "buyer"
+  const sales = useSalesSearchQuery(typed, { skip: !searchesSales || typed.length < 2 })
   const data = index.data
-  const pages = query ? best(navigationFor(kind), (page) => [page.label], query) : navigationFor(kind)
+  const navigation = navigationFor(kind, usePermissions())
+  const pages = query ? best(navigation, (page) => [page.label], query) : navigation
   // Only this search's orders: an earlier search's stay out while this one is on its way.
   const salesOrders = query && typed === query ? (sales.currentData?.orders ?? []).slice(0, shown) : []
   const products = query
@@ -144,7 +148,7 @@ function SearchResults({
   ]
   const highlighted = picked.query === query && values.includes(picked.value) ? picked.value : (values[0] ?? "")
   // Sales orders are on their way until typing pauses and the server answers.
-  const searchingSales = kind === "buyer" && query.length >= 2 && (typed !== query || sales.isFetching)
+  const searchingSales = searchesSales && query.length >= 2 && (typed !== query || sales.isFetching)
   const loading = index.isLoading || searchingSales
 
   return (

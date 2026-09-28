@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
-import { session } from "@/server/auth"
+import { can } from "@/lib/access"
+import { requirePage, session } from "@/server/auth"
 import { catalogEditor } from "@/server/catalogs"
 
 export const metadata: Metadata = { title: "Catalog" }
@@ -12,11 +13,12 @@ export default async function CatalogPage({ params }: { params: Promise<{ id: st
   if (s.org.kind !== "supplier") {
     redirect("/")
   }
+  requirePage(s, "catalogs")
   const id = z.uuid().safeParse((await params).id)
   const data = id.success ? await catalogEditor(s.org.id, id.data) : null
   if (!data?.catalog) {
     notFound()
   }
   // A new revision remounts the form with what was saved.
-  return <CatalogEditor key={data.catalog.revision} data={data} />
+  return <CatalogEditor key={data.catalog.revision} data={data} readOnly={!can(s, "catalogs", "edit")} />
 }

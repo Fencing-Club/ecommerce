@@ -8,10 +8,11 @@ import { CatalogPicker } from "@/components/supplier/customers"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Amounts } from "@/components/supplier/shared"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { can } from "@/lib/access"
 import { formatDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { cn } from "@/lib/utils"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { customerDetail } from "@/server/supplier-workspace"
 
 export const metadata: Metadata = { title: "Customer" }
@@ -21,6 +22,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (s.org.kind !== "supplier") {
     redirect("/")
   }
+  requirePage(s, "customers")
   const id = z.uuid().safeParse((await params).id)
   const detail = id.success ? await customerDetail(s.org.id, id.data) : null
   if (!detail) {
@@ -63,7 +65,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               </div>
             </CardContent>
           </Card>
-          <SupplierOrderIndex orders={orders} showCustomer={false} />
+          {/* The customer's orders, for someone who can open them. */}
+          {can(s, "orders") && <SupplierOrderIndex orders={orders} showCustomer={false} />}
         </div>
         <div className="flex flex-col gap-4">
           <Card size="sm">
@@ -78,7 +81,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 value={customer.catalogId}
                 hint
               />
-              {customer.catalog && (
+              {customer.catalog && can(s, "catalogs") && (
                 <Link
                   href={`/catalogs/${customer.catalog.id}`}
                   className="text-xs text-muted-foreground hover:underline"

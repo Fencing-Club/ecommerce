@@ -5,7 +5,7 @@ import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
-import { requireBuyer, session } from "@/server/auth"
+import { requireBuyer, requirePage, session } from "@/server/auth"
 import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 
@@ -13,7 +13,9 @@ type Props = { params: Promise<{ id: string }> }
 
 // Looking the PO up here too gives a malformed or unknown id the not-found page's title.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { order } = await accessibleOrder(await session(), (await params).id)
+  const s = await session()
+  requirePage(s, "orders", "edit")
+  const { order } = await accessibleOrder(s, (await params).id)
   return { title: `Edit ${order.data.reference}` }
 }
 
@@ -21,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EditOrder({ params }: Props) {
   const s = await session()
   requireBuyer(s)
+  requirePage(s, "orders", "edit")
   const { id } = await params
   const { order } = await accessibleOrder(s, id)
   if (order.status !== "draft") {

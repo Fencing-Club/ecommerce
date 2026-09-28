@@ -2,7 +2,8 @@ import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 
 const trackingInput = z.strictObject({
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     if (s.org.kind !== "supplier") {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
+    requireAccess(s, "inventory", "edit")
     const { id, ...changes } = trackingInput.parse(await request.json())
     const [updated] = await db()
       .update(supplierProducts)
@@ -32,6 +34,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ revision: updated.revision })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not save" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Could not save" },
+      { status: failureStatus(error) }
+    )
   }
 }

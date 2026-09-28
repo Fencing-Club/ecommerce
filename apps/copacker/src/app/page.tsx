@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { Landing } from "@/components/marketing/landing"
+import { homeFor } from "@/lib/navigation"
 import { session, signedInUser } from "@/server/auth"
 import { appUrl } from "@/server/security"
 
@@ -24,13 +25,12 @@ export const metadata: Metadata = {
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
-// Buyers land on the Overview; suppliers and forwarders on their purchase orders. Anyone signed out gets the marketing
-// page.
-const homes = { buyer: "/overview", supplier: "/orders", forwarder: "/orders" } as const
+// Buyers land on the Overview, and suppliers and forwarders on their purchase orders, or a member on their first page.
+// Anyone signed out gets the marketing page.
 export default async function Home() {
   if (!(await signedInUser())) {
     return <Landing />
   }
   const s = await session()
-  redirect(homes[s.org.kind])
+  redirect(homeFor(s.org.kind, s))
 }

@@ -5,14 +5,14 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
-import { session, requireOwner, requireBuyer } from "@/server/auth"
+import { session, requireAdmin, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
 import { appUrl, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
 export async function GET(request: Request, context: { params: Promise<{ provider: string }> }) {
   const s = await session()
-  requireOwner(s)
+  requireAdmin(s)
   requireBuyer(s)
   const provider = z.enum(["shopify", "amazon"]).parse((await context.params).provider)
   const url = new URL(request.url),

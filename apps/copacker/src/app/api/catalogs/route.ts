@@ -1,5 +1,6 @@
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
 import { saveCatalog } from "@/server/catalogs"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 
 // Creates or saves a catalog from its form.
@@ -8,8 +9,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
   }
   try {
-    return Response.json(await saveCatalog(await session(), await request.json()))
+    const s = await session()
+    requireAccess(s, "catalogs", "edit")
+    return Response.json(await saveCatalog(s, await request.json()))
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not save catalog" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Could not save catalog" },
+      { status: failureStatus(error) }
+    )
   }
 }

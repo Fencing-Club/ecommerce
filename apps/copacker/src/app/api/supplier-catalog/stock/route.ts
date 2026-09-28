@@ -2,7 +2,8 @@ import { and, eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requireAccess, session } from "@/server/auth"
+import { failureStatus } from "@/server/errors"
 import { appUrl } from "@/server/security"
 
 const stockInput = z.strictObject({
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
     if (s.org.kind !== "supplier") {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
+    requireAccess(s, "inventory", "edit")
     const { counts } = stockInput.parse(await request.json())
     const ids = counts.map((count) => count.id)
     if (new Set(ids).size !== ids.length) {
@@ -56,6 +58,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ saved })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Could not save stock" }, { status: 400 })
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Could not save stock" },
+      { status: failureStatus(error) }
+    )
   }
 }

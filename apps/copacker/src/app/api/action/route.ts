@@ -9,9 +9,18 @@ import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
-import { identity, session, requireOwner, requireBuyer, requireMembership, setWorkspace } from "@/server/auth"
+import {
+  identity,
+  session,
+  requireAccess,
+  requireAdmin,
+  requireBuyer,
+  requireMembership,
+  setWorkspace
+} from "@/server/auth"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
+import { failureStatus } from "@/server/errors"
 import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
 import {
   createForwarder,
@@ -46,7 +55,7 @@ import { forwardShipment, shipShipment } from "@/server/shipment-legs"
 import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
-import { cancelInvitation, inviteColleague, removeColleague } from "@/server/team"
+import { cancelInvitation, changeAccess, inviteColleague, removeColleague, resendInvitation } from "@/server/team"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
@@ -79,15 +88,23 @@ export async function POST(request: Request) {
     const id = () => z.uuid().parse(data.id),
       revision = () => z.number().int().positive().parse(data.revision)
     if (action === "team.invite") {
-      requireOwner(s)
+      requireAdmin(s)
       return Response.json(await inviteColleague(s.org, data))
     }
+    if (action === "team.resend") {
+      requireAdmin(s)
+      return Response.json(await resendInvitation(s.org, data))
+    }
+    if (action === "team.access") {
+      requireAdmin(s)
+      return Response.json(await changeAccess(s, data))
+    }
     if (action === "team.cancel") {
-      requireOwner(s)
+      requireAdmin(s)
       return Response.json(await cancelInvitation(s.org.id, data))
     }
     if (action === "team.remove") {
-      requireOwner(s)
+      requireAdmin(s)
       return Response.json(await removeColleague(s, data))
     }
     if (action === "workspace.switch") {
@@ -97,7 +114,7 @@ export async function POST(request: Request) {
     }
     if (action === "supplier.create") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       // The email is optional: a supplier can get POs without joining Copacker, and is invited once it has one.
       const input = z
         .object({
@@ -144,7 +161,7 @@ export async function POST(request: Request) {
     // Invites a supplier that hasn't joined, or sends its invitation again; an email given here replaces the saved one.
     if (action === "supplier.invite" || action === "supplier.resend") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       const email = z
         .union([z.email().max(254), z.literal("")])
         .optional()
@@ -187,52 +204,54 @@ export async function POST(request: Request) {
     }
     if (action === "supplier.remove") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       await removeSupplier(s.org.id, id())
       return Response.json({ ok: true })
     }
     if (action === "supplier.update") {
       requireBuyer(s)
+      requireAccess(s, "partners", "edit")
       await updateSupplier(s.org.id, data)
       return Response.json({ ok: true })
     }
     if (action === "forwarder.create") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       const forwarder = await createForwarder(s.org, data)
       return Response.json({ id: forwarder.id })
     }
     if (action === "forwarder.rename") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       await renameForwarder(s.org.id, id(), data)
       return Response.json({ ok: true })
     }
     if (action === "forwarder.remove") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       await removeForwarder(s.org.id, id())
       return Response.json({ ok: true })
     }
     if (action === "forwarder.invite") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       await inviteForwarder(s.org, id(), data.email)
       return Response.json({ ok: true })
     }
     if (action === "forwarder.address") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       await saveForwarderAddress(s.org.id, data)
       return Response.json({ ok: true })
     }
     // Adds or edits a pickup address for a supplier that hasn't joined, or with `remove`, deletes it.
     if (action === "supplier.address") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAccess(s, "partners", "edit")
       return Response.json(await (data.remove === true ? removeSupplierAddress : saveSupplierAddress)(s.org.id, data))
     }
     if (action === "contact.create") {
+      requireAdmin(s)
       const input = z
         .object({
           name: z.string().trim().min(1).max(100),
@@ -262,7 +281,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "workspace.timeZone") {
-      requireOwner(s)
+      requireAdmin(s)
       // An empty choice goes back to each viewer's computer's time zone.
       const input = z
         .object({ timeZone: z.union([z.literal(""), z.string().refine(isTimeZone, "Choose a time zone")]) })
@@ -274,7 +293,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "workspace.restock") {
-      requireOwner(s)
+      requireAdmin(s)
       // The sales period and default lead time Restock starts from and the Overview uses.
       const days = z.number().int().min(dayRange.min).max(dayRange.max)
       const input = z.object({ salesDays: days, leadTimeDays: days }).parse(data)
@@ -285,7 +304,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "workspace.excludedShopifyTags") {
-      requireOwner(s)
+      requireAdmin(s)
       if (s.org.kind !== "buyer") {
         throw new Error("A buyer workspace is required")
       }
@@ -297,10 +316,10 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "supplier.profile") {
+      requireAdmin(s)
       if (s.org.kind !== "supplier") {
         throw new Error("A supplier workspace is required")
       }
-      requireOwner(s)
       // The supplier's own contact details, which their buyers see.
       const parsed = supplierContactSchema.parse(data)
       const profile = {
@@ -316,6 +335,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "contact.update") {
+      requireAdmin(s)
       const input = z
         .object({
           name: z.string().trim().min(1).max(100),
@@ -339,8 +359,8 @@ export async function POST(request: Request) {
             : "Save delivery addresses here. Forwarders' addresses are on the Forwarders page"
         )
       }
-      // Only the workspace's own addresses: a partner's addresses change through the partner's actions, which check
-      // the owner role.
+      // Only the workspace's own addresses: a partner's addresses change through the partner's actions, which need
+      // Partners access.
       const updated = await db()
         .update(contacts)
         .set(input)
@@ -359,19 +379,20 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "connection.amazonSelfAuthorized") {
-      requireOwner(s)
+      requireAdmin(s)
       requireBuyer(s)
       const connected = await connectAmazonSelfAuthorized(s.org.id, data)
       await queueAmazonSubscription(s.org.id, randomUUID())
       return Response.json({ ok: true, ...connected })
     }
     if (action === "connection.delete") {
-      requireOwner(s)
+      requireAdmin(s)
       requireBuyer(s)
       const provider = z.enum(["amazon", "shopify"]).parse(data.provider)
       return Response.json({ ok: true, ...(await disconnect(s.org.id, provider)) })
     }
     if (action === "contact.delete") {
+      requireAdmin(s)
       const deleted = await db()
         .delete(contacts)
         .where(
@@ -389,42 +410,52 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "order.create") {
+      requireAccess(s, "orders", "edit")
       const order = await createOrder(s, data)
       return Response.json({ redirect: `/orders/${order.id}` })
     }
     if (action === "order.update") {
+      requireAccess(s, "orders", "edit")
       const input = z.object({ id: z.uuid(), revision: z.number().int().positive(), order: z.unknown() }).parse(data)
       await updateDraftOrder(s, input.id, input.order, input.revision)
       return Response.json({ redirect: `/orders/${input.id}` })
     }
     if (action === "order.submit") {
+      requireAccess(s, "orders", "edit")
       return Response.json({ ok: true, ...(await submitOrder(s, id(), revision())) })
     }
     if (action === "shipment.create") {
+      requireAccess(s, "shipments", "edit")
       const shipment = await newShipment(s, id())
       return Response.json({ redirect: `/shipments/${shipment.id}` })
     }
     if (action === "shipment.save") {
+      requireAccess(s, "shipments", "edit")
       return Response.json(
         await savePacking(s, id(), data.draft, revision(), z.number().int().positive().parse(data.orderRevision))
       )
     }
     if (action === "shipment.check") {
+      requireAccess(s, "shipments", "edit")
       return Response.json(await checkPacking(s, id(), data.packing))
     }
     if (action === "shipment.submit") {
+      requireAccess(s, "shipments", "edit")
       return Response.json(await submitPacking(s, id(), data.packing, revision()))
     }
     if (action === "shipment.approve") {
+      requireAccess(s, "shipments", "edit")
       await approveInvoice(s, id(), revision(), z.boolean().parse(data.updateCost))
       return Response.json({ ok: true })
     }
     if (action === "shipment.correct") {
+      requireAccess(s, "shipments", "edit")
       await correctShipment(s, id(), z.string().parse(data.reason))
       return Response.json({ ok: true })
     }
     if (action === "shipment.retry") {
       requireBuyer(s)
+      requireAccess(s, "shipments", "edit")
       await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
         if (!initial) {
@@ -457,6 +488,7 @@ export async function POST(request: Request) {
     }
     if (action === "shipment.reconcile") {
       requireBuyer(s)
+      requireAccess(s, "shipments", "edit")
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
       if (!shipment?.snapshot || !shipment.packing || !["needs_attention", "correction"].includes(shipment.status)) {
         throw new Error("Shipment is not awaiting reconciliation")
@@ -505,6 +537,7 @@ export async function POST(request: Request) {
     }
     if (action === "shipment.cancelAmazon") {
       requireBuyer(s)
+      requireAccess(s, "shipments", "edit")
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
       if (!shipment?.amazonOrderId || shipment.status !== "correction") {
         throw new Error("An existing Amazon shipment must be in correction before replacement")
@@ -530,24 +563,30 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "shipment.received") {
+      requireAccess(s, "shipments", "edit")
       await receiveShipment(s, id())
       return Response.json({ ok: true })
     }
     if (action === "landedCost.create") {
+      requireAccess(s, "orders", "edit")
       return Response.json(await addLandedCost(s, data))
     }
     if (action === "landedCost.delete") {
+      requireAccess(s, "orders", "edit")
       await removeLandedCost(s, id())
       return Response.json({ ok: true })
     }
     if (action === "monthlyCost.create") {
+      requireAdmin(s)
       return Response.json(await addMonthlyCost(s, data))
     }
     if (action === "monthlyCost.delete") {
+      requireAdmin(s)
       await removeMonthlyCost(s, id())
       return Response.json({ ok: true })
     }
     if (action === "order.delete") {
+      requireAccess(s, "orders", "edit")
       await deleteDraftOrder(s, id())
       return Response.json({ redirect: "/orders" })
     }
@@ -555,23 +594,27 @@ export async function POST(request: Request) {
       return Response.json(await saveProfile(s, data))
     }
     if (action === "order.comment") {
+      requireAccess(s, "orders", "view")
       return Response.json(await addComment(s, data))
     }
     if (action === "order.close") {
+      requireAccess(s, "orders", "edit")
       await closeOrder(s, id())
       return Response.json({ ok: true })
     }
     if (action === "shipment.ship") {
+      requireAccess(s, "shipments", "edit")
       await shipShipment(s, id())
       return Response.json({ ok: true })
     }
     if (action === "shipment.forward") {
+      requireAccess(s, s.org.kind === "forwarder" ? "orders" : "shipments", "edit")
       await forwardShipment(s, data)
       return Response.json({ ok: true })
     }
     if (action === "job.retry") {
       requireBuyer(s)
-      requireOwner(s)
+      requireAdmin(s)
       const [job] = await db().select().from(jobs).where(eq(jobs.id, id()))
       if (!job || job.kind === "amazon" || job.status !== "failed") {
         throw new Error("This job cannot be retried here")
@@ -582,6 +625,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true })
     }
     if (action === "shipment.release") {
+      requireAccess(s, "shipments", "edit")
       const [released] = await db().select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, id()))
       const missingLabels = released ? await linesMissingLabels(s, released.orderId) : new Set<string>()
       requireBuyer(s)
@@ -636,7 +680,7 @@ export async function POST(request: Request) {
     }
     return Response.json(
       { error: message.startsWith("Failed query:") ? "Could not save this change. Refresh and try again" : message },
-      { status: 400 }
+      { status: failureStatus(error) }
     )
   }
 }

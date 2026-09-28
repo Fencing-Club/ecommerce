@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { stockSource, stockScopes, stockSelection } from "@/server/stock"
 
 const cursorSchema = z.strictObject({
@@ -37,6 +37,7 @@ export async function GET(request: Request) {
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
+  requirePage(s, "products")
   const search = new URL(request.url).searchParams
   const query = querySchema.safeParse(Object.fromEntries(search))
   let cursor: z.infer<typeof cursorSchema> | undefined

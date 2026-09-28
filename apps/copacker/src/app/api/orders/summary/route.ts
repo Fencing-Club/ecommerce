@@ -3,7 +3,7 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { orders, shipments, suppliers } from "@/db/schema"
-import { session } from "@/server/auth"
+import { requirePage, session } from "@/server/auth"
 import { orderCoverage } from "@/server/readiness"
 
 const querySchema = z.strictObject({
@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   if (s.org.kind !== "buyer") {
     return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
   }
+  requirePage(s, "orders")
   const search = new URL(request.url).searchParams
   const parsed = querySchema.safeParse(Object.fromEntries(search))
   if (!parsed.success || [...search.keys()].some((key) => search.getAll(key).length !== 1)) {

@@ -6,7 +6,7 @@ This document is the integration handoff for the design agent. Page layout, comp
 
 All business routes use the WorkOS session. The active workspace is selected with a server-set HttpOnly cookie and checked against live database membership on every request. No client-supplied organization grants access. Every mutation requires Origin equal to APP_URL. Never use browser-provided account credentials.
 
-`POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`, or `{ redirect }`; failure returns HTTP 400 with `{ error }`. Show multiline validation errors in the relevant form. Refresh server data after successful mutations. Unexpected errors must not display raw database queries or tokens.
+`POST /api/action`, content-type application/json, body `{ action, data }`. Success returns `{ ok: true }`, `{ id }`, or `{ redirect }`; failure returns HTTP 400 with `{ error }`, or 403 when the person's role or page access doesn't allow it ([Roles and page access](permissions.md)). Show multiline validation errors in the relevant form. Refresh server data after successful mutations. Unexpected errors must not display raw database queries or tokens.
 
 The UI should always send the last displayed numeric revision for a PO/shipment mutation. Revision conflicts require refresh, never silent overwrite.
 
@@ -16,12 +16,14 @@ The UI should always send the last displayed numeric revision for a PO/shipment 
 | --- | --- | --- |
 | workspace.create | name, kind: buyer or supplier, optional next invitation URL | Authenticated user; creates owner membership |
 | workspace.switch | id | Existing workspace member |
-| team.invite | email | Workspace owner; exact-email invitation |
+| team.invite | email, role: admin or member, access | Owner or admin; exact-email invitation with the role and a member's pages |
+| team.access | userId or email, role, access | Owner or admin; changes a colleague's or an invitation's access, never the owner's or your own |
+| team.resend, team.cancel | email | Owner or admin |
 | team.accept | token | Verified invited email, no prior workspace needed |
-| team.remove | userId | Owner; removes a member, cannot remove self |
-| supplier.create | name, email | Buyer owner; invitation to supplier workspace |
-| supplier.accept | token, orgId | Exact verified invited email; owner of the selected supplier workspace. Acceptance switches to that workspace and consumes the invitation once. |
-| contact.create | name, kind: pickup or forwarder, address | Active workspace member |
+| team.remove | userId | Owner or admin; removes anyone but the owner and yourself |
+| supplier.create | name, email | Buyer, Partners: Edit; invitation to supplier workspace |
+| supplier.accept | token, orgId | Exact verified invited email; owner or admin of the selected supplier workspace. Acceptance switches to that workspace and consumes the invitation once. |
+| contact.create | name, kind: pickup or forwarder, address | Owner or admin |
 | order.create | OrderInput | Buyer; catalog identities re-read from connected Shopify |
 | order.submit | id, revision | Buyer; publishes PO, queues email with PDF attachment, creates first packing draft; returns ok and shipmentId |
 | shipment.create | id (PO ID) | Buyer or assigned supplier; resumes the editable packing draft, or creates the next partial shipment; returns shipment URL |
@@ -34,7 +36,7 @@ The UI should always send the last displayed numeric revision for a PO/shipment 
 | shipment.cancelAmazon | id | Buyer; cancels the AWD order or FBA inbound plan in Amazon and verifies it's cancelled before releasing quantities |
 | shipment.release | id, revision, bookingReference | Buyer; requires all carton, product and carrier label assignments |
 | shipment.collected | id | Buyer or supplier; records reported collection, not carrier tracking proof |
-| job.retry | id | Buyer owner; failed email/Shopify job for an accessible PO |
+| job.retry | id | Buyer owner or admin; failed email/Shopify job for an accessible PO |
 
 Canonical schemas are exported by `@repo/aisle`: orderInputSchema, itemSchema, packingDraftSchema, packingSchema, cartonInputSchema, addressSchema. Prices are integer minor currency units **per individual piece**; weights kg; dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID, and product names are read-only to suppliers. They propose supplier SKU and unit-price changes in `packing.changes`.
 
@@ -45,8 +47,8 @@ An order has one destination and one supplier. A PO to Amazon sends each line to
 - `GET /api/catalog?q=`: buyer-only Shopify search; returns variant id/title/SKU, product title, inventory item id/unitCost, supplierSku, asin, plus Amazon ASIN/FNSKU when the connected listing exposes them. An empty mapping is unknown, never an invented barcode.
 - `POST /api/supplier-catalog/match` `{ supplierId, currency, supplierSkus }`: buyer-only; each SKU's catalog match and `available`, the pieces the supplier can still sell (on hand less what its sent POs haven't yet taken), or null when the product doesn't track inventory or continues selling when out of stock.
 - `POST /api/supplier-catalog/stock` `{ id, onHand }`: supplier-only; sets a tracked catalog product's on hand count. 404 when the product isn't the supplier's or doesn't track inventory.
-- `GET /api/connections/shopify?shop=store.myshopify.com`: buyer owner authorization redirect. The same path receives the HMAC-verified OAuth callback.
-- `GET /api/connections/amazon`: buyer owner OAuth redirect and callback. Single-use state is tied to user, organization, and provider.
+- `GET /api/connections/shopify?shop=store.myshopify.com`: buyer owner or admin authorization redirect. The same path receives the HMAC-verified OAuth callback.
+- `GET /api/connections/amazon`: buyer owner or admin OAuth redirect and callback. Single-use state is tied to user, organization, and provider.
 
 ## Documents
 
