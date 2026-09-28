@@ -102,6 +102,8 @@ export const EbayConnectedMember = meta.story({
   args: { admin: false, ebayAvailable: true, ebay },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Connected")).toBeVisible()
+    // A connection's state renders as a status badge: connected is done.
+    await expect(canvas.getByText("Connected").closest("[data-slot=status]")).toHaveAttribute("data-tone", "success")
     await expect(canvas.getByText(ebayAccount)).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "eBay settings" })).toBeNull()
   }

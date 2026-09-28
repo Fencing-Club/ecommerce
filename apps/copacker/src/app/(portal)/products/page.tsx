@@ -26,7 +26,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       <>
         <PageHeader title={t("title")}>
           <ProductActions />
-          {can(s, "products", "edit") && (
+          {/* Without products, the empty list offers the first one instead. */}
+          {products.length > 0 && can(s, "products", "edit") && (
             <Button nativeButton={false} render={<Link href="/products/new" />}>
               <Plus data-icon="inline-start" />
               {t("addProduct")}

@@ -106,6 +106,23 @@ export const Variations = meta.story({
   }
 })
 
+// Emptied, a number stays empty and clears what was saved.
+export const ClearCaseQuantity = meta.story({
+  args: { product: editable(0) },
+  play: async ({ args }) => {
+    const details = within(await panel())
+    const caseQuantity = details.getByRole("spinbutton", { name: "Case quantity" })
+    await expect(caseQuantity).toHaveValue(24)
+    await userEvent.clear(caseQuantity)
+    await expect(caseQuantity).toHaveValue(null)
+    await userEvent.click(details.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(args.onSaved).toHaveBeenCalledOnce())
+    await expect(saved).toEqual([
+      { url: "/api/inventory/product-defaults", body: expect.objectContaining({ caseQuantity: null }) }
+    ])
+  }
+})
+
 export const CasePacks = meta.story({
   args: { product: editable(0) },
   play: async ({ args }) => {

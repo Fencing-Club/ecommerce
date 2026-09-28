@@ -41,6 +41,9 @@ export const Owner = meta.story({
       ])
     )
     await expect(await canvas.findByRole("status")).toHaveTextContent("Saved")
+    // The field shows the website as saved.
+    await expect(website).toHaveValue("https://harbor.example.com")
+    await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
     await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
   }
 })

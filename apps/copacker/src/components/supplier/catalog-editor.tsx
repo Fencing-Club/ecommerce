@@ -16,7 +16,7 @@ import {
   AlertDialogTitle
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Combobox,
@@ -703,19 +703,18 @@ export function CatalogEditor({
 
         <Card className="@container gap-0 py-0">
           <div className="flex flex-col gap-3 border-b p-4">
-            <CardHeader className="px-0">
+            {/* The switch moves under the title when the two don't fit on one line, instead of squeezing its label. */}
+            <CardHeader className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-0">
               <CardTitle>{t("products")}</CardTitle>
-              <CardAction>
-                <div className="flex items-center gap-2 text-sm">
-                  <Switch
-                    id="catalog-include-new"
-                    disabled={readOnly}
-                    checked={settings.includeNewProducts}
-                    onCheckedChange={(checked) => change({ includeNewProducts: checked })}
-                  />
-                  <label htmlFor="catalog-include-new">{t("includeNew")}</label>
-                </div>
-              </CardAction>
+              <div className="flex items-center gap-2 text-sm">
+                <Switch
+                  id="catalog-include-new"
+                  disabled={readOnly}
+                  checked={settings.includeNewProducts}
+                  onCheckedChange={(checked) => change({ includeNewProducts: checked })}
+                />
+                <label htmlFor="catalog-include-new">{t("includeNew")}</label>
+              </div>
             </CardHeader>
             <IndexToolbar
               tabs={[

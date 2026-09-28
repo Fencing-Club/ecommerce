@@ -4,8 +4,8 @@ import { CheckCircle2, ChevronDown, CircleDashed, Clock, Ellipsis, MapPin, Penci
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { StatusBadge } from "@/components/common"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -110,15 +110,18 @@ function PartnerRow({
 }) {
   const t = useTranslations("partners.row")
   return (
+    // On a phone the row stacks: the name and menu, then the status under the name.
     <TableRow
-      className="cursor-pointer"
+      className="cursor-pointer @max-md:flex @max-md:flex-wrap @max-md:items-center @max-md:gap-x-3 @max-md:gap-y-1 @max-md:px-4 @max-md:py-3"
       onClick={(event) => {
         if (isRowClick(event)) {
           onOpen()
         }
       }}
     >
-      <TableCell className="ps-4">
+      {/* Takes the room the other columns leave, and truncates to it, so a long contact line never pushes the other
+          columns off the screen. */}
+      <TableCell className="w-full max-w-0 ps-4 @max-md:w-auto @max-md:max-w-none @max-md:min-w-0 @max-md:flex-1 @max-md:p-0">
         <div className="flex items-center gap-3">
           <Avatar aria-hidden className="rounded-md after:rounded-md">
             <AvatarFallback className="rounded-md text-xs font-medium">{initials(name)}</AvatarFallback>
@@ -127,16 +130,16 @@ function PartnerRow({
             <button
               type="button"
               onClick={onOpen}
-              className="w-fit rounded-sm text-start font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="max-w-full truncate rounded-sm text-start font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {name}
             </button>
-            {contactLine && <span className="text-xs text-muted-foreground">{contactLine}</span>}
+            {contactLine && <span className="truncate text-xs text-muted-foreground">{contactLine}</span>}
           </div>
         </div>
       </TableCell>
       {type && <TableCell className="hidden @2xl:table-cell">{type}</TableCell>}
-      <TableCell>
+      <TableCell className="@max-md:order-last @max-md:basis-full @max-md:p-0 @max-md:ps-11">
         <div className="flex flex-col items-start gap-1">
           <StandingBadge standing={standing} />
           {/* Says an invitation sent from the menu went, or why it didn't. */}
@@ -146,7 +149,7 @@ function PartnerRow({
         </div>
       </TableCell>
       <TableCell className="hidden text-muted-foreground @2xl:table-cell">{detail}</TableCell>
-      <TableCell className="w-12 pe-4 text-end">
+      <TableCell className="w-12 pe-4 text-end @max-md:w-auto @max-md:p-0">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" size="icon-sm" aria-label={t("moreActions", { name })} />}
@@ -163,30 +166,27 @@ function PartnerRow({
   )
 }
 
-// In the Status badge's styles: joined is done, a live invitation is in progress, anything else is neutral.
+// A status badge: joined is done, a live invitation is in progress, anything else is neutral.
 function StandingBadge({ standing }: { standing: Standing }) {
   const t = useTranslations("partners.row.standing")
   if (standing.joined) {
     return (
-      <Badge variant="outline">
-        <CheckCircle2 data-icon="inline-start" />
+      <StatusBadge tone="success" icon={<CheckCircle2 aria-hidden />}>
         {t("joined")}
-      </Badge>
+      </StatusBadge>
     )
   }
   if (standing.invited && !standing.expired) {
     return (
-      <Badge variant="secondary">
-        <Clock data-icon="inline-start" />
+      <StatusBadge tone="info" icon={<Clock aria-hidden />}>
         {t("invited")}
-      </Badge>
+      </StatusBadge>
     )
   }
   return (
-    <Badge variant="outline">
-      <CircleDashed data-icon="inline-start" />
+    <StatusBadge tone="neutral" icon={<CircleDashed aria-hidden />}>
       {standing.invited ? t("expired") : t("notInvited")}
-    </Badge>
+    </StatusBadge>
   )
 }
 

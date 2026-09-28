@@ -85,6 +85,7 @@ export const NewBuyer = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByText("Choose one")).toBeVisible()
     await userEvent.click(canvas.getByText("Buyer"))
+    await waitFor(() => expect(canvas.queryByText("Choose one")).toBeNull())
     await continueTo(canvas, "Your company")
     await expect(canvas.queryByLabelText(/Phone number/)).toBeNull()
 
@@ -320,5 +321,29 @@ export const Phone = meta.story({
     await expect(canvasElement.querySelector("aside")).not.toBeVisible()
     await expect(canvas.getByRole("heading", { level: 1, name: "About you" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Sign out" })).toBeVisible()
+  }
+})
+
+// On a phone the last step's buttons stay on screen: Back is only its arrow, and the rest wrap when they don't fit.
+export const PhoneLastStep = meta.story({
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  args: {
+    steps: ["role", "company", "address"],
+    initial: blankWizard({ firstName: "Alex", lastName: "Rivera", position: "Owner" })
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("Freight forwarder"))
+    await continueTo(canvas, "Your company")
+    await userEvent.type(canvas.getByLabelText(/Company name/), "Bayline Freight")
+    await continueTo(canvas, "Warehouse address")
+    const form = canvas.getByRole("heading", { level: 1 }).closest("form")
+    if (!form) {
+      throw new Error("The step isn't in a form")
+    }
+    const edge = form.getBoundingClientRect().right
+    for (const name of ["Back", "Skip for now", "Create workspace"]) {
+      await expect(canvas.getByRole("button", { name }).getBoundingClientRect().right).toBeLessThanOrEqual(edge + 1)
+    }
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
   }
 })

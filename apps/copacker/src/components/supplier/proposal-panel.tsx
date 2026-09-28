@@ -42,7 +42,7 @@ export function ChangeBadge({ change }: { change: LineChange }) {
 }
 
 // A table that runs edge to edge inside the card: the first and last columns line up with the card's padding.
-const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
+const edgeTable = "[&_td:first-child]:ps-3 [&_td:last-child]:pe-3 [&_th:first-child]:ps-3 [&_th:last-child]:pe-3"
 
 // A value before and after the change: the old one struck through, then the new one.
 function FromTo({ before, after }: { before: React.ReactNode; after: React.ReactNode }) {
@@ -151,8 +151,9 @@ export function ProposalPanel({
   const declined = proposal.status === "declined"
   const status = proposalStatus(proposal.status, viewer)
   return (
-    <Card className="@container gap-0 py-0">
-      <CardHeader className="border-b pt-4">
+    // Small, like the purchase order page's other cards.
+    <Card size="sm" className="@container gap-0 py-0">
+      <CardHeader className="border-b pt-3">
         <CardTitle>{viewer === "buyer" ? t("theirChanges", { supplier: supplierName }) : t("yourChanges")}</CardTitle>
         {declined && proposal.reason && (
           <CardDescription className="whitespace-pre-line">{t("reason", { reason: proposal.reason })}</CardDescription>
@@ -163,7 +164,7 @@ export function ProposalPanel({
       </CardHeader>
       <div className="divide-y">
         {proposal.note && (
-          <div className="px-4 py-3">
+          <div className="p-3">
             <blockquote className="border-s-2 ps-3 text-sm whitespace-pre-line text-muted-foreground">
               {proposal.note}
             </blockquote>
@@ -209,7 +210,7 @@ export function ProposalPanel({
             </TableBody>
           </Table>
         )}
-        <dl className="grid gap-x-4 gap-y-2 px-4 py-3 text-sm @sm:grid-cols-[10rem_minmax(0,1fr)]">
+        <dl className="grid gap-x-4 gap-y-2 p-3 text-sm @sm:grid-cols-[10rem_minmax(0,1fr)]">
           {unchanged > 0 && (
             <>
               <dt className="text-muted-foreground">{t("otherProducts")}</dt>

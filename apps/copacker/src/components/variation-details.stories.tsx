@@ -66,7 +66,9 @@ export const Edit = meta.story({
 
     await userEvent.type(canvas.getByRole("textbox", { name: "Supplier SKU for Black" }), "LM-TOTE-002")
     await userEvent.type(canvas.getByRole("spinbutton", { name: "Amazon minimum for Black" }), "0")
+    // Emptied, a minimum stays empty rather than showing its saved value again.
     await userEvent.clear(canvas.getByRole("spinbutton", { name: "Warehouse minimum for Black" }))
+    await expect(canvas.getByRole("spinbutton", { name: "Warehouse minimum for Black" })).toHaveValue(null)
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(submitted).toHaveBeenCalledWith({
@@ -76,14 +78,14 @@ export const Edit = meta.story({
             supplierSku: "LM-TOTE-001",
             asin: "B0TOTE0001",
             amazonStockTarget: 50,
-            storeStockTarget: undefined
+            storeStockTarget: null
           },
           {
             variantId: variations[1]!.variantId,
             supplierSku: "LM-TOTE-002",
             asin: "",
             amazonStockTarget: 0,
-            storeStockTarget: undefined
+            storeStockTarget: null
           }
         ]
       })

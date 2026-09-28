@@ -29,7 +29,6 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { type Locale, localeNames, locales } from "@/i18n/locales"
 import { contactDetailsSchema } from "@/lib/contact-details"
 import { type ContactKind, contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
-import { websiteSchema } from "@/lib/onboarding"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
 import { ActionForm, FormError, SubmitButton } from "./actions"
@@ -116,10 +115,8 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
     schema: contactDetailsSchema,
     action: "supplier.profile",
     defaultValues: profile,
-    keepSaved: true,
-    // The website shows as saved, with its https://.
-    onSuccess: () =>
-      form.resetField("website", { defaultValue: websiteSchema.safeParse(form.getValues("website")).data })
+    // The fields show what was saved: the website with its https://.
+    keepSaved: (saved) => saved
   })
   return (
     <SettingsForm form={form} onSubmit={submit}>
@@ -142,10 +139,14 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
 
 // The browser's time zone doesn't change while the page is open, so there's nothing to subscribe to.
 const noSubscription = () => () => undefined
-const restockSchema = z.object({
-  salesDays: z.number({ error: "settings.restock.enterDays" }).int().min(dayRange.min).max(dayRange.max),
-  leadTimeDays: z.number({ error: "settings.restock.enterDays" }).int().min(dayRange.min).max(dayRange.max)
-})
+// An empty field asks for the days; the checks after it keep their own messages, such as "Enter 730 or less", which a
+// plain `error` here would replace.
+const days = z
+  .number({ error: (issue) => (issue.code === "invalid_type" ? "settings.restock.enterDays" : undefined) })
+  .int()
+  .min(dayRange.min)
+  .max(dayRange.max)
+const restockSchema = z.object({ salesDays: days, leadTimeDays: days })
 
 // The sales period and default lead time Restock starts from and the Overview uses.
 export function RestockSettingsForm(values: z.input<typeof restockSchema>) {

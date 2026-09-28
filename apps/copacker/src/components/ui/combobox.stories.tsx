@@ -109,8 +109,7 @@ export const Default = meta.story({
     await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument())
 
     // Clearing empties the field.
-    const clear = canvasElementButton(input, "combobox-clear")
-    await userEvent.click(clear)
+    await userEvent.click(canvas.getByRole("button", { name: "Clear" }))
     await expect(input).toHaveValue("")
     await expect(args.onValueChange).toHaveBeenLastCalledWith(null, expect.anything())
   }
@@ -149,7 +148,7 @@ export const Trigger = meta.story({
   play: async ({ canvas }) => {
     const input = canvas.getByRole("combobox", { name: "Supplier" })
     await expect(input).toHaveValue("Cedar Works")
-    await userEvent.click(canvasElementButton(input, "input-group-button"))
+    await userEvent.click(canvas.getByRole("button", { name: "Show options" }))
     const selected = await screen.findByRole("option", { name: "Cedar Works" })
     await expect(selected).toHaveAttribute("aria-selected", "true")
     await expect(selected.querySelector("svg")).toBeInTheDocument()
@@ -173,6 +172,7 @@ export const Disabled = meta.story({
   play: async ({ canvas, args }) => {
     const input = canvas.getByRole("combobox", { name: "Supplier" })
     await expect(input).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Show options" })).toBeDisabled()
     await expect(args.onValueChange).not.toHaveBeenCalled()
   }
 })
@@ -225,23 +225,11 @@ export const MultipleChips = meta.story({
     await expect(canvas.getByText("Juniper Home")).toHaveAttribute("data-slot", "combobox-chip")
     await expect(args.onValueChange).toHaveBeenLastCalledWith([customers[0], customers[1]], expect.anything())
 
-    // A chip's remove button takes it back out.
-    const harbor = canvas.getByText("Harbor Goods")
-    const remove = harbor.querySelector("[data-slot=combobox-chip-remove]")
-    if (!(remove instanceof HTMLElement)) {
-      throw new Error("The chip has no remove button")
-    }
-    await userEvent.click(remove)
+    // With the list closed, a chip's remove button, named for it, takes it back out.
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument())
+    await userEvent.click(canvas.getByRole("button", { name: "Remove Harbor Goods" }))
     await waitFor(() => expect(canvas.queryByText("Harbor Goods")).not.toBeInTheDocument())
     await expect(args.onValueChange).toHaveBeenLastCalledWith([customers[1]], expect.anything())
   }
 })
-
-// The button in the input's group with the given slot.
-function canvasElementButton(input: HTMLElement, slot: string) {
-  const button = input.closest("[data-slot=input-group]")?.querySelector(`[data-slot=${slot}]`)
-  if (!(button instanceof HTMLElement)) {
-    throw new Error(`No ${slot} beside the input`)
-  }
-  return button
-}

@@ -2,6 +2,7 @@
 
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
@@ -14,9 +15,11 @@ function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
 }
 
 function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Trigger.Props) {
+  const t = useTranslations("common.ui")
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
+      aria-label={t("showOptions")}
       className={cn("[&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     >
@@ -27,9 +30,11 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
 }
 
 function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
+  const t = useTranslations("common.ui")
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
+      aria-label={t("clear")}
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
       className={cn(className)}
       {...props}
@@ -199,10 +204,14 @@ function ComboboxChip({
   className,
   children,
   showRemove = true,
+  label = typeof children === "string" ? children : "",
   ...props
 }: ComboboxPrimitive.Chip.Props & {
   showRemove?: boolean
+  // What the chip is, for its remove button's name, such as "Remove Harbor Goods". Text children are used by default.
+  label?: string
 }) {
+  const t = useTranslations("common.ui")
   return (
     <ComboboxPrimitive.Chip
       data-slot="combobox-chip"
@@ -218,6 +227,7 @@ function ComboboxChip({
           render={<Button variant="ghost" size="icon-xs" />}
           className="-ms-1 opacity-50 hover:opacity-100"
           data-slot="combobox-chip-remove"
+          aria-label={t("remove", { label })}
         >
           <XIcon className="pointer-events-none" />
         </ComboboxPrimitive.ChipRemove>

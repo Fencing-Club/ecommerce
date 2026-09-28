@@ -350,7 +350,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                     <TableHead>{t("cartons.carton")}</TableHead>
                     <TableHead>{t("cartons.product")}</TableHead>
                     <TableHead className="text-end">{t("cartons.units")}</TableHead>
-                    <TableHead>{t("cartons.dimensions")}</TableHead>
+                    <TableHead className="ps-6">{t("cartons.dimensions")}</TableHead>
                     <TableHead className="text-end">{t("cartons.weight")}</TableHead>
                     {amazon && <TableHead>{t("cartons.amazonLabel")}</TableHead>}
                   </TableRow>
@@ -359,13 +359,21 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                   {shipment.packing?.cartons.map((c) => (
                     <TableRow key={c.cartonId}>
                       <TableCell className="font-medium">{c.cartonId}</TableCell>
+                      {/* SKUs wrap between each other, never at their own hyphens. */}
                       <TableCell className="whitespace-normal">
-                        {c.items.map((i) => snapshot.items.find((p) => p.id === i.itemId)?.buyerSku).join(", ")}
+                        {c.items.map((i, index) => (
+                          <Fragment key={i.itemId}>
+                            {index > 0 && ", "}
+                            <span className="whitespace-nowrap">
+                              {snapshot.items.find((p) => p.id === i.itemId)?.buyerSku}
+                            </span>
+                          </Fragment>
+                        ))}
                       </TableCell>
                       <TableCell className="text-end tabular-nums">
                         {c.items.reduce((n, i) => n + i.pieces, 0)}
                       </TableCell>
-                      <TableCell className="tabular-nums">
+                      <TableCell className="ps-6 tabular-nums">
                         {c.length} × {c.width} × {c.height}
                       </TableCell>
                       <TableCell className="text-end tabular-nums">{c.weight}</TableCell>

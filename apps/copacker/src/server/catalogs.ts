@@ -97,12 +97,15 @@ export async function catalogEditor(orgId: string, id: string | null) {
       .from(catalogs)
       .where(and(eq(catalogs.supplierOrgId, orgId), id ? ne(catalogs.id, id) : sql`true`))
   ])
-  const [catalog] = id
-    ? await db()
-        .select()
-        .from(catalogs)
-        .where(and(eq(catalogs.id, id), eq(catalogs.supplierOrgId, orgId)))
-    : []
+  // `.at` rather than destructuring, so the type says a new catalog has none.
+  const catalog = id
+    ? (
+        await db()
+          .select()
+          .from(catalogs)
+          .where(and(eq(catalogs.id, id), eq(catalogs.supplierOrgId, orgId)))
+      ).at(0)
+    : undefined
   if (id && !catalog) {
     return null
   }
@@ -115,7 +118,7 @@ export async function catalogEditor(orgId: string, id: string | null) {
       return {
         id: group.id,
         title: group.title,
-        image: group.images[0] ?? null,
+        image: group.images.at(0) ?? null,
         variants: rows.map(({ group: _group, groupId: _groupId, options, ...variant }) => ({
           ...variant,
           label: variantLabel(options, group.optionNames),

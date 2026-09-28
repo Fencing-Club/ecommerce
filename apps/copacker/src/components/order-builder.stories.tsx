@@ -45,10 +45,11 @@ async function choose(canvas: Canvas, pill: string, option: string) {
   await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull())
 }
 
-// Types over what's in a number cell, as selecting it and typing does.
+// Clears a number cell, which stays empty, then types a new number into it.
 async function replace(input: HTMLElement, text: string) {
-  const length = input instanceof HTMLInputElement ? input.value.length : 0
-  await userEvent.type(input, text, { initialSelectionStart: 0, initialSelectionEnd: length })
+  await userEvent.clear(input)
+  await expect(input).toHaveValue(null)
+  await userEvent.type(input, text)
 }
 
 export const Empty = meta.story({
@@ -74,7 +75,7 @@ export const CreateOrder = meta.story({
     await choose(canvas, "Supplier", "Lotus Manufacturing")
     await userEvent.click(canvas.getByRole("button", { name: "Search products to add" }))
     const dialog = await shownDialog("Add products")
-    await userEvent.click(await dialog.findByRole("checkbox", { name: /^Select Waffle towel Sand/ }))
+    await userEvent.click(await dialog.findByRole("checkbox", { name: "Waffle towel Sand" }))
     await userEvent.click(dialog.getByRole("button", { name: "Add to purchase order" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     // The new line takes focus, at its supplier SKU.
@@ -142,6 +143,19 @@ export const Validation = meta.story({
     // Back to Amazon, the address goes.
     await choose(canvas, "Destination", "Amazon")
     await expect(canvas.queryByRole("combobox", { name: "Delivery address" })).toBeNull()
+
+    // A cleared quantity stays empty once it loses focus, and saving asks for it.
+    const quantity = canvas.getByRole("spinbutton", { name: "Quantity of Canvas tote bag" })
+    await userEvent.clear(quantity)
+    await userEvent.tab()
+    await expect(quantity).toHaveValue(null)
+    await expect(canvas.getByText("1 variant (0 units)")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(quantity).toHaveAttribute("aria-invalid", "true"))
+    await expect(actions).not.toHaveBeenCalled()
+    await userEvent.type(quantity, "40")
+    await expect(quantity).toHaveAttribute("aria-invalid", "false")
+    await expect(canvas.getByText("1 variant (40 units)")).toBeVisible()
   }
 })
 
@@ -218,6 +232,8 @@ export const EditDraft = meta.story({
     await expect(canvas.getByRole("combobox", { name: "Delivery address" })).toHaveTextContent("Oakland warehouse")
     await expect(canvas.getByRole("textbox", { name: "Reference number" })).toHaveValue("PO-1042")
     await expect(canvas.getByText("Needs an uploaded label")).toBeVisible()
+    // The warning color is too light for text: only its icon uses it.
+    await expect(canvas.getByText("Needs an uploaded label").closest(".text-warning")).toBeNull()
     await expect(canvas.getByText("3 variants (420 units)")).toBeVisible()
     const save = canvas.getByRole("button", { name: "Save" })
     await expect(save).toBeDisabled()

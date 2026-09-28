@@ -41,7 +41,7 @@ function targetGroup(product: SheetProduct, variants: Map<string, VariantRow>) {
   if (ids.size > 1) {
     throw new LocalizedError("rowMixedProducts", { row: product.line, handle: product.handle })
   }
-  return [...ids][0] ?? null
+  return [...ids].at(0) ?? null
 }
 
 function groupFields(product: SheetProduct) {

@@ -57,6 +57,31 @@ export const AddTags = meta.story({
   }
 })
 
+// Clicking a suggestion the typing narrowed to adds the suggestion, not what's typed; so does Tab then Enter.
+export const PickFilteredSuggestion = meta.story({
+  play: async ({ canvas, args }) => {
+    const input = canvas.getByLabelText("Tags")
+    await userEvent.type(input, "t")
+    await userEvent.click(canvas.getByRole("button", { name: "Tote" }))
+    await expect(args.onChange).toHaveBeenCalledOnce()
+    await expect(args.onChange).toHaveBeenLastCalledWith(["Tote"])
+    await expect(input).toHaveValue("")
+    await expect(input).toHaveFocus()
+    await userEvent.type(input, "lin")
+    await userEvent.tab()
+    await expect(canvas.getByRole("button", { name: "Linen" })).toHaveFocus()
+    await userEvent.keyboard("{Enter}")
+    await expect(args.onChange).toHaveBeenLastCalledWith(["Tote", "Linen"])
+    await expect(input).toHaveValue("")
+    // Leaving the suggestions for elsewhere still keeps what's typed.
+    await userEvent.type(input, "ma")
+    await userEvent.tab()
+    await expect(canvas.getByRole("button", { name: "Market" })).toHaveFocus()
+    await userEvent.tab()
+    await expect(args.onChange).toHaveBeenLastCalledWith(["Tote", "Linen", "ma"])
+  }
+})
+
 export const RemoveTags = meta.story({
   args: { value: ["Canvas", "Gift", "Natural"] },
   play: async ({ canvas, args }) => {

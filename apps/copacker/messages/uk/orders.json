@@ -304,8 +304,6 @@
     "search": "Пошук товарів",
     "product": "Товар",
     "available": "Доступно",
-    "selectAllOf": "Вибрати все з {product}",
-    "select": "Вибрати {product} {variant}",
     "alreadyAdded": "Уже в замовленні на закупівлю",
     "noMatches": "Жоден товар не відповідає.",
     "loading": "Завантаження…",

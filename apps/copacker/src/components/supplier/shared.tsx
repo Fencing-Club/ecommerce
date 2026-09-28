@@ -2,8 +2,9 @@
 
 import { useWindowEvent } from "@mantine/hooks"
 import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { StatusBadge as ToneBadge, type StatusTone } from "@/components/common"
+import { StatCard } from "@/components/stat-card"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,7 +53,7 @@ export function StatusBadge({ status }: { status: keyof typeof statuses }) {
 // link: a middle click or Ctrl opens a new tab. Keyboard focus rings the row. Controls in the row sit above it with
 // `relative z-10`.
 export const rowLink =
-  "outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
+  "underline-offset-4 outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
 
 // Amounts in each currency, one under another, or a dash for none.
 export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount: number }> }) {
@@ -66,6 +67,36 @@ export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount
         <span key={row.currency}>{money(row.amount, row.currency)}</span>
       ))}
     </span>
+  )
+}
+
+// Amounts in each currency as a stat card, as the buyer Overview shows money: the first currency is the figure, the
+// others are named beneath. A dash for none.
+export function AmountsStat({
+  label,
+  amounts
+}: {
+  label: string
+  amounts: Array<{ currency: string; amount: number }>
+}) {
+  const money = useMoney()
+  const format = useFormatter()
+  const t = useTranslations("overview")
+  const [first, ...others] = amounts
+  return (
+    <StatCard
+      label={label}
+      value={first ? money(first.amount, first.currency) : "—"}
+      caption={
+        others.length > 0 &&
+        t("plusCurrencies", {
+          amounts: format.list(
+            others.map((row) => money(row.amount, row.currency)),
+            { type: "conjunction" }
+          )
+        })
+      }
+    />
   )
 }
 

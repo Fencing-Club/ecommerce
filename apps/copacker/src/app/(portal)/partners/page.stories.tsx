@@ -131,8 +131,9 @@ async function PartnersPage({ permissions, type, q: query, partners, restockLead
         </div>
         {shown.length ? (
           <div className="@container">
-            <Table framed={false}>
-              <TableHeader>
+            {/* On a phone each row stacks, as its row says. */}
+            <Table framed={false} className="@max-md:block">
+              <TableHeader className="@max-md:hidden">
                 <TableRow>
                   <TableHead className="ps-4">{t("columns.name")}</TableHead>
                   {showType && <TableHead className="hidden @2xl:table-cell">{t("columns.type")}</TableHead>}
@@ -143,7 +144,7 @@ async function PartnersPage({ permissions, type, q: query, partners, restockLead
                   </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="@max-md:block">
                 {shown.map((row) =>
                   row.type === "supplier" ? (
                     <SupplierRow

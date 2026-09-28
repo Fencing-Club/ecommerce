@@ -106,6 +106,7 @@ export function TeamSettings({
             you={member.userId === you}
             manageable={admin && member.role !== "owner" && member.userId !== you}
             transferable={owner && member.userId !== you}
+            admin={admin}
             workspace={workspace}
             kind={kind}
           />
@@ -327,7 +328,10 @@ function PageAccess({
         {label}
       </label>
       <div className="w-32 shrink-0">
+        {/* A new select for each set of levels: when prices go off, Base UI's select sees Edit leave the options
+            before it sees the level drop to View, and resets to No access. */}
         <SelectControl
+          key={highest ?? "none"}
           id={id}
           ref={ref}
           required
@@ -437,6 +441,7 @@ function MemberRow({
   you,
   manageable,
   transferable,
+  admin,
   workspace,
   kind
 }: {
@@ -446,6 +451,8 @@ function MemberRow({
   manageable: boolean
   // Whether the signed-in person can make them the owner: the owner, for anyone else.
   transferable: boolean
+  // Whether the signed-in person manages the team, so other rows have menus this row's badge lines up with.
+  admin: boolean
   workspace: string
   kind: string
 }) {
@@ -496,6 +503,7 @@ function MemberRow({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      {admin && !manageable && !transferable && <span aria-hidden className="size-7 shrink-0" />}
       {transferable && (
         <AlertDialog open={open === "transfer"} onOpenChange={(next) => setOpen(next ? "transfer" : null)}>
           <AlertDialogContent>

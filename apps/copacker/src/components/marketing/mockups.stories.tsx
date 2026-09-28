@@ -23,6 +23,8 @@ export const Restock = meta.story({
       throw new Error("The shot is inert")
     }
     const shot = within(frame)
+    // No landmarks of its own, so the page around it keeps its one main.
+    await expect(frame.querySelector("main, header, aside, nav")).toBeNull()
     await expect(shot.getAllByText("Restock").length).toBeGreaterThan(0)
     await expect(shot.getByText("Ridgeline Goods", { selector: "span.truncate" })).toBeVisible()
     await expect(shot.getByText("$15,090.00")).toBeVisible()

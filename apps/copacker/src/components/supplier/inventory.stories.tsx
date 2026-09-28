@@ -55,6 +55,10 @@ export const Default = meta.story({
     await expect(untracked.queryByRole("spinbutton")).toBeNull()
     await expect(untracked.queryByRole("switch", { name: /Continue selling/ })).toBeNull()
     await expect(screen.queryByRole("region", { name: "Unsaved changes" })).toBeNull()
+    // A product without a photo keeps the photo's frame, empty.
+    const photoIn = (sku: string) => screen.getByText(sku, { selector: "td" }).closest("tr")!.querySelector("img")
+    await expect(photoIn("LM-TOTE-NAT")).not.toBeNull()
+    await expect(photoIn("LM-BASKET")).toBeNull()
   }
 })
 

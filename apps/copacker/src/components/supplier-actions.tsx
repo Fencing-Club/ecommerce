@@ -60,7 +60,8 @@ const supplierSchema = z.object({
   name: z.string().trim().min(1).max(120),
   // Shown, not edited: it comes from Shopify's Supplier field.
   shopifySupplierName: z.string(),
-  leadTimeDays: z.number().int().min(1).max(730).optional(),
+  // Empty clears the supplier's own, so the workspace's applies.
+  leadTimeDays: z.number().int().min(1).max(730).nullable(),
   ...contactDetailsSchema.shape
 })
 // A supplier that joined keeps its own contact details, which are shown as it saved them and not sent, so they aren't
@@ -114,7 +115,7 @@ export function EditSupplier({
     values: {
       name,
       shopifySupplierName: shopifySupplierName ?? "",
-      leadTimeDays: leadTimeDays ?? undefined,
+      leadTimeDays,
       contactName: contact.contactName ?? "",
       contactEmail: contact.contactEmail ?? "",
       phoneNumber: contact.phoneNumber ?? "",
@@ -128,7 +129,7 @@ export function EditSupplier({
         data: {
           id,
           name: values.name,
-          leadTimeDays: values.leadTimeDays ?? null,
+          leadTimeDays: values.leadTimeDays,
           ...(!joined && {
             contactName: values.contactName,
             contactEmail: values.contactEmail,

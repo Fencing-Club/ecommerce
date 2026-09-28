@@ -4,6 +4,7 @@ import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
 import { ArrowRight, CircleCheck, CircleDashed } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
+import { StatusBadge } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -170,10 +171,9 @@ function NotConnected({ store }: { store: Store }) {
       <TileBody
         store={store}
         badge={
-          <Badge variant="outline">
-            <CircleDashed data-icon="inline-start" />
+          <StatusBadge tone="neutral" icon={<CircleDashed aria-hidden />}>
             {t("notConnected")}
-          </Badge>
+          </StatusBadge>
         }
       />
     </div>
@@ -197,10 +197,9 @@ function Connected({
     <TileBody
       store={store}
       badge={
-        <Badge variant="outline">
-          <CircleCheck data-icon="inline-start" className="text-success" />
+        <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
           {t("connected")}
-        </Badge>
+        </StatusBadge>
       }
       footer={
         <span className="flex min-w-0 flex-col gap-0.5">

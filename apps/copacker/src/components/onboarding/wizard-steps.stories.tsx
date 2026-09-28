@@ -113,6 +113,8 @@ export const Role = meta.story({
     await expect(await canvas.findByText("Choose one")).toBeVisible()
     await userEvent.click(canvas.getByText("Supplier"))
     await expect(canvas.getByRole("radio", { name: /Supplier/ })).toBeChecked()
+    // Picking one clears the error at once, as choosing a position does.
+    await waitFor(() => expect(canvas.queryByText("Choose one")).toBeNull())
     await userEvent.keyboard("{ArrowDown}")
     await expect(canvas.getByRole("radio", { name: /Freight forwarder/ })).toBeChecked()
     await userEvent.keyboard("{Enter}")

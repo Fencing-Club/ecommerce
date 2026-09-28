@@ -95,8 +95,9 @@ export function FormInput({
   )
 }
 
-// Numbers are stored as numbers; money goes in FormMoney. A whole number `step`, such as 1 for days or pieces, brings up
-// a keypad without a decimal point.
+// Numbers are stored as numbers, and an empty field as null: React Hook Form shows a field's default in place of
+// undefined, so emptying it would bring the default back. Money goes in FormMoney. A whole number `step`, such as 1 for
+// days or pieces, brings up a keypad without a decimal point.
 export function FormNumber({
   name,
   label,
@@ -104,7 +105,7 @@ export function FormNumber({
   className,
   onValueChange,
   ...props
-}: FormFieldProps & { onValueChange?: (value: number | undefined) => void } & Omit<
+}: FormFieldProps & { onValueChange?: (value: number | null) => void } & Omit<
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange" | "type"
   >) {
@@ -126,7 +127,7 @@ export function FormNumber({
         ref={ref}
         value={value}
         onChange={(event) => {
-          const next = event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * 1000) / 1000
+          const next = event.target.value === "" ? null : Math.round(event.target.valueAsNumber * 1000) / 1000
           onChange(next)
           onValueChange?.(next)
         }}
@@ -141,11 +142,11 @@ export function FormNumber({
 }
 
 // A typed amount in minor units: "78.5", "1,250.00", or "78,50" from a keyboard with a decimal comma. Anything else is
-// NaN, which fails validation as not a number, and an empty field is undefined.
+// NaN, which fails validation as not a number, and an empty field is null, as in FormNumber.
 function minorUnits(text: string) {
   const amount = text.trim()
   if (amount === "") {
-    return undefined
+    return null
   }
   const decimal = /^-?\d+,\d{1,2}$/.test(amount) ? amount.replace(",", ".") : amount
   if (!/^-?(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/.test(decimal) || !/\d/.test(decimal)) {

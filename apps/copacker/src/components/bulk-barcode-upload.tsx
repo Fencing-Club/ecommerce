@@ -184,7 +184,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
         }
       }}
     >
-      <SheetTrigger render={<Button variant="outline" size="sm" />}>
+      <SheetTrigger render={<Button variant="outline" />}>
         <UploadCloud data-icon="inline-start" />
         {t("title")}
       </SheetTrigger>

@@ -95,15 +95,24 @@ export const WrongType = meta.story({
   }
 })
 
-// Dropping several files takes only the first.
+// Dropping several files takes none of them and says to choose one; a single file then goes in.
 export const OneFileOnly = meta.story({
   play: async ({ canvas, args }) => {
-    const first = pdf("invoice-a.pdf")
-    drop(canvas.getByRole("button", { name: /Drop a PDF/ }), [first, pdf("invoice-b.pdf")])
+    const zone = canvas.getByRole("button", { name: /Drop a PDF/ })
+    drop(zone, [pdf("invoice-a.pdf"), pdf("invoice-b.pdf")])
+    await expect(await canvas.findByText("Choose one PDF")).toBeVisible()
+    await expect(zone).toHaveAttribute("data-invalid", "true")
+    await expect(canvas.queryByText("invoice-a.pdf")).toBeNull()
+    await expect(args.onFileChange).not.toHaveBeenCalled()
+    // A wrong file among them doesn't change that.
+    drop(zone, [new File(["id,sku"], "catalog.csv", { type: "text/csv" }), pdf("invoice-a.pdf")])
+    await expect(await canvas.findByText("Choose one PDF")).toBeVisible()
+    await expect(args.onFileChange).not.toHaveBeenCalled()
+    const file = pdf("invoice-a.pdf")
+    drop(zone, [file])
     await expect(await canvas.findByText("invoice-a.pdf")).toBeVisible()
-    await expect(canvas.queryByText("invoice-b.pdf")).toBeNull()
-    await expect(args.onFileChange).toHaveBeenCalledOnce()
-    await expect(args.onFileChange).toHaveBeenCalledWith(first)
+    await expect(canvas.queryByText("Choose one PDF")).toBeNull()
+    await expect(args.onFileChange).toHaveBeenCalledWith(file)
   }
 })
 

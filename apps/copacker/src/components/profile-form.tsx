@@ -33,10 +33,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     schema,
     action: "profile.update",
     defaultValues: profile,
-    keepSaved: true,
-    // The website shows as saved, with its https://.
-    onSuccess: () =>
-      form.resetField("website", { defaultValue: websiteSchema.safeParse(form.getValues("website")).data })
+    // The fields show what was saved: the website with its https://.
+    keepSaved: (saved) => saved
   })
   return (
     <SettingsForm form={form} onSubmit={submit}>

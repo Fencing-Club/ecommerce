@@ -81,6 +81,8 @@ export const CalendarRange = meta.story({
     await userEvent.click(within(picker).getByRole("button", { name: "Thursday, September 3, 2026" }))
     await expect(within(picker).getByLabelText("Start date")).toHaveValue("2026-09-03")
     await expect(within(picker).getByLabelText("End date")).toHaveValue("2026-09-08")
+    // The range's ends are filled in the brand color, like other chosen things.
+    await expect(within(picker).getByRole("button", { name: "Thursday, September 3, 2026" })).toHaveClass("bg-primary")
     await expect(within(picker).getByRole("button", { name: "Saturday, September 5, 2026" })).toHaveAttribute(
       "aria-pressed",
       "false"

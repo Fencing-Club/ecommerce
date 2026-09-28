@@ -104,8 +104,9 @@ export const Edit = meta.story({
     await expect(dialog).toHaveTextContent("From purchase order to sellable stock. Empty means 60.")
     const leadTime = within(dialog).getByRole("spinbutton", { name: "Lead time (days)" })
     await expect(leadTime).toHaveValue(45)
-    // Typed over: emptying a number field brings back its saved value.
-    await userEvent.type(leadTime, "30", { initialSelectionStart: 0, initialSelectionEnd: 2 })
+    await userEvent.clear(leadTime)
+    await expect(leadTime).toHaveValue(null)
+    await userEvent.type(leadTime, "30")
     const website = within(dialog).getByRole("textbox", { name: "Website" })
     await userEvent.clear(website)
     await userEvent.type(website, "lotus-mfg.example.com")
@@ -200,6 +201,35 @@ export const EditJoined = meta.story({
         { action: "supplier.update", data: { id: supplierRecordId, name: "Lotus Manufacturing", leadTimeDays: 21 } }
       ])
     )
+  }
+})
+
+// Emptying the lead time clears the supplier's own, so the workspace's applies.
+export const EditClearLeadTime = meta.story({
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <EditSupplier
+      id={supplierRecordId}
+      name="Lotus Manufacturing"
+      shopifySupplierName={null}
+      leadTimeDays={45}
+      defaultLeadTimeDays={60}
+      contact={contact}
+      joined={false}
+      open
+      onOpenChange={args.onOpenChange ?? (() => undefined)}
+    />
+  ),
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole("dialog", { name: "Edit Lotus Manufacturing" })
+    const leadTime = within(dialog).getByRole("spinbutton", { name: "Lead time (days)" })
+    await userEvent.clear(leadTime)
+    await userEvent.tab()
+    await expect(leadTime).toHaveValue(null)
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(sent).toHaveLength(1))
+    await expect(sent[0]).toMatchObject({ action: "supplier.update", data: { leadTimeDays: null } })
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false))
   }
 })
 

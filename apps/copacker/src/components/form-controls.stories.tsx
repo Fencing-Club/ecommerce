@@ -116,6 +116,24 @@ export const Saved = meta.story({
   }
 })
 
+// Emptied, a saved number or amount stays empty instead of showing the saved value again.
+export const ClearSaved = meta.story({
+  args: { values: { reference: "PO-1045", shipBy: "2026-10-15", pieces: 120, unitPrice: 890 } },
+  play: async ({ canvas, args }) => {
+    const units = canvas.getByLabelText(/Units/)
+    const price = canvas.getByLabelText(/Unit price/)
+    await userEvent.clear(units)
+    await userEvent.clear(price)
+    await userEvent.tab()
+    await expect(units).toHaveValue(null)
+    await expect(price).toHaveValue("")
+    await userEvent.click(canvas.getByRole("button", { name: "Save line" }))
+    await waitFor(() => expect(units).toHaveAccessibleDescription("Enter a number"))
+    await expect(price).toHaveAccessibleDescription("USD Enter a number")
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+  }
+})
+
 // A decimal comma reads as cents; text that isn't an amount stays in view to fix.
 export const MoneyTyping = meta.story({
   play: async ({ canvas }) => {

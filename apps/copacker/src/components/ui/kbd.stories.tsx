@@ -31,6 +31,22 @@ export const Group = meta.story({
   }
 })
 
+// In Urdu the keys still read left to right: Ctrl, then K.
+export const RightToLeft = meta.story({
+  globals: { locale: "ur" },
+  render: () => (
+    <KbdGroup>
+      <Kbd>Ctrl</Kbd>
+      <Kbd>K</Kbd>
+    </KbdGroup>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Ctrl").getBoundingClientRect().left).toBeLessThan(
+      canvas.getByText("K").getBoundingClientRect().left
+    )
+  }
+})
+
 export const InButton = meta.story({
   render: () => (
     <Button variant="outline">

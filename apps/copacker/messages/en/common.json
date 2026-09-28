@@ -133,7 +133,10 @@
     "close": "Close",
     "toggleSidebar": "Toggle Sidebar",
     "sidebar": "Sidebar",
-    "sidebarDescription": "Displays the mobile sidebar."
+    "sidebarDescription": "Displays the mobile sidebar.",
+    "clear": "Clear",
+    "showOptions": "Show options",
+    "remove": "Remove {label}"
   },
   "pages": {
     "error": {

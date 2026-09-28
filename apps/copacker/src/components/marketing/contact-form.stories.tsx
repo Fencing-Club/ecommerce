@@ -129,3 +129,19 @@ export const Offline = meta.story({
     )
   }
 })
+
+// On a phone the topics sit one to a row, so a long word such as Partnerschaften stays whole inside its card.
+export const PhoneTopics = meta.story({
+  globals: { locale: "de", viewport: { value: "mobile1", isRotated: false } },
+  play: async ({ canvas }) => {
+    const topics = canvas.getAllByRole("radio")
+    await expect(topics).toHaveLength(6)
+    for (const topic of topics) {
+      const card = topic.closest("label")
+      if (!card) {
+        throw new Error("A topic isn't in its card")
+      }
+      await expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth)
+    }
+  }
+})

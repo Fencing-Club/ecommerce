@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { events, orderProposals, orderRevisions, orders, shipments, suppliers } from "@/db/schema"
 import { can, type Permissions } from "@/lib/access"
 import { adjustmentKeys, knownName, paymentTermKeys } from "@/lib/order-lines"
@@ -249,7 +250,7 @@ async function OrderPage(args: Args) {
         />
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center gap-1.5 p-3">
@@ -276,24 +277,29 @@ async function OrderPage(args: Args) {
                 </Button>
               )}
             </div>
-            <div className="overflow-x-auto border-t">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-start font-medium">{t("detail.columns.products")}</th>
-                    <th className="w-36 px-2 py-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
-                    <th className="w-24 px-2 py-2 text-end font-medium">{t("detail.columns.quantity")}</th>
-                    {prices && <th className="w-28 px-2 py-2 text-end font-medium">{t("detail.columns.cost")}</th>}
-                    {prices && <th className="w-28 px-2 py-2 text-end font-medium">{t("detail.columns.total")}</th>}
-                    <th className="w-12">
+            {/* Too narrow for its columns, as on a phone, each line stacks: the product with its menu, then the supplier
+                SKU, the quantity at its cost and the total. */}
+            <div className="@container border-t">
+              <Table framed={false} className="@max-2xl:block">
+                <TableHeader className="@max-2xl:hidden">
+                  <TableRow>
+                    <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
+                    <TableHead className="w-36">{t("detail.columns.supplierSku")}</TableHead>
+                    <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
+                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.cost")}</TableHead>}
+                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.total")}</TableHead>}
+                    <TableHead className="w-12 pe-3">
                       <span className="sr-only">{t("detail.columns.actions")}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="@max-2xl:block">
                   {order.data.items.map((item) => (
-                    <tr key={item.id} className="border-t align-top">
-                      <td className="px-3 py-2.5">
+                    <TableRow
+                      key={item.id}
+                      className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
+                    >
+                      <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
                         <p className="leading-snug font-medium">{item.name}</p>
                         {item.variant && item.variant !== "Default Title" && (
                           <Badge variant="secondary" className="mt-1">
@@ -308,11 +314,11 @@ async function OrderPage(args: Args) {
                               {line}
                             </p>
                           ))}
-                      </td>
-                      <td className="px-2 py-2.5">
+                      </TableCell>
+                      <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
                         <SupplierSku item={item} notSet={t("detail.notSet")} />
-                      </td>
-                      <td className="px-2 py-2.5 text-end tabular-nums">
+                      </TableCell>
+                      <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
                         {item.pieces}
                         {item.piecesPerSet > 1 && (
                           <p className="text-xs text-muted-foreground">
@@ -324,16 +330,18 @@ async function OrderPage(args: Args) {
                             {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
                           </p>
                         )}
-                      </td>
+                      </TableCell>
                       {prices && (
-                        <td className="px-2 py-2.5 text-end tabular-nums">{money(item.unitPrice, currency, locale)}</td>
+                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0 @max-2xl:before:content-['×_']">
+                          {money(item.unitPrice, currency, locale)}
+                        </TableCell>
                       )}
                       {prices && (
-                        <td className="px-2 py-2.5 text-end tabular-nums">
+                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
                           {money(item.pieces * item.unitPrice, currency, locale)}
-                        </td>
+                        </TableCell>
                       )}
-                      <td className="py-1.5 pe-2 text-end">
+                      <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">
                         <LineMenu
                           orderId={id}
                           itemId={item.id}
@@ -344,11 +352,11 @@ async function OrderPage(args: Args) {
                           warning={item.suffocationWarning}
                           editable={order.status === "draft" && buyer && editsOrder}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </Card>
 
@@ -690,14 +698,17 @@ const meta = preview.meta({
 // A sent purchase order being packed, as the buyer's owner sees it.
 export const Sent = meta.story({
   ...page("buyer"),
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole("heading", { name: "PO-1042" })).toBeVisible()
+    // The lines are the app's shared table, with its header band, as the forwarder's view of them is.
+    await expect(canvasElement.querySelector("[data-slot=table-header]")).toHaveTextContent("Products")
     await expect(canvas.getByText("With supplier", { selector: "[data-slot=badge], span" })).toBeVisible()
     await expect(canvas.getByText("Oakland warehouse")).toBeVisible()
     await expect(canvas.getByText("160 to ship")).toBeVisible()
     // A line without a supplier SKU says so.
     await expect(canvas.getByText("Not set")).toBeVisible()
-    await expect(canvas.getByRole("columnheader", { name: "Cost" })).toBeVisible()
+    // The header hides where the lines stack, as they do in a narrow window.
+    await expect(canvas.getByRole("columnheader", { name: "Cost", hidden: true })).toBeInTheDocument()
     await expect(canvas.getAllByText("$2,958.00").length).toBeGreaterThan(0)
     await expect(canvas.getByText("Nov 15, 2026")).toBeVisible()
     await expect(canvas.getByText("Please use the recycled polybags.", { selector: "dd" })).toBeVisible()
@@ -832,7 +843,7 @@ export const MemberWithoutPrices = meta.story({
   ...page("buyer", member),
   args: { permissions: member },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("columnheader", { name: "Cost" })).toBeNull()
+    await expect(canvas.queryByRole("columnheader", { name: "Cost", hidden: true })).toBeNull()
     await expect(canvas.queryByText("Cost summary")).toBeNull()
     await expect(canvas.queryByText("Landed costs")).toBeNull()
     await expect(canvas.queryByText(/\$/)).toBeNull()

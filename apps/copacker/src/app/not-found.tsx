@@ -22,7 +22,7 @@ export default async function NotFound() {
     <div className="flex min-h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center border-b px-4">
         <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-          <BrandMark />
+          <BrandMark flat />
         </Link>
       </header>
       <main id="main-content" className="flex flex-1 items-center justify-center p-6">

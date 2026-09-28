@@ -14,8 +14,9 @@ type Options<Schema extends z.ZodType<FieldValues, FieldValues>> = {
   // Shapes validated values into the /api/action payload, for example to add an id or revision.
   toPayload?: (values: z.output<Schema>) => Record<string, unknown>
   onSuccess?: (result: ActionResult) => void
-  // A settings form keeps what was saved; other forms clear for the next entry.
-  keepSaved?: boolean
+  // A settings form keeps what was saved; other forms clear for the next entry. A settings form whose saving changes
+  // what was typed, such as adding a website's https://, passes what to show from the saved values instead.
+  keepSaved?: boolean | ((values: z.output<Schema>) => DefaultValues<z.input<Schema>>)
 }
 
 export function useActionForm<Schema extends z.ZodType<FieldValues, FieldValues>>({
@@ -40,6 +41,8 @@ export function useActionForm<Schema extends z.ZodType<FieldValues, FieldValues>
       const result = await run({ action, data: toPayload ? toPayload(values) : values }).unwrap()
       if (result.redirect) {
         router.push(result.redirect)
+      } else if (typeof keepSaved === "function") {
+        form.reset(keepSaved(values))
       } else {
         form.reset(keepSaved ? form.getValues() : defaultValues)
       }

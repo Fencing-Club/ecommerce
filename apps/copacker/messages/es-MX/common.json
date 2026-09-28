@@ -133,7 +133,10 @@
     "close": "Cerrar",
     "toggleSidebar": "Mostrar u ocultar barra lateral",
     "sidebar": "Barra lateral",
-    "sidebarDescription": "Muestra la barra lateral en celulares."
+    "sidebarDescription": "Muestra la barra lateral en celulares.",
+    "clear": "Borrar",
+    "showOptions": "Mostrar opciones",
+    "remove": "Quitar {label}"
   },
   "pages": {
     "error": {

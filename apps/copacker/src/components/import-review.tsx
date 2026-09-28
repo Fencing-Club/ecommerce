@@ -5,6 +5,7 @@ import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { Fragment, useState } from "react"
+import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
@@ -19,7 +20,7 @@ import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Field, FieldGroup } from "./ui/field"
+import { Field, FieldError, FieldGroup } from "./ui/field"
 import { Input } from "./ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
@@ -106,6 +107,9 @@ function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
     event.preventDefault()
   }
 }
+
+// A cell saving needs that's still empty.
+const blank = (value: string | number | null) => value === null || value === ""
 
 // A typed amount in minor units, or null while it isn't a whole nonnegative amount with at most two decimals.
 function minorUnits(value: string | null) {
@@ -236,6 +240,7 @@ export function ImportReview({
 }) {
   const t = useTranslations("orders")
   const tr = useTranslations("orders.review")
+  const validation = useTranslations("validation")
   const errorMessage = useErrorMessage()
   const router = useRouter()
   const [proposal, setProposal] = useState(initialProposal)
@@ -244,6 +249,8 @@ export function ImportReview({
   const [supplierId, setSupplierId] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [error, setError] = useState<string | null>(null)
+  // Once saving has been tried, what it still needs is marked, and clears as it's filled in.
+  const [checking, setChecking] = useState(false)
   const [searchRow, setSearchRow] = useState<number | null>(null)
   const [query, setQuery] = useState("")
   const [search, catalog] = reviewApi.useLazyImportCatalogQuery()
@@ -261,6 +268,14 @@ export function ImportReview({
   // The search results for what's typed, with the next catalog page to look through.
   const results = catalog.originalArgs?.q === query ? catalog.data : undefined
   const nextCursor = results?.nextCursor ?? null
+  // The details saving still needs.
+  const missing = {
+    supplier: !supplierId,
+    reference: !proposal.reference?.trim(),
+    dueDate: !dueDate,
+    currency: !currency
+  }
+  const flagged = (value: string | number | null) => checking && blank(value)
 
   function edit(change: (draft: ImportProposal) => void) {
     setProposal((current) => {
@@ -335,13 +350,19 @@ export function ImportReview({
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    if (!supplierId) {
-      setError(tr("chooseSupplier"))
-      return
-    }
     const unnamed = proposal.items.findIndex((item) => !item.description.trim())
-    if (unnamed !== -1) {
-      setError(tr("chooseProductForLine", { line: unnamed + 1 }))
+    const incomplete =
+      Object.values(missing).some(Boolean) ||
+      proposal.items.some((item) => blank(item.pieces) || blank(item.piecesPerSet) || blank(item.pricePerPiece)) ||
+      proposal.adjustments.some((charge) => blank(charge.description.trim()) || blank(charge.amount))
+    if (incomplete || unnamed !== -1) {
+      // The form checks itself, as the app's other forms do, then focuses the first field to fill in.
+      const form = event.currentTarget
+      flushSync(() => {
+        setChecking(true)
+        setError(unnamed === -1 ? null : tr("chooseProductForLine", { line: unnamed + 1 }))
+      })
+      form.querySelector<HTMLElement>("[aria-invalid=true]")?.focus()
       return
     }
     try {
@@ -392,7 +413,7 @@ export function ImportReview({
       <FormError message={error ?? undefined} />
       {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
       {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <form id={formId} className="@container" onSubmit={submit} onKeyDown={keepEnterFromSubmitting}>
+      <form id={formId} className="@container" noValidate onSubmit={submit} onKeyDown={keepEnterFromSubmitting}>
         {/* One column, or the lines beside the details and cost summary once there's room, as in the editor. */}
         <fieldset
           disabled={busy}
@@ -410,16 +431,19 @@ export function ImportReview({
                   label={tr("supplier")}
                   required
                   placeholder={tr("chooseSupplier")}
+                  error={checking && missing.supplier ? tr("chooseSupplier") : undefined}
                   options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
                 />
-                <Field>
+                <Field data-invalid={checking && missing.reference}>
                   <FormLabel htmlFor="import-reference" label={tr("reference")} required />
                   <Input
                     id="import-reference"
                     required
                     maxLength={80}
+                    aria-invalid={checking && missing.reference}
+                    aria-describedby={checking && missing.reference ? "import-reference-error" : undefined}
                     value={proposal.reference ?? ""}
                     onChange={(e) => {
                       const value = e.target.value
@@ -428,21 +452,30 @@ export function ImportReview({
                       })
                     }}
                   />
+                  <FieldError id="import-reference-error">
+                    {checking && missing.reference ? validation("required") : undefined}
+                  </FieldError>
                 </Field>
-                <Field>
+                <Field data-invalid={checking && missing.dueDate}>
                   <FormLabel htmlFor="import-due-date" label={t("detail.requiredBy")} required />
                   <DateInput
                     id="import-due-date"
                     required
+                    aria-invalid={checking && missing.dueDate}
+                    aria-describedby={checking && missing.dueDate ? "import-due-date-error" : undefined}
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                   />
+                  <FieldError id="import-due-date-error">
+                    {checking && missing.dueDate ? validation("required") : undefined}
+                  </FieldError>
                 </Field>
                 <SelectField
                   id="import-currency"
                   label={t("detail.currency")}
                   required
                   placeholder={tr("chooseCurrency")}
+                  error={checking && missing.currency ? tr("chooseCurrency") : undefined}
                   options={currencies.map((code) => ({ value: code, label: t(`currencies.${code}`) }))}
                   value={currency ?? ""}
                   onChange={(e) => {
@@ -463,7 +496,7 @@ export function ImportReview({
               <CardTitle>{tr("lines")}</CardTitle>
             </CardHeader>
             {/* An editing grid: on a phone it scrolls sideways rather than squeezing the inputs. */}
-            <Table framed={false} className={edgeTable}>
+            <Table framed={false} className={cn(edgeTable, "min-w-3xl")}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("columns.product")}</TableHead>
@@ -522,6 +555,7 @@ export function ImportReview({
                           <Input
                             aria-label={tr("unitsOnLine", { line })}
                             required
+                            aria-invalid={flagged(item.pieces)}
                             type="number"
                             inputMode="numeric"
                             min="1"
@@ -540,6 +574,7 @@ export function ImportReview({
                           <Input
                             aria-label={tr("unitsPerPackOnLine", { line })}
                             required
+                            aria-invalid={flagged(item.piecesPerSet)}
                             type="number"
                             inputMode="numeric"
                             min="1"
@@ -558,6 +593,7 @@ export function ImportReview({
                           <Input
                             aria-label={tr("pricePerUnitOnLine", { line })}
                             required
+                            aria-invalid={flagged(item.pricePerPiece)}
                             inputMode="decimal"
                             autoComplete="off"
                             className="text-end tabular-nums"
@@ -757,6 +793,7 @@ export function ImportReview({
                         aria-label={tr("charge", { number: index + 1 })}
                         placeholder={tr("description")}
                         required
+                        aria-invalid={flagged(charge.description.trim())}
                         maxLength={255}
                         value={charge.description}
                         onChange={(e) => {
@@ -773,6 +810,7 @@ export function ImportReview({
                         aria-label={tr("chargeAmount", { number: index + 1 })}
                         placeholder="0.00"
                         required
+                        aria-invalid={flagged(charge.amount)}
                         inputMode="decimal"
                         autoComplete="off"
                         className="text-end tabular-nums"

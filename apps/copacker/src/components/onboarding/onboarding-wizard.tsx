@@ -270,14 +270,21 @@ export function OnboardingWizard({
                 {step === "address" && <AddressStepFields kind={kind} />}
               </div>
               <FormError message={error} />
-              <div className="flex items-center gap-2">
+              {/* On a phone, Back is only its arrow so the last step's three buttons share one row; a longer
+                  translation wraps them instead of running off the screen. */}
+              <div className="flex flex-wrap items-center gap-2">
                 {index > 0 && (
-                  <Button type="button" variant="ghost" className="h-10" onClick={() => go(index - 1)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 max-sm:w-10 max-sm:px-0"
+                    onClick={() => go(index - 1)}
+                  >
                     <ArrowLeft data-icon="inline-start" className="rtl:rotate-180" />
-                    {t("wizard.back")}
+                    <span className="max-sm:sr-only">{t("wizard.back")}</span>
                   </Button>
                 )}
-                <div className="ms-auto flex items-center gap-2">
+                <div className="ms-auto flex flex-wrap items-center justify-end gap-2">
                   {step === "address" && last && (
                     <SubmitButton
                       type="button"

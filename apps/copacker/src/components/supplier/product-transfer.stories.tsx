@@ -173,6 +173,25 @@ export const CloseStartsOver = meta.story({
     dialog = await openImport(canvas)
     await expect(dialog.queryByText("New variants")).toBeNull()
     await expect(dialog.getByRole("button", { name: "Preview" })).toBeDisabled()
+
+    // So it does after Cancel.
+    await userEvent.upload(dialog.getByLabelText("Product file"), spreadsheet)
+    await userEvent.click(dialog.getByRole("button", { name: "Preview" }))
+    await expect(await dialog.findByText("New variants")).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    dialog = await openImport(canvas)
+    await expect(dialog.queryByText("New variants")).toBeNull()
+    await expect(dialog.getByRole("button", { name: "Preview" })).toBeDisabled()
+
+    // And after an import.
+    await userEvent.upload(dialog.getByLabelText("Product file"), spreadsheet)
+    await userEvent.click(dialog.getByRole("button", { name: "Preview" }))
+    await userEvent.click(await dialog.findByRole("button", { name: "Import 8 variants" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    dialog = await openImport(canvas)
+    await expect(dialog.queryByText("New variants")).toBeNull()
+    await expect(dialog.getByRole("button", { name: "Preview" })).toBeDisabled()
   }
 })
 

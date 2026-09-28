@@ -110,7 +110,10 @@ export default async function OrdersPage({
             label={t("stats.withSuppliers")}
             value={rows.filter((r) => r.order.status === "submitted").length}
           />
-          <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
+          {/* Only buyers have drafts. */}
+          {isBuyer && (
+            <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
+          )}
         </StatGrid>
       )}
 

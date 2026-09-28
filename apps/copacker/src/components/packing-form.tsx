@@ -36,11 +36,14 @@ import { Upload } from "./upload"
 
 type Values = z.input<typeof packingSchema>
 
-// An empty number field. It renders blank, fails validation with "Enter a number", and is dropped from drafts.
+// An empty number field, which is null once someone empties it. It renders blank, fails validation with "Enter a
+// number", and is dropped from drafts. The form has no other nulls.
 const blank = Number.NaN
 const withoutBlanks = (values: Values): Values =>
   JSON.parse(
-    JSON.stringify(values, (_, value) => (typeof value === "number" && Number.isNaN(value) ? undefined : value))
+    JSON.stringify(values, (_, value) =>
+      value === null || (typeof value === "number" && Number.isNaN(value)) ? undefined : value
+    )
   )
 
 // A carton's measurements, each labeled under orders.packing.dimensions.

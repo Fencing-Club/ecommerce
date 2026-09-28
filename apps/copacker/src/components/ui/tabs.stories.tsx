@@ -73,13 +73,18 @@ export const Line = meta.story({
 export const Vertical = meta.story({
   args: { orientation: "vertical" },
   play: async ({ canvas }) => {
-    // The list sits beside the panel. (Tabs uses its orientation for the layout only and doesn't pass it on, so the
-    // arrow keys stay left and right.)
+    // The list sits beside the panel, and up and down move between its tabs.
     const list = canvas.getByRole("tablist")
     await expect(list.closest("[data-slot=tabs]")).toHaveAttribute("data-orientation", "vertical")
+    await expect(list).toHaveAttribute("aria-orientation", "vertical")
     await expect(canvas.getByRole("tabpanel").getBoundingClientRect().left).toBeGreaterThan(
       list.getBoundingClientRect().right
     )
+    canvas.getByRole("tab", { name: "Open" }).focus()
+    await userEvent.keyboard("{ArrowDown}")
+    await expect(canvas.getByRole("tab", { name: "Shipped" })).toHaveFocus()
+    await userEvent.keyboard("{ArrowUp}")
+    await expect(canvas.getByRole("tab", { name: "Open" })).toHaveFocus()
     await userEvent.click(canvas.getByRole("tab", { name: "Shipped" }))
     await expect(canvas.getByRole("tab", { name: "Shipped" })).toHaveAttribute("aria-selected", "true")
   }

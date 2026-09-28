@@ -137,9 +137,11 @@ export const FirstSync = meta.story({
       ordersApi(() => ({ orders: [], total: 0 }))
     )
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText("Syncing your orders")).toBeVisible()
     await expect(canvas.getByText("40% copied")).toBeVisible()
+    // Its icon sits on the muted tile every empty state has.
+    await expect(canvasElement.querySelector("[data-slot=empty-icon]")).toHaveAttribute("data-variant", "icon")
     await expect(canvas.getByText("Syncing… 40%")).toBeVisible()
     // One source has nothing to filter by.
     await expect(canvas.queryByRole("combobox", { name: "Source" })).toBeNull()

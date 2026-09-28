@@ -24,13 +24,22 @@ export function Stage({ className, children }: { className?: string; children: R
   )
 }
 
-// Copacker's box and name, as the app header shows them.
-export function BrandMark({ className }: { className?: string }) {
+// Copacker's box and name, the same in the app header and on the pages around it. `flat` drops the box's glow where it
+// sits in a header with a border under it, which the glow would spill over.
+export function BrandMark({ className, flat }: { className?: string; flat?: boolean }) {
   return (
-    <span className={cn("flex items-center gap-2.5 text-[0.9375rem] font-semibold tracking-tight", className)}>
+    <span
+      className={cn(
+        "flex items-center gap-2.5 text-[0.9375rem] font-semibold tracking-tight whitespace-nowrap",
+        className
+      )}
+    >
       <span
         aria-hidden
-        className="flex size-8 items-center justify-center rounded-[0.625rem] bg-primary text-primary-foreground shadow-lg shadow-orange-500/25"
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-[0.625rem] bg-primary text-primary-foreground",
+          !flat && "shadow-lg shadow-orange-500/25"
+        )}
       >
         <Box className="size-4" />
       </span>

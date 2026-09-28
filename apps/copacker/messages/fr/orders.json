@@ -304,8 +304,6 @@
     "search": "Rechercher des produits",
     "product": "Produit",
     "available": "Disponible",
-    "selectAllOf": "Tout sélectionner pour {product}",
-    "select": "Sélectionner {product} {variant}",
     "alreadyAdded": "Déjà sur le bon de commande",
     "noMatches": "Aucun produit ne correspond.",
     "loading": "Chargement…",

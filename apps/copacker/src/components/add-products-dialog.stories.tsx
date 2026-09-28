@@ -46,8 +46,8 @@ export const AddProducts = meta.story({
 
     const add = dialog.getByRole("button", { name: "Add to purchase order" })
     await expect(add).toBeDisabled()
-    await userEvent.click(dialog.getByRole("checkbox", { name: /^Select Waffle towel Sand/ }))
-    await userEvent.click(dialog.getByRole("checkbox", { name: /^Select all of Linen napkin set/ }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Waffle towel Sand" }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Linen napkin set" }))
     await expect(dialog.getByText("2 variants selected")).toBeVisible()
     await userEvent.click(add)
     await waitFor(() => expect(args.onAdd).toHaveBeenCalledWith([sand, napkins]))
@@ -79,18 +79,25 @@ export const AlreadyAdded = meta.story({
   args: { added: new Set([sand.id]) },
   play: async ({ canvas }) => {
     const dialog = await open(canvas)
-    const already = await dialog.findByRole("checkbox", { name: /^Select Waffle towel Sand/ })
+    const already = await dialog.findByRole("checkbox", { name: "Waffle towel Sand" })
     await expect(already).toBeChecked()
     await expect(already).toHaveAttribute("aria-disabled", "true")
     await expect(dialog.getByText("Already on the purchase order")).toBeVisible()
-    await userEvent.click(dialog.getByRole("checkbox", { name: /^Select all of Waffle towel/ }))
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Waffle towel" }))
     await expect(dialog.getByText("1 variant selected")).toBeVisible()
-    await expect(dialog.getByRole("checkbox", { name: /^Select Waffle towel Slate/ })).toBeChecked()
-    // Closing forgets the choice.
+    await expect(dialog.getByRole("checkbox", { name: "Waffle towel Slate" })).toBeChecked()
+    // Closing forgets the choice, whether by Escape or Cancel.
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
     const again = await open(canvas)
     await expect(await again.findByText("0 variants selected")).toBeVisible()
+    await userEvent.click(await again.findByRole("checkbox", { name: "Waffle towel Slate" }))
+    await expect(again.getByText("1 variant selected")).toBeVisible()
+    await userEvent.click(again.getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    const reopened = await open(canvas)
+    await expect(await reopened.findByText("0 variants selected")).toBeVisible()
+    await expect(await reopened.findByRole("checkbox", { name: "Waffle towel Slate" })).not.toBeChecked()
   }
 })
 
@@ -134,7 +141,7 @@ export const AddFails = meta.story({
   },
   play: async ({ args, canvas }) => {
     const dialog = await open(canvas)
-    await userEvent.click(await dialog.findByRole("checkbox", { name: /^Select Waffle towel Slate/ }))
+    await userEvent.click(await dialog.findByRole("checkbox", { name: "Waffle towel Slate" }))
     await userEvent.click(dialog.getByRole("button", { name: "Add to purchase order" }))
     await expect(await dialog.findByText("Couldn’t add those products. Try again.")).toBeVisible()
     await expect(args.onAdd).not.toHaveBeenCalled()

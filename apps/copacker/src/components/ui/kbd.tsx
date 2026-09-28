@@ -13,8 +13,9 @@ function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
   )
 }
 
+// A shortcut reads left to right in every language, so Urdu shows Ctrl K rather than K Ctrl.
 function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return <kbd data-slot="kbd-group" className={cn("inline-flex items-center gap-1", className)} {...props} />
+  return <kbd data-slot="kbd-group" dir="ltr" className={cn("inline-flex items-center gap-1", className)} {...props} />
 }
 
 export { Kbd, KbdGroup }

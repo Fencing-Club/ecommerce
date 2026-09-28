@@ -52,11 +52,11 @@ function typeName(accept: Accept) {
 // Why a dropped, pasted or chosen file was turned down, in the zone's words.
 function rejection(
   t: ReturnType<typeof useTranslations<"common.fileDropzone">>,
-  rejected: FileRejection | undefined,
+  rejected: FileRejection,
   type: string,
   size: string
 ) {
-  const codes = new Set(rejected?.errors.map((error) => error.code))
+  const codes = new Set(rejected.errors.map((error) => error.code))
   if (codes.has(ErrorCode.FileInvalidType)) {
     return t("wrongType", { type })
   }
@@ -128,14 +128,20 @@ export function FileDropzone({
     noKeyboard: true,
     noDrag: Boolean(file),
     noPaste: Boolean(file),
-    onDropAccepted: ([next]) => {
-      if (next) {
+    // Several files at once take none, rather than whichever came first: react-dropzone would keep the first and turn
+    // down the rest.
+    onDrop: (accepted, rejected) => {
+      const [next] = accepted
+      if (accepted.length + rejected.length > 1) {
+        setProblem(t("oneFile", { type }))
+      } else if (next) {
         setProblem("")
         refocus.current = "row"
         onFileChange(next)
+      } else if (rejected[0]) {
+        setProblem(rejection(t, rejected[0], type, largest))
       }
-    },
-    onDropRejected: ([rejected]) => setProblem(rejection(t, rejected, type, largest))
+    }
   })
   const zoneRef = useMergedRef(zone, ref, rootRef)
   const rowRef = useMergedRef(row, rootRef)

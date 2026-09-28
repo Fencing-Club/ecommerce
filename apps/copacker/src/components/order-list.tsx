@@ -7,6 +7,7 @@ import { Status } from "@/components/common"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { contacts, type orders } from "@/db/schema"
+import { cn } from "@/lib/utils"
 import { requirementTranslator } from "@/server/requirements"
 import { LinkRow } from "./link-row"
 import { TabLinks } from "./tab-links"
@@ -50,6 +51,18 @@ function dayFormat(locale: string, timeZone: string | undefined) {
     })
 }
 
+// On a phone each row stacks to its reference and status, with the supplier under the reference and the value below;
+// wider tables give the supplier its own column, then add the destination and the day it was made.
+const columns = {
+  row: "@max-md:flex @max-md:flex-wrap @max-md:items-start @max-md:gap-x-3 @max-md:gap-y-1 @max-md:px-4 @max-md:py-3",
+  order: "@max-md:min-w-0 @max-md:flex-1 @max-md:p-0",
+  supplier: "@max-md:hidden",
+  supplierInline: "@md:hidden",
+  wide: "hidden @2xl:table-cell",
+  status: "@max-md:p-0",
+  value: "text-end tabular-nums @max-md:basis-full @max-md:p-0 @max-md:text-start"
+}
+
 // The purchase order list: status tabs, then a row per PO that opens it from anywhere on the row.
 export async function OrderList({
   rows,
@@ -84,43 +97,47 @@ export async function OrderList({
         tabs={shownTabs.map((tab) => ({
           label: t(`tabs.${tab.key}.label`),
           href: tab.status ? `/orders?status=${tab.status}` : "/orders",
-          current: tab === current
+          current: tab === current,
+          count: tab.status ? rows.filter((row) => row.order.status === tab.status).length : rows.length
         }))}
       />
       <div className="@container">
-        <Table>
-          <TableHeader>
+        <Table className="@max-md:block">
+          <TableHeader className="@max-md:hidden">
             <TableRow>
               <TableHead>{t("columns.purchaseOrder")}</TableHead>
               <TableHead>{t("columns.supplier")}</TableHead>
-              <TableHead className="hidden @2xl:table-cell">{t("columns.destination")}</TableHead>
-              <TableHead className="hidden @2xl:table-cell">{t("columns.created")}</TableHead>
+              <TableHead className={columns.wide}>{t("columns.destination")}</TableHead>
+              <TableHead className={columns.wide}>{t("columns.created")}</TableHead>
               <TableHead>{t("columns.status")}</TableHead>
               {showValue && <TableHead className="text-end">{t("columns.value")}</TableHead>}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="@max-md:block">
             {shown.length ? (
               shown.map(({ order, supplier }) => {
                 const lines = order.data.items.length
                 return (
-                  <LinkRow key={order.id} href={`/orders/${order.id}`}>
-                    <TableCell>
+                  <LinkRow key={order.id} href={`/orders/${order.id}`} className={columns.row}>
+                    <TableCell className={columns.order}>
                       <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
                         {order.data.reference}
                       </Link>
-                      <p className="text-xs text-muted-foreground">{t("products", { count: lines })}</p>
+                      <p className="text-xs whitespace-normal text-muted-foreground">
+                        <span className={columns.supplierInline}>{supplier.name}, </span>
+                        {t("products", { count: lines })}
+                      </p>
                     </TableCell>
-                    <TableCell>{supplier.name}</TableCell>
-                    <TableCell className="hidden @2xl:table-cell">{destination(order.data)}</TableCell>
-                    <TableCell className="hidden text-muted-foreground tabular-nums @2xl:table-cell">
+                    <TableCell className={columns.supplier}>{supplier.name}</TableCell>
+                    <TableCell className={columns.wide}>{destination(order.data)}</TableCell>
+                    <TableCell className={cn(columns.wide, "text-muted-foreground tabular-nums")}>
                       <time dateTime={order.createdAt.toISOString()}>{day(order.createdAt)}</time>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className={columns.status}>
                       <Status status={order.status} />
                     </TableCell>
                     {showValue && (
-                      <TableCell className="text-end tabular-nums">
+                      <TableCell className={columns.value}>
                         {money(orderTotal(order.data), order.data.currency, locale)}
                       </TableCell>
                     )}
@@ -128,8 +145,11 @@ export async function OrderList({
                 )
               })
             ) : (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={showValue ? 6 : 5} className="h-24 text-center text-muted-foreground">
+              <TableRow className="hover:bg-transparent @max-md:block">
+                <TableCell
+                  colSpan={showValue ? 6 : 5}
+                  className="h-24 text-center text-muted-foreground @max-md:flex @max-md:items-center @max-md:justify-center"
+                >
                   {t(`tabs.${current.key}.empty`)}
                 </TableCell>
               </TableRow>

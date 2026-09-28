@@ -124,8 +124,10 @@ export function ImportIntake() {
             <FormError message={listError} />
           </div>
         )}
-        {imports.isLoading && <p className="p-4 text-sm text-muted-foreground">{t("loading")}</p>}
-        {imports.isSuccess && !items.length && <p className="p-4 text-sm text-muted-foreground">{t("empty")}</p>}
+        {imports.isLoading && <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("loading")}</p>}
+        {imports.isSuccess && !items.length && (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>
+        )}
         {items.length > 0 && (
           <Table framed={false} className={edgeTable}>
             <TableHeader>

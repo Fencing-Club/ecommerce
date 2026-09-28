@@ -304,8 +304,6 @@
     "search": "प्रोडक्ट खोजें",
     "product": "प्रोडक्ट",
     "available": "उपलब्ध",
-    "selectAllOf": "{product} के सभी चुनें",
-    "select": "{product} {variant} चुनें",
     "alreadyAdded": "पहले से खरीद ऑर्डर में है",
     "noMatches": "कोई प्रोडक्ट मेल नहीं खाता।",
     "loading": "लोड हो रहा है…",

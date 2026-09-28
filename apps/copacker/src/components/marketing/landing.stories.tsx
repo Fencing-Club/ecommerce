@@ -23,18 +23,10 @@ const meta = preview.meta({
   }
 })
 
-// The page's own main, rather than the one in the product shot's picture of the app.
-function page(root: HTMLElement) {
-  const main = root.querySelector<HTMLElement>("#main-content")
-  if (!main) {
-    throw new Error("The page has its main")
-  }
-  return within(main)
-}
-
 export const Default = meta.story({
   play: async ({ canvas, canvasElement }) => {
-    const main = page(canvasElement)
+    // One main landmark: the product shot's picture of the app has none of its own.
+    const main = within(canvas.getByRole("main"))
     await expect(main.getByRole("heading", { level: 1 })).toHaveTextContent("Restocking, handled.")
     await expect(main.getByText(/^Copacker forecasts your inventory/)).toBeVisible()
     // Every call to join links to the waitlist at the foot of the page.
@@ -98,8 +90,8 @@ export const Waitlist = meta.story({
 })
 
 export const Film = meta.story({
-  play: async ({ canvasElement }) => {
-    await userEvent.click(page(canvasElement).getByRole("button", { name: /Watch the video/ }))
+  play: async ({ canvas }) => {
+    await userEvent.click(within(canvas.getByRole("main")).getByRole("button", { name: /Watch the video/ }))
     const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 5000 })
     await waitFor(() => expect(dialog).toBeVisible())
     await pressEscapeIn(dialog)
@@ -110,9 +102,9 @@ export const Film = meta.story({
 // A phone: the section links move to the footer, and the page reads top to bottom.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas, canvasElement }) => {
+  play: async ({ canvas }) => {
     await expect(canvas.getByLabelText("Main")).not.toBeVisible()
-    await expect(page(canvasElement).getByRole("heading", { level: 1 })).toBeVisible()
+    await expect(within(canvas.getByRole("main")).getByRole("heading", { level: 1 })).toBeVisible()
     await expect(canvas.getByRole("navigation", { name: "Product" })).toBeInTheDocument()
   }
 })

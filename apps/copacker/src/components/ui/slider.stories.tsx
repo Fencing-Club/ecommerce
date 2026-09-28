@@ -62,6 +62,19 @@ export const Range = meta.story({
   }
 })
 
+// A single number, rather than a list of one, has one thumb.
+export const SingleNumber = meta.story({
+  args: { defaultValue: 40 },
+  play: async ({ canvas, canvasElement, args }) => {
+    await expect(canvasElement.querySelectorAll("[data-slot=slider-thumb]")).toHaveLength(1)
+    const slider = canvas.getByRole("slider", { name: "Monthly orders" })
+    await expect(slider).toHaveAttribute("aria-valuenow", "40")
+    slider.focus()
+    await userEvent.keyboard("{ArrowRight}")
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(41, expect.anything())
+  }
+})
+
 export const WithoutValue = meta.story({
   args: { defaultValue: undefined },
   play: async ({ canvasElement }) => {

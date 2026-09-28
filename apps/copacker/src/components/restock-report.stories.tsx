@@ -235,9 +235,11 @@ export const NothingToReorder = meta.story({
       )
     )
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText("Nothing to reorder", undefined, loaded)).toBeVisible()
     await expect(canvas.getByText("0 to reorder, 1 has enough stock")).toBeVisible()
+    // Its icon sits on the muted tile every empty state has.
+    await expect(canvasElement.querySelector("[data-slot=empty-icon]")).toHaveAttribute("data-variant", "icon")
   }
 })
 

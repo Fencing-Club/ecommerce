@@ -67,7 +67,7 @@ const roles = [
 export function RoleFields() {
   const t = useTranslations("onboarding.roles")
   const {
-    field: { value, onChange, ref },
+    field: { value, onChange, onBlur, ref },
     fieldState
   } = useController({ name: "kind" })
   return (
@@ -76,7 +76,17 @@ export function RoleFields() {
       <RadioGroup
         ref={ref}
         value={value}
-        onValueChange={onChange}
+        // Picking one counts as touching the field, as closing a select's menu does, so an error clears at once.
+        onValueChange={(next) => {
+          onChange(next)
+          onBlur()
+        }}
+        // Leaving the cards counts too; moving between them with the arrow keys doesn't.
+        onBlur={(event) => {
+          if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) {
+            onBlur()
+          }
+        }}
         // Enter continues, as it does from a browser's own radio buttons.
         onKeyDown={(event) => {
           if (event.key === "Enter") {

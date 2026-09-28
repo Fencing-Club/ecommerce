@@ -32,7 +32,9 @@ export const Default = meta.story({
     const orders = card(canvas, "Units ordered")
     await expect(orders.getByText("5,280")).toBeVisible()
     await expect(orders.getByText("+5%")).toBeVisible()
-    await expect(orders.getByText("vs previous period")).toBeVisible()
+    // The buyer Overview's pill: tinted, with the comparison beside it when the tile has room and always read out.
+    await expect(orders.getByText("+5%")).toHaveClass("bg-success/10")
+    await expect(orders.getByText("vs previous period")).toBeInTheDocument()
     await expect(card(canvas, "Order value").getByText("$18,420.00")).toBeVisible()
     await expect(card(canvas, "Order value").getByText("-12%")).toHaveClass("text-destructive")
     await expect(card(canvas, "Units shipped").getByText("No earlier orders to compare")).toBeVisible()

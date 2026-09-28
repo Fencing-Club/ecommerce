@@ -2,7 +2,7 @@
 
 import { Plus, X } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { type RefObject, useState } from "react"
+import { type RefObject, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -37,6 +37,18 @@ export function TagPicker({
     }
     onChange(next)
     setDraft("")
+  }
+  const list = useRef<HTMLDivElement>(null)
+  // Leaving the picker adds what's typed. Moving from the text box to a suggestion doesn't: the typing narrowed the
+  // suggestions, and adding it first would move them under the pointer, so the click would land on another.
+  const leave = (event: React.FocusEvent) => {
+    const next = event.relatedTarget
+    if (next instanceof Node && (next === input.current || list.current?.contains(next))) {
+      return
+    }
+    if (draft.trim()) {
+      add(draft)
+    }
   }
   const matches = suggestions
     .filter((tag) => !value.some((chosen) => same(chosen, tag)))
@@ -86,13 +98,24 @@ export function TagPicker({
               onChange(value.slice(0, -1))
             }
           }}
-          onBlur={() => draft.trim() && add(draft)}
+          onBlur={leave}
         />
       </div>
       {matches.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div ref={list} className="flex flex-wrap gap-1" onBlur={leave}>
           {matches.map((tag) => (
-            <Button key={tag} type="button" variant="outline" size="xs" onClick={() => add(tag)}>
+            <Button
+              key={tag}
+              type="button"
+              variant="outline"
+              size="xs"
+              // Keeps focus in the text box, for the next tag, and takes it back there after Enter or Space.
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                add(tag)
+                input.current?.focus()
+              }}
+            >
               <Plus data-icon="inline-start" />
               {tag}
             </Button>

@@ -121,7 +121,8 @@ export function Status({ status }: { status: string }) {
 
 // The page title with its actions on the right. A record's page passes its parents, which lead the title on the same
 // line (Customers › Fencing Club), and a status badge after it. When the actions don't fit beside the title, they wrap
-// below it. It must be the page's first element, so the sidebar's collapse button sits beside it.
+// below it, across the page's full width. It must be the page's first element, so the sidebar's collapse button sits
+// beside the title. The title's line is 36px tall with or without actions beside it, so titles line up across pages.
 export function PageHeader({
   title,
   parents,
@@ -138,9 +139,9 @@ export function PageHeader({
 }) {
   const t = useTranslations("common")
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+    <div data-slot="page-header" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {parents?.length ? (
             <nav aria-label={t("breadcrumb")}>
               <ol className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -186,7 +187,7 @@ export function EmptyState({
   return (
     <Empty className="gap-4 py-10">
       <EmptyHeader className="gap-1">
-        <EmptyMedia className="text-muted-foreground">
+        <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
           {media ?? <PackageOpen aria-hidden className="size-5" />}
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>

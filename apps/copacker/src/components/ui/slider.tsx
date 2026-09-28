@@ -3,19 +3,16 @@
 import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 import { cn } from "@/lib/utils"
 
-// A thumb for each value, or a range's two when there's no value yet.
-function thumbs(value: unknown, defaultValue: unknown, min: number, max: number): readonly unknown[] {
-  if (Array.isArray(value)) {
-    return value
+// A thumb for each value: one for a single number, or a range's two when there's no value yet.
+function thumbCount(value: SliderPrimitive.Root.Props["value"]) {
+  if (typeof value === "number") {
+    return 1
   }
-  if (Array.isArray(defaultValue)) {
-    return defaultValue
-  }
-  return [min, max]
+  return value?.length ?? 2
 }
 
 function Slider({ className, defaultValue, value, min = 0, max = 100, ...props }: SliderPrimitive.Root.Props) {
-  const _values = thumbs(value, defaultValue, min, max)
+  const thumbs = thumbCount(value ?? defaultValue)
 
   return (
     <SliderPrimitive.Root
@@ -39,7 +36,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, ...props }
           />
         </SliderPrimitive.Track>
         {/* Keyboard focus lands on the range input inside the thumb, so the thumb rings when it holds focus. */}
-        {Array.from({ length: _values.length }, (_, index) => (
+        {Array.from({ length: thumbs }, (_, index) => (
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}

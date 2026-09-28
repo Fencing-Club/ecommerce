@@ -544,7 +544,7 @@ export function grossProfit(
   for (const item of current) {
     byCurrency.set(item.currency!, (byCurrency.get(item.currency!) ?? 0) + item.revenueMinor)
   }
-  const currency = [...byCurrency].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  const currency = [...byCurrency].toSorted((a, b) => b[1] - a[1]).at(0)?.[0] ?? null
   let revenue = 0,
     costed = 0,
     cost = 0,

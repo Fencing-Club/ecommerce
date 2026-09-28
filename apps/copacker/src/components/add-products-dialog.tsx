@@ -2,10 +2,18 @@
 
 import { Search } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import type { CatalogProduct } from "@/lib/api"
@@ -38,6 +46,9 @@ export function AddProductsDialog({
 }) {
   const t = useTranslations("orders.addProducts")
   const errorMessage = useErrorMessage()
+  // Each checkbox is named by the text beside it, a variation's with its product's: "Waffle towel Sand". The wrapping
+  // label would otherwise name it with everything in the row.
+  const id = useId()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [products, setProducts] = useState<Product[]>([])
@@ -176,6 +187,7 @@ export function AddProductsDialog({
                 const open = choosable.get(product.productId) ?? []
                 const allOn = open.length > 0 && open.every((variant) => selected.has(variant.variantId))
                 const single = product.variants.length === 1 && !product.variants[0]!.title
+                const titleId = `${id}-${product.productId}`
                 return [
                   <tr key={product.productId} className="border-t">
                     <td className="px-4 py-2" colSpan={single ? 1 : 3}>
@@ -189,14 +201,16 @@ export function AddProductsDialog({
                               on
                             )
                           }
-                          aria-label={t("selectAllOf", { product: product.title })}
+                          aria-labelledby={titleId}
                         />
                         {product.imageUrl ? (
                           <img src={product.imageUrl} alt="" className="size-9 rounded border object-contain" />
                         ) : (
                           <span className="size-9 rounded border bg-muted" />
                         )}
-                        <span className="font-medium">{product.title}</span>
+                        <span id={titleId} className="font-medium">
+                          {product.title}
+                        </span>
                         {single && added.has(product.variants[0]!.variantId) && (
                           <span className="text-xs text-muted-foreground">{t("alreadyAdded")}</span>
                         )}
@@ -216,10 +230,10 @@ export function AddProductsDialog({
                                   checked={already || selected.has(variant.variantId)}
                                   disabled={already}
                                   onCheckedChange={(on) => toggle([variant.variantId], on)}
-                                  aria-label={t("select", { product: product.title, variant: variant.title ?? "" })}
+                                  aria-labelledby={`${titleId} ${id}-${variant.variantId}`}
                                 />
                                 <span>
-                                  {variant.title}
+                                  <span id={`${id}-${variant.variantId}`}>{variant.title}</span>
                                   {already && <span className="block text-xs">{t("alreadyAdded")}</span>}
                                 </span>
                               </label>
@@ -243,9 +257,7 @@ export function AddProductsDialog({
           <span className="text-muted-foreground">{t("selected", { count: selected.size })}</span>
           <FormError message={error ? errorMessage(error.failure, t(error.fallback)) : undefined} />
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {t("cancel")}
-            </Button>
+            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
             <Button type="button" disabled={!selected.size || adding} onClick={() => void add()}>
               {adding ? t("adding") : t("add")}
             </Button>

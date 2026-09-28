@@ -28,7 +28,8 @@ import { cn } from "@/lib/utils"
 
 const nav = pagesFor("buyer")
 
-// The app's window: the header with search, the sidebar with the buyer's pages, and the page itself.
+// The app's window: the header with search, the sidebar with the buyer's pages, and the page itself. Plain boxes
+// rather than header, aside and main, so the picture adds no landmarks to the page around it.
 function AppFrame({ active, children }: { active: (typeof nav)[number]["view"]; children: React.ReactNode }) {
   const t = useTranslations("marketing.shot")
   const pages = useTranslations("navigation")
@@ -37,7 +38,7 @@ function AppFrame({ active, children }: { active: (typeof nav)[number]["view"]; 
       inert
       className="light flex size-full flex-col overflow-hidden rounded-xl bg-background text-sm text-foreground select-none"
     >
-      <header className="grid h-12 shrink-0 grid-cols-[1fr_minmax(0,26rem)_1fr] items-center gap-2 border-b px-4">
+      <div className="grid h-12 shrink-0 grid-cols-[1fr_minmax(0,26rem)_1fr] items-center gap-2 border-b px-4">
         <span className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Box className="size-3.5" />
@@ -53,9 +54,9 @@ function AppFrame({ active, children }: { active: (typeof nav)[number]["view"]; 
           </span>
         </span>
         <Bell className="size-4 justify-self-end text-muted-foreground" />
-      </header>
+      </div>
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-56 shrink-0 flex-col gap-4 border-e bg-sidebar p-2 text-sidebar-foreground">
+        <div className="flex w-56 shrink-0 flex-col gap-4 border-e bg-sidebar p-2 text-sidebar-foreground">
           <div className="flex items-center gap-2 rounded-lg p-2">
             <span className="flex size-8 items-center justify-center rounded-lg border bg-background text-xs font-semibold">
               RG
@@ -100,8 +101,8 @@ function AppFrame({ active, children }: { active: (typeof nav)[number]["view"]; 
               <span className="truncate text-xs text-muted-foreground">alex@ridgelinegoods.com</span>
             </span>
           </div>
-        </aside>
-        <main className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden px-6 py-5">{children}</main>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden px-6 py-5">{children}</div>
       </div>
     </div>
   )

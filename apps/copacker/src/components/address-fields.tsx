@@ -1,7 +1,7 @@
 "use client"
 
 import { useLocale, useTranslations } from "next-intl"
-import { useId } from "react"
+import { useId, useState } from "react"
 import { useController } from "react-hook-form"
 import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { countriesIn } from "@/lib/countries"
@@ -30,11 +30,13 @@ function CountrySelect({ name }: { name: string }) {
     fieldState
   } = useController({ name })
   const code = typeof value === "string" ? value.trim().toUpperCase() : ""
-  // An address saved before the menu may hold a code the list lacks, such as UK. It shows as saved until changed.
-  const options =
-    code && !countries.some((country) => country.value === code)
-      ? [{ value: code, label: code }, ...countries]
-      : countries
+  // An address saved before the menu may hold a code the list lacks, such as UK. It shows as saved, and stays in the
+  // list after another country is picked: Base UI's Select drops its value when an option leaves the list under it.
+  const [saved] = useState(code)
+  const unlisted = [...new Set([saved, code])].filter(
+    (entry) => entry && !countries.some((country) => country.value === entry)
+  )
+  const options = [...unlisted.map((entry) => ({ value: entry, label: entry })), ...countries]
   return (
     <Field data-invalid={fieldState.invalid}>
       <FormLabel htmlFor={id} label={t("country")} required />

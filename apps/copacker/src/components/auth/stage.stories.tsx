@@ -41,3 +41,13 @@ export const Brand = meta.story({
     await expect(canvasElement.querySelector("[aria-hidden] svg")).not.toBeNull()
   }
 })
+
+// In a header with a border under it, the box drops its glow.
+export const FlatBrand = meta.story({
+  render: () => <BrandMark flat />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByText("Copacker")).toBeVisible()
+    const box = canvasElement.querySelector("[aria-hidden]")
+    await expect(box && getComputedStyle(box).boxShadow).toBe("none")
+  }
+})

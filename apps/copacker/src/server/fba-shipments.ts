@@ -141,7 +141,7 @@ export function choosePlacementOption(options: FbaPlacementOption[]) {
 // The buyer's own carrier or forwarder takes FBA shipments, as small parcels when Amazon allows it.
 export function chooseTransportationOption(options: FbaTransportationOption[]) {
   const own = options.filter((option) => option.shippingSolution === "USE_YOUR_OWN_CARRIER")
-  return own.find((option) => option.shippingMode === "GROUND_SMALL_PARCEL") ?? own[0] ?? null
+  return own.find((option) => option.shippingMode === "GROUND_SMALL_PARCEL") ?? own.at(0) ?? null
 }
 
 // The week the cartons are expected at Amazon: the first delivery window starting once they're ready, or the latest

@@ -335,6 +335,24 @@ export const ControlledOpen = meta.story({
   }
 })
 
+// Without `open`, the sidebar keeps its own state and onOpenChange only hears about it.
+export const OpenChangeCallback = meta.story({
+  args: { onOpenChange: fn() },
+  render: ({ onOpenChange }) => (
+    <SidebarProvider onOpenChange={onOpenChange}>
+      <AppFrame onNewOrder={ignore} onMore={ignore} />
+    </SidebarProvider>
+  ),
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(triggerOf(canvasElement))
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false)
+    await expect(sidebarOf(canvasElement)).toHaveAttribute("data-state", "collapsed")
+    await userEvent.click(triggerOf(canvasElement))
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true)
+    await expect(sidebarOf(canvasElement)).toHaveAttribute("data-state", "expanded")
+  }
+})
+
 // On a phone the sidebar opens over the page as a sheet.
 export const Mobile = meta.story({
   globals: { viewport: { value: "iphone14", isRotated: false } },

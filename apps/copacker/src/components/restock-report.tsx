@@ -887,8 +887,8 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
     <Card>
       <Empty className="gap-4 py-10">
         <EmptyHeader className="gap-1">
-          <EmptyMedia className="text-muted-foreground">
-            <Icon aria-hidden className="size-5" />
+          <EmptyMedia variant="icon">
+            <Icon aria-hidden />
           </EmptyMedia>
           <EmptyTitle>{title}</EmptyTitle>
           {searching && <EmptyDescription>{t("onlyWithSupplier")}</EmptyDescription>}

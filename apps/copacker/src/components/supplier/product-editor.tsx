@@ -811,7 +811,7 @@ export function ProductEditor({
           </div>
 
           <div className="flex flex-col gap-4">
-            <Card size="sm">
+            <Card>
               <CardHeader>
                 <CardTitle>{t("status")}</CardTitle>
               </CardHeader>
@@ -837,7 +837,7 @@ export function ProductEditor({
                 )}
               </CardContent>
             </Card>
-            <Card size="sm">
+            <Card>
               <CardHeader>
                 <CardTitle>{t("organization")}</CardTitle>
               </CardHeader>
@@ -873,7 +873,7 @@ export function ProductEditor({
               </CardContent>
             </Card>
             {saved.id && (
-              <Card size="sm">
+              <Card>
                 <CardHeader>
                   <CardTitle>{t("catalogs")}</CardTitle>
                 </CardHeader>

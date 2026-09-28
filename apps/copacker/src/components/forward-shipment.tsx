@@ -21,7 +21,12 @@ import { FormInput, FormMoney } from "./form-controls"
 const schema = z.object({
   carrier: z.string().trim().min(1, "shipments.forward.enterCarrier").max(100),
   reference: z.string().trim().min(1, "shipments.forward.enterReference").max(100),
-  amount: z.number({ error: "shipments.forward.enterFreightCost" }).int().min(0).max(100000000)
+  // An empty cost asks for one; the range checks keep their own messages, which a plain `error` would replace.
+  amount: z
+    .number({ error: (issue) => (issue.code === "invalid_type" ? "shipments.forward.enterFreightCost" : undefined) })
+    .int()
+    .min(0)
+    .max(100000000)
 })
 
 // The forwarder's leg: it ships the goods on and says what the freight cost and how to track it. The buyer does this

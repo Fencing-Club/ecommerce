@@ -163,7 +163,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
             {shown.map((customer) => (
               <LinkRow key={customer.id} href={`/customers/${customer.id}`}>
                 <TableCell>
-                  <Link href={`/customers/${customer.id}`} className="font-medium hover:underline">
+                  <Link href={`/customers/${customer.id}`} className="font-medium underline-offset-4 hover:underline">
                     {customer.name}
                   </Link>
                   <p className="text-xs text-muted-foreground">

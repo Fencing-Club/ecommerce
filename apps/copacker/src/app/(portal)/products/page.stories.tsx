@@ -32,7 +32,8 @@ async function ProductsPage({ kind, permissions, products, providers, q }: Args)
       <>
         <PageHeader title={t("title")}>
           <ProductActions />
-          {can(permissions, "products", "edit") && (
+          {/* Without products, the empty list offers the first one instead. */}
+          {products.length > 0 && can(permissions, "products", "edit") && (
             <Button nativeButton={false} render={<Link href="/products/new" />}>
               <Plus data-icon="inline-start" />
               {t("addProduct")}
@@ -221,5 +222,7 @@ export const SupplierWithoutProducts = meta.story({
   args: { kind: "supplier", products: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Add your first product")).toBeVisible()
+    // The empty list offers the first product, so the header doesn't offer it again.
+    await expect(canvas.getAllByText("Add product")).toHaveLength(1)
   }
 })

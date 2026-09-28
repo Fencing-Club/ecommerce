@@ -66,7 +66,7 @@ function line(canvas: Canvas, number: number) {
   return within(canvas.getByRole("spinbutton", { name: `Units on line ${number}` }).closest("tr")!)
 }
 
-// The details the browser requires before the draft saves: the supplier and the date it's required by.
+// The details the draft needs before it saves: the supplier and the date it's required by.
 async function fillDetails(canvas: Canvas) {
   await userEvent.click(canvas.getByRole("combobox", { name: "Supplier" }))
   await userEvent.click(await screen.findByRole("option", { name: "Lotus Manufacturing" }))
@@ -115,12 +115,21 @@ export const Review = meta.story({
 // Saving checks the import is still in review, saves the corrections, then creates the draft purchase order.
 export const SaveDraft = meta.story({
   play: async ({ canvas }) => {
-    // The browser holds the save until the required details are in.
+    // The review holds the save until the required details are in, with its own messages, and focuses the first.
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
-    await expect(canvas.getByLabelText(/Required by/)).toBeInvalid()
+    const supplier = canvas.getByRole("combobox", { name: "Supplier" })
+    await waitFor(() => expect(supplier).toHaveFocus())
+    await expect(supplier).toHaveAttribute("aria-invalid", "true")
+    await expect(supplier).toHaveAccessibleDescription("Choose a supplier")
+    const requiredBy = canvas.getByLabelText(/Required by/)
+    await expect(requiredBy).toHaveAttribute("aria-invalid", "true")
+    await expect(requiredBy).toHaveAccessibleDescription("This field is required")
+    await expect(canvas.getByRole("textbox", { name: /Reference number/ })).toHaveAttribute("aria-invalid", "false")
     await expect(saved).not.toHaveBeenCalled()
 
     await fillDetails(canvas)
+    await expect(supplier).toHaveAttribute("aria-invalid", "false")
+    await expect(canvas.queryByText("This field is required")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
     await expect(corrected).toHaveBeenCalledWith({ revision: 3, proposal: importProposal })
@@ -222,11 +231,24 @@ export const AddAndRemoveLines = meta.story({
     await expect(canvas.getByRole("textbox", { name: "Find a product for line 3" })).toHaveValue("")
     await expect(line(canvas, 3).getByText("Added during review")).toBeVisible()
     await fillDetails(canvas)
+    // Its empty cells are marked, the first focused, until they're filled in.
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    const units = canvas.getByRole("spinbutton", { name: "Units on line 3" })
+    await waitFor(() => expect(units).toHaveFocus())
+    await expect(units).toHaveAttribute("aria-invalid", "true")
+    await expect(canvas.getByRole("textbox", { name: "Price per unit on line 3" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    )
+    await expect(canvas.getByRole("spinbutton", { name: "Units on line 1" })).toHaveAttribute("aria-invalid", "false")
+    await expect(saved).not.toHaveBeenCalled()
     await userEvent.type(canvas.getByRole("spinbutton", { name: "Units on line 3" }), "12")
     await userEvent.type(canvas.getByRole("spinbutton", { name: "Units per pack on line 3" }), "1")
     await userEvent.type(canvas.getByRole("textbox", { name: "Price per unit on line 3" }), "2.50")
+    await expect(units).toHaveAttribute("aria-invalid", "false")
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent("Choose a product for line 3")
+    await expect(corrected).not.toHaveBeenCalled()
 
     for (const number of [3, 2]) {
       await userEvent.click(canvas.getByRole("button", { name: `More for line ${number}` }))
@@ -242,8 +264,15 @@ export const AddAndRemoveLines = meta.story({
 export const Charges = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add charge" }))
+    // Saving marks the new charge's empty description and amount.
+    await fillDetails(canvas)
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await waitFor(() => expect(canvas.getByRole("textbox", { name: "Charge 2" })).toHaveFocus())
+    await expect(canvas.getByRole("textbox", { name: "Amount of charge 2" })).toHaveAttribute("aria-invalid", "true")
+    await expect(corrected).not.toHaveBeenCalled()
     await userEvent.type(canvas.getByRole("textbox", { name: "Charge 2" }), "Early payment discount")
     await userEvent.type(canvas.getByRole("textbox", { name: "Amount of charge 2" }), "-20")
+    await expect(canvas.getByRole("textbox", { name: "Amount of charge 2" })).toHaveAttribute("aria-invalid", "false")
     await expect(canvas.getByText("$65.00")).toBeVisible()
     await expect(canvas.getByText("$1,955.00")).toBeVisible()
     await expect(canvas.getByText("$20.00 under the document total")).toBeVisible()

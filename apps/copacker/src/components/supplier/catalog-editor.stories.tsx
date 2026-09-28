@@ -306,6 +306,9 @@ export const IncludeNewProducts = meta.story({
   play: async ({ canvas }) => {
     const toggle = canvas.getByRole("switch", { name: "Automatically include new products" })
     await expect(toggle).toBeChecked()
+    // On a narrow card the switch moves under the title rather than squeezing its label onto two lines.
+    const label = canvas.getByText("Automatically include new products")
+    await expect(label.getBoundingClientRect().height).toBeLessThan(2 * parseFloat(getComputedStyle(label).lineHeight))
     await userEvent.click(toggle)
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveBeenCalledWith(expect.objectContaining({ includeNewProducts: false })))

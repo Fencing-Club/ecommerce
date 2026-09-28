@@ -136,7 +136,7 @@ export async function customerList(orgId: string) {
         orders: own.length,
         open: own.filter((order) => order.stage !== "closed").length,
         spent: totalsByCurrency(own),
-        lastOrderAt: own[0]?.sentAt ?? null
+        lastOrderAt: own.at(0)?.sentAt ?? null
       }
     })
   }
@@ -198,7 +198,7 @@ export async function inventoryRows(orgId: string) {
     return {
       ...row,
       variant: variantLabel(options, optionNames),
-      image: images[0] ?? null,
+      image: images.at(0) ?? null,
       committed: owed,
       available: row.onHand - owed
     }

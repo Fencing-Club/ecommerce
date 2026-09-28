@@ -40,11 +40,8 @@ const meta = preview.meta({
 })
 
 export const SignedOut = meta.story({
-  play: async ({ canvasElement }) => {
-    const main = canvasElement.querySelector<HTMLElement>("#main-content")
-    if (!main) {
-      throw new Error("The page has its main")
-    }
+  play: async ({ canvas }) => {
+    const main = canvas.getByRole("main")
     await expect(within(main).getByRole("heading", { level: 1 })).toHaveTextContent("Restocking, handled.")
     await expect(within(main).getByRole("heading", { level: 2, name: "Get early access." })).toBeInTheDocument()
   }

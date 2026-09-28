@@ -45,6 +45,11 @@ export const Existing = meta.story({
     await expect(canvas.getByRole("link", { name: "Products" })).toHaveAttribute("href", "/products")
     await expect(canvas.getByRole("textbox", { name: /Title/ })).toHaveValue("Canvas tote bag")
     await expect(canvas.getByRole("textbox", { name: "Product page" })).toHaveValue("https://lotus.example.com/tote")
+    // The side cards are the same size as the main ones, so they line up when they stack on a phone.
+    await expect(canvas.getByRole("textbox", { name: "Product page" }).closest("[data-slot=card]")).toHaveAttribute(
+      "data-size",
+      "default"
+    )
     await expect(canvas.getByRole("img", { name: "tote.png" })).toBeVisible()
     // One Add for photos, one for a new option.
     await expect(canvas.getAllByRole("button", { name: "Add" })).toHaveLength(2)

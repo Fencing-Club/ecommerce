@@ -19,14 +19,15 @@ const meta = preview.meta({
 export const AllOrders = meta.story({
   play: async ({ canvas }) => {
     const tabs = within(canvas.getByRole("navigation", { name: "Purchase order status" }))
+    // Each tab counts its purchase orders, as the shipment list's tabs do.
     await expect(tabs.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "All",
-      "Draft",
-      "With supplier",
-      "Closed"
+      "All5",
+      "Draft1",
+      "With supplier2",
+      "Closed2"
     ])
-    await expect(tabs.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page")
-    await expect(tabs.getByRole("link", { name: "Draft" })).toHaveAttribute("href", "/orders?status=draft")
+    await expect(tabs.getByRole("link", { name: /^All/ })).toHaveAttribute("aria-current", "page")
+    await expect(tabs.getByRole("link", { name: /^Draft/ })).toHaveAttribute("href", "/orders?status=draft")
     await expect(canvas.getByRole("columnheader", { name: "Value" })).toBeInTheDocument()
     await expect(canvas.getByRole("link", { name: "PO-1046" })).toHaveAttribute("href", "/orders/order-PO-1046")
     await expect(canvas.getAllByText("3 products")).toHaveLength(5)
@@ -45,7 +46,7 @@ export const AllOrders = meta.story({
 export const Drafts = meta.story({
   args: { status: "draft" },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "Draft" })).toHaveAttribute("aria-current", "page")
+    await expect(canvas.getByRole("link", { name: /^Draft/ })).toHaveAttribute("aria-current", "page")
     await expect(canvas.getByRole("link", { name: "PO-1046" })).toBeVisible()
     await expect(canvas.queryByRole("link", { name: "PO-1045" })).toBeNull()
   }
@@ -73,12 +74,31 @@ export const WithoutValues = meta.story({
     drafts: false
   },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("link", { name: "Draft" })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: /^Draft/ })).toBeNull()
     // Without a Draft tab, the draft status falls back to All.
-    await expect(canvas.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page")
+    await expect(canvas.getByRole("link", { name: /^All/ })).toHaveAttribute("aria-current", "page")
     await expect(canvas.queryByRole("columnheader", { name: "Value" })).toBeNull()
     await expect(canvas.queryByText("$2,958.00")).toBeNull()
     await expect(canvas.getByText("Amazon FBA")).toBeInTheDocument()
     await expect(canvas.getByText("Oakland warehouse")).toBeInTheDocument()
+  }
+})
+
+// On a phone each row stacks to its reference and status, with the supplier under the reference and the value below,
+// instead of scrolling sideways.
+export const Phone = meta.story({
+  decorators: [
+    (Story) => (
+      <div data-phone className="w-[358px]">
+        <Story />
+      </div>
+    )
+  ],
+  play: async ({ canvas, canvasElement }) => {
+    const width = canvasElement.querySelector("[data-phone]")?.getBoundingClientRect().right ?? 0
+    await expect(canvas.getByRole("table").getBoundingClientRect().right).toBeLessThanOrEqual(width)
+    await expect(canvas.queryByRole("columnheader", { name: "Supplier" })).toBeNull()
+    await expect(canvas.getAllByText(/^Lotus Manufacturing,/)[0]).toBeVisible()
+    await expect(canvas.getAllByText("$2,958.00")[0]).toBeVisible()
   }
 })

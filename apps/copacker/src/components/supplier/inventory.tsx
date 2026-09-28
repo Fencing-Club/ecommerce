@@ -229,7 +229,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                       <div className="min-w-0">
                         <PageLink
                           href={`/products/${row.groupId}`}
-                          className="line-clamp-2 font-medium hover:underline"
+                          className="line-clamp-2 font-medium underline-offset-4 hover:underline"
                         >
                           {row.title}
                         </PageLink>

@@ -116,7 +116,7 @@ export const Filled = meta.story({
 // An address saved before the country menu may hold a code the list lacks; it shows as saved until changed.
 export const UnlistedCountryCode = meta.story({
   args: { address: { ...filled, countryCode: "UK" } },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const country = canvas.getByRole("combobox", { name: /Country/ })
     await expect(country).toHaveTextContent("UK")
     await userEvent.click(country)
@@ -124,6 +124,14 @@ export const UnlistedCountryCode = meta.story({
     await expect(screen.getByRole("option", { name: "United Kingdom" })).toBeInTheDocument()
     await userEvent.click(screen.getByRole("option", { name: "UK" }))
     await expect(country).toHaveTextContent("UK")
+    // Picking a listed country replaces it.
+    await userEvent.click(country)
+    await userEvent.click(await screen.findByRole("option", { name: "United Kingdom" }))
+    await expect(country).toHaveTextContent("United Kingdom")
+    await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
+    await waitFor(() =>
+      expect(args.onSubmit).toHaveBeenCalledWith({ address: { ...filled, countryCode: "GB" } }, expect.anything())
+    )
   }
 })
 

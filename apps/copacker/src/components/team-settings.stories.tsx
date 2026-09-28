@@ -38,6 +38,11 @@ export const Owner = meta.story({
     await expect(canvas.getByText("3 people")).toBeVisible()
     await expect(canvas.getByText("You")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "More for Alex Rivera" })).toBeNull()
+    // Without a menu, the owner's role badge still lines up with the others.
+    await expect(canvas.getByText("Owner").getBoundingClientRect().right).toBeCloseTo(
+      canvas.getAllByText("Admin")[0]!.getBoundingClientRect().right,
+      0
+    )
     await expect(canvas.getByText("Invited, expires Oct 4")).toBeVisible()
     await expect(canvas.getByText("Invitation expired")).toHaveClass("text-destructive")
     await userEvent.click(canvas.getByRole("button", { name: "More for Priya Shah" }))
@@ -96,10 +101,13 @@ export const InviteWithoutPrices = meta.story({
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "lee@harbor.example.com")
     await choose(dialog, "Overview", "View")
     await choose(dialog, "Partners", "Edit")
+    await choose(dialog, "Purchase orders", "Edit")
     await userEvent.click(within(dialog).getByRole("switch", { name: "See prices and costs" }))
     await expect(within(dialog).getByRole("combobox", { name: "Overview" })).toBeDisabled()
     await expect(within(dialog).getByRole("combobox", { name: "Overview" })).toHaveTextContent("No access")
     await expect(within(dialog).getByRole("combobox", { name: "Partners" })).toHaveTextContent("Edit")
+    // Editing purchase orders sets prices, so it drops to viewing them.
+    await expect(within(dialog).getByRole("combobox", { name: "Purchase orders" })).toHaveTextContent("View")
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Purchase orders" }))
     await expect(await screen.findByRole("option", { name: "View" })).toBeInTheDocument()
     await expect(screen.queryByRole("option", { name: "Edit" })).toBeNull()
@@ -110,7 +118,7 @@ export const InviteWithoutPrices = meta.story({
       expect(sent).toEqual([
         {
           action: "team.invite",
-          data: { email: "lee@harbor.example.com", role: "member", access: { partners: "edit" } }
+          data: { email: "lee@harbor.example.com", role: "member", access: { partners: "edit", orders: "view" } }
         }
       ])
     )

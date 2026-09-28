@@ -1,10 +1,9 @@
-import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
+import { CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
-import { Attention, CardLink } from "@/components/overview-sections"
-import { Badge } from "@/components/ui/badge"
+import { Attention, CardLink, DeltaPill } from "@/components/overview-sections"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -82,28 +81,29 @@ function tasks(counts: Data["attention"], t: TaskText) {
 // card's padding.
 const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 
-// The change against the comparison period, such as +12% vs previous period.
+// The change against the comparison period as the buyer Overview's pill, such as +12% vs previous period. The comparison
+// shows beside the pill when the tile has room for it, and is always read out.
 function Delta({ change, comparison }: { change: number | null; comparison: string | null }) {
   const t = useTranslations("supplier.overview")
-  const locale = useLocale()
   if (change === null || !comparison) {
-    return <span className="text-xs text-muted-foreground">{t("noComparison")}</span>
+    return (
+      <span className="truncate" title={t("noComparison")}>
+        {t("noComparison")}
+      </span>
+    )
   }
-  const up = change >= 0
-  const Icon = up ? ArrowUpRight : ArrowDownRight
+  const versus = t("versus", { comparison })
   return (
-    <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      <Badge variant="outline" className={up ? "text-success" : "text-destructive"}>
-        <Icon data-icon="inline-start" />
-        {new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0, signDisplay: "always" }).format(
-          Math.round(change * 100) / 100
-        )}
-      </Badge>
-      {t("versus", { comparison })}
-    </span>
+    <>
+      <DeltaPill value={change} title={versus} />
+      <span className="sr-only @min-[15rem]:not-sr-only">
+        <span className="whitespace-nowrap">{versus}</span>
+      </span>
+    </>
   )
 }
 
+// A KPI tile as on the buyer Overview: the label, the figure, and its change.
 function Kpi({
   label,
   value,
@@ -117,15 +117,19 @@ function Kpi({
   comparison: string | null
 }) {
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums group-data-[size=sm]/card:text-2xl">
-          {value}
-        </CardTitle>
+    // Two tiles a row on a phone pad less, so each label still fits.
+    <Card className="@container gap-3 @max-sm/kpis:[--card-spacing:--spacing(3)]">
+      <CardHeader className="grid-cols-1 gap-1">
+        <CardDescription className="truncate" title={label}>
+          {label}
+        </CardDescription>
+        {/* Proportional figures, as on the buyer Overview: a hero number reads on its own. */}
+        <CardTitle className="text-2xl leading-8 font-semibold tracking-tight">{value}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Delta change={change} comparison={comparison} />
+      <CardContent className="flex flex-1 flex-col justify-end">
+        <div className="flex h-5 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <Delta change={change} comparison={comparison} />
+        </div>
       </CardContent>
     </Card>
   )
@@ -203,7 +207,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
     <div className="@container flex flex-col gap-6">
       <Attention items={todo} />
 
-      <div className="grid gap-4 @lg:grid-cols-2 @4xl:grid-cols-4">
+      <div className="@container/kpis grid grid-cols-2 gap-4 @4xl:grid-cols-4">
         <Kpi
           label={t("ordersReceived")}
           value={data.kpis.orders.value.toLocaleString(locale)}

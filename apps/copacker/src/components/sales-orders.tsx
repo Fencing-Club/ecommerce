@@ -375,8 +375,8 @@ function OrderList({
     body = (
       <Empty className="py-12">
         <EmptyHeader>
-          <EmptyMedia className="text-muted-foreground">
-            <Spinner className="size-5" />
+          <EmptyMedia variant="icon">
+            <Spinner />
           </EmptyMedia>
           <EmptyTitle>{t("syncing")}</EmptyTitle>
           {typeof firstSync.progress === "number" && (

@@ -125,7 +125,8 @@ export function ContactForm() {
               name="topic"
               control={form.control}
               render={({ field }) => (
-                <div className="clear-both grid grid-cols-2 gap-2 lg:grid-cols-1">
+                // One to a row on a phone: two leave too little room for a word such as Partnerships beside its icon.
+                <div className="clear-both grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                   {contactTopics.map((topic) => {
                     const { icon: Icon, key } = topics[topic]
                     const chosen = field.value === topic
@@ -155,7 +156,7 @@ export function ContactForm() {
                         >
                           <Icon className="size-4" />
                         </span>
-                        <span className="font-medium">{t(`topics.${key}`)}</span>
+                        <span className="min-w-0 font-medium break-words">{t(`topics.${key}`)}</span>
                       </label>
                     )
                   })}

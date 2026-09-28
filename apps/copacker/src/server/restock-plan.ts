@@ -273,7 +273,7 @@ export function restockPlan(input: {
       // (or the whole period, if shorter) keeps a few lucky days from inflating it.
       const stockoutDays = Math.min(input.salesDays, input.stockoutsFor?.(variant.variantId, variant.sku) ?? 0)
       const rateDays = Math.max(Math.min(input.salesDays, 7), input.salesDays - stockoutDays)
-      const casePack = bundle && channel.kind === "shopify" ? null : (details?.casePacks[0] ?? null)
+      const casePack = bundle && channel.kind === "shopify" ? null : (details?.casePacks.at(0) ?? null)
       const caseQuantity = casePack?.units ?? (bundle ? null : (row?.caseQuantity ?? null))
       const minimumOrder = details?.minimumOrder ?? null
       const unitCostMinor = bundle ? null : (row?.unitCostMinor ?? null)

@@ -71,6 +71,23 @@ export const Header = meta.story({
   }
 })
 
+// Titles sit at the same height with or without actions beside them, even a taller control such as a large button.
+export const TitlesLineUp = meta.story({
+  render: () => (
+    <div className="grid grid-cols-2 items-start gap-8">
+      <PageHeader title="Products" />
+      <PageHeader title="Overview">
+        <Button size="lg">Last 30 days</Button>
+      </PageHeader>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const products = canvas.getByRole("heading", { level: 1, name: "Products" }).getBoundingClientRect()
+    const overview = canvas.getByRole("heading", { level: 1, name: "Overview" }).getBoundingClientRect()
+    await expect(overview.top).toBe(products.top)
+  }
+})
+
 // A record's page: its parents lead the title, with its status after it. A parent the person can't open is plain text.
 export const RecordHeader = meta.story({
   render: () => (
@@ -96,10 +113,12 @@ export const Empty = meta.story({
       <Button>Create purchase order</Button>
     </EmptyState>
   ),
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByText("No shipments yet")).toBeVisible()
     await expect(canvas.getByText("Shipments show here once a supplier packs a purchase order")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Create purchase order" })).toBeVisible()
+    // The icon sits on a tile, as every empty state's does.
+    await expect(canvasElement.querySelector("[data-slot=empty-icon]")).toHaveAttribute("data-variant", "icon")
   }
 })
 

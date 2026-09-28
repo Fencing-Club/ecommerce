@@ -239,7 +239,8 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   <span key={`blank-${index}`} />
                 ))}
                 {days.map((day) => {
-                  // The range's first and last days are filled; the days between are shaded and join up.
+                  // The range's first and last days are filled in the brand color, as other chosen things are; the days
+                  // between are shaded and join up.
                   const edge = day === draft.range.from || day === draft.range.to
                   const between = !edge && day > draft.range.from && day < draft.range.to
                   return (
@@ -248,7 +249,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                       type="button"
                       className={cn(
                         "h-9 min-w-9 rounded-md text-sm tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:text-muted-foreground/50",
-                        edge && "bg-foreground font-semibold text-background",
+                        edge && "bg-primary font-semibold text-primary-foreground",
                         between && "rounded-none bg-muted",
                         !edge && "enabled:hover:bg-accent enabled:hover:text-accent-foreground"
                       )}

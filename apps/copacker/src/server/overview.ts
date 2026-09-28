@@ -300,7 +300,7 @@ export function summarizeRestock(
         ...bucket,
         items: [...counts.values()].reduce((sum, count) => sum + count, 0),
         // The channel holding most of the group's items, where Restock opens for it.
-        channel: [...counts].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null
+        channel: [...counts].toSorted((a, b) => b[1] - a[1]).at(0)?.[0] ?? null
       }
     }),
     slow: {
@@ -321,7 +321,7 @@ export function summarizeRestock(
       .map((seller) => ({
         ...seller,
         // Restock opens on the channel it sells most in.
-        channel: seller.channels.toSorted((a, b) => b.sold - a.sold)[0]?.key ?? null,
+        channel: seller.channels.toSorted((a, b) => b.sold - a.sold).at(0)?.key ?? null,
         channels: seller.channels.map((channel) => channel.label)
       }))
   }
@@ -961,7 +961,10 @@ export async function overview(
   const previousSeries = period.previous ? dailySales(dayRows, coverage, period.previous, timeZone, now) : null
   const totals = periodTotal(series, previousSeries, covered)
   const salesCurrency =
-    dayRows.filter((row) => row.currency).toSorted((a, b) => b.revenueMinor - a.revenueMinor)[0]?.currency ?? null
+    dayRows
+      .filter((row) => row.currency)
+      .toSorted((a, b) => b.revenueMinor - a.revenueMinor)
+      .at(0)?.currency ?? null
   const index = catalogIndex(restock.catalog, markups)
   const fees = Object.fromEntries(feeRows.map((row) => [row.source, platformFees(row.list)])) as Partial<
     Record<SalesSource, ReturnType<typeof platformFees>>

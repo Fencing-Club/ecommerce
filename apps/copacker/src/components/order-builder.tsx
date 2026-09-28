@@ -8,25 +8,14 @@ import {
   type OrderInput,
   orderInputSchema
 } from "@repo/aisle"
-import {
-  AlertTriangle,
-  ArrowRight,
-  Building2,
-  Download,
-  Ellipsis,
-  MapPin,
-  Package,
-  Plus,
-  Warehouse,
-  X
-} from "lucide-react"
+import { ArrowRight, Building2, Download, Ellipsis, MapPin, Package, Plus, Warehouse, X } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { PageLink } from "@/components/access"
-import { PageHeader } from "@/components/common"
+import { PageHeader, WarningNote } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -340,7 +329,7 @@ export function OrderBuilder({
       <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-4">
         <FormError message={form.formState.errors.root?.server?.message} />
 
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
           <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center gap-1.5 p-3">
               <RoutePicker
@@ -394,21 +383,22 @@ export function OrderBuilder({
             {via &&
               destination === "amazon" &&
               forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
-                <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
-                  <AlertTriangle className="size-3.5" />
-                  {tb.rich("stopNeedsPhone", { link: forwardersLink })}
+                <p className="px-3 pb-3">
+                  <WarningNote>{tb.rich("stopNeedsPhone", { link: forwardersLink })}</WarningNote>
                 </p>
               )}
 
-            <div className="overflow-x-auto border-t">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
+            {/* Too narrow for its inputs, as on a phone, the table scrolls sideways instead of squeezing them. It's
+                positioned so the header's hidden labels scroll with it. Its header band matches the app's other tables. */}
+            <div className="relative overflow-x-auto border-t">
+              <table className="w-full min-w-3xl text-sm">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="px-3 py-2 text-start font-medium">{t("detail.columns.products")}</th>
-                    <th className="w-36 px-2 py-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
-                    <th className="w-24 px-2 py-2 text-start font-medium">{t("detail.columns.quantity")}</th>
-                    <th className="w-32 px-2 py-2 text-start font-medium">{t("detail.columns.cost")}</th>
-                    <th className="w-24 px-2 py-2 text-end font-medium">{t("detail.columns.total")}</th>
+                    <th className="h-10 px-3 text-start font-medium">{t("detail.columns.products")}</th>
+                    <th className="h-10 w-36 px-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
+                    <th className="h-10 w-24 px-2 text-start font-medium">{t("detail.columns.quantity")}</th>
+                    <th className="h-10 w-32 px-2 text-start font-medium">{t("detail.columns.cost")}</th>
+                    <th className="h-10 w-24 px-2 text-end font-medium">{t("detail.columns.total")}</th>
                     <th className="w-18">
                       <span className="sr-only">{t("detail.columns.actions")}</span>
                     </th>
@@ -444,9 +434,8 @@ export function OrderBuilder({
                               : line.buyerSku}
                           </p>
                           {needsBarcode.has(line.variantId) && (
-                            <p className="mt-1 flex items-center gap-1 text-xs text-warning">
-                              <AlertTriangle className="size-3.5" />
-                              {tb("needsLabel")}
+                            <p className="mt-1">
+                              <WarningNote>{tb("needsLabel")}</WarningNote>
                             </p>
                           )}
                           <FormError message={lineError?.message ?? lineError?.root?.message} />
@@ -482,7 +471,11 @@ export function OrderBuilder({
                               {tb("available", { count: available })}
                             </p>
                           )}
-                          {ruleProblem && <p className="mt-1 text-xs text-warning">{ruleProblem}</p>}
+                          {ruleProblem && (
+                            <p className="mt-1">
+                              <WarningNote>{ruleProblem}</WarningNote>
+                            </p>
+                          )}
                         </td>
                         <td className="px-2 py-2">
                           <CellNumber
@@ -774,7 +767,8 @@ function CellNumber({
       value={!typing && scale === 100 && shown !== "" ? shown.toFixed(2) : shown}
       onFocus={() => setTyping(true)}
       onChange={(event) => {
-        onChange(event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * scale * 1000) / 1000)
+        // A cleared cell holds null, which saving asks to fill in. Undefined would read back as the line's first value.
+        onChange(event.target.value === "" ? null : Math.round(event.target.valueAsNumber * scale * 1000) / 1000)
         onValueChange?.()
       }}
       onBlur={() => {
@@ -782,7 +776,7 @@ function CellNumber({
         onBlur()
       }}
       aria-invalid={fieldState.invalid}
-      className="tabular-nums"
+      className="text-end tabular-nums"
     />
   )
   return (

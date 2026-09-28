@@ -304,8 +304,6 @@
     "search": "搜索产品",
     "product": "产品",
     "available": "可用",
-    "selectAllOf": "全选 {product}",
-    "select": "选择 {product} {variant}",
     "alreadyAdded": "已在采购订单中",
     "noMatches": "没有匹配的产品。",
     "loading": "正在加载…",

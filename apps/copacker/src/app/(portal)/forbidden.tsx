@@ -18,7 +18,7 @@ export default async function PortalForbidden() {
       <PageHeader title={t("title")} />
       <Empty className="gap-4 py-10">
         <EmptyHeader className="gap-1">
-          <EmptyMedia className="text-muted-foreground">
+          <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
             <Lock aria-hidden className="size-5" />
           </EmptyMedia>
           <EmptyDescription>{t("askAdmin")}</EmptyDescription>

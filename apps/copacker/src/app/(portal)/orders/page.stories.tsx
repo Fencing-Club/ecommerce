@@ -97,7 +97,10 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
             label={t("stats.withSuppliers")}
             value={rows.filter((r) => r.order.status === "submitted").length}
           />
-          <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
+          {/* Only buyers have drafts. */}
+          {isBuyer && (
+            <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
+          )}
         </StatGrid>
       )}
 
@@ -257,7 +260,9 @@ export const Forwarder = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Purchase orders" })).toBeVisible()
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toBeVisible()
-    await expect(canvas.queryByRole("link", { name: "Draft" })).toBeNull()
+    await expect(canvas.queryByRole("link", { name: /^Draft/ })).toBeNull()
+    // Forwarders never have drafts, so there's no count of them.
+    await expect(canvas.queryByText("Drafts")).toBeNull()
     await expect(canvas.queryByRole("columnheader", { name: "Value" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: /Create purchase order/ })).toBeNull()
   }

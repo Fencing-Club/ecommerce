@@ -133,7 +133,10 @@
     "close": "Chiudi",
     "toggleSidebar": "Mostra/nascondi barra laterale",
     "sidebar": "Barra laterale",
-    "sidebarDescription": "Mostra la barra laterale mobile."
+    "sidebarDescription": "Mostra la barra laterale mobile.",
+    "clear": "Cancella",
+    "showOptions": "Mostra opzioni",
+    "remove": "Rimuovi {label}"
   },
   "pages": {
     "error": {

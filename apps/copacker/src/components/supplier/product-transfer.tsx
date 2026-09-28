@@ -107,6 +107,14 @@ function ProductImportDialog({
   const shared = useTranslations("supplier.shared")
   const locale = useLocale()
 
+  // Closing, however it's done, starts the next import afresh.
+  function close() {
+    setOpen(false)
+    setFile(null)
+    setPreview(null)
+    setError("")
+  }
+
   async function send(mode: "preview" | "commit") {
     if (!file) {
       return
@@ -133,7 +141,7 @@ function ProductImportDialog({
       if (!result.imported) {
         throw new Error(t("alreadyImported"))
       }
-      setOpen(false)
+      close()
       router.refresh()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("importFailed"))
@@ -149,11 +157,10 @@ function ProductImportDialog({
       open={open}
       onOpenChange={(next) => {
         if (!pending) {
-          setOpen(next)
-          if (!next) {
-            setFile(null)
-            setPreview(null)
-            setError("")
+          if (next) {
+            setOpen(true)
+          } else {
+            close()
           }
         }
       }}
@@ -226,7 +233,7 @@ function ProductImportDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" disabled={pending} onClick={() => setOpen(false)}>
+          <Button variant="outline" disabled={pending} onClick={close}>
             {shared("cancel")}
           </Button>
           {preview ? (

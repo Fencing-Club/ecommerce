@@ -62,13 +62,13 @@ const wholeNumber = "products.details.enterWholeNumber"
 
 const schema = z.object({
   supplierId: z.string(),
-  minimumOrder: z.number().int(wholeNumber).min(1).max(1000000).optional(),
+  minimumOrder: z.number().int(wholeNumber).min(1).max(1000000).nullable(),
   amazonNetwork: z.enum(amazonNetworks),
   prepCategory: z.enum(prepCategories),
   suffocationWarning: z.boolean(),
   description: z.string().trim().max(2000),
-  caseQuantity: z.number().int(wholeNumber).min(1).max(100000).optional(),
-  casePacks: z.array(casePackSchema.extend({ weightKg: z.number().positive().max(1000).optional() })).max(10),
+  caseQuantity: z.number().int(wholeNumber).min(1).max(100000).nullable(),
+  casePacks: z.array(casePackSchema).max(10),
   productLabel: z.enum(productLabels),
   variations: z.array(variationSchema)
 })
@@ -116,13 +116,13 @@ export function ProductImage({ url, small = false }: { url: string | null; small
 function formValues({ defaults, variants }: EditableProduct): Values {
   return {
     supplierId: defaults.supplierId ?? "",
-    minimumOrder: defaults.minimumOrder ?? undefined,
+    minimumOrder: defaults.minimumOrder,
     amazonNetwork: defaults.amazonNetwork,
     prepCategory: defaults.prepCategory ?? defaultPrep,
     suffocationWarning: defaults.suffocationWarning,
     description: defaults.description,
-    caseQuantity: defaults.caseQuantity ?? undefined,
-    casePacks: defaults.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? undefined })),
+    caseQuantity: defaults.caseQuantity,
+    casePacks: defaults.casePacks,
     productLabel: defaults.productLabel,
     variations: variants.map(variationValues)
   }
@@ -133,9 +133,9 @@ function details(values: Output, saved: ProductDefaults): Details {
     description: values.description,
     // Leaving an unset preparation on sealed polybag keeps it unset.
     prepCategory: values.prepCategory === defaultPrep && saved.prepCategory === null ? null : values.prepCategory,
-    casePacks: values.casePacks.map((pack) => ({ ...pack, weightKg: pack.weightKg ?? null })),
-    caseQuantity: values.caseQuantity ?? null,
-    minimumOrder: values.minimumOrder ?? null,
+    casePacks: values.casePacks,
+    caseQuantity: values.caseQuantity,
+    minimumOrder: values.minimumOrder,
     supplierId: values.supplierId || null,
     productLabel: values.productLabel,
     suffocationWarning: values.suffocationWarning,
@@ -189,7 +189,8 @@ function CasePacks() {
               units: caseQuantity ?? 1,
               lengthCm: 0,
               widthCm: 0,
-              heightCm: 0
+              heightCm: 0,
+              weightKg: null
             })
           }
         >

@@ -39,6 +39,11 @@ const rowOf = (name: string) => within(screen.getByText(name).closest("tr")!)
 export const ForBuyer = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Lotus Manufacturing proposed changes")).toBeVisible()
+    // Small, like the purchase order page's other cards.
+    await expect(canvas.getByText("Lotus Manufacturing proposed changes").closest("[data-slot=card]")).toHaveAttribute(
+      "data-size",
+      "sm"
+    )
     await expect(canvas.getByText("Approval needed")).toBeVisible()
     await expect(canvas.getByText(/Cotton costs went down\./)).toBeVisible()
     const tote = rowOf("Canvas tote bag / Natural")

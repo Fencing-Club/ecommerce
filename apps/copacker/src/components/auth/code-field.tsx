@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils"
 
 const length = 6
 
+// The code in pasted text, such as "482 913", "482-913" or the email's "Your code is 482913."
+function codeIn(text: string) {
+  return /(?<!\d)\d(?:[ -]?\d){5}(?!\d)/.exec(text)?.[0].replace(/\D/g, "")
+}
+
 // A six-digit code, drawn as six boxes. One real input underneath takes the typing, pasting and the browser's
 // autofill from the email, so it reads and behaves as a single field; `onComplete` runs when the sixth digit lands.
 export function CodeField({
@@ -25,6 +30,12 @@ export function CodeField({
     fieldState
   } = useController({ name })
   const value = typeof fieldValue === "string" ? fieldValue : ""
+  const update = (digits: string) => {
+    onChange(digits)
+    if (digits.length === length && digits !== value) {
+      onComplete(digits)
+    }
+  }
   const slot = (index: number) => {
     const current = focused && index === Math.min(value.length, length - 1)
     return (
@@ -55,11 +66,21 @@ export function CodeField({
           ref={ref}
           name={fieldName}
           value={value}
+          // No maxLength: the browser would cut pasted text to six characters before its digits are picked out. A
+          // digit typed into a full code is turned away instead, as maxLength would.
           onChange={(event) => {
-            const digits = event.target.value.replace(/\D/g, "").slice(0, length)
-            onChange(digits)
-            if (digits.length === length) {
-              onComplete(digits)
+            const digits = event.target.value.replace(/\D/g, "")
+            const typed = event.nativeEvent instanceof InputEvent && event.nativeEvent.inputType === "insertText"
+            if (!(typed && digits.length > length)) {
+              update(digits.slice(0, length))
+            }
+          }}
+          // A pasted code replaces whatever was typed, wherever it sits in the text.
+          onPaste={(event) => {
+            const code = codeIn(event.clipboardData.getData("text"))
+            if (code) {
+              event.preventDefault()
+              update(code)
             }
           }}
           onFocus={(event) => {
@@ -74,7 +95,6 @@ export function CodeField({
           }}
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={length}
           spellCheck={false}
           aria-invalid={fieldState.invalid}
           className="absolute inset-0 z-10 size-full cursor-text text-base caret-transparent opacity-0"

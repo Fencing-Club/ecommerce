@@ -60,9 +60,18 @@ export const Typing = meta.story({
     await expect(boxes(canvasElement)).toEqual(["1", "2", "3", "4", "5", "6"])
     await expect(args.onComplete).toHaveBeenCalledOnce()
     await expect(args.onComplete).toHaveBeenCalledWith("123456")
-    // A seventh digit doesn't fit.
+    // A seventh digit doesn't fit, and doesn't complete the code again.
     await userEvent.keyboard("7")
     await expect(input).toHaveValue("123456")
+    await expect(args.onComplete).toHaveBeenCalledOnce()
+    // Nor does one typed between the others.
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error("The field is an input")
+    }
+    input.setSelectionRange(2, 2)
+    await userEvent.keyboard("7")
+    await expect(input).toHaveValue("123456")
+    input.setSelectionRange(6, 6)
     await userEvent.keyboard("{Backspace}")
     await expect(boxes(canvasElement)).toEqual(["1", "2", "3", "4", "5", ""])
   }
@@ -87,6 +96,26 @@ export const Pasting = meta.story({
     await expect(boxes(canvasElement)).toEqual(["4", "8", "2", "9", "1", "3"])
     await expect(args.onComplete).toHaveBeenCalledOnce()
     await expect(args.onComplete).toHaveBeenCalledWith("482913")
+  }
+})
+
+// A code copied with a space or dash in it, or from the email's sentence, fills the field; so does pasting over a
+// partly typed one.
+export const PastingFromEmail = meta.story({
+  play: async ({ canvas, args }) => {
+    const input = canvas.getByLabelText("Verification code")
+    for (const [pasted, code] of [
+      ["482 913", "482913"],
+      ["482-913", "482913"],
+      ["Your code: 123456", "123456"],
+      ["Your Copacker code is 250617. It expires in 10 minutes.", "250617"]
+    ]) {
+      await userEvent.clear(input)
+      await userEvent.type(input, "9")
+      await userEvent.paste(pasted)
+      await expect(input).toHaveValue(code)
+      await expect(args.onComplete).toHaveBeenLastCalledWith(code)
+    }
   }
 })
 

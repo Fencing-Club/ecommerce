@@ -117,7 +117,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
         }
       }}
     >
-      <SheetTrigger render={<Button variant="outline" size="sm" />}>
+      <SheetTrigger render={<Button variant="outline" />}>
         <Tags data-icon="inline-start" />
         {t("labels.manage")}
       </SheetTrigger>

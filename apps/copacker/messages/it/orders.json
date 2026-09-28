@@ -304,8 +304,6 @@
     "search": "Cerca prodotti",
     "product": "Prodotto",
     "available": "Disponibili",
-    "selectAllOf": "Seleziona tutto di {product}",
-    "select": "Seleziona {product} {variant}",
     "alreadyAdded": "Già nell’ordine di acquisto",
     "noMatches": "Nessun prodotto corrispondente.",
     "loading": "Caricamento…",

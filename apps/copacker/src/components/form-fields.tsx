@@ -1,6 +1,6 @@
 "use client"
 
-import { Field, FieldDescription } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError } from "@/components/ui/field"
 import { FormLabel } from "./form-controls"
 import { SelectControl } from "./form-select"
 
@@ -14,6 +14,7 @@ export function SelectField({
   description,
   required,
   disabled,
+  error,
   value,
   defaultValue,
   onChange
@@ -27,13 +28,15 @@ export function SelectField({
   description?: React.ReactNode
   required?: boolean
   disabled?: boolean
+  // The form's own message when the field fails its check.
+  error?: string
   value?: string
   defaultValue?: string
   // Called with the chosen value as `target.value`, like a native select's change event.
   onChange?: (event: { target: { value: string } }) => void
 }) {
   return (
-    <Field>
+    <Field data-invalid={!!error}>
       <FormLabel htmlFor={id} label={label} required={required} />
       <SelectControl
         id={id}
@@ -42,11 +45,13 @@ export function SelectField({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        invalid={!!error}
         value={value}
         defaultValue={defaultValue}
         onValueChange={(next) => onChange?.({ target: { value: next ?? "" } })}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
+      <FieldError id={`${id}-error`}>{error}</FieldError>
     </Field>
   )
 }

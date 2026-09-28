@@ -42,6 +42,11 @@ export const Products = meta.story({
     await expect(canvas.getByRole("link", { name: "PO-1045" })).toHaveAttribute("href", "/orders/order-PO-1045")
     await expect(canvas.getByText("4 products, 5 variations")).toBeVisible()
     await expect(canvas.getByRole("button", { name: /1 need a label/ })).toHaveAttribute("aria-pressed", "false")
+    // The toolbar's filters and actions are as tall as its search box.
+    const searchBox = canvas.getByRole("searchbox", { name: "Search products" }).closest("[data-slot=input-group]")
+    await expect(canvas.getByRole("button", { name: /1 need a label/ }).offsetHeight).toBe(
+      searchBox instanceof HTMLElement ? searchBox.offsetHeight : 0
+    )
 
     // A product's variations open beneath it.
     await userEvent.click(canvas.getByRole("button", { name: "Show the 2 variations of Canvas tote bag" }))

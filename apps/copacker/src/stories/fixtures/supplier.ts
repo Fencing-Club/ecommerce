@@ -26,8 +26,7 @@ import { daysAgo } from "./orders"
 
 const id = (group: string, n: number) => `${group}-4b3e-4f5a-8c6d-${String(n).padStart(12, "0")}`
 
-// A photo in document storage. The server's types give every product a main photo (`images[0] ?? null` reads as the
-// photo's type), so each fixture has one.
+// A photo in document storage.
 function image(name: string): ProductImage {
   return { key: `supplier-images/org_supplier/${name}`, name, contentType: "image/png" }
 }
@@ -107,7 +106,7 @@ function catalogVariant(n: number, overrides: Partial<CatalogVariant>): CatalogV
 }
 
 // Every active product, as the catalog form lists them: a tote in two colors, an apron with volume pricing, and a
-// basket without a price.
+// basket without a price or a photo.
 export const catalogProducts: CatalogProduct[] = [
   {
     id: id("2f8c6b14", 1),
@@ -134,7 +133,7 @@ export const catalogProducts: CatalogProduct[] = [
   {
     id: id("2f8c6b14", 3),
     title: "Market basket",
-    image: image("basket.png"),
+    image: null,
     variants: [catalogVariant(4, { supplierSku: "LM-BASKET", priceMinor: null })]
   }
 ]
@@ -184,25 +183,16 @@ export const wholesaleCatalog: CatalogEditorData = {
   customers: catalogCustomers
 }
 
-// A catalog that isn't saved yet. The server's type calls it a row (its `rows[0] ?? null` reads as the row's type), so
-// the missing one is typed as a row.
-function unsaved(): CatalogEditorData["catalog"] {
-  return null!
-}
-
 // A new catalog's form: every product, and customers to assign.
 export const newCatalog: CatalogEditorData = {
-  catalog: unsaved(),
+  catalog: null,
   products: catalogProducts,
   entries: [],
   customers: catalogCustomers.map((customer) => ({ ...customer, assigned: false }))
 }
 
-// A customer as the Customers list has it. One that hasn't ordered has no last order, which the server's type leaves
-// out (`own[0]?.sentAt ?? null` reads as a date).
-type CustomerRow = Omit<Awaited<ReturnType<typeof customerList>>["customers"][number], "lastOrderAt"> & {
-  lastOrderAt: Date | null
-}
+// A customer as the Customers list has it. One that hasn't ordered has no last order.
+type CustomerRow = Awaited<ReturnType<typeof customerList>>["customers"][number]
 
 function customerRow(
   customerId: string,
@@ -333,7 +323,8 @@ function inventoryRow(n: number, overrides: Partial<InventoryRow>): InventoryRow
   return { ...row, available: row.onHand - row.committed }
 }
 
-// Stock: a tote in two colors (one short of what's ordered), an apron that keeps selling, and an untracked basket.
+// Stock: a tote in two colors (one short of what's ordered), an apron that keeps selling, and an untracked basket
+// without a photo.
 export const inventoryRows: InventoryRow[] = [
   inventoryRow(1, { supplierSku: "LM-TOTE-NAT", variant: "Natural", image: photo, onHand: 120, committed: 80 }),
   inventoryRow(2, { supplierSku: "LM-TOTE-BLK", variant: "Black", image: photo, onHand: 40, committed: 64 }),
@@ -347,7 +338,7 @@ export const inventoryRows: InventoryRow[] = [
   inventoryRow(4, {
     title: "Market basket",
     supplierSku: "LM-BASKET",
-    image: image("basket.png"),
+    image: null,
     trackInventory: false,
     onHand: 0
   })

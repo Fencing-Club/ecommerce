@@ -2,13 +2,22 @@ import { cookies } from "next/headers"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { EmptyState, PageHeader } from "@/components/common"
+import { Button } from "@/components/ui/button"
 import { serverStory } from "@/stories/server"
 import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { Shell } from "./shell"
 
 // The portal's shell for a workspace of `kind`, around a page, with the sidebar as the person last left it (the
-// sidebar_state cookie).
-async function ShellStory({ kind, collapsed }: { kind: WorkspaceKind; collapsed: boolean }) {
+// sidebar_state cookie). `actions` gives the page's header buttons.
+async function ShellStory({
+  kind,
+  collapsed,
+  actions
+}: {
+  kind: WorkspaceKind
+  collapsed: boolean
+  actions?: boolean
+}) {
   const store = await cookies()
   if (collapsed) {
     store.set("sidebar_state", "false")
@@ -23,7 +32,14 @@ async function ShellStory({ kind, collapsed }: { kind: WorkspaceKind; collapsed:
     workspaces: Object.values(workspaces).map(({ id, name }) => ({ id, name })),
     children: (
       <>
-        <PageHeader title="Shipments" />
+        <PageHeader title="Shipments">
+          {actions && (
+            <>
+              <Button variant="outline">Import</Button>
+              <Button>Create purchase order</Button>
+            </>
+          )}
+        </PageHeader>
         <EmptyState title="No shipments yet" description="Shipments show here once a supplier packs a purchase order" />
       </>
     )
@@ -99,5 +115,28 @@ export const Collapsed = meta.story({
   args: { collapsed: true },
   play: async () => {
     await expect(document.querySelector("[data-slot=sidebar][data-state]")).toHaveAttribute("data-state", "collapsed")
+  }
+})
+
+// On a phone the header's buttons wrap under the title and start at the page's edge, and the sidebar's button stays
+// on the title's line.
+export const Phone = meta.story({
+  args: { actions: true },
+  globals: { viewport: { value: "iphone12", isRotated: false } },
+  play: async () => {
+    const main = byId("main-content")
+    const title = within(main).getByRole("heading", { name: "Shipments" }).getBoundingClientRect()
+    const toggle = within(main).getByRole("button", { name: "Toggle Sidebar" })
+    const button = toggle.getBoundingClientRect()
+    const create = within(main).getByRole("button", { name: "Create purchase order" }).getBoundingClientRect()
+    const edge = main.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(main).paddingInlineStart)
+    await expect(create.top).toBeGreaterThanOrEqual(title.bottom)
+    await expect(
+      Math.abs(within(main).getByRole("button", { name: "Import" }).getBoundingClientRect().left - edge)
+    ).toBeLessThanOrEqual(1)
+    await expect(title.left).toBeGreaterThanOrEqual(button.right)
+    await expect(Math.abs(button.top + button.height / 2 - (title.top + title.height / 2))).toBeLessThanOrEqual(2)
+    // The header spans the button's column, but the button stays on top, where a tap finds it.
+    await expect(toggle.contains(document.elementFromPoint(button.left + button.width / 2, button.top + 4))).toBe(true)
   }
 })

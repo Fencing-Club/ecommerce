@@ -44,12 +44,12 @@ const forwarder: ForwarderDetails = {
   expired: false
 }
 
-// Rows render in the partners table.
+// Rows render in the partners table, which stacks them on a phone.
 function Rows({ children }: { children: React.ReactNode }) {
   return (
     <div className="@container">
-      <Table>
-        <TableBody>{children}</TableBody>
+      <Table className="@max-md:block">
+        <TableBody className="@max-md:block">{children}</TableBody>
       </Table>
     </div>
   )
@@ -178,6 +178,8 @@ export const SupplierJoined = meta.story({
   render: () => <SupplierStory joined email="mei@lotus.example.com" addresses={[]} leadTimeDays={null} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByText("On Copacker")).toBeVisible()
+    // Standing renders as a status badge: on Copacker is done.
+    await expect(canvas.getByText("On Copacker").closest("[data-slot=status]")).toHaveAttribute("data-tone", "success")
     await expect(canvas.getByText("Lead time 60 days")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "More actions for Lotus Manufacturing" }))
     await screen.findByRole("menuitem", { name: "Edit" })
@@ -274,5 +276,21 @@ export const ForwarderViewOnly = meta.story({
     const sheet = await screen.findByRole("dialog", { name: "Bayline Freight" })
     await expect(within(sheet).queryByRole("button", { name: "Edit Bayline Freight" })).toBeNull()
     await expect(within(sheet).queryByRole("button", { name: "Remove" })).toBeNull()
+  }
+})
+
+// On a phone the row stacks: the long contact line truncates, and the status and menu stay on screen.
+export const Phone = meta.story({
+  render: () => (
+    <div data-phone className="w-[358px]">
+      <SupplierStory />
+    </div>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const width = canvasElement.querySelector("[data-phone]")?.getBoundingClientRect().right ?? 0
+    const menu = canvas.getByRole("button", { name: "More actions for Lotus Manufacturing" })
+    await expect(menu.getBoundingClientRect().right).toBeLessThanOrEqual(width)
+    await expect(canvas.getByText("Not invited").getBoundingClientRect().right).toBeLessThanOrEqual(width)
+    await expect(canvas.queryByRole("columnheader")).toBeNull()
   }
 })

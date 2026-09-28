@@ -99,7 +99,7 @@ export function SupplierOrderIndex({
                       : t("firstAndMore", { first: order.firstItem, count: order.lines - 1 })}
                   </p>
                 </TableCell>
-                <TableCell className="hidden text-muted-foreground @2xl:table-cell">
+                <TableCell className="hidden text-muted-foreground tabular-nums @2xl:table-cell">
                   {formatDate(order.sentAt, locale)}
                 </TableCell>
                 {showCustomer && (

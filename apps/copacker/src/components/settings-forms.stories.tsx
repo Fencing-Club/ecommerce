@@ -57,8 +57,13 @@ export const RestockValidation = meta.story({
       initialSelectionEnd: 2
     })
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
-    // Days outside 1 to 730 ask for the days again.
-    await expect(await canvas.findAllByText("Enter the days")).toHaveLength(2)
+    // Days outside 1 to 730 say which end they passed.
+    await expect(await canvas.findByText("Enter 1 or more")).toBeVisible()
+    await expect(canvas.getByText("Enter 730 or less")).toBeVisible()
+    // Emptied, a field stays empty and asks for the days.
+    await userEvent.clear(leadTime)
+    await expect(leadTime).toHaveValue(null)
+    await expect(await canvas.findByText("Enter the days")).toBeVisible()
     await expect(sent).toHaveLength(0)
   }
 })
@@ -102,6 +107,8 @@ export const SupplierProfile = meta.story({
       ])
     )
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
+    // The field shows the website as saved.
+    await expect(website).toHaveValue("https://lotus.example.com")
   }
 })
 

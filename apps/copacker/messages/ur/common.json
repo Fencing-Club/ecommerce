@@ -133,7 +133,10 @@
     "close": "بند کریں",
     "toggleSidebar": "سائیڈبار ٹوگل کریں",
     "sidebar": "سائیڈبار",
-    "sidebarDescription": "موبائل سائیڈبار دکھاتا ہے۔"
+    "sidebarDescription": "موبائل سائیڈبار دکھاتا ہے۔",
+    "clear": "صاف کریں",
+    "showOptions": "اختیارات دکھائیں",
+    "remove": "{label} ہٹائیں"
   },
   "pages": {
     "error": {

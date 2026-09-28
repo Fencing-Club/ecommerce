@@ -21,7 +21,7 @@ export function NotificationsMenu() {
         </PopoverHeader>
         <Empty className="px-6 py-10">
           <EmptyHeader className="gap-1">
-            <EmptyMedia className="text-muted-foreground">
+            <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
               <Bell aria-hidden className="size-5" />
             </EmptyMedia>
             <EmptyTitle>{t("empty")}</EmptyTitle>

@@ -41,7 +41,7 @@ export const { useSaveVariationDetailsMutation } = variationDetailsApi
 
 const text = z.string().trim().max(255)
 const wholeNumber = "products.details.enterWholeNumber"
-const minimum = z.number(wholeNumber).int(wholeNumber).min(0).max(1000000).optional()
+const minimum = z.number(wholeNumber).int(wholeNumber).min(0).max(1000000).nullable()
 export const variationSchema = z.object({
   variantId: z.string(),
   supplierSku: text,
@@ -57,8 +57,8 @@ export function variationValues(variation: VariationFields & { variantId: string
     variantId: variation.variantId,
     supplierSku: variation.supplierSku ?? "",
     asin: variation.asin ?? "",
-    amazonStockTarget: variation.amazonStockTarget ?? undefined,
-    storeStockTarget: variation.storeStockTarget ?? undefined
+    amazonStockTarget: variation.amazonStockTarget,
+    storeStockTarget: variation.storeStockTarget
   }
 }
 
@@ -66,8 +66,8 @@ export function variationInput(values: VariationValues): VariationInput {
   return {
     supplierSku: values.supplierSku,
     asin: values.asin,
-    amazonStockTarget: values.amazonStockTarget ?? null,
-    storeStockTarget: values.storeStockTarget ?? null
+    amazonStockTarget: values.amazonStockTarget,
+    storeStockTarget: values.storeStockTarget
   }
 }
 
@@ -89,9 +89,9 @@ function hidden(chunks: React.ReactNode) {
   return <span className="sr-only">{chunks}</span>
 }
 
-// Whole units from a number field, or nothing while it's empty.
+// Whole units from a number field, or null while it's empty, as in FormNumber, so the saved value doesn't come back.
 function units(input: HTMLInputElement) {
-  return input.value === "" ? undefined : input.valueAsNumber
+  return input.value === "" ? null : input.valueAsNumber
 }
 
 function Cell({

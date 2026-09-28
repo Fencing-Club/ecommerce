@@ -4,9 +4,10 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { PageHeader } from "@/components/common"
+import { StatCard, StatGrid } from "@/components/stat-card"
 import { CatalogPicker } from "@/components/supplier/customers"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
-import { Amounts } from "@/components/supplier/shared"
+import { AmountsStat } from "@/components/supplier/shared"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { can } from "@/lib/access"
 import { formatDate } from "@/lib/format"
@@ -54,33 +55,18 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       <PageHeader parents={[{ label: pages("customers"), href: "/customers" }]} title={customer.name} />
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
-          <Card size="sm">
-            <CardContent className={cn("grid divide-x text-sm", prices ? "grid-cols-3" : "grid-cols-2")}>
-              {prices && (
-                <div className="pe-3">
-                  <p className="text-muted-foreground">{t("spent")}</p>
-                  <p className="mt-1 text-lg font-semibold">
-                    <Amounts amounts={customer.spent} />
-                  </p>
-                </div>
-              )}
-              <div className={prices ? "px-3" : "pe-3"}>
-                <p className="text-muted-foreground">{t("orders")}</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{customer.orders.toLocaleString(locale)}</p>
-              </div>
-              <div className="ps-3">
-                <p className="text-muted-foreground">{t("since")}</p>
-                <p className="mt-1 text-lg font-semibold">{formatDate(customer.createdAt, locale)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <StatGrid>
+            {prices && <AmountsStat label={t("spent")} amounts={customer.spent} />}
+            <StatCard label={t("orders")} value={customer.orders.toLocaleString(locale)} />
+            <StatCard label={t("since")} value={formatDate(customer.createdAt, locale)} />
+          </StatGrid>
           {/* The customer's orders, for someone who can open them. */}
           {can(s, "orders") && (
             <SupplierOrderIndex orders={prices ? orders : withoutTotals(orders)} showCustomer={false} />
           )}
         </div>
         <div className="flex flex-col gap-4">
-          <Card size="sm">
+          <Card>
             <CardHeader>
               <CardTitle>{t("catalog")}</CardTitle>
             </CardHeader>
@@ -102,7 +88,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               )}
             </CardContent>
           </Card>
-          <Card size="sm">
+          <Card>
             <CardHeader>
               <CardTitle>{t("contact")}</CardTitle>
             </CardHeader>

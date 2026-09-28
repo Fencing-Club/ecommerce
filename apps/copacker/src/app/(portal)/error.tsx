@@ -17,7 +17,7 @@ export default function PortalError({ retry }: { retry: () => void }) {
       <PageHeader title={t("title")} />
       <Empty className="gap-4 py-10">
         <EmptyHeader className="gap-1">
-          <EmptyMedia className="text-muted-foreground">
+          <EmptyMedia variant="icon" className="size-10 text-muted-foreground">
             <CircleAlert aria-hidden className="size-5" />
           </EmptyMedia>
           <EmptyTitle>

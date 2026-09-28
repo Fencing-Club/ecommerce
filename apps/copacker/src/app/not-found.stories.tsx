@@ -13,7 +13,11 @@ const meta = preview.meta({
 
 export const Default = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "Copacker" })).toHaveAttribute("href", "/")
+    const home = canvas.getByRole("link", { name: "Copacker" })
+    await expect(home).toHaveAttribute("href", "/")
+    // Copacker's box sits flat in the bordered header, as in the app's own header, without the sign-in pages' glow.
+    const box = home.querySelector("[aria-hidden]")
+    await expect(box && getComputedStyle(box).boxShadow).toBe("none")
     await expect(canvas.getByText("Page not found")).toBeVisible()
     await expect(canvas.getByText("Check the address and try again")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Go to Copacker" })).toHaveAttribute("href", "/")
