@@ -2,6 +2,7 @@
 
 import { CircleCheck, UploadCloud } from "lucide-react"
 import { useState } from "react"
+import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import { errorMessage } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
 import { WarningNote } from "./common"
+import { pdfFiles } from "./file-dropzone"
 import { useUploadBarcodeMutation } from "./product-barcodes"
 
 // One chosen file and what happened to it. A file whose SKU matched no single variation can be retried with a SKU.
@@ -31,7 +33,8 @@ function targetLabel(target: BarcodeTarget) {
   return target.sku ? `${name} (${target.sku})` : name
 }
 
-const isPdf = (file: File) => file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+// The most a barcode PDF may weigh, as the upload takes it.
+const maxBytes = 32 * 1024 * 1024
 
 function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed" }>; onRetry: (sku: string) => void }) {
   const [sku, setSku] = useState("")
@@ -90,15 +93,20 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
   const [files, setFiles] = useState<File[]>([])
   const [results, setResults] = useState<Result[]>([])
   const [running, setRunning] = useState(false)
-  const [dragging, setDragging] = useState(false)
-  // Changing it clears the file picker once its files are uploaded.
-  const [picker, setPicker] = useState(0)
+  // How many of the last files dropped or chosen weren't PDFs within the size limit.
+  const [skipped, setSkipped] = useState(0)
   const [upload] = useUploadBarcodeMutation()
-
-  const choose = (chosen: File[]) => {
-    setFiles(chosen.filter(isPdf))
-    setResults([])
-  }
+  // Drop, paste or click the zone to choose PDFs; react-dropzone leaves out anything else.
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: pdfFiles,
+    maxSize: maxBytes,
+    disabled: running,
+    onDrop: (accepted, rejected) => {
+      setFiles(accepted)
+      setSkipped(rejected.length)
+      setResults([])
+    }
+  })
   const update = (index: number, result: Result) =>
     setResults((current) => current.map((item, at) => (at === index ? result : item)))
 
@@ -138,7 +146,6 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
     }
     setRunning(false)
     setFiles([])
-    setPicker((key) => key + 1)
     if (saved) {
       onChanged()
     }
@@ -164,6 +171,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
           if (!next) {
             setResults([])
             setFiles([])
+            setSkipped(0)
           }
         }
       }}
@@ -178,14 +186,15 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
           <SheetDescription>Name each PDF after its SKU, such as ABC-123.pdf</SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-          {/* The file input covers the whole zone, so a click opens the picker and dropped files land in it. */}
           <div
+            {...getRootProps({ role: "button", "aria-label": "Choose barcode PDFs" })}
             className={cn(
-              "relative flex flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors hover:bg-muted/50 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
-              dragging && "border-ring bg-muted/50",
-              running && "opacity-50"
+              "flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+              isDragActive && "border-ring bg-muted/50",
+              running && "cursor-default opacity-50"
             )}
           >
+            <input {...getInputProps()} />
             <UploadCloud className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
             <span className="font-medium">
               {files.length
@@ -193,20 +202,13 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
                 : "Choose PDFs or drop them here"}
             </span>
             <span className="text-xs text-muted-foreground">Up to 32 MB each</span>
-            <input
-              key={picker}
-              type="file"
-              accept="application/pdf"
-              multiple
-              disabled={running}
-              aria-label="Barcode PDFs"
-              className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-default"
-              onDragEnter={() => setDragging(true)}
-              onDragLeave={() => setDragging(false)}
-              onDrop={() => setDragging(false)}
-              onChange={(event) => choose([...(event.target.files ?? [])])}
-            />
           </div>
+          {skipped > 0 && (
+            <WarningNote>
+              {skipped === 1 ? "Left out 1 file that isn’t a PDF" : `Left out ${skipped} files that aren’t PDFs`} up to
+              32 MB
+            </WarningNote>
+          )}
           {results.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground" aria-live="polite">

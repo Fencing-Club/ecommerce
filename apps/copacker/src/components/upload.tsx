@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { errorMessage, useUploadDocumentMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { FileDropzone } from "./file-dropzone"
+import { FileDropzone, pdfFiles } from "./file-dropzone"
 import { SelectField } from "./form-fields"
 
 const titles = {
@@ -147,7 +147,7 @@ export function Upload({
           id={`${id}-drop`}
           label={label === undefined ? titles[kind] : label}
           hint={kind === "product_label" ? "One label sheet per variation, up to 32 MB" : undefined}
-          accept="application/pdf,.pdf"
+          accept={pdfFiles}
           maxBytes={maxBytes}
           file={file}
           onFileChange={choose}

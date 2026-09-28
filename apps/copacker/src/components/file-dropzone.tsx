@@ -5,9 +5,11 @@
 // file and uploads it or submits it with its form. For example, a CSV import:
 //
 //   const [file, setFile] = useState<File | null>(null)
-//   <FileDropzone label="Catalog CSV" accept=".csv,text/csv" maxBytes={5 * 1024 * 1024} file={file} onFileChange={setFile} />
+//   <FileDropzone label="Catalog CSV" accept={{ "text/csv": [".csv"] }} maxBytes={5 * 1024 * 1024} file={file} onFileChange={setFile} />
 //
-// - accept: the types to take, as an input's accept attribute lists them. Dropped files are checked against it too.
+// Dropping, pasting and the file picker come from react-dropzone, which also checks each file's type and size.
+//
+// - accept: the types to take, as react-dropzone's map of media types to extensions, such as `pdfFiles`.
 // - maxBytes: the largest file to take. The zone shows it, unless `hint` says something else.
 // - label: shown above the zone. Leave it out when a card title already names the file.
 // - name: submits the file with a surrounding native form. `id` goes on the zone's button.
@@ -20,6 +22,7 @@
 import { useMergedRef } from "@mantine/hooks"
 import { FileText, UploadCloud, X } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
+import { type Accept, ErrorCode, type FileRejection, useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
@@ -31,28 +34,26 @@ function fileSize(bytes: number) {
   return bytes < 1024 * 1024 ? kilobytes.format(Math.max(1, bytes / 1024)) : megabytes.format(bytes / 1024 / 1024)
 }
 
-// What the prompt and errors call the file: PDF or CSV when that's all the zone takes, or just "file".
-const typeNames: Record<string, string> = { ".pdf": "PDF", "application/pdf": "PDF", ".csv": "CSV", "text/csv": "CSV" }
+export const pdfFiles: Accept = { "application/pdf": [".pdf"] }
 
-function typeName(types: string[]) {
-  const names = new Set(types.map((type) => typeNames[type] ?? "file"))
+// What the prompt and errors call the file: PDF or CSV when that's all the zone takes, or just "file".
+const typeNames: Record<string, string> = { "application/pdf": "PDF", "text/csv": "CSV" }
+
+function typeName(accept: Accept) {
+  const names = new Set(Object.keys(accept).map((type) => typeNames[type] ?? "file"))
   return names.size === 1 ? [...names][0]! : "file"
 }
 
-// Whether a file is one of the accepted types: by extension (.pdf), by media type (application/pdf) or by a media
-// type's family (image/*), as the browser's own picker matches them.
-function accepts(file: File, types: string[]) {
-  const name = file.name.toLowerCase()
-  const type = file.type.toLowerCase()
-  return (
-    types.length === 0 ||
-    types.some((accepted) => {
-      if (accepted.startsWith(".")) {
-        return name.endsWith(accepted)
-      }
-      return accepted.endsWith("/*") ? type.startsWith(accepted.slice(0, -1)) : type === accepted
-    })
-  )
+// Why a dropped, pasted or chosen file was turned down, in the zone's words.
+function rejection(rejected: FileRejection | undefined, noun: string, maxBytes: number) {
+  const codes = new Set(rejected?.errors.map((error) => error.code))
+  if (codes.has(ErrorCode.FileInvalidType)) {
+    return noun === "file" ? "Choose a supported file" : `Choose a ${noun}`
+  }
+  if (codes.has(ErrorCode.FileTooLarge)) {
+    return `Choose a ${noun} up to ${fileSize(maxBytes)}`
+  }
+  return `Choose one ${noun}`
 }
 
 export function FileDropzone({
@@ -71,7 +72,7 @@ export function FileDropzone({
   ref,
   children
 }: {
-  accept: string
+  accept: Accept
   maxBytes: number
   file: File | null
   onFileChange: (file: File | null) => void
@@ -88,28 +89,44 @@ export function FileDropzone({
 }) {
   const generatedId = useId()
   const zoneId = id ?? `${generatedId}-zone`
-  const input = useRef<HTMLInputElement>(null)
   // The zone, or Replace beside a stored file: whichever chooses the next file.
   const zone = useRef<HTMLButtonElement>(null)
-  const zoneRef = useMergedRef(zone, ref)
   const row = useRef<HTMLDivElement>(null)
   // Where focus goes once a chosen or removed file renders, since the zone and the row replace each other.
   const refocus = useRef<"zone" | "row" | null>(null)
-  const [dragging, setDragging] = useState(false)
   // Why the last file dropped or chosen was turned down.
   const [problem, setProblem] = useState("")
-  const types = accept
-    .split(",")
-    .map((type) => type.trim().toLowerCase())
-    .filter(Boolean)
-  const noun = typeName(types)
+  const noun = typeName(accept)
   const message = problem || error
   const flagged = Boolean(message) || invalid
+  // The zone's own button and Replace open the picker, so the dropzone itself only takes drops and pastes. A chosen
+  // file takes neither until it's removed.
+  const { getRootProps, getInputProps, isDragActive, open, rootRef, inputRef } = useDropzone({
+    accept,
+    maxSize: maxBytes,
+    multiple: false,
+    disabled,
+    noClick: true,
+    noKeyboard: true,
+    noDrag: Boolean(file),
+    noPaste: Boolean(file),
+    onDropAccepted: ([next]) => {
+      if (next) {
+        setProblem("")
+        refocus.current = "row"
+        onFileChange(next)
+      }
+    },
+    onDropRejected: ([rejected]) => setProblem(rejection(rejected, noun, maxBytes))
+  })
+  const zoneRef = useMergedRef(zone, ref, rootRef)
+  const rowRef = useMergedRef(row, rootRef)
+  const replaceRef = useMergedRef(zone, ref)
 
   // The hidden input holds the file the parent keeps, so a native form submits it and choosing the same file again
   // after removing it still counts as a change.
   useEffect(() => {
-    const picker = input.current
+    const picker = inputRef.current
     if (picker && picker.files?.[0] !== file) {
       if (file) {
         try {
@@ -129,48 +146,12 @@ export function FileDropzone({
       zone.current?.focus()
     }
     refocus.current = null
-  }, [file])
-
-  function choose(files: FileList | null) {
-    const next = files?.[0]
-    if (!next) {
-      return
-    }
-    let issue = ""
-    if (!accepts(next, types)) {
-      issue = noun === "file" ? "Choose a supported file" : `Choose a ${noun}`
-    } else if (next.size > maxBytes) {
-      issue = `Choose a ${noun} up to ${fileSize(maxBytes)}`
-    }
-    setProblem(issue)
-    if (issue) {
-      if (input.current) {
-        input.current.value = ""
-      }
-      return
-    }
-    refocus.current = "row"
-    onFileChange(next)
-  }
+  }, [file, inputRef])
 
   function remove() {
     setProblem("")
     refocus.current = "zone"
     onFileChange(null)
-  }
-
-  function over(event: React.DragEvent) {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = disabled ? "none" : "copy"
-    setDragging(!disabled)
-  }
-
-  function drop(event: React.DragEvent) {
-    event.preventDefault()
-    setDragging(false)
-    if (!disabled) {
-      choose(event.dataTransfer.files)
-    }
   }
 
   return (
@@ -180,25 +161,16 @@ export function FileDropzone({
           {label}
         </FieldLabel>
       )}
-      <input
-        ref={input}
-        type="file"
-        name={name}
-        accept={accept}
-        hidden
-        onChange={(event) => choose(event.target.files)}
-      />
+      <input {...getInputProps({ name })} />
       {file || current ? (
         // Takes focus when the file is chosen, so keyboard and screen reader users land on it rather than the page. One
         // row for the chosen and the stored file, so focus stays when an uploaded file becomes the stored one.
         <div
-          ref={row}
+          {...getRootProps()}
+          ref={rowRef}
           tabIndex={-1}
           data-invalid={flagged || undefined}
-          data-dragging={dragging || undefined}
-          {...(file
-            ? {}
-            : { onDragEnter: over, onDragOver: over, onDragLeave: () => setDragging(false), onDrop: drop })}
+          data-dragging={isDragActive || undefined}
           className="flex min-h-12 items-center gap-3 rounded-lg border py-2 pr-2 pl-3 text-foreground transition-colors outline-none data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive"
         >
           <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
@@ -244,7 +216,7 @@ export function FileDropzone({
                   )}
                 </span>
                 <Button
-                  ref={zoneRef}
+                  ref={replaceRef}
                   type="button"
                   id={zoneId}
                   variant="outline"
@@ -252,7 +224,7 @@ export function FileDropzone({
                   disabled={disabled}
                   aria-label={`Replace ${current.name}`}
                   aria-describedby={message ? `${zoneId}-error` : undefined}
-                  onClick={() => input.current?.click()}
+                  onClick={open}
                 >
                   Replace
                 </Button>
@@ -263,6 +235,7 @@ export function FileDropzone({
       ) : (
         // A button rather than the input itself, so the zone takes focus, clicks and drops alike.
         <button
+          {...getRootProps({ role: "button" })}
           ref={zoneRef}
           type="button"
           id={zoneId}
@@ -271,13 +244,9 @@ export function FileDropzone({
           aria-describedby={
             [label ? `${zoneId}-hint` : "", message ? `${zoneId}-error` : ""].filter(Boolean).join(" ") || undefined
           }
-          data-dragging={dragging || undefined}
+          data-dragging={isDragActive || undefined}
           data-invalid={flagged || undefined}
-          onClick={() => input.current?.click()}
-          onDragEnter={over}
-          onDragOver={over}
-          onDragLeave={() => setDragging(false)}
-          onDrop={drop}
+          onClick={open}
           className="flex w-full cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-6 text-center transition-colors outline-none *:pointer-events-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive data-invalid:focus-visible:ring-destructive/20"
         >
           <UploadCloud aria-hidden className="mb-1 size-5 text-muted-foreground" />

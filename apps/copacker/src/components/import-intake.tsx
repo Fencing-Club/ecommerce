@@ -12,7 +12,7 @@ import { api, errorMessage } from "@/lib/api"
 import { formatDate } from "@/lib/format"
 import { FormError, SubmitButton } from "./actions"
 import { StatusBadge, type StatusTone } from "./common"
-import { FileDropzone } from "./file-dropzone"
+import { FileDropzone, pdfFiles } from "./file-dropzone"
 
 type ImportSummary = { id: string; filename: string; status: string; revision: number; createdAt: string }
 const importsApi = api.injectEndpoints({
@@ -88,7 +88,7 @@ export function ImportIntake() {
             }}
           >
             <FileDropzone
-              accept="application/pdf,.pdf"
+              accept={pdfFiles}
               maxBytes={maxBytes}
               hint="Up to 10 MB and 50 pages"
               file={file}

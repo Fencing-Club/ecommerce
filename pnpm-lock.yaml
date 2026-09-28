@@ -111,6 +111,9 @@ importers:
       react-dom:
         specifier: 19.2.7
         version: 19.2.7(react@19.2.7)
+      react-dropzone:
+        specifier: ^20.1.2
+        version: 20.1.2(@types/react@19.3.0)(react@19.2.7)
       react-hook-form:
         specifier: ^7.88.0
         version: 7.88.0(react@19.2.7)
@@ -3922,6 +3925,10 @@ packages:
   atomically@2.1.1:
     resolution: {integrity: sha1-xU77YF7MkuHot1JjiAbSwUwx540=}
 
+  attr-accept@4.0.0:
+    resolution: {integrity: sha1-4DgALIdYMLK5h3SRir/Uvet9nJc=}
+    engines: {node: '>= 22'}
+
   babel-plugin-react-compiler@1.0.0:
     resolution: {integrity: sha1-vfc2CiOk1ev8oJAlXaOJPv0HQl8=}
 
@@ -4729,6 +4736,10 @@ packages:
   figures@6.1.0:
     resolution: {integrity: sha1-k1R59Rhl+nR59vqU/G/HrBTmLEo=}
     engines: {node: '>=18'}
+
+  file-selector@5.0.1:
+    resolution: {integrity: sha1-mo96lEVZ7+QRW+9A34hawgkrBlE=}
+    engines: {node: '>= 22'}
 
   fill-range@7.1.1:
     resolution: {integrity: sha1-RCZdPKwH4+p9wkdRY4BkN1SgUpI=}
@@ -6147,6 +6158,16 @@ packages:
     resolution: {integrity: sha1-BFDcmundv/du8ZZAHNi4x/tGbMw=}
     peerDependencies:
       react: 19.2.7
+
+  react-dropzone@20.1.2:
+    resolution: {integrity: sha512-gj2m31ZmYOZjTuW6CDfx38/WW2JlbuQ/X2Il8cOwIWa7Znp7vQSPJFtRfDbAjusBuoXzAYktI+r2R6iKMaRTPw==}
+    engines: {node: '>= 22'}
+    peerDependencies:
+      '@types/react': '*'
+      react: 19.2.7
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   react-email@6.9.5:
     resolution: {integrity: sha512-XkUFa4S3XGbVQegdGSvkShsEOn/j9t3yL5MXRf5A2l4K+RzXNPK2TZLOgI/bXfWu2WRyKWb9aVDtfLLuyBMi2A==}
@@ -10103,6 +10124,8 @@ snapshots:
       stubborn-fs: 2.0.0
       when-exit: 2.1.5
 
+  attr-accept@4.0.0: {}
+
   babel-plugin-react-compiler@1.0.0:
     dependencies:
       '@babel/types': 7.29.8
@@ -10931,6 +10954,8 @@ snapshots:
   figures@6.1.0:
     dependencies:
       is-unicode-supported: 2.1.0
+
+  file-selector@5.0.1: {}
 
   fill-range@7.1.1:
     dependencies:
@@ -12211,6 +12236,14 @@ snapshots:
     dependencies:
       react: 19.2.7
       scheduler: 0.27.0
+
+  react-dropzone@20.1.2(@types/react@19.3.0)(react@19.2.7):
+    dependencies:
+      attr-accept: 4.0.0
+      file-selector: 5.0.1
+      react: 19.2.7
+    optionalDependencies:
+      '@types/react': 19.3.0
 
   react-email@6.9.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
