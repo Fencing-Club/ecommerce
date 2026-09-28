@@ -7,10 +7,11 @@ each line which network it's packed for. AWD China is left out until it's clear 
 
 When the supplier submits packing, each carton must hold products for one network, following that network's rules.
 Submitting (or approving invoice changes) splits the cartons into one shipment per network: the shipment keeps the first
-network's cartons (FBA, then AWD US) and each other network's become a new shipment with the same ready date, pickup
-address and invoice. Each shipment records its `amazonNetwork`, gets its own `amazon` job, labels, shipping-label upload,
-release and packet. The job creates the shipment in Amazon and fetches a label for every carton; the shipment then waits
-for the buyer's carrier labels, the same way for both networks.
+network's cartons (FBA, then AWD US) and each other network's become a new shipment with the same ready date and pickup
+address, and its own copy of the invoice, so a correction to one shipment leaves the others' invoice current. Each
+shipment records its `amazonNetwork`, gets its own `amazon` job, labels, shipping-label upload, release and packet. The
+job creates the shipment in Amazon and fetches a label for every carton; the shipment then waits for the buyer's carrier
+labels, the same way for both networks.
 
 ## AWD US (`awd_us`)
 

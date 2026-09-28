@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto"
 import { type Address, addressSchema } from "@repo/aisle"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { type AnyColumn, and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
-import { contacts, forwarders, jobs, memberships, organizations } from "@/db/schema"
+import { contacts, forwarders, jobs, memberships, orderRevisions, orders, organizations, shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { hash, token } from "./security"
@@ -266,7 +266,8 @@ export async function acceptForwarderInvitation(
       .update(forwarders)
       .set({ forwarderOrgId: orgId, invitationHash: null, expiresAt: null })
       .where(eq(forwarders.id, row.id))
-    // The addresses the buyer saved for it become the forwarder's own, unless it already keeps some.
+    // The addresses the buyer saved for it become the forwarder's own, unless it already keeps some; the ones the
+    // buyer's POs stop at always do. Those POs then stop at the forwarder's copy, which it keeps up to date from here.
     const [kept] = await tx
       .select({ id: contacts.id })
       .from(contacts)
@@ -275,13 +276,38 @@ export async function acceptForwarderInvitation(
       .select()
       .from(contacts)
       .where(and(eq(contacts.orgId, row.buyerOrgId), eq(contacts.forwarderId, row.id)))
-    if (!kept && saved.length) {
-      await tx
+    const stops = await tx
+      .selectDistinct({ addressId: sql<string>`${orders.data}->'via'->>'addressId'` })
+      .from(orders)
+      .where(and(eq(orders.buyerOrgId, row.buyerOrgId), sql`${orders.data}->'via'->>'forwarderId' = ${row.id}`))
+    const handedOver = kept ? saved.filter((contact) => stops.some((stop) => stop.addressId === contact.id)) : saved
+    for (const contact of handedOver) {
+      const [copy] = await tx
         .insert(contacts)
-        .values(
-          saved.map((contact) => ({ orgId, kind: "delivery" as const, name: contact.name, address: contact.address }))
-        )
+        .values({ orgId, kind: "delivery", name: contact.name, address: contact.address })
+        .returning({ id: contacts.id })
+      await moveStops(tx, row.id, contact.id, copy!.id)
     }
   }
   await (transaction ? accept(transaction) : db().transaction(accept))
+}
+
+// Moves the stops at one of a forwarder's addresses to another of its addresses, in its POs, their earlier revisions and
+// their shipments.
+async function moveStops(tx: Transaction, forwarderId: string, from: string, to: string) {
+  const stopsAt = (route: AnyColumn) =>
+    and(sql`${route}->'via'->>'forwarderId' = ${forwarderId}`, sql`${route}->'via'->>'addressId' = ${from}`)
+  const moved = (route: AnyColumn) => sql`jsonb_set(${route}, '{via,addressId}', to_jsonb(${to}::text))`
+  await tx
+    .update(orders)
+    .set({ data: moved(orders.data) })
+    .where(stopsAt(orders.data))
+  await tx
+    .update(orderRevisions)
+    .set({ data: moved(orderRevisions.data) })
+    .where(stopsAt(orderRevisions.data))
+  await tx
+    .update(shipments)
+    .set({ snapshot: moved(shipments.snapshot) })
+    .where(stopsAt(shipments.snapshot))
 }

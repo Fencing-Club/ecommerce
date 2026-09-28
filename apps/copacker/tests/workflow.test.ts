@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
-import { addressSchema, orderInputSchema, packingSchema, buildAwdRequest, orderTotal, type Packing } from "@repo/aisle"
+import {
+  type Address,
+  addressSchema,
+  orderInputSchema,
+  packingSchema,
+  buildAwdRequest,
+  orderTotal,
+  type Packing
+} from "@repo/aisle"
 import { ProviderError } from "@repo/aisle/amazon"
 import { packingListPdf, purchaseOrderPdf } from "@repo/aisle/documents"
 import { and, eq } from "drizzle-orm"
@@ -225,7 +233,7 @@ const orderData = orderInputSchema.parse({
     }
   ]
 })
-function actor(kind: "buyer" | "supplier", id: string): Session {
+function actor(kind: Session["org"]["kind"], id: string): Session {
   return {
     user: { id: `user-${id}`, email: "tester@example.com", emailVerified: true, name: "Tess Tester" },
     org: {
@@ -1908,6 +1916,16 @@ async function queuedShipment() {
 async function retryDue() {
   await database.update(tables.jobs).set({ runAt: new Date(0) })
 }
+// Runs an action as the current actor.
+async function post(name: string, data: Record<string, unknown>) {
+  return action(
+    new Request("http://localhost:3000/api/action", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+      body: JSON.stringify({ action: name, data })
+    })
+  )
+}
 
 describe("durable shipment worker recovery", () => {
   it("resumes confirmation polling without creating a second Amazon order", async () => {
@@ -2050,18 +2068,7 @@ describe("leg holders shipping the goods on", () => {
     return prepared.id
   }
   const forwarderOrg = randomUUID()
-  const forwarderActor: Session = {
-    ...actor("buyer", forwarderOrg),
-    org: { ...actor("buyer", forwarderOrg).org, kind: "forwarder" }
-  }
-  const post = (name: string, data: Record<string, unknown>) =>
-    action(
-      new Request("http://localhost:3000/api/action", {
-        method: "POST",
-        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
-        body: JSON.stringify({ action: name, data })
-      })
-    )
+  const forwarderActor = actor("forwarder", forwarderOrg)
 
   it("lets the supplier mark its released goods shipped, and the buyer receive them", async () => {
     const id = await released()
@@ -3315,6 +3322,31 @@ function fakeFba() {
   return state
 }
 
+// The forwarder joining Copacker: the test user makes a forwarder workspace, with any addresses it already keeps, and
+// accepts the forwarder's invitation into it.
+async function joinForwarder(forwarderId: string, kept: Array<{ name: string; address: Address }> = []) {
+  const forwarderOrg = randomUUID()
+  await database.insert(tables.organizations).values({ id: forwarderOrg, name: "Yiwu Logistics", kind: "forwarder" })
+  await database
+    .insert(tables.memberships)
+    .values({ orgId: forwarderOrg, userId: buyer.user.id, email: buyer.user.email, role: "owner" })
+  if (kept.length) {
+    await database
+      .insert(tables.contacts)
+      .values(kept.map((contact) => ({ ...contact, orgId: forwarderOrg, kind: "delivery" as const })))
+  }
+  await database
+    .update(tables.forwarders)
+    .set({
+      email: buyer.user.email,
+      invitationHash: hash("forwarder-invitation-test-token"),
+      expiresAt: new Date(Date.now() + 86400000)
+    })
+    .where(eq(tables.forwarders.id, forwarderId))
+  await acceptForwarderInvitation(buyer.user, forwarderOrg, "forwarder-invitation-test-token")
+  return forwarderOrg
+}
+
 describe("PO to a released FBA shipment", () => {
   beforeEach(async () => {
     await database.update(tables.orders).set({ status: "draft", data: fbaOrder }).where(eq(tables.orders.id, orderId))
@@ -3496,6 +3528,59 @@ describe("PO to a released FBA shipment", () => {
     expect(shipment!.packing!.origin.city).toBe("Shenzhen")
   })
 
+  it("keeps a sent PO's stop when its forwarder joins, at the forwarder's own copy of the address", async () => {
+    fakeFba()
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    const stop = {
+      name: "Yiwu warehouse",
+      addressLine1: "88 Futian Road",
+      addressLine2: "",
+      city: "Yiwu",
+      stateOrRegion: "Zhejiang",
+      postalCode: "322000",
+      countryCode: "CN",
+      phoneNumber: "",
+      email: ""
+    }
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address: stop })
+    const [saved] = await forwarderAddresses(buyerId)
+    const data = { ...fbaOrder, via: { forwarderId: forwarder.id, addressId: saved!.addressId } }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    // Amazon waits for a phone number at the stop, and the forwarder joins before anyone adds one.
+    const shipmentId = await packed([
+      { cartonId: "C1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 160 }] },
+      { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+    ])
+    const forwarderOrg = await joinForwarder(forwarder.id)
+    const [own] = await database.select().from(tables.contacts).where(eq(tables.contacts.orgId, forwarderOrg))
+    // The forwarder adds the phone number to the address it now keeps, and the buyer retries.
+    context.actor = actor("forwarder", forwarderOrg)
+    const update = {
+      id: own!.id,
+      name: "Yiwu warehouse",
+      kind: "delivery",
+      address: { ...stop, phoneNumber: "+8657985550100" }
+    }
+    expect((await post("contact.update", update)).status).toBe(200)
+    context.actor = buyer
+    expect((await post("shipment.retry", { id: shipmentId, revision: 1 })).status).toBe(200)
+    for (let run = 0; run < 30 && (await runNextJob()); run++) {
+      await retryDue()
+    }
+    const [shipment] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
+    expect(shipment).toMatchObject({ status: "waiting_labels", issue: null })
+    expect(provider.api.fbaCreatePlan.mock.calls[0]![0]).toMatchObject({
+      sourceAddress: { addressLine1: "88 Futian Road", city: "Yiwu", phoneNumber: "+8657985550100" }
+    })
+    // The purchase order ships to the address as the forwarder keeps it.
+    await generatePo(orderId)
+    expect(vi.mocked(purchaseOrderPdf).mock.lastCall![0].shipTo).toEqual({
+      name: "Yiwu Logistics, Yiwu warehouse",
+      lines: ["Then to Amazon FBA", "88 Futian Road", "Yiwu, Zhejiang 322000", "CN", "Yiwu warehouse, +8657985550100"]
+    })
+  })
+
   it("splits one PO's cartons into a shipment per Amazon network, each with its own Amazon job", async () => {
     fakeFba()
     // Cords go to AWD US in bulk; gloves go to FBA.
@@ -3576,6 +3661,65 @@ describe("PO to a released FBA shipment", () => {
     expect(provider.api.fbaCreatePlan.mock.calls[0]![0]).toMatchObject({ items: [{ msku: "glove-6", quantity: 10 }] })
     const [fba] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
     expect(fba).toMatchObject({ status: "waiting_labels", amazonShipmentId: "FBA15SH2" })
+  })
+
+  it("gives a shipment split off by network its own invoice, which correcting the other shipment leaves current", async () => {
+    const data = {
+      ...fbaOrder,
+      items: [{ ...fbaOrder.items[0]!, amazonNetwork: "awd_us" as const }, fbaOrder.items[1]!]
+    }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    const invoice = await uploadPdf("invoice", shipmentId)
+    const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
+    const packing = packingSchema.parse({
+      invoiceDocumentId: invoiceDocument!.id,
+      readyDate: "2026-10-15",
+      origin: {
+        name: "Supplier",
+        addressLine1: "Road 1",
+        city: "Shenzhen",
+        stateOrRegion: "Guangdong",
+        postalCode: "518000",
+        countryCode: "CN",
+        phoneNumber: "+86123456789"
+      },
+      cartons: [
+        { cartonId: "A1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 160 }] },
+        { cartonId: "G1", length: 30, width: 20, height: 10, weight: 3, items: [{ itemId: gloveId, pieces: 10 }] }
+      ]
+    })
+    await submitPacking(buyer, shipmentId, packing, 1)
+    const [awd] = await database
+      .select()
+      .from(tables.shipments)
+      .where(and(eq(tables.shipments.orderId, orderId), eq(tables.shipments.amazonNetwork, "awd_us")))
+    // The FBA shipment's cartons are corrected while the AWD shipment carries on and is released.
+    await correctShipment(buyer, shipmentId, "Change cartons")
+    await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, awd!.id))
+    context.actor = supplier
+    expect(await (await post("shipment.ship", { id: awd!.id })).json()).toEqual({ ok: true })
+    // Each shipment has its own copy of the invoice, and only the corrected one's is outdated.
+    const invoices = await database.select().from(tables.documents).where(eq(tables.documents.kind, "invoice"))
+    expect(invoices.map((row) => [row.shipmentId, row.name, row.outdated]).toSorted()).toEqual(
+      [
+        [shipmentId, "Labels.pdf", 1],
+        [awd!.id, "Labels.pdf", 0]
+      ].toSorted()
+    )
+    const copy = invoices.find((row) => row.shipmentId === awd!.id)!
+    expect(awd!.packing!.invoiceDocumentId).toBe(copy.id)
+    // The copy has its own file, which the supplier downloads like the original.
+    expect(copy.objectKey).not.toBe(invoices.find((row) => row.shipmentId === shipmentId)!.objectKey)
+    await database
+      .insert(tables.memberships)
+      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "owner" })
+    const download = await downloadDocument(new Request("http://localhost"), {
+      params: Promise.resolve({ id: copy.id })
+    })
+    expect(download.status).toBe(200)
+    expect((await PDFDocument.load(await download.arrayBuffer())).getPageCount()).toBe(1)
   })
 
   it("keeps products Amazon packs separately out of the same carton", async () => {
@@ -5068,6 +5212,40 @@ describe("freight forwarders", () => {
     await expect(
       saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Another", address })
     ).rejects.toThrow("keeps its own addresses")
+  })
+
+  it("hands a forwarder that keeps its own addresses only the saved ones POs stop at, and moves those POs there", async () => {
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
+    await saveForwarderAddress(buyerId, {
+      forwarderId: forwarder.id,
+      name: "Ningbo port",
+      address: { ...address, city: "Ningbo", postalCode: "315000" }
+    })
+    const saved = (await forwarderAddresses(buyerId)).find((row) => row.addressName === "Yiwu warehouse")!
+    const data = { ...orderData, via: { forwarderId: forwarder.id, addressId: saved.addressId } }
+    await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+    await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+    const [shipment] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: data })
+      .returning()
+    const forwarderOrg = await joinForwarder(forwarder.id, [
+      { name: "Main warehouse", address: { ...address, addressLine1: "1 Main Road" } }
+    ])
+    const own = await database.select().from(tables.contacts).where(eq(tables.contacts.orgId, forwarderOrg))
+    expect(own.map((contact) => contact.name).toSorted()).toEqual(["Main warehouse", "Yiwu warehouse"])
+    // The PO, its revision and its shipment stop at the forwarder's copy, one of the addresses it offers.
+    const copy = own.find((contact) => contact.name === "Yiwu warehouse")!
+    const via = { forwarderId: forwarder.id, addressId: copy.id }
+    const [order] = await database.select().from(tables.orders).where(eq(tables.orders.id, orderId))
+    const [revision] = await database
+      .select()
+      .from(tables.orderRevisions)
+      .where(eq(tables.orderRevisions.orderId, orderId))
+    const [moved] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment!.id))
+    expect([order?.data.via, revision?.data.via, moved?.snapshot?.via]).toEqual([via, via, via])
+    expect((await forwarderAddresses(buyerId)).map((row) => row.addressId)).toContain(copy.id)
   })
 
   it("keeps forwarders to the buyer that added them", async () => {

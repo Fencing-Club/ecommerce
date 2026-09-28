@@ -3,7 +3,7 @@ import type { Address, OrderInput, Packing } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
-import { db } from "@/db"
+import { db, type Transaction } from "@/db"
 import {
   contacts,
   documents,
@@ -15,7 +15,7 @@ import {
   suppliers,
   orderRevisions
 } from "@/db/schema"
-import { putFile } from "./storage"
+import { getFile, putFile } from "./storage"
 
 type DocumentInput = Omit<typeof documents.$inferInsert, "id" | "objectKey" | "bytes">
 export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
@@ -67,6 +67,22 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
       .returning()
     return doc!
   })
+}
+// Files a copy of a shipment's document with another shipment, under the given ID and with a stored file of its own,
+// such as the commercial invoice a shipment split off by Amazon network keeps. A correction to either shipment then
+// outdates only its own.
+export async function copyDocument(
+  tx: Transaction,
+  documentId: string,
+  copy: { id: string; shipmentId: string; shipmentRevision: number }
+) {
+  const [doc] = await tx.select().from(documents).where(eq(documents.id, documentId))
+  if (!doc) {
+    throw new Error("Document is unavailable")
+  }
+  const objectKey = `orders/${doc.orderId}/${copy.id}.pdf`
+  await putFile(objectKey, await getFile(doc.objectKey))
+  await tx.insert(documents).values({ ...doc, ...copy, objectKey })
 }
 // "1 Test Street", "Suite 2", "Testville, WA 98000", "US"
 function addressLines(address: Address) {

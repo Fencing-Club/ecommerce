@@ -145,4 +145,87 @@ describe("migrations", () => {
       "edited"
     ])
   })
+
+  it("moves POs stopping at an address saved for a forwarder that has joined to the forwarder's own copy", async () => {
+    const pg = new PGlite()
+    const steps = await migrationSql()
+    const moving = journal.entries.findIndex((entry) => entry.tag === "0042_joined_forwarder_stops")
+    for (const step of steps.slice(0, moving)) {
+      await pg.exec(step)
+    }
+    // Rows without their workspaces and suppliers, which the foreign keys would otherwise need.
+    await pg.exec("SET session_replication_role = replica")
+    const buyerOrg = randomUUID()
+    const contact = async (orgId: string, name: string, forwarderId: string | null = null) => {
+      const id = randomUUID()
+      const address = { name, addressLine1: "1000 Siji Road", city: "Yiwu", postalCode: "322000", countryCode: "CN" }
+      await pg.query(
+        `INSERT INTO "contacts" ("id", "orgId", "name", "kind", "address", "forwarderId") VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, orgId, name, forwarderId ? "forwarder" : "delivery", JSON.stringify(address), forwarderId]
+      )
+      return id
+    }
+    // A PO stopping at a forwarder's address, with its first revision and a shipment.
+    const order = async (forwarderId: string, addressId: string) => {
+      const id = randomUUID()
+      const data = JSON.stringify({ reference: "PO-1", via: { forwarderId, addressId } })
+      await pg.query(
+        `INSERT INTO "orders" ("id", "buyerOrgId", "supplierId", "shopifyDomain", "data") VALUES ($1, $2, $3, 'test.myshopify.com', $4)`,
+        [id, buyerOrg, randomUUID(), data]
+      )
+      await pg.query(
+        `INSERT INTO "order_revisions" ("orderId", "revision", "data", "actor", "reason") VALUES ($1, 1, $2, 'user', 'created')`,
+        [id, data]
+      )
+      await pg.query(`INSERT INTO "shipments" ("orderId", "orderRevision", "snapshot") VALUES ($1, 1, $2)`, [id, data])
+      return id
+    }
+    // Yiwu joined without addresses of its own, so joining copied the one saved for it. Ningbo already kept one, so
+    // the address saved for it wasn't copied. Shanghai hasn't joined.
+    const forwarder = async (name: string, forwarderOrgId: string | null) => {
+      const id = randomUUID()
+      await pg.query(
+        `INSERT INTO "forwarders" ("id", "buyerOrgId", "forwarderOrgId", "name") VALUES ($1, $2, $3, $4)`,
+        [id, buyerOrg, forwarderOrgId, name]
+      )
+      return id
+    }
+    const yiwuOrg = randomUUID(),
+      ningboOrg = randomUUID()
+    const yiwu = await forwarder("Yiwu Logistics", yiwuOrg),
+      ningbo = await forwarder("Ningbo Freight", ningboOrg),
+      shanghai = await forwarder("Shanghai Cargo", null)
+    const yiwuCopy = await contact(yiwuOrg, "Yiwu warehouse")
+    await contact(ningboOrg, "Main warehouse")
+    const toYiwu = await order(yiwu, await contact(buyerOrg, "Yiwu warehouse", yiwu))
+    const toNingbo = await order(ningbo, await contact(buyerOrg, "Ningbo port", ningbo))
+    const shanghaiSaved = await contact(buyerOrg, "Pudong", shanghai)
+    const toShanghai = await order(shanghai, shanghaiSaved)
+    await pg.exec(steps[moving]!)
+
+    const stops = async (orderId: string) =>
+      (
+        await pg.query(
+          `SELECT o."data"->'via'->>'addressId' AS "order", r."data"->'via'->>'addressId' AS "revision",
+             s."snapshot"->'via'->>'addressId' AS "shipment"
+           FROM "orders" o JOIN "order_revisions" r ON r."orderId" = o."id" JOIN "shipments" s ON s."orderId" = o."id"
+           WHERE o."id" = $1`,
+          [orderId]
+        )
+      ).rows[0]
+    const own = async (orgId: string) =>
+      (
+        await pg.query<{ id: string; name: string; kind: string }>(
+          `SELECT "id", "name", "kind" FROM "contacts" WHERE "orgId" = $1 ORDER BY "name"`,
+          [orgId]
+        )
+      ).rows
+    expect(await own(yiwuOrg)).toEqual([{ id: yiwuCopy, name: "Yiwu warehouse", kind: "delivery" }])
+    expect(await stops(toYiwu)).toEqual({ order: yiwuCopy, revision: yiwuCopy, shipment: yiwuCopy })
+    // Ningbo keeps a copy of the address its PO stops at.
+    const ningboCopy = (await own(ningboOrg)).find((row) => row.name === "Ningbo port")
+    expect(ningboCopy).toMatchObject({ kind: "delivery" })
+    expect(await stops(toNingbo)).toEqual({ order: ningboCopy?.id, revision: ningboCopy?.id, shipment: ningboCopy?.id })
+    expect(await stops(toShanghai)).toEqual({ order: shanghaiSaved, revision: shanghaiSaved, shipment: shanghaiSaved })
+  })
 })

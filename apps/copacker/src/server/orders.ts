@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import {
   amazonNetworkNames,
   approveChanges,
@@ -36,7 +37,7 @@ import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
-import { generatePo } from "./documents"
+import { copyDocument, generatePo } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { discardFile } from "./product-barcodes"
 import { withVariantFields } from "./product-fields"
@@ -522,8 +523,8 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
   return { approval: submitted.approval }
 }
 // Queues a shipment's cartons for Amazon, one shipment per Amazon network they go to: the shipment keeps the first
-// network's cartons, and each other network's become a new shipment. Each gets its own Amazon job and takes its own
-// pieces from the supplier's stock. Returns the timeline event.
+// network's cartons, and each other network's become a new shipment with its own copy of the commercial invoice. Each
+// gets its own Amazon job and takes its own pieces from the supplier's stock. Returns the timeline event.
 async function queueAmazon(
   tx: Transaction,
   shipment: { id: string; orderId: string; revision: number },
@@ -547,17 +548,23 @@ async function queueAmazon(
   await takeSupplierStock(tx, shipment.id, supplierOrgId, data, first!.packing)
   const queued = [{ shipmentId: shipment.id, revision: shipment.revision }]
   for (const part of rest) {
+    const invoiceDocumentId = randomUUID()
     const [added] = await tx
       .insert(shipments)
       .values({
         orderId: shipment.orderId,
         orderRevision,
         snapshot: data,
-        packing: part.packing,
+        packing: { ...part.packing, invoiceDocumentId },
         amazonNetwork: part.network,
         status: "queued"
       })
       .returning({ id: shipments.id, revision: shipments.revision })
+    await copyDocument(tx, part.packing.invoiceDocumentId, {
+      id: invoiceDocumentId,
+      shipmentId: added!.id,
+      shipmentRevision: added!.revision
+    })
     await takeSupplierStock(tx, added!.id, supplierOrgId, data, part.packing)
     queued.push({ shipmentId: added!.id, revision: added!.revision })
   }

@@ -133,9 +133,11 @@ dimensions cm. IDs are UUIDs. Buyer SKU, Shopify variant ID and product names ar
 supplier SKU and unit-price changes in `packing.changes`.
 
 An order has one destination (`amazon` or `warehouse`) and one supplier. A freight forwarder is never a destination,
-only a stop on the way: `via` is `{forwarderId, addressId}`, one of the buyer's forwarder addresses. On a PO to Amazon
-each line has `amazonNetwork`, `fba` (default) or `awd_us`, defaulted from the product's `amazonNetwork` setting. A
-submission splits into one shipment per network; see [Amazon inbound shipments](amazon-inbound.md).
+only a stop on the way: `via` is `{forwarderId, addressId}`, one of the addresses the buyer saved for the forwarder or,
+once it has joined, one of its own. Joining copies the saved addresses POs stop at into the forwarder's workspace and
+moves those POs, their revisions and their shipments to the copies. On a PO to Amazon each line has `amazonNetwork`,
+`fba` (default) or `awd_us`, defaulted from the product's `amazonNetwork` setting. A submission splits into one shipment
+per network; see [Amazon inbound shipments](amazon-inbound.md).
 
 PO data may include `adjustments: [{description, amount}]`, signed integer minor-unit amounts included in totals and the
 PO PDF. A line's `skuLabel` overrides whether each unit gets its SKU label; left out, the product's label setting

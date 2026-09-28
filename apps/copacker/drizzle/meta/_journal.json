@@ -295,6 +295,13 @@
       "when": 1790575968122,
       "tag": "0041_localization",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790637293645,
+      "tag": "0042_joined_forwarder_stops",
+      "breakpoints": true
     }
   ]
 }
