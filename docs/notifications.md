@@ -98,12 +98,14 @@ notification of a new order starts another, and the daily reconciliation reads t
 
 - The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
   `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
-  without a support ticket, so local development shares it through its own redirect URL name (RuName). A refresh
-  token works from any environment with the same keys.
+  without a support ticket, so local development shares its keys. A refresh token works from any environment with the
+  same keys. eBay only returns sign-in to an HTTPS address, so a seller connects through a deployed environment;
+  local development reads the orders a deployed one would, but can't complete sign-in on `http://localhost`.
 - Copacker needs `EBAY_CLIENT_ID` (App ID), `EBAY_CLIENT_SECRET` (Cert ID) and `EBAY_RU_NAME` (the redirect URL
   name). Without all three, Settings shows eBay as coming soon.
-- The RuName's accepted URL is `https://<APP_URL>/api/connections/ebay`; its declined URL is
-  `https://<APP_URL>/settings#integrations`. Sign-in asks for `sell.fulfillment.readonly` (orders),
+- The RuName is `Andrew_Craswell-AndrewCr-Copack-gjttg` (display title Copacker, OAuth enabled). Its accepted URL is
+  `https://copacker.ai/api/connections/ebay`, its declined URL `https://copacker.ai/settings#integrations`, and its
+  privacy policy `https://copacker.ai/privacy`. Sign-in asks for `sell.fulfillment.readonly` (orders),
   `commerce.identity.readonly` (the seller's user ID and username) and `commerce.notification.subscription`.
 - A connection is stored under the seller's immutable eBay user ID; Settings shows their username. The refresh token
   lasts about 18 months; after that the order sync fails with `reconnect` and Settings offers Reconnect.
@@ -150,8 +152,8 @@ EventBridge to a queue the worker reads.
   workspace. Copacker keeps nothing about buyers, so a buyer's notice changes nothing.
 - eBay keeps a new production keyset disabled until the account deletion endpoint is set in the developer portal
   (Alerts & Notifications). The redirect URL name settings under User Tokens only appear once the keyset is compliant.
-  As of 2026-09-28 production answers the endpoint check; the endpoint and token are waiting to be entered in the
-  portal.
+  The endpoint and token were entered on 2026-09-28, which enabled the keyset; eBay made the destination the order
+  subscriptions reuse.
 
 ## Daily reconciliation and failures
 
