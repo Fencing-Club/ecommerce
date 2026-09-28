@@ -106,12 +106,8 @@ export default async function OrdersPage({
         />
       ) : (
         <EmptyState
-          title="Your next shipment starts here"
-          description={
-            isBuyer
-              ? nextStep.description
-              : "Accept a buyer invitation to see the purchase orders shared with your workspace."
-          }
+          title={isBuyer ? "Your next shipment starts here" : "No purchase orders yet"}
+          description={isBuyer ? nextStep.description : "Purchase orders shipping through you appear here."}
         >
           {isBuyer && (
             <Button nativeButton={false} render={<Link href={nextStep.href} />}>

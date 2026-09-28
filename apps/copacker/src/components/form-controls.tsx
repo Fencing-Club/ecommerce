@@ -1,7 +1,7 @@
 "use client"
 
 import { CalendarDays } from "lucide-react"
-import { useId, useState } from "react"
+import { useId, useRef, useState } from "react"
 import { useController } from "react-hook-form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
@@ -75,6 +75,9 @@ export function SelectControl({
   onBlur?: () => void
   ref?: React.Ref<HTMLButtonElement>
 }) {
+  // Opening the menu moves focus out of the trigger. That isn't leaving the field, so it doesn't count as a blur, which
+  // would show a required field's error while its menu is still open; closing the menu does.
+  const open = useRef(false)
   const hasEmpty = options.some((option) => option.value === "")
   const choices: Choice[] = [
     ...(placeholder !== undefined && !required && !hasEmpty ? [{ value: "", label: placeholder, clears: true }] : []),
@@ -96,8 +99,24 @@ export function SelectControl({
       autoComplete={autoComplete}
       {...(value === undefined ? { defaultValue: choice(defaultValue) } : { value: choice(value) })}
       onValueChange={(next) => onValueChange?.(next === emptyChoice ? "" : (next ?? undefined))}
+      onOpenChange={(next) => {
+        open.current = next
+        if (!next) {
+          onBlur?.()
+        }
+      }}
     >
-      <SelectTrigger id={id} ref={ref} onBlur={onBlur} aria-invalid={invalid} className="w-full">
+      <SelectTrigger
+        id={id}
+        ref={ref}
+        onBlur={() => {
+          if (!open.current) {
+            onBlur?.()
+          }
+        }}
+        aria-invalid={invalid}
+        className="w-full"
+      >
         <SelectValue>
           {(current: string | null) => {
             const option = choices.find((candidate) => candidate.value === current)
