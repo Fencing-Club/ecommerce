@@ -23,7 +23,7 @@ export function Film({ className }: { className?: string }) {
         }
       >
         <Play className="fill-current" />
-        Watch the film
+        Watch the video
         <span className="tabular-nums opacity-60">1:45</span>
       </DialogTrigger>
       <DialogContent className="dark gap-0 overflow-hidden rounded-2xl bg-black p-0 ring-white/15 sm:max-w-5xl">

@@ -83,7 +83,7 @@ export function Contact() {
             </Way>
             <Way
               icon={FilmIcon}
-              title="Watch the film"
+              title="Watch the video"
               text="A restock from forecast to warehouse, in under two minutes."
             >
               <Film className="border-border bg-transparent text-foreground hover:bg-muted" />
