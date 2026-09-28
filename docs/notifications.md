@@ -22,11 +22,10 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   transactions and fulfillments start the order sync. Products, inventory items, inventory levels (updated, connected,
   disconnected) and locations start the stock refresh. App uninstalled disconnects the store. Fulfillment topics need
   `read_fulfillments`, so a store connected before Copacker asked for it subscribes to them after reconnecting; its
-  shipments still arrive as order updates until then. Editing only a variant metafield (supplier SKU, ASIN, Amazon
-  stock target, case quantity) in Shopify sends no event, so those edits reach Copacker with the
-  next stock refresh, at the latest the daily reconciliation. Supplier SKUs edited in Copacker update its copy
-  directly. Without `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development)
-  nothing is subscribed, and syncs still copy orders.
+  shipments still arrive as order updates until then. Shopify metafields (supplier SKU, ASIN, stock targets, case
+  quantity, supplier) are copied once per store, before its first stock sync, and later edits to them never reach
+  Copacker ([Variation and product details](api-contract.md#variation-and-product-details)). Without
+  `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development) nothing is subscribed, and syncs still copy orders.
 - Each event carries the webhook's headers as metadata and its body as the payload. Events are gathered into
   five-minute periods; each period starts the existing order sync or stock refresh three minutes after it ends, so a
   burst of orders reads Shopify once.
@@ -167,6 +166,6 @@ EventBridge to a queue the worker reads.
 ## Daily reconciliation and failures
 
 - Each worker makes sure a `reconcile:<date>` job is queued for 07:00 UTC; the job key keeps it to one run a day. It
-  starts an order sync for every buyer connection, refreshes the stock scopes already in use and renews Shopify and
-  Amazon subscriptions.
+  starts an order sync for every buyer connection, refreshes the stock scopes already in use and renews Shopify, eBay
+  and Amazon subscriptions.
 - A job that fails logs a `job_failed` event with its kind, key, attempt and error, and keeps the error on its row.

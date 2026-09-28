@@ -13,20 +13,23 @@ A supplier can work for several buyers.
 - A PO has one destination: Amazon, or one of the buyer's own locations. A freight forwarder is only a stop on the way
   (`via`), never a destination.
 - Quantities and prices are per piece. A pack size converts pieces into Amazon's sellable units.
-- Suppliers may propose changes to their SKU and price, never to the buyer's SKU or product. Changes need the buyer's
-  approval, publish a new PO revision and keep the earlier ones. An approved supplier SKU is written to the Shopify
-  variant's `custom.supplier_sku`; writing the unit cost back to Shopify is the buyer's choice, with currency and pack
-  checks.
+- Suppliers never change the buyer's SKU. Their commercial invoice can change a line's supplier SKU and price, and on a
+  sent PO they can propose adding or removing products and changing quantities, prices and payment terms
+  ([Order changes](supplier-workspace.md#order-changes)). These need the buyer's approval, publish a new PO revision and
+  keep the earlier ones. An approved supplier SKU is saved in Copacker's
+  [variation details](api-contract.md#variation-and-product-details), not in Shopify; writing the unit cost back to
+  Shopify is the buyer's choice, with currency and pack checks.
 - Partial shipments reserve quantities independently. A commercial invoice PDF is required.
 
 ## Shipments
 
 The supplier submits carton identifiers, contents, cm/kg measurements, the ship-from contact and address, and the local
-ready-for-pickup date. Copacker validates them and checks Amazon eligibility before creating anything in Amazon, then maps
-Amazon's carton labels to the supplier's carton numbers ([Amazon inbound shipments](amazon-inbound.md)). The buyer books
-the carrier in Amazon and uploads its shipping labels; a ready date isn't a booked pickup. Released documents are the
-packing list, product labels, carton and shipping labels, and the packing checklist. A correction invalidates the
-documents it affects and goes through Amazon's update or replacement paths; labels are never silently reused.
+ready-for-pickup date. Copacker validates them and reads each SKU's prep category from Amazon; an AWD order is also
+checked for eligibility before it's created. Copacker then maps Amazon's carton labels to the supplier's carton numbers
+([Amazon inbound shipments](amazon-inbound.md)). The buyer books the carrier in Amazon and uploads its shipping labels;
+a ready date isn't a booked pickup. Released documents are the packing list, product labels, carton and shipping
+labels, and the packing checklist. A correction outdates all of the shipment's documents. Amazon shipments are never
+updated: one already created is cancelled, and its goods go in a new shipment, so labels are never silently reused.
 
 ## Architecture
 

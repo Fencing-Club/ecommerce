@@ -38,7 +38,7 @@ What Edit covers where it isn't obvious:
 ## Prices and costs
 
 A member sees prices and costs only with **See prices and costs** (`access.prices`, always `"view"`). A forwarder's
-members don't get the switch: a forwarder never sees what a purchase order is worth. Without it:
+members don't get the switch, but a forwarder can download the commercial invoice, prices included. Without it:
 
 - Pages about money close: the Overview (sales, profit and costs) and a supplier's Catalogs.
 - Pages whose changes set prices are View only: Purchase orders, and a supplier's Products. `highestLevel` in

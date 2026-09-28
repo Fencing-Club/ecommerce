@@ -67,11 +67,12 @@ sheet.
 
 ## Order changes
 
-A supplier can edit a sent PO while its shipments are still being packed: quantities, prices, added and removed
-products, payment terms and the ready date. A change to the ready date alone applies straight away. Other changes
-become a pending `order_proposals` row that the buyer approves or declines on the PO page. Approving publishes the next
-PO revision, which fills in added products from the buyer's Shopify variants with that supplier SKU. It also files the
-supplier's commercial invoice with the shipment being packed, so the supplier doesn't upload one.
+A supplier can edit a sent PO while none of its shipments has been submitted, gone into correction or been cancelled:
+quantities, prices, added and removed products, payment terms and the ready date. A change to the ready date alone
+applies straight away. Other changes become a pending `order_proposals` row that the buyer approves or declines on the
+PO page. Approving publishes the next PO revision, which fills in added products from the buyer's Shopify variants with
+that supplier SKU. It also files the supplier's commercial invoice with the shipment being packed, so the supplier
+doesn't upload one.
 
 ## Saved addresses and product details
 

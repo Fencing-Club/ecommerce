@@ -100,7 +100,7 @@ kept with that partner and change through the partner's commands.
 | order.update | id, revision, order | Buyer, Orders: Edit. Saves a draft as its next revision; returns redirect |
 | order.submit | id, revision | Buyer, Orders: Edit. Sends the PO, emails a supplier that has joined, stores the PO PDF and creates the first packing draft; returns ok and shipmentId |
 | order.delete | id | Buyer, Orders: Edit. Deletes a draft with its documents, history and landed costs; a PO import saved as that draft goes back to review; returns redirect |
-| order.close | id | Buyer, Orders: Edit. Closes a sent PO: unpacked shipments are cancelled; refused while a shipment is being created or on its way |
+| order.close | id | Buyer, Orders: Edit. Closes a sent PO: unpacked shipments are cancelled; refused unless every shipment is received, cancelled, or still packing with no Amazon request in progress |
 | order.comment | orderId, message | Orders: View; a comment on the PO's timeline |
 | landedCost.create | orderId, kind: freight, duty or other, description, amount | Buyer, Orders: Edit; returns the cost |
 | landedCost.delete | id | Buyer, Orders: Edit |
@@ -120,7 +120,7 @@ kept with that partner and change through the partner's commands.
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
-| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete |
+| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to the supplier |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |
@@ -238,8 +238,9 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
 
 - invoice: shipmentId; the commercial invoice PDF, required before packing submission. Only while the shipment is in
   packing or correction; a new invoice outdates the previous one.
-- product_label: itemId; buyer, Orders: Edit; one PDF page stored with the PO line. Refused once a released shipment
-  carries that line.
+- product_label: itemId; buyer, Orders: Edit; one PDF page stored with the PO line, refused once a released shipment
+  carries that line. No page uploads one and label generation doesn't read it: product labels come from the Products
+  page's barcodes ([Product labels](#product-labels)).
 - shipping_label: buyer; shipmentId and `assignments`, a JSON array of `{ cartonId, page }`, while the shipment waits
   for labels. Page is 1-based in the uploaded PDF and each page maps to one carton. The server splits pages, preserves
   their dimensions and stores each assignment. Several files can cover all cartons.
@@ -324,8 +325,8 @@ stable code and message, plus field, cartonId or itemId where applicable. Each i
 reservedPieces and availablePieces, excluding the shipment being checked. Preflight is advisory: submission repeats the
 same rules under the order lock. It never creates an Amazon shipment.
 
-A buyer entering a supplier's invoice itself, for a supplier not on Copacker, has its changes applied at once rather
-than waiting for approval.
+An invoice the buyer enters itself has its changes applied at once rather than waiting for approval, whether or not the
+supplier is on Copacker.
 
 ## Order workflow
 

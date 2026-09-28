@@ -19,7 +19,8 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    sign-in pages against the WorkOS API ([Sign-in and getting started](auth.md)); its database owns workspace
    memberships and per-order sharing.
 2. Shopify: a public-distribution app with `<APP_URL>/api/connections/shopify` as its redirect and the scopes in
-   `apps/copacker/shopify.app.toml`. The supplier SKU is the variant metafield `custom.supplier_sku`.
+   `apps/copacker/shopify.app.toml`. Supplier SKUs live in Copacker, copied once per store from the variant metafield
+   `custom.supplier_sku`.
 3. Amazon: a public SP-API application with the AWD role and Listings access, redirecting to
    `<APP_URL>/api/connections/amazon`. Amazon requires an HTTPS redirect, so test it on a deployed environment. While the
    app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link then asks for `version=beta`, and sellers can connect by
