@@ -58,7 +58,7 @@ export function Contact() {
                 <h1
                   id="contact-title"
                   className={cn(
-                    "text-[clamp(3.25rem,9vw,7rem)] leading-[0.92] font-semibold tracking-[-0.055em]",
+                    "text-[clamp(3.25rem,9vw,7rem)] leading-[0.92] font-semibold tracking-[-0.055em] urdu:pb-[0.25em] urdu:leading-[1.6] urdu:tracking-normal",
                     lift
                   )}
                   style={{ animationDelay: "100ms" }}
@@ -83,7 +83,7 @@ export function Contact() {
           <section aria-labelledby="ways-title" className="mx-auto max-w-6xl px-6 pt-24 pb-28 sm:pt-28 sm:pb-36">
             <h2
               id="ways-title"
-              className="text-[clamp(2rem,4vw,3rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance"
+              className="text-[clamp(2rem,4vw,3rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance urdu:leading-[1.6] urdu:tracking-normal"
             >
               {t("waysTitle")}
             </h2>

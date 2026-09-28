@@ -10,16 +10,19 @@ import { skipLink } from "./layout.css"
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false })
 // Geist has no Devanagari or Urdu letters, so Hindi and Urdu pages add a font for them after Geist, which still draws
-// Latin text such as SKUs. They load only on those pages.
+// Latin text such as SKUs, and before Geist's fallback, which would otherwise draw Urdu in Arial. They load only on those
+// pages.
 const devanagari = Noto_Sans_Devanagari({ subsets: ["devanagari"], preload: false })
 const nastaliq = Noto_Nastaliq_Urdu({ subsets: ["arabic"], preload: false })
 const scriptFonts: Partial<Record<Locale, string>> = {
   hi: devanagari.style.fontFamily,
   ur: nastaliq.style.fontFamily
 }
-// React's CSSProperties has no custom properties, so the Geist variable is typed through it.
+// next/font names Geist and then its fallback. React's CSSProperties has no custom properties, so the Geist variable is
+// typed through it.
+const [geist, geistFallback] = geistSans.style.fontFamily.split(", ")
 const fontStack = (scriptFont: string) =>
-  ({ "--font-geist-sans": `${geistSans.style.fontFamily}, ${scriptFont}` }) as React.CSSProperties
+  ({ "--font-geist-sans": `${geist}, ${scriptFont}, ${geistFallback}` }) as React.CSSProperties
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common")

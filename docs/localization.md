@@ -21,6 +21,11 @@ text. Worker jobs and emails have no request: use `translatorFor(profile.locale)
 Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
 Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
 
+Urdu is set in Noto Nastaliq Urdu, whose letters rise and hang far past the line Latin text sits on. `globals.css`
+gives Urdu's body sizes taller lines, and a headline with a tight `leading-[…]` adds `urdu:leading-[1.6]
+urdu:tracking-normal` (the `urdu:` variant is also in `globals.css`). Text clipped to its box, such as `lit`'s gradient,
+needs room past the line too.
+
 ## Messages
 
 - One file per area and language (namespaces such as `common`, `orders`, `errors` for failures the server returns,

@@ -31,7 +31,7 @@ export function Unsubscribe({
         id="main-content"
         className="mx-auto flex min-h-[60svh] max-w-xl flex-col justify-center px-6 py-24 sm:py-32"
       >
-        <h1 className="text-[clamp(2rem,5vw,3rem)] leading-[1.05] font-semibold tracking-[-0.04em] text-balance">
+        <h1 className="text-[clamp(2rem,5vw,3rem)] leading-[1.05] font-semibold tracking-[-0.04em] text-balance urdu:leading-[1.6] urdu:tracking-normal">
           {title}
         </h1>
         <p className={cn("mt-4 text-lg text-pretty", quiet)}>{text}</p>

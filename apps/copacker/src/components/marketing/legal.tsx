@@ -94,7 +94,7 @@ export function Legal({
         {/* About 70 characters a line. In rem, as Geist's `ch` (its zero) is far wider than its average letter. */}
         <article className="max-w-[35rem] text-[1.0625rem] leading-[1.75]">
           <header>
-            <h1 className="text-[clamp(2.5rem,6vw,3.75rem)] leading-[1] font-semibold tracking-[-0.045em] text-balance">
+            <h1 className="text-[clamp(2.5rem,6vw,3.75rem)] leading-[1] font-semibold tracking-[-0.045em] text-balance urdu:leading-[1.6] urdu:tracking-normal">
               {title}
             </h1>
             <p className="mt-5 text-sm text-foreground/60">{t.rich("updated", { date, time: stamped(updated) })}</p>

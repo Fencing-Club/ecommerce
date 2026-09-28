@@ -51,7 +51,7 @@ export function Signup() {
       <div>
         <h2
           id="signup-title"
-          className="text-[clamp(2.75rem,6.5vw,5.25rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance"
+          className="text-[clamp(2.75rem,6.5vw,5.25rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance urdu:leading-[1.6] urdu:tracking-normal"
         >
           {t("title")}
         </h2>

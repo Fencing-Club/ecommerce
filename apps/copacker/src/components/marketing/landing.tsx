@@ -82,7 +82,7 @@ function Hero() {
             aria-hidden
             className="pointer-events-none absolute -inset-x-56 -top-8 -bottom-40 -z-10 bg-[radial-gradient(closest-side,oklch(0.145_0_0/0.65),oklch(0.145_0_0/0.5)_35%,oklch(0.145_0_0/0.25)_65%,oklch(0.145_0_0/0.08)_85%,transparent)]"
           />
-          <h1 className="text-[clamp(3.5rem,11vw,8rem)] leading-[0.92] font-semibold tracking-[-0.055em]">
+          <h1 className="text-[clamp(3.5rem,11vw,8rem)] leading-[0.92] font-semibold tracking-[-0.055em] urdu:pb-[0.25em] urdu:leading-[1.6] urdu:tracking-normal">
             {t.rich("title", { first: firstWords, second: secondWords })}
           </h1>
           <p
@@ -136,7 +136,7 @@ function Section({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:items-end lg:gap-16">
         <h2
           id={`${id}-title`}
-          className="text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance"
+          className="text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance urdu:leading-[1.6] urdu:tracking-normal"
         >
           {title}
         </h2>
@@ -185,7 +185,7 @@ function Faq() {
       <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-16">
         <h2
           id="faq-title"
-          className="text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.02] font-semibold tracking-[-0.04em]"
+          className="text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.02] font-semibold tracking-[-0.04em] urdu:leading-[1.6] urdu:tracking-normal"
         >
           {t("title")}
         </h2>

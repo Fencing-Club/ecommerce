@@ -614,7 +614,7 @@ export function Journey() {
                   i > chapter && "translate-y-3"
                 )}
               >
-                <p className="text-[clamp(2rem,4vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance">
+                <p className="text-[clamp(2rem,4vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance urdu:leading-[1.6] urdu:tracking-normal">
                   {t(`chapters.${entry.key}.title`)}
                 </p>
                 <p className={cn("mt-4 max-w-sm text-lg text-pretty", quiet)}>{t(`chapters.${entry.key}.text`)}</p>

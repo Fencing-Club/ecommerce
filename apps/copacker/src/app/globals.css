@@ -4,6 +4,18 @@
 
 /* Dark inside a .dark ancestor, but not within a .light element nested in it (the marketing page's product shots). */
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
+/* Urdu pages, set in Nastaliq, whose letters rise and hang well past the lines Latin text sits on. */
+@custom-variant urdu (&:lang(ur));
+@layer base {
+  /* So Urdu's body sizes get lines tall enough that one line's letters don't run into the next. */
+  :root:lang(ur) {
+    --text-xs--line-height: 2;
+    --text-sm--line-height: 2;
+    --text-base--line-height: 2;
+    --text-lg--line-height: 2;
+    --text-xl--line-height: 2;
+  }
+}
 
 /* The color values themselves, light and dark, live in src/styles/theme.css.ts, which vanilla-extract styles share. */
 @theme inline {
