@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { type Session, session } from "@/server/auth"
 import { overview } from "@/server/overview"
 import { storeTimeZone } from "@/server/store-time-zone"
-import { supplierOverview } from "@/server/supplier-workspace"
+import { supplierOverview } from "@/server/supplier-overview"
 import * as styles from "@/components/overview.css"
 
 export const metadata: Metadata = { title: "Overview" }
@@ -61,7 +61,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     return (
       <>
         <PageHeader title="Overview" />
-        <SupplierOverview data={await supplierOverview(s.org.id)} />
+        <SupplierOverview data={await supplierOverview(s.org, await searchParams)} />
       </>
     )
   }

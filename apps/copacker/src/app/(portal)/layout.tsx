@@ -2,6 +2,7 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { Shell } from "@/components/shell"
 import { SystemTimeZone } from "@/components/system-time-zone"
+import { WorkspaceWatch } from "@/components/workspace-watch"
 import { session } from "@/server/auth"
 import { ownProfile } from "@/server/profile"
 export const dynamic = "force-dynamic"
@@ -17,6 +18,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <Shell name={s.org.name} email={s.user.email} kind={s.org.kind} active={s.org.id} workspaces={s.workspaces}>
       <SystemTimeZone />
+      <WorkspaceWatch id={s.org.id} />
       {children}
     </Shell>
   )

@@ -14,6 +14,7 @@ import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import {
   orders,
+  orderProposals,
   orderRevisions,
   suppliers,
   shipments,
@@ -401,12 +402,23 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
   }
   return submitted
 }
+// Packing waits while the supplier's changes to the PO are with the buyer, so cartons match the PO it approves.
+async function refusePendingChanges(tx: Transaction, orderId: string) {
+  const [pending] = await tx
+    .select({ id: orderProposals.id })
+    .from(orderProposals)
+    .where(and(eq(orderProposals.orderId, orderId), eq(orderProposals.status, "pending")))
+  if (pending) {
+    throw new Error("Changes to this PO are waiting for approval. Pack once they're answered")
+  }
+}
 export async function newShipment(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted") {
       throw new Error("Submit the PO before creating a shipment")
     }
+    await refusePendingChanges(tx, orderId)
     const existing = await tx
       .select()
       .from(shipments)
@@ -440,6 +452,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     if (!shipment || !["packing", "correction"].includes(shipment.status) || shipment.revision !== expectedRevision) {
       throw new Error("This shipment has changed. Refresh before submitting")
     }
+    await refusePendingChanges(tx, order.id)
     if (shipment.amazonOrderId || shipment.operation !== "none") {
       throw new Error("Resolve the existing Amazon shipment before submitting replacement cartons")
     }

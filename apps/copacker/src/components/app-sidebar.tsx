@@ -54,6 +54,7 @@ import {
   SidebarRail,
   useSidebar
 } from "@/components/ui/sidebar"
+import { announceWorkspace } from "@/components/workspace-watch"
 import { useActionMutation } from "@/lib/api"
 import * as styles from "./app-sidebar.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -224,6 +225,7 @@ function WorkspaceSwitcher({
 
   async function switchTo(id: string) {
     await run({ action: "workspace.switch", data: { id } }).unwrap()
+    announceWorkspace(id)
     // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
     window.location.assign("/")
   }

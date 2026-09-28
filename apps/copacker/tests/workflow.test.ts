@@ -174,6 +174,7 @@ import {
 import { hash } from "../src/server/security"
 import { shopifyOrderTags, untaggedShopifyOrders } from "../src/server/shopify-tags"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
+import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
@@ -4710,6 +4711,8 @@ describe("supplier proposals", () => {
     await packing()
     await proposeChanges(supplier, orderId, change(), 1)
     const [proposal] = await database.select().from(tables.orderProposals)
+    // Packing waits for the buyer's answer, so the cartons match the PO it approves.
+    await expect(newShipment(supplier, orderId)).rejects.toThrow("waiting for approval")
     await expect(approveProposal(supplier, proposal!.id)).rejects.toThrow("buyer workspace")
     await declineProposal(buyer, proposal!.id, "Too expensive")
     expect((await database.select().from(tables.orderProposals))[0]).toMatchObject({
@@ -4742,5 +4745,23 @@ describe("supplier proposals", () => {
     const shipment = await packing()
     await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, shipment.id))
     await expect(proposeChanges(supplier, orderId, change(), 1)).rejects.toThrow("already packed")
+  })
+})
+
+describe("supplier overview", () => {
+  it("counts only the workspace's own orders and customers", async () => {
+    const mine = await supplierOverview({ id: supplierId, timeZone: "UTC" }, { period: "today" })
+    expect(mine.backlog).toMatchObject({ orders: 1 })
+    expect(mine.kpis.orders.value).toBe(1)
+    expect(mine.topCustomers).toMatchObject([{ id: supplierLinkId, orders: 1 }])
+    const elsewhere = randomUUID()
+    await database.insert(tables.organizations).values({ id: elsewhere, name: "Another supplier", kind: "supplier" })
+    const theirs = await supplierOverview({ id: elsewhere, timeZone: "UTC" }, { period: "today" })
+    expect(theirs).toMatchObject({
+      backlog: { orders: 0, pieces: 0 },
+      kpis: { orders: { value: 0 } },
+      topCustomers: []
+    })
+    expect(theirs.recent).toEqual([])
   })
 })

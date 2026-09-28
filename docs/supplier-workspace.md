@@ -4,6 +4,20 @@ A supplier's sidebar has Overview, then Sales (Orders, Shipments, Customers) and
 Catalogs). Overview, Orders and Products share their routes with the buyer's pages and render the supplier's version
 when the workspace is a supplier.
 
+## Overview
+
+A supplier's Overview (`src/server/supplier-overview.ts`) covers its supply operations for a period picked like the
+buyer's: orders received, their value (in the currency most orders use), pieces ordered and pieces shipped, each against
+the previous period. It also shows what needs doing, where open orders stand, the most-ordered products and customers,
+and inventory health against open orders. An order counts on the day its first shipment opened, which is when it was
+sent. Pieces count as shipped on the day the supplier marked the shipment shipped.
+
+## One workspace per page
+
+The active workspace is a cookie every tab shares, and the portal's layout doesn't render again on navigation. So
+`WorkspaceWatch` reloads a tab when another tab switches workspaces, and it checks `/api/workspace` on each page change
+and on focus. That way a page never shows one workspace's data under another's sidebar.
+
 ## Products and variants
 
 A product (`supplier_product_groups`) has a title, description, category, product code, store page, up to four option
@@ -11,6 +25,8 @@ names and photos. Each variant is a `supplier_products` row: one SKU with its pr
 or case), packaging, stock and notes. A variant's `title` is the product's title followed by its option values, such as
 "Blade (Left, 5)", because PO snapshots and matching read it. Saving a product archives variants left off the form
 rather than deleting them, so earlier POs and stock records keep them.
+
+The Inventory page edits on hand counts in place, as Shopify does. Each change shows as a green or red difference, and Save commits every changed row in one transaction (`/api/supplier-catalog/stock`).
 
 Photos are stored under `supplier-images/<supplier workspace>/` and served by `/api/product-images`, which lets the
 supplier and the buyers it supplies read them.

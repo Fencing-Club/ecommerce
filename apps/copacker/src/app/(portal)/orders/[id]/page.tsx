@@ -171,7 +171,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 Edit order
               </Button>
             )}
-          {order.status === "submitted" && (editable || remaining) && (
+          {order.status === "submitted" && (editable || remaining) && proposal?.status !== "pending" && (
             <ActionButton action="shipment.create" data={{ id }}>
               {editable ? "Continue packing" : "Prepare next shipment"}
             </ActionButton>

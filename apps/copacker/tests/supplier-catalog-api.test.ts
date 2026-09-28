@@ -293,11 +293,23 @@ describe("products", () => {
     )
   })
 
-  it("sets a tracked variant's on hand count and tells buyers what's available", async () => {
+  it("saves changed on hand counts together and tells buyers what's available", async () => {
     const product = await insertProduct(supplierA, { supplierSku: "SAME", priceMinor: 190 })
-    const stock = (onHand: number) => saveStock(post("/api/supplier-catalog/stock", { id: product.id, onHand }))
-    // An untracked product is made to order, so it has no count to set.
+    const other = await insertProduct(supplierA, { supplierSku: "OTHER", trackInventory: true, onHand: 5 })
+    const stock = (onHand: number) =>
+      saveStock(post("/api/supplier-catalog/stock", { counts: [{ id: product.id, onHand }] }))
+    // An untracked product is made to order, so it has no count to set, and one bad count saves none.
     expect((await stock(12)).status).toBe(404)
+    const both = {
+      counts: [
+        { id: other.id, onHand: 9 },
+        { id: product.id, onHand: 12 }
+      ]
+    }
+    expect((await saveStock(post("/api/supplier-catalog/stock", both))).status).toBe(404)
+    expect(
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, other.id)))[0]
+    ).toMatchObject({ onHand: 5 })
     await database
       .update(tables.supplierProducts)
       .set({ trackInventory: true })
@@ -305,7 +317,10 @@ describe("products", () => {
     context.actor = actor(supplierB, "supplier")
     expect((await stock(12)).status).toBe(404)
     context.actor = actor(supplierA, "supplier")
-    expect(await (await stock(12)).json()).toEqual({ revision: 2 })
+    expect(await (await saveStock(post("/api/supplier-catalog/stock", both))).json()).toEqual({ saved: 2 })
+    expect(
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, other.id)))[0]
+    ).toMatchObject({ onHand: 9 })
     context.actor = actor(buyerId, "buyer")
     expect((await stock(12)).status).toBe(403)
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", available: 12 })

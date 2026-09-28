@@ -150,7 +150,11 @@ export async function reviseContext(s: Session, orderId: string) {
 // The supplier proposes changes to a sent PO. A change to the ready date alone needs no approval and applies at once.
 export async function proposeChanges(s: Session, orderId: string, raw: unknown, expectedRevision: number) {
   requireSupplier(s)
-  const proposal = proposalSchema.parse(raw)
+  const parsed = proposalSchema.safeParse(raw)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Check the changes and try again")
+  }
+  const proposal = parsed.data
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted" || order.revision !== expectedRevision) {

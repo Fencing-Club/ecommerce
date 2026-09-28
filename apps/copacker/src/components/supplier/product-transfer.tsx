@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, Download, FileSpreadsheet, Upload } from "lucide-react"
+import { Download, EllipsisVertical, FileSpreadsheet, Upload } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -11,36 +11,56 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 
-// Every product in the product template, as an Excel workbook or CSV.
-export function ProductExportMenu() {
+// The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
+export function ProductActions() {
+  const [importing, setImporting] = useState(false)
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" />}>
-        <Download data-icon="inline-start" />
-        Export
-        <ChevronDown data-icon="inline-end" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem
-          render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
-        >
-          <FileSpreadsheet />
-          Excel (.xlsx)
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          render={<a href="/api/supplier-catalog/export?format=csv" download aria-label="Export to CSV" />}
-        >
-          <FileSpreadsheet />
-          CSV
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          More actions
+          <EllipsisVertical data-icon="inline-end" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem onClick={() => setImporting(true)}>
+            <Upload />
+            Import products
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
+          >
+            <Download />
+            Export to Excel
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={<a href="/api/supplier-catalog/export?format=csv" download aria-label="Export to CSV" />}
+          >
+            <Download />
+            Export to CSV
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={<a href="/api/supplier-catalog/template?format=xlsx" download aria-label="Download template" />}
+          >
+            <FileSpreadsheet />
+            Download template
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ProductImportDialog open={importing} onOpenChange={setImporting} />
+    </>
   )
 }
 
@@ -54,9 +74,14 @@ type Preview = {
 }
 
 // Imports the product template, CSV or Excel: pick a file, check what it will change, then import.
-export function ProductImportDialog() {
+function ProductImportDialog({
+  open,
+  onOpenChange: setOpen
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [pending, setPending] = useState(false)
@@ -113,10 +138,6 @@ export function ProductImportDialog() {
         }
       }}
     >
-      <DialogTrigger render={<Button variant="outline" />}>
-        <Upload data-icon="inline-start" />
-        Import
-      </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Import products</DialogTitle>

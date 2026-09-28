@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { InventorySync } from "@/components/inventory-sync"
 import { ProductIndex } from "@/components/supplier/product-index"
-import { ProductExportMenu, ProductImportDialog } from "@/components/supplier/product-transfer"
+import { ProductActions } from "@/components/supplier/product-transfer"
 import { Button } from "@/components/ui/button"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
@@ -21,8 +21,7 @@ export default async function ProductsPage() {
     return (
       <>
         <PageHeader title="Products">
-          <ProductExportMenu />
-          <ProductImportDialog />
+          <ProductActions />
           <Button nativeButton={false} render={<Link href="/products/new" />}>
             <Plus data-icon="inline-start" />
             Add product
