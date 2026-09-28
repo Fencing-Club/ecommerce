@@ -5285,4 +5285,24 @@ describe("supplier overview", () => {
     })
     expect(theirs.recent).toEqual([])
   })
+
+  it("counts the pieces a shipment carries once the supplier ships it", async () => {
+    const prepared = await preparation()
+    await database
+      .update(tables.shipments)
+      .set({ status: "ready", packing: prepared.packing })
+      .where(eq(tables.shipments.id, prepared.id))
+    const overview = () => supplierOverview({ id: supplierId, timeZone: "UTC" }, { period: "today" })
+    expect((await overview()).kpis.shipped.value).toBe(0)
+    context.actor = supplier
+    const shipped = await action(
+      new Request("http://localhost:3000/api/action", {
+        method: "POST",
+        headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+        body: JSON.stringify({ action: "shipment.ship", data: { id: prepared.id } })
+      })
+    )
+    expect(shipped.status).toBe(200)
+    expect((await overview()).kpis.shipped.value).toBe(160)
+  })
 })

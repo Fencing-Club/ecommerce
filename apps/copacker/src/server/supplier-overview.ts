@@ -117,7 +117,7 @@ export async function supplierOverview(org: { id: string; timeZone: string | nul
         db()
           .select({ orderId: events.orderId, createdAt: events.createdAt })
           .from(events)
-          .where(and(inArray(events.orderId, orderIds), eq(events.message, "Supplier shipped the goods")))
+          .where(and(inArray(events.orderId, orderIds), eq(events.messageKey, "supplierShipped")))
           .orderBy(asc(events.createdAt))
       ])
     : [[], []]

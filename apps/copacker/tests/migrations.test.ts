@@ -87,6 +87,7 @@ describe("migrations", () => {
     const orderId = randomUUID()
     const recorded = [
       "PO submitted to supplier",
+      "Supplier shipped the goods",
       "Supplier set the ready date to 2026-10-20",
       "Supplier proposed changes: Two weeks later",
       "Supplier's changes approved; PO revision 3 published",
@@ -122,6 +123,8 @@ describe("migrations", () => {
       messageKey: "submittedToSupplier",
       messageValues: null
     })
+    // The supplier Overview finds shipped goods by this key alone.
+    expect(byKey("supplierShipped")).toEqual({ message: null, messageKey: "supplierShipped", messageValues: null })
     expect(byKey("readyDateSet")?.messageValues).toEqual({ date: "2026-10-20" })
     expect(byKey("changesProposedWithNote")?.messageValues).toEqual({ note: "Two weeks later" })
     expect(byKey("supplierChangesApproved")?.messageValues).toEqual({ revision: 3 })
