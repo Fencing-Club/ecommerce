@@ -4,6 +4,9 @@ import Link from "next/link"
 import { BrandMark } from "@/components/auth/stage"
 import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
+// Outside the app's layouts, so it brings the app's stylesheet itself; the reset comes first.
+import "@/styles/global.css"
+import "./globals.css"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common.pages.notFound")

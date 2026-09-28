@@ -1,14 +1,10 @@
-import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components"
 import type { Metadata } from "next"
 import { getLocale, getTranslations } from "next-intl/server"
 import { Geist, Geist_Mono, Noto_Nastaliq_Urdu, Noto_Sans_Devanagari } from "next/font/google"
-import { LocalizationProvider } from "@/components/localization-provider"
-import { Providers } from "@/components/providers"
+import { ClientMessages } from "@/components/client-messages"
 import { ThemeScript } from "@/components/theme-provider"
 import { direction, type Locale } from "@/i18n/locales"
 import { cn } from "@/lib/utils"
-import "@/styles/global.css"
-import "./globals.css"
 import { skipLink } from "./layout.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
@@ -34,6 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+// What every page shares: the document in the page's language, its fonts and the skip link. The app's stylesheet,
+// providers and messages come with its own layouts (AppProviders), and the marketing pages bring only what they use,
+// so a visitor's first page carries none of the app. The error page shows outside every other layout, so its messages
+// are here.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [locale, t] = await Promise.all([getLocale(), getTranslations("common")])
   const scriptFont = scriptFonts[locale]
@@ -50,11 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a className={skipLink} href="#main-content">
           {t("skipToContent")}
         </a>
-        <LocalizationProvider>
-          <AuthKitProvider>
-            <Providers>{children}</Providers>
-          </AuthKitProvider>
-        </LocalizationProvider>
+        <ClientMessages namespaces={["common.pages.error"]}>{children}</ClientMessages>
       </body>
     </html>
   )

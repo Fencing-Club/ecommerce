@@ -6,6 +6,9 @@ import Link from "next/link"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+// Outside the app's layouts, so it brings the app's stylesheet itself; the reset comes first.
+import "@/styles/global.css"
+import "./globals.css"
 
 // A page outside the portal that failed, or the portal's own layout: Copacker's name along the top, as the not-found
 // page has it, and the portal error page's empty state in the middle. Trying again fetches the page afresh (`retry`;

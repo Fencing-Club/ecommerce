@@ -1,4 +1,5 @@
 import { useFormatter, useTranslations } from "next-intl"
+import { ClientMessages } from "@/components/client-messages"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
@@ -11,6 +12,7 @@ import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
 import { JoinWaitlist, lift, lit, quiet, rise, Site, stage } from "./site"
+import "./stylesheet"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
@@ -236,30 +238,43 @@ function Closing() {
 export function Landing() {
   const t = useTranslations("marketing")
   return (
-    <Site>
-      <main id="main-content">
-        <Hero />
-        <Section id="forecast" title={t("forecast.title")} text={t("forecast.text")}>
-          <div className="relative isolate">
-            <div
-              aria-hidden
-              className="absolute -inset-x-24 -inset-y-20 -z-10 bg-[radial-gradient(closest-side,rgb(255_122_46/0.13),transparent)]"
-            />
-            <Planner />
-          </div>
-        </Section>
-        <Journey />
-        <Island>
-          <Section id="agents" title={t("agents.title")} text={t("agents.text")}>
-            <Agents />
-            <div className="mt-20 sm:mt-24">
-              <Connect />
+    <ClientMessages
+      namespaces={[
+        "common.ui",
+        "marketing.film",
+        "marketing.planner",
+        "marketing.journey",
+        "marketing.agentsDiagram",
+        "marketing.connect",
+        "marketing.copyButton",
+        "marketing.signup"
+      ]}
+    >
+      <Site>
+        <main id="main-content">
+          <Hero />
+          <Section id="forecast" title={t("forecast.title")} text={t("forecast.text")}>
+            <div className="relative isolate">
+              <div
+                aria-hidden
+                className="absolute -inset-x-24 -inset-y-20 -z-10 bg-[radial-gradient(closest-side,rgb(255_122_46/0.13),transparent)]"
+              />
+              <Planner />
             </div>
           </Section>
-        </Island>
-        <Faq />
-        <Closing />
-      </main>
-    </Site>
+          <Journey />
+          <Island>
+            <Section id="agents" title={t("agents.title")} text={t("agents.text")}>
+              <Agents />
+              <div className="mt-20 sm:mt-24">
+                <Connect />
+              </div>
+            </Section>
+          </Island>
+          <Faq />
+          <Closing />
+        </main>
+      </Site>
+    </ClientMessages>
   )
 }

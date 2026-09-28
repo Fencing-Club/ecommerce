@@ -2,6 +2,7 @@ import { ChevronDown } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { Site } from "./site"
+import "./stylesheet"
 
 // The privacy policy and the terms: documents on the paper, with none of the landing page's staging. The text keeps a
 // comfortable measure, every section has an anchor, and on a wide screen the contents stay beside it. The frame is in

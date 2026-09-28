@@ -11,7 +11,10 @@ language. Translations are written by hand (or with an AI assistant) into JSON f
 2. Otherwise, the computer's language, from the browser's `Accept-Language` header (`negotiateLocale`).
 3. Otherwise, English.
 
-`LocalizationProvider` (in the root layout) passes that language, its messages and the time zone to client components.
+`LocalizationProvider` (in `AppProviders`, which every layout of the app renders) passes that language, its messages
+and the time zone to client components. The marketing pages pass only the parts their client components use
+(`ClientMessages`), so their HTML doesn't carry every area's messages; a marketing client component that starts using
+another namespace needs it added to its page's list.
 Dates format in the time zone the browser last reported (the `tz` cookie), so the server and browser render the same
 text. Worker jobs and emails have no request: use `translatorFor(profile.locale)` from `src/i18n/translator.ts`.
 

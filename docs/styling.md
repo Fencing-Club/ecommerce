@@ -30,12 +30,12 @@ same property on one element with both. Where a component is on Tailwind, keep i
 
 | Module                    | Use it for                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/app/globals.css`     | Tailwind, shadcn's base styles, and the theme mapping. Imported once in the root layout.      |
+| `src/app/globals.css`     | Tailwind, shadcn's base styles, and the theme mapping. Imported by `AppProviders` and the marketing pages. |
 | `components.json`         | The shadcn CLI's settings.                                                                   |
 | `@/styles/theme.css`      | `vars`: the color, radius, font and shadow tokens, for vanilla-extract styles.               |
 | `@/styles/tokens`         | Build-time helpers for vanilla-extract: `space(4)`, `alpha(color, 50)`, `fontSize.sm`.       |
 | `@/styles/sprinkles.css`  | `sx()`: typed layout and text utilities with `sm`/`md`/`lg`/`xl` responsive values.          |
-| `@/styles/global.css`     | The reset and base element styles. Imported before `globals.css` in the root layout.         |
+| `@/styles/global.css`     | The reset and base element styles. Imported before `globals.css`, wherever that is.          |
 
 ## Tables
 
