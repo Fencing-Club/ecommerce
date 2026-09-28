@@ -57,9 +57,11 @@ after the request leaves the outcome unknown; the buyer links the existing AWD o
 with `shipment.reconcile`, which checks its reference or name. `shipment.cancelAmazon`, from a shipment in correction,
 cancels the AWD order or voids the inbound plan and marks the shipment cancelled once Amazon confirms.
 
-Amazon rejects a new AWD order with `CAPACITY_UNAVAILABLE` while the account's AWD capacity is taken, such as by open
-AWD shipments that haven't arrived. Smaller cartons don't help; the shipment stays in Needs attention until capacity
-frees and it's retried.
+A failed `amazon` job puts the shipment in Needs attention with the error as its issue, such as the reasons Amazon gave
+for finding AWD cartons ineligible or rejecting the order. No Amazon error code is handled specially and nothing retries
+by itself; the buyer retries with **Retry shipment** (`shipment.retry`). For example, Amazon rejects a new AWD order
+with `CAPACITY_UNAVAILABLE` while the account's AWD capacity is taken, such as by open AWD shipments that haven't
+arrived. Smaller cartons don't help; retry once capacity frees.
 
 ## Seller Central links
 

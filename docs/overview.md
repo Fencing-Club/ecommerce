@@ -76,9 +76,10 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
   **slow-moving stock** (over 3 months of cover, or no sales in 8 weeks), valued at cost.
 - **Best sellers, shipments in progress, open POs by supplier, and purchasing by month.**
 
-Restock figures come from `restockAllChannels()` with `restockDefaults` (56-day sales period and lead time). That's the
-slowest part, so the result is cached per workspace for five minutes and dropped as soon as anything it reads changes
-(POs, shipments, stock snapshots, order syncs, product details, suppliers, locations, connections).
+Restock figures come from `restockAllChannels()` with the workspace's sales period and lead time from Settings
+(`restockSettings()`, 60 days each by default). That's the slowest part, so the result is cached per workspace for five
+minutes and dropped as soon as anything it reads changes (POs, shipments, stock snapshots, order syncs, product details,
+suppliers, locations, connections, the sales period or lead time).
 
 ## Links into Restock
 
