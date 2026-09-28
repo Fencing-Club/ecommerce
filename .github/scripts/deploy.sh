@@ -9,6 +9,17 @@ set -euo pipefail
 sha="$1"
 site="$2"
 
+# A token pasted into `gh secret set` on Windows can carry a carriage return, which Railway rejects.
+RAILWAY_TOKEN=$(printf '%s' "${RAILWAY_TOKEN:-}" | tr -d '[:space:]')
+export RAILWAY_TOKEN
+scope=$(curl -sS https://backboard.railway.com/graphql/v2 -H "Project-Access-Token: $RAILWAY_TOKEN" \
+  -H "Content-Type: application/json" -d '{"query":"{ projectToken { projectId environmentId } }"}')
+if ! grep -q '"environmentId"' <<< "$scope"; then
+  echo "::error::Railway refused the token (${#RAILWAY_TOKEN} characters): $scope"
+  exit 1
+fi
+echo "Railway token scope: $scope"
+
 newest() {
   railway deployment list --service "$1" --limit 1 --json | node -e '
     let input = ""
