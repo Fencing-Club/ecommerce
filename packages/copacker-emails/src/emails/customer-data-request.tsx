@@ -1,7 +1,10 @@
 /** @jsxRuntime automatic */
 import { Fragment } from "react"
-import { Layout, Paragraph } from "../layout"
+import { Section, Text } from "react-email"
+import { Layout } from "../layout"
+import { Details } from "../parts"
 import { renderEmail } from "../render"
+import { color, font } from "../theme"
 
 export type CustomerDataRequestProps = {
   // Copacker's origin, such as https://copacker.example.
@@ -16,36 +19,66 @@ export type CustomerDataRequestProps = {
 }
 
 const title = ({ shop }: CustomerDataRequestProps) => `Customer data request for ${shop}`
-const opening = ({ requestId, shop }: CustomerDataRequestProps) =>
-  `Shopify sent Copacker a customer data request (request ${requestId}) for ${shop}.`
 
 // To the store's owners, who answer the customer: what Copacker holds about them.
 export default function CustomerDataRequest(props: CustomerDataRequestProps) {
-  const { appUrl, orders, to } = props
+  const { appUrl, shop, requestId, orders } = props
+  const lead =
+    "Shopify sent Copacker a customer data request. Include what Copacker holds in your reply to the customer."
   return (
-    <Layout appUrl={appUrl} heading={title(props)} preview={opening(props)} recipient={to}>
-      <Paragraph>{opening(props)}</Paragraph>
-      <Paragraph>
-        Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses.
-      </Paragraph>
+    <Layout
+      appUrl={appUrl}
+      eyebrow="Shopify data request"
+      heading={title(props)}
+      lead={lead}
+      note="Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses."
+      preview={lead}
+      reason={`Shopify sent a customer data request for ${shop}, which is connected to Copacker.`}
+    >
+      <Details
+        rows={[
+          { label: "Store", value: shop },
+          { label: "Request", value: String(requestId) },
+          { label: "Orders Copacker holds", value: orders.length ? orders.length.toLocaleString("en-US") : "None" }
+        ]}
+      />
       {orders.length ? (
-        <>
-          <Paragraph>
-            For the orders in the request, Copacker stores only the order details it uses to plan restocks:
-          </Paragraph>
-          <Paragraph>
+        <Section
+          className="cp-panel"
+          style={{
+            backgroundColor: color.panel,
+            border: `1px solid ${color.line}`,
+            borderRadius: 12,
+            margin: "0 0 8px",
+            padding: "14px 18px"
+          }}
+        >
+          <Text
+            className="cp-muted"
+            style={{ color: color.muted, fontFamily: font, fontSize: 13, lineHeight: "20px", margin: "0 0 8px" }}
+          >
+            Only the order details Copacker uses to plan restocks:
+          </Text>
+          {/* One paragraph with a line for each order, so the plain text lists them on consecutive lines too. */}
+          <Text
+            className="cp-ink"
+            style={{
+              color: color.ink,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+              fontSize: 13,
+              lineHeight: "20px",
+              margin: 0
+            }}
+          >
             {orders.map((order, index) => (
-              <Fragment key={index}>
+              <Fragment key={order}>
                 {index ? <br /> : null}
                 {order}
               </Fragment>
             ))}
-          </Paragraph>
-        </>
-      ) : (
-        <Paragraph>Copacker doesn’t hold any of the orders in the request.</Paragraph>
-      )}
-      <Paragraph>Include this information in your response to the customer.</Paragraph>
+          </Text>
+        </Section>
+      ) : null}
     </Layout>
   )
 }

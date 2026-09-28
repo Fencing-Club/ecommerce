@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Address, OrderInput } from "@repo/aisle"
+import type { Address, OrderInput, Packing } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
@@ -168,11 +168,12 @@ export async function generatePo(orderId: string, revision?: number) {
   if (!historical) {
     throw new Error("Purchase order revision is unavailable")
   }
+  const parties = await documentParties(order, historical.data)
   const bytes = await purchaseOrderPdf({
     order: historical.data,
     revision: targetRevision,
     issued: historical.createdAt.toISOString().slice(0, 10),
-    ...(await documentParties(order, historical.data))
+    ...parties
   })
   const doc = await storeDocument(
     {
@@ -185,25 +186,44 @@ export async function generatePo(orderId: string, revision?: number) {
     },
     bytes
   )
-  return { doc, bytes }
+  // Where the PDF says the goods go, for the email it's sent with.
+  return { doc, bytes, shipTo: parties.shipTo?.name ?? destinationName(historical.data) }
 }
-// A packed shipment's packing list and checklist. An Amazon shipment goes to the warehouses Amazon chose, named by their
-// codes, such as HGR6; any other to the PO's ship-to address.
-export async function packingDocuments(shipment: typeof shipments.$inferSelect) {
-  if (!shipment.packing || !shipment.snapshot) {
-    throw new Error("Shipment packing is missing")
-  }
+// A shipment the supplier has packed: its cartons, and the purchase order they were packed from.
+type PackedShipment = typeof shipments.$inferSelect & { packing: Packing; snapshot: OrderInput }
+const packed = (shipment: typeof shipments.$inferSelect | undefined): shipment is PackedShipment =>
+  Boolean(shipment?.packing && shipment.snapshot)
+
+// Who a shipment's documents are from, and where its cartons go: to the warehouses Amazon chose, named by their codes
+// such as HGR6, or to the purchase order's ship-to address.
+async function shipmentParties(shipment: PackedShipment) {
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
   // Only the shipment's own lines, so a forwarder stop names the Amazon network its cartons go on to.
   const included = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
-  const { buyer } = parties
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
   const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
   const shipTo = warehouses.length
     ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
     : parties.shipTo
+  return { buyer: parties.buyer, shipTo }
+}
+
+// Where a packed shipment's cartons go, as its packing list names it, such as "Amazon AWD US" or the buyer's warehouse.
+export async function shipmentDestination(shipment: typeof shipments.$inferSelect) {
+  if (!packed(shipment)) {
+    return undefined
+  }
+  return (await shipmentParties(shipment)).shipTo?.name ?? destinationName(shipment.snapshot)
+}
+
+// A packed shipment's packing list and checklist.
+export async function packingDocuments(shipment: typeof shipments.$inferSelect) {
+  if (!packed(shipment)) {
+    throw new Error("Shipment packing is missing")
+  }
+  const { buyer, shipTo } = await shipmentParties(shipment)
   return {
     packingList: await packingListPdf({
       order: shipment.snapshot,

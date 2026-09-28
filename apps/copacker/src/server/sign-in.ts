@@ -1,3 +1,4 @@
+import { passwordResetEmail } from "@repo/copacker-emails"
 import { saveSession } from "@workos-inc/authkit-nextjs"
 import {
   AuthenticationException,
@@ -307,11 +308,7 @@ export async function requestPasswordReset(raw: unknown) {
     await sendEmail({
       to: reset.email,
       key: `password-reset:${reset.id}`,
-      subject: "Reset your Copacker password",
-      text: [
-        `Choose a new password for ${reset.email}: ${link}`,
-        `The link expires in ${lasting(reset.expiresAt)}. If you didn’t ask to reset your password, you can ignore this email.`
-      ].join("\n\n")
+      ...(await passwordResetEmail({ appUrl: appUrl(), link, expiresIn: lasting(reset.expiresAt), to: reset.email }))
     })
   } catch (error) {
     console.error("Couldn’t send the password reset email", error)

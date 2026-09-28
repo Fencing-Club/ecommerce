@@ -1,101 +1,177 @@
 /** @jsxRuntime automatic */
 // Each .tsx file here names React's automatic JSX runtime itself. Copacker's worker runs this package through tsx, which
 // applies the app's tsconfig only to the app's own files, so JSX here would otherwise compile to React.createElement.
-import type { ReactNode } from "react"
-import { Body, Button, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from "react-email"
+import type { CSSProperties, ReactNode } from "react"
+import {
+  Body,
+  Button,
+  Column,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Row,
+  Section,
+  Text
+} from "react-email"
+import { LinkFallback } from "./parts"
+import { color, css, font, glow } from "./theme"
 
-// Copacker's colors as the app sets them: the brand orange, and the neutral scale for text and lines. `dark` is what
-// each becomes in mail apps that show a dark inbox and let the email pick its colors there.
-const color = { brand: "#ea580c", ink: "#0a0a0a", body: "#404040", muted: "#737373", line: "#e5e5e5" }
-const dark = { page: "#0a0a0a", ink: "#fafafa", body: "#d4d4d4", muted: "#a3a3a3", line: "#262626" }
-
-// The reader's own system font: San Francisco on Apple devices, Segoe UI on Windows, Roboto on Android.
-const font = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-
-// What inline styles can't say: the dark colors and the narrower frame on phones, which elements take by class. The
-// page sets no background of its own, so a mail app that darkens emails itself has only the text to recolor.
-const css = `
-:root { color-scheme: light dark; supported-color-schemes: light dark; }
-@media (prefers-color-scheme: dark) {
-  .cp-page { background-color: ${dark.page} !important; }
-  .cp-ink { color: ${dark.ink} !important; }
-  .cp-body { color: ${dark.body} !important; }
-  .cp-muted { color: ${dark.muted} !important; }
-  .cp-rule { border-color: ${dark.line} !important; }
-}
-@media only screen and (max-width: 600px) {
-  .cp-frame { padding: 32px 20px !important; }
-  .cp-heading { font-size: 22px !important; line-height: 30px !important; }
-}
-`
-
-// Copacker's mark and name, as the app's header shows them. Mail apps don't draw SVG, so the mark is an image the app
-// serves; the plain-text version leaves the header out.
-function Mark({ appUrl }: { appUrl: string }) {
+// A table of one cell that has the class, colors and padding. React Email's Section moves padding from its table to its
+// cell, where the phone styles couldn't change it by the table's class, and mail apps such as Outlook ignore padding on
+// a table anyway.
+function Frame({ children, className, style }: { children: ReactNode; className: string; style: CSSProperties }) {
   return (
-    <Section data-skip-in-text style={{ paddingBottom: 40 }}>
-      <table border={0} cellPadding={0} cellSpacing={0} role="presentation">
-        <tbody>
-          <tr>
-            <td style={{ verticalAlign: "middle" }}>
-              <Img alt="" height={32} src={`${appUrl}/email/mark.png`} width={32} />
-            </td>
-            <td
-              className="cp-ink"
-              style={{
-                color: color.ink,
-                fontFamily: font,
-                fontSize: 16,
-                fontWeight: 600,
-                letterSpacing: "-0.2px",
-                lineHeight: "32px",
-                paddingLeft: 10,
-                verticalAlign: "middle"
-              }}
-            >
-              Copacker
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <table border={0} cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+      <tbody>
+        <tr>
+          <td className={className} style={style}>
+            {children}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
+// The hero: Copacker's mark and name, what kind of email it is, the title and its line, on the dark band with the
+// orange glow the landing page's hero has. Mail apps don't draw SVG, so the mark is an image the app serves.
+function Hero({
+  appUrl,
+  eyebrow,
+  heading,
+  lead
+}: {
+  appUrl: string
+  eyebrow: string
+  heading: string
+  lead: ReactNode
+}) {
+  return (
+    <Frame
+      className="cp-band"
+      style={{
+        backgroundColor: color.band,
+        backgroundImage: glow,
+        borderRadius: "16px 16px 0 0",
+        padding: "28px 36px 34px"
+      }}
+    >
+      <Row data-skip-in-text>
+        <Column style={{ width: 30, verticalAlign: "middle" }}>
+          <Img alt="" height={30} src={`${appUrl}/email/mark.png`} width={30} style={{ borderRadius: 8 }} />
+        </Column>
+        <Column
+          style={{
+            color: "#ffffff",
+            fontFamily: font,
+            fontSize: 17,
+            fontWeight: 700,
+            letterSpacing: "-0.3px",
+            lineHeight: "30px",
+            paddingLeft: 10,
+            verticalAlign: "middle"
+          }}
+        >
+          Copacker
+        </Column>
+      </Row>
+      <Text
+        style={{
+          color: color.glowText,
+          fontFamily: font,
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "1.4px",
+          lineHeight: "16px",
+          margin: "36px 0 10px",
+          textTransform: "uppercase"
+        }}
+      >
+        {eyebrow}
+      </Text>
+      <Heading
+        as="h1"
+        className="cp-heading"
+        style={{
+          color: "#ffffff",
+          fontFamily: font,
+          fontSize: 30,
+          fontWeight: 700,
+          letterSpacing: "-0.8px",
+          lineHeight: "38px",
+          margin: "0 0 12px"
+        }}
+      >
+        {heading}
+      </Heading>
+      <Text style={{ color: color.bandText, fontFamily: font, fontSize: 16, lineHeight: "26px", margin: 0 }}>
+        {lead}
+      </Text>
+    </Frame>
+  )
+}
+
+// The one thing to do, as a button in the brand orange.
+function Action({ label, href }: { label: string; href: string }) {
+  return (
+    <Section style={{ paddingTop: 4 }}>
+      <Button
+        className="cp-button"
+        href={href}
+        style={{
+          backgroundColor: color.brand,
+          borderRadius: 10,
+          color: "#ffffff",
+          fontFamily: font,
+          fontSize: 16,
+          fontWeight: 600,
+          letterSpacing: "-0.1px",
+          lineHeight: "22px",
+          padding: "14px 26px",
+          textDecoration: "none"
+        }}
+      >
+        {label}
+      </Button>
     </Section>
   )
 }
 
-export function Paragraph({ children }: { children: ReactNode }) {
-  return (
-    <Text
-      className="cp-body"
-      style={{ color: color.body, fontFamily: font, fontSize: 16, lineHeight: "26px", marginBottom: 16, marginTop: 0 }}
-    >
-      {children}
-    </Text>
-  )
-}
-
-// Every Copacker email: the mark, a title, a line or two, one button, and a quiet footer.
+// Every Copacker email: the hero on the dark band, then on the white card its details, one button and a quiet note,
+// and a footer that says why it came.
 export function Layout({
   action,
   appUrl,
   children,
+  eyebrow,
+  fallback,
   heading,
+  lead,
   note,
   preview,
-  recipient
+  reason
 }: {
-  // The one thing to do, as a button.
   action?: { label: string; href: string }
   // Copacker's origin, such as https://copacker.example, which serves the mark.
   appUrl: string
-  children: ReactNode
-  // The title, which is also the subject.
+  children?: ReactNode
+  // What kind of email it is, above the title, such as "New purchase order".
+  eyebrow: string
+  // Writes the button's link out under the note, where the link itself matters, such as an invitation's.
+  fallback?: boolean
   heading: string
+  // The sentence under the title.
+  lead: ReactNode
   // A quiet line under the button.
-  note?: string
+  note?: ReactNode
   // The line inboxes show after the subject.
   preview: string
-  // The address the email went to, for the footer. An email whose note names it already leaves it out.
-  recipient?: string
+  // Why this email came, for the footer.
+  reason: string
 }) {
   return (
     <Html lang="en">
@@ -107,76 +183,60 @@ export function Layout({
         <title>{heading}</title>
         <style>{css}</style>
       </Head>
-      <Body className="cp-page" style={{ margin: 0 }}>
+      <Body className="cp-page" style={{ backgroundColor: color.page, margin: 0, padding: 0 }}>
         <Preview useTitleTag={false}>{preview}</Preview>
-        <Container style={{ maxWidth: 560, padding: "48px 32px" }} tdClassName="cp-frame">
-          <Mark appUrl={appUrl} />
-          <Heading
-            as="h1"
-            className="cp-ink cp-heading"
-            style={{
-              color: color.ink,
-              fontFamily: font,
-              fontSize: 24,
-              fontWeight: 600,
-              letterSpacing: "-0.4px",
-              lineHeight: "32px",
-              margin: "0 0 16px"
-            }}
-          >
-            {heading}
-          </Heading>
-          {children}
-          {action ? (
-            <Section style={{ paddingTop: 8 }}>
-              <Button
-                href={action.href}
-                style={{
-                  backgroundColor: color.brand,
-                  borderRadius: 8,
-                  color: "#ffffff",
-                  fontFamily: font,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  lineHeight: "20px",
-                  padding: "12px 20px",
-                  textDecoration: "none"
-                }}
-              >
-                {action.label}
-              </Button>
-            </Section>
-          ) : null}
-          {note ? (
-            <Text
-              className="cp-muted"
+        {/* Body copies the page color to a cell of its own that has no class, so the dark styles couldn't change it; this
+        cell covers it. */}
+        <Frame className="cp-page cp-outer" style={{ backgroundColor: color.page, padding: "32px 16px 40px" }}>
+          <Container style={{ maxWidth: 568 }}>
+            <Hero appUrl={appUrl} eyebrow={eyebrow} heading={heading} lead={lead} />
+            <Frame
+              className="cp-card cp-content"
               style={{
-                color: color.muted,
-                fontFamily: font,
-                fontSize: 14,
-                lineHeight: "22px",
-                marginBottom: 0,
-                marginTop: 24
+                backgroundColor: color.card,
+                border: `1px solid ${color.line}`,
+                borderRadius: "0 0 16px 16px",
+                borderTop: 0,
+                padding: "32px 36px 30px"
               }}
             >
-              {note}
-            </Text>
-          ) : null}
-          <Hr className="cp-rule" style={{ borderTop: `1px solid ${color.line}`, margin: "40px 0 20px" }} />
-          <Text
-            className="cp-muted"
-            style={{
-              color: color.muted,
-              fontFamily: font,
-              fontSize: 13,
-              lineHeight: "20px",
-              marginBottom: 0,
-              marginTop: 0
-            }}
-          >
-            {recipient ? `Sent by Copacker to ${recipient}` : "Sent by Copacker"}
-          </Text>
-        </Container>
+              {children}
+              {action ? <Action {...action} /> : null}
+              {note ? (
+                <Text
+                  className="cp-muted"
+                  style={{ color: color.muted, fontFamily: font, fontSize: 14, lineHeight: "22px", margin: "20px 0 0" }}
+                >
+                  {note}
+                </Text>
+              ) : null}
+              {fallback && action ? <LinkFallback href={action.href} /> : null}
+            </Frame>
+            <Section style={{ padding: "28px 24px 0", textAlign: "center" }}>
+              <Text style={{ fontFamily: font, fontSize: 13, lineHeight: "20px", margin: 0 }}>
+                <Link
+                  className="cp-ink cp-home"
+                  href={appUrl}
+                  style={{ color: color.ink, fontWeight: 700, letterSpacing: "-0.1px", textDecoration: "none" }}
+                >
+                  Copacker
+                </Link>
+              </Text>
+              <Text
+                className="cp-muted"
+                style={{ color: color.muted, fontFamily: font, fontSize: 12, lineHeight: "18px", margin: "2px 0 12px" }}
+              >
+                Restocking, handled.
+              </Text>
+              <Text
+                className="cp-muted"
+                style={{ color: color.muted, fontFamily: font, fontSize: 12, lineHeight: "18px", margin: 0 }}
+              >
+                {reason}
+              </Text>
+            </Section>
+          </Container>
+        </Frame>
       </Body>
     </Html>
   )

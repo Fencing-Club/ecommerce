@@ -3590,8 +3590,19 @@ describe("fluid packing handoff", () => {
       attachments: [{ filename: "PO-TEST.pdf" }]
     })
     for (const version of [sent.html, sent.text]) {
-      expect(version).toContain("Required by Oct 20, 2026. The PDF is attached.")
-      expect(version).toContain(`https://copacker.example/orders/${orderId}`)
+      // It sums up the PDF: the units, where they go, the required-by date, each line and the total.
+      for (const copy of [
+        "Buyer sent you a purchase order for 160 units of 1 product.",
+        "Amazon AWD US",
+        "Oct 20, 2026",
+        "Foil body cord",
+        "Two-pack, B-2",
+        "$336.00",
+        "The purchase order PDF is attached.",
+        `https://copacker.example/orders/${orderId}`
+      ]) {
+        expect(version).toContain(copy)
+      }
     }
 
     await pg.exec("TRUNCATE jobs, shipments CASCADE")
@@ -3601,11 +3612,37 @@ describe("fluid packing handoff", () => {
     expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))).toHaveLength(0)
   })
   it("emails the supplier which shipment's labels are ready, numbered as the app numbers them", async () => {
+    const packing = packingSchema.parse({
+      invoiceDocumentId: randomUUID(),
+      readyDate: "2026-10-15",
+      origin: {
+        name: "Supplier",
+        addressLine1: "Road 1",
+        city: "Shenzhen",
+        stateOrRegion: "Guangdong",
+        postalCode: "518000",
+        countryCode: "CN",
+        phoneNumber: "+86123456789",
+        email: "supplier@example.com"
+      },
+      cartons: [
+        { cartonId: "A1", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] },
+        { cartonId: "A2", length: 50, width: 40, height: 30, weight: 15, items: [{ itemId, pieces: 80 }] }
+      ]
+    })
     const [, second] = await database
       .insert(tables.shipments)
       .values([
         { orderId, orderRevision: 1, createdAt: new Date("2026-09-01T00:00:00Z") },
-        { orderId, orderRevision: 1, createdAt: new Date("2026-09-02T00:00:00Z") }
+        {
+          orderId,
+          orderRevision: 1,
+          createdAt: new Date("2026-09-02T00:00:00Z"),
+          packing,
+          snapshot: orderData,
+          amazonNetwork: "awd_us",
+          amazonShipmentId: "STAR-1, STAR-2"
+        }
       ])
       .returning({ id: tables.shipments.id })
     vi.stubEnv("APP_URL", "https://copacker.example")
@@ -3618,8 +3655,18 @@ describe("fluid packing handoff", () => {
     const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; html: string; text: string }
     expect(sent.subject).toBe("Labels ready for PO-TEST, shipment 2")
     for (const version of [sent.html, sent.text]) {
-      expect(version).toContain(`https://copacker.example/shipments/${second!.id}`)
+      // It says what's in the shipment and where it goes, as its packing list does.
+      for (const copy of [
+        "Buyer released the shipment",
+        "Amazon AWD US",
+        "Oct 15, 2026",
+        "STAR-1, STAR-2",
+        `https://copacker.example/shipments/${second!.id}`
+      ]) {
+        expect(version).toContain(copy)
+      }
     }
+    expect(sent.text).toMatch(/Cartons +2\n/)
   })
   it("saves incomplete packing without reserving stock or queueing Amazon work", async () => {
     const prepared = await preparation()

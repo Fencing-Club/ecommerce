@@ -1,4 +1,4 @@
-import { buildAwdRequest } from "@repo/aisle"
+import { buildAwdRequest, money, orderTotal } from "@repo/aisle"
 import { downloadAmazonLabels } from "@repo/aisle/amazon"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/aisle/labels"
 import {
@@ -13,7 +13,7 @@ import { z } from "zod"
 import { db } from "../db/index"
 import { shipments, orders, orderRevisions, organizations } from "../db/schema"
 import { amazonFor, shopifyFor } from "./connections"
-import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
+import { generatePo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
 import { saveSupplierSkus } from "./product-fields"
@@ -220,7 +220,7 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     })
   } else if (input.type === "po") {
     const po = await generatePo(input.orderId!, input.revision)
-    // The email says what the attached PDF does: that revision's reference and required-by date, and the buyer.
+    // The email says what the attached PDF does: that revision's lines, total, dates and ship-to, and the buyer.
     const [sent] = await db()
       .select({ order: orderRevisions.data, buyer: organizations.name })
       .from(orderRevisions)
@@ -230,12 +230,27 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     if (!sent) {
       throw new Error("Purchase order revision is unavailable")
     }
+    const { order } = sent
     email = await purchaseOrderEmail({
       appUrl: appUrl(),
       orderId: input.orderId!,
-      reference: sent.order.reference,
+      reference: order.reference,
       buyer: sent.buyer,
-      dueDate: sent.order.dueDate,
+      revision: po.doc.orderRevision,
+      dueDate: order.dueDate,
+      shipTo: po.shipTo,
+      paymentTerms: order.paymentTerms || undefined,
+      // The most valuable lines first, named as the PDF names them, without Shopify's "Default Title".
+      items: order.items
+        .toSorted((a, b) => b.pieces * b.unitPrice - a.pieces * a.unitPrice)
+        .map((item) => ({
+          quantity: item.pieces,
+          name: item.name,
+          detail: [item.variant === "Default Title" ? "" : item.variant, item.supplierSku].filter(Boolean).join(", "),
+          amount: money(item.pieces * item.unitPrice, order.currency)
+        })),
+      units: order.items.reduce((sum, item) => sum + item.pieces, 0),
+      total: money(orderTotal(order), order.currency),
       to: input.to
     })
     attachments.push({ filename: po.doc.name, content: Buffer.from(po.bytes).toString("base64") })
@@ -249,22 +264,33 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     })
   } else {
     // A purchase order's shipments are numbered oldest first, as the app numbers them.
-    const [[order], numbered] = await Promise.all([
-      db().select({ data: orders.data }).from(orders).where(eq(orders.id, input.orderId!)),
+    const [[released], numbered] = await Promise.all([
+      db()
+        .select({ shipment: shipments, order: orders.data, buyer: organizations.name })
+        .from(shipments)
+        .innerJoin(orders, eq(orders.id, shipments.orderId))
+        .innerJoin(organizations, eq(organizations.id, orders.buyerOrgId))
+        .where(and(eq(shipments.id, input.shipmentId!), eq(shipments.orderId, input.orderId!))),
       db()
         .select({ id: shipments.id })
         .from(shipments)
         .where(eq(shipments.orderId, input.orderId!))
         .orderBy(shipments.createdAt)
     ])
-    if (!order) {
-      throw new Error("Purchase order is missing")
+    if (!released) {
+      throw new Error("Shipment is missing")
     }
+    const { shipment } = released
     email = await labelsReadyEmail({
       appUrl: appUrl(),
-      shipmentId: input.shipmentId!,
-      reference: order.data.reference,
-      shipment: numbered.findIndex((row) => row.id === input.shipmentId) + 1 || undefined,
+      shipmentId: shipment.id,
+      reference: released.order.reference,
+      buyer: released.buyer,
+      shipment: numbered.findIndex((row) => row.id === shipment.id) + 1 || undefined,
+      cartons: shipment.packing?.cartons.length,
+      destination: await shipmentDestination(shipment),
+      readyDate: shipment.packing?.readyDate,
+      amazonShipments: shipment.amazonShipmentId?.split(", "),
       to: input.to
     })
   }
