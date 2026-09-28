@@ -37,8 +37,10 @@ effects and the scenes all read their timing from it. `src/ad.tsx` plays each se
 
 - `src/scenes/` has one file per section. Each scene is a pure function of the seconds since its section started, so
   any frame renders on its own and the recap can reuse other scenes' pieces.
-- `src/ui.tsx` rebuilds Copacker's interface (the window with each workspace's sidebar, cards, badges, tables, the
-  cursor), and `src/data.ts` holds the demo workspace, whose numbers all agree with each other.
+- `src/ui.tsx` rebuilds Copacker's interface as the app draws it today (the window with the app header and each
+  workspace's sidebar, cards, status badges, tables, the cursor), and `src/data.ts` holds the demo workspaces, the
+  marketing page's brand, partners and products, whose numbers all agree with each other. When the app's look changes,
+  change them to match.
 - `src/type.tsx` has the headlines and chapter labels; `src/stage.tsx` has the dark stage and the word-by-word captions.
 - Chapters hand over without hard cuts. The reveal's window carries into the forecast, the reorder's into Amazon, and
   the handoffs' into the agents: each exports its window's last pose for the next chapter's `Shot` to start `from`.
@@ -74,6 +76,8 @@ effects and the scenes all read their timing from it. `src/ad.tsx` plays each se
 - `node scripts/loudness.ts <file.wav>` measures a mix's integrated loudness (BS.1770, gated) and sample peak. Decode a
   render at 48 kHz first: `pnpm --filter video exec remotion ffmpeg -i out/copacker.mp4 -vn -ar 48000 out/copacker.wav`.
   Deliver about -14 LUFS for YouTube and social, and -24 LKFS for US broadcast (ATSC A/85).
+- The landing page plays the -14 LUFS web mix, made smaller and served from R2, as [Landing page](landing-page.md#assets)
+  says.
 - Before release: the logo is the app's
   orange box tile, and every figure on screen is demo data, so any customer proof added later must be real. The
   vertical 9:16 version still needs its own layout.

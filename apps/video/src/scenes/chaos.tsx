@@ -5,7 +5,7 @@ import { supplier } from "../data"
 import { mixed, ramp, settle } from "../motion"
 import { font, stage } from "../theme"
 import { moments } from "../timeline"
-import { Badge } from "../ui"
+import { Status } from "../ui"
 
 // The mess a restock makes without Copacker: the pieces that pile up through the hook, then snap into order on the
 // drop. Positions are the centers of each piece, on the 1920 by 1080 frame; `z` pushes a piece back into the distance.
@@ -52,7 +52,7 @@ const errors = [
   "Labels missing FNSKU",
   "Carton over 50 lb",
   "Delivery window missed",
-  "Packing list doesn't match the PO",
+  "Packing list doesn't match the order",
   "Invoice total doesn't match",
   "Shipment stuck in Working"
 ]
@@ -286,7 +286,7 @@ const ProductCard = ({ out }: { out: number }) => (
     </div>
     <span style={{ fontSize: 19, fontWeight: 600 }}>Steel Bottle 32 oz</span>
     <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      {out > 0 ? <Badge tone="danger">Out of stock</Badge> : <Badge tone="success">In stock</Badge>}
+      <Status status={out > 0 ? "out_of_stock" : "in_stock"} />
       <span style={{ fontSize: 15, color: "#71717a" }}>{out > 0 ? "0 available" : "1,140 available"}</span>
     </span>
   </div>

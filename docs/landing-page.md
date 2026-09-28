@@ -68,12 +68,16 @@ parts live in `apps/copacker/src/components/marketing/`:
 
 ## Assets
 
-`apps/copacker/public/marketing/` holds the film (the ad's web mix at 1080p and 30 fps), its poster and the social
-image, the last two from the ad's end card. After re-rendering the ad (see [Video](video.md)), export them again from
-`apps/video`:
+The film, the ad's web mix at 1080p and 30 fps, is `film.mp4` in the `copacker-media` R2 bucket, which `film.tsx` plays
+from `https://media.copacker.ai/film.mp4`. `apps/copacker/public/marketing/` holds its poster and the social image, both
+from the ad's end card. After re-rendering the ad (see [Video](video.md)), export them again from `apps/video`, then
+upload `out/film.mp4` over the bucket's `film.mp4`:
 
 ```sh
-pnpm exec remotion ffmpeg -y -i out/copacker-web.mp4 -r 30 -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart ../copacker/public/marketing/film.mp4
+pnpm exec remotion ffmpeg -y -i out/copacker-web.mp4 -r 30 -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart out/film.mp4
 pnpm exec remotion ffmpeg -y -ss 101.2 -i out/copacker-web.mp4 -frames:v 1 -vf scale=1280:-2 -q:v 3 ../copacker/public/marketing/film.jpg
 pnpm exec remotion ffmpeg -y -ss 101.2 -i out/copacker-web.mp4 -frames:v 1 -vf crop=1920:1008:0:36,scale=1200:630 -q:v 3 ../copacker/public/marketing/og.jpg
 ```
+
+Cloudflare and browsers keep the film for a day, so purge `https://media.copacker.ai/film.mp4` in Cloudflare once the
+new cut is up. The bucket answers range requests, which Safari needs to play and seek it.

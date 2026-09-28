@@ -1,12 +1,21 @@
-import { CircleCheck, Download, Globe, Package, TrendingDown, Warehouse } from "lucide-react"
+import {
+  CircleCheck,
+  Download,
+  Globe,
+  LoaderCircle,
+  Package,
+  PackageCheck,
+  TrendingDown,
+  Warehouse
+} from "lucide-react"
 import type { CSSProperties, ReactNode } from "react"
 import { Easing } from "remotion"
-import { buyer, count, orderUnits, ordered, split } from "../data"
+import { buyer, count, orderUnits, ordered, reference, split } from "../data"
 import { mixed, ramp, settle } from "../motion"
 import { app, font, stage } from "../theme"
 import { moments, sections } from "../timeline"
 import { lit } from "../type"
-import { AppWindow, Badge, Button, Card, CardTitle, Table } from "../ui"
+import { AppWindow, Button, Card, CardTitle, PageHeader, Status, Table } from "../ui"
 import { Feature, Shot } from "./feature"
 import { PoPage, reorderEnd } from "./reorder"
 
@@ -87,35 +96,57 @@ export const BoxLabel = ({ box, style }: { box: number; style?: CSSProperties })
 
 const labelled = (t: number, i: number) => t >= m.labels[Math.min(i, m.labels.length - 1)]
 
-// The shipment's page while Copacker creates it in Amazon: the steps, the labels, and the cartons they go on.
+// The shipment's page while Copacker creates it in Amazon: its progress, the labels as they print, and the cartons
+// they go on. Once it's done, the supplier's packet is ready.
 const ShipmentPage = ({ t }: { t: number }) => {
   const ready = t >= m.steps[m.steps.length - 1] + 0.2
   const rows = [
-    { carton: 1, product: ordered[0], pieces: 24, size: "42 × 32 × 28", weight: "11.6" },
-    { carton: 2, product: ordered[0], pieces: 24, size: "42 × 32 × 28", weight: "11.6" },
-    { carton: 21, product: ordered[1], pieces: 12, size: "38 × 28 × 26", weight: "7.9" }
+    { carton: 1, sku: ordered[0].sku, units: 24, size: "42 × 32 × 28", weight: "11.6" },
+    { carton: 2, sku: ordered[0].sku, units: 24, size: "42 × 32 × 28", weight: "11.6" },
+    { carton: 3, sku: ordered[0].sku, units: 24, size: "42 × 32 × 28", weight: "11.6" }
   ]
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <div style={{ display: "grid", gap: 4 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>Shipment 2 to Amazon FBA</span>
-          {ready ? <Badge tone="success">Ready for pickup</Badge> : <Badge tone="primary">Creating shipment</Badge>}
-        </div>
-        <span style={{ fontSize: 16, color: app.muted }}>PO 1042 to Amazon FBA, {split.fba.cartons} cartons</span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 16 }}>
-        <Card>
-          <CardTitle>Creating the Amazon shipment</CardTitle>
-          <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+      <PageHeader
+        parents={["Purchase orders", reference]}
+        title="Shipment 2"
+        badge={<Status status={ready ? "ready" : "creating"} />}
+        description={
+          <>
+            Amazon FBA, {split.fba.cartons} cartons
+            {ready ? (
+              <>
+                , <span style={{ color: app.foreground, fontWeight: 500 }}>{shipment}</span>
+              </>
+            ) : null}
+          </>
+        }
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 18 }}>
+        <Card style={{ display: "grid", alignContent: "start", gap: 16, padding: 18 }}>
+          <span style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+            {ready ? (
+              <PackageCheck size={19} color={app.primary} style={{ flex: "none", marginTop: 2 }} />
+            ) : (
+              <LoaderCircle size={19} style={{ flex: "none", marginTop: 2, transform: `rotate(${t * 400}deg)` }} />
+            )}
+            <span style={{ display: "grid", lineHeight: 1.4 }}>
+              <span style={{ fontWeight: 500 }}>
+                {ready ? "Supplier packet ready" : "Creating the Amazon shipment"}
+              </span>
+              <span style={{ color: app.muted }}>
+                {ready ? "Print labels at actual size" : "Usually a few minutes"}
+              </span>
+            </span>
+          </span>
+          <div style={{ display: "grid", gap: 11, paddingTop: 14, borderTop: `1px solid ${app.border}` }}>
             {steps.map((step, i) => (
               <div
                 key={step}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
-                  fontSize: 16,
+                  gap: 11,
                   color: t >= m.steps[i] - 0.6 ? app.foreground : app.muted,
                   opacity: t >= m.steps[i] - 0.6 ? 1 : 0.45
                 }}
@@ -126,15 +157,15 @@ const ShipmentPage = ({ t }: { t: number }) => {
             ))}
           </div>
         </Card>
-        <Card style={{ position: "relative", overflow: "hidden" }}>
+        <Card style={{ position: "relative", overflow: "hidden", padding: 18 }}>
           <CardTitle
             aside={
-              <Button variant="outline" icon={Download} style={{ height: 36, fontSize: 14.5 }}>
-                Download labels
+              <Button variant="outline" size="sm" icon={Download}>
+                Download packet
               </Button>
             }
           >
-            Box labels
+            Carton labels
           </CardTitle>
           <div style={{ position: "relative", height: 230 }}>
             {m.labels.map((at, i) => {
@@ -156,33 +187,36 @@ const ShipmentPage = ({ t }: { t: number }) => {
           </div>
         </Card>
       </div>
-      <Card style={{ paddingBottom: 8 }}>
-        <CardTitle>Carton overview</CardTitle>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: 18, borderBottom: `1px solid ${app.border}`, fontSize: 17, fontWeight: 500 }}>
+          Cartons
+        </div>
         <Table
+          inset={18}
           columns={[
-            { label: "Supplier carton", width: 1.2 },
-            { label: "Product", width: 1.9 },
-            { label: "Units", width: 0.8, align: "right" },
-            { label: "Dimensions (cm)", width: 1.5, align: "right" },
-            { label: "Weight (kg)", width: 1.1, align: "right" },
-            { label: "Amazon label number", width: 2.4 }
+            { label: "Carton", width: 0.8 },
+            { label: "Product", width: 1.1 },
+            { label: "Units", width: 0.7, align: "right" },
+            { label: "Dimensions (cm)", width: 1.45 },
+            { label: "Weight (kg)", width: 1.05, align: "right" },
+            { label: "Amazon label", width: 2.2 }
           ]}
-          rows={rows.map(({ carton, product, pieces, size, weight }, i) => ({
+          rows={rows.map(({ carton, sku, units, size, weight }, i) => ({
             key: String(carton),
             cells: [
-              carton,
-              product.name,
-              pieces,
+              <span key="carton" style={{ fontWeight: 500 }}>
+                {carton}
+              </span>,
+              sku,
+              units,
               size,
               weight,
               labelled(t, i * 2) ? (
-                <span key="label" style={{ fontFamily: font.mono, fontSize: 15 }}>
+                <span key="label" style={{ fontFamily: font.mono, fontSize: 14 }}>
                   {shipment}U{String(carton).padStart(6, "0")}
                 </span>
               ) : (
-                <span key="pending" style={{ color: app.muted }}>
-                  Pending
-                </span>
+                "—"
               )
             ]
           }))}
@@ -281,7 +315,7 @@ const Split = ({ t }: { t: number }) => {
       </svg>
       <SplitNode
         icon={Package}
-        title="PO 1042"
+        title="Purchase order 1042"
         value={`${count(orderUnits)} units`}
         detail="From Shenzhen Metalworks"
         shown={order}
@@ -399,14 +433,14 @@ export const Amazon = ({ t }: { t: number }): ReactNode => {
           <AppWindow
             width={1180}
             height={mixed(790, 800, carried)}
-            workspace={buyer.name}
+            workspace={buyer}
             page={shipmentShown < 0.5 ? "Purchase orders" : "Shipments"}
           >
             <div style={{ position: "absolute", inset: "26px 30px", opacity: 1 - shipmentShown }}>
               {shipmentShown < 1 ? (
                 <PoPage
                   t={sections.reorder.to - sections.reorder.from}
-                  status={{ label: "With supplier", tone: "primary" }}
+                  status="submitted"
                   lines={moments.reorder.lines}
                   submit={moments.reorder.submit}
                 />

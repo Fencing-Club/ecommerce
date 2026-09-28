@@ -1,195 +1,348 @@
-import { ChevronRight, CircleCheck, Factory, FileText, Send, Ship, User, Warehouse } from "lucide-react"
-import type { ReactNode } from "react"
-import { buyer, cartonTotal, count, forwarder, money, orderTotal, orderUnits, ordered, supplier } from "../data"
+import {
+  ArrowRight,
+  Building2,
+  ChevronRight,
+  CircleCheck,
+  Copy,
+  Ellipsis,
+  Factory,
+  FileText,
+  MapPin,
+  Send,
+  Trash2,
+  User,
+  Warehouse
+} from "lucide-react"
+import type { CSSProperties, ReactNode } from "react"
+import {
+  buyer,
+  cartonTotal,
+  cents,
+  count,
+  forwarder,
+  orderTotal,
+  orderUnits,
+  ordered,
+  reference,
+  supplier
+} from "../data"
 import { glide, mixed, pressed, ramp, settle, since } from "../motion"
 import { app } from "../theme"
 import { moments } from "../timeline"
-import { AppWindow, Badge, Button, Card, CardTitle, Cursor, ringFor, Table, Tag, Toast, type Tone } from "../ui"
+import { AppWindow, Button, Card, Cursor, PageHeader, ringFor, RoutePill, Status, Table, Tag, Toast } from "../ui"
 import { Feature, Shot } from "./feature"
 import { RestockPage } from "./forecast"
 
 const m = moments.reorder
 
-const Pill = ({ icon: Icon, children }: { icon: typeof Factory; children: ReactNode }) => (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 8,
-      padding: "7px 14px",
-      borderRadius: 999,
-      border: `1px solid ${app.border}`,
-      fontSize: 15.5,
-      fontWeight: 500,
-      whiteSpace: "nowrap"
-    }}
-  >
-    <Icon size={17} strokeWidth={1.8} color={app.muted} />
-    {children}
-  </span>
-)
-
 // Supplier, forwarder stop, destination: the route every purchase order shows.
 export const Route = () => (
-  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <Pill icon={Factory}>{supplier.name}</Pill>
-    <ChevronRight size={18} color={app.muted} />
-    <Pill icon={Ship}>{forwarder.name}</Pill>
-    <ChevronRight size={18} color={app.muted} />
-    <Pill icon={Warehouse}>Amazon FBA and AWD</Pill>
+  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7 }}>
+    <RoutePill icon={Building2}>{supplier.name}</RoutePill>
+    <ArrowRight size={18} color={app.muted} />
+    <RoutePill icon={Warehouse}>{forwarder.name}</RoutePill>
+    <ArrowRight size={18} color={app.muted} />
+    <RoutePill icon={MapPin}>Amazon</RoutePill>
   </div>
+)
+
+// A value under its label, as the purchase order's details list them.
+const Detail = ({ label, value }: { label: string; value: string }) => (
+  <span style={{ display: "grid", gap: 2 }}>
+    <span style={{ color: app.muted }}>{label}</span>
+    <span>{value}</span>
+  </span>
 )
 
 type PoProps = {
   t: number
-  // The status badge, and the moments its lines arrive and Submit is clicked (or never, for a finished order).
-  status: { label: string; tone: Tone }
+  // Whether it's still a draft or with the supplier, and when its lines arrive and Submit is clicked, if it is.
+  status: "draft" | "submitted"
   lines?: readonly number[]
   submit?: number
-  action?: string
 }
 
-// A purchase order's page: its header and route, its products and totals, and its details.
-export const PoPage = ({ t, status, lines = [-1, -1], submit, action = "Submit to supplier" }: PoProps) => (
-  <div style={{ display: "grid", gap: 18 }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-      <Badge tone={status.tone}>{status.label}</Badge>
-      <span style={{ flex: 1 }} />
-      <Button variant="outline" icon={FileText}>
-        Download PO
-      </Button>
-      <Button
-        icon={Send}
-        press={submit === undefined ? 0 : pressed(t, submit)}
-        ring={submit === undefined ? 0 : ringFor(t, submit)}
-      >
-        {action}
-      </Button>
-    </div>
-    <Route />
-    <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16 }}>
-      <Card style={{ paddingBottom: 8 }}>
-        <CardTitle>Products</CardTitle>
-        <Table
-          columns={[
-            { label: "Products", width: 2 },
-            { label: "Supplier SKU", width: 1.3 },
-            { label: "Qty", width: 0.9, align: "right" },
-            { label: "Cost", width: 0.9, align: "right" },
-            { label: "Total", width: 1.1, align: "right" }
-          ]}
-          rows={[
-            ...ordered.map((line, i) => {
-              const shown = settle(t, lines[i], 20, 180)
-              return {
+// A purchase order's page: its route and products and its shipments, with its costs and details beside them.
+export const PoPage = ({ t, status, lines = [-1, -1, -1], submit }: PoProps) => {
+  const arrive = (i: number): CSSProperties => {
+    const shown = settle(t, lines[i], 20, 180)
+    return { opacity: shown, transform: `translateY(${(1 - shown) * 14}px)` }
+  }
+  const sent = status === "submitted"
+  // Submit goes once the purchase order is sent, a moment after the click.
+  const submitting = !sent || (submit !== undefined && t < submit + 0.25)
+  return (
+    <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+      <PageHeader
+        parents={["Purchase orders"]}
+        title={reference}
+        badge={<Status status={status} />}
+        actions={
+          <>
+            {submitting ? (
+              <Button
+                press={submit === undefined ? 0 : pressed(t, submit)}
+                ring={submit === undefined ? 0 : ringFor(t, submit)}
+              >
+                Submit to supplier
+              </Button>
+            ) : null}
+            <Button variant="outline" icon={Ellipsis} />
+          </>
+        }
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 296px", alignItems: "start", gap: 18 }}>
+        <div style={{ display: "grid", gap: 18 }}>
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: 14, borderBottom: `1px solid ${app.border}` }}>
+              <Route />
+            </div>
+            <Table
+              small
+              fontSize={15}
+              columns={[
+                { label: "Products", width: 2.05 },
+                { label: "Supplier SKU", width: 1.25 },
+                { label: "Qty", width: 0.75, align: "right" },
+                { label: "Cost", width: 0.75, align: "right" },
+                { label: "Total", width: 1.3, align: "right" },
+                { label: "Actions", width: "44px", hidden: true }
+              ]}
+              rows={ordered.map((line, i) => ({
                 key: line.sku,
                 cells: [
-                  line.name,
+                  <span key="name" style={{ display: "grid", lineHeight: 1.35 }}>
+                    <span style={{ fontWeight: 500 }}>{line.name}</span>
+                    <span style={{ fontSize: 13.5, color: app.muted }}>{line.sku}</span>
+                  </span>,
                   line.sku,
                   count(line.order),
-                  `$${line.cost.toFixed(2)}`,
-                  money(line.order * line.cost)
+                  cents(line.cost),
+                  cents(line.order * line.cost),
+                  <Ellipsis key="menu" size={17} color={app.muted} />
                 ],
-                style: { opacity: shown, transform: `translateY(${(1 - shown) * 14}px)` }
-              }
-            }),
-            {
-              key: "total",
-              cells: [
-                <span key="label" style={{ fontWeight: 600 }}>
-                  Total
-                </span>,
-                "",
-                <span key="units" style={{ fontWeight: 600 }}>
-                  {count(orderUnits)}
-                </span>,
-                "",
-                <span key="value" style={{ fontWeight: 600 }}>
-                  {money(orderTotal)}
+                style: { minHeight: 62, ...arrive(i) }
+              }))}
+            />
+          </Card>
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "16px 16px 12px", fontSize: 17, fontWeight: 500 }}>Shipments</div>
+            {sent ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "11px 16px",
+                  borderTop: `1px solid ${app.border}`,
+                  opacity: submit === undefined ? 1 : settle(t, submit + 0.3, 20, 170)
+                }}
+              >
+                <span style={{ display: "grid", flex: 1, lineHeight: 1.35 }}>
+                  <span style={{ fontWeight: 500 }}>Shipment 1</span>
+                  <span style={{ fontSize: 13.5, color: app.muted }}>Cartons in preparation, 0 cartons</span>
                 </span>
-              ],
-              style: { borderBottom: "none", opacity: settle(t, lines[lines.length - 1] + 0.15, 20, 180) }
-            }
-          ]}
-        />
-      </Card>
-      <Card style={{ display: "grid", gap: 14, alignContent: "start" }}>
-        <CardTitle>Purchase order details</CardTitle>
-        {[
-          ["Required by", "Dec 1"],
-          ["Payment terms", "30% deposit, 70% before shipping"],
-          ["Currency", "USD"],
-          ["Cartons", `${count(cartonTotal)} planned`]
-        ].map(([label, value]) => (
-          <div key={label} style={{ display: "grid", gap: 2 }}>
-            <span style={{ fontSize: 14, color: app.muted }}>{label}</span>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>{value}</span>
-          </div>
-        ))}
-      </Card>
+                <Status status="packing" />
+                <ChevronRight size={18} color={app.muted} />
+              </div>
+            ) : (
+              <div style={{ padding: "0 16px 16px", color: app.muted }}>
+                Shipments start once the purchase order is sent.
+              </div>
+            )}
+          </Card>
+        </div>
+        <div style={{ display: "grid", gap: 18, fontSize: 15 }}>
+          <Card style={{ display: "grid", gap: 10, padding: 16, ...arrive(2) }}>
+            <span style={{ fontSize: 17, fontWeight: 500 }}>Cost summary</span>
+            <span style={{ fontWeight: 500 }}>Order details</span>
+            <span style={{ display: "flex", justifyContent: "space-between", gap: 12, whiteSpace: "nowrap" }}>
+              <span>
+                {ordered.length} variants ({count(orderUnits)} units)
+              </span>
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>{cents(orderTotal)}</span>
+            </span>
+            <span style={{ height: 1, background: app.border }} />
+            <span style={{ display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
+              <span>Total</span>
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>{cents(orderTotal)}</span>
+            </span>
+          </Card>
+          <Card style={{ display: "grid", gap: 14, padding: 16 }}>
+            <span style={{ fontSize: 17, fontWeight: 500 }}>Purchase order details</span>
+            <Detail label="Required by" value="Dec 1, 2026" />
+            <Detail label="Payment terms" value="30% deposit, 70% before shipping" />
+            <Detail label="Currency" value="USD" />
+            <Detail label="Note to supplier" value="—" />
+          </Card>
+        </div>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
+// The supplier's first few cartons of the order's 160, each a row of fields as they fill them in.
 const cartons = [
-  { range: "1 to 20", product: ordered[0], size: "42 × 32 × 28", weight: "11.6" },
-  { range: "21 to 105", product: ordered[0], size: "42 × 32 × 28", weight: "11.6" },
-  { range: "106 to 130", product: ordered[1], size: "38 × 28 × 26", weight: "7.9" },
-  { range: "131 to 160", product: ordered[1], size: "38 × 28 × 26", weight: "7.9" }
+  { id: "1", product: ordered[0], length: 42, width: 32, height: 28, weight: "11.6" },
+  { id: "2", product: ordered[0], length: 42, width: 32, height: 28, weight: "11.6" },
+  { id: "3", product: ordered[0], length: 42, width: 32, height: 28, weight: "11.6" },
+  { id: "106", product: ordered[1], length: 38, width: 28, height: 26, weight: "7.9" }
 ]
+const cartonColumns = "1.25fr repeat(4, minmax(0, 1fr)) 2.1fr 0.85fr 52px"
 
-// The supplier's side of the same order: the invoice they've uploaded and the cartons they're packing.
-const PackingPage = ({ t }: { t: number }) => (
-  <div style={{ display: "grid", gap: 16 }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-      <span style={{ fontSize: 16, color: app.muted }}>from {buyer.name}</span>
-      <Badge tone="primary">Packing</Badge>
-      <span style={{ flex: 1 }} />
-      <Button icon={CircleCheck} press={pressed(t, m.packed)} ring={ringFor(t, m.packed)}>
-        Submit packing list
-      </Button>
-    </div>
-    <Card style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px" }}>
-      <FileText size={22} strokeWidth={1.8} color={app.muted} />
-      <span style={{ flex: 1, fontSize: 16.5, fontWeight: 500 }}>Official commercial invoice</span>
-      <span style={{ fontSize: 15.5, color: app.muted }}>CI-1042.pdf</span>
-      <Badge tone="success">Uploaded</Badge>
-    </Card>
-    <Card style={{ paddingBottom: 8 }}>
-      <CardTitle aside={<span style={{ fontSize: 15, color: app.muted }}>160 cartons, {count(orderUnits)} units</span>}>
-        Cartons
-      </CardTitle>
-      <Table
-        columns={[
-          { label: "Cartons", width: 1.2 },
-          { label: "Product", width: 2 },
-          { label: "Units", width: 1, align: "right" },
-          { label: "Dimensions (cm)", width: 1.6, align: "right" },
-          { label: "Weight (kg)", width: 1.1, align: "right" }
-        ]}
-        rows={cartons.map(({ range, product, size, weight }, i) => {
-          const shown = settle(t, m.cartons[i], 20, 180)
-          return {
-            key: range,
-            cells: [range, product.name, `${product.caseOf} each`, size, weight],
-            style: { opacity: shown, transform: `translateX(${(1 - shown) * -20}px)` }
-          }
-        })}
-      />
-    </Card>
-  </div>
+// One of a carton's fields, filled in.
+const Box = ({ children }: { children: ReactNode }) => (
+  <span
+    style={{
+      display: "flex",
+      alignItems: "center",
+      height: 40,
+      padding: "0 11px",
+      overflow: "hidden",
+      borderRadius: 10,
+      boxShadow: `inset 0 0 0 1px ${app.border}`,
+      whiteSpace: "nowrap",
+      fontVariantNumeric: "tabular-nums"
+    }}
+  >
+    {children}
+  </span>
 )
 
-/// Where the buyer's window rests when the chapter ends, pushed back behind the supplier's, for the Amazon chapter to
+// The supplier's side of the same order: the shipment they're packing, with their invoice uploaded, their cartons,
+// and the bar that submits the packing list.
+const PackingPage = ({ t }: { t: number }) => (
+  <>
+    <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+      <PageHeader parents={["Orders", reference]} title="Shipment 1" badge={<Status status="packing" />} />
+      <Card style={{ display: "grid", gap: 14, padding: 18 }}>
+        <span style={{ display: "grid", gap: 3 }}>
+          <span style={{ fontSize: 17, fontWeight: 500 }}>Commercial invoice</span>
+          <span style={{ color: app.muted }}>Your invoice for these cartons</span>
+        </span>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "8px 9px 8px 13px",
+            borderRadius: 10,
+            boxShadow: `inset 0 0 0 1px ${app.border}`
+          }}
+        >
+          <FileText size={18} color={app.muted} />
+          <span style={{ display: "grid", flex: 1, lineHeight: 1.35 }}>
+            <span style={{ fontWeight: 500 }}>CI-1042.pdf</span>
+            <span style={{ fontSize: 13.5, color: app.muted }}>184 KB</span>
+          </span>
+          <Button variant="outline" size="sm">
+            Replace
+          </Button>
+        </span>
+      </Card>
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: 18, borderBottom: `1px solid ${app.border}`, fontSize: 17, fontWeight: 500 }}>
+          Cartons
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: cartonColumns,
+            gap: 10,
+            padding: "9px 18px",
+            borderBottom: `1px solid ${app.border}`,
+            background: "oklch(0.97 0 0 / 0.5)",
+            color: app.muted,
+            fontSize: 12.5,
+            fontWeight: 500,
+            whiteSpace: "nowrap"
+          }}
+        >
+          <span>Carton number</span>
+          <span>Length (cm)</span>
+          <span>Width (cm)</span>
+          <span>Height (cm)</span>
+          <span>Weight (kg)</span>
+          <span>Product</span>
+          <span>Units</span>
+          <span />
+        </div>
+        {cartons.map(({ id, product, length, width, height, weight }, i) => {
+          const shown = settle(t, m.cartons[i], 20, 180)
+          return (
+            <div
+              key={id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: cartonColumns,
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 18px",
+                borderBottom: `1px solid ${app.border}`,
+                opacity: shown,
+                transform: `translateX(${(1 - shown) * -20}px)`
+              }}
+            >
+              <Box>{id}</Box>
+              <Box>{length}</Box>
+              <Box>{width}</Box>
+              <Box>{height}</Box>
+              <Box>{weight}</Box>
+              <Box>
+                {product.name} / {product.sku}
+              </Box>
+              <Box>{product.caseOf}</Box>
+              <span style={{ display: "flex", justifyContent: "flex-end", gap: 12, color: app.muted }}>
+                <Copy size={17} />
+                <Trash2 size={17} />
+              </span>
+            </div>
+          )
+        })}
+      </Card>
+    </div>
+    {/* The action bar stays in view at the bottom of the window, over the cartons. */}
+    <div
+      style={{
+        position: "absolute",
+        left: 30,
+        right: 30,
+        bottom: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        padding: 13,
+        borderRadius: 16,
+        background: app.background,
+        boxShadow: `0 0 0 1px ${app.ring}, 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.1)`,
+        fontSize: 16
+      }}
+    >
+      <span style={{ display: "grid", paddingLeft: 4, lineHeight: 1.35 }}>
+        <span style={{ fontWeight: 500 }}>
+          {count(cartonTotal)} cartons, {count(orderUnits)} units
+        </span>
+        <span style={{ fontSize: 13.5, color: app.muted }}>Draft saved</span>
+      </span>
+      <span style={{ display: "flex", gap: 9 }}>
+        <Button variant="ghost">Save draft</Button>
+        <Button variant="outline">Check packing</Button>
+        <Button press={pressed(t, m.packed)} ring={ringFor(t, m.packed)}>
+          Submit packing list
+        </Button>
+      </span>
+    </div>
+  </>
+)
+
+// Where the buyer's window rests when the chapter ends, pushed back behind the supplier's, for the Amazon chapter to
 // carry on from.
 export const reorderEnd = { x: 1262 - 390, y: 580 - 30, turn: -9, scale: 1, dim: 1 }
 
 // 0:36 to 0:46, reorder: one click turns the restock into a purchase order, one more sends it to the supplier, and the
 // supplier packs it in their own workspace. The camera pushes in on each button as it's clicked.
 export const Reorder = ({ t }: { t: number }) => {
-  const checked = settle(t, 0.7, 14, 220)
   const poShown = settle(t, m.reorder + 0.3, 20, 150)
   const restockGone = ramp(t, m.reorder + 0.15, m.reorder + 0.45)
   const sent = t >= m.submit + 0.25
@@ -199,22 +352,22 @@ export const Reorder = ({ t }: { t: number }) => {
   const closer = ramp(t, m.lines[0] + 0.3, m.lines[0] + 0.9)
   const buyerZoom = buyerIn * mixed(0.1, 0.3, closer)
   const toSubmit = ramp(t, m.reorder + 0.4, m.lines[0] + 0.6)
-  // On the supplier's side it pushes in on the cartons as they fill, then pans up to Submit packing list.
+  // On the supplier's side it pushes in on the cartons as they fill, then pans down to Submit packing list.
   const supplierZoom =
     0.26 * ramp(t, m.cartons[0] - 0.2, m.cartons[0] + 0.3) * (1 - ramp(t, m.packed + 0.6, m.packed + 1.1))
   const toPacked = ramp(t, m.cartons[3] + 0.2, m.packed - 0.3)
   const buyerCursor = glide(t, [
     { at: 0.5, x: 900, y: 700 },
-    { at: 1.3, x: 1075, y: 292 },
-    { at: 1.9, x: 1075, y: 292 },
-    { at: 3.4, x: 1050, y: 110 },
-    { at: 4.2, x: 1050, y: 110 },
+    { at: 1.3, x: 1082, y: 466 },
+    { at: 1.9, x: 1082, y: 466 },
+    { at: 3.4, x: 1005, y: 102 },
+    { at: 4.2, x: 1005, y: 102 },
     { at: 4.8, x: 820, y: 520 }
   ])
   const supplierCursor = glide(t, [
-    { at: 5.4, x: 900, y: 640 },
-    { at: 7.6, x: 950, y: 108 },
-    { at: 8.6, x: 950, y: 108 },
+    { at: 5.4, x: 900, y: 560 },
+    { at: 7.6, x: 948, y: 690 },
+    { at: 8.6, x: 948, y: 690 },
     { at: 9.2, x: 760, y: 420 }
   ])
   const toast = settle(t, m.submit + 0.3, 18, 170) * (1 - ramp(t, m.supplier - 0.4, m.supplier))
@@ -238,25 +391,19 @@ export const Reorder = ({ t }: { t: number }) => {
         x={1262}
         y={580}
         zoom={buyerZoom}
-        focus={{ x: mixed(91, 89, toSubmit), y: mixed(37, 14, toSubmit) }}
+        focus={{ x: mixed(92, 86, toSubmit), y: mixed(59, 13, toSubmit) }}
         shift={{ x: (reorderEnd.x - 1262) * partner - 80 * closer * buyerIn, y: (reorderEnd.y - 580) * partner }}
         dim={partner}
       >
         <AppWindow
           width={1180}
           height={790}
-          workspace={buyer.name}
+          workspace={buyer}
           page={t < m.reorder + 0.3 ? "Restock" : "Purchase orders"}
         >
           <div style={{ position: "absolute", inset: "26px 30px", opacity: 1 - restockGone }}>
             {restockGone < 1 ? (
-              <RestockPage
-                t={t}
-                rows={[-1, -1, -1]}
-                checked={checked}
-                reorder={pressed(t, m.reorder)}
-                ring={ringFor(t, m.reorder)}
-              />
+              <RestockPage t={t} rows={[-1, -1, -1, -1]} reorder={pressed(t, m.reorder)} ring={ringFor(t, m.reorder)} />
             ) : null}
           </div>
           <div
@@ -268,19 +415,14 @@ export const Reorder = ({ t }: { t: number }) => {
             }}
           >
             {t >= m.reorder + 0.3 ? (
-              <PoPage
-                t={t}
-                status={sent ? { label: "With supplier", tone: "primary" } : { label: "Draft", tone: "neutral" }}
-                lines={m.lines}
-                submit={m.submit}
-              />
+              <PoPage t={t} status={sent ? "submitted" : "draft"} lines={m.lines} submit={m.submit} />
             ) : null}
           </div>
           {toast > 0 ? (
             <Toast
               icon={Send}
               title={`Sent to ${supplier.name}`}
-              detail="It's in their workspace now"
+              detail="It’s in their workspace now"
               style={{
                 position: "absolute",
                 right: 26,
@@ -308,11 +450,11 @@ export const Reorder = ({ t }: { t: number }) => {
             y={600}
             turn={-6}
             zoom={supplierZoom}
-            focus={{ x: mixed(50, 86, toPacked), y: mixed(64, 14, toPacked) }}
+            focus={{ x: mixed(50, 88, toPacked), y: mixed(66, 93, toPacked) }}
             shift={{ x: -200 * supplierZoom, y: 0 }}
             whipOut={{ at: m.out, to: "right" }}
           >
-            <AppWindow width={1080} height={740} workspace={supplier.name} kind="Supplier" page="Purchase orders">
+            <AppWindow width={1080} height={740} workspace={supplier} page="Shipments">
               <PackingPage t={t} />
               {packedToast > 0 ? (
                 <Toast
@@ -322,9 +464,9 @@ export const Reorder = ({ t }: { t: number }) => {
                   style={{
                     position: "absolute",
                     right: 26,
-                    bottom: 24,
+                    top: 24,
                     opacity: packedToast,
-                    transform: `translateY(${(1 - packedToast) * 20}px)`
+                    transform: `translateY(${(1 - packedToast) * -20}px)`
                   }}
                 />
               ) : null}
@@ -342,7 +484,8 @@ export const Reorder = ({ t }: { t: number }) => {
               position: "absolute",
               left: 1100,
               top: 150,
-              opacity: partner * (1 - tagsGone),
+              // It steps aside while the camera is pushed in on the supplier's window, which rises past it.
+              opacity: partner * (1 - tagsGone) * (1 - supplierZoom / 0.26),
               transform: `translateY(${(1 - partner) * 16}px)`
             }}
           >

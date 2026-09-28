@@ -1,10 +1,11 @@
-import { Bot, CircleCheck, Plug, Plus } from "lucide-react"
+import { Bot, CircleCheck, FileUp, Plug, Plus } from "lucide-react"
+import type { ReactNode } from "react"
 import { Easing } from "remotion"
-import { buyer, forwarder, money, orderTotal, supplier } from "../data"
+import { agentReference, buyer, cents, forwarder, orderTotal, otherSupplier, reference, supplier } from "../data"
 import { mixed, ramp, settle } from "../motion"
 import { app, font, stage } from "../theme"
 import { moments, sections } from "../timeline"
-import { AppWindow, Badge, Button, Card, CardTitle, PageTitle, Table, Toast, type Tone } from "../ui"
+import { AppWindow, Button, Card, PageHeader, Status, type StatusKey, Table, Toast } from "../ui"
 import { Feature, Shot } from "./feature"
 import { BuyerView, handoffsEnd } from "./handoffs"
 
@@ -14,8 +15,8 @@ const prompt = "Reorder anything that runs out before it arrives, and send it to
 
 const steps = [
   "Checked restock: 2 products run out before they arrive",
-  `Created PO 1043 for ${supplier.name}`,
-  "Sent PO 1043 to the supplier",
+  `Created purchase order 1043 for ${supplier.name}`,
+  "Sent purchase order 1043 to the supplier",
   "Planned the Amazon AWD shipment"
 ]
 
@@ -131,39 +132,63 @@ export const AgentPanel = ({ t, compact = false }: { t: number; compact?: boolea
   )
 }
 
-const orders: readonly {
-  po: string
-  supplier: string
-  destination: string
-  status: string
-  tone: Tone
-  value: string
-}[] = [
-  {
-    po: "PO 1042",
-    supplier: supplier.name,
-    destination: "Amazon FBA and AWD",
-    status: "Shipped by forwarder",
-    tone: "success",
-    value: money(orderTotal)
-  },
-  {
-    po: "PO 1039",
-    supplier: "Saigon Packaging Co.",
-    destination: "Amazon AWD",
-    status: "Packing",
-    tone: "primary",
-    value: "$6,420"
-  },
-  {
-    po: "PO 1036",
-    supplier: supplier.name,
-    destination: "Amazon FBA",
-    status: "Received",
-    tone: "neutral",
-    value: "$9,860"
-  }
+// A purchase order in the list: its reference over how many products it has.
+const Reference = ({ children, products }: { children: ReactNode; products: number }) => (
+  <span style={{ display: "grid", lineHeight: 1.35 }}>
+    <span style={{ fontWeight: 500 }}>{children}</span>
+    <span style={{ fontSize: 13.5, color: app.muted }}>
+      {products} {products === 1 ? "product" : "products"}
+    </span>
+  </span>
+)
+
+const orders: readonly { reference: string; products: number; supplier: string; status: StatusKey; value: string }[] = [
+  { reference, products: 2, supplier: supplier.name, status: "submitted", value: cents(orderTotal) },
+  { reference: "PO-1039", products: 1, supplier: otherSupplier.name, status: "submitted", value: cents(6420) },
+  { reference: "PO-1036", products: 3, supplier: supplier.name, status: "closed", value: cents(9860) }
 ]
+
+const columns = [
+  { label: "Purchase order", width: 1.3 },
+  { label: "Supplier", width: 1.9 },
+  { label: "Status", width: 1.35 },
+  { label: "Value", width: 1.15, align: "right" }
+] as const
+
+// The purchase order list's status tabs, with All chosen.
+const Tabs = () => (
+  <span
+    style={{
+      display: "inline-flex",
+      justifySelf: "start",
+      alignItems: "center",
+      height: 38,
+      padding: 3,
+      borderRadius: 10,
+      background: app.surface
+    }}
+  >
+    {["All", "Draft", "With supplier", "Closed"].map((tab, i) => (
+      <span
+        key={tab}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          height: "100%",
+          padding: "0 12px",
+          borderRadius: 8,
+          background: i === 0 ? app.background : "transparent",
+          boxShadow: i === 0 ? "0 1px 3px 0 oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1)" : undefined,
+          color: i === 0 ? app.foreground : "oklch(0.145 0 0 / 0.6)",
+          fontSize: 16,
+          fontWeight: 500
+        }}
+      >
+        {tab}
+      </span>
+    ))}
+  </span>
+)
 
 // The buyer's purchase orders, updating as the agent works: its new order arrives, then goes to the supplier.
 const Orders = ({ t }: { t: number }) => {
@@ -177,68 +202,66 @@ const Orders = ({ t }: { t: number }) => {
     { label: "Drafts", value: created && !sent ? 2 : 1 }
   ]
   const fresh = {
-    key: "PO 1043",
+    key: agentReference,
     cells: [
-      <span key="po" style={{ fontWeight: 600 }}>
-        PO 1043
-      </span>,
+      <Reference key="reference" products={2}>
+        {agentReference}
+      </Reference>,
       supplier.name,
-      "Amazon AWD",
-      sent ? (
-        <Badge key="status" tone="primary">
-          With supplier
-        </Badge>
-      ) : (
-        <Badge key="status">Draft</Badge>
-      ),
-      money(orderTotal)
+      <Status key="status" status={sent ? "submitted" : "draft"} />,
+      cents(orderTotal)
     ],
     style: {
+      minHeight: 62,
       background: `oklch(0.646 0.222 41.116 / ${0.1 * highlight})`,
       opacity: arrival,
       transform: `translateY(${(1 - arrival) * -16}px)`
     }
   }
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <PageTitle aside={<Button icon={Plus}>Create purchase order</Button>}>Purchase orders</PageTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+    <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+      <PageHeader
+        title="Purchase orders"
+        actions={
+          <>
+            <Button variant="outline" icon={FileUp}>
+              Import
+            </Button>
+            <Button icon={Plus}>Create purchase order</Button>
+          </>
+        }
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
         {stats.map(({ label, value }) => (
-          <Card key={label} style={{ display: "grid", gap: 4, padding: "16px 20px" }}>
-            <span style={{ fontSize: 14.5, color: app.muted }}>{label}</span>
-            <span style={{ fontSize: 30, fontWeight: 600 }}>{value}</span>
+          <Card key={label} style={{ display: "grid", gap: 4, padding: 18 }}>
+            <span style={{ fontWeight: 500, color: app.muted }}>{label}</span>
+            <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>{value}</span>
           </Card>
         ))}
       </div>
-      <Card style={{ paddingBottom: 8 }}>
-        <CardTitle>All purchase orders</CardTitle>
-        <Table
-          columns={[
-            { label: "Purchase order", width: 1.2 },
-            { label: "Supplier", width: 1.9 },
-            { label: "Destination", width: 1.8 },
-            { label: "Status", width: 1.8 },
-            { label: "Value", width: 1, align: "right" }
-          ]}
-          rows={[
-            ...(created ? [fresh] : []),
-            ...orders.map(({ po, supplier: from, destination, status, tone, value }) => ({
-              key: po,
-              cells: [
-                <span key="po" style={{ fontWeight: 600 }}>
-                  {po}
-                </span>,
-                from,
-                destination,
-                <Badge key="status" tone={tone}>
-                  {status}
-                </Badge>,
-                value
-              ]
-            }))
-          ]}
-        />
-      </Card>
+      <div style={{ display: "grid", gap: 14 }}>
+        <Tabs />
+        <div style={{ overflow: "hidden", borderRadius: 10, boxShadow: `inset 0 0 0 1px ${app.border}` }}>
+          <Table
+            columns={columns}
+            rows={[
+              ...(created ? [fresh] : []),
+              ...orders.map(({ reference: po, products, supplier: from, status, value }) => ({
+                key: po,
+                cells: [
+                  <Reference key="reference" products={products}>
+                    {po}
+                  </Reference>,
+                  from,
+                  <Status key="status" status={status} />,
+                  value
+                ],
+                style: { minHeight: 62 }
+              }))
+            ]}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -278,7 +301,7 @@ export const Agents = ({ t }: { t: number }) => {
         <AppWindow
           width={mixed(1060, 1000, carried)}
           height={mixed(700, 760, carried)}
-          workspace={buyer.name}
+          workspace={buyer}
           page="Purchase orders"
         >
           <div style={{ position: "absolute", inset: "26px 30px", opacity: 1 - ordersShown }}>
@@ -316,7 +339,7 @@ export const Agents = ({ t }: { t: number }) => {
             icon={Bot}
             tone="primary"
             title={i === 0 ? `${supplier.name}’s agent` : `${forwarder.short}’s agent`}
-            detail={i === 0 ? "Packing list submitted for PO 1043" : "Pickup booked for Dec 2"}
+            detail={i === 0 ? "Packing list submitted for purchase order 1043" : "Pickup booked for Dec 2"}
             style={{
               position: "absolute",
               right: 90,

@@ -1,87 +1,88 @@
-import { CircleCheck, Download, Factory, FileText, Ship, Truck, User } from "lucide-react"
-import { type CSSProperties, type ReactNode, useContext } from "react"
+import { Download, Factory, FileText, PackageCheck, Ship, User } from "lucide-react"
+import { type CSSProperties, Fragment, type ReactNode, useContext } from "react"
 import { Easing } from "remotion"
-import { buyer, count, forwarder, ordered, supplier } from "../data"
+import { buyer, forwarder, ordered, reference, split, supplier } from "../data"
 import { glide, mixed, pressed, ramp, settle, since } from "../motion"
 import { Clock } from "../stage"
 import { app } from "../theme"
 import { moments } from "../timeline"
-import { AppWindow, Badge, Button, Card, CardTitle, Checkbox, Cursor, ringFor, Table, Tag } from "../ui"
+import {
+  Alert,
+  AppWindow,
+  Button,
+  Card,
+  CardTitle,
+  Checkbox,
+  Cursor,
+  PageHeader,
+  ringFor,
+  Status,
+  Table,
+  Tag
+} from "../ui"
 import { Feature } from "./feature"
 import { Route } from "./reorder"
 
 const m = moments.handoffs
 
+// Amazon's rules the cartons follow, as the packing checklist in the supplier's packet lists them.
 const requirements = [
-  "One SKU per carton for AWD",
-  "Suffocation warning on poly bags",
+  "One SKU per AWD US carton",
   "FNSKU label on every unit",
-  "Cartons under 22.7 kg (50 lb)"
+  "Suffocation warning on polybags",
+  "Cartons at most 22.68 kg (50 lb)"
 ]
 
-const documents = [
-  "Purchase order",
-  "Commercial invoice",
-  "Packing list",
-  "Packing checklist",
-  "Carton label",
-  "Shipping label"
-]
-
-// The supplier's side: Amazon's requirements to check off, and the labels to download.
+// The supplier's side: the shipment's packet ready to download, and the checklist to work through.
 const SupplierView = ({ t }: { t: number }) => {
-  const downloaded = t >= m.download + 0.25
   const cursor = glide(t, [
-    { at: m.supplier, x: 820, y: 700 },
-    { at: m.download - 0.15, x: 1000, y: 616 },
-    { at: m.download + 0.4, x: 1000, y: 616 },
-    { at: m.checklist[0] - 0.1, x: 322, y: 262 },
-    { at: m.checklist[3], x: 322, y: 424 },
-    { at: m.forwarder, x: 700, y: 700 }
+    { at: m.supplier, x: 820, y: 640 },
+    { at: m.download - 0.15, x: 928, y: 178 },
+    { at: m.download + 0.4, x: 928, y: 178 },
+    { at: m.checklist[0] - 0.1, x: 312, y: 316 },
+    { at: m.checklist[3], x: 312, y: 448 },
+    { at: m.forwarder, x: 700, y: 640 }
   ])
   const tick = (i: number) => (t >= m.checklist[i] ? settle(t, m.checklist[i], 12, 240) : 0)
   return (
     <>
-      <div style={{ display: "grid", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-          <span style={{ fontSize: 16, color: app.muted }}>from {buyer.name}</span>
-          <Badge tone="primary">Packing</Badge>
-        </div>
-        <Card>
-          <CardTitle>Packing checklist</CardTitle>
-          <div style={{ display: "grid", gap: 4 }}>
-            {requirements.map((requirement, i) => (
-              <div
-                key={requirement}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "10px 0",
-                  borderTop: i > 0 ? `1px solid ${app.border}` : undefined,
-                  fontSize: 17
-                }}
-              >
-                <Checkbox checked={tick(i)} />
-                <span style={{ color: tick(i) > 0.5 ? app.foreground : app.muted }}>{requirement}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px" }}>
-          <FileText size={22} strokeWidth={1.8} color={app.muted} />
-          <span style={{ flex: 1, fontSize: 17, fontWeight: 500 }}>Carton labels</span>
-          {downloaded ? (
-            <>
-              <span style={{ fontSize: 15, color: app.muted }}>PO-1042-carton-labels.pdf</span>
-              <Badge tone="success">Downloaded</Badge>
-            </>
-          ) : (
-            <Button icon={Download} press={pressed(t, m.download)} ring={ringFor(t, m.download)}>
-              Download labels
+      <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+        <PageHeader parents={["Orders", reference]} title="Shipment 2" badge={<Status status="ready" />} />
+        <Alert
+          icon={PackageCheck}
+          iconColor={app.primary}
+          title="Supplier packet ready"
+          description="Print labels at actual size"
+          style={{ boxShadow: "inset 0 0 0 1px oklch(0.646 0.222 41.116 / 0.4)" }}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Download}
+              press={pressed(t, m.download)}
+              ring={ringFor(t, m.download)}
+            >
+              Download packet
             </Button>
-          )}
+          }
+        />
+        <Card style={{ padding: 18 }}>
+          <CardTitle>Packing checklist</CardTitle>
+          {requirements.map((requirement, i) => (
+            <div
+              key={requirement}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 13,
+                height: 44,
+                borderTop: i > 0 ? `1px solid ${app.border}` : undefined
+              }}
+            >
+              <Checkbox checked={tick(i)} />
+              <span style={{ color: tick(i) > 0.5 ? app.foreground : app.muted }}>{requirement}</span>
+            </div>
+          ))}
         </Card>
       </div>
       {t >= m.supplier && t < m.forwarder + 0.3 ? (
@@ -96,52 +97,94 @@ const SupplierView = ({ t }: { t: number }) => {
   )
 }
 
-// The forwarder's side: the order without prices, and the form that marks it shipped.
+// A document to download, as the app lists them: its kind, the file's name under it, and the download button.
+const DocumentRow = ({ kind, file, style }: { kind: string; file: string; style?: CSSProperties }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 12, height: 54, ...style }}>
+    <FileText size={18} color={app.muted} style={{ flex: "none" }} />
+    <span style={{ display: "grid", flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+      <span style={{ fontWeight: 500 }}>{kind}</span>
+      <span
+        style={{ overflow: "hidden", fontSize: 13.5, color: app.muted, textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+      >
+        {file}
+      </span>
+    </span>
+    <Download size={18} color={app.muted} style={{ flex: "none" }} />
+  </div>
+)
+
+// The forwarder's side: the order without prices, its shipment to move on, and the documents it ships with.
 const ForwarderView = ({ t }: { t: number }) => {
   const shipped = t >= m.shipped + 0.25
   const cursor = glide(t, [
-    { at: m.forwarder, x: 800, y: 720 },
-    { at: m.shipped - 0.1, x: 1030, y: 560 },
-    { at: m.buyer, x: 1030, y: 560 },
-    { at: m.buyer + 0.6, x: 800, y: 720 }
+    { at: m.forwarder, x: 800, y: 640 },
+    { at: m.shipped - 0.1, x: 953, y: 470 },
+    { at: m.buyer, x: 953, y: 470 },
+    { at: m.buyer + 0.6, x: 800, y: 640 }
   ])
   return (
     <>
-      <div style={{ display: "grid", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-          {shipped ? (
-            <Badge tone="success">Shipped by forwarder</Badge>
-          ) : (
-            <Badge tone="primary">Ready for pickup</Badge>
-          )}
-        </div>
-        <Route />
-        <Card style={{ paddingBottom: 8 }}>
-          <Table
-            columns={[
-              { label: "Products", width: 2.4 },
-              { label: "Qty", width: 1, align: "right" }
-            ]}
-            rows={ordered.map((line) => ({ key: line.sku, cells: [line.name, count(line.order)] }))}
-          />
-        </Card>
-        <Card style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", alignItems: "end", gap: 16 }}>
-          {[
-            ["Carrier", "Ocean freight"],
-            ["Tracking or booking number", "PLL-240917"]
-          ].map(([label, value]) => (
-            <span key={label} style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 14, color: app.muted }}>{label}</span>
-              <span style={{ padding: "9px 12px", borderRadius: 9, border: `1px solid ${app.border}`, fontSize: 16 }}>
-                {value}
+      <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+        <PageHeader parents={["Purchase orders"]} title={reference} badge={<Status status="submitted" />} />
+        <div style={{ display: "grid", gap: 18 }}>
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: 14, borderBottom: `1px solid ${app.border}` }}>
+              <Route />
+            </div>
+            <Table
+              small
+              inset={14}
+              columns={[
+                { label: "Products", width: 3 },
+                { label: "Qty", width: 1, align: "right" }
+              ]}
+              rows={ordered.map((line, i) => ({
+                key: line.sku,
+                cells: [
+                  <span key="name" style={{ display: "grid", lineHeight: 1.35 }}>
+                    <span style={{ fontWeight: 500 }}>{line.name}</span>
+                    <span style={{ fontSize: 13.5, color: app.muted }}>
+                      {line.sku}, to Amazon {i === 0 ? "FBA" : "AWD US"}
+                    </span>
+                  </span>,
+                  line.order.toLocaleString("en-US")
+                ],
+                style: { minHeight: 62 }
+              }))}
+            />
+          </Card>
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "16px 16px 12px", fontSize: 17, fontWeight: 500 }}>Shipments</div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                height: 66,
+                padding: "0 16px",
+                borderTop: `1px solid ${app.border}`
+              }}
+            >
+              <span style={{ display: "grid", flex: 1, lineHeight: 1.35 }}>
+                <span style={{ fontWeight: 500 }}>Shipment 2 to Amazon FBA</span>
+                <span style={{ fontSize: 13.5, color: app.muted }}>
+                  {split.fba.cartons} cartons{shipped ? ", Ocean freight PLL-240917" : ""}
+                </span>
               </span>
-            </span>
-          ))}
-          <Button icon={Truck} press={pressed(t, m.shipped)} ring={ringFor(t, m.shipped)}>
-            Mark shipped
-          </Button>
-        </Card>
+              <Status status={shipped ? "forwarded" : "shipped"} />
+              {shipped ? null : (
+                <Button size="sm" press={pressed(t, m.shipped)} ring={ringFor(t, m.shipped)}>
+                  Mark shipped
+                </Button>
+              )}
+            </div>
+          </Card>
+          <Card style={{ padding: "16px 16px 4px" }}>
+            <CardTitle>Documents</CardTitle>
+            <DocumentRow kind="Commercial invoice" file="CI-1042.pdf" />
+            <DocumentRow kind="Packing list" file="Packing list.pdf" style={{ borderTop: `1px solid ${app.border}` }} />
+          </Card>
+        </div>
       </div>
       {t >= m.forwarder && t < m.buyer + 0.8 ? (
         <Cursor x={cursor.x - 250} y={cursor.y - 56} clicked={since(t, m.shipped)} fill="#047857" />
@@ -150,71 +193,187 @@ const ForwarderView = ({ t }: { t: number }) => {
   )
 }
 
+// A person's initials on the timeline, in Copacker's orange.
+const Initials = ({ name }: { name: string }) => (
+  <span
+    style={{
+      display: "grid",
+      placeItems: "center",
+      flex: "none",
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      background: "oklch(0.646 0.222 41.116 / 0.15)",
+      color: app.primary,
+      fontSize: 13,
+      fontWeight: 600
+    }}
+  >
+    {name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")}
+  </span>
+)
+
+type Entry = { at: number; time: string; text: string; author?: string }
+
+// What happens on the order, newest first, as it lands: the supplier's update in its own words, then each shipment
+// event. The purchase order went to the supplier on an earlier day.
+const entries: readonly Entry[] = [
+  {
+    at: m.shipped + 0.4,
+    time: "4:12 PM",
+    text: `${forwarder.name} shipped the goods: Ocean freight PLL-240917`
+  },
+  { at: m.checklist[3] + 0.3, time: "2:05 PM", text: "Supplier shipped the goods" },
+  {
+    at: m.download + 0.3,
+    time: "11:40 AM",
+    text: "Packet printed. Labels go on this afternoon.",
+    author: supplier.person.name
+  }
+]
+
+// Every document on the order, in the order they're made: the purchase order's own, then the shipment's.
+const documents = [
+  { kind: "Purchase order", file: `${reference}.pdf` },
+  { kind: "Commercial invoice", file: "CI-1042.pdf" },
+  { kind: "Packing list", file: "Packing list.pdf" },
+  { kind: "Packing checklist", file: "Packing checklist.pdf" },
+  { kind: "Carton label 1", file: "FBA17K3Q2XD5U000001.pdf" },
+  { kind: "Shipping label", file: "Shipping labels.pdf" }
+]
+
 // The buyer's side: every update landing on the order's timeline, and every document in one place.
 export const BuyerView = ({ t }: { t: number }) => {
-  const shipped = t >= m.shipped + 0.4
-  const events = [
-    { at: -1, text: `Packing list submitted by ${supplier.name}` },
-    { at: m.download + 0.3, text: `Carton labels downloaded by ${supplier.name}` },
-    { at: m.checklist[3] + 0.3, text: `Packing checklist completed by ${supplier.name}` },
-    { at: m.shipped + 0.4, text: `Shipped by ${forwarder.name}` }
-  ]
+  const landed = entries.filter(({ at }) => t >= at)
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-        {shipped ? <Badge tone="success">Shipped by forwarder</Badge> : <Badge tone="primary">Packing</Badge>}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 16 }}>
-        <Card>
-          <CardTitle>Timeline</CardTitle>
-          <div style={{ display: "grid", gap: 12 }}>
-            {events
-              .filter(({ at }) => t >= at)
-              .map(({ at, text }) => {
-                const shown = settle(t, at, 18, 180)
-                return (
-                  <div
-                    key={text}
+    <div style={{ display: "grid", gap: 24, fontSize: 16 }}>
+      <PageHeader parents={["Purchase orders"]} title={reference} badge={<Status status="submitted" />} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)",
+          alignItems: "start",
+          gap: 22
+        }}
+      >
+        <div style={{ display: "grid", gap: 16 }}>
+          <span style={{ fontSize: 17, fontWeight: 600 }}>Timeline</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Initials name={buyer.person.name} />
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                height: 40,
+                padding: "0 12px",
+                borderRadius: 10,
+                boxShadow: `inset 0 0 0 1px ${app.border}`,
+                color: app.muted
+              }}
+            >
+              Leave a comment…
+            </span>
+          </span>
+          <div style={{ position: "relative", display: "grid", gap: 20, paddingLeft: 44 }}>
+            <span style={{ position: "absolute", top: 4, bottom: 4, left: 15, width: 2, background: app.border }} />
+            {[
+              { day: "Tuesday, November 10, 2026", items: landed },
+              {
+                day: "Monday, September 14, 2026",
+                items: [{ at: -1, time: "9:12 AM", text: "Purchase order submitted to supplier" }]
+              }
+            ].map(({ day, items }) =>
+              items.length ? (
+                <div key={day} style={{ display: "grid", gap: 12 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 500, color: app.muted }}>{day}</span>
+                  {items.map(({ at, time, text, author }) => {
+                    const shown = at < 0 ? 1 : settle(t, at, 18, 180)
+                    const arrival: CSSProperties = { opacity: shown, transform: `translateY(${(1 - shown) * -12}px)` }
+                    return author ? (
+                      <div key={text} style={{ display: "flex", gap: 12, marginLeft: -44, ...arrival }}>
+                        <Initials name={author} />
+                        <span
+                          style={{
+                            display: "grid",
+                            flex: 1,
+                            gap: 3,
+                            padding: "9px 13px",
+                            borderRadius: 10,
+                            background: "oklch(0.97 0 0 / 0.6)"
+                          }}
+                        >
+                          <span style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                            <span style={{ fontWeight: 500 }}>
+                              {author}
+                              <span style={{ fontWeight: 400, color: app.muted }}> at {supplier.name}</span>
+                            </span>
+                            <span style={{ fontSize: 13.5, color: app.muted, whiteSpace: "nowrap" }}>{time}</span>
+                          </span>
+                          {text}
+                        </span>
+                      </div>
+                    ) : (
+                      <span key={text} style={{ position: "relative", display: "flex", gap: 12, ...arrival }}>
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: 6,
+                            left: -35,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 6,
+                            border: `2px solid ${app.background}`,
+                            background: "oklch(0.556 0 0 / 0.5)"
+                          }}
+                        />
+                        <span style={{ flex: 1 }}>{text}</span>
+                        <span style={{ paddingTop: 2, fontSize: 13.5, color: app.muted, whiteSpace: "nowrap" }}>
+                          {time}
+                        </span>
+                      </span>
+                    )
+                  })}
+                </div>
+              ) : null
+            )}
+          </div>
+        </div>
+        <Card style={{ padding: "16px 16px 4px" }}>
+          <CardTitle>Documents</CardTitle>
+          {documents.map(({ kind, file }, i) => {
+            const pop = t >= m.documents[i] ? settle(t, m.documents[i], 14, 220) : 0
+            return (
+              <Fragment key={kind}>
+                {i === 1 ? (
+                  <span
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      fontSize: 16,
-                      opacity: at < 0 ? 1 : shown,
-                      transform: `translateY(${at < 0 ? 0 : (1 - shown) * 14}px)`
+                      display: "block",
+                      padding: "10px 0 2px",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      color: app.muted,
+                      opacity: pop
                     }}
                   >
-                    <span style={{ width: 10, height: 10, borderRadius: 5, background: app.primary, flex: "none" }} />
-                    {text}
-                  </div>
-                )
-              })}
-          </div>
-        </Card>
-        <Card>
-          <CardTitle>Documents</CardTitle>
-          <div style={{ display: "grid", gap: 10 }}>
-            {documents.map((document, i) => {
-              const ready = t >= m.documents[i]
-              const pop = ready ? settle(t, m.documents[i], 12, 240) : 0
-              return (
-                <div key={document} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16 }}>
-                  {ready ? (
-                    <CircleCheck
-                      size={20}
-                      color="#fff"
-                      fill={app.success}
-                      style={{ transform: `scale(${0.6 + 0.4 * pop})` }}
-                    />
-                  ) : (
-                    <FileText size={20} color={app.muted} strokeWidth={1.8} />
-                  )}
-                  <span style={{ color: ready ? app.foreground : app.muted }}>{document}</span>
-                </div>
-              )
-            })}
-          </div>
+                    Shipment 2
+                  </span>
+                ) : null}
+                <DocumentRow
+                  kind={kind}
+                  file={file}
+                  style={{
+                    borderTop: i > 1 ? `1px solid ${app.border}` : undefined,
+                    opacity: pop,
+                    transform: `translateX(${(1 - pop) * 16}px)`
+                  }}
+                />
+              </Fragment>
+            )
+          })}
         </Card>
       </div>
     </div>
@@ -294,8 +453,8 @@ const Party = ({
 const windowSize = { width: 1060, height: 700 }
 
 // 1:04 to 1:18, handoffs: buyer, supplier and forwarder each in their own workspace, all on the same order. The
-// supplier downloads labels and checks off Amazon's requirements, the forwarder marks it shipped, and the buyer sees it
-// all, with every document in one place. The buyer's window stays for the agents chapter as the others fade.
+// supplier downloads its packet and checks off Amazon's requirements, the forwarder marks it shipped, and the buyer sees
+// it all, with every document in one place. The buyer's window stays for the agents chapter as the others fade.
 export const Handoffs = ({ t }: { t: number }) => {
   const toSupplier = settle(t, m.supplier, 18, 120)
   const toForwarder = settle(t, m.forwarder, 18, 120)
@@ -344,7 +503,7 @@ export const Handoffs = ({ t }: { t: number }) => {
             </Tag>
           }
         >
-          <AppWindow {...windowSize} workspace={buyer.name} page="Purchase orders">
+          <AppWindow {...windowSize} workspace={buyer} page="Purchase orders">
             <BuyerView t={t} />
           </AppWindow>
         </Party>
@@ -357,7 +516,7 @@ export const Handoffs = ({ t }: { t: number }) => {
           gone={gone}
           tag={<Tag icon={Ship}>{forwarder.short}</Tag>}
         >
-          <AppWindow {...windowSize} workspace={forwarder.name} kind="Forwarder" page="Purchase orders">
+          <AppWindow {...windowSize} workspace={forwarder} page="Purchase orders">
             <ForwarderView t={t} />
           </AppWindow>
         </Party>
@@ -370,7 +529,7 @@ export const Handoffs = ({ t }: { t: number }) => {
           gone={gone}
           tag={<Tag icon={Factory}>{supplier.name}</Tag>}
         >
-          <AppWindow {...windowSize} workspace={supplier.name} kind="Supplier" page="Purchase orders">
+          <AppWindow {...windowSize} workspace={supplier} page="Shipments">
             <SupplierView t={t} />
           </AppWindow>
         </Party>

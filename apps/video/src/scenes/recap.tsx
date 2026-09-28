@@ -1,23 +1,27 @@
 import { AbsoluteFill, Easing } from "remotion"
-import { count, restock } from "../data"
+import { count, reference, restock } from "../data"
 import { ramp, settle } from "../motion"
 import { Stage } from "../stage"
 import { app } from "../theme"
 import { moments } from "../timeline"
 import { lit } from "../type"
-import { Badge, Card } from "../ui"
+import { Card, Status } from "../ui"
 import { AgentPanel } from "./agents"
 import { BoxLabel } from "./amazon"
+import { Product } from "./forecast"
 import { Route } from "./reorder"
 
 const m = moments.recap
 const [bottle] = restock
 
 const Answer = () => (
-  <Card style={{ display: "grid", gap: 10, width: 560, padding: 30 }}>
-    <span style={{ fontSize: 20, color: app.muted }}>{bottle.name}</span>
-    <span style={{ fontSize: 24, fontWeight: 600 }}>To order</span>
-    <span style={{ fontSize: 88, fontWeight: 700, letterSpacing: "-0.04em", color: app.primary }}>
+  <Card style={{ display: "grid", gap: 12, width: 560, padding: 30, fontSize: 16 }}>
+    <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, zoom: 1.25 }}>
+      <Product name={bottle.name} sku={bottle.sku} />
+      <Status status={bottle.status} />
+    </span>
+    <span style={{ marginTop: 8, fontSize: 22, fontWeight: 600 }}>To order</span>
+    <span style={{ fontSize: 88, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.04em", color: app.primary }}>
       {count(bottle.order)}
     </span>
     <span style={{ fontSize: 19, color: app.muted }}>
@@ -29,10 +33,14 @@ const Answer = () => (
 const Order = () => (
   <Card style={{ display: "grid", gap: 18, width: 820, padding: 30 }}>
     <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <span style={{ fontSize: 40, fontWeight: 600, letterSpacing: "-0.02em" }}>PO 1042</span>
-      <Badge tone="primary">With supplier</Badge>
+      <span style={{ fontSize: 40, fontWeight: 600, letterSpacing: "-0.02em" }}>{reference}</span>
+      <span style={{ zoom: 1.4 }}>
+        <Status status="submitted" />
+      </span>
     </span>
-    <Route />
+    <span style={{ zoom: 1.2 }}>
+      <Route />
+    </span>
   </Card>
 )
 
