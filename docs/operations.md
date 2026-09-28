@@ -129,8 +129,7 @@ Still to do:
 - Shopify: an EventBridge source on Copacker Dev for staging's Shopify queue ([notifications](notifications.md)).
 - Email: nothing receives `@copacker.ai` mail yet. Invitations, purchase orders, label notices and password resets
   set no reply-to, so replies to them go to `hello@copacker.ai` and bounce. Set up mailboxes (Google Workspace, whose
-  records go at the root), then point `CONTACT_EMAIL` there from the personal Gmail. Turn off WorkOS's own password
-  reset email ([Auth](auth.md#workos-settings)).
+  records go at the root), then point `CONTACT_EMAIL` there from the personal Gmail.
 
 ## Databases and migrations
 
