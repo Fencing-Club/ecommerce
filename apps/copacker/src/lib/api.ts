@@ -51,13 +51,16 @@ export const api = createApi({
     search: build.query<SearchIndex, void>({ query: () => "search" }),
     salesSearch: build.query<{ orders: SalesOrderSummary[] }, string>({
       query: (q) => ({ url: "sales/orders", params: { q } })
-    })
+    }),
+    // Whether Copacker is down for maintenance, which the maintenance page asks until it can reload.
+    maintenance: build.query<{ active: boolean }, void>({ query: () => "maintenance" })
   })
 })
 
 export const {
   useActionMutation,
   useLazyCatalogQuery,
+  useMaintenanceQuery,
   useSalesSearchQuery,
   useSearchQuery,
   useSuppliersQuery,

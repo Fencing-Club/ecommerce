@@ -151,6 +151,13 @@
     "forbidden": {
       "title": "No access",
       "askAdmin": "Ask an admin for access"
+    },
+    "maintenance": {
+      "title": "Down for maintenance",
+      "status": "Maintenance in progress",
+      "heading": "We’ll be back <accent>soon</accent>",
+      "text": "Your data is safe, and this page reloads when we’re back.",
+      "contact": "Contact us"
     }
   }
 }

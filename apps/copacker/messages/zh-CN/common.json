@@ -151,6 +151,13 @@
     "forbidden": {
       "title": "无访问权限",
       "askAdmin": "请向管理员申请访问权限"
+    },
+    "maintenance": {
+      "title": "维护中",
+      "status": "正在维护",
+      "heading": "我们<accent>很快</accent>回来",
+      "text": "你的数据安全无虞，我们回来后此页面会自动刷新。",
+      "contact": "联系我们"
     }
   }
 }

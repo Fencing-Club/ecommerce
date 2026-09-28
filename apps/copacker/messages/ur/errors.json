@@ -327,6 +327,7 @@
   "tooManySheetRows": "فائل میں {max, number} سے زیادہ ویریئنٹس ہیں",
   "tooManySignups": "بہت زیادہ سائن اپس۔ چند منٹ بعد دوبارہ کوشش کریں۔",
   "transferOwnershipFirst": "پہلے {workspaces} کی ملکیت منتقل کریں",
+  "underMaintenance": "Copacker کی دیکھ بھال جاری ہے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
   "uploadFailed": "اپ لوڈ ناکام ہو گیا",
   "uploadInvoiceBeforeShipping": "بھیجنے سے پہلے موجودہ کمرشل انوائس اپ لوڈ کریں",
   "uploadLabelOnProducts": "اس کا لیبل پروڈکٹس کے صفحے پر اپ لوڈ کریں",

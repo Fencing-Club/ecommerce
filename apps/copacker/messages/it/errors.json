@@ -327,6 +327,7 @@
   "tooManySheetRows": "Il file contiene più di {max, number} varianti",
   "tooManySignups": "Troppe registrazioni. Riprova tra qualche minuto.",
   "transferOwnershipFirst": "Trasferisci prima la proprietà di {workspaces}",
+  "underMaintenance": "Copacker è in manutenzione. Riprova tra poco.",
   "uploadFailed": "Caricamento non riuscito",
   "uploadInvoiceBeforeShipping": "Carica la fattura commerciale aggiornata prima di spedire",
   "uploadLabelOnProducts": "Carica la sua etichetta nella pagina Prodotti",

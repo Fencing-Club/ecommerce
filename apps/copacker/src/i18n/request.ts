@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers"
 import { cache } from "react"
 import { db } from "@/db"
 import { profiles } from "@/db/schema"
+import { maintenanceHeader } from "@/lib/maintenance"
 import { isTimeZone, timeZoneCookie } from "@/lib/time-zone"
 import { signedInUser } from "@/server/auth"
 import { isLocale, negotiateLocale } from "./locales"
@@ -14,8 +15,12 @@ export async function systemLocale() {
   return negotiateLocale((await headers()).get("accept-language"))
 }
 
-// The language the signed-in person chose in Settings, or null to follow their computer.
+// The language the signed-in person chose in Settings, or null to follow their computer. The maintenance page skips
+// sign-in and the database, which may be down, so it follows the computer.
 export const chosenLocale = cache(async () => {
+  if ((await headers()).has(maintenanceHeader)) {
+    return null
+  }
   const user = await signedInUser()
   if (!user) {
     return null

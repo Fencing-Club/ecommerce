@@ -327,6 +327,7 @@
   "tooManySheetRows": "У файлі понад {max, number} варіантів",
   "tooManySignups": "Забагато реєстрацій. Спробуйте за кілька хвилин.",
   "transferOwnershipFirst": "Спочатку передайте право власності на {workspaces}",
+  "underMaintenance": "Copacker на технічному обслуговуванні. Спробуйте трохи згодом.",
   "uploadFailed": "Не вдалося завантажити",
   "uploadInvoiceBeforeShipping": "Завантажте актуальний комерційний рахунок перед відвантаженням",
   "uploadLabelOnProducts": "Завантажте його етикетку на сторінці «Товари»",

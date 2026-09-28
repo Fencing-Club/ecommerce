@@ -327,6 +327,7 @@
   "tooManySheetRows": "The file has more than {max, number} variants",
   "tooManySignups": "Too many signups. Try again in a few minutes.",
   "transferOwnershipFirst": "Transfer ownership of {workspaces} first",
+  "underMaintenance": "Copacker is down for maintenance. Try again soon.",
   "uploadFailed": "Upload failed",
   "uploadInvoiceBeforeShipping": "Upload the current commercial invoice before shipping",
   "uploadLabelOnProducts": "Upload its label on the Products page",

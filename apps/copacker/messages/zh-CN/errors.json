@@ -327,6 +327,7 @@
   "tooManySheetRows": "文件中的变体超过 {max, number} 个",
   "tooManySignups": "注册次数过多。请几分钟后再试。",
   "transferOwnershipFirst": "请先转让 {workspaces} 的所有权",
+  "underMaintenance": "Copacker 正在维护，请稍后再试。",
   "uploadFailed": "上传失败",
   "uploadInvoiceBeforeShipping": "发货前请上传最新的商业发票",
   "uploadLabelOnProducts": "请在“产品”页面上传其标签",

@@ -23,6 +23,22 @@ Amazon create is checkpointed before the network request. If its response is los
 
 Failed notification and Shopify write jobs remain visible for an owner to retry after fixing configuration. Shopify cost updates require equal currencies and use supplier piece price multiplied by the sellable pack size. No estimated exchange rate or hidden freight allocation is applied.
 
+## Maintenance
+
+To take Copacker down, set the `maintenance` feature flag to **All** in that environment's WorkOS dashboard (Feature
+flags). Within about 10 seconds every page behind sign-in, signing in included, shows the maintenance page at its own
+address with a 503 and `Retry-After`, and the API and server actions answer 503 with a message. The marketing site
+(home for visitors, contact, privacy, terms, unsubscribe), its forms and `/api/health` stay up. Set the flag back to
+**None** and open maintenance pages reload into the page they stand in for.
+
+- The flag is created once, in the dashboard (Create feature flag, slug `maintenance`). WorkOS creates flags in every
+  environment, each with its own setting. **Some** takes no one down: Copacker reads the flag for everyone at once.
+- The page skips sign-in and the database, so it works while Postgres is down. If WorkOS can't be reached, Copacker
+  stays up.
+- `/maintenance` previews the page. The worker keeps running; stop it in Railway if the work needs it idle.
+- The rules are in `apps/copacker/src/server/maintenance.ts`. `next.config.ts` shows the page for requests the proxy
+  marks, since a rewrite from the proxy itself leaves the app when the server's hostname is 127.0.0.1.
+
 ## Releases
 
 Every push to `codex/copacker` runs CI (`pnpm verify`, the build, and every migration on an empty Postgres 18). When

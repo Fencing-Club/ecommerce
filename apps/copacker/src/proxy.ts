@@ -1,8 +1,9 @@
 import { authkitProxy } from "@workos-inc/authkit-nextjs"
 import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server"
+import { closedForMaintenance, maintenanceResponse, underMaintenance } from "@/server/maintenance"
 import { resumeCookie, returnPath, siteUrlFor } from "@/server/security"
 const auth = authkitProxy()
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   // Back from signing out to continue on another page, such as an invitation for another email.
   const resume = request.cookies.get(resumeCookie)?.value
   if (resume && request.nextUrl.pathname === "/") {
@@ -12,6 +13,10 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
   }
   if (!process.env.WORKOS_CLIENT_ID) {
     return NextResponse.next()
+  }
+  // While Copacker is down for maintenance, everything behind sign-in shows the maintenance page.
+  if (closedForMaintenance(request) && (await underMaintenance())) {
+    return maintenanceResponse(request)
   }
   return auth(request, event)
 }

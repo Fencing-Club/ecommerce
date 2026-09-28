@@ -151,6 +151,13 @@
     "forbidden": {
       "title": "Kein Zugriff",
       "askAdmin": "Bitten Sie einen Admin um Zugriff"
+    },
+    "maintenance": {
+      "title": "Wartungsarbeiten",
+      "status": "Wartung läuft",
+      "heading": "Wir sind <accent>bald</accent> zurück",
+      "text": "Ihre Daten sind sicher, und diese Seite lädt neu, sobald wir zurück sind.",
+      "contact": "Kontakt aufnehmen"
     }
   }
 }

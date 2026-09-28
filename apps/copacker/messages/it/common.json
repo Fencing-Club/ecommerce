@@ -151,6 +151,13 @@
     "forbidden": {
       "title": "Nessun accesso",
       "askAdmin": "Chiedi l’accesso a un amministratore"
+    },
+    "maintenance": {
+      "title": "In manutenzione",
+      "status": "Manutenzione in corso",
+      "heading": "Torniamo <accent>presto</accent>",
+      "text": "I tuoi dati sono al sicuro, e questa pagina si ricarica al nostro ritorno.",
+      "contact": "Contattaci"
     }
   }
 }
