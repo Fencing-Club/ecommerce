@@ -77,7 +77,7 @@
     "stock": "Existencias"
   },
   "salesByChannel": {
-    "title": "Ventas por canal",
+    "title": "Tendencia de ventas",
     "aboutLabel": "Acerca de las ventas",
     "about": "Después de descuentos, antes de impuestos y envío.",
     "aboutLocation": "Pedidos de Shopify enviados desde {location}. Después de descuentos, antes de impuestos y envío.",

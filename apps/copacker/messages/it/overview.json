@@ -77,7 +77,7 @@
     "stock": "Giacenza"
   },
   "salesByChannel": {
-    "title": "Vendite per canale",
+    "title": "Andamento delle vendite",
     "aboutLabel": "Informazioni sulle vendite",
     "about": "Al netto degli sconti, prima di tasse e spedizione.",
     "aboutLocation": "Ordini Shopify spediti da {location}. Al netto degli sconti, prima di tasse e spedizione.",

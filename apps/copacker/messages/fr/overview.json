@@ -77,7 +77,7 @@
     "stock": "Stock"
   },
   "salesByChannel": {
-    "title": "Ventes par canal",
+    "title": "Évolution des ventes",
     "aboutLabel": "À propos des ventes",
     "about": "Après remises, hors taxes et livraison.",
     "aboutLocation": "Commandes Shopify expédiées depuis {location}. Après remises, hors taxes et livraison.",

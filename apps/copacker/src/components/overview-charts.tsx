@@ -28,10 +28,8 @@ const axis = {
   tickMargin: 8
 } as const
 
-// Each source's value, and its value in the compared period under "previous:<source>".
-type Point = { key: string; label: string; title: string } & Partial<
-  Record<SalesSource | `previous:${SalesSource}`, number | null>
->
+// The shown sources' total, and their total in the compared period.
+type Point = { key: string; label: string; title: string; value: number | null; previous?: number | null }
 type Metric = "orders" | "units" | "sales"
 // Names a UTC day or month, in the reader's language: "Sep 3", "Sep", "September 2026".
 type Dates = { day: (day: string) => string; month: (month: string) => string; longMonth: (month: string) => string }
@@ -58,10 +56,7 @@ function ChartTooltip({
         <div key={String(entry.dataKey)} className="flex items-center gap-2">
           <span
             aria-hidden
-            className={cn(
-              "w-3 shrink-0 border-t-2",
-              String(entry.dataKey).startsWith("previous:") && "border-dashed opacity-50"
-            )}
+            className={cn("w-3 shrink-0 border-t-2", entry.dataKey === "previous" && "border-dashed opacity-50")}
             style={{ borderColor: entry.color }}
           />
           <span className="flex-1 text-muted-foreground">{String(entry.name)}</span>
@@ -115,7 +110,7 @@ const pointTitle = (first: string, step: Step, dates: Dates, weekOf: (date: stri
   return step === "week" ? weekOf(dates.day(first)) : dates.longMonth(first.slice(0, 7))
 }
 
-// The period's points by source, and the compared period's total alongside, lined up point for point.
+// The period's points summed across sources, and the compared period's alongside, lined up point for point.
 function points(
   daily: DailySales[],
   previous: DailySales[] | null,
@@ -131,21 +126,15 @@ function points(
       : cells.reduce((total, cell) => total + (cell ? measure(cell, metric) : 0), 0)
   return groups(daily, step).map(({ start, end }) => {
     const first = daily[start]!.date
-    const point: Point = {
+    const cells = (rows: DailySales[]) => rows.flatMap((row) => sources.map((source) => row[source]))
+    const before = previous?.slice(start, end)
+    return {
       key: first,
       label: step === "month" ? dates.month(first.slice(0, 7)) : dates.day(first),
-      title: pointTitle(first, step, dates, weekOf)
+      title: pointTitle(first, step, dates, weekOf),
+      value: sum(cells(daily.slice(start, end))),
+      ...(before && { previous: before.length ? sum(cells(before)) : null })
     }
-    for (const source of sources) {
-      point[source] = sum(daily.slice(start, end).map((row) => row[source]))
-    }
-    if (previous) {
-      const before = previous.slice(start, end)
-      for (const source of sources) {
-        point[`previous:${source}`] = before.length ? sum(before.map((row) => row[source])) : null
-      }
-    }
-    return point
   })
 }
 
@@ -196,7 +185,7 @@ function Segmented<T extends string>({
   )
 }
 
-// Units or sales by source over the Overview's period, with the compared period as a faint dashed line. Sales appear
+// Units or sales over the Overview's period, the shown sources together as one line, with the compared period as a faint dashed line. Sales appear
 // once orders have prices; orders without a price are left out of them.
 export function SalesTrend({
   daily,
@@ -213,6 +202,7 @@ export function SalesTrend({
   currency: string | null
 }) {
   const t = useTranslations("overview.salesChart")
+  const channels = useTranslations("overview.channel")
   const period = useTranslations("overview.period")
   const intl = useFormatter()
   const locale = useLocale()
@@ -223,42 +213,36 @@ export function SalesTrend({
       intl.dateTime(new Date(`${month}-01T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" })
   }
   const previousLabel = period(`comparisons.${comparison}`)
-  const previousName = (source: SalesSource) => t("previousSeries", { source: sourceSeries[source].label, comparison })
   // Sales first when orders have prices; orders otherwise.
   const [chosen, setMetric] = useState<Metric>(currency ? "sales" : "orders")
   const metric: Metric = currency || chosen !== "sales" ? chosen : "orders"
   const step = stepFor(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
+  // One source keeps its name and color; several read as all channels together.
+  const single = shown.length === 1 ? sourceSeries[shown[0]!] : null
+  const series = { label: single?.label ?? channels("all"), color: single?.color ?? vars.color.chart1 }
+  const previousName = t("previousSeries", { source: series.label, comparison })
   const data = points(daily, previous, shown, metric, step, dates, (date) => t("weekOf", { date }))
-  const compared = data.some((point) => shown.some((source) => isPresent(point[`previous:${source}`])))
+  const compared = data.some((point) => isPresent(point.previous))
   const format = (value: number) =>
     metric === "sales"
       ? intl.number(value / 100, { style: "currency", currency: currency ?? "USD", maximumFractionDigits: 0 })
       : intl.number(value, { maximumFractionDigits: 0 })
   // "12 orders", "1 unit", "$4,203".
   const describe = (value: number) => (metric === "sales" ? format(value) : t(metric, { count: value }))
-  const totals = shown.map((source) => ({
-    source,
-    value: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
-    known: data.some((point) => isPresent(point[source]))
-  }))
+  const total = data.reduce((sum, point) => sum + (point.value ?? 0), 0)
+  const known = data.some((point) => isPresent(point.value))
 
   return (
     <div className="flex flex-1 flex-col gap-4">
       {/* The legend and the measure switch share one row, centered on each other. */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <ul className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
-          {totals.map((total) => (
-            <li key={total.source} className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="size-2.5 shrink-0 rounded-[3px]"
-                style={{ backgroundColor: sourceSeries[total.source].color }}
-              />
-              <span className="text-muted-foreground">{sourceSeries[total.source].label}</span>
-              <span className="font-medium tabular-nums">{total.known ? format(total.value) : "—"}</span>
-            </li>
-          ))}
+          <li className="flex items-center gap-2">
+            <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: series.color }} />
+            <span className="text-muted-foreground">{series.label}</span>
+            <span className="font-medium tabular-nums">{known ? format(total) : "—"}</span>
+          </li>
           {compared && (
             <li className="flex items-center gap-2 text-muted-foreground">
               <span aria-hidden className="w-3 shrink-0 border-t-2 border-dashed border-muted-foreground/60" />
@@ -286,12 +270,10 @@ export function SalesTrend({
           aria-hidden
         >
           <defs>
-            {shown.map((source) => (
-              <linearGradient key={source} id={`fill-${source}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={sourceSeries[source].color} stopOpacity={0.12} />
-                <stop offset="100%" stopColor={sourceSeries[source].color} stopOpacity={0} />
-              </linearGradient>
-            ))}
+            <linearGradient id="fill-sales" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={series.color} stopOpacity={0.12} />
+              <stop offset="100%" stopColor={series.color} stopOpacity={0} />
+            </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke={vars.color.border} />
           <XAxis dataKey="label" {...axis} minTickGap={40} />
@@ -307,40 +289,35 @@ export function SalesTrend({
             content={<ChartTooltip points={data} format={describe} />}
           />
           {/* Straight segments between points, so a line never overshoots a value or loops back. */}
-          {compared &&
-            shown.map((source) => (
-              <Area
-                key={`previous:${source}`}
-                type="linear"
-                dataKey={`previous:${source}`}
-                name={previousName(source)}
-                stroke={sourceSeries[source].color}
-                strokeOpacity={0.35}
-                strokeWidth={1}
-                strokeDasharray="3 3"
-                fill="none"
-                dot={false}
-                activeDot={false}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            ))}
-          {shown.map((source) => (
+          {compared && (
             <Area
-              key={source}
               type="linear"
-              dataKey={source}
-              name={sourceSeries[source].label}
-              stroke={sourceSeries[source].color}
-              strokeWidth={2}
-              strokeLinejoin="round"
-              fill={`url(#fill-${source})`}
+              dataKey="previous"
+              name={previousName}
+              stroke={series.color}
+              strokeOpacity={0.35}
+              strokeWidth={1}
+              strokeDasharray="3 3"
+              fill="none"
               dot={false}
-              activeDot={{ r: 4, strokeWidth: 2, stroke: vars.color.card }}
+              activeDot={false}
               connectNulls={false}
               isAnimationActive={false}
             />
-          ))}
+          )}
+          <Area
+            type="linear"
+            dataKey="value"
+            name={series.label}
+            stroke={series.color}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            fill="url(#fill-sales)"
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 2, stroke: vars.color.card }}
+            connectNulls={false}
+            isAnimationActive={false}
+          />
         </AreaChart>
       </div>
       <table className="sr-only">
@@ -348,32 +325,16 @@ export function SalesTrend({
         <thead>
           <tr>
             <th scope="col">{t("stepColumn", { step })}</th>
-            {shown.map((source) => (
-              <th key={source} scope="col">
-                {sourceSeries[source].label}
-              </th>
-            ))}
-            {compared &&
-              shown.map((source) => (
-                <th key={`previous:${source}`} scope="col">
-                  {previousName(source)}
-                </th>
-              ))}
+            <th scope="col">{series.label}</th>
+            {compared && <th scope="col">{previousName}</th>}
           </tr>
         </thead>
         <tbody>
           {data.map((point) => (
             <tr key={point.key}>
               <th scope="row">{point.label}</th>
-              {shown.map((source) => {
-                const value = point[source]
-                return <td key={source}>{isPresent(value) ? format(value) : t("noData")}</td>
-              })}
-              {compared &&
-                shown.map((source) => {
-                  const value = point[`previous:${source}`]
-                  return <td key={`previous:${source}`}>{isPresent(value) ? format(value) : t("noData")}</td>
-                })}
+              <td>{isPresent(point.value) ? format(point.value) : t("noData")}</td>
+              {compared && <td>{isPresent(point.previous) ? format(point.previous) : t("noData")}</td>}
             </tr>
           ))}
         </tbody>

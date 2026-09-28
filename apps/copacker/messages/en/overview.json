@@ -77,7 +77,7 @@
     "stock": "Stock"
   },
   "salesByChannel": {
-    "title": "Sales by channel",
+    "title": "Sales trend",
     "aboutLabel": "About sales",
     "about": "After discounts, before tax and shipping.",
     "aboutLocation": "Shopify orders shipped from {location}. After discounts, before tax and shipping.",

@@ -77,7 +77,7 @@
     "stock": "Lagerbestand"
   },
   "salesByChannel": {
-    "title": "Umsatz nach Kanal",
+    "title": "Umsatzverlauf",
     "aboutLabel": "Über den Umsatz",
     "about": "Nach Rabatten, vor Steuern und Versand.",
     "aboutLocation": "Shopify-Aufträge, versendet von {location}. Nach Rabatten, vor Steuern und Versand.",

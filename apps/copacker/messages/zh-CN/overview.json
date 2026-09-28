@@ -77,7 +77,7 @@
     "stock": "库存量"
   },
   "salesByChannel": {
-    "title": "各渠道销售额",
+    "title": "销售趋势",
     "aboutLabel": "关于销售额",
     "about": "扣除折扣后，不含税费和运费。",
     "aboutLocation": "从 {location} 发货的 Shopify 订单。扣除折扣后，不含税费和运费。",
