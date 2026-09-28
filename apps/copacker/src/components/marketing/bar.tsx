@@ -23,7 +23,8 @@ export function Bar({ tone, children }: { tone: "dark" | "light"; children: Reac
     const request = () => {
       frame ||= requestAnimationFrame(check)
     }
-    check()
+    // The first look waits for a frame too, rather than making the browser lay out the page in the middle of hydrating it.
+    request()
     addEventListener("scroll", request, { passive: true })
     addEventListener("resize", request)
     return () => {

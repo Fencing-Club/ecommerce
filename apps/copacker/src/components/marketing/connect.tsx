@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
 import { setups } from "./setups"
+import { usePageIdle } from "./use-page-idle"
 
 // How agents reach Copacker: pick yours, and its own setup shows, ready to copy (./setups); and the CLI, which reads
 // the same data for scripts and coding agents. The terminal types out its session once it scrolls into view.
@@ -201,8 +202,16 @@ function Agents() {
 // both cards past the screen.
 export function Connect() {
   const t = useTranslations("marketing.connect")
+  // The code is set in Geist Mono, which is fetched only once the page is idle: this is far down the page, and the
+  // font would otherwise load with the page's first paint. Until then the code uses the computer's own monospace.
+  const idle = usePageIdle()
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div
+      className={cn(
+        "grid grid-cols-1 gap-6 lg:grid-cols-2",
+        !idle && "[--font-geist-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace]"
+      )}
+    >
       <Agents />
       <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
         <div className="flex flex-col gap-3">

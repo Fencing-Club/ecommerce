@@ -10,7 +10,7 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
-import { JoinWaitlist, lit, quiet, rise, Site, stage } from "./site"
+import { JoinWaitlist, lift, lit, quiet, rise, Site, stage } from "./site"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
@@ -47,12 +47,12 @@ function Shot({
 
 // The headline's two halves rise in one after the other, and the second is lit.
 const firstWords = (chunks: React.ReactNode) => (
-  <span className={cn("inline-block", rise)} style={{ animationDelay: "150ms" }}>
+  <span className={cn("inline-block", lift)} style={{ animationDelay: "150ms" }}>
     {chunks}
   </span>
 )
 const secondWords = (chunks: React.ReactNode) => (
-  <span className={cn("inline-block", rise, lit)} style={{ animationDelay: "320ms" }}>
+  <span className={cn("inline-block", lift, lit)} style={{ animationDelay: "320ms" }}>
     {chunks}
   </span>
 )
@@ -84,7 +84,7 @@ function Hero() {
             {t.rich("title", { first: firstWords, second: secondWords })}
           </h1>
           <p
-            className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
+            className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", lift)}
             style={{ animationDelay: "520ms" }}
           >
             {t("text")}

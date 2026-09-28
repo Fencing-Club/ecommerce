@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { ContactForm } from "./contact-form"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
-import { JoinWaitlist, lit, rise, Site, stage } from "./site"
+import { JoinWaitlist, lift, lit, rise, Site, stage } from "./site"
 
 // The contact page, in the home page's language: a dark stage with the settled field of points, and the form set across
 // its lower edge the way the hero's product shot is, then other ways in on the paper below.
@@ -54,13 +54,13 @@ export function Contact() {
             <div className="mx-auto max-w-6xl px-6 pt-24 sm:pt-32">
               <h1
                 id="contact-title"
-                className={cn("text-[clamp(3.25rem,9vw,7rem)] leading-[0.92] font-semibold tracking-[-0.055em]", rise)}
+                className={cn("text-[clamp(3.25rem,9vw,7rem)] leading-[0.92] font-semibold tracking-[-0.055em]", lift)}
                 style={{ animationDelay: "100ms" }}
               >
                 {t.rich("title", { lit: litWords })}
               </h1>
               <p
-                className={cn("mt-6 max-w-xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
+                className={cn("mt-6 max-w-xl text-lg text-pretty text-white/65 sm:text-xl", lift)}
                 style={{ animationDelay: "250ms" }}
               >
                 {t("text")}

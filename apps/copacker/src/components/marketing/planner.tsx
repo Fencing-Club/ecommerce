@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { usePageIdle } from "./use-page-idle"
 
 // The forecast, for the visitor to play with: one product's stock, sold through Amazon, Shopify and eBay, with the
 // holiday rush ahead. Copacker works back from the day it would run out, through the supplier's lead time, to the day
 // to order and how much. Changing the lead time, the stores or the rush glides everything to its new place.
 
-// The hand the chart's note is written in. It's only for the note, well down the page, so it loads when the note needs
-// it rather than being preloaded with the page's own fonts.
+// The hand the chart's note is written in. It's only for the note, well down the page and hidden until the chart is
+// seen, so the note takes it on once the page is idle, and the font loads then rather than with the page's first paint.
 const hand = Caveat({ subsets: ["latin"], preload: false })
 
 type Store = { key: "amazon" | "shopify" | "ebay"; name: string; perDay: number }
@@ -185,6 +186,7 @@ export function Planner() {
   const [inputs, setInputs] = useState<Inputs>({ lead: 60, amazon: 1, shopify: 1, ebay: 1, rush: 1 })
   const shown = useGlide(inputs)
   const figure = useRef<HTMLDivElement>(null)
+  const idle = usePageIdle()
   const [seen, setSeen] = useState(false)
   useEffect(() => {
     const element = figure.current
@@ -447,7 +449,7 @@ export function Planner() {
                   transform={`rotate(-4 ${noteRight} ${noteTop})`}
                   textAnchor="end"
                   className="fill-foreground/85"
-                  style={{ fontFamily: hand.style.fontFamily, fontSize: noteSize }}
+                  style={{ fontFamily: idle ? hand.style.fontFamily : undefined, fontSize: noteSize }}
                 >
                   <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
                     {t("restock")}
