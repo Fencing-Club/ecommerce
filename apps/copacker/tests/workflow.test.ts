@@ -4309,7 +4309,18 @@ describe("supplier lead times", () => {
       phoneNumber: null,
       website: null
     })
-    await expect(updateSupplier(buyerId, { ...edit, contactEmail: "not an email" })).rejects.toThrow("Invalid email")
+    await expect(updateSupplier(buyerId, { ...edit, contactEmail: "not an email" })).rejects.toThrow(
+      "Enter an email address"
+    )
+    await expect(updateSupplier(buyerId, { ...edit, phoneNumber: "call me" })).rejects.toThrow("Enter a phone number")
+    await expect(updateSupplier(buyerId, { ...edit, website: "supplier" })).rejects.toThrow("Enter a website")
+    // A website typed without https:// is saved with it; details left out stay as they were.
+    await updateSupplier(buyerId, { ...edit, website: "supplier.example", phoneNumber: "+86 188 6161 3263" })
+    expect(await saved()).toMatchObject({
+      contactName: "Wei Chen",
+      phoneNumber: "+86 188 6161 3263",
+      website: "https://supplier.example"
+    })
     // Joined: the buyer's changes to them are ignored.
     await database
       .update(tables.suppliers)

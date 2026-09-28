@@ -762,7 +762,8 @@ function CellNumber({
       {...props}
       ref={ref}
       type="number"
-      inputMode="decimal"
+      // A quantity steps in whole pieces, so its keypad has no decimal point.
+      inputMode={Number.isInteger(props.step) ? "numeric" : "decimal"}
       aria-label={label}
       value={!typing && scale === 100 && shown !== "" ? shown.toFixed(2) : shown}
       onFocus={() => setTyping(true)}

@@ -237,8 +237,12 @@ function ConnectShopify() {
             <Input
               id={id}
               name="shop"
+              required
               placeholder="your-store.myshopify.com"
+              inputMode="url"
+              autoCapitalize="none"
               autoComplete="off"
+              spellCheck={false}
               aria-invalid={Boolean(error)}
               onChange={() => setError(undefined)}
             />

@@ -143,7 +143,7 @@ export function CompanyFields({ kind }: { kind: WorkspaceKind | "" }) {
 export function AddressStepFields({ kind }: { kind: WorkspaceKind | "" }) {
   return (
     <div className="flex flex-col gap-5">
-      <FormInput name="address.name" required label="Address name" />
+      <FormInput name="address.name" required label="Address name" autoComplete="off" />
       <AddressFields path="address.address" requirePhone={kind === "supplier"} />
     </div>
   )

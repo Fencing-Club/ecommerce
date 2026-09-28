@@ -101,7 +101,7 @@ export function TeamSettings({
   )
 }
 
-const inviteSchema = z.object({ email: z.email("Enter a valid email address").max(254) })
+const inviteSchema = z.object({ email: z.email("Enter an email address").max(254) })
 
 function InviteForm({ onSent }: { onSent: (email: string) => void }) {
   const { form, submit } = useActionForm({

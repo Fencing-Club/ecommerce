@@ -205,16 +205,16 @@ export function FormInput({
   )
 }
 
-// Numbers are stored as numbers. `scale` converts display units to stored units, such as dollars to cents.
+// Numbers are stored as numbers; money goes in FormMoney. A whole number `step`, such as 1 for days or pieces, brings up
+// a keypad without a decimal point.
 export function FormNumber({
   name,
   label,
   description,
   className,
-  scale = 1,
   onValueChange,
   ...props
-}: Common & { scale?: number; onValueChange?: (value: number | undefined) => void } & Omit<
+}: Common & { onValueChange?: (value: number | undefined) => void } & Omit<
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange" | "type"
   >) {
@@ -223,7 +223,7 @@ export function FormNumber({
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
     fieldState
   } = useController({ name })
-  const value = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue / scale : ""
+  const value = typeof fieldValue === "number" && Number.isFinite(fieldValue) ? fieldValue : ""
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
       <FormLabel htmlFor={id} label={label} required={props.required} />
@@ -231,13 +231,12 @@ export function FormNumber({
         {...props}
         id={id}
         type="number"
-        inputMode="decimal"
+        inputMode={Number.isInteger(Number(props.step)) ? "numeric" : "decimal"}
         name={fieldName}
         ref={ref}
         value={value}
         onChange={(event) => {
-          const next =
-            event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * scale * 1000) / 1000
+          const next = event.target.value === "" ? undefined : Math.round(event.target.valueAsNumber * 1000) / 1000
           onChange(next)
           onValueChange?.(next)
         }}

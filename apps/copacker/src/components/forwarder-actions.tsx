@@ -65,19 +65,13 @@ export function AddForwarder({
           <DialogDescription>A freight forwarder your purchase orders can ship to.</DialogDescription>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Add forwarder" dialog>
-          <FormInput
-            name="name"
-            required
-            label="Company"
-            placeholder="Shenzhen Logistics"
-            autoComplete="organization"
-          />
+          <FormInput name="name" required label="Company" placeholder="Shenzhen Logistics" autoComplete="off" />
           <FormInput
             name="email"
             label="Email"
             type="email"
             placeholder="ops@forwarder.example"
-            autoComplete="email"
+            autoComplete="off"
             description="Add one to invite them now."
           />
         </ActionForm>
@@ -125,7 +119,7 @@ export function InviteForwarder({
           <DialogDescription>They’ll keep their own warehouse addresses for your purchase orders.</DialogDescription>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Send invitation" dialog>
-          <FormInput name="email" required label="Email" type="email" autoComplete="email" />
+          <FormInput name="email" required label="Email" type="email" autoComplete="off" />
         </ActionForm>
       </DialogContent>
     </Dialog>
@@ -155,7 +149,7 @@ export function RenameForwarder({ id, name }: { id: string; name: string }) {
           <DialogTitle>Edit forwarder</DialogTitle>
         </DialogHeader>
         <ActionForm form={form} onSubmit={submit} label="Save" dialog>
-          <FormInput name="name" required label="Company" autoComplete="organization" />
+          <FormInput name="name" required label="Company" autoComplete="off" />
         </ActionForm>
       </DialogContent>
     </Dialog>

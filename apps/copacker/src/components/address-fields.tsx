@@ -57,7 +57,7 @@ function CountrySelect({ name }: { name: string }) {
 export function AddressFields({ path, requirePhone = false }: { path: string; requirePhone?: boolean }) {
   return (
     <FieldGroup className="grid gap-4 sm:grid-cols-2">
-      <FormInput name={`${path}.name`} label="Contact name" required className="sm:col-span-2" />
+      <FormInput name={`${path}.name`} label="Contact name" required autoComplete="name" className="sm:col-span-2" />
       <FormInput
         name={`${path}.phoneNumber`}
         label="Phone number"

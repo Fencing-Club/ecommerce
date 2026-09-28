@@ -155,7 +155,13 @@ function AddressForm({
       label={contact ? "Save changes" : "Save address"}
       dialog
     >
-      <FormInput name="name" required label="Address name" placeholder={pickup ? "Factory" : "Yiwu warehouse"} />
+      <FormInput
+        name="name"
+        required
+        label="Address name"
+        placeholder={pickup ? "Factory" : "Yiwu warehouse"}
+        autoComplete="off"
+      />
       <AddressFields path="address" requirePhone={pickup} />
     </ActionForm>
   )

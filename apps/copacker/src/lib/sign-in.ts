@@ -15,7 +15,7 @@ export function isOAuthProvider(value: string): value is OAuthProvider {
   return Object.hasOwn(oauthProviders, value)
 }
 
-const email = z.email("Enter a valid email address").max(254)
+const email = z.email("Enter an email address").max(254)
 
 export const newPasswordSchema = z
   .string()

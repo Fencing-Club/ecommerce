@@ -2,6 +2,7 @@ import { and, eq, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { orders, suppliers } from "@/db/schema"
+import { contactDetailsSchema } from "@/lib/contact-details"
 
 // Removes a supplier from a buyer's workspace. Its invitation stops working and its workspace loses access to the
 // buyer's POs. A supplier working on a sent PO stays until that PO is closed, so no shipment is left without its packer.
@@ -30,16 +31,15 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
   })
 }
 
-const optional = (field: z.ZodType<string>) =>
-  z
-    .union([field, z.literal("")])
-    .optional()
-    .transform((value) => (value === undefined ? undefined : value || null))
+// A contact detail as the forms check it: left out keeps what's saved, and empty clears it.
+const keepOrClear = (field: z.ZodType<string, string>) =>
+  field.optional().transform((value) => (value === undefined ? undefined : value || null))
+const details = contactDetailsSchema.shape
 export const supplierContactSchema = z.object({
-  website: optional(z.url({ protocol: /^https?$/ }).max(500)),
-  contactName: optional(z.string().trim().max(120)),
-  contactEmail: optional(z.email().max(254)),
-  phoneNumber: optional(z.string().trim().max(50))
+  website: keepOrClear(details.website),
+  contactName: keepOrClear(details.contactName),
+  contactEmail: keepOrClear(details.contactEmail),
+  phoneNumber: keepOrClear(details.phoneNumber)
 })
 
 export const supplierUpdateSchema = z.strictObject({

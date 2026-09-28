@@ -233,6 +233,7 @@ export function OrderReviser({
                     <>
                       <Input
                         type="number"
+                        inputMode="numeric"
                         min={line.piecesPerSet}
                         step={line.piecesPerSet}
                         value={line.pieces || ""}

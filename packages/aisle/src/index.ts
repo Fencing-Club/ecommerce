@@ -34,7 +34,7 @@ export const addressSchema = z.object({
   phoneNumber: z
     .string()
     .trim()
-    .pipe(z.union([z.literal(""), z.string().min(6).max(30)]))
+    .pipe(z.union([z.literal(""), z.string().min(6, "Enter a phone number").max(30)]))
     .default(""),
   email: z
     .string()

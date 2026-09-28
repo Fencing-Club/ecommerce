@@ -354,6 +354,7 @@ function VariantSheet({
                 <Input
                   id="variant-pieces"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   value={draft.piecesPerSellablePack}
                   onChange={(event) => change({ piecesPerSellablePack: whole(event.target.value, 1) ?? 1 })}
@@ -364,6 +365,7 @@ function VariantSheet({
                 <Input
                   id="variant-packs"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   placeholder="Unknown"
                   value={draft.sellablePacksPerCase ?? ""}

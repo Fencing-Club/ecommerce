@@ -18,6 +18,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 import { errorMessage, useActionMutation } from "@/lib/api"
+import { contactDetailsSchema } from "@/lib/contact-details"
 import { formErrorMap } from "@/lib/form-errors"
 import { FormError } from "./actions"
 import { FormInput, FormNumber } from "./form-controls"
@@ -58,10 +59,15 @@ const supplierSchema = z.object({
   // Shown, not edited: it comes from Shopify's Supplier field.
   shopifySupplierName: z.string(),
   leadTimeDays: z.number().int().min(1).max(730).optional(),
-  contactName: z.string().trim().max(120),
-  contactEmail: z.union([z.email({ error: "Enter a valid email" }).max(254), z.literal("")]),
-  phoneNumber: z.string().trim().max(50),
-  website: z.union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
+  ...contactDetailsSchema.shape
+})
+// A supplier that joined keeps its own contact details, which are shown as it saved them and not sent, so they aren't
+// checked here.
+const joinedSupplierSchema = supplierSchema.extend({
+  contactName: z.string(),
+  contactEmail: z.string(),
+  phoneNumber: z.string(),
+  website: z.string()
 })
 
 type SupplierContact = {
@@ -99,7 +105,7 @@ export function EditSupplier({
   const router = useRouter()
   const [run] = useActionMutation()
   const form = useForm<z.input<typeof supplierSchema>, unknown, z.output<typeof supplierSchema>>({
-    resolver: zodResolver(supplierSchema, { error: formErrorMap }),
+    resolver: zodResolver(joined ? joinedSupplierSchema : supplierSchema, { error: formErrorMap }),
     values: {
       name,
       shopifySupplierName: shopifySupplierName ?? "",
@@ -149,7 +155,7 @@ export function EditSupplier({
             <DialogHeader>
               <DialogTitle>Edit {name}</DialogTitle>
             </DialogHeader>
-            <FormInput name="name" required label="Name" autoComplete="organization" />
+            <FormInput name="name" required label="Name" autoComplete="off" />
             <FormInput
               name="shopifySupplierName"
               label="Company name"
@@ -163,8 +169,10 @@ export function EditSupplier({
             <FormInput
               name="website"
               label="Website"
-              type="url"
-              placeholder="https://supplier.example"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="example.com"
               disabled={joined}
               description={joined ? `${name} keeps their contact details in their own workspace.` : undefined}
             />
@@ -234,7 +242,7 @@ export function InviteSupplierByEmail({
                 They’ll see the purchase orders you share and get emailed when one needs documents.
               </DialogDescription>
             </DialogHeader>
-            <FormInput name="email" required label="Supplier email" type="email" autoComplete="email" />
+            <FormInput name="email" required label="Supplier email" type="email" autoComplete="off" />
             <FormError message={form.formState.errors.root?.server?.message} />
             <DialogFooter>
               <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>

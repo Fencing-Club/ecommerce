@@ -20,7 +20,7 @@ import { FormInput, FormMoney } from "./form-controls"
 const schema = z.object({
   carrier: z.string().trim().min(1, "Enter the carrier").max(100),
   reference: z.string().trim().min(1, "Enter the tracking or booking number").max(100),
-  amount: z.number({ error: "Enter the freight cost" }).int().min(0)
+  amount: z.number({ error: "Enter the freight cost" }).int().min(0).max(100000000)
 })
 
 // The forwarder's leg: it ships the goods on and says what the freight cost and how to track it. The buyer does this

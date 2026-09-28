@@ -103,7 +103,7 @@ export async function POST(request: Request) {
         .object({
           name: z.string().trim().min(2).max(120),
           email: z
-            .union([z.email(), z.literal("")])
+            .union([z.email().max(254), z.literal("")])
             .optional()
             .transform((v) => v?.toLowerCase() || null)
         })
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       requireBuyer(s)
       requireOwner(s)
       const email = z
-        .union([z.email(), z.literal("")])
+        .union([z.email().max(254), z.literal("")])
         .optional()
         .transform((v) => v?.toLowerCase() || null)
         .parse(data.email)
@@ -235,7 +235,7 @@ export async function POST(request: Request) {
     if (action === "contact.create") {
       const input = z
         .object({
-          name: z.string().min(1).max(100),
+          name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
           shopifyLocationId: z
@@ -318,7 +318,7 @@ export async function POST(request: Request) {
     if (action === "contact.update") {
       const input = z
         .object({
-          name: z.string().min(1).max(100),
+          name: z.string().trim().min(1).max(100),
           kind: z.enum(contactKinds),
           address: addressSchema,
           shopifyLocationId: z

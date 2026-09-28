@@ -12,7 +12,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useActionForm } from "@/hooks/useActionForm"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { ActionForm } from "./actions"
-import { FormInput, FormNumber, FormSelect } from "./form-controls"
+import { FormInput, FormMoney, FormSelect } from "./form-controls"
 
 const day = z.union([z.iso.date(), z.literal("")])
 const schema = z
@@ -164,7 +164,7 @@ function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess:
     <ActionForm form={form} onSubmit={submit} label="Add cost" dialog>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput name="name" required label="Name" placeholder="Marketplace Connect" />
-        <FormNumber name="amount" required label={`Amount a month (${currency})`} scale={100} min={0} step="0.01" />
+        <FormMoney name="amount" required label="Amount a month" currency={currency} />
       </div>
       <FormSelect
         name="channel"

@@ -501,6 +501,7 @@ export function ImportReview({
                             aria-label={`Pieces on line ${line}`}
                             required
                             type="number"
+                            inputMode="numeric"
                             min="1"
                             step="1"
                             className="text-right tabular-nums"
@@ -518,6 +519,7 @@ export function ImportReview({
                             aria-label={`Pieces per set on line ${line}`}
                             required
                             type="number"
+                            inputMode="numeric"
                             min="1"
                             step="1"
                             className="text-right tabular-nums"

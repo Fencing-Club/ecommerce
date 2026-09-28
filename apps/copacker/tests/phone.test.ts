@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatPhone, phoneHref } from "../src/lib/phone"
+import { formatPhone, phoneHref, phoneSchema } from "../src/lib/phone"
 
 describe("formatPhone", () => {
   it("formats North American numbers", () => {
@@ -24,5 +24,36 @@ describe("formatPhone", () => {
 describe("phoneHref", () => {
   it("keeps only dialable characters", () => {
     expect(phoneHref("+1 (425) 260-2501")).toBe("tel:+14252602501")
+  })
+})
+
+describe("phoneSchema", () => {
+  const message = (value: string) => phoneSchema.safeParse(value).error?.issues[0]?.message
+
+  it("takes numbers as people write them, with an extension, or nothing", () => {
+    for (const value of [
+      "+1 (425) 260-2501",
+      "+86 188 6161 3263",
+      "0755-8654 3210",
+      "425.260.2501",
+      "+1 425 260 2501 ext. 12",
+      "425-260-2501 x12",
+      ""
+    ]) {
+      expect(phoneSchema.parse(value)).toBe(value)
+    }
+    expect(phoneSchema.parse("  +86 188 6161 3263 ")).toBe("+86 188 6161 3263")
+  })
+
+  it("saves full-width digits and brackets from a Chinese keyboard as plain ones", () => {
+    expect(phoneSchema.parse("（0755）8654-3210")).toBe("(0755)8654-3210")
+    expect(phoneSchema.parse("０７５５ ８６５４ ３２１０")).toBe("0755 8654 3210")
+  })
+
+  it("turns down words, email addresses and part of a number", () => {
+    for (const value of ["call me", "12345", "WeChat 13800000000", "Tel: 425-260-2501", "123456789@qq.com"]) {
+      expect(message(value)).toBe("Enter a phone number")
+    }
+    expect(phoneSchema.safeParse("1".repeat(31)).success).toBe(false)
   })
 })

@@ -1,5 +1,6 @@
 import { addressSchema } from "@repo/aisle"
 import { z } from "zod"
+import { phoneSchema } from "./phone"
 
 // What getting started asks, shared by the steps in the browser and the server that saves them.
 
@@ -24,12 +25,21 @@ export const positions = [
   "Other"
 ]
 
-// A website as typed: "example.com" is read as https://example.com.
+const websiteError = "Enter a website, such as example.com"
+
+// A website as typed, or nothing: "example.com" is read as https://example.com. Its host has to be a domain name, so a
+// word such as "fencing" isn't taken for a website, and neither is an email address typed here.
 export const websiteSchema = z
   .string()
   .trim()
+  .max(500)
   .transform((value) => (value && !/^[a-z][a-z\d+.-]*:\/\//i.test(value) ? `https://${value}` : value))
-  .pipe(z.union([z.url({ protocol: /^https?$/, error: "Enter a website, such as example.com" }), z.literal("")]))
+  .pipe(
+    z.union([
+      z.literal(""),
+      z.httpUrl({ error: websiteError }).refine((url) => !/^https?:\/\/[^/?#]*@/i.test(url), websiteError)
+    ])
+  )
 
 export const personSchema = z.object({
   firstName: z.string().trim().min(1, "Enter your first name").max(60),
@@ -40,10 +50,7 @@ export const personSchema = z.object({
 export const companySchema = z.object({
   name: z.string().trim().min(2, "Enter your company’s name").max(120),
   website: websiteSchema,
-  phone: z
-    .string()
-    .trim()
-    .pipe(z.union([z.literal(""), z.string().min(6, "Enter the full number").max(30)]))
+  phone: phoneSchema
 })
 
 // An address with nothing filled in yet, for the address step to start from.

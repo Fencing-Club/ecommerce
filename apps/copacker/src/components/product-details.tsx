@@ -329,7 +329,15 @@ function DetailsForm({
                 ]}
                 placeholder={loadingSuppliers ? "Loading…" : "—"}
               />
-              {only && <FormInput name="variations.0.supplierSku" label="Supplier SKU" maxLength={255} />}
+              {only && (
+                <FormInput
+                  name="variations.0.supplierSku"
+                  label="Supplier SKU"
+                  maxLength={255}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              )}
               <FormNumber name="minimumOrder" label="Minimum order quantity" min={1} step={1} />
               {only && <FormNumber name="variations.0.storeStockTarget" label="Warehouse minimum" min={0} step={1} />}
             </div>
@@ -338,7 +346,15 @@ function DetailsForm({
           <Section title="Amazon">
             <div className="grid gap-4 sm:grid-cols-2">
               <FormSelect name="amazonNetwork" required label="Amazon warehouse" options={networkOptions} />
-              {only && <FormInput name="variations.0.asin" label="ASIN" maxLength={255} />}
+              {only && (
+                <FormInput
+                  name="variations.0.asin"
+                  label="ASIN"
+                  maxLength={255}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              )}
               {only && (
                 <FormNumber
                   name="variations.0.amazonStockTarget"

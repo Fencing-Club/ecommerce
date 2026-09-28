@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, Download, Ellipsis, Pencil } from "lucide-react"
+import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
@@ -144,19 +144,32 @@ export function OrderMenu({
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          {draft && <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>Edit</DropdownMenuItem>}
+          {draft && (
+            <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>
+              <Pencil />
+              Edit
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem render={<a href={`/api/orders/${id}/po`} download aria-label="Download purchase order" />}>
+            <Download />
             Download purchase order
           </DropdownMenuItem>
           {labels && (
             <DropdownMenuItem render={<a href={`/api/orders/${id}/labels`} download aria-label="Download labels" />}>
+              <Download />
               Download labels
             </DropdownMenuItem>
           )}
           {(closable || draft) && <DropdownMenuSeparator />}
-          {closable && <DropdownMenuItem onClick={() => setClosing(true)}>Close purchase order</DropdownMenuItem>}
+          {closable && (
+            <DropdownMenuItem onClick={() => setClosing(true)}>
+              <Archive />
+              Close purchase order
+            </DropdownMenuItem>
+          )}
           {draft && (
             <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
+              <Trash2 />
               Delete draft
             </DropdownMenuItem>
           )}

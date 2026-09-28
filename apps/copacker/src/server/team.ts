@@ -6,7 +6,7 @@ import type { Session } from "./auth"
 import { hash, token } from "./security"
 
 const week = 7 * 86400000
-const emailSchema = z.object({ email: z.email("Enter a valid email address").max(254) })
+const emailSchema = z.object({ email: z.email("Enter an email address").max(254) })
 
 // The workspace's people, owners first, and the invitations still waiting for someone to join, each with the day its
 // link stops working, such as "Oct 4" in the workspace's time zone.

@@ -25,7 +25,9 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { useActionForm } from "@/hooks/useActionForm"
+import { contactDetailsSchema } from "@/lib/contact-details"
 import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
+import { websiteSchema } from "@/lib/onboarding"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
 import { ActionForm, FormError, SubmitButton } from "./actions"
@@ -89,33 +91,29 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
   })
   return (
     <ActionForm form={form} onSubmit={submit} label="Add supplier" dialog>
-      <FormInput name="name" required label="Supplier company" placeholder="Ok Fencing" autoComplete="organization" />
+      <FormInput name="name" required label="Supplier company" placeholder="Ok Fencing" autoComplete="off" />
       <FormInput
         name="email"
         label="Email"
         type="email"
         placeholder="supplier@example.com"
-        autoComplete="email"
+        autoComplete="off"
         description="Add one to invite them now."
       />
     </ActionForm>
   )
 }
 
-const supplierProfileSchema = z.object({
-  contactName: z.string().trim().max(120),
-  contactEmail: z.union([z.email({ error: "Enter a valid email" }).max(254), z.literal("")]),
-  phoneNumber: z.string().trim().max(50),
-  website: z.union([z.url({ protocol: /^https?$/, error: "Enter a full address, starting https://" }), z.literal("")])
-})
-
 // The supplier's contact details, which their buyers see. All optional.
-export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchema>) {
+export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema>) {
   const { form, submit } = useActionForm({
-    schema: supplierProfileSchema,
+    schema: contactDetailsSchema,
     action: "supplier.profile",
     defaultValues: profile,
-    keepSaved: true
+    keepSaved: true,
+    // The website shows as saved, with its https://.
+    onSuccess: () =>
+      form.resetField("website", { defaultValue: websiteSchema.safeParse(form.getValues("website")).data })
   })
   return (
     <SettingsForm form={form} onSubmit={submit}>
@@ -123,7 +121,14 @@ export function SupplierProfileForm(profile: z.input<typeof supplierProfileSchem
         <FormInput name="contactName" label="Contact name" autoComplete="name" />
         <FormInput name="contactEmail" label="Contact email" type="email" autoComplete="email" />
         <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
-        <FormInput name="website" label="Website" type="url" placeholder="https://supplier.example" />
+        <FormInput
+          name="website"
+          label="Website"
+          inputMode="url"
+          autoComplete="url"
+          spellCheck={false}
+          placeholder="example.com"
+        />
       </div>
     </SettingsForm>
   )
@@ -350,7 +355,7 @@ export function ContactForm({
   return (
     <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"} dialog>
       <div className={kinds.length > 1 ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
-        <FormInput name="name" required label="Address name" placeholder="Shenzhen warehouse" />
+        <FormInput name="name" required label="Address name" placeholder="Shenzhen warehouse" autoComplete="off" />
         {kinds.length > 1 && (
           <FormSelect
             name="kind"

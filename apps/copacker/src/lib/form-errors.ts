@@ -27,7 +27,7 @@ export const formErrorMap: z.core.$ZodErrorMap = (issue) => {
       return `Enter ${issue.maximum} or less`
     case "invalid_format":
       if (issue.format === "email") {
-        return "Enter a valid email address"
+        return "Enter an email address"
       }
       if (issue.format === "date") {
         return "Enter a date"
