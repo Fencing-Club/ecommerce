@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
 import { Bar } from "./bar"
+import { Connect } from "./connect"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
 import { Journey } from "./journey"
 import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
+import { Signup } from "./signup"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
@@ -136,8 +138,8 @@ function Hero() {
             className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
             style={{ animationDelay: "520ms" }}
           >
-            Copacker forecasts what to reorder from your Amazon, Shopify and eBay sales, then sends the purchase order
-            and ships it to Amazon.
+            Copacker forecasts what to reorder from your Amazon, Shopify and eBay sales, sends the purchase order, and
+            runs the logistics from your supplier to Amazon or your own warehouse.
           </p>
           <div
             className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}
@@ -219,12 +221,40 @@ function Faq() {
     ["What does Copacker cost?", "Nothing right now. There are no paid plans, and signing up doesn’t ask for a card."],
     ["Which stores does it work with?", "Amazon, Shopify and eBay. Copacker reads your sales and stock from each."],
     [
+      "Can I ship to my own warehouse or a 3PL?",
+      "Yes. A purchase order can go to any of your delivery addresses instead of Amazon. Link an address to a Shopify location, and what you’ve ordered shows as on order there."
+    ],
+    [
+      "Does Restock plan for my other locations?",
+      "Yes. It plans for each of your Shopify locations as well as Amazon, and a reorder for a location goes straight to it."
+    ],
+    [
+      "How do I track shipments outside Amazon?",
+      "Your supplier marks the shipment shipped, your forwarder adds the carrier and tracking number, and you mark it received, all on the purchase order."
+    ],
+    [
+      "Does it work with freight forwarders?",
+      "Yes. Your forwarder gets its own workspace, downloads the invoice and labels, and marks each shipment shipped with its carrier, tracking number and freight cost."
+    ],
+    [
+      "Do my suppliers need an account?",
+      "No. They can work in Copacker for free, or you can fill in their side of the order yourself."
+    ],
+    [
       "Does it ship to AWD?",
       "Yes. Copacker plans shipments to FBA and AWD, including AWD warehouses in China and Vietnam."
     ],
     [
+      "Which documents and labels does it make?",
+      "Purchase orders, packing lists, and FNSKU, carton, shipping and warning labels, alongside the commercial invoice from your supplier."
+    ],
+    [
       "What’s MCP?",
-      "The Model Context Protocol, an open standard for connecting AI agents to apps. Copacker’s MCP server lets your agents work in your workspace."
+      "The Model Context Protocol, an open standard for connecting AI agents to apps. Copacker’s MCP server works with ChatGPT, Claude, Cursor, VS Code and any other MCP client."
+    ],
+    [
+      "Is there a CLI?",
+      "Yes. The copacker CLI reads and acts on the same data as the app, for your scripts and coding agents."
     ]
   ]
   return (
@@ -252,24 +282,21 @@ function Faq() {
   )
 }
 
+// The close: product news by email on an orange stage, rather than the hero again.
 function Closing() {
   return (
     <section
       data-tone="dark"
-      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#f54a00] px-6 py-32 text-center text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-44"
+      aria-labelledby="signup-title"
+      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#f54a00] py-24 text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-32"
     >
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,#ffb27a,transparent_70%),radial-gradient(ellipse_70%_60%_at_100%_100%,#7a1f00,transparent_70%),radial-gradient(ellipse_60%_60%_at_0%_100%,#c2410c,transparent_70%)]"
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_80%_at_0%_0%,#ffb27a,transparent_70%),radial-gradient(ellipse_70%_60%_at_100%_100%,#7a1f00,transparent_70%),radial-gradient(ellipse_60%_60%_at_100%_0%,#c2410c,transparent_70%)]"
       />
-      <h2 className="text-[clamp(3rem,8vw,6rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance">
-        Restocking, handled.
-      </h2>
-      <div className="mt-12 flex flex-wrap justify-center gap-3">
-        <GetStarted className="bg-white text-[#1c1917] hover:bg-white/90" />
-        <Film />
+      <div className="mx-auto max-w-6xl px-6">
+        <Signup />
       </div>
-      <p className="mt-4 text-sm text-white/70">{free}</p>
     </section>
   )
 }
@@ -300,9 +327,7 @@ function Footer() {
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>
-          <p className="max-w-xs text-muted-foreground">
-            Forecasting, purchase orders and Amazon shipments, in one place.
-          </p>
+          <p className="max-w-xs text-muted-foreground">Forecasting, purchase orders and logistics, in one place.</p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title} className="flex flex-col gap-3 text-sm">
@@ -358,9 +383,12 @@ export function Landing() {
           <Section
             id="agents"
             title="Built for AI agents."
-            text="Copacker connects to your agents over MCP, so they can plan, order and ship right alongside you. Your partners’ agents post their updates too."
+            text="Copacker’s MCP server works with any agent, so yours can plan, order and ship right alongside you. Your partners’ agents post their updates too."
           >
             <Agents />
+            <div className="mt-20 sm:mt-24">
+              <Connect />
+            </div>
           </Section>
         </Island>
         <Faq />

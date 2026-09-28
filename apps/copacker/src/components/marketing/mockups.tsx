@@ -9,7 +9,6 @@ import {
   Factory,
   GlassWater,
   PanelLeft,
-  RefreshCw,
   Search,
   TrendingDown
 } from "lucide-react"
@@ -64,28 +63,30 @@ function AppFrame({ active, children }: { active: string; children: React.ReactN
             </span>
             <ChevronsUpDown className="size-3.5 text-muted-foreground" />
           </div>
-          {navigationGroups
-            .filter((group) => group.key === "store" || group.key === "purchasing")
-            .map((group) => (
-              <div key={group.key} className="flex flex-col gap-0.5">
-                <span className="px-2 pb-1 text-xs text-muted-foreground">{group.label}</span>
-                {nav
-                  .filter((item) => item.group === group.key)
-                  .map(({ label, icon: Icon }) => (
-                    <span
-                      key={label}
-                      className={cn(
-                        "flex h-8 items-center gap-2 rounded-md px-2",
-                        label === active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <Icon className="size-4" />
-                      {label}
-                    </span>
-                  ))}
+          {navigationGroups.map((group) => {
+            const items = nav.filter((item) => item.group === group.key)
+            if (!items.length) {
+              return null
+            }
+            return (
+              <div key={group.key} className={cn("flex flex-col gap-0.5", group.key === "workspace" && "mt-auto")}>
+                {group.label && <span className="px-2 pb-1 text-xs text-muted-foreground">{group.label}</span>}
+                {items.map(({ label, icon: Icon }) => (
+                  <span
+                    key={label}
+                    className={cn(
+                      "flex h-8 items-center gap-2 rounded-md px-2",
+                      label === active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </span>
+                ))}
               </div>
-            ))}
-          <div className="mt-auto flex items-center gap-2 p-2">
+            )
+          })}
+          <div className="flex items-center gap-2 p-2">
             <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
               AR
             </span>
@@ -168,10 +169,6 @@ export function RestockShot() {
           <span className="text-muted-foreground">Lead time</span> 60{" "}
           <span className="text-muted-foreground">days</span>
         </Chip>
-        <Button variant="outline" className="ml-auto">
-          <RefreshCw />
-          Recalculate
-        </Button>
       </div>
       <Card className="gap-4">
         <CardContent className="flex flex-col gap-4">

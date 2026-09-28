@@ -1,6 +1,7 @@
 import { Bot, Box, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Scaled } from "./scaled"
+import { Ticker } from "./ticker"
 
 // Agents working through Copacker over MCP: yours on the left, running a restock, and your partners' on the right,
 // posting their updates, with requests and answers pulsing along the links. The motion is SVG animation; with reduced
@@ -106,23 +107,20 @@ export function Agents() {
               <p className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-[#ff8a3d]/12 px-4 py-3 text-[1.1rem] ring-1 ring-[#ff8a3d]/30">
                 Reorder anything that runs out before it arrives, and send it to AWD.
               </p>
-              <div className="grid min-h-14 items-center">
-                {steps.map((step, i) => (
-                  <span
-                    key={step}
-                    className={cn(
-                      "col-start-1 row-start-1 flex items-center gap-3 text-[1.05rem] text-white/85 motion-safe:animate-turn",
-                      i > 0 && "motion-reduce:hidden"
-                    )}
-                    style={{ animationDelay: `${i * 3 - 12}s` }}
-                  >
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-background">
-                      <Check className="size-4" strokeWidth={3} />
+              <Ticker
+                className="min-h-16 items-center"
+                lines={steps.map((step) => ({
+                  key: step,
+                  content: (
+                    <span className="flex items-center gap-3 text-[1.05rem] text-white/85">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-background">
+                        <Check className="size-4" strokeWidth={3} />
+                      </span>
+                      {step}
                     </span>
-                    {step}
-                  </span>
-                ))}
-              </div>
+                  )
+                }))}
+              />
             </div>
             {partners.map(({ name, message, box }) => (
               <div key={name} className={cn(card, "flex flex-col gap-3")} style={box}>

@@ -6,7 +6,7 @@ import { appUrl } from "@/server/security"
 
 const title = "Copacker: Restocking, handled"
 const description =
-  "Forecast what to reorder, send purchase orders, and ship to Amazon FBA and AWD, with your supplier and forwarder on the same record."
+  "Forecast what to reorder, send the purchase order, and run the logistics to Amazon or your own warehouse, with your supplier and forwarder on the same order."
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),

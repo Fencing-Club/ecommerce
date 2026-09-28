@@ -12,7 +12,9 @@ orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
 | `tilt.tsx`                       | Leans the hero's product shot back and straightens it as it scrolls in.                             |
 | `planner.tsx`                    | The forecast to play with: lead time, stores and the holiday rush move the reorder date and size.   |
 | `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory to Amazon, as a 3D diorama that scroll plays (three.js).         |
-| `agents.tsx`                     | The animated diagram of agents working over MCP.                                                    |
+| `agents.tsx`, `ticker.tsx`       | The animated diagram of agents working over MCP, and the lines that take turns in its card.         |
+| `connect.tsx`                    | How agents connect (any MCP client, by URL or on your machine) and the CLI's terminal session.      |
+| `signup.tsx`                     | The close: the mailing list signup, which posts to `/api/mailing-list`.                             |
 | `mockups.tsx`, `scaled.tsx`      | The hero's product shot, and the wrapper that scales it to its column like a screenshot.            |
 | `film.tsx`                       | The ad, in a dialog.                                                                                |
 
@@ -35,6 +37,9 @@ orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
   where the session cookie isn't set.
 - There are no paid plans, so the page asks only for a sign-up, and says it's free.
+- The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), in the segment
+  `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed out, so it checks the address, turns
+  away bots that fill in a hidden field, and slows down more than five signups from one address in ten minutes.
 
 ## Assets
 
