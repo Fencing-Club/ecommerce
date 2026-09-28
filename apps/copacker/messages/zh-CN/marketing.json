@@ -243,7 +243,7 @@
       "deliver": {
         "step": "送达",
         "title": "送达 FBA，也送到你手上。",
-        "text": "货代把 Amazon 的箱子送到 FBA，其余的由 FedEx 送到你的仓库。"
+        "text": "货代把 Amazon 的箱子送到 FBA，其余的由快递公司送到你的仓库。"
       }
     },
     "documents": {

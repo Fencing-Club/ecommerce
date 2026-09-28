@@ -243,7 +243,7 @@
       "deliver": {
         "step": "Consegna",
         "title": "Consegnato a FBA, e a te.",
-        "text": "Il tuo spedizioniere porta i cartoni di Amazon a FBA, e FedEx consegna il resto al tuo magazzino."
+        "text": "Il tuo spedizioniere porta i cartoni di Amazon a FBA, e un corriere consegna il resto al tuo magazzino."
       }
     },
     "documents": {

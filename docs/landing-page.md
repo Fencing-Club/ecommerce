@@ -31,15 +31,15 @@ parts live in `apps/copacker/src/components/marketing/`:
   two while sales go on.
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
-  line (FNSKU and suffocation warning labels on the units, the box right-sized round them, then the carton and shipping
-  labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage (the bill of lading lands
-  once the container is aboard), customs (the seller's container goes in, the barrier lifts on release, and FedEx loads
-  its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own warehouse. The chapters,
-  cards and the order's documents in `journey.tsx` are timed to the same points, so change them together. three.js
-  loads only as the section comes near. The cards follow places in the world (`locate`) or hold a spot on screen, and
-  slide to stay clear of the screen's edges, the header and the words. The last shot fits the whole board to any
-  screen's shape; on a phone the trip ends at the warehouses instead. The sea's color, glints and foam are drawn per
-  point in a shader patched onto its material (`onBeforeCompile`).
+  line (FNSKU and suffocation warning labels on the units, the box right-sized round them, then the carton and
+  shipping labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage (the bill of
+  lading lands once the container is aboard), customs (the seller's container goes in, the barrier lifts on release,
+  and FedEx loads its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own warehouse
+  (the copy just says a carrier). The chapters, cards and the order's documents in `journey.tsx` are timed to the same
+  points, so change them together. three.js loads only as the section comes near. The cards follow places in the world
+  (`locate`) or hold a spot on screen, and slide to stay clear of the screen's edges, the header and the words. The
+  last shot fits the whole board to any screen's shape; on a phone the trip ends at the warehouses instead. The sea's
+  color, glints and foam are drawn per point in a shader patched onto its material (`onBeforeCompile`).
 - Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
   order, and the journey steps from chapter to chapter instead of moving.
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
