@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, type PDFFont, rgb } from "pdf-lib"
+import { drawableText } from "./documents"
 
 // Code 128 symbols as bar and space widths in modules, bar first. Values 0-102 are data, 103-105 start codes A-C,
 // 106 stop (with its final bar).
@@ -134,11 +135,16 @@ export function code128Modules(text: string) {
 const sheet = { width: 612, height: 792, columns: 3, rows: 10, left: 13.5, top: 36, pitch: 198, label: 189 }
 const labelHeight = 72
 
+// A label's code as its barcode encodes it, and as it's printed under the barcode: Code 128 set B has only printable
+// ASCII.
 const printable = (text: string) =>
   text
     .replace(/[^\x20-\x7e]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
+
+// Text for people to read on one line, as the font draws it, such as "Épée" as is and "Łódź" as "Lódz".
+const labelText = (text: string, font: PDFFont) => drawableText(text, font).replace(/\s+/g, " ").trim()
 
 // Fits a title in the width, keeping its start and end when it's too long, as Amazon's labels do.
 function fitTitle(title: string, font: PDFFont, size: number, width: number) {
@@ -205,9 +211,9 @@ export async function standardProductLabels({
   const width = sheet.label - inset * 2
   const moduleWidth = Math.min(1, width / moduleCount)
   const barWidth = moduleCount * moduleWidth
-  const name = fitTitle(printable(title), regular, 8, width)
+  const name = fitTitle(labelText(title, regular), regular, 8, width)
   const country = madeIn(countryOfOrigin)
-  const origin = country ? printable(`Made in ${country}`) : null
+  const origin = country ? labelText(`Made in ${country}`, regular) : null
   const black = rgb(0, 0, 0)
   const text = (value: string, size: number, x: number, y: number) =>
     page.drawText(value, { x, y, size, font: regular, color: black })

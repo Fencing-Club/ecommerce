@@ -227,7 +227,7 @@ export async function generateShipmentDocuments(shipmentId: string) {
   )
   await storeDocument(
     { ...input, kind: "checklist", name: "Packing Checklist.pdf" },
-    await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer })
+    await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer, shipTo })
   )
 }
 

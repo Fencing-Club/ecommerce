@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
+import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
 import { money, orderTotal, type OrderInput, type Packing } from "./index"
 import type { CartonLabel } from "./labels"
 import {
@@ -30,6 +30,56 @@ const lineName = (item: OrderInput["items"][number]) =>
 
 type Column = { label: string; x: number; align?: "left" | "right"; width?: number }
 
+// Letters whose stroke or other mark doesn't come off by decomposing them, and the hyphens (U+2010 to U+2012), bar
+// (U+2015) and minus sign (U+2212) the standard fonts lack, as the characters nearest them.
+const plainForms: Partial<Record<string, string>> = {
+  ł: "l",
+  Ł: "L",
+  đ: "d",
+  Đ: "D",
+  ħ: "h",
+  Ħ: "H",
+  ı: "i",
+  ŧ: "t",
+  Ŧ: "T",
+  œ: "oe",
+  Œ: "OE",
+  "\u2010": "-",
+  "\u2011": "-",
+  "\u2012": "-",
+  "\u2015": "\u2014",
+  "\u2212": "-"
+}
+
+// Each font's characters, found once per font. A standard font has those of its encoding, such as WinAnsi for Helvetica.
+const fontCharacters = new WeakMap<PDFFont, ReadonlySet<string>>()
+function characterSet(font: PDFFont) {
+  const known = fontCharacters.get(font)
+  if (known) {
+    return known
+  }
+  const characters = new Set(font.getCharacterSet().map((code) => String.fromCodePoint(code)))
+  fontCharacters.set(font, characters)
+  return characters
+}
+
+// Text as the font can draw it. A character the font lacks becomes the nearest one it has: a Latin letter without its
+// marks, such as "l" for "ł" and "o" for "ő", or a compatibility form's plain one, such as "1" for a full-width "１".
+// Anything else, such as Chinese, becomes a space.
+export function drawableText(value: string, font: PDFFont) {
+  const characters = characterSet(font)
+  const drawable = (text: string) => Array.from(text).every((char) => characters.has(char))
+  // Composed first, so a letter typed as a base letter and a combining mark, such as "ó", stays one letter.
+  return Array.from(value.normalize("NFC"), (char) => {
+    if (characters.has(char)) {
+      return char
+    }
+    // A combining mark left on its own comes off entirely.
+    const plain = plainForms[char] ?? char.normalize("NFKD").replace(/\p{M}/gu, "")
+    return drawable(plain) ? plain : " "
+  }).join("")
+}
+
 // The layout Copacker's documents share, after Fencing Club's printed invoice: a masthead with the buyer and the
 // document type over a heavy rule, a band of facts, then sections labelled in a left rail, and a footer on every page
 // with the buyer's name, contact details, reference and page count.
@@ -49,15 +99,16 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
   const top = height - 40
   const bottom = 64
   const content = left + 96
-  const safe = (value: string) => value.replace(/[^\x20-\x7e\xa0-\xff]/g, " ")
-  const trackedWidth = (value: string, size: number, font: Font, tracking: number) =>
-    font.widthOfTextAtSize(safe(value), size) + tracking * Math.max(0, safe(value).length - 1)
+  const trackedWidth = (value: string, size: number, font: Font, tracking: number) => {
+    const text = drawableText(value, font)
+    return font.widthOfTextAtSize(text, size) + tracking * Math.max(0, text.length - 1)
+  }
   // Splits text into lines no wider than the given width.
   const wrap = (value: string, font: Font, size: number, max: number) => {
     const rows: string[] = []
     for (const paragraph of value.split(/\r?\n/)) {
       let row = ""
-      for (const word of safe(paragraph).split(/\s+/).filter(Boolean)) {
+      for (const word of drawableText(paragraph, font).split(/\s+/).filter(Boolean)) {
         const next = row ? `${row} ${word}` : word
         if (font.widthOfTextAtSize(next, size) > max && row) {
           rows.push(row)
@@ -76,7 +127,7 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
   type Style = { size?: number; font?: Font; color?: typeof ink; tracking?: number; align?: "left" | "right" }
   const draw = (value: string, x: number, style: Style = {}) => {
     const { size = 10, font = regular, color = ink, tracking = 0, align = "left" } = style
-    const text = safe(value)
+    const text = drawableText(value, font)
     let cursor = align === "right" ? x - trackedWidth(text, size, font, tracking) : x
     if (!tracking) {
       page.drawText(text, { x: cursor, y: at.y, size, font, color })
@@ -132,29 +183,36 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
     wrap,
     ensure,
     newPage,
-    // A band of facts, such as the PO number and dates, divided by hairlines. The last can be shown large.
+    // A band of facts, such as the PO number and dates, divided by hairlines. The last can be shown large. A value too
+    // long for its column wraps, and the band grows to fit it.
     facts(facts: Array<[string, string]>, { emphasizeLast = false } = {}) {
       const band = (right - left) / facts.length
       const bandTop = at.y
-      facts.forEach(([name, value], index) => {
-        const x = left + index * band + (index ? 16 : 0)
+      const cells = facts.map(([name, value], index) => {
         const big = emphasizeLast && index === facts.length - 1
+        const size = big ? 16 : 11.5
+        return { name, big, size, rows: wrap(value, bold, size, band - 20) }
+      })
+      const bandHeight = 50 + Math.max(...cells.map(({ size, rows }) => (rows.length - 1) * (size + 2)))
+      cells.forEach(({ name, big, size, rows }, index) => {
+        const x = left + index * band + (index ? 16 : 0)
         at.y = bandTop - 20
         label(name, x)
         at.y -= big ? 19 : 16
-        for (const row of wrap(value, bold, big ? 16 : 11.5, band - 20).slice(0, 1)) {
-          draw(row, x, { size: big ? 16 : 11.5, font: bold })
+        for (const row of rows) {
+          draw(row, x, { size, font: bold })
+          at.y -= size + 2
         }
         if (index) {
           page.drawLine({
             start: { x: left + index * band, y: bandTop },
-            end: { x: left + index * band, y: bandTop - 50 },
+            end: { x: left + index * band, y: bandTop - bandHeight },
             thickness: 0.75,
             color: rule
           })
         }
       })
-      at.y = bandTop - 50
+      at.y = bandTop - bandHeight
       line(left, right, at.y)
     },
     // A section's label in the left rail, beside the first line of its content.
@@ -224,7 +282,7 @@ async function documentKit(title: string, reference: string, buyer: DocumentBuye
         let x = left + trackedWidth(buyer.name.toUpperCase(), 8, bold, 1.5) + 18
         for (const value of contact) {
           draw(value, x, { size: 8, color: muted })
-          x += regular.widthOfTextAtSize(safe(value), 8) + 18
+          x += regular.widthOfTextAtSize(drawableText(value, regular), 8) + 18
         }
         draw(`${reference}   PAGE ${index + 1} OF ${pages.length}`, right, {
           size: 8,
@@ -493,8 +551,14 @@ export async function packingListPdf(input: {
 }
 
 // The supplier's checklist for packing a shipment: carton rules, how to prepare each unit, each product's own steps,
-// and the final checks, each with a box to tick.
-export async function checklistPdf(input: { order: OrderInput; packing: Packing; buyer: DocumentBuyer }) {
+// and the final checks, each with a box to tick. Its destination is the Amazon network the cartons are packed for, or
+// else the name of where they ship.
+export async function checklistPdf(input: {
+  order: OrderInput
+  packing: Packing
+  buyer: DocumentBuyer
+  shipTo?: PoParty
+}) {
   const { order, packing } = input
   const amazon = order.destination === "amazon"
   const kit = await documentKit("Packing checklist", order.reference, input.buyer)
@@ -503,7 +567,7 @@ export async function checklistPdf(input: { order: OrderInput; packing: Packing;
   const items = order.items.filter((item) => included.has(item.id))
   kit.facts([
     ["Purchase order", order.reference],
-    ["Destination", destinationName({ destination: order.destination, items })],
+    ["Destination", (!amazon && input.shipTo?.name) || destinationName({ destination: order.destination, items })],
     ["Ready by", longDate(packing.readyDate)],
     ["Cartons", String(packing.cartons.length)]
   ])

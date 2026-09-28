@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib"
 import { describe, expect, it } from "vitest"
+import { readLabelPdfPages } from "../src/label-pdf-reader"
 import {
   code128B,
   code128Modules,
@@ -10,6 +11,10 @@ import {
   standardProductLabels,
   suffocationWarningLabels
 } from "../src/product-labels"
+
+// The text a PDF shows, each run drawn on its own line.
+const pdfText = async (bytes: Uint8Array) =>
+  (await readLabelPdfPages(bytes)).pages.flatMap((page) => page.items).join("\n")
 
 describe("Code 128", () => {
   it("has a well-formed symbol for every value", () => {
@@ -41,6 +46,16 @@ describe("standard product labels", () => {
     expect(pdf.getPageCount()).toBe(1)
     expect(pdf.getPage(0).getSize()).toEqual({ width: 612, height: 792 })
     expect(pdf.getTitle()).toBe("X001ABC123 product labels")
+  })
+
+  it("prints the title's accents, and the code as its barcode has it", async () => {
+    const text = await pdfText(
+      await standardProductLabels({ code: "X001ABC123", title: "Épée blade – Łódź 花剑", countryOfOrigin: "CW" })
+    )
+    expect(text).toContain("Épée blade – Lódz")
+    expect(text).toContain("Made in Curaçao")
+    expect(text).toContain("X001ABC123")
+    expect(text).not.toMatch(/\p{Script=Han}/u)
   })
 
   it("titles a label with the Shopify product and variant", () => {

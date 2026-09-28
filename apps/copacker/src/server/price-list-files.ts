@@ -1,4 +1,5 @@
 import { money } from "@repo/aisle"
+import { drawableText } from "@repo/aisle/documents"
 import ExcelJS from "exceljs"
 import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib"
 import type { PriceList } from "./catalog-export"
@@ -80,10 +81,6 @@ export async function priceListPdf(list: PriceList) {
   pdf.setAuthor(list.supplier)
   const regular = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const supported = new Set(regular.getCharacterSet())
-  // Helvetica covers Western European text; anything else prints as a question mark rather than failing.
-  const safe = (value: string) =>
-    [...value.replace(/[‐-―]/g, "-")].map((char) => (supported.has(char.codePointAt(0)!) ? char : "?")).join("")
   const ink = rgb(0.09, 0.09, 0.11)
   const muted = rgb(0.44, 0.44, 0.48)
   const rule = rgb(0.85, 0.85, 0.87)
@@ -108,14 +105,14 @@ export async function priceListPdf(list: PriceList) {
     color = ink,
     align: "left" | "right" = "left"
   ) => {
-    const clean = safe(value)
+    const clean = drawableText(value, font)
     const at = align === "right" ? x - font.widthOfTextAtSize(clean, size) : x
     page.drawText(clean, { x: at, y, size, font, color })
   }
   const wrap = (value: string, font: PDFFont, size: number, max: number) => {
     const lines: string[] = []
     let line = ""
-    for (const word of safe(value).split(/\s+/).filter(Boolean)) {
+    for (const word of drawableText(value, font).split(/\s+/).filter(Boolean)) {
       const next = line ? `${line} ${word}` : word
       if (font.widthOfTextAtSize(next, size) > max && line) {
         lines.push(line)
@@ -199,7 +196,10 @@ export async function priceListPdf(list: PriceList) {
 
   const pages = pdf.getPages()
   for (const [index, current] of pages.entries()) {
-    const footer = safe(`${list.supplier}, ${list.title} price list, page ${index + 1} of ${pages.length}`)
+    const footer = drawableText(
+      `${list.supplier}, ${list.title} price list, page ${index + 1} of ${pages.length}`,
+      regular
+    )
     current.drawText(footer, {
       x: (width - regular.widthOfTextAtSize(footer, 8)) / 2,
       y: 30,
