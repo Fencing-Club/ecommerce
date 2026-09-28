@@ -1,10 +1,10 @@
 // The mailing list the marketing page signs people up to: contacts in Resend, added to the segment
 // MAILING_LIST_SEGMENT_ID names when it's set, so broadcasts can go to just them. Adding contacts takes a full access
-// key, MAILING_LIST_API_KEY, since the key the app sends email with should only be able to send; without one, it tries
-// that key. Resend treats an address that's already a contact as a validation error, and anyone can sign up, so the
-// page says the same thing either way.
+// key, EMAIL_MAILING_LIST_API_KEY, since the key the app sends email with should only be able to send; without one, it
+// tries that key. Resend treats an address that's already a contact as a validation error, and anyone can sign up, so
+// the page says the same thing either way.
 export async function joinMailingList(email: string) {
-  const key = process.env.MAILING_LIST_API_KEY || process.env.EMAIL_API_KEY
+  const key = process.env.EMAIL_MAILING_LIST_API_KEY || process.env.EMAIL_API_KEY
   if (!key) {
     throw new Error("Mailing list is not configured")
   }
