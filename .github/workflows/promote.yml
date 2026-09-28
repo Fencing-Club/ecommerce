@@ -44,3 +44,20 @@ jobs:
             exit 1
           fi
       - run: bash .github/scripts/deploy.sh "${{ steps.staging.outputs.sha }}" "${{ vars.PRODUCTION_URL }}"
+      # Production holds real data, so only the read-only, signed-out specs run against it.
+      - run: npm install --global pnpm@11.9.0
+      - run: pnpm install --frozen-lockfile
+        env:
+          PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+      - run: pnpm --filter copacker exec playwright install --with-deps chromium
+      - run: pnpm --filter copacker test:e2e --grep @smoke
+        env:
+          E2E_BASE_URL: ${{ vars.PRODUCTION_URL }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-production
+          path: |
+            apps/copacker/e2e/.report
+            apps/copacker/e2e/.results
+          retention-days: 14

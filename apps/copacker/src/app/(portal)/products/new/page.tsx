@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { blankProduct, ProductEditor } from "@/components/supplier/product-editor"
+import { ProductEditor } from "@/components/supplier/product-editor"
 import { requirePage, session, titleFor } from "@/server/auth"
 
 export const generateMetadata = titleFor("products.page.addProduct", "products", "edit")
@@ -10,5 +10,5 @@ export default async function NewProductPage() {
     redirect("/products")
   }
   requirePage(s, "products", "edit")
-  return <ProductEditor initial={blankProduct()} />
+  return <ProductEditor />
 }

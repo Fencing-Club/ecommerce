@@ -2,12 +2,12 @@ import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { blankProduct, ProductEditor } from "@/components/supplier/product-editor"
+import { ProductEditor } from "@/components/supplier/product-editor"
 import { pageStory } from "@/stories/server"
 
 // A supplier's Add product page (page.tsx), which starts from a blank product. A buyer's is redirected to Products.
 async function NewProductPage() {
-  return <ProductEditor initial={blankProduct()} />
+  return <ProductEditor />
 }
 
 // The products each story saved.

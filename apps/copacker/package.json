@@ -19,6 +19,7 @@
     "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "predeploy": "pnpm db:migrate",
@@ -26,6 +27,7 @@
     "db:down": "docker compose down",
     "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
+    "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts"
   },
   "dependencies": {
@@ -66,7 +68,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
     "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@storybook/addon-a11y": "10.6.0",

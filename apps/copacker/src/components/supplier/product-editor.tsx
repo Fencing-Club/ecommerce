@@ -85,7 +85,7 @@ function newVariant(like?: EditorVariant): EditorVariant {
   }
 }
 
-export function blankProduct(): EditorProduct {
+function blankProduct(): EditorProduct {
   return {
     title: "",
     status: "active",
@@ -455,15 +455,16 @@ export function ProductEditor({
   catalogs = [],
   readOnly = false
 }: {
-  initial: EditorProduct
+  // The product to edit; a new product starts blank.
+  initial?: EditorProduct
   catalogs?: Array<{ id: string; title: string; status: "active" | "draft" | "archived" }>
   // For someone who can only view products: the form shows the product with every field and button turned off.
   readOnly?: boolean
 }) {
   const router = useRouter()
   const prices = useCan("prices")
-  const [saved, setSaved] = useState(initial)
-  const [product, setProduct] = useState(initial)
+  const [saved, setSaved] = useState(() => initial ?? blankProduct())
+  const [product, setProduct] = useState(saved)
   const [editing, setEditing] = useState<string | null>(null)
   const [newOption, setNewOption] = useState("")
   const [pending, setPending] = useState(false)

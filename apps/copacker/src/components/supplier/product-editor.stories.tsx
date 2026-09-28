@@ -4,7 +4,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { productCatalogs, toteProduct } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
-import { blankProduct, ProductEditor } from "./product-editor"
+import { ProductEditor } from "./product-editor"
 
 // What the form sent: each product saved, and each photo's file name.
 const saved = fn()
@@ -271,7 +271,8 @@ export const Options = meta.story({
 })
 
 export const New = meta.story({
-  args: { initial: blankProduct(), catalogs: [] },
+  // Without a product, the editor starts a blank one.
+  args: { initial: undefined, catalogs: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Add product" })).toBeVisible()
     await expect(canvas.queryByText("Catalogs")).toBeNull()
@@ -298,7 +299,7 @@ export const New = meta.story({
 })
 
 export const NewDiscard = meta.story({
-  args: { initial: blankProduct() },
+  args: { initial: undefined },
   play: async () => {
     await userEvent.click(saveBar().getByRole("button", { name: "Discard" }))
     await expect(getRouter().push).toHaveBeenCalledWith("/products")

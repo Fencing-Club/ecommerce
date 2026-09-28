@@ -7,7 +7,12 @@ import { useEffect } from "react"
 // Tabs of this browser tell each other when the workspace changes.
 const channel = "copacker-workspace"
 
+// Set once this tab switches workspaces: it's on its way to the new workspace's home, so its own announcement, which it
+// hears too, mustn't reload the page it's leaving.
+let switching = false
+
 export function announceWorkspace(id: string) {
+  switching = true
   const broadcast = new BroadcastChannel(channel)
   broadcast.postMessage(id)
   broadcast.close()
@@ -35,7 +40,7 @@ export function WorkspaceWatch({ id }: { id: string }) {
   useEffect(() => {
     const broadcast = new BroadcastChannel(channel)
     broadcast.onmessage = (event: MessageEvent<string>) => {
-      if (event.data !== id) {
+      if (!switching && event.data !== id) {
         window.location.reload()
       }
     }

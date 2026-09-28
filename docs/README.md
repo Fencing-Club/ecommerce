@@ -11,6 +11,7 @@
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Setup, releases and infrastructure](operations.md)
+- [End-to-end tests: the Playwright suite](e2e.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)

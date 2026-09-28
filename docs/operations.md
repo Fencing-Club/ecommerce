@@ -63,17 +63,21 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-Every push to `codex/copacker` runs CI (`pnpm verify`, Copacker's build, and every migration on an empty Postgres 18).
-When it passes, the `deploy-staging` job deploys that commit to Railway's staging environment. To release to production,
-run the **Promote to production** workflow in GitHub Actions. It releases the commit staging serves, after taking a
-backup of the production database.
+Every push to `codex/copacker` runs CI (`pnpm verify`, Copacker's build, every migration on an empty Postgres 18, and
+the [end-to-end suite](e2e.md)). When they pass, the `deploy-staging` job deploys that commit to Railway's staging
+environment and runs the end-to-end suite against it. To release to production, run the **Promote to production**
+workflow in GitHub Actions. It releases the commit staging serves, after taking a backup of the production database,
+and then runs the signed-out smoke specs against production.
 
 Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
 pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
 `/api/health` to report the commit. Deploys to one environment never overlap, and a newer push doesn't cancel one.
 
 - Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
-  (Project settings, Tokens).
+  (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
+  signs in with.
+- Staging's web service pre-deploy command is `pnpm --filter copacker predeploy && pnpm --filter copacker db:seed:e2e`
+  (set in Railway), so every staging deploy starts the end-to-end workspaces over. Production's only migrates.
 - Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`) and
   `PRODUCTION_DATABASE_VOLUME_INSTANCE`, the production Postgres volume that the promote backs up.
 - Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
