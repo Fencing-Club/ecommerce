@@ -5,6 +5,7 @@ import { poImports } from "@/db/schema"
 import { session, requireBuyer, requirePage } from "@/server/auth"
 import { catalogMatches } from "@/server/catalog-matches"
 import { shopifyFor } from "@/server/connections"
+import { errorResponse } from "@/server/errors"
 import { withVariantFields } from "@/server/product-fields"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,14 +18,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     .object({ id: z.uuid(), query: z.string().trim().min(1).max(255), cursor: z.string().max(2000).nullable() })
     .safeParse({ id, query: search.get("q") ?? "", cursor: search.get("cursor") })
   if (!input.success) {
-    return Response.json({ error: "Enter a product name, buyer SKU or supplier SKU" }, { status: 400 })
+    return errorResponse("enterCatalogSearch", 400)
   }
   const [record] = await db()
     .select()
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   if (!record) {
-    return Response.json({ error: "Import not found" }, { status: 404 })
+    return errorResponse("importNotFound", 404)
   }
   try {
     const shop = await shopifyFor(s.org.id, record.shopifyDomain)
@@ -44,6 +45,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       { headers: { "Cache-Control": "no-store" } }
     )
   } catch {
-    return Response.json({ error: "Catalog search is unavailable. Try again." }, { status: 503 })
+    return errorResponse("catalogSearchUnavailable", 503)
   }
 }

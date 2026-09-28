@@ -72,8 +72,9 @@ export function Details({ rows }: { rows: ReadonlyArray<{ label: string; value: 
 
 export type LineItem = { quantity: number; name: string; detail?: string; amount: string }
 
-// A purchase order's first lines, each with its quantity and amount, and how many more there are.
-export function LineItems({ items, more }: { items: ReadonlyArray<LineItem>; more: number }) {
+// A purchase order's first lines, each with its quantity and amount, and the line that says how many more there are,
+// such as "And 2 more products in the purchase order".
+export function LineItems({ items, lang, more }: { items: ReadonlyArray<LineItem>; lang: string; more?: string }) {
   return (
     <Section style={{ margin: "0 0 24px" }}>
       <Table>
@@ -92,7 +93,7 @@ export function LineItems({ items, more }: { items: ReadonlyArray<LineItem>; mor
                 width: 44
               }}
             >
-              {item.quantity}&nbsp;×
+              {item.quantity.toLocaleString(lang)}&nbsp;×
             </td>
             <td
               className="cp-rule"
@@ -128,12 +129,12 @@ export function LineItems({ items, more }: { items: ReadonlyArray<LineItem>; mor
           </tr>
         ))}
       </Table>
-      {more > 0 ? (
+      {more ? (
         <Text
           className="cp-muted cp-rule"
           style={{ ...cell, borderTop: rule, color: color.muted, fontSize: 13, margin: 0, padding: "12px 0 0" }}
         >
-          {`And ${more} more ${more === 1 ? "product" : "products"} in the purchase order`}
+          {more}
         </Text>
       ) : null}
     </Section>
@@ -188,15 +189,16 @@ export function Steps({ steps }: { steps: ReadonlyArray<ReactNode> }) {
 }
 
 // The button's link written out, for mail apps that break buttons and for readers who copy it. The plain text already
-// writes the button's link, so it leaves this out.
-export function LinkFallback({ href }: { href: string }) {
+// writes the button's link, so it leaves this out. The label introduces it, such as "Or paste this link into your
+// browser:".
+export function LinkFallback({ href, label }: { href: string; label: string }) {
   return (
     <Text
       data-skip-in-text
       className="cp-muted"
       style={{ color: color.muted, fontFamily: font, fontSize: 13, lineHeight: "20px", margin: "18px 0 0" }}
     >
-      Or paste this link into your browser:
+      {label}
       <br />
       <Link href={href} style={{ color: color.brand, textDecoration: "underline", wordBreak: "break-all" }}>
         {href}
@@ -205,9 +207,10 @@ export function LinkFallback({ href }: { href: string }) {
   )
 }
 
-// A date such as "Dec 1, 2026". It has no time of day, so it's read in UTC to stay the same day everywhere.
-export const day = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+// A date such as "Dec 1, 2026" in the reader's language. It has no time of day, so it's read in UTC to stay the same day
+// everywhere.
+export const day = (date: string, lang: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString(lang, {
     month: "short",
     day: "numeric",
     year: "numeric",

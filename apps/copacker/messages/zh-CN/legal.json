@@ -1,0 +1,18 @@
+{
+  "contents": "目录",
+  "updated": "最后更新：<time>{date}</time>",
+  "privacy": {
+    "title": "隐私政策",
+    "metadata": {
+      "title": "隐私政策 | Copacker",
+      "description": "Copacker 收集哪些信息、如何使用和共享这些信息，以及你有哪些选择，包括来自 Amazon 和你连接的其他店铺的数据。"
+    }
+  },
+  "terms": {
+    "title": "服务条款",
+    "metadata": {
+      "title": "服务条款 | Copacker",
+      "description": "使用 Copacker 的条款：账户和工作区、你的责任、你的数据、费用，以及我们的责任限制。"
+    }
+  }
+}

@@ -2,6 +2,7 @@ import type { AmazonNetwork, OrderInput } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { Shopify } from "@repo/aisle/shopify"
 import type { LocationClassification } from "./inventory-locations"
+import { serverTextInEnglish } from "./text"
 
 type OrderItem = OrderInput["items"][number]
 type StockRow = Awaited<ReturnType<Shopify["stock"]>>["rows"][number]
@@ -271,7 +272,8 @@ export function groupInventory(
     classifications = new Map(),
     includeExcluded = false,
     everyProduct = false,
-    onOrder = new Map()
+    onOrder = new Map(),
+    untitled = serverTextInEnglish("untitledProduct")
   }: {
     locationId?: string | null
     query?: string | null
@@ -281,6 +283,8 @@ export function groupInventory(
     // items, which partners stock and ship, are still left out.
     everyProduct?: boolean
     onOrder?: ReadonlyMap<string, PendingOrder[]>
+    // The title of a product without one, in the page's language.
+    untitled?: string
   } = {}
 ): InventoryProduct[] {
   const search = query?.trim().toLocaleLowerCase() ?? ""
@@ -297,7 +301,7 @@ export function groupInventory(
     if ((locationId && levels.length === 0) || (uncounted && !everyProduct) || (everyProduct && isCollective(row))) {
       continue
     }
-    const title = row.productTitle ?? row.buyerSku ?? "Untitled product"
+    const title = row.productTitle ?? row.buyerSku ?? untitled
     const variantTitle = row.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null
     if (search && ![title, variantTitle, row.buyerSku].some((text) => text?.toLocaleLowerCase().includes(search))) {
       continue

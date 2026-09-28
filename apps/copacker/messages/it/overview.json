@@ -1,0 +1,267 @@
+{
+  "title": "Panoramica",
+  "loading": "Caricamento panoramica",
+  "notAvailable": "Non disponibile",
+  "new": "Nuovo",
+  "plusCurrencies": "Più {amounts}",
+  "noStores": {
+    "title": "Nessun negozio collegato",
+    "connectDescription": "Collega Shopify o Amazon per vedere la panoramica",
+    "askAdmin": "Chiedi a un amministratore di collegarli",
+    "connect": "Collega negozi"
+  },
+  "period": {
+    "choose": "Scegli un periodo",
+    "presets": {
+      "today": "Oggi",
+      "yesterday": "Ieri",
+      "last7": "Ultimi 7 giorni",
+      "last30": "Ultimi 30 giorni",
+      "last90": "Ultimi 90 giorni",
+      "last365": "Ultimi 365 giorni",
+      "lastWeek": "Settimana scorsa",
+      "lastMonth": "Mese scorso",
+      "lastQuarter": "Trimestre scorso",
+      "last12Months": "Ultimi 12 mesi",
+      "lastYear": "Anno scorso",
+      "weekToDate": "Settimana in corso",
+      "monthToDate": "Mese in corso",
+      "quarterToDate": "Trimestre in corso",
+      "yearToDate": "Anno in corso"
+    },
+    "comparisons": {
+      "previousPeriod": "Periodo precedente",
+      "previousYear": "Anno precedente",
+      "none": "Nessun confronto"
+    },
+    "last": "Ultimi",
+    "toDate": "Periodo in corso",
+    "custom": "Intervallo personalizzato",
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine",
+    "previousMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "cancel": "Annulla",
+    "apply": "Applica"
+  },
+  "channel": {
+    "label": "Canale",
+    "all": "Tutti i canali",
+    "shopifyLocation": "Shopify: {location}"
+  },
+  "kpis": {
+    "label": "Vendite, {period}",
+    "about": "Informazioni su {label}",
+    "versus": "{comparison, select, previousYear {rispetto all’anno precedente} other {rispetto al periodo precedente}}",
+    "noPrices": "Ancora nessun prezzo",
+    "noOrders": "Nessun ordine sincronizzato",
+    "noUnitCosts": "Nessun costo unitario",
+    "uncostedSales": "Esclude {amount} di vendite senza costo unitario.",
+    "estimatedFees": "Alcune commissioni sono stimate finché la piattaforma non le registra.",
+    "margin": "<figure>{percent}</figure> di margine",
+    "sales": "Vendite",
+    "salesInfo": "Al netto degli sconti, prima di tasse e spedizione.",
+    "orders": "Ordini",
+    "averageOrder": "Valore medio dell’ordine",
+    "units": "Unità vendute",
+    "grossProfit": "Utile lordo",
+    "stockoutLosses": "Perdite per esaurimento",
+    "stockoutInfo": "Vendite che si prevede di perdere mentre gli articoli sono esauriti, prima che arrivino i riordini effettuati oggi.",
+    "lostThisPeriod": "{amount} persi in questo periodo"
+  },
+  "sections": {
+    "sales": "Vendite",
+    "purchasing": "Acquisti",
+    "productsAndCustomers": "Prodotti e clienti",
+    "products": "Prodotti",
+    "stock": "Giacenza"
+  },
+  "salesByChannel": {
+    "title": "Vendite per canale",
+    "aboutLabel": "Informazioni sulle vendite",
+    "about": "Al netto degli sconti, prima di tasse e spedizione.",
+    "aboutLocation": "Ordini Shopify spediti da {location}. Al netto degli sconti, prima di tasse e spedizione.",
+    "otherMarketplaces": "{count, plural, one {# ordine Amazon al di fuori del Nord America non è conteggiato.} other {# ordini Amazon al di fuori del Nord America non sono conteggiati.}}",
+    "orders": "Ordini",
+    "noOrders": "Nessun ordine sincronizzato"
+  },
+  "salesChart": {
+    "measure": "Misura",
+    "metrics": {
+      "sales": "Vendite",
+      "orders": "Ordini",
+      "units": "Unità"
+    },
+    "orders": "{count, plural, one {# ordine} other {# ordini}}",
+    "units": "{count, plural, one {# unità} other {# unità}}",
+    "weekOf": "Settimana del {date}",
+    "previousSeries": "{source}, {comparison, select, previousYear {anno precedente} other {periodo precedente}}",
+    "caption": "{metric, select, orders {Ordini} units {Unità vendute} other {Vendite}} per {step, select, week {settimana} month {mese} other {giorno}}",
+    "stepColumn": "{step, select, week {Settimana del} month {Mese} other {Giorno}}",
+    "noData": "Nessun dato"
+  },
+  "setup": {
+    "title": "Completa la configurazione",
+    "progress": "{done} di {total} completati",
+    "done": "Fatto"
+  },
+  "attention": {
+    "title": "Da controllare",
+    "caughtUp": "Tutto in ordine"
+  },
+  "inventory": {
+    "title": "Inventario",
+    "aboutLabel": "Informazioni sui valori dell’inventario",
+    "about": "Il valore al dettaglio usa il prezzo a cui ogni unità è stata venduta di recente, o il suo prezzo Shopify. I costi includono i costi di sbarco degli ordini di acquisto.",
+    "products": "Prodotti",
+    "onHand": "{count, number} in giacenza",
+    "onTheWay": "{count, number} in arrivo",
+    "atCost": "{amount} al costo",
+    "noUnitCosts": "Nessun costo unitario",
+    "noPrices": "Nessun prezzo",
+    "noStock": "Nessuna giacenza sincronizzata",
+    "unitsOnHand": "Unità in giacenza",
+    "valueAtCost": "Valore al costo",
+    "retailValue": "Valore al dettaglio",
+    "potentialProfit": "Utile lordo potenziale"
+  },
+  "cover": {
+    "title": "Giorni di copertura",
+    "aboutLabel": "Informazioni sui giorni di copertura",
+    "about": "Quanto dura la giacenza di ogni articolo al ritmo di vendita recente.",
+    "items": "{count, plural, one {# articolo} other {# articoli}}"
+  },
+  "upcoming": {
+    "title": "Spese previste",
+    "aboutLabel": "Informazioni sulle spese previste",
+    "about": "Riordini da effettuare e ordini di acquisto inviati, per data di scadenza.",
+    "next60": "Prossimi 60 giorni",
+    "reorders": "Riordini da effettuare ora",
+    "reordersDetail": "Stima basata sui costi unitari",
+    "purchaseOrders": "{count, plural, one {# ordine di acquisto} other {# ordini di acquisto}}",
+    "due": {
+      "overdue": "Scaduti",
+      "next30": "In scadenza nei prossimi 30 giorni",
+      "next60": "In scadenza tra 31 e 60 giorni",
+      "later": "In scadenza più avanti"
+    }
+  },
+  "trending": {
+    "title": "Prodotti di tendenza",
+    "sellingMore": "In crescita",
+    "sellingLess": "In calo",
+    "nothingMore": "Nessun prodotto in crescita",
+    "nothingLess": "Nessun prodotto in calo",
+    "noPreviousOrders": "Nessun ordine sincronizzato per {period}",
+    "noComparison": "Nessun periodo di confronto",
+    "noChanges": "Nessun prodotto è variato di più di qualche unità",
+    "units": "Da {from, number} a {count, plural, one {# unità} other {# unità}}",
+    "variantUnits": "{variant}, da {from, number} a {count, plural, one {# unità} other {# unità}}"
+  },
+  "slow": {
+    "title": "Giacenza a lenta rotazione",
+    "aboutLabel": "Informazioni sulla giacenza a lenta rotazione",
+    "about": "Giacenza che dura più di 3 mesi o che non ha venduto di recente.",
+    "summary": "{items, plural, one {# articolo} other {# articoli}}, {units, plural, one {# unità} other {# unità}}",
+    "summaryAtCost": "{items, plural, one {# articolo} other {# articoli}}, {units, plural, one {# unità} other {# unità}}, {amount} al costo",
+    "product": "Prodotto",
+    "onHand": "In giacenza",
+    "cover": "Copertura",
+    "atCost": "Al costo",
+    "days": "{count, plural, one {# giorno} other {# giorni}}",
+    "notSelling": "Non vende",
+    "noUnitCost": "Nessun costo unitario",
+    "empty": "Nessuna giacenza a lenta rotazione"
+  },
+  "bestSellers": {
+    "title": "Più venduti",
+    "restock": "Riassortimento",
+    "product": "Prodotto",
+    "sold": "Venduti",
+    "onHand": "In giacenza",
+    "cover": "Copertura",
+    "status": "Stato",
+    "days": "{count, plural, one {# giorno} other {# giorni}}",
+    "empty": "Ancora nessuna vendita"
+  },
+  "openOrders": {
+    "title": "Ordini di acquisto aperti",
+    "link": "Ordini di acquisto",
+    "supplier": "Fornitore",
+    "orders": "Ordini",
+    "openValue": "Valore aperto",
+    "otherSuppliers": "{count, plural, one {# altro fornitore} other {altri # fornitori}}",
+    "empty": "Nessun ordine di acquisto aperto",
+    "open": "Aperti",
+    "drafts": "Bozze",
+    "purchaseOrders": "{count, plural, one {# ordine di acquisto} other {# ordini di acquisto}}"
+  },
+  "profit": {
+    "title": "Utile lordo",
+    "monthlyCosts": "Costi mensili",
+    "sales": "Vendite",
+    "orderFees": "Commissioni sugli ordini",
+    "costOfGoods": "Costo del venduto",
+    "fees": "Commissioni",
+    "groups": {
+      "refunds": "Rimborsi e contestazioni",
+      "shipping": "Spedizione e trasporto",
+      "advertising": "Pubblicità",
+      "monthly": "Costi mensili"
+    },
+    "charges": {
+      "amazonRefunds": "Rimborsi Amazon",
+      "amazonAds": "Pubblicità Amazon",
+      "amazonCharges": "Addebiti dell’account Amazon",
+      "amazonMcf": "Evasione Amazon per ordini Shopify",
+      "amazonFreight": "Trasporto in entrata Amazon",
+      "shopifyLabels": "Etichette di spedizione Shopify",
+      "shopifyBill": "Fattura Shopify (piano e app)",
+      "shopifyDisputes": "Contestazioni Shopify",
+      "shopifyDuties": "Dazi e imposte di importazione"
+    },
+    "whatsIn": "Cosa include {line}",
+    "needsCosts": "Servono i prezzi degli ordini e i costi unitari"
+  },
+  "customers": {
+    "title": "Clienti Shopify",
+    "aboutLabel": "Informazioni sui dati dei clienti",
+    "about": "Valore nel tempo, clienti abituali e ordini per cliente si riferiscono agli ultimi 12 mesi. Gli ordini come ospite e quelli Amazon non sono conteggiati.",
+    "reconnect": "Ricollega Shopify nelle <settings>Impostazioni</settings> per contare i clienti abituali",
+    "reconnectAskAdmin": "Chiedi a un amministratore di ricollegare Shopify per contare i clienti abituali",
+    "syncing": "Disponibile dopo la prossima sincronizzazione degli ordini Shopify",
+    "noCustomers": "Nessun cliente",
+    "lifetimeValue": "Valore del cliente nel tempo",
+    "returning": "Clienti di ritorno",
+    "returningNote": "{returning, number} di {customers, number} in questo periodo",
+    "repeat": "Clienti abituali",
+    "ordersPerCustomer": "Ordini per cliente"
+  },
+  "landedCosts": {
+    "title": "Costi di sbarco",
+    "aboutLabel": "Informazioni sui costi di sbarco",
+    "about": "Trasporto, dazi e altri costi per farti arrivare questa merce, aggiunti ai costi unitari nella Panoramica. Il trasporto Amazon per le spedizioni di questo ordine di acquisto viene aggiunto automaticamente. Li vede solo il tuo team.",
+    "amazonFreight": "Trasporto in entrata Amazon",
+    "shipment": "Spedizione {reference}",
+    "supplierTotal": "Totale fornitore",
+    "landedTotal": "Totale con costi di sbarco",
+    "markup": "Ricarico",
+    "markupValue": "{percent} sul costo del prodotto",
+    "empty": "Ancora nessun costo",
+    "kinds": {
+      "freight": "Trasporto",
+      "duty": "Dazi",
+      "other": "Altro"
+    },
+    "moreActions": "Altre azioni per il costo {kind}",
+    "remove": "Rimuovi",
+    "add": "Aggiungi costo",
+    "addTitle": "Aggiungi costo di sbarco",
+    "addDescription": "Converti una fattura in un’altra valuta in {currency} al tasso che hai pagato.",
+    "type": "Tipo",
+    "amount": "Importo",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Fattura dello spedizioniere, bolla doganale…",
+    "enterAmount": "Inserisci l’importo"
+  }
+}

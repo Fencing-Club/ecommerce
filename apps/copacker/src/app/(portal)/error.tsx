@@ -1,6 +1,7 @@
 "use client"
 
 import { CircleAlert } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { PageHeader } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -10,24 +11,25 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 // sidebar's collapse button, and the empty state below is built like EmptyState. Trying again fetches the page afresh
 // (`retry`; `reset` would only re-render what already failed). Every workspace has an Overview.
 export default function PortalError({ retry }: { retry: () => void }) {
+  const t = useTranslations("common.pages.error")
   return (
     <>
-      <PageHeader title="Something went wrong" />
+      <PageHeader title={t("title")} />
       <Empty className="gap-4 py-10">
         <EmptyHeader className="gap-1">
           <EmptyMedia className="text-muted-foreground">
             <CircleAlert aria-hidden className="size-5" />
           </EmptyMedia>
           <EmptyTitle>
-            <h2>This page didn’t load</h2>
+            <h2>{t("didntLoad")}</h2>
           </EmptyTitle>
-          <EmptyDescription>Your data hasn’t changed</EmptyDescription>
+          <EmptyDescription>{t("dataUnchanged")}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button onClick={retry}>Try again</Button>
+            <Button onClick={retry}>{t("tryAgain")}</Button>
             <Button variant="outline" nativeButton={false} render={<Link href="/overview" />}>
-              Go to Overview
+              {t("goToOverview")}
             </Button>
           </div>
         </EmptyContent>

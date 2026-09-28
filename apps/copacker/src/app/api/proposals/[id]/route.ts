@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { requireAccess, session } from "@/server/auth"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { approveProposal, declineProposal, withdrawProposal } from "@/server/order-proposals"
 import { isAppOrigin } from "@/server/security"
 
@@ -13,7 +13,7 @@ const input = z.discriminatedUnion("action", [
 // The buyer approves or declines a supplier's changes to a PO, or the supplier withdraws them.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const body = input.parse(await request.json())
@@ -29,9 +29,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     return Response.json({ ok: true })
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Couldn't save" },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error, "couldNotSave") }, { status: failureStatus(error) })
   }
 }

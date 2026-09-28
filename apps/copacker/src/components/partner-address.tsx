@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Address, addressSchema, originSchema } from "@repo/aisle"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -12,8 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
-import { formErrorMap } from "@/lib/form-errors"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { formatPhone } from "@/lib/phone"
 import { cn } from "@/lib/utils"
 import { ActionForm } from "./actions"
@@ -86,12 +87,17 @@ export function PartnerAddressDialog({
   onOpenChange: (open: boolean) => void
   onSaved?: (saved: Saved) => void
 }) {
-  const noun = partner.kind === "supplier" ? "pickup address" : "address"
+  const t = useTranslations("partners.address")
+  const pickup = partner.kind === "supplier"
+  let title = pickup ? t("addPickup", { name: partner.name }) : t("add", { name: partner.name })
+  if (contact) {
+    title = pickup ? t("editPickup") : t("edit")
+  }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{contact ? `Edit ${noun}` : `Add a ${noun} for ${partner.name}`}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {/* Mounted only while the dialog is open, so each opening starts from the current address. */}
         <AddressForm
@@ -119,6 +125,9 @@ function AddressForm({
   draft?: Partial<Address>
   onSaved: (saved: Saved) => void
 }) {
+  const t = useTranslations("partners.address")
+  const errorMessage = useErrorMessage()
+  const formErrorMap = useFormErrorMap()
   const router = useRouter()
   const [run] = useActionMutation()
   const pickup = partner.kind === "supplier"
@@ -152,14 +161,14 @@ function AddressForm({
         event?.stopPropagation()
         return submit(event)
       }}
-      label={contact ? "Save changes" : "Save address"}
+      label={contact ? t("saveChanges") : t("save")}
       dialog
     >
       <FormInput
         name="name"
         required
-        label="Address name"
-        placeholder={pickup ? "Factory" : "Yiwu warehouse"}
+        label={t("name")}
+        placeholder={pickup ? t("pickupPlaceholder") : t("placeholder")}
         autoComplete="off"
       />
       <AddressFields path="address" requirePhone={pickup} />
@@ -188,11 +197,12 @@ export function PartnerAddressSheet({
   // The partner's own actions, at the foot of the panel.
   children?: React.ReactNode
 }) {
+  const t = useTranslations("partners.address")
   const [adding, setAdding] = useState(false)
   const supplier = partner.kind === "supplier"
-  let description = supplier ? "Pickup addresses" : "Stops on the way to Amazon or your warehouse"
+  let description = supplier ? t("sheet.supplier") : t("sheet.forwarder")
   if (joined) {
-    description = supplier ? "Keeps its own pickup addresses on Copacker" : "Keeps its own addresses on Copacker"
+    description = supplier ? t("sheet.joinedSupplier") : t("sheet.joinedForwarder")
   }
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -209,13 +219,13 @@ export function PartnerAddressSheet({
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">No addresses yet</p>
+            <p className="text-sm text-muted-foreground">{t("empty")}</p>
           )}
           {editable && (
             <div>
               <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
                 <MapPinPlus data-icon="inline-start" />
-                Add address
+                {t("addButton")}
               </Button>
               <PartnerAddressDialog partner={partner} open={adding} onOpenChange={setAdding} />
             </div>
@@ -236,6 +246,8 @@ function AddressItem({
   contact: PartnerAddress
   editable: boolean
 }) {
+  const t = useTranslations("partners.address")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
@@ -254,7 +266,7 @@ function AddressItem({
       }).unwrap()
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, `Couldn’t remove ${contact.name}`))
+      setError(errorMessage(e, t("removeFailed", { name: contact.name })))
       setRemoving(false)
     }
   }
@@ -264,28 +276,28 @@ function AddressItem({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <AddressSummary name={contact.name} address={contact.address} />
         {error && (
-          <p role="alert" className="pl-7 text-xs text-destructive">
+          <p role="alert" className="ps-7 text-xs text-destructive">
             {error}
           </p>
         )}
       </div>
       {editable && removing && (
-        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${contact.name}`}>
+        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={t("removing", { name: contact.name })}>
           <Spinner />
         </Button>
       )}
       {editable && !removing && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={`More actions for ${contact.name}`} />}
+            render={<Button variant="ghost" size="icon-sm" aria-label={t("moreActions", { name: contact.name })} />}
           >
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => setEditing(true)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEditing(true)}>{t("menuEdit")}</DropdownMenuItem>
             {removable && (
               <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
-                Remove
+                {t("menuRemove")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

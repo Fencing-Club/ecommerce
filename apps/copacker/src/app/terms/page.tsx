@@ -1,25 +1,27 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Legal } from "@/components/marketing/legal"
 import { appUrl } from "@/server/security"
 
-const title = "Terms of service | Copacker"
-const description =
-  "The terms for using Copacker: accounts and workspaces, your responsibilities, your data, fees, and the limits of our liability."
-
-export const metadata: Metadata = {
-  metadataBase: new URL(appUrl()),
-  title: { absolute: title },
-  description,
-  alternates: { canonical: "/terms" },
-  openGraph: {
-    type: "website",
-    siteName: "Copacker",
-    title,
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, marketing] = await Promise.all([getTranslations("legal"), getTranslations("marketing")])
+  const title = t("terms.metadata.title")
+  const description = t("terms.metadata.description")
+  return {
+    metadataBase: new URL(appUrl()),
+    title: { absolute: title },
     description,
-    images: [{ url: "/marketing/og.jpg", width: 1200, height: 630, alt: "Copacker: Restocking, handled" }]
-  },
-  twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
+    alternates: { canonical: "/terms" },
+    openGraph: {
+      type: "website",
+      siteName: "Copacker",
+      title,
+      description,
+      images: [{ url: "/marketing/og.jpg", width: 1200, height: 630, alt: marketing("metadata.title") }]
+    },
+    twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
+  }
 }
 
 // Rendered per request, like the home page, so its links carry the deployed address rather than the build's.
@@ -27,11 +29,12 @@ export const dynamic = "force-dynamic"
 
 // The terms for using Copacker. The company's legal name, address and governing law aren't settled yet, so the clauses
 // that need them are left out until they are. Fees follow the marketing page: free for now, with no promise it stays so.
-export default function TermsPage() {
+export default async function TermsPage() {
+  const t = await getTranslations("legal")
   const contact = <Link href="/contact">contact page</Link>
   return (
     <Legal
-      title="Terms of service"
+      title={t("terms.title")}
       updated="2026-09-27"
       lead="These terms are the agreement between you and Copacker for using copacker.ai and the Copacker app. By creating an account or using Copacker, you accept them. If you use Copacker for a company, you accept them on its behalf and confirm you’re allowed to, and “you” includes the company."
       sections={[

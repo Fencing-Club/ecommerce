@@ -87,7 +87,7 @@ describe("page access", () => {
     expect(homeFor("supplier", { role: "member", access: { orders: "view" } })).toBe("/orders")
     expect(homeFor("buyer", { role: "member", access: {} })).toBe("/settings")
     expect(homeFor("buyer", { role: "admin", access: {} })).toBe("/overview")
-    expect(areasFor("forwarder")).toStrictEqual([{ area: "orders", label: "Purchase orders" }])
+    expect(areasFor("forwarder")).toStrictEqual([{ area: "orders", labelKey: "purchaseOrders" }])
   })
 })
 

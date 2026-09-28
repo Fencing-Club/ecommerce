@@ -1,0 +1,222 @@
+{
+  "title": "سیٹنگز",
+  "delete": {
+    "title": "حذف کریں",
+    "description": "مستقل، اور واپس نہیں ہو سکتا",
+    "workspace": {
+      "title": "ورک اسپیس حذف کریں",
+      "detail": "{workspace} اور اس میں موجود سب کچھ، سب کے لیے",
+      "confirm": "{workspace} حذف کریں؟",
+      "field": "ورک اسپیس کا نام",
+      "buyer": "اس کے خریداری آرڈر، پروڈکٹس، کنکشنز اور ٹیم سب کے لیے حذف ہو جاتے ہیں۔",
+      "supplier": "اس کے پروڈکٹس، کیٹلاگ اور ٹیم سب کے لیے حذف ہو جاتے ہیں۔ خریداروں کے خریداری آرڈر برقرار رہتے ہیں۔",
+      "forwarder": "اس کے پتے اور ٹیم سب کے لیے حذف ہو جاتے ہیں۔ خریداروں کے خریداری آرڈر برقرار رہتے ہیں۔"
+    },
+    "account": {
+      "title": "اکاؤنٹ حذف کریں",
+      "detail": "آپ کا سائن ان اور ہر ورک اسپیس میں آپ کی جگہ",
+      "confirm": "اپنا اکاؤنٹ حذف کریں؟",
+      "field": "آپ کی ای میل",
+      "removed": "آپ سائن آؤٹ ہو جائیں گے اور ہر ورک اسپیس سے ہٹا دیے جائیں گے۔",
+      "closing": "آپ سائن آؤٹ ہو جائیں گے اور ہر ورک اسپیس سے ہٹا دیے جائیں گے۔ {count, plural, one {{workspaces} آپ کے اکاؤنٹ کے ساتھ بند ہو جائے گا۔} other {{workspaces} آپ کے اکاؤنٹ کے ساتھ بند ہو جائیں گے۔}}",
+      "handOver": "پہلے {workspaces} کی ملکیت منتقل کریں۔"
+    },
+    "cancel": "منسوخ کریں",
+    "close": "بند کریں"
+  },
+  "language": {
+    "title": "زبان",
+    "description": "صرف آپ کے لیے",
+    "label": "زبان",
+    "system": "سسٹم ({language})"
+  },
+  "form": {
+    "save": "محفوظ کریں",
+    "saved": "محفوظ ہو گیا"
+  },
+  "profile": {
+    "title": "پروفائل",
+    "firstName": "پہلا نام",
+    "lastName": "آخری نام",
+    "position": "عہدہ",
+    "choose": "منتخب کریں",
+    "company": "کمپنی",
+    "website": "کمپنی کی ویب سائٹ",
+    "enterCompany": "اپنی کمپنی درج کریں"
+  },
+  "team": {
+    "title": "ٹیم",
+    "description": "{workspace} میں لوگ",
+    "people": "{count, plural, one {# شخص} other {# لوگ}}",
+    "invite": "مدعو کریں",
+    "inviteTo": "{workspace} میں مدعو کریں",
+    "sendInvitation": "دعوت نامہ بھیجیں",
+    "email": "ای میل",
+    "enterEmail": "ای میل ایڈریس درج کریں",
+    "role": "رول",
+    "roles": {
+      "owner": "اونر",
+      "admin": "ایڈمن",
+      "member": "ممبر"
+    },
+    "roleDescriptions": {
+      "admin": "سب کچھ، بشمول ٹیم اور سیٹنگز",
+      "member": "صرف وہ صفحات جو آپ منتخب کریں"
+    },
+    "pages": "صفحات",
+    "choosePage": "کم از کم ایک صفحہ منتخب کریں",
+    "seePrices": "قیمتیں اور لاگتیں دیکھیں",
+    "needsPrices": "قیمتیں اور لاگتیں دیکھنے کی اجازت ضروری ہے",
+    "levels": {
+      "none": "رسائی نہیں",
+      "view": "دیکھیں",
+      "edit": "ترمیم"
+    },
+    "changeAccess": "رسائی تبدیل کریں",
+    "changeAccessFor": "{who} کی رسائی تبدیل کریں",
+    "save": "محفوظ کریں",
+    "you": "آپ",
+    "more": "{name} کے لیے مزید",
+    "remove": "ہٹائیں",
+    "removeTitle": "{name} کو ہٹائیں؟",
+    "removeDescription": "ان کی {workspace} تک رسائی فوراً ختم ہو جائے گی۔",
+    "transferOwnership": "ملکیت منتقل کریں",
+    "transferTitle": "ملکیت {name} کو منتقل کریں؟",
+    "transferDescription": "وہ {workspace} کے اونر بن جائیں گے، اور آپ ایڈمن رہیں گے۔",
+    "cancel": "منسوخ کریں",
+    "invitationExpired": "دعوت نامے کی میعاد ختم ہو گئی",
+    "invited": "مدعو، میعاد {expires} کو ختم",
+    "invitationSent": "دعوت نامہ بھیج دیا گیا، میعاد {expires} کو ختم",
+    "updating": "{email} اپ ڈیٹ ہو رہا ہے",
+    "sendAgain": "دوبارہ بھیجیں",
+    "cancelInvitation": "دعوت نامہ منسوخ کریں"
+  },
+  "integrations": {
+    "title": "انٹیگریشنز",
+    "description": "وہ اسٹورز جن کے ساتھ Copacker سنک کرتا ہے",
+    "marketplaces": "مارکیٹ پلیسز",
+    "marketplacesUnavailable": "Amazon سے لوڈ نہیں ہو سکا",
+    "stores": {
+      "shopify": "پروڈکٹس، انوینٹری، آرڈرز، اخراجات",
+      "amazon": "آرڈرز، انوینٹری، اخراجات، شپمنٹس",
+      "ebay": "آرڈرز، انوینٹری"
+    },
+    "comingSoon": "جلد آ رہا ہے",
+    "connect": "منسلک کریں",
+    "notConnected": "منسلک نہیں",
+    "connected": "منسلک ہے",
+    "storeSettings": "{store} سیٹنگز",
+    "cancel": "منسوخ کریں",
+    "shopify": {
+      "title": "Shopify منسلک کریں",
+      "description": "آپ Shopify میں Copacker کو منظوری دیں گے",
+      "store": "اسٹور",
+      "storeDescription": "ایڈمن لنک یا myshopify.com ڈومین",
+      "enterStore": "اپنے اسٹور کا ایڈمن لنک یا myshopify.com ڈومین درج کریں"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon منسلک کریں",
+      "description": "Amazon کے Solution Provider Portal میں Copacker کی ایپ کے ساتھ والا مینو کھولیں، Authorize منتخب کریں اور ریفریش ٹوکن کاپی کریں۔ آپ کا مرچنٹ ٹوکن Seller Central میں Settings، Account Info کے تحت ہے۔",
+      "connect": "منسلک کریں",
+      "merchantToken": "مرچنٹ ٹوکن",
+      "refreshToken": "ریفریش ٹوکن"
+    }
+  },
+  "excludedTags": {
+    "title": "خارج شدہ آرڈر ٹیگز",
+    "syncing": "Shopify سے ٹیگز سنک ہو رہے ہیں",
+    "none": "کوئی نہیں",
+    "edit": "ترمیم کریں",
+    "editLabel": "خارج شدہ آرڈر ٹیگز میں ترمیم کریں",
+    "description": "ان ٹیگز والے Shopify آرڈرز شمار نہیں ہوتے۔",
+    "tags": "ٹیگز",
+    "addTag": "ٹیگ شامل کریں",
+    "wildcard": "* کو وائلڈ کارڈ کے طور پر استعمال کریں، جیسے amazon*",
+    "saveFailed": "ٹیگز محفوظ نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "saving": "محفوظ ہو رہا ہے…"
+  },
+  "restock": {
+    "title": "ری اسٹاک",
+    "description": "ری اسٹاک اور جائزہ میں استعمال ہوتا ہے",
+    "salesPeriod": "سیلز کی مدت",
+    "leadTime": "لیڈ ٹائم",
+    "days": "{count, plural, one {# دن} other {# دن}}",
+    "salesPeriodDays": "سیلز کی مدت (دن)",
+    "leadTimeDays": "لیڈ ٹائم (دن)",
+    "leadTimeDescription": "ان سپلائرز کے لیے جن کا اپنا نہیں",
+    "enterDays": "دن درج کریں"
+  },
+  "timeZone": {
+    "title": "ٹائم زون",
+    "description": "جائزہ میں دنوں اور مہینوں کے لیے",
+    "label": "اسٹور کا ٹائم زون",
+    "automatic": "خودکار",
+    "automaticZone": "خودکار، {zone}"
+  },
+  "monthlyCosts": {
+    "title": "ماہانہ اخراجات",
+    "description": "وہ اخراجات جو Shopify اور Amazon رپورٹ نہیں کرتے",
+    "count": "{count, plural, =0 {کوئی ماہانہ خرچ نہیں} one {# خرچ} other {# اخراجات}}",
+    "allChannels": "تمام چینلز",
+    "between": "{channel}، {start} سے {end} تک",
+    "since": "{channel}، {start} سے",
+    "until": "{channel}، {end} تک",
+    "removeFailed": "یہ خرچ ہٹایا نہیں جا سکا",
+    "removing": "{name} ہٹایا جا رہا ہے",
+    "more": "{name} کے لیے مزید",
+    "remove": "ہٹائیں",
+    "add": "خرچ شامل کریں",
+    "addTitle": "ماہانہ خرچ شامل کریں",
+    "name": "نام",
+    "amount": "ماہانہ رقم",
+    "channel": "چینل",
+    "paidSince": "ادائیگی کب سے",
+    "paidUntil": "ادائیگی کب تک",
+    "enterName": "نام درج کریں",
+    "enterAmount": "رقم درج کریں",
+    "endBeforeStart": "اختتامی تاریخ آغاز کی تاریخ سے پہلے نہیں ہو سکتی"
+  },
+  "supplierProfile": {
+    "title": "سپلائر پروفائل",
+    "description": "رابطے کی تفصیلات جو خریدار دیکھتے ہیں",
+    "contactName": "رابطے کا نام",
+    "contactEmail": "رابطے کی ای میل",
+    "phone": "فون",
+    "website": "ویب سائٹ"
+  },
+  "supplierForm": {
+    "submit": "سپلائر شامل کریں",
+    "company": "سپلائر کمپنی",
+    "email": "ای میل",
+    "emailDescription": "انہیں ابھی مدعو کرنے کے لیے ای میل شامل کریں۔"
+  },
+  "addresses": {
+    "title": "پتے",
+    "description": "جہاں خریداری آرڈرز ڈیلیور ہوتے ہیں",
+    "pickupTitle": "پک اپ کے پتے",
+    "pickupDescription": "جہاں سے کیریئرز آپ کے کارٹن اٹھاتے ہیں",
+    "count": "{count, plural, =0 {کوئی پتہ نہیں} one {# پتہ} other {# پتے}}",
+    "noPickupAddresses": "پک اپ کا کوئی پتہ نہیں",
+    "add": "پتہ شامل کریں",
+    "editTitle": "پتے میں ترمیم کریں",
+    "edit": "ترمیم کریں",
+    "remove": "ہٹائیں",
+    "more": "{name} کے لیے مزید",
+    "removing": "{name} ہٹایا جا رہا ہے",
+    "removeFailed": "یہ پتہ ہٹایا نہیں جا سکا",
+    "stockArrivesAt": "اسٹاک {location} پر پہنچتا ہے",
+    "stockArrivesAtShopify": "اسٹاک Shopify لوکیشن پر پہنچتا ہے",
+    "addPhone": "شپمنٹس میں استعمال کرنے کے لیے فون نمبر شامل کریں",
+    "supplierKeepsPickups": "اب پک اپ آپ کا سپلائر سنبھالتا ہے، ان کے شامل کرنے کے بعد اسے ہٹا دیں",
+    "saveChanges": "تبدیلیاں محفوظ کریں",
+    "saveAddress": "پتہ محفوظ کریں",
+    "name": "پتے کا نام",
+    "namePlaceholder": "شینزین گودام",
+    "kind": "پتے کی قسم",
+    "shopifyLocation": "Shopify لوکیشن",
+    "shopifyLocationDescription": "یہاں بھیجے گئے خریداری آرڈرز وہاں آرڈر شدہ کے طور پر دکھائی دیتے ہیں",
+    "notLinked": "منسلک نہیں"
+  }
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { CircleCheck, UploadCloud } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ import {
   SheetTitle,
   SheetTrigger
 } from "@/components/ui/sheet"
-import { errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
 import { WarningNote } from "./common"
@@ -28,15 +29,11 @@ type Result =
   | { status: "saved"; file: File; target: BarcodeTarget; replaced: boolean }
   | { status: "failed"; file: File; message: string; retry: boolean }
 
-function targetLabel(target: BarcodeTarget) {
-  const name = target.variant ? `${target.product}, ${target.variant}` : target.product
-  return target.sku ? `${name} (${target.sku})` : name
-}
-
 // The most a barcode PDF may weigh, as the upload takes it.
 const maxBytes = 32 * 1024 * 1024
 
 function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed" }>; onRetry: (sku: string) => void }) {
+  const t = useTranslations("products.bulkUpload")
   const [sku, setSku] = useState("")
   const id = `retry-${result.file.name}`
   return (
@@ -51,29 +48,38 @@ function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed"
     >
       <Field>
         <FieldLabel htmlFor={id} className="text-xs font-normal text-muted-foreground">
-          SKU for {result.file.name}
+          {t("skuFor", { file: result.file.name })}
         </FieldLabel>
         <Input id={id} value={sku} onChange={(event) => setSku(event.target.value)} autoComplete="off" />
       </Field>
       <Button type="submit" variant="outline" disabled={!sku.trim()}>
-        Save
+        {t("save")}
       </Button>
     </form>
   )
 }
 
 function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string) => void }) {
+  const t = useTranslations("products.bulkUpload")
+  // The variation a file was saved to, such as "Tee, Large (TEE-L)".
+  const targetLabel = (target: BarcodeTarget) => {
+    const name = target.variant
+      ? t("productVariant", { product: target.product, variant: target.variant })
+      : target.product
+    return target.sku ? t("nameSku", { name, sku: target.sku }) : name
+  }
   return (
     <li className="flex flex-col gap-1 px-3 py-2.5">
       <span className="text-sm font-medium [overflow-wrap:anywhere]">{result.file.name}</span>
-      {result.status === "waiting" && <span className="text-xs text-muted-foreground">Waiting</span>}
-      {result.status === "uploading" && <span className="text-xs text-muted-foreground">Uploading…</span>}
+      {result.status === "waiting" && <span className="text-xs text-muted-foreground">{t("waiting")}</span>}
+      {result.status === "uploading" && <span className="text-xs text-muted-foreground">{t("uploading")}</span>}
       {result.status === "saved" && (
         <span className="inline-flex items-start gap-1 text-xs">
           <CircleCheck className="mt-px size-3.5 shrink-0 text-success" aria-hidden="true" />
           <span>
-            {result.replaced ? "Replaced for " : "Saved for "}
-            {targetLabel(result.target)}
+            {result.replaced
+              ? t("replacedFor", { target: targetLabel(result.target) })
+              : t("savedFor", { target: targetLabel(result.target) })}
           </span>
         </span>
       )}
@@ -89,6 +95,8 @@ function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string)
 
 // Uploads many barcode PDFs at once, matching each to a variation by the SKU in its file name.
 export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
+  const t = useTranslations("products.bulkUpload")
+  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [results, setResults] = useState<Result[]>([])
@@ -126,7 +134,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
       update(index, {
         status: "failed",
         file,
-        message: errorMessage(error, "The barcode couldn't be uploaded. Try again."),
+        message: errorMessage(error, t("uploadFailed")),
         // No variation, or several, have that SKU; another SKU may match.
         retry: status === 404 || status === 409
       })
@@ -160,7 +168,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
 
   const done = results.filter((result) => result.status === "saved" || result.status === "failed").length
   const failed = results.filter((result) => result.status === "failed").length
-  const uploadLabel = files.length > 1 ? `Upload ${files.length} files` : "Upload file"
+  const uploadLabel = t("uploadFiles", { count: files.length })
 
   return (
     <Sheet
@@ -178,16 +186,16 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
     >
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
         <UploadCloud data-icon="inline-start" />
-        Upload barcodes
+        {t("title")}
       </SheetTrigger>
       <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Upload barcodes</SheetTitle>
-          <SheetDescription>Name each PDF after its SKU, such as ABC-123.pdf</SheetDescription>
+          <SheetTitle>{t("title")}</SheetTitle>
+          <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
           <div
-            {...getRootProps({ role: "button", "aria-label": "Choose barcode PDFs" })}
+            {...getRootProps({ role: "button", "aria-label": t("choose") })}
             className={cn(
               "flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed px-4 py-8 text-center text-sm transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
               isDragActive && "border-ring bg-muted/50",
@@ -196,27 +204,18 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
           >
             <input {...getInputProps()} />
             <UploadCloud className="mb-1 size-5 text-muted-foreground" aria-hidden="true" />
-            <span className="font-medium">
-              {files.length
-                ? `${files.length} ${files.length === 1 ? "PDF" : "PDFs"} chosen`
-                : "Choose PDFs or drop them here"}
-            </span>
-            <span className="text-xs text-muted-foreground">Up to 32 MB each</span>
+            <span className="font-medium">{files.length ? t("chosen", { count: files.length }) : t("dropHere")}</span>
+            <span className="text-xs text-muted-foreground">{t("sizeLimit")}</span>
           </div>
-          {skipped > 0 && (
-            <WarningNote>
-              {skipped === 1 ? "Left out 1 file that isn’t a PDF" : `Left out ${skipped} files that aren’t PDFs`} up to
-              32 MB
-            </WarningNote>
-          )}
+          {skipped > 0 && <WarningNote>{t("skipped", { count: skipped })}</WarningNote>}
           {results.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground" aria-live="polite">
                 {running
-                  ? `Uploading ${Math.min(done + 1, results.length)} of ${results.length}…`
-                  : `${results.length - failed} of ${results.length} saved`}
+                  ? t("progress", { current: Math.min(done + 1, results.length), total: results.length })
+                  : t("savedCount", { saved: results.length - failed, total: results.length })}
               </p>
-              <ul className="divide-y rounded-lg border" aria-label="Upload results">
+              <ul className="divide-y rounded-lg border" aria-label={t("results")}>
                 {results.map((result, index) => (
                   <ResultRow
                     key={`${result.file.name}-${index}`}
@@ -230,7 +229,7 @@ export function BulkBarcodeUpload({ onChanged }: { onChanged: () => void }) {
         </div>
         <SheetFooter className="border-t sm:flex-row sm:justify-end">
           <Button type="button" disabled={running || !files.length} onClick={() => void start()}>
-            {running ? "Uploading…" : uploadLabel}
+            {running ? t("uploading") : uploadLabel}
           </Button>
         </SheetFooter>
       </SheetContent>

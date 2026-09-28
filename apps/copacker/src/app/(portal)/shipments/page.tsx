@@ -1,6 +1,7 @@
 import { amazonNetworkNames } from "@repo/aisle"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { AlertTriangle, ExternalLink } from "lucide-react"
+import { getFormatter, getTranslations } from "next-intl/server"
 import { unstable_cache } from "next/cache"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid, Status } from "@/components/common"
@@ -11,14 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { db } from "@/db"
 import { connections, organizations, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
-import { shortDate } from "@/lib/format"
 import { visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
-import { shipmentDestinations } from "./destination"
+import { readyDateFormat, shipmentDestinations } from "./destination"
 
-export const generateMetadata = titleFor("Shipments", "shipments")
+export const generateMetadata = titleFor("shipments.list.title", "shipments")
 
 // The workspace's shipments in its connected Amazon account, read from Amazon at most every two minutes. Null when no
 // Amazon account is connected.
@@ -47,17 +47,17 @@ const columns = {
   destination: "hidden @2xl:table-cell",
   partner: "hidden @3xl:table-cell",
   partnerInline: "@3xl:hidden",
-  cartons: "text-right tabular-nums @max-md:hidden",
-  ready: "hidden pl-6 tabular-nums @4xl:table-cell",
+  cartons: "text-end tabular-nums @max-md:hidden",
+  ready: "hidden ps-6 tabular-nums @4xl:table-cell",
   status: "@max-md:p-0"
 }
 
 // The list's tabs, kept in the URL: active shipments by default. Amazon calls a received shipment closed.
 const views = [
-  { view: undefined, label: "Active", empty: "No active shipments" },
-  { view: "received", label: "Received", empty: "No received shipments" },
-  { view: "cancelled", label: "Cancelled", empty: "No cancelled shipments" },
-  { view: "all", label: "All", empty: "No shipments" }
+  { view: undefined, key: "active" },
+  { view: "received", key: "received" },
+  { view: "cancelled", key: "cancelled" },
+  { view: "all", key: "all" }
 ] as const
 function stage(status: string) {
   if (["received", "CLOSED"].includes(status)) {
@@ -72,6 +72,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
   const s = await session()
   requirePage(s, "shipments")
+  const [t, format] = await Promise.all([getTranslations("shipments.list"), getFormatter()])
   const isBuyer = s.org.kind === "buyer"
   // A supplier's navigation calls purchase orders orders.
   const supplierView = s.org.kind === "supplier"
@@ -136,34 +137,34 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PageHeader title="Shipments" />
+      <PageHeader title={t("title")} />
 
       {/* Counts only help once there is something to count. */}
       {list.length > 0 && (
         <StatGrid>
-          <StatCard label="Packing" value={count("packing")} />
+          <StatCard label={t("stats.packing")} value={count("packing")} />
           <StatCard
-            label={isBuyer ? "Action needed" : "Waiting on buyer"}
+            label={isBuyer ? t("stats.actionNeeded") : t("stats.waitingOnBuyer")}
             value={count("approval", "waiting_labels")}
           />
-          <StatCard label="Ready for pickup" value={count("ready")} />
+          <StatCard label={t("stats.readyForPickup")} value={count("ready")} />
         </StatGrid>
       )}
 
       {amazonFailed && (
         <Alert>
           <AlertTriangle />
-          <AlertTitle>Amazon shipments didn’t load</AlertTitle>
-          <AlertDescription>Refresh the page to try again.</AlertDescription>
+          <AlertTitle>{t("amazonFailed.title")}</AlertTitle>
+          <AlertDescription>{t("amazonFailed.description")}</AlertDescription>
         </Alert>
       )}
 
       {list.length > 0 || amazonAll.length > 0 ? (
         <div className="flex flex-col gap-3">
           <TabLinks
-            label="Shipment status"
+            label={t("tabsLabel")}
             tabs={views.map((tab) => ({
-              label: tab.label,
+              label: t(`tabs.${tab.key}`),
               href: tab.view ? `/shipments?view=${tab.view}` : "/shipments",
               current: tab === current,
               count: tabCount(tab.view)
@@ -173,12 +174,14 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
             <Table className="@max-md:block">
               <TableHeader className="@max-md:hidden">
                 <TableRow>
-                  <TableHead>Shipment</TableHead>
-                  <TableHead className={columns.partner}>{isBuyer ? "Supplier" : "Customer"}</TableHead>
-                  <TableHead className={columns.destination}>Destination</TableHead>
-                  <TableHead className={columns.cartons}>Cartons</TableHead>
-                  <TableHead className={columns.ready}>Ready date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("columns.shipment")}</TableHead>
+                  <TableHead className={columns.partner}>
+                    {isBuyer ? t("columns.supplier") : t("columns.customer")}
+                  </TableHead>
+                  <TableHead className={columns.destination}>{t("columns.destination")}</TableHead>
+                  <TableHead className={columns.cartons}>{t("columns.cartons")}</TableHead>
+                  <TableHead className={columns.ready}>{t("columns.readyDate")}</TableHead>
+                  <TableHead>{t("columns.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="@max-md:block">
@@ -193,7 +196,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
                         </Link>
                         <p className={columns.detail}>
                           <span className={columns.partnerInline}>{partner}, </span>
-                          {[`Shipment ${number}`, shipment.amazonShipmentId].filter(Boolean).join(", ")}
+                          {[t("shipmentNumber", { number }), shipment.amazonShipmentId].filter(Boolean).join(", ")}
                         </p>
                       </TableCell>
                       <TableCell className={columns.partner}>{partner}</TableCell>
@@ -201,7 +204,9 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
                         {destination(order.data, shipment.amazonNetwork)}
                       </TableCell>
                       <TableCell className={columns.cartons}>{cartons || "—"}</TableCell>
-                      <TableCell className={columns.ready}>{ready ? shortDate(ready) : "—"}</TableCell>
+                      <TableCell className={columns.ready}>
+                        {ready ? format.dateTime(new Date(`${ready}T00:00:00Z`), readyDateFormat) : "—"}
+                      </TableCell>
                       <TableCell className={columns.status}>
                         <Status status={shipment.status} />
                       </TableCell>
@@ -220,7 +225,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
                       >
                         {row.shipmentId}
                         <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
-                        <span className="sr-only"> (opens in Seller Central)</span>
+                        <span className="sr-only"> {t("opensInSellerCentral")}</span>
                       </a>
                       {row.name && <p className={columns.detail}>{row.name}</p>}
                     </TableCell>
@@ -239,7 +244,7 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
                       colSpan={6}
                       className="h-24 text-center text-muted-foreground @max-md:flex @max-md:items-center @max-md:justify-center"
                     >
-                      {current.empty}
+                      {t(`empty.${current.key}`)}
                     </TableCell>
                   </TableRow>
                 )}
@@ -249,12 +254,12 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
         </div>
       ) : (
         <EmptyState
-          title="No shipments yet"
-          description={supplierView ? "Start one from an order" : "Start one from a sent purchase order"}
+          title={t("none.title")}
+          description={supplierView ? t("none.supplierDescription") : t("none.buyerDescription")}
         >
           {can(s, "orders") && (
             <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
-              {supplierView ? "View orders" : "View purchase orders"}
+              {supplierView ? t("none.viewOrders") : t("none.viewPurchaseOrders")}
             </Button>
           )}
         </EmptyState>

@@ -1,0 +1,123 @@
+{
+  "title": "Початок роботи",
+  "newWorkspaceTitle": "Новий робочий простір",
+  "person": {
+    "enterFirstName": "Введіть ім’я",
+    "enterLastName": "Введіть прізвище",
+    "choosePosition": "Виберіть посаду"
+  },
+  "company": {
+    "enterName": "Введіть назву компанії",
+    "enterWebsite": "Введіть вебсайт, наприклад example.com"
+  },
+  "place": {
+    "enterName": "Назвіть цю адресу"
+  },
+  "positions": {
+    "owner": "Власник",
+    "generalManager": "Генеральний менеджер",
+    "operationsManager": "Операційний менеджер",
+    "purchasingManager": "Менеджер із закупівель",
+    "buyer": "Закупівельник",
+    "salesManager": "Менеджер із продажу",
+    "accountManager": "Менеджер з клієнтів",
+    "productionManager": "Менеджер виробництва",
+    "qualityControl": "Контроль якості",
+    "logisticsCoordinator": "Координатор логістики",
+    "warehouseManager": "Завідувач складу",
+    "customerService": "Обслуговування клієнтів",
+    "finance": "Фінанси",
+    "other": "Інше"
+  },
+  "steps": {
+    "about": "Про вас",
+    "role": "Чим займається ваша компанія?",
+    "company": "Ваша компанія",
+    "address": {
+      "none": "Адреса",
+      "buyer": {
+        "title": "Адреса доставки",
+        "description": "Куди доставляють замовлення на закупівлю"
+      },
+      "supplier": {
+        "title": "Адреса забору",
+        "description": "Звідки перевізники забирають ваші коробки"
+      },
+      "forwarder": {
+        "title": "Адреса складу",
+        "description": "Куди покупці надсилають вам товари"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Склад",
+    "supplier": "Фабрика",
+    "forwarder": "Склад"
+  },
+  "fields": {
+    "firstName": "Ім’я",
+    "lastName": "Прізвище",
+    "position": "Посада",
+    "choose": "Виберіть",
+    "companyName": "Назва компанії",
+    "website": "Вебсайт",
+    "websitePlaceholder": "example.com",
+    "phone": "Номер телефону",
+    "addressName": "Назва адреси"
+  },
+  "roles": {
+    "legend": "Чим займається ваша компанія",
+    "buyer": {
+      "title": "Покупець",
+      "description": "Купуєте в постачальників і продаєте на Amazon або Shopify"
+    },
+    "supplier": {
+      "title": "Постачальник",
+      "description": "Виготовляєте товари й виконуєте замовлення на закупівлю"
+    },
+    "forwarder": {
+      "title": "Експедитор",
+      "description": "Приймаєте товари й відправляєте їх далі для покупців"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Виберіть один варіант",
+    "pickupPhone": "Додайте телефон для забору. Він потрібен Amazon, щоб запланувати забір",
+    "step": "Крок {current} з {total}",
+    "invitedBy": "Запрошує {name}",
+    "back": "Назад",
+    "skip": "Пропустити",
+    "continue": "Продовжити",
+    "createWorkspace": "Створити робочий простір",
+    "join": "Приєднатися до {workspace}",
+    "cancel": "Скасувати",
+    "signOut": "Вийти"
+  },
+  "preview": {
+    "workspace": "Робочий простір",
+    "kinds": {
+      "buyer": "Робочий простір покупця",
+      "supplier": "Робочий простір постачальника",
+      "forwarder": "Робочий простір експедитора"
+    },
+    "groups": {
+      "store": "Магазин",
+      "purchasing": "Закупівлі",
+      "sales": "Продажі",
+      "products": "Товари"
+    },
+    "pages": {
+      "overview": "Огляд",
+      "orders": "Замовлення",
+      "products": "Товари",
+      "restock": "Поповнення",
+      "purchaseOrders": "Замовлення на закупівлю",
+      "shipments": "Відправлення",
+      "customers": "Клієнти",
+      "inventory": "Запаси",
+      "catalogs": "Каталоги",
+      "settings": "Налаштування"
+    },
+    "address": "Адреса"
+  }
+}

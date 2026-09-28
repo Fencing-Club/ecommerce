@@ -1,0 +1,18 @@
+{
+  "contents": "Contents",
+  "updated": "Last updated <time>{date}</time>",
+  "privacy": {
+    "title": "Privacy policy",
+    "metadata": {
+      "title": "Privacy policy | Copacker",
+      "description": "What Copacker collects, how it’s used and shared, and your choices, including for data from Amazon and the other stores you connect."
+    }
+  },
+  "terms": {
+    "title": "Terms of service",
+    "metadata": {
+      "title": "Terms of service | Copacker",
+      "description": "The terms for using Copacker: accounts and workspaces, your responsibilities, your data, fees, and the limits of our liability."
+    }
+  }
+}

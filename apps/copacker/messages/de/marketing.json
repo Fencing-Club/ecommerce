@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "title": "Copacker: Nachschub, erledigt",
+    "description": "Prognostizieren Sie Ihren Bestand, senden Sie Bestellungen rechtzeitig, damit Ihnen nichts ausgeht, und übergeben Sie an Ihren Spediteur, Amazon FBA und AWD, mit allen Etiketten und Dokumenten fertig für Sie erstellt."
+  },
+  "site": {
+    "free": "Kostenlos, ohne Kreditkarte.",
+    "getStarted": "Loslegen",
+    "signIn": "Anmelden",
+    "contact": "Kontakt",
+    "mainNav": "Hauptmenü",
+    "sections": {
+      "forecast": "Prognose",
+      "handoffs": "Übergaben",
+      "agents": "Agenten",
+      "faq": "FAQ"
+    },
+    "footer": {
+      "product": "Produkt",
+      "company": "Unternehmen",
+      "account": "Konto",
+      "tagline": "Prognosen, Bestellungen und Logistik an einem Ort.",
+      "privacy": "Datenschutz",
+      "terms": "AGB"
+    }
+  },
+  "film": {
+    "watch": "Video ansehen",
+    "title": "Copacker: Nachschub, erledigt"
+  },
+  "copyButton": {
+    "copy": "Kopieren",
+    "copied": "Kopiert"
+  },
+  "signup": {
+    "title": "Erfahren Sie, was als Nächstes kommt.",
+    "text": "Neue Shops, neue Routen und neue Tools, kurz per E-Mail, sobald sie da sind.",
+    "done": "Sie stehen auf der Liste.",
+    "email": "E-Mail",
+    "placeholder": "sie@firma.de",
+    "subscribe": "Abonnieren",
+    "subscribing": "Wird abonniert",
+    "failed": "Eintragung fehlgeschlagen. Versuchen Sie es gleich noch einmal.",
+    "getStartedNow": "Oder jetzt kostenlos loslegen"
+  },
+  "hero": {
+    "title": "<first>Nachschub,</first> <second>erledigt.</second>",
+    "text": "Copacker prognostiziert Ihren Bestand, sendet Bestellungen rechtzeitig, damit Ihnen nichts ausgeht, und übernimmt die Übergaben an Ihren Spediteur, Amazon FBA und AWD, mit allen Etiketten und Dokumenten fertig für Sie erstellt.",
+    "shotCaption": "Die Nachschub-Seite von Copacker: zwei Produkte von Shenzhen Metalworks zum Nachbestellen, mit Bestellmengen, geschätzten Kosten von {cost} und rund {lost} Umsatz, der gefährdet ist, bevor die Nachbestellungen eintreffen."
+  },
+  "forecast": {
+    "title": "Rechtzeitig nachbestellen.",
+    "text": "Copacker prognostiziert jedes Produkt aus Ihren Amazon-, Shopify- und eBay-Verkäufen und rechnet von der Lieferzeit Ihres Lieferanten auf den Tag zurück, an dem Sie bestellen müssen."
+  },
+  "agents": {
+    "title": "Gebaut für KI-Agenten.",
+    "text": "Der MCP-Server von Copacker funktioniert mit jedem Agenten, damit Ihrer direkt mit Ihnen plant, bestellt und versendet. Auch die Agenten Ihrer Partner melden ihre Updates."
+  },
+  "faq": {
+    "title": "Fragen",
+    "questions": {
+      "cost": {
+        "question": "Was kostet Copacker?",
+        "answer": "Derzeit nichts. Es gibt keine kostenpflichtigen Tarife, und für die Registrierung brauchen Sie keine Karte."
+      },
+      "stores": {
+        "question": "Mit welchen Shops funktioniert es?",
+        "answer": "Amazon, Shopify und eBay. Copacker liest aus jedem Shop Ihre Verkäufe und Lagerbestände."
+      },
+      "warehouse": {
+        "question": "Kann ich an mein eigenes Lager oder einen 3PL liefern?",
+        "answer": "Ja. Eine Bestellung kann statt an Amazon an jede Ihrer Lieferadressen gehen. Verknüpfen Sie eine Adresse mit einem Shopify-Standort, und was Sie bestellt haben, erscheint dort als bestellt."
+      },
+      "locations": {
+        "question": "Plant Nachschub auch für meine anderen Standorte?",
+        "answer": "Ja. Geplant wird für jeden Ihrer Shopify-Standorte sowie für Amazon, und eine Nachbestellung für einen Standort geht direkt dorthin."
+      },
+      "tracking": {
+        "question": "Wie verfolge ich Sendungen außerhalb von Amazon?",
+        "answer": "Ihr Lieferant markiert die Sendung als versendet, Ihr Spediteur ergänzt Transporteur und Sendungsnummer, und Sie markieren sie als eingegangen, alles in der Bestellung."
+      },
+      "forwarders": {
+        "question": "Funktioniert es mit Spediteuren?",
+        "answer": "Ja. Ihr Spediteur bekommt einen eigenen Workspace, lädt Rechnung und Etiketten herunter und markiert jede Sendung mit Transporteur, Sendungsnummer und Frachtkosten als versendet."
+      },
+      "suppliers": {
+        "question": "Brauchen meine Lieferanten ein Konto?",
+        "answer": "Nein. Sie können Copacker kostenlos nutzen, oder Sie füllen ihren Teil der Bestellung selbst aus."
+      },
+      "awd": {
+        "question": "Liefert es an AWD?",
+        "answer": "Ja. Copacker plant Sendungen an FBA und AWD, einschließlich AWD-Lagern in China und Vietnam."
+      },
+      "documents": {
+        "question": "Welche Dokumente und Etiketten erstellt es?",
+        "answer": "Bestellungen, Packlisten sowie FNSKU-, Karton-, Versand- und Warnetiketten, dazu die Handelsrechnung Ihres Lieferanten."
+      },
+      "mcp": {
+        "question": "Was ist MCP?",
+        "answer": "Das Model Context Protocol, ein offener Standard, um KI-Agenten mit Apps zu verbinden. Der MCP-Server von Copacker funktioniert mit ChatGPT, Claude, Cursor, VS Code und jedem anderen MCP-Client."
+      },
+      "cli": {
+        "question": "Gibt es eine CLI?",
+        "answer": "Ja. Die copacker-CLI liest und bearbeitet dieselben Daten wie die App, für Ihre Skripte und Coding-Agenten."
+      }
+    }
+  },
+  "agentsDiagram": {
+    "yours": "Ihr Agent",
+    "prompt": "Bestell alles nach, was vor dem Eintreffen ausgeht, und schick es an AWD.",
+    "partner": "Agent von {name}",
+    "packingList": "Packliste für Bestellung {number} gesendet",
+    "pickup": "Abholung für {date} gebucht",
+    "steps": {
+      "checked": "Nachschub geprüft: {count, plural, one {# Produkt geht aus, bevor es eintrifft} other {# Produkte gehen aus, bevor sie eintreffen}}",
+      "created": "Bestellung {number} für {supplier} erstellt",
+      "sent": "Bestellung {number} an den Lieferanten gesendet",
+      "planned": "Amazon-AWD-Sendung geplant"
+    }
+  },
+  "connect": {
+    "title": "Funktioniert mit jedem Agenten.",
+    "text": "Fügen Sie Ihrem Agenten den MCP-Server von Copacker hinzu, und er arbeitet mit Nachschub, Bestellungen und Sendungen wie Sie.",
+    "yourAgent": "Ihr Agent",
+    "anyClient": "Jeder MCP-Client",
+    "terminal": "Terminal",
+    "serverUrl": "Server-URL",
+    "setups": {
+      "claude": "Öffnen Sie in Claude Customize und dann Connectors. Fügen Sie mit dieser URL einen eigenen Connector hinzu und verbinden Sie ihn.",
+      "chatgpt": "Aktivieren Sie in ChatGPT im Web den Entwicklermodus unter Settings, Security and login, und fügen Sie diese URL dann unter Plugins hinzu.",
+      "claudeCode": "Führen Sie das aus und melden Sie sich dann in Claude Code mit {command} an.",
+      "codex": "Führen Sie das aus und melden Sie sich an, wenn Codex danach fragt. CLI, IDE-Erweiterung und ChatGPT-Desktop-App nutzen die Einrichtung gemeinsam.",
+      "cursor": "Fügen Sie Copacker zur MCP-Datei von Cursor hinzu und melden Sie sich dann unter Customize an.",
+      "vsCode": "Fügen Sie Copacker zur MCP-Datei Ihres Workspace hinzu, starten Sie es aus der Datei heraus und melden Sie sich an.",
+      "gemini": "Führen Sie das aus und melden Sie sich dann mit {command} an.",
+      "windsurf": "Windsurf heißt jetzt Devin Desktop. Öffnen Sie die MCP-Konfigurationsdatei über das Menü MCPs und fügen Sie Copacker hinzu.",
+      "zed": "Fügen Sie Copacker in den Einstellungen von Zed hinzu oder als Remote-Server unter Settings, AI, MCP Servers.",
+      "openCode": "Fügen Sie Copacker zur Konfigurationsdatei von OpenCode hinzu. Die Anmeldung erfolgt bei der ersten Verbindung.",
+      "hermes": "Führen Sie das aus und melden Sie sich an, wenn Hermes sich zum ersten Mal verbindet.",
+      "openClaw": "Führen Sie diese Befehle aus, um Copacker hinzuzufügen und sich anzumelden.",
+      "any": "Richten Sie jeden anderen Client auf diese URL aus oder lassen Sie ihn den Server der CLI mit {command} starten."
+    },
+    "session": "Eine Terminal-Sitzung mit der copacker-CLI",
+    "cli": {
+      "title": "Dieselben Daten, im Terminal.",
+      "text": "Die copacker-CLI nutzt dieselben Endpunkte wie die App, damit Ihre Skripte und Coding-Agenten alles lesen und bearbeiten können, was Sie auch können."
+    }
+  },
+  "planner": {
+    "days": "{count, plural, one {# Tag} other {# Tage}}",
+    "inDays": "{count, plural, one {In # Tag} other {In # Tagen}}",
+    "inStock": "{sku}, {count, number} auf Lager",
+    "soldADay": "Verkauft pro Tag",
+    "captionLate": "Lagerbestand von {product} in den nächsten {horizon} Tagen. Ohne Nachbestellung ist er in {out, plural, one {# Tag} other {# Tagen}} aufgebraucht. Heute bestellt, treffen {units, number} Einheiten erst danach ein, und rund {lost} Umsatz gehen verloren.",
+    "captionInTime": "Lagerbestand von {product} in den nächsten {horizon} Tagen. Ohne Nachbestellung ist er in {out, plural, one {# Tag} other {# Tagen}} aufgebraucht. Bestellt in {orderBy, plural, one {# Tag} other {# Tagen}}, treffen {units, number} Einheiten rechtzeitig ein.",
+    "unitsInStock": "Einheiten auf Lager",
+    "holidayRush": "Weihnachtsgeschäft",
+    "rush": "Saison",
+    "runsOut": "Ausverkauft",
+    "orderToday": "Heute bestellen",
+    "orderBy": "Bestellen bis",
+    "restock": "Nachschub",
+    "restockUnits": "+{count, plural, one {# Einheit} other {# Einheiten}}",
+    "leadTimeDays": "{count} Tage Lieferzeit",
+    "today": "Heute",
+    "withReorder": "Mit Nachbestellung",
+    "withoutReorder": "Ohne Nachbestellung",
+    "leadTime": "Lieferzeit",
+    "landsLate": "Trifft erst nach dem Ausverkauf ein",
+    "landsInTime": "Trifft vor dem Ausverkauf ein",
+    "order": "Bestellmenge",
+    "units": "{count, plural, one {# Einheit} other {# Einheiten}}",
+    "cartons": "{count, plural, one {# Karton} other {# Kartons}}",
+    "runsOutWithout": "Ausverkauft ohne Nachbestellung",
+    "notThisSeason": "Nicht in dieser Saison",
+    "todaysPace": "Beim heutigen Tempo",
+    "lostSales": "Umsatzverlust",
+    "none": "Keiner",
+    "whileOut": "Solange es ausverkauft ist",
+    "inStockThroughout": "Durchgehend auf Lager"
+  },
+  "shot": {
+    "search": "Suchen",
+    "buyerWorkspace": "Käufer-Workspace",
+    "restock": "Nachschub",
+    "allSuppliers": "Alle Lieferanten",
+    "salesPeriod": "<muted>Verkaufszeitraum</muted> {count, plural, one {# <muted>Tag</muted>} other {# <muted>Tage</muted>}}",
+    "leadTime": "<muted>Lieferzeit</muted> {count, plural, one {# <muted>Tag</muted>} other {# <muted>Tage</muted>}}",
+    "estimatedCost": "Geschätzte Kosten",
+    "lines": "Positionen",
+    "units": "Einheiten",
+    "cases": "Umkartons",
+    "volume": "Volumen",
+    "weight": "Gewicht",
+    "lostSales": "Rund {amount} Umsatzverlust, bevor Nachbestellungen eintreffen",
+    "products": "{count, plural, one {# Produkt} other {# Produkte}}",
+    "supplierSummary": "Lieferzeit {days, plural, one {# Tag} other {# Tage}}, {lines, plural, one {# Position} other {# Positionen}}, {units, plural, one {# Einheit} other {# Einheiten}}",
+    "reorder": "Nachbestellen",
+    "days": "{count, plural, one {# Tag} other {# Tage}}",
+    "columns": {
+      "product": "Produkt",
+      "status": "Status",
+      "stockLeft": "Restbestand",
+      "sold": "Verkauft",
+      "available": "Verfügbar",
+      "order": "Bestellmenge",
+      "cost": "Kosten"
+    }
+  },
+  "journey": {
+    "title": "Eine Bestellung, von der Fabrik zu Amazon und in Ihr Lager",
+    "steps": "Schritte",
+    "purchaseOrder": "Bestellung {number}",
+    "documentCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
+    "saved": "In der Bestellung gespeichert: {name}",
+    "chapters": {
+      "order": {
+        "step": "Bestellen",
+        "title": "Nachbestellen mit einem Klick.",
+        "text": "Copacker erstellt die Bestellung und sendet sie an Ihren Lieferanten."
+      },
+      "pack": {
+        "step": "Packen",
+        "title": "Etikettiert und passgenau verpackt.",
+        "text": "FNSKU- und Erstickungsgefahr-Etiketten auf jede Einheit, Karton- und Versandetiketten auf jeden Karton, und jeder Karton hat die passende Größe."
+      },
+      "pickUp": {
+        "step": "Abholen",
+        "title": "Amazon und Ihr Spediteur holen ab.",
+        "text": "Amazon übernimmt die Kartons für AWD in Übersee, Ihr Spediteur den Rest."
+      },
+      "ship": {
+        "step": "Versenden",
+        "title": "Unterwegs.",
+        "text": "Handelsrechnung, Konnossement und Sendungsverfolgung landen in derselben Bestellung."
+      },
+      "customs": {
+        "step": "Zoll",
+        "title": "Durch den Zoll.",
+        "text": "Ihr Spediteur verzollt sie mit Konnossement und Handelsrechnung, die schon in der Bestellung liegen."
+      },
+      "deliver": {
+        "step": "Zustellen",
+        "title": "Geliefert an FBA und an Sie.",
+        "text": "Ihr Spediteur bringt die Amazon-Kartons zu FBA, und FedEx liefert den Rest in Ihr Lager."
+      }
+    },
+    "documents": {
+      "purchaseOrder": "Bestellung",
+      "fnskuLabels": "FNSKU-Etiketten",
+      "chokingHazardLabels": "Erstickungsgefahr-Etiketten",
+      "packingList": "Packliste",
+      "cartonLabels": "Kartonetiketten",
+      "shippingLabels": "Versandetiketten",
+      "commercialInvoice": "Handelsrechnung",
+      "billOfLading": "Konnossement"
+    },
+    "pins": {
+      "unitLabels": "FNSKU- und Erstickungsgefahr-Etiketten",
+      "rightSized": "Passgenau auf {size}",
+      "boxLabels": "Karton- und Versandetiketten"
+    },
+    "places": {
+      "awdInChina": "AWD in China",
+      "customs": "Zoll",
+      "yourWarehouse": "Ihr Lager"
+    },
+    "cards": {
+      "withSupplier": "Beim Lieferanten",
+      "supplier": "Lieferant",
+      "units": "Einheiten",
+      "total": "Gesamt",
+      "submitted": "Gesendet",
+      "cartons": "Kartons",
+      "cartonSize": "Kartongröße",
+      "weight": "Gewicht",
+      "shipments": "Sendungen",
+      "awdByAmazon": "AWD in China, durch Amazon",
+      "unitCount": "{count, plural, one {# Einheit} other {# Einheiten}}",
+      "pickedUp": "Abgeholt von {forwarder}",
+      "onTheWater": "Auf See",
+      "inTransit": "Unterwegs",
+      "arrives": "Ankunft",
+      "checkedInAwd": "Bei AWD eingegangen",
+      "released": "Freigegeben",
+      "cleared": "Verzollt",
+      "checkedIn": "Bei Amazon FBA eingegangen",
+      "delivered": "In Ihr Lager geliefert"
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "Copacker kontaktieren",
+      "description": "Fragen, eine Demo für Ihr Team oder eine Zusammenarbeit: Schreiben Sie Copacker."
+    },
+    "title": "Sprechen Sie mit <lit>uns.</lit>",
+    "text": "Fragen zu Copacker, eine Demo für Ihr Team oder eine Zusammenarbeit. Schreiben Sie uns, wir melden uns.",
+    "waysTitle": "Oder überzeugen Sie sich selbst.",
+    "tryIt": "Ausprobieren",
+    "watchTitle": "Video ansehen",
+    "watchText": "Nachschub von der Prognose bis ins Lager, in unter zwei Minuten.",
+    "faqTitle": "FAQ lesen",
+    "faqText": "Shops, Versand über Amazon hinaus, Partner und Agenten.",
+    "questions": "Fragen",
+    "form": {
+      "topic": "Worum geht es?",
+      "topics": {
+        "gettingStarted": "Erste Schritte",
+        "walkthrough": "Eine Demo",
+        "support": "Support",
+        "partnerships": "Partnerschaften",
+        "press": "Presse",
+        "other": "Etwas anderes"
+      },
+      "name": "Name",
+      "email": "E-Mail",
+      "company": "Unternehmen",
+      "message": "Nachricht",
+      "send": "Nachricht senden",
+      "sending": "Wird gesendet",
+      "failed": "Nachricht konnte nicht gesendet werden. Versuchen Sie es gleich noch einmal.",
+      "sent": "Nachricht gesendet.",
+      "writeBack": "Wir antworten an {email}.",
+      "another": "Weitere senden",
+      "enterName": "Geben Sie Ihren Namen ein",
+      "enterEmail": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "writeMessage": "Schreiben Sie Ihre Nachricht",
+      "tooLong": "Maximal 5.000 Zeichen"
+    }
+  }
+}

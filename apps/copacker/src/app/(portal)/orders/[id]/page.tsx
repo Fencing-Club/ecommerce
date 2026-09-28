@@ -1,8 +1,9 @@
 import { amazonNetworkNames, money, type OrderItem, orderTotal } from "@repo/aisle"
-import { destinationRequirements, itemRequirements, prepInstructions, sharedPrep } from "@repo/aisle/requirements"
+import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
 import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
 import type { Metadata } from "next"
+import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
@@ -20,13 +21,15 @@ import { Separator } from "@/components/ui/separator"
 import { db } from "@/db"
 import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
-import { dayDate } from "@/lib/format"
+import { adjustmentKeys, knownName, paymentTermKeys } from "@/lib/order-lines"
+import { storedEvent } from "@/lib/timeline-events"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { noAccessTitle, requirePage, session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
 import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
+import { requirementTranslator } from "@/server/requirements"
 import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
 import { ForwarderView } from "./forwarder-view"
@@ -38,14 +41,20 @@ type Props = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [s, { id }] = await Promise.all([session(), params])
   if (!can(s, "orders")) {
-    return noAccessTitle
+    return noAccessTitle()
   }
   const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
   return { title: order.data.reference }
 }
 
 export default async function OrderPage({ params }: Props) {
-  const s = await session()
+  const [s, t, common, format, locale] = await Promise.all([
+    session(),
+    getTranslations("orders"),
+    getTranslations("common"),
+    getFormatter(),
+    getLocale()
+  ])
   requirePage(s, "orders")
   // A malformed or unknown id is a not-found, from forwarderOrder or accessibleOrder.
   const { id } = await params
@@ -112,20 +121,22 @@ export default async function OrderPage({ params }: Props) {
     ...history.map((event) => ({
       key: event.id,
       at: event.createdAt,
-      message: event.message,
+      content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
       comment: event.kind === "comment",
       author: event.author,
       authorOrg: event.authorOrg,
-      revision: null
+      revision: null,
+      revisionNumber: null
     })),
     ...revisions.map((r) => ({
       key: r.id,
       at: r.createdAt,
-      message: r.revision === 1 ? r.reason : `Revision ${r.revision}: ${r.reason}`,
+      content: storedEvent({ messageKey: r.reason, messageValues: null }) ?? r.reason,
       comment: false,
       author: null,
       authorOrg: null,
-      revision: r.data
+      revision: r.data,
+      revisionNumber: r.revision
     }))
   ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
   // The documents kept with the PO that this workspace can download: the PO's own, then each shipment's, in the order
@@ -136,7 +147,7 @@ export default async function OrderPage({ params }: Props) {
     // Shipments' documents are for those who can open shipments.
     ...(seesShipments ? shipmentRows : []).map((shipment, index) => ({
       key: shipment.id,
-      title: `Shipment ${index + 1}`,
+      title: t("detail.shipment", { number: index + 1 }),
       shipmentId: shipment.id
     }))
   ].flatMap((group) => {
@@ -162,7 +173,10 @@ export default async function OrderPage({ params }: Props) {
         .then((rows) => rows[0])
     : undefined
   const via = order.data.via && leg?.name
-  const instructions = [...(prep ? [`${prepInstructions[prep]}.`] : []), ...destinationRequirements(order.data)]
+  const text = await requirementTranslator()
+  const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
+    text.requirement
+  )
 
   const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
   const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
@@ -180,17 +194,30 @@ export default async function OrderPage({ params }: Props) {
     return row && [row.forwarder, row.name].filter(Boolean).join(", ")
   }
   const stop = order.data.via && (place(order.data.via.addressId) ?? via)
+  // A calendar day, such as the date the PO is required by, the same wherever it's read.
+  const day = (value: string) =>
+    format.dateTime(new Date(`${value}T00:00:00Z`), {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC"
+    })
+  // The buyer's note, labeled from the viewer's side: to the supplier for the buyer, from the buyer for the supplier.
+  let noteLabel = t("detail.noteToSupplier")
+  if (s.org.kind === "supplier") {
+    noteLabel = buyerName ? t("detail.noteFrom", { buyer: buyerName }) : t("detail.buyersNote")
+  }
 
   return (
     <>
       <PageHeader
-        parents={[{ label: s.org.kind === "supplier" ? "Orders" : "Purchase orders", href: "/orders" }]}
+        parents={[{ label: s.org.kind === "supplier" ? t("index.supplierTitle") : t("index.title"), href: "/orders" }]}
         title={order.data.reference}
         badge={<Status status={status} />}
       >
         {order.status === "draft" && buyer && editsOrder && (
           <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-            {supplier.supplierOrgId ? "Submit to supplier" : "Send purchase order"}
+            {supplier.supplierOrgId ? t("detail.submitToSupplier") : t("detail.send")}
           </ActionButton>
         )}
         {s.org.kind === "supplier" &&
@@ -199,7 +226,7 @@ export default async function OrderPage({ params }: Props) {
           proposals.changeable &&
           proposal?.status !== "pending" && (
             <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
-              Edit order
+              {t("revise.title")}
             </Button>
           )}
         {order.status === "submitted" &&
@@ -207,7 +234,7 @@ export default async function OrderPage({ params }: Props) {
           (editable || remaining) &&
           proposal?.status !== "pending" && (
             <ActionButton action="shipment.create" data={{ id }}>
-              {editable ? "Continue packing" : "Prepare next shipment"}
+              {editable ? t("detail.continuePacking") : t("detail.prepareNextShipment")}
             </ActionButton>
           )}
         <OrderMenu
@@ -225,10 +252,8 @@ export default async function OrderPage({ params }: Props) {
       {s.org.kind === "buyer" && !supplier.supplierOrgId && (
         <Alert>
           <InfoIcon />
-          <AlertTitle>{supplier.name} isn’t on Copacker</AlertTitle>
-          <AlertDescription>
-            Email them the purchase order yourself, then enter their cartons and invoice on the shipment.
-          </AlertDescription>
+          <AlertTitle>{t("detail.offCopacker.title", { supplier: supplier.name })}</AlertTitle>
+          <AlertDescription>{t("detail.offCopacker.description")}</AlertDescription>
         </Alert>
       )}
 
@@ -252,25 +277,25 @@ export default async function OrderPage({ params }: Props) {
           <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center gap-1.5 p-3">
               <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
-              <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+              <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
               {stop && (
                 <>
                   <RoutePill icon={<Warehouse />}>{stop}</RoutePill>
-                  <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+                  <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
                 </>
               )}
               <RoutePill icon={<MapPin />}>
-                {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
+                {place(order.data.deliveryId) ?? formatDestination(order.data.destination, common)}
               </RoutePill>
               {order.status === "draft" && buyer && editsOrder && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-auto"
+                  className="ms-auto"
                   render={<Link href={`/orders/${id}/edit`} />}
                   nativeButton={false}
                 >
-                  Edit
+                  {t("builder.edit")}
                 </Button>
               )}
             </div>
@@ -278,13 +303,13 @@ export default async function OrderPage({ params }: Props) {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">Products</th>
-                    <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
-                    <th className="w-24 px-2 py-2 text-right font-medium">Qty</th>
-                    {prices && <th className="w-28 px-2 py-2 text-right font-medium">Cost</th>}
-                    {prices && <th className="w-28 px-2 py-2 text-right font-medium">Total</th>}
+                    <th className="px-3 py-2 text-start font-medium">{t("detail.columns.products")}</th>
+                    <th className="w-36 px-2 py-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
+                    <th className="w-24 px-2 py-2 text-end font-medium">{t("detail.columns.quantity")}</th>
+                    {prices && <th className="w-28 px-2 py-2 text-end font-medium">{t("detail.columns.cost")}</th>}
+                    {prices && <th className="w-28 px-2 py-2 text-end font-medium">{t("detail.columns.total")}</th>}
                     <th className="w-12">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("detail.columns.actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -299,33 +324,39 @@ export default async function OrderPage({ params }: Props) {
                           </Badge>
                         )}
                         <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
-                        {itemRequirements(item, order.data.destination, prep).map((line) => (
-                          <p key={line} className="text-xs text-muted-foreground">
-                            {line}
-                          </p>
-                        ))}
+                        {itemRequirements(item, order.data.destination, prep)
+                          .map(text.requirement)
+                          .map((line) => (
+                            <p key={line} className="text-xs text-muted-foreground">
+                              {line}
+                            </p>
+                          ))}
                       </td>
                       <td className="px-2 py-2.5">
-                        <SupplierSku item={item} />
+                        <SupplierSku item={item} notSet={t("detail.notSet")} />
                       </td>
-                      <td className="px-2 py-2.5 text-right tabular-nums">
+                      <td className="px-2 py-2.5 text-end tabular-nums">
                         {item.pieces}
                         {item.piecesPerSet > 1 && (
-                          <p className="text-xs text-muted-foreground">{item.piecesPerSet} per pack</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("detail.perPack", { count: item.piecesPerSet })}
+                          </p>
                         )}
                         {remainingFor(item.id) !== item.pieces && (
-                          <p className="text-xs text-muted-foreground">{remainingFor(item.id)} to ship</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
+                          </p>
                         )}
                       </td>
                       {prices && (
-                        <td className="px-2 py-2.5 text-right tabular-nums">{money(item.unitPrice, currency)}</td>
+                        <td className="px-2 py-2.5 text-end tabular-nums">{money(item.unitPrice, currency, locale)}</td>
                       )}
                       {prices && (
-                        <td className="px-2 py-2.5 text-right tabular-nums">
-                          {money(item.pieces * item.unitPrice, currency)}
+                        <td className="px-2 py-2.5 text-end tabular-nums">
+                          {money(item.pieces * item.unitPrice, currency, locale)}
                         </td>
                       )}
-                      <td className="py-1.5 pr-2 text-right">
+                      <td className="py-1.5 pe-2 text-end">
                         <LineMenu
                           orderId={id}
                           itemId={item.id}
@@ -347,7 +378,7 @@ export default async function OrderPage({ params }: Props) {
           {instructions.length > 0 && (
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Instructions</CardTitle>
+                <CardTitle>{t("detail.instructions")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="flex flex-col gap-1">
@@ -361,7 +392,7 @@ export default async function OrderPage({ params }: Props) {
 
           <Card size="sm" className="gap-0 pb-0">
             <CardHeader className="pb-3">
-              <CardTitle>Shipments</CardTitle>
+              <CardTitle>{t("detail.shipments")}</CardTitle>
             </CardHeader>
             {shipmentRows.length ? (
               <ul>
@@ -370,26 +401,32 @@ export default async function OrderPage({ params }: Props) {
                     <>
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="font-medium">
-                          Shipment {index + 1}
-                          {shipment.amazonNetwork && ` to Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`}
+                          {shipment.amazonNetwork
+                            ? t("detail.shipmentToAmazon", {
+                                number: index + 1,
+                                network: amazonNetworkNames[shipment.amazonNetwork]
+                              })
+                            : t("detail.shipment", { number: index + 1 })}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {shipment.amazonShipmentId ?? "Cartons in preparation"},{" "}
-                          {shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0} cartons
+                          {t("detail.shipmentCartons", {
+                            reference: shipment.amazonShipmentId ?? t("detail.cartonsInPreparation"),
+                            count: shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
+                          })}
                         </span>
                       </span>
                       <Status status={shipment.status} />
                     </>
                   )
                   return (
-                    <li key={shipment.id} className="flex items-center gap-3 border-t pr-3">
+                    <li key={shipment.id} className="flex items-center gap-3 border-t pe-3">
                       {seesShipments ? (
                         <Link
                           href={`/shipments/${shipment.id}`}
                           className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
                         >
                           {summary}
-                          <ChevronRight className="size-4 text-muted-foreground" />
+                          <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
                         </Link>
                       ) : (
                         <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">{summary}</div>
@@ -407,7 +444,7 @@ export default async function OrderPage({ params }: Props) {
               </ul>
             ) : (
               <p className="px-3 pb-3 text-muted-foreground">
-                {order.status === "draft" ? "Shipments start once the purchase order is sent." : "No shipments yet."}
+                {order.status === "draft" ? t("detail.shipmentsStartOnSend") : t("detail.noShipments")}
               </p>
             )}
           </Card>
@@ -415,7 +452,7 @@ export default async function OrderPage({ params }: Props) {
           {documentGroups.length > 0 && (
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Documents</CardTitle>
+                <CardTitle>{t("detail.documents")}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {documentGroups.map((group) => (
@@ -441,27 +478,24 @@ export default async function OrderPage({ params }: Props) {
           {prices && (
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Cost summary</CardTitle>
+                <CardTitle>{t("detail.costSummary")}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                <p className="font-medium">Order details</p>
+                <p className="font-medium">{t("detail.orderDetails")}</p>
                 <div className="flex justify-between gap-3">
-                  <span>
-                    {order.data.items.length} {order.data.items.length === 1 ? "variant" : "variants"} ({units}{" "}
-                    {units === 1 ? "unit" : "units"})
-                  </span>
-                  <span className="tabular-nums">{money(subtotal, currency)}</span>
+                  <span>{t("detail.variantsAndItems", { variants: order.data.items.length, items: units })}</span>
+                  <span className="tabular-nums">{money(subtotal, currency, locale)}</span>
                 </div>
                 {order.data.adjustments?.map((adjustment, index) => (
                   <div key={index} className="flex justify-between gap-3">
-                    <span>{adjustment.description}</span>
-                    <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
+                    <span>{knownName(adjustmentKeys, adjustment.description, t)}</span>
+                    <span className="tabular-nums">{money(adjustment.amount, currency, locale)}</span>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span className="tabular-nums">{money(orderTotal(order.data), currency)}</span>
+                  <span>{t("detail.columns.total")}</span>
+                  <span className="tabular-nums">{money(orderTotal(order.data), currency, locale)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -469,15 +503,20 @@ export default async function OrderPage({ params }: Props) {
 
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Purchase order details</CardTitle>
+              <CardTitle>{t("detail.purchaseOrderDetails")}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="flex flex-col gap-3">
-                {order.data.dueDate && <Detail label="Required by" value={dayDate(order.data.dueDate)} />}
-                <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
-                {order.data.readyDate && <Detail label="Ready" value={dayDate(order.data.readyDate)} />}
-                <Detail label="Currency" value={currency} />
-                <Detail label={noteLabel(s.org.kind, buyerName)} value={order.data.notes || "—"} />
+                {order.data.dueDate && <Detail label={t("detail.requiredBy")} value={day(order.data.dueDate)} />}
+                <Detail
+                  label={t("detail.paymentTerms")}
+                  value={
+                    order.data.paymentTerms ? knownName(paymentTermKeys, order.data.paymentTerms, t) : t("detail.none")
+                  }
+                />
+                {order.data.readyDate && <Detail label={t("detail.ready")} value={day(order.data.readyDate)} />}
+                <Detail label={t("detail.currency")} value={currency} />
+                <Detail label={noteLabel} value={order.data.notes || "—"} />
               </dl>
             </CardContent>
           </Card>
@@ -505,23 +544,15 @@ export default async function OrderPage({ params }: Props) {
 }
 
 // A line's supplier SKU, or each component's for a bundle, so the supplier knows what to make.
-function SupplierSku({ item }: { item: OrderItem }) {
+function SupplierSku({ item, notSet }: { item: OrderItem; notSet: string }) {
   if (item.components?.length) {
     return item.components.map((component) => (
       <p key={component.variantId}>
-        {component.quantity} × {component.supplierSku || component.buyerSku || "Not set"}
+        {component.quantity} × {component.supplierSku || component.buyerSku || notSet}
       </p>
     ))
   }
-  return item.supplierSku || <WarningNote>Not set</WarningNote>
-}
-
-// The buyer's note, labeled from the viewer's side: to the supplier for the buyer, from the buyer for the supplier.
-function noteLabel(viewer: string, buyerName: string | undefined) {
-  if (viewer !== "supplier") {
-    return "Note to supplier"
-  }
-  return buyerName ? `Note from ${buyerName}` : "Buyer’s note"
+  return item.supplierSku || <WarningNote>{notSet}</WarningNote>
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

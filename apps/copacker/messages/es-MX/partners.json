@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "Socios",
+    "tabsLabel": "Tipos de socio",
+    "tabs": {
+      "all": "Todos",
+      "supplier": "Proveedores",
+      "forwarder": "Agentes de carga"
+    },
+    "search": "Buscar socios",
+    "columns": {
+      "name": "Nombre",
+      "type": "Tipo",
+      "status": "Estado",
+      "details": "Detalles",
+      "actions": "Acciones"
+    },
+    "empty": {
+      "noMatch": "Ningún socio coincide con “{query}”",
+      "all": "Aún no hay socios",
+      "supplier": "Aún no hay proveedores",
+      "forwarder": "Aún no hay agentes de carga"
+    },
+    "hints": {
+      "forwarder": "Agrega un agente de carga para enviar tus órdenes de compra a través de él.",
+      "supplier": "Aquí aparecen los proveedores de Shopify.",
+      "search": "Revisa la ortografía o busca en otra pestaña."
+    }
+  },
+  "add": {
+    "button": "Agregar socio",
+    "supplier": "Proveedor",
+    "forwarder": "Agente de carga"
+  },
+  "row": {
+    "types": {
+      "supplier": "Proveedor",
+      "forwarder": "Agente de carga"
+    },
+    "addresses": "{count, plural, one {# dirección} other {# direcciones}}",
+    "noAddresses": "Aún no hay direcciones",
+    "leadTime": "Tiempo de entrega: {days, plural, one {# día} other {# días}}",
+    "leadTimeAndAddresses": "Tiempo de entrega: {days, plural, one {# día} other {# días}}, {count, plural, one {# dirección} other {# direcciones}}",
+    "sending": "Enviando…",
+    "invitationSentTo": "Invitación enviada a {email}",
+    "invitationSent": "Invitación enviada",
+    "moreActions": "Más acciones para {name}",
+    "menu": {
+      "edit": "Editar",
+      "addresses": "Direcciones",
+      "invite": "Invitar",
+      "resend": "Reenviar invitación"
+    },
+    "standing": {
+      "joined": "En Copacker",
+      "invited": "Invitado",
+      "expired": "Invitación vencida",
+      "notInvited": "Sin invitar"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "Agregar agente de carga",
+      "title": "Agregar un agente de carga",
+      "description": "Recoge en tu proveedor y envía a Amazon o a tu almacén.",
+      "submit": "Agregar agente de carga",
+      "company": "Empresa",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "Correo electrónico",
+      "emailDescription": "Agrega uno para invitarlo ahora."
+    },
+    "invite": {
+      "title": "Invitar a {name}",
+      "description": "Mantendrá sus propias direcciones de almacén para tus órdenes de compra.",
+      "submit": "Enviar invitación",
+      "email": "Correo electrónico"
+    },
+    "rename": {
+      "trigger": "Editar",
+      "triggerLabel": "Editar {name}",
+      "title": "Editar agente de carga",
+      "submit": "Guardar",
+      "company": "Empresa"
+    },
+    "remove": {
+      "trigger": "Quitar",
+      "title": "¿Quitar a {name}?",
+      "description": "Las nuevas órdenes de compra no podrán enviarse a este agente. Las órdenes de compra ya enviadas conservan su dirección.",
+      "cancel": "Cancelar",
+      "confirm": "Quitar",
+      "failed": "No se pudo quitar a {name}"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "Agregar proveedor",
+      "title": "Agregar un proveedor",
+      "description": "Para un proveedor que aún no está en Shopify."
+    },
+    "edit": {
+      "title": "Editar {name}",
+      "name": "Nombre",
+      "companyName": "Nombre de la empresa",
+      "companyNameDescription": "Como en el campo Proveedor de Shopify.",
+      "companyNamePlaceholder": "No está en Shopify",
+      "contactName": "Nombre del contacto",
+      "contactEmail": "Correo electrónico del contacto",
+      "phone": "Teléfono",
+      "website": "Sitio web",
+      "websiteJoined": "{name} administra sus datos de contacto en su propio espacio de trabajo.",
+      "leadTime": "Tiempo de entrega (días)",
+      "leadTimeDescription": "Desde la orden de compra hasta tener existencias a la venta. Si está vacío, son {days}.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "failed": "No se pudo guardar el proveedor. Inténtalo de nuevo."
+    },
+    "invite": {
+      "title": "Invitar a {name}",
+      "description": "Verá las órdenes de compra que compartas y recibirá un correo cuando alguna necesite documentos.",
+      "email": "Correo electrónico del proveedor",
+      "cancel": "Cancelar",
+      "submit": "Enviar invitación",
+      "sending": "Enviando…",
+      "failed": "No se pudo invitar a {name}. Inténtalo de nuevo."
+    }
+  },
+  "address": {
+    "editPickup": "Editar dirección de recolección",
+    "edit": "Editar dirección",
+    "addPickup": "Agregar una dirección de recolección para {name}",
+    "add": "Agregar una dirección para {name}",
+    "saveChanges": "Guardar cambios",
+    "save": "Guardar dirección",
+    "name": "Nombre de la dirección",
+    "pickupPlaceholder": "Fábrica",
+    "placeholder": "Almacén de Yiwu",
+    "sheet": {
+      "supplier": "Direcciones de recolección",
+      "forwarder": "Paradas antes de llegar a Amazon o a tu almacén",
+      "joinedSupplier": "Administra sus propias direcciones de recolección en Copacker",
+      "joinedForwarder": "Administra sus propias direcciones en Copacker"
+    },
+    "empty": "Aún no hay direcciones",
+    "addButton": "Agregar dirección",
+    "removing": "Quitando {name}",
+    "moreActions": "Más acciones para {name}",
+    "menuEdit": "Editar",
+    "menuRemove": "Quitar",
+    "removeFailed": "No se pudo quitar {name}"
+  },
+  "contactKinds": {
+    "delivery": "Dirección de entrega",
+    "forwarder": "Agente de carga",
+    "pickup": "Dirección de recolección"
+  },
+  "contactDetails": {
+    "enterEmail": "Ingresa un correo electrónico"
+  },
+  "phone": {
+    "invalid": "Ingresa un número de teléfono"
+  }
+}

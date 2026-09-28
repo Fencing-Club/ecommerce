@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { suppliers } from "@/db/schema"
 import { requireAccess, requireBuyer, session } from "@/server/auth"
 import { customerProducts } from "@/server/catalogs"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
@@ -18,7 +18,7 @@ const inputSchema = z.object({
 
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       .from(suppliers)
       .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     if (!supplier) {
-      return Response.json({ error: "Supplier is not linked to this workspace" }, { status: 404 })
+      return errorResponse("supplierNotLinked", 404)
     }
     const skus = [...new Set(input.supplierSkus.filter(Boolean))]
     // Only what the supplier offers this buyer, at its catalog prices.
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     )
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Catalog lookup failed" },
+      { error: await failureMessage(error, "catalogLookupFailed") },
       { status: failureStatus(error) }
     )
   }

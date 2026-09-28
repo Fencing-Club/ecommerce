@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { db } from "@/db"
 import { contacts, memberships, organizations, supplierProfiles } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { contactKindsFor } from "@/lib/contacts"
 import { joinSchema, workspaceSetupSchema } from "@/lib/onboarding"
 import { setWorkspace } from "./auth"
@@ -14,11 +15,11 @@ type Person = { id: string; email: string; emailVerified: boolean }
 // An invitation that can't be accepted is turned down before anything is created.
 async function openInvitation(user: Person, kind: InvitationKind, token: string) {
   if (!user.emailVerified) {
-    throw new Error("Verify your email before accepting an invitation")
+    throw new LocalizedError("verifyEmailFirst")
   }
   const invitation = await findInvitation(kind, token)
   if (!invitation || invitation.expired || invitation.email !== user.email.toLowerCase()) {
-    throw new Error("Invitation expired or belongs to a different email address")
+    throw new LocalizedError("invitationInvalid")
   }
   return invitation
 }
@@ -89,7 +90,7 @@ export async function joinWorkspace(user: Person, raw: unknown) {
       return joined
     }
     if (!input.orgId) {
-      throw new Error("Choose a workspace")
+      throw new LocalizedError("chooseWorkspace")
     }
     if (input.kind === "supplier") {
       await acceptSupplierInvitation(user, input.orgId, input.token, tx)

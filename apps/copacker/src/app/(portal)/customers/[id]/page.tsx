@@ -1,4 +1,5 @@
 import { Globe, Mail, Phone, User } from "lucide-react"
+import { getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { customerDetail, withoutTotals } from "@/server/supplier-workspace"
 
-export const generateMetadata = titleFor("Customer", "customers")
+export const generateMetadata = titleFor("supplier.pages.customer", "customers")
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
@@ -30,6 +31,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     notFound()
   }
   const { customer, contact, catalogs, orders } = detail
+  const [t, pages, locale] = await Promise.all([
+    getTranslations("supplier.customerPage"),
+    getTranslations("supplier.pages"),
+    getLocale()
+  ])
   // The phone reads grouped, as +1 (425) 260-2501, and dials as saved.
   const contactRows = [
     { icon: User, value: contact.name },
@@ -45,26 +51,26 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <PageHeader parents={[{ label: "Customers", href: "/customers" }]} title={customer.name} />
+      <PageHeader parents={[{ label: pages("customers"), href: "/customers" }]} title={customer.name} />
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card size="sm">
             <CardContent className={cn("grid divide-x text-sm", prices ? "grid-cols-3" : "grid-cols-2")}>
               {prices && (
-                <div className="pr-3">
-                  <p className="text-muted-foreground">Amount spent</p>
+                <div className="pe-3">
+                  <p className="text-muted-foreground">{t("spent")}</p>
                   <p className="mt-1 text-lg font-semibold">
                     <Amounts amounts={customer.spent} />
                   </p>
                 </div>
               )}
-              <div className={prices ? "px-3" : "pr-3"}>
-                <p className="text-muted-foreground">Orders</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{customer.orders}</p>
+              <div className={prices ? "px-3" : "pe-3"}>
+                <p className="text-muted-foreground">{t("orders")}</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums">{customer.orders.toLocaleString(locale)}</p>
               </div>
-              <div className="pl-3">
-                <p className="text-muted-foreground">Customer since</p>
-                <p className="mt-1 text-lg font-semibold">{formatDate(customer.createdAt)}</p>
+              <div className="ps-3">
+                <p className="text-muted-foreground">{t("since")}</p>
+                <p className="mt-1 text-lg font-semibold">{formatDate(customer.createdAt, locale)}</p>
               </div>
             </CardContent>
           </Card>
@@ -76,7 +82,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <div className="flex flex-col gap-4">
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Catalog</CardTitle>
+              <CardTitle>{t("catalog")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <CatalogPicker
@@ -91,14 +97,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   href={`/catalogs/${customer.catalog.id}`}
                   className="text-xs text-muted-foreground hover:underline"
                 >
-                  Open {customer.catalog.title}
+                  {t("openCatalog", { title: customer.catalog.title })}
                 </Link>
               )}
             </CardContent>
           </Card>
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Contact</CardTitle>
+              <CardTitle>{t("contact")}</CardTitle>
             </CardHeader>
             <CardContent>
               {contactRows.length ? (
@@ -117,7 +123,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No contact details</p>
+                <p className="text-sm text-muted-foreground">{t("noContact")}</p>
               )}
             </CardContent>
           </Card>

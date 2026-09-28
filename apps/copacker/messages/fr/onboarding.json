@@ -1,0 +1,123 @@
+{
+  "title": "Commencer",
+  "newWorkspaceTitle": "Nouvel espace de travail",
+  "person": {
+    "enterFirstName": "Saisissez votre prénom",
+    "enterLastName": "Saisissez votre nom",
+    "choosePosition": "Choisissez votre poste"
+  },
+  "company": {
+    "enterName": "Saisissez le nom de votre entreprise",
+    "enterWebsite": "Saisissez un site web, par exemple example.com"
+  },
+  "place": {
+    "enterName": "Nommez cette adresse"
+  },
+  "positions": {
+    "owner": "Propriétaire",
+    "generalManager": "Directeur général",
+    "operationsManager": "Responsable des opérations",
+    "purchasingManager": "Responsable des achats",
+    "buyer": "Acheteur",
+    "salesManager": "Responsable commercial",
+    "accountManager": "Chargé de clientèle",
+    "productionManager": "Responsable de production",
+    "qualityControl": "Contrôle qualité",
+    "logisticsCoordinator": "Coordinateur logistique",
+    "warehouseManager": "Responsable d’entrepôt",
+    "customerService": "Service client",
+    "finance": "Finance",
+    "other": "Autre"
+  },
+  "steps": {
+    "about": "À propos de vous",
+    "role": "Que fait votre entreprise ?",
+    "company": "Votre entreprise",
+    "address": {
+      "none": "Adresse",
+      "buyer": {
+        "title": "Adresse de livraison",
+        "description": "Où les bons de commande sont livrés"
+      },
+      "supplier": {
+        "title": "Adresse d’enlèvement",
+        "description": "Où les transporteurs récupèrent vos cartons"
+      },
+      "forwarder": {
+        "title": "Adresse de l’entrepôt",
+        "description": "Où les acheteurs vous envoient leurs marchandises"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Entrepôt",
+    "supplier": "Usine",
+    "forwarder": "Entrepôt"
+  },
+  "fields": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "position": "Poste",
+    "choose": "Choisir",
+    "companyName": "Nom de l’entreprise",
+    "website": "Site web",
+    "websitePlaceholder": "example.com",
+    "phone": "Numéro de téléphone",
+    "addressName": "Nom de l’adresse"
+  },
+  "roles": {
+    "legend": "Activité de votre entreprise",
+    "buyer": {
+      "title": "Acheteur",
+      "description": "Achetez auprès de fournisseurs et vendez sur Amazon ou Shopify"
+    },
+    "supplier": {
+      "title": "Fournisseur",
+      "description": "Fabriquez des produits et honorez des bons de commande"
+    },
+    "forwarder": {
+      "title": "Transitaire",
+      "description": "Réceptionnez des marchandises et réexpédiez-les pour des acheteurs"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Choisissez une option",
+    "pickupPhone": "Ajoutez un numéro de téléphone pour l’enlèvement. Amazon en a besoin pour planifier l’enlèvement",
+    "step": "Étape {current} sur {total}",
+    "invitedBy": "Invité par {name}",
+    "back": "Retour",
+    "skip": "Plus tard",
+    "continue": "Continuer",
+    "createWorkspace": "Créer l’espace de travail",
+    "join": "Rejoindre {workspace}",
+    "cancel": "Annuler",
+    "signOut": "Se déconnecter"
+  },
+  "preview": {
+    "workspace": "Espace de travail",
+    "kinds": {
+      "buyer": "Espace de travail acheteur",
+      "supplier": "Espace de travail fournisseur",
+      "forwarder": "Espace de travail transitaire"
+    },
+    "groups": {
+      "store": "Boutique",
+      "purchasing": "Achats",
+      "sales": "Ventes",
+      "products": "Produits"
+    },
+    "pages": {
+      "overview": "Vue d’ensemble",
+      "orders": "Commandes",
+      "products": "Produits",
+      "restock": "Réassort",
+      "purchaseOrders": "Bons de commande",
+      "shipments": "Expéditions",
+      "customers": "Clients",
+      "inventory": "Stock",
+      "catalogs": "Catalogues",
+      "settings": "Paramètres"
+    },
+    "address": "Adresse"
+  }
+}

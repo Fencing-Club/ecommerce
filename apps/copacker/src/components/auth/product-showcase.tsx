@@ -1,4 +1,5 @@
 import { Check, Ship, TrendingDown } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { BrandMark, Stage } from "./stage"
 
@@ -7,8 +8,8 @@ import { BrandMark, Stage } from "./stage"
 // figures are the ad's demo restock (docs/video.md), so the cards agree. It's dark in both themes.
 
 const restock = [
-  { name: "Steel Bottle 32 oz", days: 18, order: "2,520", tone: "bg-orange-400" },
-  { name: "Trail Mug 12 oz", days: 40, order: "660", tone: "bg-amber-300" },
+  { name: "Steel Bottle 32 oz", days: 18, order: 2520, tone: "bg-orange-400" },
+  { name: "Trail Mug 12 oz", days: 40, order: 660, tone: "bg-amber-300" },
   { name: "Camp Tumbler 20 oz", days: 133, order: null, tone: "bg-emerald-400" }
 ]
 // The bars run to this many days of stock; the tick marks the 60-day lead time.
@@ -50,63 +51,75 @@ function Enter({
   )
 }
 
+// The headline's last word, in the brand's warm gradient.
+function accent(chunks: React.ReactNode) {
+  return (
+    <span className="bg-linear-to-r from-orange-300 via-orange-200 to-amber-100 bg-clip-text text-transparent">
+      {chunks}
+    </span>
+  )
+}
+
 function Icon({ children }: { children: React.ReactNode }) {
   return <span className="flex size-7 items-center justify-center rounded-lg bg-white/[0.08]">{children}</span>
 }
 
 export function ProductShowcase() {
+  const t = useTranslations("auth.showcase")
+  const format = useFormatter()
   return (
     <Stage>
       <div className="relative flex flex-col gap-10 px-12 pt-10 xl:px-16">
         <BrandMark />
         <div className="flex flex-col gap-4">
           <p className="text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.04em] text-balance xl:text-[3.25rem]">
-            Restocking,{" "}
-            <span className="bg-linear-to-r from-orange-300 via-orange-200 to-amber-100 bg-clip-text text-transparent">
-              handled.
-            </span>
+            {t.rich("headline", {
+              accent
+            })}
           </p>
-          <p className="max-w-sm text-base text-pretty text-white/65">
-            Forecast demand, send purchase orders and ship to Amazon with your suppliers and forwarders.
-          </p>
+          <p className="max-w-sm text-base text-pretty text-white/65">{t("tagline")}</p>
         </div>
       </div>
 
       <div aria-hidden className="relative flex flex-1 items-center justify-center px-10 py-12 xl:px-14">
         <div className="flex w-full max-w-[31rem] flex-col">
           {/* Restock: how long each product lasts against the lead time, and what to order. */}
-          <Enter delay="motion-safe:delay-150" drift="[animation-delay:-2s]" className="mr-[14%]">
+          <Enter delay="motion-safe:delay-150" drift="[animation-delay:-2s]" className="me-[14%]">
             <div className={card}>
               <div className="flex items-center justify-between px-5 pt-4 pb-3">
                 <div className="flex items-center gap-2.5">
                   <Icon>
                     <TrendingDown className="size-3.5 text-orange-300" />
                   </Icon>
-                  <span className="text-sm font-medium">Restock</span>
+                  <span className="text-sm font-medium">{t("restock")}</span>
                 </div>
-                <span className="text-[11px] text-white/55">Lead time 60 days</span>
+                <span className="text-[11px] text-white/55">{t("leadTime", { count: leadTime })}</span>
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-5 border-t border-white/[0.08] px-5 pt-3 pb-6 text-xs">
-                <span className="pb-1.5 text-white/50">Product</span>
-                <span className="pb-1.5 text-right text-white/50">Runs out</span>
-                <span className="pb-1.5 text-right text-white/50">Order</span>
+                <span className="pb-1.5 text-white/50">{t("product")}</span>
+                <span className="pb-1.5 text-end text-white/50">{t("runsOut")}</span>
+                <span className="pb-1.5 text-end text-white/50">{t("order")}</span>
                 {restock.map((row) => (
                   <div key={row.name} className="contents">
                     <div className="flex min-w-0 flex-col gap-1.5 py-2">
                       <span className="truncate text-white/90">{row.name}</span>
                       <span className="relative h-1 rounded-full bg-white/[0.08]">
                         <span
-                          className={cn("absolute inset-y-0 left-0 rounded-full", row.tone)}
+                          className={cn("absolute inset-y-0 start-0 rounded-full", row.tone)}
                           style={{ width: `${Math.min(row.days / scale, 1) * 100}%` }}
                         />
                         <span
                           className="absolute -inset-y-0.5 w-px bg-white/60"
-                          style={{ left: `${(leadTime / scale) * 100}%` }}
+                          style={{ insetInlineStart: `${(leadTime / scale) * 100}%` }}
                         />
                       </span>
                     </div>
-                    <span className="self-center py-2 text-right text-white/75 tabular-nums">{row.days} days</span>
-                    <span className="self-center py-2 text-right font-medium tabular-nums">{row.order ?? "—"}</span>
+                    <span className="self-center py-2 text-end text-white/75 tabular-nums">
+                      {t("days", { count: row.days })}
+                    </span>
+                    <span className="self-center py-2 text-end font-medium tabular-nums">
+                      {row.order === null ? "—" : format.number(row.order)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -114,13 +127,13 @@ export function ProductShowcase() {
           </Enter>
 
           {/* The purchase order Restock wrote, now with the supplier. */}
-          <Enter delay="motion-safe:delay-500" drift="[animation-delay:-5s]" className="z-10 -mt-3 ml-[34%]">
+          <Enter delay="motion-safe:delay-500" drift="[animation-delay:-5s]" className="z-10 -mt-3 ms-[34%]">
             <div className={cn(card, "flex flex-col gap-3.5 p-4")}>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">Purchase order</span>
+                <span className="text-sm font-medium">{t("purchaseOrder")}</span>
                 <span className="flex items-center gap-1.5 rounded-full bg-sky-400/15 px-2 py-0.5 text-[11px] text-sky-200">
                   <span className="size-1.5 rounded-full bg-sky-300" />
-                  With supplier
+                  {t("withSupplier")}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -131,7 +144,7 @@ export function ProductShowcase() {
                   <span className="truncate text-xs text-white/75">Shenzhen Metalworks</span>
                 </div>
                 <span className="shrink-0 text-base leading-none font-semibold tracking-tight tabular-nums">
-                  $13,650
+                  {format.number(13650, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
                 </span>
               </div>
             </div>
@@ -141,7 +154,7 @@ export function ProductShowcase() {
           <Enter
             delay="motion-safe:delay-700"
             drift="[animation-delay:-3.5s]"
-            className="z-20 -mt-3 mr-[8%] ml-[6%] [@media(max-height:46rem)]:hidden"
+            className="z-20 -mt-3 me-[8%] ms-[6%] [@media(max-height:46rem)]:hidden"
           >
             <div className={cn(card, "flex flex-col gap-4 p-4")}>
               <div className="flex items-center justify-between">
@@ -149,9 +162,9 @@ export function ProductShowcase() {
                   <Icon>
                     <Ship className="size-3.5 text-sky-200" />
                   </Icon>
-                  <span className="text-sm font-medium">Shipment to AWD US</span>
+                  <span className="text-sm font-medium">{t("shipmentTo", { destination: "AWD US" })}</span>
                 </div>
-                <span className="text-xs text-white/55 tabular-nums">40 cartons</span>
+                <span className="text-xs text-white/55 tabular-nums">{t("cartons", { count: 40 })}</span>
               </div>
               <ol className="grid grid-cols-3">
                 {legs.map((leg, index) => (
@@ -179,7 +192,7 @@ export function ProductShowcase() {
                         </span>
                       )}
                     </div>
-                    <span className="truncate pr-2 text-[11px] text-white/65">{leg.name}</span>
+                    <span className="truncate pe-2 text-[11px] text-white/65">{leg.name}</span>
                   </li>
                 ))}
               </ol>

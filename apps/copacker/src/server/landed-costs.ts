@@ -1,8 +1,9 @@
 import { orderTotal, type OrderInput } from "@repo/aisle"
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm"
+import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { events, landedCosts, orders } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
 import type { Session } from "./auth"
@@ -10,7 +11,7 @@ import type { Session } from "./auth"
 // Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new Error("A buyer workspace is required")
+    throw new LocalizedError("buyerWorkspaceRequired")
   }
 }
 
@@ -50,7 +51,7 @@ export async function removeLandedCost(s: Session, id: string) {
     .innerJoin(orders, eq(orders.id, landedCosts.orderId))
     .where(and(eq(landedCosts.id, z.uuid().parse(id)), eq(orders.buyerOrgId, s.org.id)))
   if (!row) {
-    throw new Error("Landed cost not found")
+    throw new LocalizedError("landedCostNotFound")
   }
   await db().delete(landedCosts).where(eq(landedCosts.id, row.id))
 }
@@ -118,13 +119,7 @@ export async function landedMarkupsFor(orgId: string) {
       .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
       .from(events)
       .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(
-        and(
-          eq(orders.buyerOrgId, orgId),
-          // Events recorded before purchase orders were spelled out say "PO submitted to supplier".
-          inArray(events.message, ["Purchase order submitted to supplier", "PO submitted to supplier"])
-        )
-      )
+      .where(and(eq(orders.buyerOrgId, orgId), eq(events.messageKey, "submittedToSupplier")))
       .groupBy(events.orderId),
     amazonFreightByOrder(orgId)
   ])

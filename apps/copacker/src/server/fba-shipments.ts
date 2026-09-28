@@ -13,6 +13,7 @@ import { type CartonLabel, unpackLabels } from "@repo/aisle/labels"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { shipments } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { generateShipmentDocuments, storeDocument } from "./documents"
 import { forwarderAddress } from "./forwarders"
 import { PollAgain } from "./job-handlers"
@@ -32,13 +33,11 @@ export async function amazonPacking(buyerOrgId: string, order: OrderInput, packi
   }
   const stop = await forwarderAddress(buyerOrgId, order.via.forwarderId, order.via.addressId)
   if (!stop) {
-    throw new Error("The purchase order's forwarder address was removed. Edit the purchase order to choose another")
+    throw new LocalizedError("forwarderAddressRemoved")
   }
   const origin = originSchema.safeParse({ ...stop.address, name: stop.address.name || stop.forwarderName })
   if (!origin.success) {
-    throw new Error(
-      `Add a phone number to ${stop.forwarderName}'s ${stop.addressName} address. Amazon needs it to schedule pickup`
-    )
+    throw new LocalizedError("forwarderPhoneNeeded", { forwarder: stop.forwarderName, address: stop.addressName })
   }
   return { ...packing, origin: origin.data }
 }
@@ -84,7 +83,9 @@ export async function cancelAmazonShipment(
     }
     if (operation.operationStatus === "FAILED") {
       const problems = operation.operationProblems.map((problem) => problem.message).join("; ")
-      throw new Error(`Amazon couldn't cancel the inbound plan: ${problems || "no reason given"}`)
+      throw problems
+        ? new LocalizedError("amazonCancelFailed", { problems })
+        : new LocalizedError("amazonCancelFailedNoReason")
     }
     await new Promise((resolve) => setTimeout(resolve, pauseMs))
   }
@@ -124,9 +125,7 @@ export async function choosePackingOption(
     (a, b) => a.option.packingGroups.length - b.option.packingGroups.length || netFees(a.option) - netFees(b.option)
   )
   if (!best) {
-    throw new Error(
-      "Amazon needs some products packed separately. Pack each product in its own cartons, then submit again"
-    )
+    throw new LocalizedError("amazonPackSeparately")
   }
   return best
 }
@@ -179,7 +178,7 @@ export function matchBoxes(
     )
     const match = exact ?? candidates[0]
     if (!match) {
-      throw new Error(`Amazon has no box matching carton ${cartonId}`)
+      throw new LocalizedError("amazonNoBox", { carton: cartonId })
     }
     remaining.splice(remaining.indexOf(match), 1)
     return { cartonId, boxId: match.box.boxId!, shipmentId: match.shipmentId }
@@ -206,7 +205,7 @@ export async function fbaShipmentJob(
   const planId = shipment.amazonOrderId
   if (!planId) {
     if (shipment.operation === "sending") {
-      throw new Error("Amazon create outcome is unknown. Reconcile the existing inbound plan before retrying")
+      throw new LocalizedError("amazonOutcomeUnknown")
     }
     const request = buildFbaPlan(order, packing, name, prep)
     await assertOwned()
@@ -224,7 +223,7 @@ export async function fbaShipmentJob(
       )
       .returning({ id: shipments.id })
     if (dispatch.length !== 1) {
-      throw new Error("Amazon creation is already in progress. Reconcile before retrying")
+      throw new LocalizedError("amazonCreationInProgress")
     }
     const created = await createOnce(shipment.id, () => api.fbaCreatePlan(request))
     await db()
@@ -240,15 +239,17 @@ export async function fbaShipmentJob(
     }
     if (operation.operationStatus === "FAILED") {
       const problems = operation.operationProblems.map((problem) => problem.message).join("; ")
-      throw new Error(`Amazon rejected the inbound plan: ${problems || "no reason given"}`)
+      throw problems
+        ? new LocalizedError("amazonPlanRejected", { problems })
+        : new LocalizedError("amazonPlanRejectedNoReason")
     }
   }
   const plan = await api.fbaPlan(planId!)
   if (plan.name !== name) {
-    throw new Error("Amazon inbound plan does not belong to this shipment revision")
+    throw new LocalizedError("amazonPlanNotForShipment")
   }
   if (plan.status === "VOIDED") {
-    throw new Error("The Amazon inbound plan was cancelled")
+    throw new LocalizedError("amazonPlanCancelled")
   }
   await assertOwned()
 
@@ -299,7 +300,7 @@ export async function fbaShipmentJob(
     (option) => option.placementOptionId === placementOptionId
   )
   if (!placement) {
-    throw new Error("Amazon's chosen warehouses are missing from the inbound plan")
+    throw new LocalizedError("amazonWarehousesMissing")
   }
 
   // Transportation: the buyer's own carrier, with a delivery window when Amazon asks for one.
@@ -335,7 +336,7 @@ export async function fbaShipmentJob(
     const offered = listed.map(({ shipment: row, options }) => {
       const option = chooseTransportationOption(options)
       if (!option) {
-        throw new Error("Amazon offers no way to use your own carrier for this shipment. Book it in Seller Central")
+        throw new LocalizedError("amazonNoOwnCarrier")
       }
       return { shipment: row, option }
     })

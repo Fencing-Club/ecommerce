@@ -1,12 +1,16 @@
 import { withAuth } from "@workos-inc/authkit-nextjs"
 import { and, eq } from "drizzle-orm"
 import type { Metadata } from "next"
+import type { MessageKeys, NestedKeyOf } from "next-intl"
+import { getTranslations } from "next-intl/server"
 import { cookies, headers } from "next/headers"
 import { forbidden, redirect } from "next/navigation"
 import { db } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import type { Messages } from "@/i18n/messages"
 import { type AccessLevel, type Area, can, type Grant, isAdmin, type Permissions } from "@/lib/access"
-import { areaLabel } from "@/lib/navigation"
+import { areaLabelKey } from "@/lib/navigation"
 import { AccessError } from "@/server/errors"
 import { returnPath } from "@/server/security"
 
@@ -96,24 +100,24 @@ export async function profileFor(user: { id: string; firstName?: string | null; 
 }
 export function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new Error("A buyer workspace is required")
+    throw new LocalizedError("buyerWorkspaceRequired")
   }
 }
 export function requireSupplier(s: Session) {
   if (s.org.kind !== "supplier") {
-    throw new Error("A supplier workspace is required")
+    throw new LocalizedError("supplierWorkspaceRequired")
   }
 }
 // The team, the store connections and the workspace's settings are its owner's and admins'.
 export function requireAdmin(s: Pick<Session, "role">) {
   if (!isAdmin(s)) {
-    throw new AccessError("Only admins can do this")
+    throw new AccessError("adminsOnly")
   }
 }
 // Handing the workspace over and deleting it are its owner's alone.
 export function requireOwner(s: Pick<Session, "role">) {
   if (s.role !== "owner") {
-    throw new AccessError("Only the owner can do this")
+    throw new AccessError("ownerOnly")
   }
 }
 // For a request: a member without the page, or without edit access to it for a change, is turned away, as is one who
@@ -124,17 +128,28 @@ export function requireAccess(
   level: AccessLevel = "view"
 ) {
   if (!can(s, grant, level)) {
-    const name = grant === "prices" ? "prices and costs" : areaLabel(s.org.kind, grant)
-    throw new AccessError(`Ask an admin for access to ${name}`)
+    const page = grant === "prices" ? "prices" : (areaLabelKey(s.org.kind, grant) ?? grant)
+    throw new AccessError("askAdminForAccess", { page })
   }
 }
 // The No access page's title, for a page someone can't open. A page's metadata returns it rather than calling
 // forbidden(): Next titles a page whose metadata throws forbidden() as not found.
-export const noAccessTitle: Metadata = { title: "No access" }
+export async function noAccessTitle(): Promise<Metadata> {
+  const t = await getTranslations("common.pages.forbidden")
+  return { title: t("title") }
+}
+// A page title's message key, such as "products.page.addProduct".
+export type TitleKey = MessageKeys<Messages, NestedKeyOf<Messages>>
 // A guarded page's title, as its generateMetadata. Someone who can't open the page gets the No access page's title,
 // which a page's own static title would otherwise replace.
-export function titleFor(title: string, area: Area, level: AccessLevel = "view") {
-  return async (): Promise<Metadata> => (can(await session(), area, level) ? { title } : noAccessTitle)
+export function titleFor(title: TitleKey, area: Area, level: AccessLevel = "view") {
+  return async (): Promise<Metadata> => {
+    if (!can(await session(), area, level)) {
+      return noAccessTitle()
+    }
+    const t = await getTranslations()
+    return { title: t(title) }
+  }
 }
 // For a page, or a request that only reads: someone without access gets Next's 403, which shows a page as the portal's
 // No access page.
@@ -149,7 +164,7 @@ export async function requireMembership(userId: string, orgId: string) {
     .from(memberships)
     .where(and(eq(memberships.userId, userId), eq(memberships.orgId, orgId)))
   if (!member) {
-    throw new Error("Workspace access denied")
+    throw new LocalizedError("workspaceAccessDenied")
   }
   return member
 }

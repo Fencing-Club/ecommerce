@@ -7,7 +7,7 @@ import { phoneSchema } from "./phone"
 // forms and the server check them with this same schema.
 export const contactDetailsSchema = z.object({
   contactName: z.string().trim().max(120),
-  contactEmail: z.union([z.literal(""), z.email("Enter an email address").max(254)]),
+  contactEmail: z.union([z.literal(""), z.email("partners.contactDetails.enterEmail").max(254)]),
   phoneNumber: phoneSchema,
   website: websiteSchema
 })

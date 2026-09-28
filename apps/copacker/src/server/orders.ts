@@ -27,9 +27,11 @@ import {
   poImports,
   type ShipmentState
 } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { bundleQuote } from "@/lib/bundle-quote"
 import { quantityProblem } from "@/lib/catalog-pricing"
+import { eventMessage, type TimelineEvent } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
 import { customerProducts } from "./catalogs"
@@ -43,6 +45,7 @@ import { forwarderLeg } from "./shipment-legs"
 import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
+import { pricingText, serverText } from "./text"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
 async function amazonAccount(orgId: string) {
@@ -63,7 +66,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
     .from(suppliers)
     .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
   if (!supplier) {
-    throw new Error("Select a supplier in this workspace")
+    throw new LocalizedError("selectWorkspaceSupplier")
   }
   const shop = await connection(s.org.id, "shopify"),
     amazon = await amazonAccount(s.org.id)
@@ -91,11 +94,11 @@ export async function prepareOrder(s: Session, raw: unknown) {
   input.items = input.items.map((item) => {
     const source = catalog.find((v) => v?.id === item.variantId)
     if (!source?.sku) {
-      throw new Error("Every item on the purchase order must have a Shopify SKU")
+      throw new LocalizedError("itemsNeedShopifySku")
     }
     const identity = identities?.get(source.sku)
     if (source.asin?.value && identity?.asin && source.asin.value !== identity.asin) {
-      throw new Error(`Shopify and Amazon ASINs disagree for SKU ${source.sku}`)
+      throw new LocalizedError("asinMismatch", { sku: source.sku })
     }
     // A multipack is a Shopify bundle, so its pieces per unit come from the bundle, not from the PO.
     const piecesPerSet = piecesPerUnit(source)
@@ -133,7 +136,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
       }
     })
     if (item.pieces % piecesPerSet !== 0) {
-      throw new Error(`${source.sku} is a bundle of ${piecesPerSet}. Order a multiple of ${piecesPerSet} units`)
+      throw new LocalizedError("bundleMultiple", { sku: source.sku, count: piecesPerSet })
     }
     return {
       ...item,
@@ -189,7 +192,7 @@ export async function checkOrder(
     (amazonSellerId !== null &&
       !accounts.some((account) => account.provider === "amazon" && account.externalId === amazonSellerId))
   ) {
-    throw new Error("The connected merchant account changed. Refresh before saving this purchase order")
+    throw new LocalizedError("merchantChangedOrder")
   }
   const [supplier] = await tx
     .select({ id: suppliers.id, supplierOrgId: suppliers.supplierOrgId })
@@ -197,7 +200,7 @@ export async function checkOrder(
     .where(and(eq(suppliers.id, input.supplierId), eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     .for("share")
   if (!supplier) {
-    throw new Error("Select a supplier in this workspace")
+    throw new LocalizedError("selectWorkspaceSupplier")
   }
   if (stock) {
     await checkSupplierStock(tx, supplier.supplierOrgId, input)
@@ -209,11 +212,11 @@ export async function checkOrder(
       .where(and(eq(contacts.id, input.deliveryId!), eq(contacts.orgId, s.org.id), eq(contacts.kind, "delivery")))
       .for("share")
     if (!delivery) {
-      throw new Error("Choose one of your delivery addresses")
+      throw new LocalizedError("chooseDeliveryAddress")
     }
   }
   if (input.via && !(await forwarderAddress(s.org.id, input.via.forwarderId, input.via.addressId, tx))) {
-    throw new Error("Choose one of your forwarders' addresses for the stop on the way")
+    throw new LocalizedError("chooseForwarderStop")
   }
 }
 export async function persistOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
@@ -231,7 +234,7 @@ export async function persistOrder(tx: Transaction, s: Session, prepared: Awaite
     .returning()
   await tx
     .insert(orderRevisions)
-    .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "Purchase order created" })
+    .values({ orderId: order!.id, revision: 1, data: input, actor: s.user.id, reason: "created" })
   return order!
 }
 // Saves changes to a draft PO as its next revision. A sent PO changes through its shipments instead.
@@ -241,13 +244,13 @@ export async function updateDraftOrder(s: Session, id: string, raw: unknown, exp
   await db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "draft") {
-      throw new Error("Only a draft purchase order can be edited")
+      throw new LocalizedError("onlyDraftEditable")
     }
     if (order.revision !== expectedRevision) {
-      throw new Error("This purchase order has changed. Refresh before saving")
+      throw new LocalizedError("orderChangedSave")
     }
     if (order.shopifyDomain !== prepared.shopifyDomain) {
-      throw new Error("The connected Shopify store changed. Create a new purchase order instead")
+      throw new LocalizedError("shopifyStoreChanged")
     }
     await checkOrder(tx, s, prepared)
     const revision = order.revision + 1
@@ -263,7 +266,7 @@ export async function updateDraftOrder(s: Session, id: string, raw: unknown, exp
       .where(eq(orders.id, id))
     await tx
       .insert(orderRevisions)
-      .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "Purchase order edited" })
+      .values({ orderId: id, revision, data: prepared.input, actor: s.user.id, reason: "edited" })
   })
 }
 export async function createOrder(s: Session, raw: unknown) {
@@ -281,9 +284,7 @@ async function missingAmazonIdentities(s: Session, id: string) {
   }
   const amazon = await amazonAccount(s.org.id)
   if (!amazon) {
-    throw new Error(
-      "Connect Amazon in Settings before sending this purchase order. Amazon needs each item's ASIN and FNSKU."
-    )
+    throw new LocalizedError("connectAmazonBeforeSending")
   }
   const identities = await amazonIdentities(
     s.org.id,
@@ -295,9 +296,7 @@ async function missingAmazonIdentities(s: Session, id: string) {
     return !identity?.asin || !identity.fnsku || (item.asin && item.asin !== identity.asin)
   })
   if (unlisted.length) {
-    throw new Error(
-      `Amazon has no matching FBA listing for ${unlisted.map((item) => item.buyerSku).join(", ")}. Check the SKUs on Amazon, then send the purchase order.`
-    )
+    throw new LocalizedError("amazonNoListing", { skus: unlisted.map((item) => item.buyerSku).join(", ") })
   }
   return { sellerId: amazon.externalId, identities, revision: order.revision }
 }
@@ -314,16 +313,17 @@ async function checkQuantityRules(
     supplier,
     lines.map((item) => item.supplierSku)
   )
+  const t = await pricingText()
   const problems = lines.flatMap((item) => {
     const { rules } = matchSupplierCatalog(
       { supplierOrgId: supplier.supplierOrgId, supplierSku: item.supplierSku, currency: data.currency },
       products
     )
-    const problem = rules && quantityProblem(rules, item.pieces, "piece")
+    const problem = rules && quantityProblem(rules, item.pieces, "piece", t)
     return problem ? [`${item.buyerSku}: ${problem.toLowerCase()}`] : []
   })
   if (problems.length) {
-    throw new Error(`Change these quantities to meet the supplier’s rules. ${problems.join(". ")}`)
+    throw new LocalizedError("quantityRulesBroken", { problems: problems.join(". ") })
   }
 }
 export async function submitOrder(s: Session, id: string, expectedRevision: number) {
@@ -336,16 +336,16 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       order.revision !== expectedRevision ||
       (completed && completed.revision !== order.revision)
     ) {
-      throw new Error("This purchase order has changed. Refresh before submitting")
+      throw new LocalizedError("orderChangedSubmit")
     }
     if (supplier.removedAt) {
-      throw new Error("This supplier was removed. Choose another supplier or add them again")
+      throw new LocalizedError("supplierRemovedChooseAnother")
     }
     await checkSupplierStock(tx, supplier.supplierOrgId, order.data, id)
     await checkQuantityRules(tx, supplier, order.data)
     if (completed) {
       if (order.amazonSellerId && order.amazonSellerId !== completed.sellerId) {
-        throw new Error("The connected Amazon account changed. Refresh before submitting")
+        throw new LocalizedError("amazonAccountChanged")
       }
       order.data = orderInputSchema.parse({
         ...order.data,
@@ -383,9 +383,7 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
     await tx.insert(events).values({
       orderId: id,
       actor: s.user.id,
-      message: supplier.supplierOrgId
-        ? "Purchase order submitted to supplier"
-        : "Purchase order sent; share its documents with the supplier"
+      ...eventMessage({ key: supplier.supplierOrgId ? "submittedToSupplier" : "sent", values: null })
     })
     return { shipmentId: shipment!.id }
   })
@@ -405,14 +403,14 @@ async function refusePendingChanges(tx: Transaction, orderId: string) {
     .from(orderProposals)
     .where(and(eq(orderProposals.orderId, orderId), eq(orderProposals.status, "pending")))
   if (pending) {
-    throw new Error("Changes to this purchase order are waiting for approval. Pack once they're answered")
+    throw new LocalizedError("changesAwaitingApproval")
   }
 }
 export async function newShipment(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted") {
-      throw new Error("Submit the purchase order before creating a shipment")
+      throw new LocalizedError("submitBeforeShipment")
     }
     await refusePendingChanges(tx, orderId)
     const existing = await tx
@@ -428,7 +426,7 @@ export async function newShipment(s: Session, orderId: string) {
     }
     const reserved = reservedPieces(existing)
     if (order.data.items.every((item) => (reserved[item.id] ?? 0) >= item.pieces)) {
-      throw new Error("All quantities on the purchase order are already assigned to shipments")
+      throw new LocalizedError("allQuantitiesAssigned")
     }
     const [shipment] = await tx
       .insert(shipments)
@@ -458,16 +456,16 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
   const submitted = await db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     const { order, supplier } = await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || !["packing", "correction"].includes(shipment.status) || shipment.revision !== expectedRevision) {
-      throw new Error("This shipment has changed. Refresh before submitting")
+      throw new LocalizedError("shipmentChangedSubmit")
     }
     await refusePendingChanges(tx, order.id)
     if (shipment.amazonOrderId || shipment.operation !== "none") {
-      throw new Error("Resolve the existing Amazon shipment before submitting replacement cartons")
+      throw new LocalizedError("resolveAmazonShipment")
     }
     const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
     const others = await tx.select().from(shipments).where(eq(shipments.orderId, order.id))
@@ -477,7 +475,8 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
       keepOrderPrices(s, order.data, raw ?? shipment.packingDraft),
       docs,
       reservedPieces(others, shipmentId),
-      order.revision
+      order.revision,
+      await serverText()
     )
     if (!assessed.packing || assessed.issues.length) {
       throw new Error(
@@ -488,16 +487,12 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     const approval = commercialChanges(order.data, packing).length > 0
     const amazon = order.data.destination === "amazon"
     let status: ShipmentState = "ready"
-    let message = "Packing submitted; ready to ship"
+    let event: TimelineEvent = { key: "packingReady", values: null }
     if (approval) {
       status = "approval"
-      message =
-        s.org.kind === "buyer"
-          ? "Invoice entered with changes to the purchase order"
-          : "Supplier submitted invoice changes for approval"
+      event = { key: s.org.kind === "buyer" ? "invoiceEntered" : "invoiceChangesSubmitted", values: null }
     } else if (amazon) {
       status = "queued"
-      message = "Packing submitted; Amazon creation queued"
     }
     await tx
       .update(shipments)
@@ -511,11 +506,11 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
       })
       .where(eq(shipments.id, shipmentId))
     if (!approval && amazon) {
-      message = await queueAmazon(tx, shipment, packing, order.data, order.revision, supplier.supplierOrgId)
+      event = await queueAmazon(tx, shipment, packing, order.data, order.revision, supplier.supplierOrgId)
     } else if (!approval) {
       await takeSupplierStock(tx, shipmentId, supplier.supplierOrgId, order.data, packing)
     }
-    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, message })
+    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, ...eventMessage(event) })
     return { approval, revision: shipment.revision }
   })
   // The buyer entering a supplier's invoice itself, for a supplier that isn't on Copacker, doesn't approve its own
@@ -528,7 +523,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
 }
 // Queues a shipment's cartons for Amazon, one shipment per Amazon network they go to: the shipment keeps the first
 // network's cartons, and each other network's become a new shipment. Each gets its own Amazon job and takes its own
-// pieces from the supplier's stock. Returns the event message.
+// pieces from the supplier's stock. Returns the timeline event.
 async function queueAmazon(
   tx: Transaction,
   shipment: { id: string; orderId: string; revision: number },
@@ -536,7 +531,7 @@ async function queueAmazon(
   data: OrderInput,
   orderRevision: number,
   supplierOrgId: string | null
-) {
+): Promise<TimelineEvent> {
   const [first, ...rest] = splitByNetwork(data, packing)
   await tx
     .update(shipments)
@@ -576,10 +571,10 @@ async function queueAmazon(
       }))
     )
     .onConflictDoNothing()
-  const names = [first!, ...rest].map((part) => amazonNetworkNames[part.network]).join(" and ")
+  const names = [first!, ...rest].map((part) => amazonNetworkNames[part.network])
   return rest.length
-    ? `Packing submitted; split into ${names} shipments and queued for Amazon`
-    : `Packing submitted; Amazon ${names} creation queued`
+    ? { key: "packingSplit", values: { networks: names } }
+    : { key: "packingQueued", values: { network: names[0]! } }
 }
 
 export async function approveInvoice(s: Session, shipmentId: string, expectedRevision: number, updateCost: boolean) {
@@ -587,7 +582,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
   return db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     const { order, supplier } = await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
@@ -597,15 +592,13 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
       shipment.revision !== expectedRevision ||
       shipment.orderRevision !== order.revision
     ) {
-      throw new Error(
-        "The purchase order or invoice has changed. Ask the supplier to resubmit against the latest revision"
-      )
+      throw new LocalizedError("invoiceChanged")
     }
     const data = approveChanges(order.data, shipment.packing),
       revision = order.revision + 1
     await tx
       .insert(orderRevisions)
-      .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "Approved supplier commercial changes" })
+      .values({ orderId: order.id, revision, data, actor: s.user.id, reason: "approvedCommercialChanges" })
     await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, order.id))
     if (order.data.destination === "amazon") {
       await queueAmazon(tx, shipment, shipment.packing, data, revision, supplier.supplierOrgId)
@@ -649,7 +642,7 @@ export async function approveInvoice(s: Session, shipmentId: string, expectedRev
     await tx.insert(events).values({
       orderId: order.id,
       actor: s.user.id,
-      message: `Invoice changes approved; purchase order revision ${revision} published`
+      ...eventMessage({ key: "invoiceChangesApproved", values: { revision } })
     })
   })
 }
@@ -658,15 +651,15 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
   return db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     await accessibleOrder(s, initial.orderId, tx, true)
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || shipment.status === "creating" || finishedStates.includes(shipment.status)) {
-      throw new Error("Shipment cannot be edited in its current state")
+      throw new LocalizedError("shipmentNotEditable")
     }
     if (shipment.operation === "sending" && !shipment.amazonOrderId) {
-      throw new Error("Reconcile the uncertain Amazon creation before requesting a correction")
+      throw new LocalizedError("reconcileBeforeCorrection")
     }
     await returnSupplierStock(tx, shipment)
     await tx
@@ -686,9 +679,11 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
       .where(
         and(eq(jobs.key, `amazon:${shipmentId}:${shipment.revision}`), inArray(jobs.status, ["pending", "failed"]))
       )
-    await tx
-      .insert(events)
-      .values({ orderId: shipment.orderId, actor: s.user.id, message: `Correction requested: ${reason}` })
+    await tx.insert(events).values({
+      orderId: shipment.orderId,
+      actor: s.user.id,
+      ...eventMessage({ key: "correctionRequested", values: { reason } })
+    })
   })
 }
 
@@ -703,27 +698,27 @@ export async function savePacking(
   return db().transaction(async (tx) => {
     const [initial] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!initial) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     const { order } = await accessibleOrder(s, initial.orderId, tx, true)
     const draft = packingDraftSchema.parse(keepOrderPrices(s, order.data, input))
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
     if (!shipment || shipment.revision !== expectedRevision || order.revision !== expectedOrderRevision) {
-      throw new Error("The purchase order or packing draft has changed. Refresh before saving")
+      throw new LocalizedError("packingDraftChanged")
     }
     if (
       !["packing", "correction"].includes(shipment.status) ||
       shipment.operation !== "none" ||
       shipment.amazonOrderId
     ) {
-      throw new Error("Request a correction before changing submitted packing")
+      throw new LocalizedError("correctionBeforePackingChange")
     }
     const itemIds = new Set(order.data.items.map((item) => item.id))
     if (
       draft.cartons?.some((carton) => carton.items?.some((item) => item.itemId && !itemIds.has(item.itemId))) ||
       draft.changes?.some((change) => !itemIds.has(change.itemId))
     ) {
-      throw new Error("Draft contains a product that is not on this purchase order")
+      throw new LocalizedError("draftProductNotOnOrder")
     }
     const revision = shipment.revision + 1
     await tx
@@ -737,7 +732,7 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
   return db().transaction(async (tx) => {
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!shipment) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     const { order } = await accessibleOrder(s, shipment.orderId, tx)
     const docs = await tx.select().from(documents).where(eq(documents.orderId, order.id))
@@ -749,7 +744,8 @@ export async function checkPacking(s: Session, shipmentId: string, raw?: unknown
       keepOrderPrices(s, order.data, raw ?? shipment.packingDraft ?? shipment.packing ?? {}),
       docs,
       reserved,
-      order.revision
+      order.revision,
+      await serverText()
     )
     return {
       revision: shipment.revision,
@@ -790,11 +786,11 @@ export async function deleteDraftOrder(s: Session, id: string) {
   const files = await db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "draft") {
-      throw new Error("Only draft purchase orders can be deleted. Close a sent one instead")
+      throw new LocalizedError("onlyDraftDeletable")
     }
     const [shipment] = await tx.select({ id: shipments.id }).from(shipments).where(eq(shipments.orderId, id))
     if (shipment) {
-      throw new Error("This purchase order has shipments, so it can't be deleted")
+      throw new LocalizedError("orderHasShipments")
     }
     const removed = await tx
       .delete(documents)
@@ -819,25 +815,21 @@ export async function closeOrder(s: Session, id: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, id, tx, true)
     if (order.status !== "submitted") {
-      throw new Error(
-        order.status === "closed"
-          ? "This purchase order is already closed"
-          : "Send the purchase order before closing it"
-      )
+      throw new LocalizedError(order.status === "closed" ? "orderAlreadyClosed" : "sendBeforeClosing")
     }
     const rows = await tx.select().from(shipments).where(eq(shipments.orderId, id)).for("update")
     const busy = rows.filter(
       (row) => inProgress.has(row.status) || (row.status === "packing" && row.operation !== "none")
     )
     if (busy.length) {
-      throw new Error("A shipment for this purchase order is still in progress. Finish or cancel it first")
+      throw new LocalizedError("shipmentInProgress")
     }
     await tx
       .update(shipments)
       .set({ status: "cancelled", packingDraft: null, updatedAt: new Date() })
       .where(and(eq(shipments.orderId, id), eq(shipments.status, "packing")))
     await tx.update(orders).set({ status: "closed", updatedAt: new Date() }).where(eq(orders.id, id))
-    await tx.insert(events).values({ orderId: id, actor: s.user.id, message: "Purchase order closed" })
+    await tx.insert(events).values({ orderId: id, actor: s.user.id, ...eventMessage({ key: "closed", values: null }) })
   })
 }
 
@@ -847,20 +839,20 @@ export async function receiveShipment(s: Session, shipmentId: string) {
   await db().transaction(async (tx) => {
     const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId))
     if (!shipment) {
-      throw new Error("Shipment not found")
+      throw new LocalizedError("shipmentNotFound")
     }
     const { order } = await accessibleOrder(s, shipment.orderId, tx, true)
     // Goods arrive once the last leg holder has shipped them: the forwarder when they pass through one, or else the
     // supplier.
     const arriving = forwarderLeg(order.data) ? "forwarded" : "shipped"
     if (shipment.status !== arriving) {
-      throw new Error(
-        arriving === "forwarded"
-          ? "The forwarder hasn't shipped these goods on yet"
-          : "The supplier hasn't shipped these goods yet"
-      )
+      throw new LocalizedError(arriving === "forwarded" ? "forwarderNotShipped" : "supplierNotShipped")
     }
     await tx.update(shipments).set({ status: "received", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
-    await tx.insert(events).values({ orderId: shipment.orderId, actor: s.user.id, message: "Shipment received" })
+    await tx.insert(events).values({
+      orderId: shipment.orderId,
+      actor: s.user.id,
+      ...eventMessage({ key: "shipmentReceived", values: null })
+    })
   })
 }

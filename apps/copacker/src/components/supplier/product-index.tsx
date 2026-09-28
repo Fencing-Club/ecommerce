@@ -1,6 +1,6 @@
 "use client"
 
-import { money } from "@repo/aisle"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -9,7 +9,8 @@ import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { type PriceBasis, unitName } from "@/lib/catalog-pricing"
+import { useMoney } from "@/hooks/use-money"
+import type { PriceBasis } from "@/lib/catalog-pricing"
 import type { ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { IndexToolbar, matches, Pager, ProductThumb, rowLink, StatusBadge } from "./shared"
@@ -40,46 +41,51 @@ const columns = {
   status: "hidden @md:table-cell",
   inventory: "hidden @lg:table-cell",
   category: "hidden text-muted-foreground @3xl:table-cell",
-  catalogs: "hidden text-right tabular-nums @4xl:table-cell"
+  catalogs: "hidden text-end tabular-nums @4xl:table-cell"
 }
 
 // A product's prices, as one price or a range. The column says Price, so a price per piece shows alone; a price per
 // pack or case names its unit when every variant shares it.
-export function priceRange(variants: ProductRow["variants"]) {
-  const priced = variants.filter((variant) => variant.priceMinor !== null)
-  if (!priced.length) {
-    return null
+function usePriceRange() {
+  const t = useTranslations("supplier.productIndex")
+  const shared = useTranslations("supplier.shared")
+  const money = useMoney()
+  return (variants: ProductRow["variants"]) => {
+    const priced = variants.filter((variant) => variant.priceMinor !== null)
+    if (!priced.length) {
+      return null
+    }
+    const currencies = new Set(priced.map((variant) => variant.currency))
+    if (currencies.size > 1) {
+      return t("severalCurrencies")
+    }
+    const currency = priced[0]!.currency
+    const prices = priced.map((variant) => variant.priceMinor!)
+    const low = Math.min(...prices)
+    const high = Math.max(...prices)
+    const bases = new Set(priced.map((variant) => variant.priceBasis))
+    const basis = priced[0]!.priceBasis
+    const price =
+      high === low ? money(low, currency) : shared("range", { low: money(low, currency), high: money(high, currency) })
+    return bases.size === 1 && basis !== "piece" ? t("pricePer", { price, basis }) : price
   }
-  const currencies = new Set(priced.map((variant) => variant.currency))
-  if (currencies.size > 1) {
-    return "Several currencies"
-  }
-  const currency = priced[0]!.currency
-  const prices = priced.map((variant) => variant.priceMinor!)
-  const low = Math.min(...prices)
-  const high = Math.max(...prices)
-  const bases = new Set(priced.map((variant) => variant.priceBasis))
-  const basis = priced[0]!.priceBasis
-  const per = bases.size === 1 && basis !== "piece" ? ` / ${unitName(basis)}` : ""
-  return `${money(low, currency)}${high === low ? "" : ` – ${money(high, currency)}`}${per}`
 }
 
 // Stock across a product's tracked variants, like Shopify's "120 in stock for 4 variants". On a narrow table the
 // variant count folds under the stock.
 function Inventory({ variants }: { variants: ProductRow["variants"] }) {
+  const t = useTranslations("supplier.productIndex")
   const tracked = variants.filter((variant) => variant.trackInventory)
   if (!tracked.length) {
-    return <span className="text-muted-foreground">Not tracked</span>
+    return <span className="text-muted-foreground">{t("notTracked")}</span>
   }
   const onHand = tracked.reduce((sum, variant) => sum + variant.onHand, 0)
   return (
     <span className="flex flex-col @4xl:flex-row @4xl:gap-1">
-      <span className={cn("tabular-nums", onHand <= 0 && "text-destructive")}>
-        {onHand.toLocaleString("en-US")} in stock
-      </span>{" "}
+      <span className={cn("tabular-nums", onHand <= 0 && "text-destructive")}>{t("inStock", { count: onHand })}</span>{" "}
       {variants.length > 1 && (
         <span className="text-xs text-muted-foreground @4xl:text-sm">
-          for {tracked.length} variant{tracked.length === 1 ? "" : "s"}
+          {t("forVariants", { count: tracked.length })}
         </span>
       )}
     </span>
@@ -97,6 +103,10 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   const prices = useCan("prices")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  const t = useTranslations("supplier.productIndex")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
+  const priceRange = usePriceRange()
 
   const shown = products.filter(
     (product) =>
@@ -125,12 +135,12 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
         body: JSON.stringify({ ids: [...selected], active })
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? "Couldn't save. Try again.")
+        throw new Error((await response.json()).error ?? shared("couldNotSave"))
       }
       setSelected(new Set())
       router.refresh()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't save. Try again.")
+      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {
       setPending(false)
     }
@@ -138,12 +148,9 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
 
   if (!products.length) {
     return (
-      <EmptyState
-        title="Add your first product"
-        description="Customers order from your products. Add them one at a time or import a spreadsheet."
-      >
+      <EmptyState title={t("emptyTitle")} description={t("emptyDescription")}>
         <Button nativeButton={false} render={<Link href="/products/new" />}>
-          Add product
+          {t("addProduct")}
         </Button>
       </EmptyState>
     )
@@ -159,9 +166,9 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
     <div className="@container flex flex-col gap-3">
       <IndexToolbar
         tabs={[
-          { value: "all", label: "All", count: counts.all },
-          { value: "active", label: "Active", count: counts.active },
-          { value: "archived", label: "Archived", count: counts.archived }
+          { value: "all", label: shared("all"), count: counts.all },
+          { value: "active", label: shared("status.active"), count: counts.active },
+          { value: "archived", label: shared("status.archived"), count: counts.archived }
         ]}
         tab={tab}
         onTabChange={(value) => {
@@ -174,17 +181,17 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
           setQuery(value)
           setPage(0)
         }}
-        placeholder="Search products"
+        placeholder={t("search")}
       />
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-          <span className="font-medium">{selected.size} selected</span>
-          <div className="ml-auto flex gap-2">
+          <span className="font-medium">{shared("selected", { count: selected.size })}</span>
+          <div className="ms-auto flex gap-2">
             <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(true)}>
-              Set as active
+              {t("setActive")}
             </Button>
             <Button size="sm" variant="outline" disabled={pending} onClick={() => void setActive(false)}>
-              Archive
+              {t("archive")}
             </Button>
           </div>
         </div>
@@ -197,7 +204,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
               {editable && (
                 <TableHead className="w-10">
                   <Checkbox
-                    aria-label="Select all products on this page"
+                    aria-label={shared("selectAllOnPage")}
                     checked={allChosen}
                     indeterminate={chosen.length > 0 && !allChosen}
                     onCheckedChange={(checked) => {
@@ -214,12 +221,12 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   />
                 </TableHead>
               )}
-              <TableHead>Product</TableHead>
-              <TableHead className={columns.status}>Status</TableHead>
-              <TableHead className={columns.inventory}>Inventory</TableHead>
-              <TableHead className={columns.category}>Category</TableHead>
-              <TableHead className={columns.catalogs}>Catalogs</TableHead>
-              {prices && <TableHead className="text-right">Price</TableHead>}
+              <TableHead>{t("columns.product")}</TableHead>
+              <TableHead className={columns.status}>{t("columns.status")}</TableHead>
+              <TableHead className={columns.inventory}>{t("columns.inventory")}</TableHead>
+              <TableHead className={columns.category}>{t("columns.category")}</TableHead>
+              <TableHead className={columns.catalogs}>{t("columns.catalogs")}</TableHead>
+              {prices && <TableHead className="text-end">{t("columns.price")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -234,7 +241,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                   {editable && (
                     <TableCell className="relative z-10">
                       <Checkbox
-                        aria-label={`Select ${product.title}`}
+                        aria-label={shared("select", { name: product.title })}
                         checked={selected.has(product.id)}
                         onCheckedChange={(checked) => {
                           const next = new Set(selected)
@@ -257,7 +264,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                         </Link>
                         <span className="truncate text-xs text-muted-foreground">
                           {product.variants.length > 1
-                            ? `${product.variants.length} variants`
+                            ? shared("variantCount", { count: product.variants.length })
                             : product.variants[0]?.supplierSku}
                         </span>
                         {product.status === "archived" && (
@@ -275,10 +282,10 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                     <Inventory variants={product.variants} />
                   </TableCell>
                   <TableCell className={columns.category}>{product.category ?? "—"}</TableCell>
-                  <TableCell className={columns.catalogs}>{product.catalogs}</TableCell>
+                  <TableCell className={columns.catalogs}>{product.catalogs.toLocaleString(locale)}</TableCell>
                   {prices && (
-                    <TableCell className="text-right tabular-nums">
-                      {price ?? <WarningNote>No price</WarningNote>}
+                    <TableCell className="text-end tabular-nums">
+                      {price ?? <WarningNote>{shared("noPrice")}</WarningNote>}
                     </TableCell>
                   )}
                 </TableRow>
@@ -287,7 +294,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
           </TableBody>
         </Table>
       ) : (
-        <EmptyState title="No products found" description="Try another search or tab." />
+        <EmptyState title={t("noneFound")} description={t("noneFoundDescription")} />
       )}
       <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
     </div>

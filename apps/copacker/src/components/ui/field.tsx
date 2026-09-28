@@ -4,6 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { useMessageText } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
@@ -119,7 +120,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="field-description"
       className={cn(
-        "text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
+        "text-start text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
         "last:mt-0 nth-last-2:-mt-1",
         "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
         className
@@ -164,9 +165,11 @@ function FieldError({
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
+  // A message that is a full key, as zod schemas write them, shows in the person's language.
+  const text = useMessageText()
   const content = useMemo(() => {
     if (children) {
-      return children
+      return typeof children === "string" ? text(children) : children
     }
 
     if (!errors?.length) {
@@ -176,15 +179,16 @@ function FieldError({
     const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()]
 
     if (uniqueErrors?.length === 1) {
-      return uniqueErrors[0]?.message
+      const message = uniqueErrors[0]?.message
+      return message && text(message)
     }
 
     return (
-      <ul className="ml-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+      <ul className="ms-4 flex list-disc flex-col gap-1">
+        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{text(error.message)}</li>)}
       </ul>
     )
-  }, [children, errors])
+  }, [children, errors, text])
 
   if (!content) {
     return null

@@ -1,0 +1,267 @@
+{
+  "title": "Vue d’ensemble",
+  "loading": "Chargement de la vue d’ensemble",
+  "notAvailable": "Non disponible",
+  "new": "Nouveau",
+  "plusCurrencies": "Plus {amounts}",
+  "noStores": {
+    "title": "Aucune boutique connectée",
+    "connectDescription": "Connectez Shopify ou Amazon pour voir votre vue d’ensemble",
+    "askAdmin": "Demandez à un administrateur de les connecter",
+    "connect": "Connecter des boutiques"
+  },
+  "period": {
+    "choose": "Choisir une période",
+    "presets": {
+      "today": "Aujourd’hui",
+      "yesterday": "Hier",
+      "last7": "7 derniers jours",
+      "last30": "30 derniers jours",
+      "last90": "90 derniers jours",
+      "last365": "365 derniers jours",
+      "lastWeek": "Semaine dernière",
+      "lastMonth": "Mois dernier",
+      "lastQuarter": "Trimestre dernier",
+      "last12Months": "12 derniers mois",
+      "lastYear": "Année dernière",
+      "weekToDate": "Semaine en cours",
+      "monthToDate": "Mois en cours",
+      "quarterToDate": "Trimestre en cours",
+      "yearToDate": "Année en cours"
+    },
+    "comparisons": {
+      "previousPeriod": "Période précédente",
+      "previousYear": "Année précédente",
+      "none": "Aucune comparaison"
+    },
+    "last": "Derniers",
+    "toDate": "Période en cours",
+    "custom": "Période personnalisée",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "cancel": "Annuler",
+    "apply": "Appliquer"
+  },
+  "channel": {
+    "label": "Canal",
+    "all": "Tous les canaux",
+    "shopifyLocation": "Shopify : {location}"
+  },
+  "kpis": {
+    "label": "Ventes, {period}",
+    "about": "À propos de : {label}",
+    "versus": "{comparison, select, previousYear {par rapport à l’année précédente} other {par rapport à la période précédente}}",
+    "noPrices": "Aucun prix pour l’instant",
+    "noOrders": "Aucune commande synchronisée",
+    "noUnitCosts": "Aucun coût unitaire",
+    "uncostedSales": "Exclut {amount} de ventes sans coût unitaire.",
+    "estimatedFees": "Certains frais sont estimés jusqu’à ce que la plateforme les publie.",
+    "margin": "<figure>{percent}</figure> de marge",
+    "sales": "Ventes",
+    "salesInfo": "Après remises, hors taxes et livraison.",
+    "orders": "Commandes",
+    "averageOrder": "Panier moyen",
+    "units": "Unités vendues",
+    "grossProfit": "Marge brute",
+    "stockoutLosses": "Pertes dues aux ruptures",
+    "stockoutInfo": "Ventes qui devraient être perdues pendant les ruptures de stock, avant l’arrivée des réassorts commandés aujourd’hui.",
+    "lostThisPeriod": "{amount} perdus sur cette période"
+  },
+  "sections": {
+    "sales": "Ventes",
+    "purchasing": "Achats",
+    "productsAndCustomers": "Produits et clients",
+    "products": "Produits",
+    "stock": "Stock"
+  },
+  "salesByChannel": {
+    "title": "Ventes par canal",
+    "aboutLabel": "À propos des ventes",
+    "about": "Après remises, hors taxes et livraison.",
+    "aboutLocation": "Commandes Shopify expédiées depuis {location}. Après remises, hors taxes et livraison.",
+    "otherMarketplaces": "{count, plural, one {# commande Amazon hors Amérique du Nord n’est pas comptée.} other {# commandes Amazon hors Amérique du Nord ne sont pas comptées.}}",
+    "orders": "Commandes",
+    "noOrders": "Aucune commande synchronisée"
+  },
+  "salesChart": {
+    "measure": "Mesure",
+    "metrics": {
+      "sales": "Ventes",
+      "orders": "Commandes",
+      "units": "Unités"
+    },
+    "orders": "{count, plural, one {# commande} other {# commandes}}",
+    "units": "{count, plural, one {# unité} other {# unités}}",
+    "weekOf": "Semaine du {date}",
+    "previousSeries": "{source}, {comparison, select, previousYear {année précédente} other {période précédente}}",
+    "caption": "{metric, select, orders {Commandes} units {Unités vendues} other {Ventes}} par {step, select, week {semaine} month {mois} other {jour}}",
+    "stepColumn": "{step, select, week {Semaine du} month {Mois} other {Jour}}",
+    "noData": "Aucune donnée"
+  },
+  "setup": {
+    "title": "Terminer la configuration",
+    "progress": "{done} sur {total} terminées",
+    "done": "Terminé"
+  },
+  "attention": {
+    "title": "À traiter",
+    "caughtUp": "Tout est à jour"
+  },
+  "inventory": {
+    "title": "Stock",
+    "aboutLabel": "À propos des valeurs du stock",
+    "about": "La valeur de vente se base sur le prix de vente récent de chaque unité, ou sur son prix Shopify. Les coûts incluent les coûts de revient rendus des bons de commande.",
+    "products": "Produits",
+    "onHand": "{count, number} en stock",
+    "onTheWay": "{count, number} en route",
+    "atCost": "{amount} au coût",
+    "noUnitCosts": "Aucun coût unitaire",
+    "noPrices": "Aucun prix",
+    "noStock": "Aucun stock synchronisé",
+    "unitsOnHand": "Unités en stock",
+    "valueAtCost": "Valeur au coût",
+    "retailValue": "Valeur de vente",
+    "potentialProfit": "Marge brute potentielle"
+  },
+  "cover": {
+    "title": "Jours de couverture",
+    "aboutLabel": "À propos des jours de couverture",
+    "about": "Durée pendant laquelle le stock de chaque article tiendra au rythme de ventes récent.",
+    "items": "{count, plural, one {# article} other {# articles}}"
+  },
+  "upcoming": {
+    "title": "Dépenses à venir",
+    "aboutLabel": "À propos des dépenses à venir",
+    "about": "Réassorts à passer, et bons de commande envoyés selon leur échéance.",
+    "next60": "60 prochains jours",
+    "reorders": "Réassorts à passer maintenant",
+    "reordersDetail": "Estimé à partir des coûts unitaires",
+    "purchaseOrders": "{count, plural, one {# bon de commande} other {# bons de commande}}",
+    "due": {
+      "overdue": "En retard",
+      "next30": "Échéance dans les 30 prochains jours",
+      "next60": "Échéance dans 31 à 60 jours",
+      "later": "Échéance ultérieure"
+    }
+  },
+  "trending": {
+    "title": "Produits en tendance",
+    "sellingMore": "En hausse",
+    "sellingLess": "En baisse",
+    "nothingMore": "Aucun produit en hausse",
+    "nothingLess": "Aucun produit en baisse",
+    "noPreviousOrders": "Aucune commande synchronisée pour {period}",
+    "noComparison": "Aucune période de comparaison",
+    "noChanges": "Aucun produit n’a varié de plus de quelques unités",
+    "units": "De {from, number} à {count, plural, one {# unité} other {# unités}}",
+    "variantUnits": "{variant}, de {from, number} à {count, plural, one {# unité} other {# unités}}"
+  },
+  "slow": {
+    "title": "Stock à rotation lente",
+    "aboutLabel": "À propos du stock à rotation lente",
+    "about": "Stock qui tiendra plus de 3 mois, ou qui ne s’est pas vendu récemment.",
+    "summary": "{items, plural, one {# article} other {# articles}}, {units, plural, one {# unité} other {# unités}}",
+    "summaryAtCost": "{items, plural, one {# article} other {# articles}}, {units, plural, one {# unité} other {# unités}}, {amount} au coût",
+    "product": "Produit",
+    "onHand": "En stock",
+    "cover": "Couverture",
+    "atCost": "Au coût",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "notSelling": "Aucune vente",
+    "noUnitCost": "Aucun coût unitaire",
+    "empty": "Aucun stock à rotation lente"
+  },
+  "bestSellers": {
+    "title": "Meilleures ventes",
+    "restock": "Réassort",
+    "product": "Produit",
+    "sold": "Vendus",
+    "onHand": "En stock",
+    "cover": "Couverture",
+    "status": "Statut",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "empty": "Aucune vente pour l’instant"
+  },
+  "openOrders": {
+    "title": "Bons de commande en cours",
+    "link": "Bons de commande",
+    "supplier": "Fournisseur",
+    "orders": "Bons de commande",
+    "openValue": "Valeur en cours",
+    "otherSuppliers": "{count, plural, one {# autre fournisseur} other {# autres fournisseurs}}",
+    "empty": "Aucun bon de commande en cours",
+    "open": "En cours",
+    "drafts": "Brouillons",
+    "purchaseOrders": "{count, plural, one {# bon de commande} other {# bons de commande}}"
+  },
+  "profit": {
+    "title": "Marge brute",
+    "monthlyCosts": "Coûts mensuels",
+    "sales": "Ventes",
+    "orderFees": "Frais de commande",
+    "costOfGoods": "Coût des marchandises",
+    "fees": "Frais",
+    "groups": {
+      "refunds": "Remboursements et litiges",
+      "shipping": "Livraison et fret",
+      "advertising": "Publicité",
+      "monthly": "Coûts mensuels"
+    },
+    "charges": {
+      "amazonRefunds": "Remboursements Amazon",
+      "amazonAds": "Publicités Amazon",
+      "amazonCharges": "Frais du compte Amazon",
+      "amazonMcf": "Traitement Amazon des commandes Shopify",
+      "amazonFreight": "Fret entrant Amazon",
+      "shopifyLabels": "Étiquettes d’expédition Shopify",
+      "shopifyBill": "Facture Shopify (forfait et applications)",
+      "shopifyDisputes": "Litiges Shopify",
+      "shopifyDuties": "Droits de douane et taxes à l’importation"
+    },
+    "whatsIn": "Détail : {line}",
+    "needsCosts": "Nécessite les prix des commandes et les coûts unitaires"
+  },
+  "customers": {
+    "title": "Clients Shopify",
+    "aboutLabel": "À propos des chiffres clients",
+    "about": "La valeur vie client, les clients fidèles et les commandes par client portent sur les 12 derniers mois. Les commandes invitées et Amazon ne sont pas comptées.",
+    "reconnect": "Reconnectez Shopify dans les <settings>Paramètres</settings> pour compter les clients fidèles",
+    "reconnectAskAdmin": "Demandez à un administrateur de reconnecter Shopify pour compter les clients fidèles",
+    "syncing": "Disponible après la prochaine synchronisation des commandes Shopify",
+    "noCustomers": "Aucun client",
+    "lifetimeValue": "Valeur vie client",
+    "returning": "Clients récurrents",
+    "returningNote": "{returning, number} sur {customers, number} sur cette période",
+    "repeat": "Clients fidèles",
+    "ordersPerCustomer": "Commandes par client"
+  },
+  "landedCosts": {
+    "title": "Coûts de revient rendus",
+    "aboutLabel": "À propos des coûts de revient rendus",
+    "about": "Fret, droits de douane et autres coûts d’acheminement de ces marchandises jusqu’à vous, ajoutés aux coûts unitaires dans la Vue d’ensemble. Le fret Amazon des expéditions de ce bon de commande est ajouté automatiquement. Seule votre équipe les voit.",
+    "amazonFreight": "Fret entrant Amazon",
+    "shipment": "Expédition {reference}",
+    "supplierTotal": "Total fournisseur",
+    "landedTotal": "Total rendu",
+    "markup": "Majoration",
+    "markupValue": "{percent} sur le coût produit",
+    "empty": "Aucun coût pour l’instant",
+    "kinds": {
+      "freight": "Fret",
+      "duty": "Droits de douane",
+      "other": "Autre"
+    },
+    "moreActions": "Plus d’actions pour le coût : {kind}",
+    "remove": "Retirer",
+    "add": "Ajouter un coût",
+    "addTitle": "Ajouter un coût de revient rendu",
+    "addDescription": "Convertissez une facture dans une autre devise en {currency} au taux que vous avez payé.",
+    "type": "Type",
+    "amount": "Montant",
+    "description": "Description",
+    "descriptionPlaceholder": "Facture du transitaire, déclaration en douane…",
+    "enterAmount": "Saisissez le montant"
+  }
+}

@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { documents, events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import { eventMessage } from "@/lib/timeline-events"
 import type { Session } from "./auth"
 
 // The forwarder a PO's goods pass through, if any: its stop on the way to Amazon or the buyer's location. Its leg comes
@@ -15,7 +17,7 @@ export function forwarderLeg(order: Pick<OrderInput, "via">) {
 async function lockedShipment(tx: Transaction, shipmentId: string) {
   const [initial] = await tx.select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, shipmentId))
   if (!initial) {
-    throw new Error("Shipment not found")
+    throw new LocalizedError("shipmentNotFound")
   }
   const [row] = await tx
     .select({ order: orders, supplier: suppliers })
@@ -37,12 +39,10 @@ export async function shipShipment(s: Session, shipmentId: string) {
         ? supplier.supplierOrgId === s.org.id && !supplier.removedAt
         : s.org.kind === "buyer" && order.buyerOrgId === s.org.id && !supplier.supplierOrgId
     if (!allowed) {
-      throw new Error(
-        s.org.kind === "buyer" ? "The supplier marks this shipment shipped" : "This shipment isn't yours to ship"
-      )
+      throw new LocalizedError(s.org.kind === "buyer" ? "supplierMarksShipped" : "notYourShipment")
     }
     if (shipment.status !== "ready") {
-      throw new Error("Only a released shipment can be marked shipped")
+      throw new LocalizedError("onlyReleasedShipped")
     }
     const [invoice] = shipment.packing
       ? await tx
@@ -57,10 +57,12 @@ export async function shipShipment(s: Session, shipmentId: string) {
           )
       : []
     if (!invoice) {
-      throw new Error("Upload the current commercial invoice before shipping")
+      throw new LocalizedError("uploadInvoiceBeforeShipping")
     }
     await tx.update(shipments).set({ status: "shipped", updatedAt: new Date() }).where(eq(shipments.id, shipmentId))
-    await tx.insert(events).values({ orderId: order.id, actor: s.user.id, message: "Supplier shipped the goods" })
+    await tx
+      .insert(events)
+      .values({ orderId: order.id, actor: s.user.id, ...eventMessage({ key: "supplierShipped", values: null }) })
   })
 }
 
@@ -91,22 +93,22 @@ export async function forwardShipment(s: Session, raw: unknown) {
           .where(and(eq(forwarders.id, forwarderId), eq(forwarders.buyerOrgId, order.buyerOrgId)))
       : []
     if (!forwarder) {
-      throw new Error("This shipment doesn't pass through a forwarder")
+      throw new LocalizedError("noForwarderLeg")
     }
     const allowed =
       s.org.kind === "forwarder"
         ? forwarder.forwarderOrgId === s.org.id && !forwarder.removedAt
         : s.org.kind === "buyer" && order.buyerOrgId === s.org.id && !forwarder.forwarderOrgId
     if (!allowed) {
-      throw new Error(
-        s.org.kind === "buyer" ? `${forwarder.name} marks this shipment shipped` : "This shipment isn't yours to ship"
-      )
+      throw s.org.kind === "buyer"
+        ? new LocalizedError("forwarderMarksShipped", { name: forwarder.name })
+        : new LocalizedError("notYourShipment")
     }
     if (shipment.status !== "shipped") {
-      throw new Error("The supplier hasn't shipped these goods yet")
+      throw new LocalizedError("supplierNotShipped")
     }
     if (input.freight.currency !== order.data.currency) {
-      throw new Error(`Enter the freight in ${order.data.currency}, the purchase order's currency`)
+      throw new LocalizedError("freightCurrency", { currency: order.data.currency })
     }
     await tx
       .update(shipments)
@@ -129,7 +131,10 @@ export async function forwardShipment(s: Session, raw: unknown) {
     await tx.insert(events).values({
       orderId: order.id,
       actor: s.user.id,
-      message: `${forwarder.name} shipped the goods: ${input.carrier} ${input.reference}`
+      ...eventMessage({
+        key: "forwarderShipped",
+        values: { forwarder: forwarder.name, tracking: `${input.carrier} ${input.reference}` }
+      })
     })
   })
 }

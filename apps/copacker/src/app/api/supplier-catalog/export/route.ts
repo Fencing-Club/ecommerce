@@ -1,4 +1,5 @@
 import { requirePage, session } from "@/server/auth"
+import { errorResponse } from "@/server/errors"
 import { sheetCsv, sheetRows, sheetWorkbook } from "@/server/product-sheet"
 import { productList } from "@/server/supplier-products"
 
@@ -6,7 +7,7 @@ import { productList } from "@/server/supplier-products"
 export async function GET(request: Request) {
   const s = await session()
   if (s.org.kind !== "supplier") {
-    return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
+    return errorResponse("supplierWorkspaceRequired", 403)
   }
   requirePage(s, "products")
   // The sheet has every price.

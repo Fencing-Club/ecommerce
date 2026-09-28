@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "Shop",
+    "purchasing": "Einkauf",
+    "sales": "Verkauf",
+    "catalog": "Produkte"
+  },
+  "pages": {
+    "overview": "Übersicht",
+    "orders": "Aufträge",
+    "products": "Produkte",
+    "restock": "Nachschub",
+    "purchaseOrders": "Bestellungen",
+    "shipments": "Sendungen",
+    "partners": "Partner",
+    "customers": "Kunden",
+    "inventory": "Bestand",
+    "catalogs": "Kataloge",
+    "settings": "Einstellungen"
+  },
+  "sidebar": {
+    "buyerWorkspace": "Käufer-Workspace",
+    "supplierWorkspace": "Lieferanten-Workspace",
+    "forwarderWorkspace": "Spediteur-Workspace",
+    "workspaces": "Workspaces",
+    "newWorkspace": "Neuer Workspace",
+    "signOut": "Abmelden",
+    "theme": "Design",
+    "themes": {
+      "light": "Hell",
+      "dark": "Dunkel",
+      "system": "System"
+    }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "empty": "Keine Benachrichtigungen",
+    "emptyDescription": "Neuigkeiten zu Ihren Aufträgen und Sendungen erscheinen hier"
+  },
+  "search": {
+    "search": "Suchen",
+    "ctrl": "Strg",
+    "toMove": "<keys></keys> zum Navigieren",
+    "toOpen": "<keys></keys> zum Öffnen",
+    "toClose": "<keys></keys> zum Schließen",
+    "close": "Schließen",
+    "noResults": "Keine Ergebnisse für „{query}“",
+    "pages": "Seiten",
+    "orders": "Aufträge",
+    "loadingOrders": "Aufträge werden geladen",
+    "loadingResults": "Ergebnisse werden geladen",
+    "recentPurchaseOrders": "Letzte Bestellungen",
+    "products": "Produkte",
+    "purchaseOrders": "Bestellungen",
+    "shipments": "Sendungen",
+    "partners": "Partner",
+    "supplier": "Lieferant",
+    "forwarder": "Spediteur",
+    "failed": "Nicht alles konnte durchsucht werden. Versuchen Sie es erneut."
+  }
+}

@@ -285,7 +285,16 @@ export const packingDraftSchema = z
   .strict()
 export type PackingDraft = z.infer<typeof packingDraftSchema>
 export type Packing = z.infer<typeof packingSchema>
-export type ValidationIssue = { cartonId?: string; message: string }
+// A packing rule a carton or the whole packing breaks, as a code and the values it names, so the app can say it in each
+// reader's language.
+export type PackingRule =
+  | {
+      code: "duplicateCarton" | "mixedNetworks" | "awdOneSku" | "repeatedProduct" | "unknownProduct" | "unknownChange"
+    }
+  | { code: "cartonSize" | "cartonWeight"; values: { network: "FBA" | "AWD" } }
+  | { code: "incompletePacks"; values: { sku: string; pack: number } }
+  | { code: "awdUnits" | "missingAmazonIds" | "awdConfiguration" | "overQuantity"; values: { sku: string } }
+export type ValidationIssue = { cartonId?: string } & PackingRule
 
 export function validatePacking(order: OrderInput, packing: Packing, reserved: Record<string, number> = {}) {
   const issues: ValidationIssue[] = []
@@ -296,14 +305,14 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
   // locations accept any cartons.
   const amazon = order.destination === "amazon"
   for (const carton of packing.cartons) {
-    const add = (message: string) => issues.push({ cartonId: carton.cartonId, message })
+    const add = (rule: PackingRule) => issues.push({ cartonId: carton.cartonId, ...rule })
     if (cartonIds.has(carton.cartonId.toLowerCase())) {
-      add("Carton numbers must be unique")
+      add({ code: "duplicateCarton" })
     }
     cartonIds.add(carton.cartonId.toLowerCase())
     const networks = cartonNetworks(order, carton)
     if (amazon && networks.length > 1) {
-      add(`Pack ${networks.map((name) => amazonNetworkNames[name]).join(" and ")} products in separate cartons`)
+      add({ code: "mixedNetworks" })
     }
     const awd = amazon && networks.includes("awd_us")
     const network = awd ? "AWD" : "FBA"
@@ -313,52 +322,50 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       carton.items[0]!.pieces === order.items.find((i) => i.id === carton.items[0]!.itemId)?.piecesPerSet
     const limited = awd || (amazon && !oneUnit)
     if (limited && Math.max(carton.length, carton.width, carton.height) > 63.5) {
-      add(`${network} cartons must not exceed 63.5 cm on any side`)
+      add({ code: "cartonSize", values: { network } })
     }
     if (limited && carton.weight > 22.6796185) {
-      add(`${network} carton weight must not exceed 50 lb (22.68 kg)`)
+      add({ code: "cartonWeight", values: { network } })
     }
     if (awd && carton.items.length !== 1) {
-      add("AWD requires one SKU per carton")
+      add({ code: "awdOneSku" })
     }
     if (carton.items.length !== new Set(carton.items.map((i) => i.itemId)).size) {
-      add("List each product once per carton")
+      add({ code: "repeatedProduct" })
     }
     for (const content of carton.items) {
       const item = order.items.find((i) => i.id === content.itemId)
       if (!item) {
-        add("Carton contains a product that is not on this purchase order")
+        add({ code: "unknownProduct" })
         continue
       }
       totals[item.id] = (totals[item.id] ?? 0) + content.pieces
       const units = content.pieces / item.piecesPerSet
       if (!Number.isInteger(units)) {
-        add(`${item.buyerSku}: units must form complete packs of ${item.piecesPerSet}`)
+        add({ code: "incompletePacks", values: { sku: item.buyerSku, pack: item.piecesPerSet } })
       }
       if (awd && units > 150) {
-        add(`${item.buyerSku}: maximum 150 sellable units per AWD carton`)
+        add({ code: "awdUnits", values: { sku: item.buyerSku } })
       }
       if (amazon && (!item.fnsku || !item.asin)) {
-        add(`${item.buyerSku}: Amazon ASIN and FNSKU are required`)
+        add({ code: "missingAmazonIds", values: { sku: item.buyerSku } })
       }
       const config = JSON.stringify([content.pieces, carton.length, carton.width, carton.height, carton.weight])
       if (awd && configurations.has(item.id) && configurations.get(item.id) !== config) {
-        add(
-          `${item.buyerSku}: all cartons for this SKU must have the same contents, dimensions, and weight; split into separate shipments if needed`
-        )
+        add({ code: "awdConfiguration", values: { sku: item.buyerSku } })
       }
       configurations.set(item.id, config)
     }
   }
   for (const item of order.items) {
     if ((totals[item.id] ?? 0) + (reserved[item.id] ?? 0) > item.pieces) {
-      issues.push({ message: `${item.buyerSku}: cartons exceed the quantity remaining on the purchase order` })
+      issues.push({ code: "overQuantity", values: { sku: item.buyerSku } })
     }
   }
   const changedIds = new Set<string>()
   for (const change of packing.changes) {
     if (!order.items.some((i) => i.id === change.itemId) || changedIds.has(change.itemId)) {
-      issues.push({ message: "Invoice changes must reference unique items on the purchase order" })
+      issues.push({ code: "unknownChange" })
     }
     changedIds.add(change.itemId)
   }
@@ -429,7 +436,7 @@ export function buildAwdRequest(
 ) {
   const validation = validatePacking(order, packing)
   if (!validation.valid) {
-    throw new Error(validation.issues.map((i) => i.message).join("; "))
+    throw new Error(`Packing breaks rules: ${validation.issues.map((i) => i.code).join(", ")}`)
   }
   const groups = new Map<string, { count: number; distributionPackage: ReturnType<typeof packageFor> }>()
   function packageFor(carton: Packing["cartons"][number]) {
@@ -509,7 +516,7 @@ function fbaOwners(sku: string, prep: ReadonlyMap<string, AmazonPrep>) {
 export function buildFbaPlan(order: OrderInput, packing: Packing, name: string, prep: ReadonlyMap<string, AmazonPrep>) {
   const validation = validatePacking(order, packing)
   if (!validation.valid) {
-    throw new Error(validation.issues.map((i) => i.message).join("; "))
+    throw new Error(`Packing breaks rules: ${validation.issues.map((i) => i.code).join(", ")}`)
   }
   const units = new Map<string, number>()
   for (const carton of packing.cartons) {
@@ -563,8 +570,9 @@ export function fbaBoxes(order: OrderInput, packing: Packing, prep: ReadonlyMap<
   }))
 }
 
-export function money(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100)
+// Money in minor units, as orders store it, written in `locale`: $1,234.50, 1.234,50 $. English suits documents.
+export function money(amount: number, currency = "USD", locale = "en-US") {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount / 100)
 }
 export function orderTotal(order: OrderInput) {
   return (

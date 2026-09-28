@@ -1,0 +1,17 @@
+{
+  "required": "Questo campo è obbligatorio",
+  "number": "Inserisci un numero",
+  "minLength": "Inserisci almeno {minimum} caratteri",
+  "addOne": "Aggiungine almeno uno",
+  "minItems": "Aggiungine almeno {minimum}",
+  "atLeast": "Inserisci {minimum} o più",
+  "greaterThan": "Inserisci un numero maggiore di {minimum}",
+  "maxLength": "Usa al massimo {maximum} caratteri",
+  "maxItems": "Usane al massimo {maximum}",
+  "atMost": "Inserisci {maximum} o meno",
+  "email": "Inserisci un indirizzo email",
+  "date": "Inserisci una data",
+  "chooseOption": "Scegli un’opzione",
+  "format": "Controlla il formato",
+  "multipleOf": "Inserisci un multiplo di {divisor}"
+}

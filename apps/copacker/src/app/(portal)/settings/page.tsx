@@ -1,6 +1,6 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
-import type { Metadata } from "next"
+import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -11,11 +11,13 @@ import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
 import { OrdersSyncRow } from "@/components/sales-orders"
 import { SavedAddresses } from "@/components/saved-addresses"
-import { RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
+import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
 import { TeamSettings } from "@/components/team-settings"
 import { Card, CardContent } from "@/components/ui/card"
 import { db } from "@/db"
 import { connections, contacts, profiles, supplierProfiles } from "@/db/schema"
+import { isLocale } from "@/i18n/locales"
+import { systemLocale } from "@/i18n/request"
 import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
@@ -30,7 +32,10 @@ import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { teamOf } from "@/server/team"
 
-export const metadata: Metadata = { title: "Settings" }
+export async function generateMetadata() {
+  const t = await getTranslations("settings")
+  return { title: t("title") }
+}
 
 // The person's own profile first, then the workspace's settings, each as a section: its title and a short description
 // on the left, its cards on the right, stacked on smaller screens.
@@ -75,17 +80,24 @@ export default async function Settings() {
         .map((location) => ({ id: location.locationId, name: location.name }))
     : []
 
-  const [[person], owned] = await Promise.all([
+  const [[person], owned, computerLocale, t, format, locale] = await Promise.all([
     db().select().from(profiles).where(eq(profiles.userId, s.user.id)),
     // What deleting the account would do to the workspaces the person owns.
-    ownedWorkspaces(s.user.id)
+    ownedWorkspaces(s.user.id),
+    systemLocale(),
+    getTranslations("settings"),
+    getFormatter(),
+    getLocale()
   ])
+  // A monthly cost's day, such as "Jan 5, 2026".
+  const date = (day: string) =>
+    format.dateTime(new Date(`${day}T00:00:00Z`), { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader title={t("title")} />
 
       <div className="flex w-full max-w-5xl flex-col divide-y">
-        <Section id="profile" title="Profile" description={s.user.email}>
+        <Section id="profile" title={t("profile.title")} description={s.user.email}>
           <ProfileForm
             profile={{
               firstName: person?.firstName ?? "",
@@ -97,7 +109,11 @@ export default async function Settings() {
           />
         </Section>
 
-        <Section id="team" title="Team" description={`People in ${s.org.name}`}>
+        <Section id="language" title={t("language.title")} description={t("language.description")}>
+          <LanguageForm locale={isLocale(person?.locale) ? person.locale : null} systemLocale={computerLocale} />
+        </Section>
+
+        <Section id="team" title={t("team.title")} description={t("team.description", { workspace: s.org.name })}>
           <TeamSettings
             {...team}
             admin={admin}
@@ -109,7 +125,7 @@ export default async function Settings() {
         </Section>
 
         {buyer && (
-          <Section id="integrations" title="Integrations" description="Stores Copacker syncs with">
+          <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
               admin={admin}
               amazonDraft={amazonDraft}
@@ -138,8 +154,8 @@ export default async function Settings() {
                 <>
                   <OrdersSyncRow source="amazon" />
                   <InventorySyncRow provider="amazon" />
-                  <DetailRow title="Marketplaces">
-                    {amazon ? amazon.marketplaces.join(", ") || "—" : "Couldn’t load from Amazon"}
+                  <DetailRow title={t("integrations.marketplaces")}>
+                    {amazon ? amazon.marketplaces.join(", ") || "—" : t("integrations.marketplacesUnavailable")}
                   </DetailRow>
                 </>
               }
@@ -148,14 +164,14 @@ export default async function Settings() {
         )}
 
         {buyer && (
-          <Section id="restock" title="Restock" description="Used by Restock and the Overview">
+          <Section id="restock" title={t("restock.title")} description={t("restock.description")}>
             {admin ? (
               <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
             ) : (
               <Values
                 values={[
-                  { label: "Sales period", value: `${restock.days} days` },
-                  { label: "Lead time", value: `${restock.leadTimeDays} days` }
+                  { label: t("restock.salesPeriod"), value: t("restock.days", { count: restock.days }) },
+                  { label: t("restock.leadTime"), value: t("restock.days", { count: restock.leadTimeDays }) }
                 ]}
               />
             )}
@@ -163,7 +179,7 @@ export default async function Settings() {
         )}
 
         {buyer && (
-          <Section id="time-zone" title="Time zone" description="For days and months on the Overview">
+          <Section id="time-zone" title={t("timeZone.title")} description={t("timeZone.description")}>
             {admin ? (
               <TimeZoneForm
                 timeZone={s.org.timeZone}
@@ -174,8 +190,10 @@ export default async function Settings() {
               <Values
                 values={[
                   {
-                    label: "Store time zone",
-                    value: s.org.timeZone ? timeZoneLabel(s.org.timeZone) : `Automatic, ${timeZoneLabel(computerZone)}`
+                    label: t("timeZone.label"),
+                    value: s.org.timeZone
+                      ? timeZoneLabel(s.org.timeZone)
+                      : t("timeZone.automaticZone", { zone: timeZoneLabel(computerZone) })
                   }
                 ]}
               />
@@ -184,13 +202,13 @@ export default async function Settings() {
         )}
 
         {finances && (
-          <Section id="monthly-costs" title="Monthly costs" description="Costs Shopify and Amazon don’t report">
+          <Section id="monthly-costs" title={t("monthlyCosts.title")} description={t("monthlyCosts.description")}>
             <MonthlyCosts
               costs={costs.map((cost) => ({
                 id: cost.id,
                 name: cost.name,
-                amount: money(cost.amountMinor, cost.currency),
-                details: costDetails(cost)
+                amount: money(cost.amountMinor, cost.currency, locale),
+                details: costDetails(cost, t, date)
               }))}
               currency={currency}
               admin={admin}
@@ -199,7 +217,11 @@ export default async function Settings() {
         )}
 
         {supplier && (
-          <Section id="supplier-profile" title="Supplier profile" description="Contact details buyers see">
+          <Section
+            id="supplier-profile"
+            title={t("supplierProfile.title")}
+            description={t("supplierProfile.description")}
+          >
             {admin ? (
               <SupplierProfileForm
                 contactName={profile?.contactName ?? ""}
@@ -210,10 +232,10 @@ export default async function Settings() {
             ) : (
               <Values
                 values={[
-                  { label: "Contact name", value: profile?.contactName || "—" },
-                  { label: "Contact email", value: profile?.contactEmail || "—" },
-                  { label: "Phone", value: profile?.phoneNumber || "—" },
-                  { label: "Website", value: profile?.website || "—" }
+                  { label: t("supplierProfile.contactName"), value: profile?.contactName || "—" },
+                  { label: t("supplierProfile.contactEmail"), value: profile?.contactEmail || "—" },
+                  { label: t("supplierProfile.phone"), value: profile?.phoneNumber || "—" },
+                  { label: t("supplierProfile.website"), value: profile?.website || "—" }
                 ]}
               />
             )}
@@ -222,8 +244,8 @@ export default async function Settings() {
 
         <Section
           id="addresses"
-          title={supplier ? "Pickup addresses" : "Addresses"}
-          description={supplier ? "Where carriers collect your cartons" : "Where purchase orders are delivered"}
+          title={supplier ? t("addresses.pickupTitle") : t("addresses.title")}
+          description={supplier ? t("addresses.pickupDescription") : t("addresses.description")}
         >
           <SavedAddresses
             // Addresses saved for a forwarder or a supplier live with that partner on the Partners page. Older
@@ -237,7 +259,7 @@ export default async function Settings() {
           />
         </Section>
 
-        <Section id="delete" title="Delete" description="Permanent, and can’t be undone">
+        <Section id="delete" title={t("delete.title")} description={t("delete.description")}>
           <DangerZone
             workspace={s.org.name}
             kind={s.org.kind}
@@ -304,20 +326,17 @@ function Values({ values }: { values: Array<{ label: string; value: string }> })
 }
 
 // Which channel a monthly cost is for and when it's paid, such as "Amazon, since Jan 5, 2026".
-function costDetails(cost: MonthlyCost) {
-  const date = (day: string) =>
-    new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC"
-    })
-  const channel = cost.channel ? monthlyCostChannels[cost.channel] : "All channels"
+function costDetails(
+  cost: MonthlyCost,
+  t: Awaited<ReturnType<typeof getTranslations<"settings">>>,
+  date: (day: string) => string
+) {
+  const channel = cost.channel ? monthlyCostChannels[cost.channel] : t("monthlyCosts.allChannels")
   if (cost.startsOn && cost.endsOn) {
-    return `${channel}, ${date(cost.startsOn)} to ${date(cost.endsOn)}`
+    return t("monthlyCosts.between", { channel, start: date(cost.startsOn), end: date(cost.endsOn) })
   }
   if (cost.startsOn) {
-    return `${channel}, since ${date(cost.startsOn)}`
+    return t("monthlyCosts.since", { channel, start: date(cost.startsOn) })
   }
-  return cost.endsOn ? `${channel}, until ${date(cost.endsOn)}` : channel
+  return cost.endsOn ? t("monthlyCosts.until", { channel, end: date(cost.endsOn) }) : channel
 }

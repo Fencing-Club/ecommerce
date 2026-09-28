@@ -4,8 +4,9 @@ import type { CartonLabel } from "./labels"
 import {
   destinationName,
   destinationRequirements,
+  isCartonRule,
   itemRequirements,
-  prepInstructions,
+  requirementText,
   sharedPrep
 } from "./requirements"
 
@@ -387,9 +388,10 @@ async function orderPdf(input: {
     const title = wrap(item.name, bold, 10.5, descriptionWidth)
     const variant =
       item.variant && item.variant !== "Default Title" ? wrap(item.variant, regular, 9.5, descriptionWidth) : []
-    const details = [`SKU ${item.buyerSku}`, ...itemRequirements(item, order.destination, prep)].flatMap((value) =>
-      wrap(value, regular, 8.5, descriptionWidth)
-    )
+    const details = [
+      `SKU ${item.buyerSku}`,
+      ...itemRequirements(item, order.destination, prep).map(requirementText)
+    ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
     const skus = item.components?.length
       ? item.components.map(
           (component) => `${component.quantity} x ${component.supplierSku || component.buyerSku || "?"}`
@@ -452,7 +454,13 @@ async function orderPdf(input: {
   // Payment terms, instructions for the whole shipment, and the buyer's notes.
   const blocks: Array<[string, string[]]> = [
     ["Payment terms", order.paymentTerms ? [order.paymentTerms] : []],
-    ["Instructions", [...(prep ? [`${prepInstructions[prep]}.`] : []), ...destinationRequirements(order)]],
+    [
+      "Instructions",
+      [
+        ...(prep ? [`${requirementText({ code: "prep", prep })}.`] : []),
+        ...destinationRequirements(order).map(requirementText)
+      ]
+    ],
     ["Notes", order.notes ? [order.notes] : []]
   ]
   for (const [name, entries] of blocks) {
@@ -586,18 +594,23 @@ export async function checklistPdf(input: {
     {
       rail: "Cartons",
       steps: [
-        ...rules.filter((rule) => /carton/i.test(rule)),
+        ...rules.filter(isCartonRule).map(requirementText),
         "Match carton contents and quantities to the packing list."
       ]
     },
     {
       rail: "Units",
-      steps: [...(prep ? [`${prepInstructions[prep]}.`] : []), ...rules.filter((rule) => !/carton/i.test(rule))]
+      steps: [
+        ...(prep ? [`${requirementText({ code: "prep", prep })}.`] : []),
+        ...rules.filter((rule) => !isCartonRule(rule)).map(requirementText)
+      ]
     },
     ...items.map((item) => ({
       rail: "Product",
       heading: lineName(item),
-      steps: itemRequirements(item, order.destination, prep).map((step) => (step.endsWith(".") ? step : `${step}.`))
+      steps: itemRequirements(item, order.destination, prep)
+        .map(requirementText)
+        .map((step) => (step.endsWith(".") ? step : `${step}.`))
     })),
     {
       rail: "Final checks",

@@ -1,12 +1,12 @@
 import { z } from "zod"
 import { requireAccess, session } from "@/server/auth"
 import { deleteCatalog } from "@/server/catalogs"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
@@ -15,7 +15,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return Response.json({ ok: true })
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Could not delete catalog" },
+      { error: await failureMessage(error, "catalogDeleteFailed") },
       { status: failureStatus(error) }
     )
   }

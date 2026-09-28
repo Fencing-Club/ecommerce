@@ -7,7 +7,7 @@ import { ownProfile } from "./profile"
 
 export const commentInputSchema = z.object({
   orderId: z.uuid(),
-  message: z.string().trim().min(1, "Write a comment").max(4000)
+  message: z.string().trim().min(1, "notifications.comments.write").max(4000)
 })
 
 // A comment on a PO's timeline, which everyone who can see the PO reads alongside its events.

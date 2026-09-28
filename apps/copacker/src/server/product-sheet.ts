@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs"
 import { z } from "zod"
+import { LocalizedError } from "@/i18n/errors"
 import {
   defaultQuantityRules,
   type PriceBasis,
@@ -8,6 +9,7 @@ import {
   type QuantityRules
 } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
+import { pricingText } from "./text"
 
 // Copacker's product template, for CSV and Excel alike: one row per variant, like Shopify's product CSV. Rows with the
 // same handle are one product, whose details come from its first row. Import matches variants by SKU.
@@ -301,7 +303,7 @@ function csvTable(text: string) {
       } else if (quoted || cell === "") {
         quoted = !quoted
       } else {
-        throw new Error(`Unexpected quote on row ${rows.length + 1}`)
+        throw new LocalizedError("csvUnexpectedQuote", { row: rows.length + 1 })
       }
     } else if (!quoted && (char === "," || char === "\n" || char === "\r")) {
       row.push(cell)
@@ -318,7 +320,7 @@ function csvTable(text: string) {
     }
   }
   if (quoted) {
-    throw new Error("The CSV has an unclosed quote")
+    throw new LocalizedError("csvUnclosedQuote")
   }
   row.push(cell)
   rows.push(row)
@@ -354,7 +356,7 @@ async function workbookTable(bytes: Uint8Array) {
   await book.xlsx.load(bytes as unknown as ExcelJS.Buffer)
   const sheet = book.getWorksheet("Products") ?? book.worksheets[0]
   if (!sheet) {
-    throw new Error("The workbook has no sheets")
+    throw new LocalizedError("workbookNoSheets")
   }
   // Only rows with values: the template's dropdowns reach a thousand empty rows below the products.
   const rows: string[][] = []
@@ -375,7 +377,7 @@ function money(value: string, line: number, what: string) {
     return null
   }
   if (!/^(?:0|[1-9]\d{0,7})(?:\.\d{1,2})?$/.test(text)) {
-    throw new Error(`Row ${line}: ${what} must be an amount with at most two decimals, such as 12.50`)
+    throw new LocalizedError("rowAmount", { row: line, column: what })
   }
   const [whole, fraction = ""] = text.split(".")
   return Number(whole) * 100 + Number(fraction.padEnd(2, "0"))
@@ -384,7 +386,7 @@ function money(value: string, line: number, what: string) {
 function count(value: string, line: number, what: string) {
   const parsed = positive.safeParse(value.trim())
   if (!parsed.success) {
-    throw new Error(`Row ${line}: ${what} must be a whole number above 0`)
+    throw new LocalizedError("rowWholeNumber", { row: line, column: what })
   }
   return parsed.data
 }
@@ -393,7 +395,7 @@ function choice(value: string, options: readonly string[], line: number, what: s
   const text = (value.trim() || fallback).toLowerCase()
   const found = options.find((option) => option.toLowerCase() === text)
   if (!found) {
-    throw new Error(`Row ${line}: ${what} must be ${options.join(", ")}`)
+    throw new LocalizedError("rowChoice", { row: line, column: what, options: options.join(", ") })
   }
   return found
 }
@@ -405,6 +407,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
     ? await workbookTable(file.bytes)
     : csvTable(new TextDecoder("utf-8", { fatal: true }).decode(file.bytes).replace(/^﻿/, ""))
   const header = (table.shift() ?? []).map((cell) => cell.trim().toLowerCase())
+  const pricingT = await pricingText()
   const positions = new Map<SheetColumn, number>()
   for (const column of sheetColumns) {
     const index = [column.header, "formerly" in column ? column.formerly : null]
@@ -416,7 +419,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
   }
   const missing = (["handle", "title", "sku"] as const).filter((key) => !positions.has(key))
   if (missing.length) {
-    throw new Error("Use the product template. Its first row names the columns, such as Handle, Title and SKU")
+    throw new LocalizedError("useProductTemplate")
   }
   const rows = table
     .map((cells, index) => ({
@@ -429,32 +432,32 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
     }))
     .filter((row) => !row.blank)
   if (rows.length > maxRows) {
-    throw new Error(`The file has more than ${maxRows.toLocaleString("en-US")} variants`)
+    throw new LocalizedError("tooManySheetRows", { max: maxRows })
   }
   const products = new Map<string, SheetProduct>()
   const skus = new Set<string>()
   for (const { line, get } of rows) {
     const handle = get("handle").toLowerCase()
     if (!handle) {
-      throw new Error(`Row ${line}: add a handle`)
+      throw new LocalizedError("rowAddHandle", { row: line })
     }
     const sku = get("sku")
     if (!sku || sku.length > 255) {
-      throw new Error(`Row ${line}: add a SKU of up to 255 characters`)
+      throw new LocalizedError("rowAddSku", { row: line })
     }
     if (skus.has(sku)) {
-      throw new Error(`Row ${line}: SKU ${sku} is in the file twice`)
+      throw new LocalizedError("rowSkuTwice", { row: line, sku })
     }
     skus.add(sku)
     let product = products.get(handle)
     if (!product) {
       const title = get("title")
       if (!title) {
-        throw new Error(`Row ${line}: add a title for ${handle}`)
+        throw new LocalizedError("rowAddTitle", { row: line, handle })
       }
       const url = get("url")
       if (url && !z.url().safeParse(url).success) {
-        throw new Error(`Row ${line}: the product URL must start with https://`)
+        throw new LocalizedError("rowUrl", { row: line })
       }
       const optionNames = [1, 2, 3, 4].flatMap((n) => {
         const name = get(`option${n}Name` as SheetColumn)
@@ -478,7 +481,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
     for (const [index, name] of product.optionNames.entries()) {
       const value = get(`option${index + 1}Value` as SheetColumn)
       if (!value) {
-        throw new Error(`Row ${line}: add a value for ${name}`)
+        throw new LocalizedError("rowAddOptionValue", { row: line, option: name })
       }
       options[name] = value
     }
@@ -498,7 +501,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
       .map((part) => {
         const [quantity, price] = part.split("=")
         if (!quantity || !price) {
-          throw new Error(`Row ${line}: write volume pricing as quantity=price pairs, such as 50=11.00; 100=10.00`)
+          throw new LocalizedError("rowVolumePricing", { row: line })
         }
         return {
           minimum: count(quantity, line, "A volume pricing quantity"),
@@ -506,18 +509,18 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
         }
       })
     const priceMinor = money(get("price"), line, "Price")
-    const problem = pricingProblem(priceMinor, priceBreaks, quantityRules)
+    const problem = pricingProblem(priceMinor, priceBreaks, quantityRules, pricingT)
     if (problem) {
-      throw new Error(`Row ${line}: ${problem}`)
+      throw new LocalizedError("rowProblem", { row: line, problem })
     }
     const piecesPerSellablePack = get("piecesPerPack") ? count(get("piecesPerPack"), line, "Units per pack") : 1
     const sellablePacksPerCase = get("packsPerCase") ? count(get("packsPerCase"), line, "Packs per case") : null
     if (sellablePacksPerCase !== null && !Number.isSafeInteger(piecesPerSellablePack * sellablePacksPerCase)) {
-      throw new Error(`Row ${line}: the pack quantity is too large`)
+      throw new LocalizedError("rowPackTooLarge", { row: line })
     }
     const onHand = get("onHand")
     if (onHand && !/^-?\d{1,9}$/.test(onHand)) {
-      throw new Error(`Row ${line}: On hand must be a whole number`)
+      throw new LocalizedError("rowOnHand", { row: line })
     }
     product.variants.push({
       line,
@@ -542,11 +545,10 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
     for (const variant of product.variants) {
       const key = variantLabel(variant.options, product.optionNames) ?? ""
       if (seen.has(key)) {
-        throw new Error(
-          product.optionNames.length
-            ? `Row ${variant.line}: another variant of ${product.handle} has the same options`
-            : `Row ${variant.line}: give ${product.handle} options to tell its variants apart`
-        )
+        throw new LocalizedError(product.optionNames.length ? "rowSameOptions" : "rowNeedsOptions", {
+          row: variant.line,
+          handle: product.handle
+        })
       }
       seen.add(key)
     }

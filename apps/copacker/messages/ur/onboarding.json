@@ -1,0 +1,123 @@
+{
+  "title": "آغاز کریں",
+  "newWorkspaceTitle": "نیا ورک اسپیس",
+  "person": {
+    "enterFirstName": "اپنا پہلا نام درج کریں",
+    "enterLastName": "اپنا آخری نام درج کریں",
+    "choosePosition": "اپنا عہدہ منتخب کریں"
+  },
+  "company": {
+    "enterName": "اپنی کمپنی کا نام درج کریں",
+    "enterWebsite": "ویب سائٹ درج کریں، جیسے example.com"
+  },
+  "place": {
+    "enterName": "اس پتے کو نام دیں"
+  },
+  "positions": {
+    "owner": "مالک",
+    "generalManager": "جنرل مینیجر",
+    "operationsManager": "آپریشنز مینیجر",
+    "purchasingManager": "پرچیزنگ مینیجر",
+    "buyer": "خریدار",
+    "salesManager": "سیلز مینیجر",
+    "accountManager": "اکاؤنٹ مینیجر",
+    "productionManager": "پروڈکشن مینیجر",
+    "qualityControl": "کوالٹی کنٹرول",
+    "logisticsCoordinator": "لاجسٹکس کوآرڈینیٹر",
+    "warehouseManager": "گودام مینیجر",
+    "customerService": "کسٹمر سروس",
+    "finance": "فنانس",
+    "other": "دیگر"
+  },
+  "steps": {
+    "about": "آپ کے بارے میں",
+    "role": "آپ کی کمپنی کیا کرتی ہے؟",
+    "company": "آپ کی کمپنی",
+    "address": {
+      "none": "پتہ",
+      "buyer": {
+        "title": "ڈیلیوری کا پتہ",
+        "description": "جہاں خریداری آرڈر ڈیلیور ہوتے ہیں"
+      },
+      "supplier": {
+        "title": "پک اپ کا پتہ",
+        "description": "جہاں سے کیریئر آپ کے کارٹن اٹھاتے ہیں"
+      },
+      "forwarder": {
+        "title": "گودام کا پتہ",
+        "description": "جہاں خریدار آپ کو سامان بھیجتے ہیں"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "گودام",
+    "supplier": "فیکٹری",
+    "forwarder": "گودام"
+  },
+  "fields": {
+    "firstName": "پہلا نام",
+    "lastName": "آخری نام",
+    "position": "عہدہ",
+    "choose": "منتخب کریں",
+    "companyName": "کمپنی کا نام",
+    "website": "ویب سائٹ",
+    "websitePlaceholder": "example.com",
+    "phone": "فون نمبر",
+    "addressName": "پتے کا نام"
+  },
+  "roles": {
+    "legend": "آپ کی کمپنی کیا کرتی ہے",
+    "buyer": {
+      "title": "خریدار",
+      "description": "سپلائرز سے خریدیں اور Amazon یا Shopify پر بیچیں"
+    },
+    "supplier": {
+      "title": "سپلائر",
+      "description": "پروڈکٹس بنائیں اور خریداری آرڈر پورے کریں"
+    },
+    "forwarder": {
+      "title": "فریٹ فارورڈر",
+      "description": "خریداروں کے لیے سامان وصول کریں اور آگے بھیجیں"
+    }
+  },
+  "wizard": {
+    "chooseRole": "ایک منتخب کریں",
+    "pickupPhone": "پک اپ کے لیے فون نمبر شامل کریں۔ Amazon کو پک اپ شیڈول کرنے کے لیے اس کی ضرورت ہے",
+    "step": "مرحلہ {current} از {total}",
+    "invitedBy": "{name} کی طرف سے مدعو",
+    "back": "واپس",
+    "skip": "ابھی چھوڑ دیں",
+    "continue": "جاری رکھیں",
+    "createWorkspace": "ورک اسپیس بنائیں",
+    "join": "{workspace} میں شامل ہوں",
+    "cancel": "منسوخ کریں",
+    "signOut": "سائن آؤٹ"
+  },
+  "preview": {
+    "workspace": "ورک اسپیس",
+    "kinds": {
+      "buyer": "خریدار ورک اسپیس",
+      "supplier": "سپلائر ورک اسپیس",
+      "forwarder": "فریٹ فارورڈر ورک اسپیس"
+    },
+    "groups": {
+      "store": "اسٹور",
+      "purchasing": "خریداری",
+      "sales": "سیلز",
+      "products": "پروڈکٹس"
+    },
+    "pages": {
+      "overview": "جائزہ",
+      "orders": "آرڈرز",
+      "products": "پروڈکٹس",
+      "restock": "ری اسٹاک",
+      "purchaseOrders": "خریداری آرڈرز",
+      "shipments": "شپمنٹس",
+      "customers": "کسٹمرز",
+      "inventory": "انوینٹری",
+      "catalogs": "کیٹلاگز",
+      "settings": "سیٹنگز"
+    },
+    "address": "پتہ"
+  }
+}

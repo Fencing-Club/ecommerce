@@ -52,7 +52,7 @@ describe("phoneSchema", () => {
 
   it("turns down words, email addresses and part of a number", () => {
     for (const value of ["call me", "12345", "WeChat 13800000000", "Tel: 425-260-2501", "123456789@qq.com"]) {
-      expect(message(value)).toBe("Enter a phone number")
+      expect(message(value)).toBe("partners.phone.invalid")
     }
     expect(phoneSchema.safeParse("1".repeat(31)).success).toBe(false)
   })

@@ -1,0 +1,267 @@
+{
+  "title": "ओवरव्यू",
+  "loading": "ओवरव्यू लोड हो रहा है",
+  "notAvailable": "उपलब्ध नहीं",
+  "new": "नया",
+  "plusCurrencies": "साथ में {amounts}",
+  "noStores": {
+    "title": "कोई स्टोर कनेक्ट नहीं है",
+    "connectDescription": "अपना ओवरव्यू देखने के लिए Shopify या Amazon कनेक्ट करें",
+    "askAdmin": "इन्हें कनेक्ट करने के लिए किसी एडमिन से कहें",
+    "connect": "स्टोर कनेक्ट करें"
+  },
+  "period": {
+    "choose": "अवधि चुनें",
+    "presets": {
+      "today": "आज",
+      "yesterday": "कल",
+      "last7": "पिछले 7 दिन",
+      "last30": "पिछले 30 दिन",
+      "last90": "पिछले 90 दिन",
+      "last365": "पिछले 365 दिन",
+      "lastWeek": "पिछला हफ़्ता",
+      "lastMonth": "पिछला महीना",
+      "lastQuarter": "पिछली तिमाही",
+      "last12Months": "पिछले 12 महीने",
+      "lastYear": "पिछला साल",
+      "weekToDate": "इस हफ़्ते अब तक",
+      "monthToDate": "इस महीने अब तक",
+      "quarterToDate": "इस तिमाही अब तक",
+      "yearToDate": "इस साल अब तक"
+    },
+    "comparisons": {
+      "previousPeriod": "पिछली अवधि",
+      "previousYear": "पिछला साल",
+      "none": "कोई तुलना नहीं"
+    },
+    "last": "पिछले",
+    "toDate": "अवधि में अब तक",
+    "custom": "कस्टम अवधि",
+    "startDate": "शुरू की तारीख",
+    "endDate": "आखिरी तारीख",
+    "previousMonth": "पिछला महीना",
+    "nextMonth": "अगला महीना",
+    "cancel": "रद्द करें",
+    "apply": "लागू करें"
+  },
+  "channel": {
+    "label": "चैनल",
+    "all": "सभी चैनल",
+    "shopifyLocation": "Shopify: {location}"
+  },
+  "kpis": {
+    "label": "बिक्री, {period}",
+    "about": "{label} के बारे में",
+    "versus": "{comparison, select, previousYear {पिछले साल की तुलना में} other {पिछली अवधि की तुलना में}}",
+    "noPrices": "अभी कोई कीमत नहीं",
+    "noOrders": "कोई ऑर्डर सिंक नहीं हुआ",
+    "noUnitCosts": "यूनिट लागत नहीं है",
+    "uncostedSales": "इसमें यूनिट लागत के बिना {amount} की बिक्री शामिल नहीं है।",
+    "estimatedFees": "प्लेटफ़ॉर्म के पोस्ट करने तक कुछ फ़ीस अनुमानित हैं।",
+    "margin": "<figure>{percent}</figure> मार्जिन",
+    "sales": "बिक्री",
+    "salesInfo": "छूट के बाद, टैक्स और शिपिंग से पहले।",
+    "orders": "ऑर्डर",
+    "averageOrder": "औसत ऑर्डर वैल्यू",
+    "units": "बिकी यूनिट",
+    "grossProfit": "सकल लाभ",
+    "stockoutLosses": "स्टॉक खत्म होने से नुकसान",
+    "stockoutInfo": "आज दिए गए रीऑर्डर पहुंचने से पहले, स्टॉक खत्म रहने के दौरान होने वाली अनुमानित बिक्री का नुकसान।",
+    "lostThisPeriod": "इस अवधि में {amount} का नुकसान"
+  },
+  "sections": {
+    "sales": "बिक्री",
+    "purchasing": "खरीद",
+    "productsAndCustomers": "प्रोडक्ट और ग्राहक",
+    "products": "प्रोडक्ट",
+    "stock": "स्टॉक"
+  },
+  "salesByChannel": {
+    "title": "चैनल के हिसाब से बिक्री",
+    "aboutLabel": "बिक्री के बारे में",
+    "about": "छूट के बाद, टैक्स और शिपिंग से पहले।",
+    "aboutLocation": "{location} से भेजे गए Shopify ऑर्डर। छूट के बाद, टैक्स और शिपिंग से पहले।",
+    "otherMarketplaces": "{count, plural, one {उत्तरी अमेरिका के बाहर का # Amazon ऑर्डर नहीं गिना गया।} other {उत्तरी अमेरिका के बाहर के # Amazon ऑर्डर नहीं गिने गए।}}",
+    "orders": "ऑर्डर",
+    "noOrders": "कोई ऑर्डर सिंक नहीं हुआ"
+  },
+  "salesChart": {
+    "measure": "माप",
+    "metrics": {
+      "sales": "बिक्री",
+      "orders": "ऑर्डर",
+      "units": "यूनिट"
+    },
+    "orders": "{count, plural, one {# ऑर्डर} other {# ऑर्डर}}",
+    "units": "{count, plural, one {# यूनिट} other {# यूनिट}}",
+    "weekOf": "{date} वाला हफ़्ता",
+    "previousSeries": "{source}, {comparison, select, previousYear {पिछला साल} other {पिछली अवधि}}",
+    "caption": "{step, select, week {हफ़्ते} month {महीने} other {दिन}} के हिसाब से {metric, select, orders {ऑर्डर} units {बिकी यूनिट} other {बिक्री}}",
+    "stepColumn": "{step, select, week {हफ़्ता} month {महीना} other {दिन}}",
+    "noData": "कोई डेटा नहीं"
+  },
+  "setup": {
+    "title": "सेटअप पूरा करें",
+    "progress": "{total} में से {done} पूरे",
+    "done": "पूरा हुआ"
+  },
+  "attention": {
+    "title": "ध्यान देना ज़रूरी",
+    "caughtUp": "सब कुछ पूरा है"
+  },
+  "inventory": {
+    "title": "इन्वेंटरी",
+    "aboutLabel": "इन्वेंटरी वैल्यू के बारे में",
+    "about": "रिटेल वैल्यू हर यूनिट की हाल की बिक्री कीमत या उसकी Shopify कीमत पर आधारित है। लागत में खरीद ऑर्डर की लैंडेड कॉस्ट शामिल है।",
+    "products": "प्रोडक्ट",
+    "onHand": "{count, number} मौजूद",
+    "onTheWay": "{count, number} रास्ते में",
+    "atCost": "लागत पर {amount}",
+    "noUnitCosts": "यूनिट लागत नहीं है",
+    "noPrices": "कोई कीमत नहीं",
+    "noStock": "कोई स्टॉक सिंक नहीं हुआ",
+    "unitsOnHand": "मौजूद यूनिट",
+    "valueAtCost": "लागत पर वैल्यू",
+    "retailValue": "रिटेल वैल्यू",
+    "potentialProfit": "संभावित सकल लाभ"
+  },
+  "cover": {
+    "title": "स्टॉक कितने दिन चलेगा",
+    "aboutLabel": "स्टॉक के दिनों के बारे में",
+    "about": "हाल की बिक्री दर पर हर आइटम का स्टॉक कितने दिन चलेगा।",
+    "items": "{count, plural, one {# आइटम} other {# आइटम}}"
+  },
+  "upcoming": {
+    "title": "आने वाला खर्च",
+    "aboutLabel": "आने वाले खर्च के बारे में",
+    "about": "बकाया रीऑर्डर, और भेजे गए खरीद ऑर्डर उनकी देय तारीख के हिसाब से।",
+    "next60": "अगले 60 दिन",
+    "reorders": "अभी बकाया रीऑर्डर",
+    "reordersDetail": "यूनिट लागत से अनुमानित",
+    "purchaseOrders": "{count, plural, one {# खरीद ऑर्डर} other {# खरीद ऑर्डर}}",
+    "due": {
+      "overdue": "देय तारीख निकल गई",
+      "next30": "अगले 30 दिनों में देय",
+      "next60": "31 से 60 दिनों में देय",
+      "later": "बाद में देय"
+    }
+  },
+  "trending": {
+    "title": "ट्रेंडिंग प्रोडक्ट",
+    "sellingMore": "ज़्यादा बिक रहे हैं",
+    "sellingLess": "कम बिक रहे हैं",
+    "nothingMore": "कुछ भी ज़्यादा नहीं बिक रहा",
+    "nothingLess": "कुछ भी कम नहीं बिक रहा",
+    "noPreviousOrders": "{period} के लिए कोई ऑर्डर सिंक नहीं हुआ",
+    "noComparison": "तुलना के लिए कोई अवधि नहीं",
+    "noChanges": "किसी प्रोडक्ट में कुछ यूनिट से ज़्यादा बदलाव नहीं हुआ",
+    "units": "{from, number} से {count, plural, one {# यूनिट} other {# यूनिट}}",
+    "variantUnits": "{variant}, {from, number} से {count, plural, one {# यूनिट} other {# यूनिट}}"
+  },
+  "slow": {
+    "title": "धीमा बिकने वाला स्टॉक",
+    "aboutLabel": "धीमा बिकने वाले स्टॉक के बारे में",
+    "about": "ऐसा स्टॉक जो 3 महीने से ज़्यादा चलेगा, या जो हाल में नहीं बिका।",
+    "summary": "{items, plural, one {# आइटम} other {# आइटम}}, {units, plural, one {# यूनिट} other {# यूनिट}}",
+    "summaryAtCost": "{items, plural, one {# आइटम} other {# आइटम}}, {units, plural, one {# यूनिट} other {# यूनिट}}, लागत पर {amount}",
+    "product": "प्रोडक्ट",
+    "onHand": "मौजूद",
+    "cover": "कितने दिन चलेगा",
+    "atCost": "लागत पर",
+    "days": "{count, plural, one {# दिन} other {# दिन}}",
+    "notSelling": "बिक नहीं रहा",
+    "noUnitCost": "यूनिट लागत नहीं है",
+    "empty": "कोई धीमा बिकने वाला स्टॉक नहीं"
+  },
+  "bestSellers": {
+    "title": "सबसे ज़्यादा बिकने वाले",
+    "restock": "रीस्टॉक",
+    "product": "प्रोडक्ट",
+    "sold": "बिके",
+    "onHand": "मौजूद",
+    "cover": "कितने दिन चलेगा",
+    "status": "स्थिति",
+    "days": "{count, plural, one {# दिन} other {# दिन}}",
+    "empty": "अभी कोई बिक्री नहीं"
+  },
+  "openOrders": {
+    "title": "खुले खरीद ऑर्डर",
+    "link": "खरीद ऑर्डर",
+    "supplier": "सप्लायर",
+    "orders": "ऑर्डर",
+    "openValue": "खुली वैल्यू",
+    "otherSuppliers": "{count, plural, one {# अन्य सप्लायर} other {# अन्य सप्लायर}}",
+    "empty": "कोई खुला खरीद ऑर्डर नहीं",
+    "open": "खुले",
+    "drafts": "ड्राफ़्ट",
+    "purchaseOrders": "{count, plural, one {# खरीद ऑर्डर} other {# खरीद ऑर्डर}}"
+  },
+  "profit": {
+    "title": "सकल लाभ",
+    "monthlyCosts": "मासिक खर्च",
+    "sales": "बिक्री",
+    "orderFees": "ऑर्डर फ़ीस",
+    "costOfGoods": "माल की लागत",
+    "fees": "फ़ीस",
+    "groups": {
+      "refunds": "रिफ़ंड और विवाद",
+      "shipping": "शिपिंग और फ़्रेट",
+      "advertising": "विज्ञापन",
+      "monthly": "मासिक खर्च"
+    },
+    "charges": {
+      "amazonRefunds": "Amazon रिफ़ंड",
+      "amazonAds": "Amazon विज्ञापन",
+      "amazonCharges": "Amazon अकाउंट शुल्क",
+      "amazonMcf": "Shopify ऑर्डर के लिए Amazon फ़ुलफ़िलमेंट",
+      "amazonFreight": "Amazon इनबाउंड फ़्रेट",
+      "shopifyLabels": "Shopify शिपिंग लेबल",
+      "shopifyBill": "Shopify बिल (प्लान और ऐप)",
+      "shopifyDisputes": "Shopify विवाद",
+      "shopifyDuties": "ड्यूटी और आयात टैक्स"
+    },
+    "whatsIn": "{line} में क्या शामिल है",
+    "needsCosts": "ऑर्डर की कीमतें और यूनिट लागत चाहिए"
+  },
+  "customers": {
+    "title": "Shopify ग्राहक",
+    "aboutLabel": "ग्राहक आंकड़ों के बारे में",
+    "about": "लाइफ़टाइम वैल्यू, दोबारा खरीदने वाले ग्राहक और प्रति ग्राहक ऑर्डर पिछले 12 महीनों के हैं। गेस्ट और Amazon ऑर्डर नहीं गिने जाते।",
+    "reconnect": "दोबारा खरीदने वाले ग्राहक गिनने के लिए <settings>सेटिंग्स</settings> में Shopify फिर से कनेक्ट करें",
+    "reconnectAskAdmin": "दोबारा खरीदने वाले ग्राहक गिनने के लिए किसी एडमिन से Shopify फिर से कनेक्ट करने को कहें",
+    "syncing": "अगले Shopify ऑर्डर सिंक के बाद उपलब्ध",
+    "noCustomers": "कोई ग्राहक नहीं",
+    "lifetimeValue": "ग्राहक लाइफ़टाइम वैल्यू",
+    "returning": "लौटने वाले ग्राहक",
+    "returningNote": "इस अवधि में {customers, number} में से {returning, number}",
+    "repeat": "दोबारा खरीदने वाले ग्राहक",
+    "ordersPerCustomer": "प्रति ग्राहक ऑर्डर"
+  },
+  "landedCosts": {
+    "title": "लैंडेड कॉस्ट",
+    "aboutLabel": "लैंडेड कॉस्ट के बारे में",
+    "about": "इस माल को आप तक पहुंचाने का फ़्रेट, ड्यूटी और अन्य खर्च, जो ओवरव्यू पर यूनिट लागत में जोड़े जाते हैं। इस खरीद ऑर्डर के शिपमेंट का Amazon फ़्रेट अपने-आप जुड़ जाता है। इन्हें सिर्फ़ आपकी टीम देखती है।",
+    "amazonFreight": "Amazon इनबाउंड फ़्रेट",
+    "shipment": "शिपमेंट {reference}",
+    "supplierTotal": "सप्लायर का कुल",
+    "landedTotal": "लैंडेड कुल",
+    "markup": "मार्कअप",
+    "markupValue": "प्रोडक्ट लागत पर {percent}",
+    "empty": "अभी कोई खर्च नहीं",
+    "kinds": {
+      "freight": "फ़्रेट",
+      "duty": "ड्यूटी",
+      "other": "अन्य"
+    },
+    "moreActions": "{kind} खर्च के लिए और कार्रवाइयां",
+    "remove": "हटाएं",
+    "add": "खर्च जोड़ें",
+    "addTitle": "लैंडेड कॉस्ट जोड़ें",
+    "addDescription": "किसी दूसरी मुद्रा के बिल को आपके द्वारा चुकाई गई दर पर {currency} में बदलें।",
+    "type": "प्रकार",
+    "amount": "राशि",
+    "description": "विवरण",
+    "descriptionPlaceholder": "फ़ॉरवर्डर का इनवॉइस, कस्टम्स एंट्री…",
+    "enterAmount": "राशि दर्ज करें"
+  }
+}

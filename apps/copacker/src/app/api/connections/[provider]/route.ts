@@ -7,6 +7,7 @@ import { connections, oauthStates } from "@/db/schema"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireAdmin, requireBuyer } from "@/server/auth"
 import { shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
+import { errorResponse } from "@/server/errors"
 import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
@@ -75,18 +76,18 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       )
     )
   if (!state) {
-    return Response.json({ error: "Connection request expired. Start again from Settings" }, { status: 400 })
+    return errorResponse("connectionExpired", 400)
   }
   if (
     provider === "shopify" &&
     (!verifyShopifyHmac(url.searchParams, process.env.SHOPIFY_CLIENT_SECRET ?? "") ||
       url.searchParams.get("shop") !== state.shop)
   ) {
-    return Response.json({ error: "Invalid Shopify callback" }, { status: 400 })
+    return errorResponse("invalidShopifyCallback", 400)
   }
   const consumed = await db().delete(oauthStates).where(eq(oauthStates.hash, stateHash)).returning()
   if (consumed.length !== 1) {
-    return Response.json({ error: "Connection request already used" }, { status: 400 })
+    return errorResponse("connectionAlreadyUsed", 400)
   }
   let externalId: string,
     credential: { token: string; refreshToken?: string; expiresAt?: number; refreshExpiresAt?: number },
@@ -105,7 +106,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       signal: AbortSignal.timeout(30000)
     })
     if (!response.ok) {
-      return Response.json({ error: "Shopify connection failed. Start again" }, { status: 400 })
+      return errorResponse("shopifyConnectionFailed", 400)
     }
     const result = shopifyTokenResponse.parse(await response.json())
     credential = storedShopifyToken(result)
@@ -127,7 +128,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       signal: AbortSignal.timeout(30000)
     })
     if (!response.ok) {
-      return Response.json({ error: "Amazon connection failed. Start again" }, { status: 400 })
+      return errorResponse("amazonConnectionFailed", 400)
     }
     credential = { token: z.object({ refresh_token: z.string() }).parse(await response.json()).refresh_token }
   }

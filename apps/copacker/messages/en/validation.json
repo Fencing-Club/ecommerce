@@ -1,0 +1,17 @@
+{
+  "required": "This field is required",
+  "number": "Enter a number",
+  "minLength": "Enter at least {minimum} characters",
+  "addOne": "Add at least one",
+  "minItems": "Add at least {minimum}",
+  "atLeast": "Enter {minimum} or more",
+  "greaterThan": "Enter a number greater than {minimum}",
+  "maxLength": "Use {maximum} characters or fewer",
+  "maxItems": "Use {maximum} or fewer",
+  "atMost": "Enter {maximum} or less",
+  "email": "Enter an email address",
+  "date": "Enter a date",
+  "chooseOption": "Choose an option",
+  "format": "Check the format",
+  "multipleOf": "Enter a multiple of {divisor}"
+}

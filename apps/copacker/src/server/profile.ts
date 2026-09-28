@@ -10,7 +10,7 @@ import { AccessError } from "./errors"
 // The profile the portal asks for before anything else: the person and their company, and for a buyer's owner or admin,
 // the workspace's website.
 export const profileInputSchema = personSchema.extend({
-  company: z.string().trim().min(1, "Enter your company").max(120),
+  company: z.string().trim().min(1, "settings.profile.enterCompany").max(120),
   website: websiteSchema.optional()
 })
 
@@ -28,7 +28,7 @@ export async function saveProfile(s: Pick<Session, "user" | "org" | "role">, raw
   const { website, ...input } = profileInputSchema.parse(raw)
   // The website is the workspace's, which only its owner and admins change.
   if (website !== undefined && (s.org.kind !== "buyer" || !isAdmin(s))) {
-    throw new AccessError("Only admins can change the website")
+    throw new AccessError("adminsOnlyWebsite")
   }
   await db().transaction(async (tx) => {
     await writeProfile(tx, s.user.id, input)

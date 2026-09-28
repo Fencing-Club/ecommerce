@@ -6,6 +6,7 @@ import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
 import type { SalesSource } from "./sales-orders"
 import { taggedWith } from "./shopify-tags"
+import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
 
 // Money here is net product sales: what customers paid for the products, after discounts, without tax, shipping or
 // tips. Shopify lines count at their current quantity (removed and refunded units are gone), with their share of
@@ -492,7 +493,8 @@ export function grossProfit(
   charges: ChargeLine[] = [],
   // Amazon's inbound freight per unit: by seller SKU for the shipments whose contents are known, and spread over every
   // Amazon unit for the rest.
-  amazonFreight: { perUnitMinor: number; bySku?: ReadonlyMap<string, number>; currency: string } | null = null
+  amazonFreight: { perUnitMinor: number; bySku?: ReadonlyMap<string, number>; currency: string } | null = null,
+  t: ServerText = serverTextInEnglish
 ) {
   const current = items.filter((item) => item.period === "current" && item.pricedUnits > 0 && item.currency)
   // Sales in more than one currency can't be added up; the currency most sales are in is used.
@@ -536,7 +538,7 @@ export function grossProfit(
   if (freight > 0 && currency) {
     counted.push({
       key: "amazon-freight",
-      label: "Amazon inbound freight",
+      label: t("charges.amazonFreight"),
       minor: -Math.round(freight),
       currency
     })
@@ -568,7 +570,12 @@ export type Mover = {
 
 // Items selling noticeably more or less than in the period before, by change in units. Only sources that cover both
 // periods are compared, and small sellers (under 5 units in both periods) are left out as noise.
-export function movers(items: ItemRow[], index: ReturnType<typeof catalogIndex>, sources: SalesSource[]) {
+export function movers(
+  items: ItemRow[],
+  index: ReturnType<typeof catalogIndex>,
+  sources: SalesSource[],
+  t: ServerText = serverTextInEnglish
+) {
   const byItem = new Map<string, Mover>()
   for (const item of items) {
     if (!sources.includes(item.source)) {
@@ -578,7 +585,7 @@ export function movers(items: ItemRow[], index: ReturnType<typeof catalogIndex>,
     const id = row?.variantId ?? `${item.source}:${item.key}`
     const entry = byItem.get(id) ?? {
       id,
-      product: row?.productTitle ?? (item.source === "amazon" ? item.key : "Unknown product"),
+      product: row?.productTitle ?? (item.source === "amazon" ? item.key : t("unknownProduct")),
       variant: row?.variantTitle && row.variantTitle !== "Default Title" ? row.variantTitle : null,
       sku: row?.buyerSku ?? (item.source === "amazon" ? item.key : null),
       imageUrl: row?.imageUrl ?? null,
@@ -670,6 +677,7 @@ export async function platformCharges(
   to: Date,
   currency: string
 ): Promise<ChargeLine[]> {
+  const t = await serverText()
   const lines: ChargeLine[] = []
   for (const account of accounts) {
     if (account.provider === "amazon") {
@@ -701,7 +709,7 @@ export async function platformCharges(
       for (const row of rows(result)) {
         lines.push({
           key: String(row.key),
-          label: amazonChargeLabels[String(row.key)] ?? "Amazon charges",
+          label: t(amazonChargeLabels[String(row.key)] ?? "charges.amazon"),
           minor: count(row.minor),
           currency
         })
@@ -722,7 +730,7 @@ export async function platformCharges(
       for (const row of rows(result)) {
         lines.push({
           key: String(row.key),
-          label: shopifyChargeLabels[String(row.key)] ?? "Shopify charges",
+          label: t(shopifyChargeLabels[String(row.key)] ?? "charges.shopify"),
           minor: count(row.minor),
           currency
         })
@@ -732,17 +740,17 @@ export async function platformCharges(
   return lines.filter((line) => line.minor !== 0)
 }
 
-const amazonChargeLabels: Record<string, string> = {
-  "amazon-refunds": "Amazon refunds",
-  "amazon-ads": "Amazon ads",
-  "amazon-charges": "Amazon account charges",
-  "amazon-mcf": "Amazon fulfillment for Shopify orders"
+const amazonChargeLabels: Record<string, ServerKey> = {
+  "amazon-refunds": "charges.amazonRefunds",
+  "amazon-ads": "charges.amazonAds",
+  "amazon-charges": "charges.amazonAccount",
+  "amazon-mcf": "charges.amazonMcf"
 }
-const shopifyChargeLabels: Record<string, string> = {
-  "shopify-labels": "Shopify shipping labels",
-  "shopify-bill": "Shopify bill (plan and apps)",
-  "shopify-disputes": "Shopify disputes",
-  "shopify-duties": "Duties and import taxes"
+const shopifyChargeLabels: Record<string, ServerKey> = {
+  "shopify-labels": "charges.shopifyLabels",
+  "shopify-bill": "charges.shopifyBill",
+  "shopify-disputes": "charges.shopifyDisputes",
+  "shopify-duties": "charges.shopifyDuties"
 }
 
 // Amazon's inbound freight (freight service, placement and transport into its warehouses) posted over a stretch, in

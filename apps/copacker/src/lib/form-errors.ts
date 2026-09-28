@@ -1,47 +1,83 @@
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
 import type { z } from "zod"
+import type { Messages } from "@/i18n/messages"
+import validation from "../../messages/en/validation.json"
 
-// The shared @repo/aisle schemas carry developer-facing defaults; this maps them to customer-facing field messages.
-// Messages written on a schema (for example "Choose a freight forwarder") still take precedence.
-export const formErrorMap: z.core.$ZodErrorMap = (issue) => {
-  if (issue.input === "") {
-    return "This field is required"
+// A generic validation message by its key under "validation", with its values. useTranslations("validation") and
+// getTranslations("validation") are both one.
+export type ValidationTranslator = (key: keyof typeof validation, values?: Record<string, number>) => string
+
+// The shared @repo/aisle schemas carry developer-facing defaults; this maps them to customer-facing field messages in
+// the translator's language. Messages written on a schema (for example "orders.builder.chooseForwarder") still take
+// precedence, and form fields translate them.
+export function formErrorMapFor(t: ValidationTranslator): z.core.$ZodErrorMap {
+  return (issue) => {
+    if (issue.input === "") {
+      return t("required")
+    }
+    switch (issue.code) {
+      case "invalid_type":
+        return issue.expected === "number" ? t("number") : t("required")
+      case "too_small": {
+        const minimum = Number(issue.minimum)
+        if (issue.origin === "string") {
+          return minimum <= 1 ? t("required") : t("minLength", { minimum })
+        }
+        if (issue.origin === "array") {
+          return minimum <= 1 ? t("addOne") : t("minItems", { minimum })
+        }
+        return issue.inclusive ? t("atLeast", { minimum }) : t("greaterThan", { minimum })
+      }
+      case "too_big": {
+        const maximum = Number(issue.maximum)
+        if (issue.origin === "string") {
+          return t("maxLength", { maximum })
+        }
+        if (issue.origin === "array") {
+          return t("maxItems", { maximum })
+        }
+        return t("atMost", { maximum })
+      }
+      case "invalid_format":
+        if (issue.format === "email") {
+          return t("email")
+        }
+        if (issue.format === "date") {
+          return t("date")
+        }
+        if (issue.format === "uuid") {
+          return t("chooseOption")
+        }
+        return t("format")
+      case "not_multiple_of":
+        return t("multipleOf", { divisor: Number(issue.divisor) })
+      case "invalid_value":
+      case "invalid_union":
+        return t("chooseOption")
+      default:
+        return undefined
+    }
   }
-  switch (issue.code) {
-    case "invalid_type":
-      return issue.expected === "number" ? "Enter a number" : "This field is required"
-    case "too_small":
-      if (issue.origin === "string") {
-        return Number(issue.minimum) <= 1 ? "This field is required" : `Enter at least ${issue.minimum} characters`
-      }
-      if (issue.origin === "array") {
-        return Number(issue.minimum) <= 1 ? "Add at least one" : `Add at least ${issue.minimum}`
-      }
-      return issue.inclusive ? `Enter ${issue.minimum} or more` : `Enter a number greater than ${issue.minimum}`
-    case "too_big":
-      if (issue.origin === "string") {
-        return `Use ${issue.maximum} characters or fewer`
-      }
-      if (issue.origin === "array") {
-        return `Use ${issue.maximum} or fewer`
-      }
-      return `Enter ${issue.maximum} or less`
-    case "invalid_format":
-      if (issue.format === "email") {
-        return "Enter an email address"
-      }
-      if (issue.format === "date") {
-        return "Enter a date"
-      }
-      if (issue.format === "uuid") {
-        return "Choose an option"
-      }
-      return "Check the format"
-    case "not_multiple_of":
-      return `Enter a multiple of ${issue.divisor}`
-    case "invalid_value":
-    case "invalid_union":
-      return "Choose an option"
-    default:
-      return undefined
+}
+
+// The messages in English, for code without a translator. Client forms use useFormErrorMap() from
+// "@/hooks/use-error-text" instead, which speaks the person's language.
+export const formErrorMap = formErrorMapFor(
+  createTranslator({ locale: "en", messages: { validation }, namespace: "validation" })
+)
+
+// Any message's full key, such as "orders.builder.chooseSupplier".
+type MessageKey = MessageKeys<Messages, NestedKeyOf<Messages>>
+
+// Whether a message, such as one written on a zod schema, is the full key of a message rather than text to show as
+// it is.
+export function isMessageKey(messages: unknown, message: string): message is MessageKey {
+  let node = messages
+  for (const part of message.split(".")) {
+    if (typeof node !== "object" || node === null || !Object.hasOwn(node, part)) {
+      return false
+    }
+    node = Reflect.get(node, part)
   }
+  return typeof node === "string"
 }

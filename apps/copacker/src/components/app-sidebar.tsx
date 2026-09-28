@@ -1,6 +1,7 @@
 "use client"
 
 import { Check, ChevronsUpDown, LogOut, Monitor, Moon, Palette, Plus, Sun } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "@/components/theme-provider"
@@ -66,6 +67,7 @@ export function AppSidebar({ name, userName, email, kind, active, workspaces }: 
   const pathname = usePathname()
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
+  const t = useTranslations("navigation")
   // A member sees only the pages they were given.
   const navigation = navigationFor(kind, usePermissions())
 
@@ -83,18 +85,18 @@ export function AppSidebar({ name, userName, email, kind, active, workspaces }: 
           }
           return (
             <SidebarGroup key={group.key} className={group.key === "workspace" ? "mt-auto" : undefined}>
-              {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+              {group.labelKey && <SidebarGroupLabel>{t(`groups.${group.labelKey}`)}</SidebarGroupLabel>}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {items.map((item) => (
                     <SidebarMenuItem key={item.view}>
                       <SidebarMenuButton
                         isActive={isActive(item.view)}
-                        tooltip={item.label}
+                        tooltip={t(`pages.${item.labelKey}`)}
                         render={<Link href={`/${item.view}`} onClick={() => setOpenMobile(false)} />}
                       >
                         <item.icon />
-                        <span>{item.label}</span>
+                        <span>{t(`pages.${item.labelKey}`)}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -123,10 +125,12 @@ function WorkspaceSwitcher({
   workspaces: Workspace[]
   fallbackName: string
 }) {
+  const t = useTranslations("navigation.sidebar")
   const [run] = useActionMutation()
   const { isMobile } = useSidebar()
   const current = workspaces.find((workspace) => workspace.id === active)?.name ?? fallbackName
-  const subtitle = { supplier: "Supplier workspace", forwarder: "Forwarder workspace" }[kind] ?? "Buyer workspace"
+  const subtitles = { supplier: t("supplierWorkspace"), forwarder: t("forwarderWorkspace") }
+  const subtitle = kind === "supplier" || kind === "forwarder" ? subtitles[kind] : t("buyerWorkspace")
 
   async function switchTo(id: string) {
     await run({ action: "workspace.switch", data: { id } }).unwrap()
@@ -141,7 +145,7 @@ function WorkspaceSwitcher({
       <Avatar className="rounded-md after:rounded-md">
         <AvatarFallback className="rounded-md text-xs font-medium text-foreground">{initials(current)}</AvatarFallback>
       </Avatar>
-      <div className={sx({ display: "grid", flex: 1, textAlign: "left", text: "sm", lineHeight: "tight" })}>
+      <div className={sx({ display: "grid", flex: 1, textAlign: "start", text: "sm", lineHeight: "tight" })}>
         <span
           className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "medium" })}
         >
@@ -172,12 +176,12 @@ function WorkspaceSwitcher({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className={styles.menuContent}
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "bottom" : "inline-end"}
             align="start"
             sideOffset={4}
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("workspaces")}</DropdownMenuLabel>
               {workspaces.map((workspace) => (
                 <DropdownMenuItem key={workspace.id} onClick={() => void switchTo(workspace.id)}>
                   <Avatar size="sm" className={styles.workspaceAvatar}>
@@ -196,7 +200,7 @@ function WorkspaceSwitcher({
               <span className="flex size-6 shrink-0 items-center justify-center rounded-md border bg-background">
                 <Plus className="size-3.5" />
               </span>
-              New workspace
+              {t("newWorkspace")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -206,13 +210,14 @@ function WorkspaceSwitcher({
 }
 
 function UserMenu({ name, email }: { name: string; email: string }) {
+  const t = useTranslations("navigation.sidebar")
   const { isMobile } = useSidebar()
   const identity = (
     <>
       <Avatar className={styles.userAvatar}>
         <AvatarFallback className={styles.userFallback}>{initials(name)}</AvatarFallback>
       </Avatar>
-      <div className={sx({ display: "grid", flex: 1, textAlign: "left", text: "sm", lineHeight: "tight" })}>
+      <div className={sx({ display: "grid", flex: 1, textAlign: "start", text: "sm", lineHeight: "tight" })}>
         <span
           className={sx({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "medium" })}
         >
@@ -244,7 +249,7 @@ function UserMenu({ name, email }: { name: string; email: string }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className={styles.menuContent}
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "bottom" : "inline-end"}
             align="end"
             sideOffset={4}
           >
@@ -256,10 +261,12 @@ function UserMenu({ name, email }: { name: string; email: string }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               nativeButton
-              render={<button type="submit" form="sign-out" aria-label="Sign out" className={sx({ width: "full" })} />}
+              render={
+                <button type="submit" form="sign-out" aria-label={t("signOut")} className={sx({ width: "full" })} />
+              }
             >
-              <LogOut />
-              Sign out
+              <LogOut className="rtl:-scale-x-100" />
+              {t("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -268,20 +275,22 @@ function UserMenu({ name, email }: { name: string; email: string }) {
   )
 }
 
+// Each labelled by its key under the "navigation" messages' `sidebar.themes`.
 const themeOptions = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor }
+  { value: "light", icon: Sun },
+  { value: "dark", icon: Moon },
+  { value: "system", icon: Monitor }
 ] as const
 
 // Light, dark, or the computer's setting. A light or dark choice is remembered in this browser.
 function ThemeMenu() {
+  const t = useTranslations("navigation.sidebar")
   const { theme, setTheme } = useTheme()
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
         <Palette />
-        Theme
+        {t("theme")}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
         <DropdownMenuRadioGroup
@@ -296,7 +305,7 @@ function ThemeMenu() {
           {themeOptions.map((option) => (
             <DropdownMenuRadioItem key={option.value} value={option.value}>
               <option.icon />
-              {option.label}
+              {t(`themes.${option.value}`)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

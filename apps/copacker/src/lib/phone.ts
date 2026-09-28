@@ -41,4 +41,4 @@ export const phoneSchema = z
   .refine((value) => {
     const number = value.replace(extension, "")
     return !value || ((number.match(/\d/g)?.length ?? 0) >= 6 && !/\p{L}/u.test(number))
-  }, "Enter a phone number")
+  }, "partners.phone.invalid")

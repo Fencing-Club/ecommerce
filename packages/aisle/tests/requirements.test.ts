@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { orderInputSchema } from "../src/index"
-import { destinationRequirements, itemRequirements, sharedPrep } from "../src/requirements"
+import { destinationRequirements, itemRequirements, requirementText, sharedPrep } from "../src/requirements"
 
 const line = (overrides: Record<string, unknown> = {}) => ({
   id: "00000000-0000-4000-8000-000000000001",
@@ -30,8 +30,12 @@ const order = (items: ReturnType<typeof line>[]) =>
 describe("PO instructions", () => {
   it("adds Amazon's carton and label rules for Amazon, and none for other destinations", () => {
     const awd = order([line({ amazonNetwork: "awd_us" })])
-    expect(destinationRequirements(awd).join(" ")).toContain("one SKU per carton")
-    expect(destinationRequirements(order([line()])).join(" ")).toContain("mixed SKUs are allowed")
+    expect(destinationRequirements(awd)).toContainEqual({ code: "cartons", network: "awd_us" })
+    expect(
+      destinationRequirements(order([line()]))
+        .map(requirementText)
+        .join(" ")
+    ).toContain("mixed SKUs are allowed")
     expect(destinationRequirements({ ...awd, destination: "warehouse" })).toEqual([])
   })
 
@@ -49,21 +53,20 @@ describe("PO instructions", () => {
     ])
     const shared = sharedPrep(po)
     expect(shared).toBe("POLYBAGGING")
-    expect(itemRequirements(po.items[1]!, po.destination, shared)).toEqual([
+    expect(itemRequirements(po.items[1]!, po.destination, shared).map(requirementText)).toEqual([
       "Pack for FBA",
       "Bundle 2 units into one pack",
       "Label with FNSKU X004ABC123",
       "Fold the cuff.",
       "No tissue paper."
     ])
-    expect(itemRequirements(po.items[0]!, "warehouse")).toEqual(["Seal each unit in a clear polybag"])
+    expect(itemRequirements(po.items[0]!, "warehouse")).toEqual([{ code: "prep", prep: "POLYBAGGING" }])
+    expect(requirementText({ code: "prep", prep: "POLYBAGGING" })).toBe("Seal each unit in a clear polybag")
   })
 
   it("asks for a suffocation warning label on the lines that need one, to any destination", () => {
     const po = order([line({ suffocationWarning: true })])
-    expect(itemRequirements(po.items[0]!, "warehouse", "POLYBAGGING")).toEqual([
-      "Put a suffocation warning label on each polybag"
-    ])
+    expect(itemRequirements(po.items[0]!, "warehouse", "POLYBAGGING")).toEqual([{ code: "suffocationLabel" }])
     expect(order([line()]).items[0]!.suffocationWarning).toBe(false)
   })
 

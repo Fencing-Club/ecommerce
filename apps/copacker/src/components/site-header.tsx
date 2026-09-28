@@ -22,7 +22,7 @@ export function SiteHeader({ kind }: { kind: string }) {
         </span>
         Copacker
       </Link>
-      <div className="ml-auto min-[30rem]:ml-0 min-[30rem]:w-full">
+      <div className="ms-auto min-[30rem]:ms-0 min-[30rem]:w-full">
         <SearchCommand kind={kind} />
       </div>
       <div className="flex items-center justify-end">

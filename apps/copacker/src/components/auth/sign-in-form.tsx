@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { FormProvider, useWatch } from "react-hook-form"
 import { FormError, SubmitButton } from "@/components/actions"
@@ -21,6 +22,7 @@ export function leaving(state: { isSubmitting: boolean; isSubmitSuccessful: bool
 
 // Email and password. `email` fills in the address, such as an invitation's; `locked` keeps it to that address.
 export function SignInForm({ next, email = "", locked = false }: { next: string; email?: string; locked?: boolean }) {
+  const t = useTranslations("auth")
   const { form, submit } = useActionForm({
     schema: signInSchema,
     action: "auth.signIn",
@@ -35,31 +37,31 @@ export function SignInForm({ next, email = "", locked = false }: { next: string;
         <FieldGroup>
           <FormInput
             name="email"
-            label="Email"
+            label={t("fields.email")}
             type="email"
             autoComplete="username"
             inputMode="email"
             spellCheck={false}
             readOnly={locked}
-            placeholder="you@company.com"
+            placeholder={t("fields.emailPlaceholder")}
           />
           <PasswordField
             name="password"
-            label="Password"
+            label={t("fields.password")}
             autoComplete="current-password"
             action={
               <Link
                 href={reset}
                 className="text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                Forgot password?
+                {t("fields.forgotPassword")}
               </Link>
             }
           />
         </FieldGroup>
         <FormError message={form.formState.errors.root?.server?.message} />
         <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-          Sign in
+          {t("login.submit")}
         </SubmitButton>
       </form>
     </FormProvider>

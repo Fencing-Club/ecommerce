@@ -1,4 +1,6 @@
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
 import { z } from "zod"
+import supplier from "../../messages/en/supplier.json"
 
 // Volume pricing and quantity rules, as Shopify's catalogs have them. Quantities are in the product's price basis:
 // units, sellable packs or cases. A break's price applies from its minimum up; below the first break, the product's
@@ -16,51 +18,62 @@ export const quantityRulesSchema = z.object({ increment: quantity, minimum: quan
 
 export const priceBases = ["piece", "sellable_pack", "case"] as const
 export type PriceBasis = (typeof priceBases)[number]
-const basisUnits: Record<PriceBasis, [string, string]> = {
-  piece: ["unit", "units"],
-  sellable_pack: ["pack", "packs"],
-  case: ["case", "cases"]
-}
+
+type PricingMessages = (typeof supplier)["pricing"]
+// Translates the "supplier.pricing" messages: a page's `useTranslations("supplier.pricing")`, or English by default for
+// the server's checks and exports.
+export type PricingText = (
+  key: MessageKeys<PricingMessages, NestedKeyOf<PricingMessages>>,
+  values?: Record<string, string | number>
+) => string
+
+export const englishPricing: PricingText = createTranslator({
+  locale: "en",
+  messages: { supplier },
+  namespace: "supplier.pricing"
+})
 
 // "1 case", "12 cases".
-export function countOf(count: number, basis: PriceBasis) {
-  const [one, many] = basisUnits[basis]
-  return `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`
+export function countOf(count: number, basis: PriceBasis, t: PricingText = englishPricing) {
+  return t("count", { count, basis })
 }
 
-export function unitName(basis: PriceBasis) {
-  return basisUnits[basis][0]
+export function unitName(basis: PriceBasis, t: PricingText = englishPricing) {
+  return t("unit", { basis })
 }
 
 // What's wrong with a price's volume pricing and quantity rules, checked as Shopify checks them, or null.
-export function pricingProblem(priceMinor: number | null, breaks: PriceBreak[], rules: QuantityRules) {
+export function pricingProblem(
+  priceMinor: number | null,
+  breaks: PriceBreak[],
+  rules: QuantityRules,
+  t: PricingText = englishPricing
+) {
   if (rules.minimum % rules.increment !== 0) {
-    return "The minimum must be a multiple of the increment"
+    return t("minimumMultiple")
   }
   if (rules.maximum !== null && rules.maximum < rules.minimum) {
-    return "The maximum can't be less than the minimum"
+    return t("maximumBelowMinimum")
   }
   if (rules.maximum !== null && rules.maximum % rules.increment !== 0) {
-    return "The maximum must be a multiple of the increment"
+    return t("maximumMultiple")
   }
   if (breaks.length && priceMinor === null) {
-    return "Add a price before volume pricing"
+    return t("priceFirst")
   }
   let previous = { minimum: rules.minimum, priceMinor: priceMinor ?? 0 }
   for (const priceBreak of breaks) {
     if (priceBreak.minimum <= previous.minimum) {
-      return priceBreak.minimum <= rules.minimum
-        ? "Each break's quantity must be more than the minimum"
-        : "Break quantities must go up"
+      return priceBreak.minimum <= rules.minimum ? t("breakAboveMinimum") : t("breaksAscend")
     }
     if (priceBreak.minimum % rules.increment !== 0) {
-      return "Break quantities must be multiples of the increment"
+      return t("breakMultiple")
     }
     if (rules.maximum !== null && priceBreak.minimum > rules.maximum) {
-      return "Break quantities can't be more than the maximum"
+      return t("breakAboveMaximum")
     }
     if (priceBreak.priceMinor >= previous.priceMinor) {
-      return "Each break's price must be lower than the one before"
+      return t("breakPriceDescends")
     }
     previous = priceBreak
   }
@@ -108,24 +121,29 @@ export function unitPriceAt(pricing: Pick<Pricing, "priceMinor" | "priceBreaks">
 }
 
 // Why a quantity breaks the rules, in a few words, or null.
-export function quantityProblem(rules: QuantityRules, count: number, basis: PriceBasis) {
+export function quantityProblem(
+  rules: QuantityRules,
+  count: number,
+  basis: PriceBasis,
+  t: PricingText = englishPricing
+) {
   if (count < rules.minimum) {
-    return `Minimum ${countOf(rules.minimum, basis)}`
+    return t("minimumQuantity", { quantity: countOf(rules.minimum, basis, t) })
   }
   if (rules.maximum !== null && count > rules.maximum) {
-    return `Maximum ${countOf(rules.maximum, basis)}`
+    return t("maximumQuantity", { quantity: countOf(rules.maximum, basis, t) })
   }
   if (count % rules.increment !== 0) {
-    return `Order in multiples of ${rules.increment.toLocaleString("en-US")}`
+    return t("multiplesOf", { increment: rules.increment })
   }
   return null
 }
 
 // "10% off", "5% more", or null for no change. Basis points keep two decimals, such as 12.5%.
-export function adjustmentLabel(basisPoints: number) {
+export function adjustmentLabel(basisPoints: number, t: PricingText = englishPricing) {
   if (!basisPoints) {
     return null
   }
-  const percent = `${Number((Math.abs(basisPoints) / 100).toFixed(2))}%`
-  return basisPoints < 0 ? `${percent} off` : `${percent} more`
+  const percent = Math.abs(basisPoints) / 10_000
+  return basisPoints < 0 ? t("adjustmentOff", { percent }) : t("adjustmentMore", { percent })
 }

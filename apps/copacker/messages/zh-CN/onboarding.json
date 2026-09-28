@@ -1,0 +1,123 @@
+{
+  "title": "开始使用",
+  "newWorkspaceTitle": "新建工作区",
+  "person": {
+    "enterFirstName": "请输入你的名字",
+    "enterLastName": "请输入你的姓氏",
+    "choosePosition": "请选择你的职位"
+  },
+  "company": {
+    "enterName": "请输入你的公司名称",
+    "enterWebsite": "请输入网站，例如 example.com"
+  },
+  "place": {
+    "enterName": "为此地址命名"
+  },
+  "positions": {
+    "owner": "所有者",
+    "generalManager": "总经理",
+    "operationsManager": "运营经理",
+    "purchasingManager": "采购经理",
+    "buyer": "采购员",
+    "salesManager": "销售经理",
+    "accountManager": "客户经理",
+    "productionManager": "生产经理",
+    "qualityControl": "质量控制",
+    "logisticsCoordinator": "物流协调员",
+    "warehouseManager": "仓库经理",
+    "customerService": "客户服务",
+    "finance": "财务",
+    "other": "其他"
+  },
+  "steps": {
+    "about": "关于你",
+    "role": "你的公司做什么？",
+    "company": "你的公司",
+    "address": {
+      "none": "地址",
+      "buyer": {
+        "title": "收货地址",
+        "description": "采购订单的送达地址"
+      },
+      "supplier": {
+        "title": "提货地址",
+        "description": "承运商上门提货的地址"
+      },
+      "forwarder": {
+        "title": "仓库地址",
+        "description": "买家为你发送货物的地址"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "仓库",
+    "supplier": "工厂",
+    "forwarder": "仓库"
+  },
+  "fields": {
+    "firstName": "名字",
+    "lastName": "姓氏",
+    "position": "职位",
+    "choose": "请选择",
+    "companyName": "公司名称",
+    "website": "网站",
+    "websitePlaceholder": "example.com",
+    "phone": "电话号码",
+    "addressName": "地址名称"
+  },
+  "roles": {
+    "legend": "你的公司做什么",
+    "buyer": {
+      "title": "买家",
+      "description": "向供应商采购，在 Amazon 或 Shopify 上销售"
+    },
+    "supplier": {
+      "title": "供应商",
+      "description": "生产产品并履行采购订单"
+    },
+    "forwarder": {
+      "title": "货代",
+      "description": "为买家收货并转运"
+    }
+  },
+  "wizard": {
+    "chooseRole": "请选择一项",
+    "pickupPhone": "请添加提货电话号码，Amazon 需要它来安排提货",
+    "step": "第 {current} 步，共 {total} 步",
+    "invitedBy": "邀请人：{name}",
+    "back": "返回",
+    "skip": "暂时跳过",
+    "continue": "继续",
+    "createWorkspace": "创建工作区",
+    "join": "加入 {workspace}",
+    "cancel": "取消",
+    "signOut": "退出登录"
+  },
+  "preview": {
+    "workspace": "工作区",
+    "kinds": {
+      "buyer": "买家工作区",
+      "supplier": "供应商工作区",
+      "forwarder": "货代工作区"
+    },
+    "groups": {
+      "store": "店铺",
+      "purchasing": "采购",
+      "sales": "销售",
+      "products": "产品"
+    },
+    "pages": {
+      "overview": "概览",
+      "orders": "订单",
+      "products": "产品",
+      "restock": "补货",
+      "purchaseOrders": "采购订单",
+      "shipments": "货件",
+      "customers": "客户",
+      "inventory": "库存",
+      "catalogs": "目录",
+      "settings": "设置"
+    },
+    "address": "地址"
+  }
+}

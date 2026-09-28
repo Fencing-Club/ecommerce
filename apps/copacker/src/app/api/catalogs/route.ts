@@ -1,21 +1,18 @@
 import { requireAccess, session } from "@/server/auth"
 import { saveCatalog } from "@/server/catalogs"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 
 // Creates or saves a catalog from its form.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
     requireAccess(s, "catalogs", "edit")
     return Response.json(await saveCatalog(s, await request.json()))
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Could not save catalog" },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error, "catalogSaveFailed") }, { status: failureStatus(error) })
   }
 }

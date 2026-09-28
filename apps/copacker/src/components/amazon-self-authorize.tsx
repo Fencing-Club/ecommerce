@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import {
   Dialog,
@@ -18,6 +19,7 @@ import { FormInput } from "./form-controls"
 // the Solution Provider Portal and pastes the refresh token here. Copacker checks it with Amazon and stores it
 // encrypted.
 export function AmazonSelfAuthorize({ className, children }: { className?: string; children: React.ReactNode }) {
+  const t = useTranslations("settings.integrations.amazonSelfAuthorize")
   const [open, setOpen] = useState(false)
   const { form, submit } = useActionForm({
     schema: selfAuthorizationSchema,
@@ -30,18 +32,21 @@ export function AmazonSelfAuthorize({ className, children }: { className?: strin
       <DialogTrigger className={className}>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Connect Amazon</DialogTitle>
-          <DialogDescription>
-            In Amazon&apos;s Solution Provider Portal, open the menu next to Copacker&apos;s app, choose Authorize and
-            copy the refresh token. Your merchant token is in Seller Central under Settings, Account Info.
-          </DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label="Connect" dialog>
-          <FormInput name="sellerId" required label="Merchant token" placeholder="A2CIYIV0E1FHU3" autoComplete="off" />
+        <ActionForm form={form} onSubmit={submit} label={t("connect")} dialog>
+          <FormInput
+            name="sellerId"
+            required
+            label={t("merchantToken")}
+            placeholder="A2CIYIV0E1FHU3"
+            autoComplete="off"
+          />
           <FormInput
             name="refreshToken"
             required
-            label="Refresh token"
+            label={t("refreshToken")}
             type="password"
             placeholder="Atzr|…"
             autoComplete="off"

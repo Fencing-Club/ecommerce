@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { redirect } from "next/navigation"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
@@ -14,17 +15,17 @@ type Props = { params: Promise<{ id: string }> }
 
 // Looking the PO up here too gives a malformed or unknown id the not-found page's title.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders.builder")])
   if (!can(s, "orders", "edit")) {
-    return noAccessTitle
+    return noAccessTitle()
   }
   const { order } = await accessibleOrder(s, (await params).id)
-  return { title: `Edit ${order.data.reference}` }
+  return { title: t("editTitle", { reference: order.data.reference }) }
 }
 
 // Edits a draft PO. Once sent, a PO changes through its shipments instead, so this goes back to the PO.
 export default async function EditOrder({ params }: Props) {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   const { id } = await params
@@ -48,9 +49,9 @@ export default async function EditOrder({ params }: Props) {
   // The builder renders the page's header row first, then its form.
   return (
     <OrderBuilder
-      title="Edit"
+      title={t("builder.edit")}
       parents={[
-        { label: "Purchase orders", href: "/orders" },
+        { label: t("index.title"), href: "/orders" },
         { label: order.data.reference, href: `/orders/${id}` }
       ]}
       suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}

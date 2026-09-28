@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "اسٹور",
+    "purchasing": "خریداری",
+    "sales": "سیلز",
+    "catalog": "پروڈکٹس"
+  },
+  "pages": {
+    "overview": "جائزہ",
+    "orders": "آرڈرز",
+    "products": "پروڈکٹس",
+    "restock": "ری اسٹاک",
+    "purchaseOrders": "خریداری آرڈرز",
+    "shipments": "شپمنٹس",
+    "partners": "پارٹنرز",
+    "customers": "کسٹمرز",
+    "inventory": "انوینٹری",
+    "catalogs": "کیٹلاگز",
+    "settings": "سیٹنگز"
+  },
+  "sidebar": {
+    "buyerWorkspace": "خریدار ورک اسپیس",
+    "supplierWorkspace": "سپلائر ورک اسپیس",
+    "forwarderWorkspace": "فریٹ فارورڈر ورک اسپیس",
+    "workspaces": "ورک اسپیسز",
+    "newWorkspace": "نیا ورک اسپیس",
+    "signOut": "سائن آؤٹ",
+    "theme": "تھیم",
+    "themes": {
+      "light": "لائٹ",
+      "dark": "ڈارک",
+      "system": "سسٹم"
+    }
+  },
+  "notifications": {
+    "title": "اطلاعات",
+    "empty": "کوئی اطلاع نہیں",
+    "emptyDescription": "آپ کے آرڈرز اور شپمنٹس کی اپ ڈیٹس یہاں دکھائی دیں گی"
+  },
+  "search": {
+    "search": "تلاش کریں",
+    "ctrl": "Ctrl",
+    "toMove": "منتقل ہونے کے لیے <keys></keys>",
+    "toOpen": "کھولنے کے لیے <keys></keys>",
+    "toClose": "بند کرنے کے لیے <keys></keys>",
+    "close": "بند کریں",
+    "noResults": "“{query}” کے لیے کوئی نتیجہ نہیں",
+    "pages": "صفحات",
+    "orders": "آرڈرز",
+    "loadingOrders": "آرڈرز لوڈ ہو رہے ہیں",
+    "loadingResults": "نتائج لوڈ ہو رہے ہیں",
+    "recentPurchaseOrders": "حالیہ خریداری آرڈرز",
+    "products": "پروڈکٹس",
+    "purchaseOrders": "خریداری آرڈرز",
+    "shipments": "شپمنٹس",
+    "partners": "پارٹنرز",
+    "supplier": "سپلائر",
+    "forwarder": "فریٹ فارورڈر",
+    "failed": "ہر جگہ تلاش نہیں ہو سکی۔ دوبارہ کوشش کریں۔"
+  }
+}

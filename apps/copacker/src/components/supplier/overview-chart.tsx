@@ -1,14 +1,17 @@
 "use client"
 
-import { money } from "@repo/aisle"
+import { useLocale, useTranslations } from "next-intl"
 import { Bar, CartesianGrid, ComposedChart, Line, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
+import { useMoney } from "@/hooks/use-money"
+import type { Comparison } from "@/lib/date-range"
 import { compactMoney } from "@/lib/format"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 
 type Point = { key: string; label: string; title: string; value: number; orders: number; previous: number | null }
 
-const dayLabel = (day: string, options: Intl.DateTimeFormatOptions) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { ...options, timeZone: "UTC" })
+// A "YYYY-MM-DD" day in the page's language, read in UTC so it stays the same day in every time zone.
+const dayLabel = (day: string, locale: string, options: Intl.DateTimeFormatOptions) =>
+  new Date(`${day}T00:00:00Z`).toLocaleDateString(locale, { ...options, timeZone: "UTC" })
 
 function bucketSize(days: number) {
   if (days <= 45) {
@@ -17,8 +20,13 @@ function bucketSize(days: number) {
   return days <= 190 ? 7 : 30
 }
 
-// Days for a month or so, then weeks, then months, so bars stay readable.
-function buckets(series: SupplierOverviewData["series"]): Point[] {
+// Days for a month or so, then weeks, then months, so bars stay readable. `range` writes a week's first and last day
+// as one span.
+function buckets(
+  series: SupplierOverviewData["series"],
+  locale: string,
+  range: (low: string, high: string) => string
+): Point[] {
   const size = bucketSize(series.length)
   const points: Point[] = []
   for (let start = 0; start < series.length; start += size) {
@@ -30,11 +38,14 @@ function buckets(series: SupplierOverviewData["series"]): Point[] {
       : group.reduce((sum, day) => sum + (day.previous ?? 0), 0)
     points.push({
       key: first,
-      label: dayLabel(first, size === 30 ? { month: "short" } : { month: "short", day: "numeric" }),
+      label: dayLabel(first, locale, size === 30 ? { month: "short" } : { month: "short", day: "numeric" }),
       title:
         size === 1
-          ? dayLabel(first, { weekday: "short", month: "short", day: "numeric" })
-          : `${dayLabel(first, { month: "short", day: "numeric" })} – ${dayLabel(last, { month: "short", day: "numeric" })}`,
+          ? dayLabel(first, locale, { weekday: "short", month: "short", day: "numeric" })
+          : range(
+              dayLabel(first, locale, { month: "short", day: "numeric" }),
+              dayLabel(last, locale, { month: "short", day: "numeric" })
+            ),
       value: group.reduce((sum, day) => sum + day.value, 0),
       orders: group.reduce((sum, day) => sum + day.orders, 0),
       previous
@@ -49,6 +60,9 @@ function ChartTooltip({
   currency,
   previousLabel
 }: Partial<TooltipContentProps> & { currency: string; previousLabel: string | null }) {
+  const t = useTranslations("supplier.chart")
+  const locale = useLocale()
+  const money = useMoney()
   const point = payload?.[0]?.payload as Point | undefined
   if (!active || !point) {
     return null
@@ -59,19 +73,19 @@ function ChartTooltip({
       <div className="flex items-center justify-between gap-4">
         <span className="flex items-center gap-1.5 text-muted-foreground">
           <span className="size-2 rounded-[2px] bg-chart-1" aria-hidden />
-          Ordered
+          {t("ordered")}
         </span>
         <span className="font-medium tabular-nums">{money(point.value, currency)}</span>
       </div>
       <div className="flex justify-between gap-4 text-muted-foreground">
-        <span className="pl-3.5">Orders</span>
-        <span className="tabular-nums">{point.orders}</span>
+        <span className="ps-3.5">{t("orders")}</span>
+        <span className="tabular-nums">{point.orders.toLocaleString(locale)}</span>
       </div>
       {point.previous !== null && previousLabel && (
         <div className="mt-1 flex justify-between gap-4 text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-0 w-2 border-t-2 border-dashed border-muted-foreground" aria-hidden />
-            Previous period
+            {previousLabel}
           </span>
           <span className="tabular-nums">{money(point.previous, currency)}</span>
         </div>
@@ -84,20 +98,27 @@ function ChartTooltip({
 export function OrdersChart({
   series,
   currency,
-  previousLabel
+  comparison
 }: {
   series: SupplierOverviewData["series"]
   currency: string
-  previousLabel: string | null
+  // The period compared with, or null for none.
+  comparison: Exclude<Comparison, "none"> | null
 }) {
-  const data = buckets(series)
+  const t = useTranslations("supplier.chart")
+  const periods = useTranslations("overview.period")
+  const previousLabel = comparison ? periods(`comparisons.${comparison}`) : null
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
+  const money = useMoney()
+  const data = buckets(series, locale, (low, high) => shared("range", { low, high }))
   const compared = previousLabel !== null && data.some((point) => point.previous !== null)
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-[3px] bg-chart-1" aria-hidden />
-          This period
+          {t("thisPeriod")}
         </span>
         {compared && (
           <span className="flex items-center gap-1.5">
@@ -129,7 +150,7 @@ export function OrdersChart({
             axisLine={false}
             allowDecimals={false}
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickFormatter={(value: number) => compactMoney(value, currency)}
+            tickFormatter={(value: number) => compactMoney(value, currency, locale)}
           />
           <Tooltip
             cursor={{ fill: "var(--muted)", opacity: 0.6 }}
@@ -151,13 +172,13 @@ export function OrdersChart({
         </ComposedChart>
       </div>
       <table className="sr-only">
-        <caption>Order value received</caption>
+        <caption>{t("caption")}</caption>
         <thead>
           <tr>
-            <th scope="col">Period</th>
-            <th scope="col">Ordered</th>
-            <th scope="col">Orders</th>
-            {compared && <th scope="col">Previous period</th>}
+            <th scope="col">{t("period")}</th>
+            <th scope="col">{t("ordered")}</th>
+            <th scope="col">{t("orders")}</th>
+            {compared && <th scope="col">{previousLabel}</th>}
           </tr>
         </thead>
         <tbody>
@@ -165,8 +186,8 @@ export function OrdersChart({
             <tr key={point.key}>
               <th scope="row">{point.title}</th>
               <td>{money(point.value, currency)}</td>
-              <td>{point.orders}</td>
-              {compared && <td>{point.previous === null ? "No data" : money(point.previous, currency)}</td>}
+              <td>{point.orders.toLocaleString(locale)}</td>
+              {compared && <td>{point.previous === null ? t("noData") : money(point.previous, currency)}</td>}
             </tr>
           ))}
         </tbody>

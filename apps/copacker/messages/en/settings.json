@@ -1,0 +1,222 @@
+{
+  "title": "Settings",
+  "delete": {
+    "title": "Delete",
+    "description": "Permanent, and can’t be undone",
+    "workspace": {
+      "title": "Delete workspace",
+      "detail": "{workspace} and everything in it, for everyone",
+      "confirm": "Delete {workspace}?",
+      "field": "Workspace name",
+      "buyer": "Its purchase orders, products, connections and team are deleted for everyone.",
+      "supplier": "Its products, catalogs and team are deleted for everyone. Buyers keep their purchase orders.",
+      "forwarder": "Its addresses and team are deleted for everyone. Buyers keep their purchase orders."
+    },
+    "account": {
+      "title": "Delete account",
+      "detail": "Your sign-in and your place in every workspace",
+      "confirm": "Delete your account?",
+      "field": "Your email",
+      "removed": "You’re signed out and removed from every workspace.",
+      "closing": "You’re signed out and removed from every workspace. {count, plural, one {{workspaces} closes with your account.} other {{workspaces} close with your account.}}",
+      "handOver": "Transfer ownership of {workspaces} first."
+    },
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Only for you",
+    "label": "Language",
+    "system": "System ({language})"
+  },
+  "form": {
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "profile": {
+    "title": "Profile",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "position": "Position",
+    "choose": "Choose",
+    "company": "Company",
+    "website": "Company website",
+    "enterCompany": "Enter your company"
+  },
+  "team": {
+    "title": "Team",
+    "description": "People in {workspace}",
+    "people": "{count, plural, one {# person} other {# people}}",
+    "invite": "Invite",
+    "inviteTo": "Invite to {workspace}",
+    "sendInvitation": "Send invitation",
+    "email": "Email",
+    "enterEmail": "Enter an email address",
+    "role": "Role",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "roleDescriptions": {
+      "admin": "Everything, including the team and settings",
+      "member": "Only the pages you choose"
+    },
+    "pages": "Pages",
+    "choosePage": "Choose at least one page",
+    "seePrices": "See prices and costs",
+    "needsPrices": "Needs prices and costs",
+    "levels": {
+      "none": "No access",
+      "view": "View",
+      "edit": "Edit"
+    },
+    "changeAccess": "Change access",
+    "changeAccessFor": "Change access for {who}",
+    "save": "Save",
+    "you": "You",
+    "more": "More for {name}",
+    "remove": "Remove",
+    "removeTitle": "Remove {name}?",
+    "removeDescription": "They lose access to {workspace} right away.",
+    "transferOwnership": "Transfer ownership",
+    "transferTitle": "Transfer ownership to {name}?",
+    "transferDescription": "They become the owner of {workspace}, and you stay an admin.",
+    "cancel": "Cancel",
+    "invitationExpired": "Invitation expired",
+    "invited": "Invited, expires {expires}",
+    "invitationSent": "Invitation sent, expires {expires}",
+    "updating": "Updating {email}",
+    "sendAgain": "Send again",
+    "cancelInvitation": "Cancel invitation"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "description": "Stores Copacker syncs with",
+    "marketplaces": "Marketplaces",
+    "marketplacesUnavailable": "Couldn’t load from Amazon",
+    "stores": {
+      "shopify": "Products, inventory, orders, expenses",
+      "amazon": "Orders, inventory, expenses, shipments",
+      "ebay": "Orders, inventory"
+    },
+    "comingSoon": "Coming soon",
+    "connect": "Connect",
+    "notConnected": "Not connected",
+    "connected": "Connected",
+    "storeSettings": "{store} settings",
+    "cancel": "Cancel",
+    "shopify": {
+      "title": "Connect Shopify",
+      "description": "You’ll approve Copacker in Shopify",
+      "store": "Store",
+      "storeDescription": "Admin link or myshopify.com domain",
+      "enterStore": "Enter your store’s admin link or myshopify.com domain"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connect Amazon",
+      "description": "In Amazon’s Solution Provider Portal, open the menu next to Copacker’s app, choose Authorize and copy the refresh token. Your merchant token is in Seller Central under Settings, Account Info.",
+      "connect": "Connect",
+      "merchantToken": "Merchant token",
+      "refreshToken": "Refresh token"
+    }
+  },
+  "excludedTags": {
+    "title": "Excluded order tags",
+    "syncing": "Syncing tags from Shopify",
+    "none": "None",
+    "edit": "Edit",
+    "editLabel": "Edit excluded order tags",
+    "description": "Shopify orders with these tags aren’t counted.",
+    "tags": "Tags",
+    "addTag": "Add a tag",
+    "wildcard": "Use * as a wildcard, like amazon*",
+    "saveFailed": "Couldn’t save the tags. Try again.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "restock": {
+    "title": "Restock",
+    "description": "Used by Restock and the Overview",
+    "salesPeriod": "Sales period",
+    "leadTime": "Lead time",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "salesPeriodDays": "Sales period (days)",
+    "leadTimeDays": "Lead time (days)",
+    "leadTimeDescription": "For suppliers without their own",
+    "enterDays": "Enter the days"
+  },
+  "timeZone": {
+    "title": "Time zone",
+    "description": "For days and months on the Overview",
+    "label": "Store time zone",
+    "automatic": "Automatic",
+    "automaticZone": "Automatic, {zone}"
+  },
+  "monthlyCosts": {
+    "title": "Monthly costs",
+    "description": "Costs Shopify and Amazon don’t report",
+    "count": "{count, plural, =0 {No monthly costs} one {# cost} other {# costs}}",
+    "allChannels": "All channels",
+    "between": "{channel}, {start} to {end}",
+    "since": "{channel}, since {start}",
+    "until": "{channel}, until {end}",
+    "removeFailed": "Couldn't remove this cost",
+    "removing": "Removing {name}",
+    "more": "More for {name}",
+    "remove": "Remove",
+    "add": "Add cost",
+    "addTitle": "Add monthly cost",
+    "name": "Name",
+    "amount": "Amount a month",
+    "channel": "Channel",
+    "paidSince": "Paid since",
+    "paidUntil": "Paid until",
+    "enterName": "Enter a name",
+    "enterAmount": "Enter the amount",
+    "endBeforeStart": "The end date can't be before the start date"
+  },
+  "supplierProfile": {
+    "title": "Supplier profile",
+    "description": "Contact details buyers see",
+    "contactName": "Contact name",
+    "contactEmail": "Contact email",
+    "phone": "Phone",
+    "website": "Website"
+  },
+  "supplierForm": {
+    "submit": "Add supplier",
+    "company": "Supplier company",
+    "email": "Email",
+    "emailDescription": "Add one to invite them now."
+  },
+  "addresses": {
+    "title": "Addresses",
+    "description": "Where purchase orders are delivered",
+    "pickupTitle": "Pickup addresses",
+    "pickupDescription": "Where carriers collect your cartons",
+    "count": "{count, plural, =0 {No addresses} one {# address} other {# addresses}}",
+    "noPickupAddresses": "No pickup addresses",
+    "add": "Add address",
+    "editTitle": "Edit address",
+    "edit": "Edit",
+    "remove": "Remove",
+    "more": "More for {name}",
+    "removing": "Removing {name}",
+    "removeFailed": "Couldn't remove this address",
+    "stockArrivesAt": "Stock arrives at {location}",
+    "stockArrivesAtShopify": "Stock arrives at a Shopify location",
+    "addPhone": "Add a phone number to use it on shipments",
+    "supplierKeepsPickups": "Your supplier keeps pickups now, remove this once they’ve added it",
+    "saveChanges": "Save changes",
+    "saveAddress": "Save address",
+    "name": "Address name",
+    "namePlaceholder": "Shenzhen warehouse",
+    "kind": "Address type",
+    "shopifyLocation": "Shopify location",
+    "shopifyLocationDescription": "Purchase orders sent here show as on order there",
+    "notLinked": "Not linked"
+  }
+}

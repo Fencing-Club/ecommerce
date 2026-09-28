@@ -1,0 +1,222 @@
+{
+  "title": "Paramètres",
+  "delete": {
+    "title": "Supprimer",
+    "description": "Définitif et irréversible",
+    "workspace": {
+      "title": "Supprimer l’espace de travail",
+      "detail": "{workspace} et tout son contenu, pour tout le monde",
+      "confirm": "Supprimer {workspace} ?",
+      "field": "Nom de l’espace de travail",
+      "buyer": "Ses bons de commande, produits, connexions et son équipe sont supprimés pour tout le monde.",
+      "supplier": "Ses produits, catalogues et son équipe sont supprimés pour tout le monde. Les acheteurs conservent leurs bons de commande.",
+      "forwarder": "Ses adresses et son équipe sont supprimées pour tout le monde. Les acheteurs conservent leurs bons de commande."
+    },
+    "account": {
+      "title": "Supprimer le compte",
+      "detail": "Votre connexion et votre place dans chaque espace de travail",
+      "confirm": "Supprimer votre compte ?",
+      "field": "Votre e-mail",
+      "removed": "Vous êtes déconnecté et retiré de tous les espaces de travail.",
+      "closing": "Vous êtes déconnecté et retiré de tous les espaces de travail. {count, plural, one {{workspaces} est fermé avec votre compte.} other {{workspaces} sont fermés avec votre compte.}}",
+      "handOver": "Transférez d’abord la propriété de {workspaces}."
+    },
+    "cancel": "Annuler",
+    "close": "Fermer"
+  },
+  "language": {
+    "title": "Langue",
+    "description": "Pour vous uniquement",
+    "label": "Langue",
+    "system": "Système ({language})"
+  },
+  "form": {
+    "save": "Enregistrer",
+    "saved": "Enregistré"
+  },
+  "profile": {
+    "title": "Profil",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "position": "Poste",
+    "choose": "Choisir",
+    "company": "Entreprise",
+    "website": "Site web de l’entreprise",
+    "enterCompany": "Saisissez votre entreprise"
+  },
+  "team": {
+    "title": "Équipe",
+    "description": "Membres de {workspace}",
+    "people": "{count, plural, one {# personne} other {# personnes}}",
+    "invite": "Inviter",
+    "inviteTo": "Inviter dans {workspace}",
+    "sendInvitation": "Envoyer l’invitation",
+    "email": "E-mail",
+    "enterEmail": "Saisissez une adresse e-mail",
+    "role": "Rôle",
+    "roles": {
+      "owner": "Propriétaire",
+      "admin": "Administrateur",
+      "member": "Membre"
+    },
+    "roleDescriptions": {
+      "admin": "Tout, y compris l’équipe et les paramètres",
+      "member": "Uniquement les pages choisies"
+    },
+    "pages": "Pages",
+    "choosePage": "Choisissez au moins une page",
+    "seePrices": "Voir les prix et les coûts",
+    "needsPrices": "Nécessite l’accès aux prix et aux coûts",
+    "levels": {
+      "none": "Aucun accès",
+      "view": "Lecture",
+      "edit": "Modification"
+    },
+    "changeAccess": "Modifier l’accès",
+    "changeAccessFor": "Modifier l’accès de {who}",
+    "save": "Enregistrer",
+    "you": "Vous",
+    "more": "Plus d’actions pour {name}",
+    "remove": "Retirer",
+    "removeTitle": "Retirer {name} ?",
+    "removeDescription": "Cette personne perd immédiatement l’accès à {workspace}.",
+    "transferOwnership": "Transférer la propriété",
+    "transferTitle": "Transférer la propriété à {name} ?",
+    "transferDescription": "Cette personne devient propriétaire de {workspace}, et vous restez administrateur.",
+    "cancel": "Annuler",
+    "invitationExpired": "Invitation expirée",
+    "invited": "Invité, expire le {expires}",
+    "invitationSent": "Invitation envoyée, expire le {expires}",
+    "updating": "Mise à jour de {email}",
+    "sendAgain": "Renvoyer",
+    "cancelInvitation": "Annuler l’invitation"
+  },
+  "integrations": {
+    "title": "Intégrations",
+    "description": "Boutiques synchronisées avec Copacker",
+    "marketplaces": "Marketplaces",
+    "marketplacesUnavailable": "Impossible de charger depuis Amazon",
+    "stores": {
+      "shopify": "Produits, stock, commandes, dépenses",
+      "amazon": "Commandes, stock, dépenses, expéditions",
+      "ebay": "Commandes, stock"
+    },
+    "comingSoon": "Bientôt disponible",
+    "connect": "Connecter",
+    "notConnected": "Non connecté",
+    "connected": "Connecté",
+    "storeSettings": "Paramètres {store}",
+    "cancel": "Annuler",
+    "shopify": {
+      "title": "Connecter Shopify",
+      "description": "Vous autoriserez Copacker dans Shopify",
+      "store": "Boutique",
+      "storeDescription": "Lien d’administration ou domaine myshopify.com",
+      "enterStore": "Saisissez le lien d’administration ou le domaine myshopify.com de votre boutique"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connecter Amazon",
+      "description": "Dans le Solution Provider Portal d’Amazon, ouvrez le menu à côté de l’application Copacker, choisissez Authorize et copiez le jeton d’actualisation. Votre jeton marchand se trouve dans Seller Central, sous Paramètres, Informations sur le compte.",
+      "connect": "Connecter",
+      "merchantToken": "Jeton marchand",
+      "refreshToken": "Jeton d’actualisation"
+    }
+  },
+  "excludedTags": {
+    "title": "Tags de commande exclus",
+    "syncing": "Synchronisation des tags depuis Shopify",
+    "none": "Aucun",
+    "edit": "Modifier",
+    "editLabel": "Modifier les tags de commande exclus",
+    "description": "Les commandes Shopify portant ces tags ne sont pas comptées.",
+    "tags": "Tags",
+    "addTag": "Ajouter un tag",
+    "wildcard": "Utilisez * comme caractère générique, par exemple amazon*",
+    "saveFailed": "Impossible d’enregistrer les tags. Réessayez.",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…"
+  },
+  "restock": {
+    "title": "Réassort",
+    "description": "Utilisé par Réassort et la Vue d’ensemble",
+    "salesPeriod": "Période de ventes",
+    "leadTime": "Délai de livraison",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "salesPeriodDays": "Période de ventes (jours)",
+    "leadTimeDays": "Délai de livraison (jours)",
+    "leadTimeDescription": "Pour les fournisseurs sans délai propre",
+    "enterDays": "Saisissez le nombre de jours"
+  },
+  "timeZone": {
+    "title": "Fuseau horaire",
+    "description": "Pour les jours et les mois de la Vue d’ensemble",
+    "label": "Fuseau horaire de la boutique",
+    "automatic": "Automatique",
+    "automaticZone": "Automatique, {zone}"
+  },
+  "monthlyCosts": {
+    "title": "Coûts mensuels",
+    "description": "Coûts non déclarés par Shopify et Amazon",
+    "count": "{count, plural, =0 {Aucun coût mensuel} one {# coût} other {# coûts}}",
+    "allChannels": "Tous les canaux",
+    "between": "{channel}, du {start} au {end}",
+    "since": "{channel}, depuis le {start}",
+    "until": "{channel}, jusqu’au {end}",
+    "removeFailed": "Impossible de retirer ce coût",
+    "removing": "Retrait de {name}",
+    "more": "Plus d’actions pour {name}",
+    "remove": "Retirer",
+    "add": "Ajouter un coût",
+    "addTitle": "Ajouter un coût mensuel",
+    "name": "Nom",
+    "amount": "Montant mensuel",
+    "channel": "Canal",
+    "paidSince": "Payé depuis le",
+    "paidUntil": "Payé jusqu’au",
+    "enterName": "Saisissez un nom",
+    "enterAmount": "Saisissez le montant",
+    "endBeforeStart": "La date de fin ne peut pas précéder la date de début"
+  },
+  "supplierProfile": {
+    "title": "Profil fournisseur",
+    "description": "Coordonnées visibles par les acheteurs",
+    "contactName": "Nom du contact",
+    "contactEmail": "E-mail du contact",
+    "phone": "Téléphone",
+    "website": "Site web"
+  },
+  "supplierForm": {
+    "submit": "Ajouter le fournisseur",
+    "company": "Entreprise du fournisseur",
+    "email": "E-mail",
+    "emailDescription": "Ajoutez-en un pour l’inviter maintenant."
+  },
+  "addresses": {
+    "title": "Adresses",
+    "description": "Lieux de livraison des bons de commande",
+    "pickupTitle": "Adresses d’enlèvement",
+    "pickupDescription": "Où les transporteurs récupèrent vos cartons",
+    "count": "{count, plural, =0 {Aucune adresse} one {# adresse} other {# adresses}}",
+    "noPickupAddresses": "Aucune adresse d’enlèvement",
+    "add": "Ajouter une adresse",
+    "editTitle": "Modifier l’adresse",
+    "edit": "Modifier",
+    "remove": "Retirer",
+    "more": "Plus d’actions pour {name}",
+    "removing": "Retrait de {name}",
+    "removeFailed": "Impossible de retirer cette adresse",
+    "stockArrivesAt": "Le stock arrive à {location}",
+    "stockArrivesAtShopify": "Le stock arrive dans un emplacement Shopify",
+    "addPhone": "Ajoutez un numéro de téléphone pour l’utiliser sur les expéditions",
+    "supplierKeepsPickups": "Votre fournisseur gère désormais les enlèvements, retirez-la une fois qu’il l’a ajoutée",
+    "saveChanges": "Enregistrer les modifications",
+    "saveAddress": "Enregistrer l’adresse",
+    "name": "Nom de l’adresse",
+    "namePlaceholder": "Entrepôt de Shenzhen",
+    "kind": "Type d’adresse",
+    "shopifyLocation": "Emplacement Shopify",
+    "shopifyLocationDescription": "Les bons de commande envoyés ici y apparaissent comme en commande",
+    "notLinked": "Non lié"
+  }
+}

@@ -5,6 +5,7 @@ import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { type Session, session, requireMembership, requirePage } from "@/server/auth"
+import { errorTextResponse } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 async function labelsReleased(doc: typeof documents.$inferSelect) {
@@ -45,11 +46,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .from(documents)
     .where(and(eq(documents.id, id), eq(documents.outdated, 0)))
   if (!doc) {
-    return new Response("Document not found", { status: 404 })
+    return errorTextResponse("documentNotFound", 404)
   }
   await canRead(s, doc)
   if (s.org.kind !== "buyer" && !(await labelsReleased(doc))) {
-    return new Response("Labels are awaiting buyer release", { status: 409 })
+    return errorTextResponse("labelsAwaitingRelease", 409)
   }
   const bytes = await getFile(doc.objectKey)
   // Storage can be slow. Recheck withdrawal and access after fetching, before returning private bytes.
@@ -59,10 +60,10 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .from(documents)
     .where(and(eq(documents.id, id), eq(documents.outdated, 0)))
   if (!current || current.objectKey !== doc.objectKey) {
-    return new Response("Document changed. Refresh before downloading", { status: 409 })
+    return errorTextResponse("documentChanged", 409)
   }
   if (s.org.kind !== "buyer" && !(await labelsReleased(current))) {
-    return new Response("Labels are awaiting buyer release", { status: 409 })
+    return errorTextResponse("labelsAwaitingRelease", 409)
   }
   await requireMembership(s.user.id, s.org.id)
   return new Response(Buffer.from(bytes), {

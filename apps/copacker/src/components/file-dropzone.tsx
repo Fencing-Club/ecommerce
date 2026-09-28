@@ -21,23 +21,28 @@
 
 import { useMergedRef } from "@mantine/hooks"
 import { FileText, UploadCloud, X } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useId, useRef, useState } from "react"
 import { type Accept, ErrorCode, type FileRejection, useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
-const kilobytes = new Intl.NumberFormat("en-US", { style: "unit", unit: "kilobyte", maximumFractionDigits: 0 })
-const megabytes = new Intl.NumberFormat("en-US", { style: "unit", unit: "megabyte", maximumFractionDigits: 1 })
-
-// A size as people read it, such as 240 KB or 1.2 MB.
-function fileSize(bytes: number) {
-  return bytes < 1024 * 1024 ? kilobytes.format(Math.max(1, bytes / 1024)) : megabytes.format(bytes / 1024 / 1024)
+// A size as people read it in the language, such as 240 KB or 1.2 MB.
+function fileSize(bytes: number, locale: string) {
+  return bytes < 1024 * 1024
+    ? new Intl.NumberFormat(locale, { style: "unit", unit: "kilobyte", maximumFractionDigits: 0 }).format(
+        Math.max(1, bytes / 1024)
+      )
+    : new Intl.NumberFormat(locale, { style: "unit", unit: "megabyte", maximumFractionDigits: 1 }).format(
+        bytes / 1024 / 1024
+      )
 }
 
 export const pdfFiles: Accept = { "application/pdf": [".pdf"] }
 
-// What the prompt and errors call the file: PDF or CSV when that's all the zone takes, or just "file".
-const typeNames: Record<string, string> = { "application/pdf": "PDF", "text/csv": "CSV" }
+// What the prompt and errors call the file: a PDF or CSV when that's all the zone takes, or just a file. The messages
+// choose their words by it.
+const typeNames: Record<string, "pdf" | "csv"> = { "application/pdf": "pdf", "text/csv": "csv" }
 
 function typeName(accept: Accept) {
   const names = new Set(Object.keys(accept).map((type) => typeNames[type] ?? "file"))
@@ -45,15 +50,25 @@ function typeName(accept: Accept) {
 }
 
 // Why a dropped, pasted or chosen file was turned down, in the zone's words.
-function rejection(rejected: FileRejection | undefined, noun: string, maxBytes: number) {
+function rejection(
+  t: ReturnType<typeof useTranslations<"common.fileDropzone">>,
+  rejected: FileRejection | undefined,
+  type: string,
+  size: string
+) {
   const codes = new Set(rejected?.errors.map((error) => error.code))
   if (codes.has(ErrorCode.FileInvalidType)) {
-    return noun === "file" ? "Choose a supported file" : `Choose a ${noun}`
+    return t("wrongType", { type })
   }
   if (codes.has(ErrorCode.FileTooLarge)) {
-    return `Choose a ${noun} up to ${fileSize(maxBytes)}`
+    return t("tooLarge", { type, size })
   }
-  return `Choose one ${noun}`
+  return t("oneFile", { type })
+}
+
+// The prompt's "browse", in the link color.
+function browse(chunks: React.ReactNode) {
+  return <span className="font-medium text-primary">{chunks}</span>
 }
 
 export function FileDropzone({
@@ -87,6 +102,8 @@ export function FileDropzone({
   ref?: React.Ref<HTMLButtonElement>
   children?: React.ReactNode
 }) {
+  const t = useTranslations("common.fileDropzone")
+  const locale = useLocale()
   const generatedId = useId()
   const zoneId = id ?? `${generatedId}-zone`
   // The zone, or Replace beside a stored file: whichever chooses the next file.
@@ -96,7 +113,8 @@ export function FileDropzone({
   const refocus = useRef<"zone" | "row" | null>(null)
   // Why the last file dropped or chosen was turned down.
   const [problem, setProblem] = useState("")
-  const noun = typeName(accept)
+  const type = typeName(accept)
+  const largest = fileSize(maxBytes, locale)
   const message = problem || error
   const flagged = Boolean(message) || invalid
   // The zone's own button and Replace open the picker, so the dropzone itself only takes drops and pastes. A chosen
@@ -117,7 +135,7 @@ export function FileDropzone({
         onFileChange(next)
       }
     },
-    onDropRejected: ([rejected]) => setProblem(rejection(rejected, noun, maxBytes))
+    onDropRejected: ([rejected]) => setProblem(rejection(t, rejected, type, largest))
   })
   const zoneRef = useMergedRef(zone, ref, rootRef)
   const rowRef = useMergedRef(row, rootRef)
@@ -171,7 +189,7 @@ export function FileDropzone({
           tabIndex={-1}
           data-invalid={flagged || undefined}
           data-dragging={isDragActive || undefined}
-          className="flex min-h-12 items-center gap-3 rounded-lg border py-2 pr-2 pl-3 text-foreground transition-colors outline-none data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive"
+          className="flex min-h-12 items-center gap-3 rounded-lg border py-2 pe-2 ps-3 text-foreground transition-colors outline-none data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive"
         >
           <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           {file ? (
@@ -180,14 +198,14 @@ export function FileDropzone({
                 <span className="truncate text-sm font-medium" title={file.name}>
                   {file.name}
                 </span>
-                <span className="text-xs text-muted-foreground">{fileSize(file.size)}</span>
+                <span className="text-xs text-muted-foreground">{fileSize(file.size, locale)}</span>
               </span>
               {children}
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Remove ${file.name}`}
+                aria-label={t("remove", { name: file.name })}
                 disabled={disabled}
                 onClick={remove}
               >
@@ -212,7 +230,7 @@ export function FileDropzone({
                     </span>
                   )}
                   {current.size !== undefined && (
-                    <span className="text-xs text-muted-foreground">{fileSize(current.size)}</span>
+                    <span className="text-xs text-muted-foreground">{fileSize(current.size, locale)}</span>
                   )}
                 </span>
                 <Button
@@ -222,11 +240,11 @@ export function FileDropzone({
                   variant="outline"
                   size="sm"
                   disabled={disabled}
-                  aria-label={`Replace ${current.name}`}
+                  aria-label={t("replaceFile", { name: current.name })}
                   aria-describedby={message ? `${zoneId}-error` : undefined}
                   onClick={open}
                 >
-                  Replace
+                  {t("replace")}
                 </Button>
               </>
             )
@@ -251,10 +269,10 @@ export function FileDropzone({
         >
           <UploadCloud aria-hidden className="mb-1 size-5 text-muted-foreground" />
           <span id={`${zoneId}-prompt`} className="text-sm">
-            Drop a {noun} or <span className="font-medium text-primary">browse</span>
+            {t.rich("prompt", { type, browse })}
           </span>
           <span id={`${zoneId}-hint`} className="text-xs text-muted-foreground">
-            {hint ?? `Up to ${fileSize(maxBytes)}`}
+            {hint ?? t("upTo", { size: largest })}
           </span>
         </button>
       )}

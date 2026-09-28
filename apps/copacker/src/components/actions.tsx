@@ -1,6 +1,7 @@
 "use client"
 
 import { AlertCircle } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { type FieldValues, FormProvider, type UseFormReturn } from "react-hook-form"
@@ -9,17 +10,20 @@ import { Button } from "@/components/ui/button"
 import { DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage, useMessageText } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { sx } from "@/styles/sprinkles.css"
 
+// A form's error, such as the server's. A message that is a full key shows in the person's language.
 export function FormError({ message }: { message?: string }) {
+  const text = useMessageText()
   if (!message) {
     return null
   }
   return (
     <Alert variant="destructive">
       <AlertCircle />
-      <AlertDescription className={sx({ whiteSpace: "pre-line" })}>{message}</AlertDescription>
+      <AlertDescription className={sx({ whiteSpace: "pre-line" })}>{text(message)}</AlertDescription>
     </Alert>
   )
 }
@@ -55,6 +59,7 @@ export function ActionButton({
 }) {
   const router = useRouter()
   const [run, { isLoading }] = useActionMutation()
+  const errorMessage = useErrorMessage()
   const [error, setError] = useState("")
   const [succeeded, setSucceeded] = useState(false)
 
@@ -99,6 +104,7 @@ export function ActionForm<Values extends FieldValues>({
   dialog?: boolean
   children: React.ReactNode
 }) {
+  const t = useTranslations("common.actions")
   const submit = (
     <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!dialog && !form.formState.isDirty}>
       {label}
@@ -118,7 +124,7 @@ export function ActionForm<Values extends FieldValues>({
         </FieldGroup>
         {dialog && (
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
             {submit}
           </DialogFooter>
         )}

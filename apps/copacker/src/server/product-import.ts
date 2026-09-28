@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util"
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { supplierProductGroups, supplierProducts } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { variantTitle } from "@/lib/supplier-product"
 import type { SheetProduct, SheetVariant } from "./product-sheet"
 import { joinCatalogs } from "./supplier-products"
@@ -38,9 +39,7 @@ async function existingFor(executor: Executor, orgId: string, products: SheetPro
 function targetGroup(product: SheetProduct, variants: Map<string, VariantRow>) {
   const ids = new Set(product.variants.flatMap((variant) => variants.get(variant.supplierSku)?.groupId ?? []))
   if (ids.size > 1) {
-    throw new Error(
-      `Row ${product.line}: ${product.handle} has SKUs from different products. Give them separate handles`
-    )
+    throw new LocalizedError("rowMixedProducts", { row: product.line, handle: product.handle })
   }
   return [...ids][0] ?? null
 }
@@ -128,7 +127,7 @@ export async function previewImport(orgId: string, products: SheetProduct[]) {
 export async function commitImport(tx: Transaction, orgId: string, products: SheetProduct[], expectedHash: string) {
   const { variants, groups } = await existingFor(tx, orgId, products, true)
   if (revisionHash(variants.values(), groups) !== expectedHash) {
-    throw new Error("Your products changed after the preview. Preview the file again before importing")
+    throw new LocalizedError("productsChangedAfterPreview")
   }
   for (const product of products) {
     let groupId = targetGroup(product, variants)

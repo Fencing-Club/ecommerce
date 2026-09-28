@@ -1,0 +1,17 @@
+{
+  "required": "此字段为必填项",
+  "number": "请输入数字",
+  "minLength": "请至少输入 {minimum} 个字符",
+  "addOne": "请至少添加一项",
+  "minItems": "请至少添加 {minimum} 项",
+  "atLeast": "请输入不小于 {minimum} 的值",
+  "greaterThan": "请输入大于 {minimum} 的数字",
+  "maxLength": "最多 {maximum} 个字符",
+  "maxItems": "最多 {maximum} 项",
+  "atMost": "请输入不大于 {maximum} 的值",
+  "email": "请输入邮箱地址",
+  "date": "请输入日期",
+  "chooseOption": "请选择一个选项",
+  "format": "请检查格式",
+  "multipleOf": "请输入 {divisor} 的倍数"
+}

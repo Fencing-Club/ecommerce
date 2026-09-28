@@ -1,7 +1,7 @@
 "use client"
 
-import { money } from "@repo/aisle"
 import { ArrowRight } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
@@ -20,6 +20,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useMoney } from "@/hooks/use-money"
 import { dayDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { proposalChanges } from "@/server/order-proposals"
@@ -28,28 +29,29 @@ type Changes = ReturnType<typeof proposalChanges>
 
 // How an order line changes, in the shared status tones. The supplier's edit page marks its lines the same way.
 const lineChanges = {
-  added: { label: "Added", tone: "success" },
-  changed: { label: "Changed", tone: "info" },
-  removed: { label: "Removed", tone: "destructive" }
-} as const satisfies Record<string, { label: string; tone: StatusTone }>
+  added: "success",
+  changed: "info",
+  removed: "destructive"
+} as const satisfies Record<string, StatusTone>
 
 export type LineChange = keyof typeof lineChanges
 
 export function ChangeBadge({ change }: { change: LineChange }) {
-  const { label, tone } = lineChanges[change]
-  return <StatusBadge tone={tone}>{label}</StatusBadge>
+  const t = useTranslations("supplier.proposal.changes")
+  return <StatusBadge tone={lineChanges[change]}>{t(change)}</StatusBadge>
 }
 
 // A table that runs edge to edge inside the card: the first and last columns line up with the card's padding.
-const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 
 // A value before and after the change: the old one struck through, then the new one.
 function FromTo({ before, after }: { before: React.ReactNode; after: React.ReactNode }) {
+  const t = useTranslations("supplier.proposal")
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="text-muted-foreground line-through">{before}</span>
-      <ArrowRight className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="sr-only">to</span>
+      <ArrowRight className="size-3 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden />
+      <span className="sr-only">{t("to")}</span>
       <span className="font-medium">{after}</span>
     </span>
   )
@@ -79,14 +81,12 @@ function Delta({
 // Pending changes wait on the buyer, who has to act, while the supplier waits; declined ones read as failed.
 function proposalStatus(status: "pending" | "declined", viewer: "buyer" | "supplier") {
   if (status === "declined") {
-    return { tone: "destructive", label: "Declined" } as const
+    return { tone: "destructive", label: "declined" } as const
   }
   return viewer === "buyer"
-    ? ({ tone: "warning", label: "Approval needed" } as const)
-    : ({ tone: "info", label: "Awaiting approval" } as const)
+    ? ({ tone: "warning", label: "approvalNeeded" } as const)
+    : ({ tone: "info", label: "awaitingApproval" } as const)
 }
-
-const day = (value: string | null) => (value ? dayDate(value) : "Not set")
 
 // A supplier's proposed changes to a purchase order, as the buyer reviews them and the supplier waits on them: each
 // changed line with its old and new quantity and price, then terms, the ready date and the new total.
@@ -114,8 +114,13 @@ export function ProposalPanel({
   const [reason, setReason] = useState("")
   const shown = changes.lines.filter((line) => line.change !== "same")
   const unchanged = changes.lines.length - shown.length
+  const t = useTranslations("supplier.proposal")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
+  const money = useMoney()
   const price = (value: number) => money(value, currency)
-  const count = (value: number) => value.toLocaleString("en-US")
+  const count = (value: number) => value.toLocaleString(locale)
+  const day = (value: string | null) => (value ? dayDate(value, locale) : t("notSet"))
   const busy = pending !== null || refreshing
   // Answering or withdrawing changes the purchase order, which needs Edit access to it.
   const editable = useCan("orders", "edit")
@@ -132,12 +137,12 @@ export function ProposalPanel({
         body: JSON.stringify(body)
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? "Couldn't save. Try again.")
+        throw new Error((await response.json()).error ?? shared("couldNotSave"))
       }
       setDeclining(false)
       startTransition(() => router.refresh())
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't save. Try again.")
+      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {
       setPending(null)
     }
@@ -148,18 +153,18 @@ export function ProposalPanel({
   return (
     <Card className="@container gap-0 py-0">
       <CardHeader className="border-b pt-4">
-        <CardTitle>{viewer === "buyer" ? `${supplierName} proposed changes` : "Your proposed changes"}</CardTitle>
+        <CardTitle>{viewer === "buyer" ? t("theirChanges", { supplier: supplierName }) : t("yourChanges")}</CardTitle>
         {declined && proposal.reason && (
-          <CardDescription className="whitespace-pre-line">Reason: {proposal.reason}</CardDescription>
+          <CardDescription className="whitespace-pre-line">{t("reason", { reason: proposal.reason })}</CardDescription>
         )}
         <CardAction>
-          <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+          <StatusBadge tone={status.tone}>{t(status.label)}</StatusBadge>
         </CardAction>
       </CardHeader>
       <div className="divide-y">
         {proposal.note && (
           <div className="px-4 py-3">
-            <blockquote className="border-l-2 pl-3 text-sm whitespace-pre-line text-muted-foreground">
+            <blockquote className="border-s-2 ps-3 text-sm whitespace-pre-line text-muted-foreground">
               {proposal.note}
             </blockquote>
           </div>
@@ -168,9 +173,9 @@ export function ProposalPanel({
           <Table framed={false} className={edgeTable}>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className="text-right">Quantity</TableHead>
-                {prices && <TableHead className="text-right">Unit price</TableHead>}
+                <TableHead>{t("columns.product")}</TableHead>
+                <TableHead className="text-end">{t("columns.quantity")}</TableHead>
+                {prices && <TableHead className="text-end">{t("columns.unitPrice")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -187,11 +192,11 @@ export function ProposalPanel({
                     </div>
                     {line.supplierSku && <p className="text-xs text-muted-foreground">{line.supplierSku}</p>}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     <Delta before={line.before?.pieces ?? null} after={line.after?.pieces ?? null} format={count} />
                   </TableCell>
                   {prices && (
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-end tabular-nums">
                       <Delta
                         before={line.before?.unitPrice ?? null}
                         after={line.after?.unitPrice ?? null}
@@ -207,21 +212,24 @@ export function ProposalPanel({
         <dl className="grid gap-x-4 gap-y-2 px-4 py-3 text-sm @sm:grid-cols-[10rem_minmax(0,1fr)]">
           {unchanged > 0 && (
             <>
-              <dt className="text-muted-foreground">Other products</dt>
-              <dd>{unchanged} unchanged</dd>
+              <dt className="text-muted-foreground">{t("otherProducts")}</dt>
+              <dd>{t("unchanged", { count: unchanged })}</dd>
             </>
           )}
           {changes.paymentTerms && (
             <>
-              <dt className="text-muted-foreground">Payment terms</dt>
+              <dt className="text-muted-foreground">{t("paymentTerms")}</dt>
               <dd>
-                <FromTo before={changes.paymentTerms.before || "None"} after={changes.paymentTerms.after || "None"} />
+                <FromTo
+                  before={changes.paymentTerms.before || shared("none")}
+                  after={changes.paymentTerms.after || shared("none")}
+                />
               </dd>
             </>
           )}
           {changes.readyDate && (
             <>
-              <dt className="text-muted-foreground">Ready date</dt>
+              <dt className="text-muted-foreground">{t("readyDate")}</dt>
               <dd className="tabular-nums">
                 <FromTo before={day(changes.readyDate.before)} after={day(changes.readyDate.after)} />
               </dd>
@@ -229,7 +237,7 @@ export function ProposalPanel({
           )}
           {prices && (
             <>
-              <dt className="text-muted-foreground">Total</dt>
+              <dt className="text-muted-foreground">{t("total")}</dt>
               <dd className="tabular-nums">
                 <Delta before={changes.total.before} after={changes.total.after} format={price} />
               </dd>
@@ -240,7 +248,7 @@ export function ProposalPanel({
       {!declined && editable && (
         <CardFooter className="flex-wrap justify-end gap-2">
           {error && !declining && (
-            <p role="alert" className="mr-auto text-sm text-destructive">
+            <p role="alert" className="me-auto text-sm text-destructive">
               {error}
             </p>
           )}
@@ -254,19 +262,19 @@ export function ProposalPanel({
                   setDeclining(true)
                 }}
               >
-                Decline
+                {t("decline")}
               </Button>
               <Button disabled={busy} onClick={() => void act("approve", { action: "approve" })}>
-                {pending === "approve" ? "Approving" : "Approve changes"}
+                {pending === "approve" ? t("approving") : t("approve")}
               </Button>
             </>
           ) : (
             <>
               <Button variant="outline" disabled={busy} onClick={() => void act("withdraw", { action: "withdraw" })}>
-                {pending === "withdraw" ? "Withdrawing" : "Withdraw"}
+                {pending === "withdraw" ? t("withdrawing") : t("withdraw")}
               </Button>
               <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}/revise`} />}>
-                Edit
+                {t("edit")}
               </Button>
             </>
           )}
@@ -275,11 +283,11 @@ export function ProposalPanel({
       <Dialog open={declining} onOpenChange={(open) => !busy && setDeclining(open)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Decline the changes?</DialogTitle>
-            <DialogDescription>The purchase order stays as it is. {supplierName} sees your reason.</DialogDescription>
+            <DialogTitle>{t("declineTitle")}</DialogTitle>
+            <DialogDescription>{t("declineDescription", { supplier: supplierName })}</DialogDescription>
           </DialogHeader>
           <Field>
-            <FieldLabel htmlFor="decline-reason">Reason</FieldLabel>
+            <FieldLabel htmlFor="decline-reason">{t("reasonLabel")}</FieldLabel>
             <Textarea id="decline-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
           </Field>
           {error && (
@@ -289,14 +297,14 @@ export function ProposalPanel({
           )}
           <DialogFooter>
             <Button variant="outline" disabled={busy} onClick={() => setDeclining(false)}>
-              Cancel
+              {shared("cancel")}
             </Button>
             <Button
               variant="destructive"
               disabled={busy}
               onClick={() => void act("decline", { action: "decline", reason })}
             >
-              {pending === "decline" ? "Declining" : "Decline changes"}
+              {pending === "decline" ? t("declining") : t("declineChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>

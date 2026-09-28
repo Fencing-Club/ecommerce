@@ -1,0 +1,112 @@
+{
+  "tagline": "Riassortimenti, sotto controllo.",
+  "pasteLink": "Oppure incolla questo link nel browser:",
+  "invitation": {
+    "subject": "{from} ti ha invitato su Copacker",
+    "yourTeam": "Il tuo team",
+    "aBuyer": "Un acquirente",
+    "eyebrow": {
+      "supplier": "Invito fornitore",
+      "team": "Invito al team",
+      "forwarder": "Invito spedizioniere"
+    },
+    "joining": {
+      "supplier": "Unisciti come suo fornitore e ricevi lì i suoi ordini di acquisto.",
+      "team": "Unisciti al suo workspace.",
+      "forwarder": "Unisciti come suo spedizioniere e condividi con lui gli indirizzi dei tuoi magazzini."
+    },
+    "steps": {
+      "account": "Accetta, poi accedi o crea il tuo account",
+      "supplierWorkspace": "Configura il tuo workspace fornitore",
+      "supplierPack": "Prepara gli ordini di acquisto di {from} e stampa le loro etichette in un unico posto",
+      "teamStart": "Inizia a lavorare in {from}",
+      "forwarderAddresses": "Aggiungi gli indirizzi dei tuoi magazzini",
+      "forwarderShipments": "Visualizza le spedizioni che {from} invia tramite te"
+    },
+    "accept": "Accetta invito",
+    "note": "È per {email} e scade tra 7 giorni. Se non te lo aspettavi, puoi ignorare questa email.",
+    "reason": "{from} ha invitato {email} su Copacker."
+  },
+  "purchaseOrder": {
+    "subject": "Ordine di acquisto {reference} da {buyer}",
+    "eyebrow": {
+      "new": "Nuovo ordine di acquisto",
+      "revised": "Ordine di acquisto modificato"
+    },
+    "heading": "{reference} da {buyer}",
+    "lead": {
+      "new": "{buyer} ti ha inviato un ordine di acquisto per {units, plural, one {# unità} other {# unità}} di {products, plural, one {# prodotto} other {# prodotti}}.",
+      "revised": "{buyer} ha modificato questo ordine di acquisto. La versione aggiornata sostituisce quella che avevi."
+    },
+    "preview": "{units, plural, one {# unità} other {# unità}}, {total}",
+    "previewRequiredBy": "{units, plural, one {# unità} other {# unità}}, {total}, richiesto entro il {date}",
+    "labels": {
+      "revision": "Revisione",
+      "requiredBy": "Richiesto entro il",
+      "shipTo": "Spedire a",
+      "paymentTerms": "Termini di pagamento",
+      "total": "Totale"
+    },
+    "more": "E {count, plural, one {# altro prodotto} other {altri # prodotti}} nell’ordine di acquisto",
+    "open": "Apri ordine di acquisto",
+    "note": "Il PDF dell’ordine di acquisto è allegato.",
+    "reason": "{buyer} ha inviato questo ordine di acquisto tramite Copacker."
+  },
+  "labelsReady": {
+    "subject": "Etichette pronte per {reference}",
+    "subjectShipment": "Etichette pronte per {reference}, spedizione {shipment}",
+    "eyebrow": "Pronto per la spedizione",
+    "heading": "Le etichette per {reference} sono pronte",
+    "headingShipment": "Le etichette per {reference}, spedizione {shipment}, sono pronte",
+    "lead": "{buyer} ha rilasciato la spedizione: è pronta per essere etichettata e inviata.",
+    "labels": {
+      "cartons": "Cartoni",
+      "destination": "Destinazione",
+      "readyForPickup": "Pronto per il ritiro",
+      "amazonShipment": "Spedizione Amazon"
+    },
+    "steps": {
+      "print": "Stampa le etichette a grandezza reale (100%)",
+      "attach": "Applica a ogni cartone la sua etichetta, coprendo qualsiasi altro codice a barre",
+      "handOver": "Controlla la checklist di imballaggio, poi consegna i cartoni al corriere"
+    },
+    "open": "Apri spedizione",
+    "reason": "{buyer} ha rilasciato questa spedizione in Copacker."
+  },
+  "customerDataRequest": {
+    "subject": "Richiesta di dati cliente per {shop}",
+    "eyebrow": "Richiesta di dati Shopify",
+    "lead": "Shopify ha inviato a Copacker una richiesta di dati cliente. Includi ciò che Copacker conserva nella tua risposta al cliente.",
+    "noContactDetails": "Copacker non conserva nomi, indirizzi email, numeri di telefono o indirizzi postali dei clienti.",
+    "labels": {
+      "store": "Negozio",
+      "request": "Richiesta",
+      "ordersHeld": "Ordini conservati da Copacker"
+    },
+    "none": "Nessuno",
+    "ordersIntro": "Solo i dettagli degli ordini che Copacker usa per pianificare i riassortimenti:",
+    "reason": "Shopify ha inviato una richiesta di dati cliente per {shop}, che è collegato a Copacker.",
+    "order": "Ordine {number}, effettuato il {date}, stato {status}: {items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × articolo senza SKU",
+    "noItems": "nessun articolo",
+    "status": {
+      "unfulfilled": "Non evaso",
+      "partiallyFulfilled": "Evaso in parte",
+      "fulfilled": "Evaso",
+      "cancelled": "Annullato"
+    }
+  },
+  "passwordReset": {
+    "subject": "Reimposta la password di Copacker",
+    "eyebrow": "Il tuo account",
+    "heading": "Reimposta la password",
+    "lead": "Scegli una nuova password per {email}.",
+    "previewMinutes": "Scegli una nuova password per {email}. Il link scade tra {count, plural, one {# minuto} other {# minuti}}.",
+    "previewHours": "Scegli una nuova password per {email}. Il link scade tra {count, plural, one {# ora} other {# ore}}.",
+    "action": "Scegli una nuova password",
+    "expiresMinutes": "Il link scade tra {count, plural, one {# minuto} other {# minuti}}. Se non hai chiesto di reimpostare la password, puoi ignorare questa email; la tua password resta invariata.",
+    "expiresHours": "Il link scade tra {count, plural, one {# ora} other {# ore}}. Se non hai chiesto di reimpostare la password, puoi ignorare questa email; la tua password resta invariata.",
+    "reason": "Qualcuno ha chiesto di reimpostare la password di {email} su Copacker."
+  }
+}

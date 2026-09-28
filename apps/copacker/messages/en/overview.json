@@ -1,0 +1,267 @@
+{
+  "title": "Overview",
+  "loading": "Loading overview",
+  "notAvailable": "Not available",
+  "new": "New",
+  "plusCurrencies": "Plus {amounts}",
+  "noStores": {
+    "title": "No stores connected",
+    "connectDescription": "Connect Shopify or Amazon to see your overview",
+    "askAdmin": "Ask an admin to connect them",
+    "connect": "Connect stores"
+  },
+  "period": {
+    "choose": "Choose a period",
+    "presets": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "last365": "Last 365 days",
+      "lastWeek": "Last week",
+      "lastMonth": "Last month",
+      "lastQuarter": "Last quarter",
+      "last12Months": "Last 12 months",
+      "lastYear": "Last year",
+      "weekToDate": "Week to date",
+      "monthToDate": "Month to date",
+      "quarterToDate": "Quarter to date",
+      "yearToDate": "Year to date"
+    },
+    "comparisons": {
+      "previousPeriod": "Previous period",
+      "previousYear": "Previous year",
+      "none": "No comparison"
+    },
+    "last": "Last",
+    "toDate": "Period to date",
+    "custom": "Custom range",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "cancel": "Cancel",
+    "apply": "Apply"
+  },
+  "channel": {
+    "label": "Channel",
+    "all": "All channels",
+    "shopifyLocation": "Shopify: {location}"
+  },
+  "kpis": {
+    "label": "Sales, {period}",
+    "about": "About {label}",
+    "versus": "{comparison, select, previousYear {vs previous year} other {vs previous period}}",
+    "noPrices": "No prices yet",
+    "noOrders": "No orders synced",
+    "noUnitCosts": "No unit costs",
+    "uncostedSales": "Leaves out {amount} of sales without a unit cost.",
+    "estimatedFees": "Some fees are estimated until the platform posts them.",
+    "margin": "<figure>{percent}</figure> margin",
+    "sales": "Sales",
+    "salesInfo": "After discounts, before tax and shipping.",
+    "orders": "Orders",
+    "averageOrder": "Average order value",
+    "units": "Units sold",
+    "grossProfit": "Gross profit",
+    "stockoutLosses": "Stockout losses",
+    "stockoutInfo": "Sales expected to be lost while items are out of stock, before reorders placed today arrive.",
+    "lostThisPeriod": "{amount} lost this period"
+  },
+  "sections": {
+    "sales": "Sales",
+    "purchasing": "Purchasing",
+    "productsAndCustomers": "Products and customers",
+    "products": "Products",
+    "stock": "Stock"
+  },
+  "salesByChannel": {
+    "title": "Sales by channel",
+    "aboutLabel": "About sales",
+    "about": "After discounts, before tax and shipping.",
+    "aboutLocation": "Shopify orders shipped from {location}. After discounts, before tax and shipping.",
+    "otherMarketplaces": "{count, plural, one {# Amazon order from outside North America isn’t counted.} other {# Amazon orders from outside North America aren’t counted.}}",
+    "orders": "Orders",
+    "noOrders": "No orders synced"
+  },
+  "salesChart": {
+    "measure": "Measure",
+    "metrics": {
+      "sales": "Sales",
+      "orders": "Orders",
+      "units": "Units"
+    },
+    "orders": "{count, plural, one {# order} other {# orders}}",
+    "units": "{count, plural, one {# unit} other {# units}}",
+    "weekOf": "Week of {date}",
+    "previousSeries": "{source}, {comparison, select, previousYear {previous year} other {previous period}}",
+    "caption": "{metric, select, orders {Orders} units {Units sold} other {Sales}} by {step, select, week {week} month {month} other {day}}",
+    "stepColumn": "{step, select, week {Week of} month {Month} other {Day}}",
+    "noData": "No data"
+  },
+  "setup": {
+    "title": "Finish setting up",
+    "progress": "{done} of {total} done",
+    "done": "Done"
+  },
+  "attention": {
+    "title": "Needs attention",
+    "caughtUp": "All caught up"
+  },
+  "inventory": {
+    "title": "Inventory",
+    "aboutLabel": "About inventory values",
+    "about": "Retail value uses what each unit recently sold for, or its Shopify price. Costs include landed costs from purchase orders.",
+    "products": "Products",
+    "onHand": "{count, number} on hand",
+    "onTheWay": "{count, number} on the way",
+    "atCost": "{amount} at cost",
+    "noUnitCosts": "No unit costs",
+    "noPrices": "No prices",
+    "noStock": "No stock synced",
+    "unitsOnHand": "Units on hand",
+    "valueAtCost": "Value at cost",
+    "retailValue": "Retail value",
+    "potentialProfit": "Potential gross profit"
+  },
+  "cover": {
+    "title": "Days of cover",
+    "aboutLabel": "About days of cover",
+    "about": "How long each item’s stock lasts at its recent sales rate.",
+    "items": "{count, plural, one {# item} other {# items}}"
+  },
+  "upcoming": {
+    "title": "Upcoming spend",
+    "aboutLabel": "About upcoming spend",
+    "about": "Reorders that are due, and sent purchase orders by their due date.",
+    "next60": "Next 60 days",
+    "reorders": "Reorders due now",
+    "reordersDetail": "Estimated from unit costs",
+    "purchaseOrders": "{count, plural, one {# purchase order} other {# purchase orders}}",
+    "due": {
+      "overdue": "Past due",
+      "next30": "Due in the next 30 days",
+      "next60": "Due in 31 to 60 days",
+      "later": "Due later"
+    }
+  },
+  "trending": {
+    "title": "Trending products",
+    "sellingMore": "Selling more",
+    "sellingLess": "Selling less",
+    "nothingMore": "Nothing selling more",
+    "nothingLess": "Nothing selling less",
+    "noPreviousOrders": "No orders synced for {period}",
+    "noComparison": "No comparison period",
+    "noChanges": "No product changed by more than a few units",
+    "units": "{from, number} to {count, plural, one {# unit} other {# units}}",
+    "variantUnits": "{variant}, {from, number} to {count, plural, one {# unit} other {# units}}"
+  },
+  "slow": {
+    "title": "Slow-moving stock",
+    "aboutLabel": "About slow-moving stock",
+    "about": "Stock that lasts over 3 months, or hasn’t sold recently.",
+    "summary": "{items, plural, one {# item} other {# items}}, {units, plural, one {# unit} other {# units}}",
+    "summaryAtCost": "{items, plural, one {# item} other {# items}}, {units, plural, one {# unit} other {# units}}, {amount} at cost",
+    "product": "Product",
+    "onHand": "On hand",
+    "cover": "Cover",
+    "atCost": "At cost",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "notSelling": "Not selling",
+    "noUnitCost": "No unit cost",
+    "empty": "No slow-moving stock"
+  },
+  "bestSellers": {
+    "title": "Best sellers",
+    "restock": "Restock",
+    "product": "Product",
+    "sold": "Sold",
+    "onHand": "On hand",
+    "cover": "Cover",
+    "status": "Status",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "empty": "No sales yet"
+  },
+  "openOrders": {
+    "title": "Open purchase orders",
+    "link": "Purchase orders",
+    "supplier": "Supplier",
+    "orders": "Orders",
+    "openValue": "Open value",
+    "otherSuppliers": "{count, plural, one {# other supplier} other {# other suppliers}}",
+    "empty": "No open purchase orders",
+    "open": "Open",
+    "drafts": "Drafts",
+    "purchaseOrders": "{count, plural, one {# purchase order} other {# purchase orders}}"
+  },
+  "profit": {
+    "title": "Gross profit",
+    "monthlyCosts": "Monthly costs",
+    "sales": "Sales",
+    "orderFees": "Order fees",
+    "costOfGoods": "Cost of goods",
+    "fees": "Fees",
+    "groups": {
+      "refunds": "Refunds and disputes",
+      "shipping": "Shipping and freight",
+      "advertising": "Advertising",
+      "monthly": "Monthly costs"
+    },
+    "charges": {
+      "amazonRefunds": "Amazon refunds",
+      "amazonAds": "Amazon ads",
+      "amazonCharges": "Amazon account charges",
+      "amazonMcf": "Amazon fulfillment for Shopify orders",
+      "amazonFreight": "Amazon inbound freight",
+      "shopifyLabels": "Shopify shipping labels",
+      "shopifyBill": "Shopify bill (plan and apps)",
+      "shopifyDisputes": "Shopify disputes",
+      "shopifyDuties": "Duties and import taxes"
+    },
+    "whatsIn": "What’s in {line}",
+    "needsCosts": "Needs order prices and unit costs"
+  },
+  "customers": {
+    "title": "Shopify customers",
+    "aboutLabel": "About customer figures",
+    "about": "Lifetime value, repeat customers and orders per customer cover the last 12 months. Guest and Amazon orders aren’t counted.",
+    "reconnect": "Reconnect Shopify in <settings>Settings</settings> to count repeat customers",
+    "reconnectAskAdmin": "Ask an admin to reconnect Shopify to count repeat customers",
+    "syncing": "Available after the next Shopify order sync",
+    "noCustomers": "No customers",
+    "lifetimeValue": "Customer lifetime value",
+    "returning": "Returning customers",
+    "returningNote": "{returning, number} of {customers, number} in this period",
+    "repeat": "Repeat customers",
+    "ordersPerCustomer": "Orders per customer"
+  },
+  "landedCosts": {
+    "title": "Landed costs",
+    "aboutLabel": "About landed costs",
+    "about": "Freight, duty and other costs of getting these goods to you, added to unit costs on the Overview. Amazon’s freight for this purchase order’s shipments is added automatically. Only your team sees them.",
+    "amazonFreight": "Amazon inbound freight",
+    "shipment": "Shipment {reference}",
+    "supplierTotal": "Supplier total",
+    "landedTotal": "Landed total",
+    "markup": "Markup",
+    "markupValue": "{percent} on product cost",
+    "empty": "No costs yet",
+    "kinds": {
+      "freight": "Freight",
+      "duty": "Duty",
+      "other": "Other"
+    },
+    "moreActions": "More actions for {kind} cost",
+    "remove": "Remove",
+    "add": "Add cost",
+    "addTitle": "Add landed cost",
+    "addDescription": "Convert a bill in another currency to {currency} at the rate you paid.",
+    "type": "Type",
+    "amount": "Amount",
+    "description": "Description",
+    "descriptionPlaceholder": "Forwarder invoice, customs entry…",
+    "enterAmount": "Enter the amount"
+  }
+}

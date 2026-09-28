@@ -1,0 +1,156 @@
+{
+  "appDescription": "Ein gemeinsamer Workspace, in dem Käufer und Lieferanten Amazon-Sendungen vorbereiten.",
+  "skipToContent": "Zum Inhalt springen",
+  "breadcrumb": "Brotkrümelnavigation",
+  "about": "Info zu {label}",
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen. Versuchen Sie es erneut.",
+    "offline": "Copacker ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+  },
+  "actions": {
+    "cancel": "Abbrechen"
+  },
+  "status": {
+    "draft": "Entwurf",
+    "active": "Aktiv",
+    "archived": "Archiviert",
+    "submitted": "Beim Lieferanten",
+    "closed": "Abgeschlossen",
+    "packing": "Wird gepackt",
+    "approval": "Genehmigung erforderlich",
+    "creatingShipment": "Sendung wird erstellt",
+    "waitingLabels": "Versandetiketten fehlen",
+    "ready": "Abholbereit",
+    "shipped": "Versendet",
+    "forwarded": "Vom Spediteur versendet",
+    "received": "Eingegangen",
+    "correction": "Korrektur angefordert",
+    "needsAttention": "Handlungsbedarf",
+    "cancelled": "Storniert",
+    "working": "In Bearbeitung",
+    "created": "Erstellt",
+    "readyToShip": "Versandbereit",
+    "inTransit": "Unterwegs",
+    "delivered": "Zugestellt",
+    "checkedIn": "Eingecheckt",
+    "receiving": "Im Wareneingang",
+    "error": "Fehler",
+    "pending": "Ausstehend",
+    "unshipped": "Nicht versendet",
+    "unfulfilled": "Nicht ausgeführt",
+    "partiallyShipped": "Teilweise versendet",
+    "partiallyFulfilled": "Teilweise ausgeführt",
+    "fulfilled": "Ausgeführt",
+    "unfulfillable": "Nicht ausführbar",
+    "inStock": "Auf Lager",
+    "reorderSoon": "Bald nachbestellen",
+    "reorderNow": "Jetzt nachbestellen",
+    "outOfStock": "Nicht auf Lager",
+    "onCopacker": "Auf Copacker",
+    "invited": "Eingeladen",
+    "invitationExpired": "Einladung abgelaufen",
+    "notInvited": "Nicht eingeladen"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "Ihren Standort"
+  },
+  "documents": {
+    "download": "Herunterladen",
+    "purchaseOrder": "Bestellung",
+    "invoice": "Handelsrechnung",
+    "packingList": "Packliste",
+    "checklist": "Pack-Checkliste",
+    "cartonLabel": "Kartonetikett",
+    "shippingLabel": "Versandetikett",
+    "productLabel": "Produktetikett"
+  },
+  "format": {
+    "plusAmounts": "Zzgl. {amounts}",
+    "separator": ", "
+  },
+  "address": {
+    "country": "Land",
+    "chooseCountry": "Land auswählen",
+    "contactName": "Ansprechpartner",
+    "phoneNumber": "Telefonnummer",
+    "email": "E-Mail",
+    "streetAddress": "Straße und Hausnummer",
+    "addressLine2": "Adresszusatz",
+    "city": "Ort",
+    "stateOrProvince": "Bundesland oder Region",
+    "postalCode": "Postleitzahl"
+  },
+  "sync": {
+    "actions": "Aktionen für {label}",
+    "syncing": "Wird synchronisiert…",
+    "syncNow": "Jetzt synchronisieren",
+    "reconnect": "Erneut verbinden",
+    "synced": "Synchronisiert <time></time>"
+  },
+  "disconnect": {
+    "disconnect": "Trennen",
+    "title": "{name} trennen?",
+    "shopifyEffect": "Copacker synchronisiert keine Produkte, Lagerbestände, Umsätze und Kosten mehr mit {account}. Bestellungen bleiben unverändert.",
+    "amazonEffect": "Copacker liest keine Umsätze und Lagerbestände mehr aus {account} und kann keine AWD-Sendungen erstellen. Bestellungen bleiben unverändert.",
+    "failed": "{name} konnte nicht getrennt werden",
+    "cancel": "Abbrechen"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {Wählen Sie eine PDF-Datei} csv {Wählen Sie eine CSV-Datei} other {Wählen Sie eine unterstützte Datei}}",
+    "tooLarge": "{type, select, pdf {Wählen Sie eine PDF-Datei bis {size}} csv {Wählen Sie eine CSV-Datei bis {size}} other {Wählen Sie eine Datei bis {size}}}",
+    "oneFile": "{type, select, pdf {Wählen Sie eine einzelne PDF-Datei} csv {Wählen Sie eine einzelne CSV-Datei} other {Wählen Sie eine einzelne Datei}}",
+    "prompt": "{type, select, pdf {PDF-Datei ablegen oder <browse>durchsuchen</browse>} csv {CSV-Datei ablegen oder <browse>durchsuchen</browse>} other {Datei ablegen oder <browse>durchsuchen</browse>}}",
+    "upTo": "Bis {size}",
+    "remove": "{name} entfernen",
+    "replaceFile": "{name} ersetzen",
+    "replace": "Ersetzen"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "Offizielle Handelsrechnung",
+      "productLabels": "Produktetiketten",
+      "shippingLabels": "Versandetiketten des Transporteurs"
+    },
+    "chooseVariationError": "Wählen Sie eine Produktvariante",
+    "enterLabelPage": "Geben Sie für mindestens einen Karton die Etikettenseite ein",
+    "failed": "Hochladen fehlgeschlagen. Versuchen Sie es erneut.",
+    "choosePdf": "Wählen Sie eine PDF-Datei",
+    "variation": "Produktvariante",
+    "chooseVariation": "Variante auswählen",
+    "productLabelHint": "Ein Etikettenbogen pro Variante, bis 32 MB",
+    "uploading": "Wird hochgeladen",
+    "uploaded": "Hochgeladen",
+    "upload": "Hochladen",
+    "labelPages": "Etikettenseite für jeden Karton",
+    "labelPagesDescription": "Lassen Sie einen Karton leer, wenn sein Etikett in einer anderen Datei ist",
+    "carton": "Karton {carton}",
+    "page": "Seite"
+  },
+  "ui": {
+    "close": "Schließen",
+    "toggleSidebar": "Seitenleiste ein-/ausblenden",
+    "sidebar": "Seitenleiste",
+    "sidebarDescription": "Zeigt die mobile Seitenleiste an."
+  },
+  "pages": {
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "didntLoad": "Diese Seite wurde nicht geladen",
+      "dataUnchanged": "Ihre Daten sind unverändert",
+      "tryAgain": "Erneut versuchen",
+      "goToOverview": "Zur Übersicht"
+    },
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "checkAddress": "Prüfen Sie die Adresse und versuchen Sie es erneut",
+      "goToCopacker": "Zu Copacker",
+      "removed": "Sie wurde möglicherweise entfernt oder befindet sich in einem anderen Workspace",
+      "goToOverview": "Zur Übersicht"
+    },
+    "forbidden": {
+      "title": "Kein Zugriff",
+      "askAdmin": "Bitten Sie einen Admin um Zugriff"
+    }
+  }
+}

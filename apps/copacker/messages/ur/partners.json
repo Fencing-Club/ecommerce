@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "پارٹنرز",
+    "tabsLabel": "پارٹنر کی اقسام",
+    "tabs": {
+      "all": "تمام",
+      "supplier": "سپلائرز",
+      "forwarder": "فریٹ فارورڈرز"
+    },
+    "search": "پارٹنرز تلاش کریں",
+    "columns": {
+      "name": "نام",
+      "type": "قسم",
+      "status": "اسٹیٹس",
+      "details": "تفصیلات",
+      "actions": "کارروائیاں"
+    },
+    "empty": {
+      "noMatch": "“{query}” سے کوئی پارٹنر مماثل نہیں",
+      "all": "ابھی کوئی پارٹنر نہیں",
+      "supplier": "ابھی کوئی سپلائر نہیں",
+      "forwarder": "ابھی کوئی فریٹ فارورڈر نہیں"
+    },
+    "hints": {
+      "forwarder": "خریداری آرڈرز اس کے ذریعے بھیجنے کے لیے فریٹ فارورڈر شامل کریں۔",
+      "supplier": "Shopify کے سپلائرز یہاں نظر آتے ہیں۔",
+      "search": "ہجے چیک کریں، یا کسی اور ٹیب میں تلاش کریں۔"
+    }
+  },
+  "add": {
+    "button": "پارٹنر شامل کریں",
+    "supplier": "سپلائر",
+    "forwarder": "فریٹ فارورڈر"
+  },
+  "row": {
+    "types": {
+      "supplier": "سپلائر",
+      "forwarder": "فریٹ فارورڈر"
+    },
+    "addresses": "{count, plural, one {# پتہ} other {# پتے}}",
+    "noAddresses": "ابھی کوئی پتہ نہیں",
+    "leadTime": "لیڈ ٹائم {days, plural, one {# دن} other {# دن}}",
+    "leadTimeAndAddresses": "لیڈ ٹائم {days, plural, one {# دن} other {# دن}}، {count, plural, one {# پتہ} other {# پتے}}",
+    "sending": "بھیجا جا رہا ہے…",
+    "invitationSentTo": "دعوت نامہ {email} کو بھیج دیا گیا",
+    "invitationSent": "دعوت نامہ بھیج دیا گیا",
+    "moreActions": "{name} کے لیے مزید کارروائیاں",
+    "menu": {
+      "edit": "ترمیم کریں",
+      "addresses": "پتے",
+      "invite": "مدعو کریں",
+      "resend": "دعوت نامہ دوبارہ بھیجیں"
+    },
+    "standing": {
+      "joined": "Copacker پر موجود",
+      "invited": "مدعو",
+      "expired": "دعوت نامے کی میعاد ختم",
+      "notInvited": "مدعو نہیں"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "فریٹ فارورڈر شامل کریں",
+      "title": "فریٹ فارورڈر شامل کریں",
+      "description": "آپ کے سپلائر سے مال اٹھا کر Amazon یا آپ کے گودام تک پہنچاتا ہے۔",
+      "submit": "فریٹ فارورڈر شامل کریں",
+      "company": "کمپنی",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "ای میل",
+      "emailDescription": "ابھی مدعو کرنے کے لیے ای میل شامل کریں۔"
+    },
+    "invite": {
+      "title": "{name} کو مدعو کریں",
+      "description": "وہ آپ کے خریداری آرڈرز کے لیے اپنے گودام کے پتے خود رکھیں گے۔",
+      "submit": "دعوت نامہ بھیجیں",
+      "email": "ای میل"
+    },
+    "rename": {
+      "trigger": "ترمیم کریں",
+      "triggerLabel": "{name} میں ترمیم کریں",
+      "title": "فریٹ فارورڈر میں ترمیم کریں",
+      "submit": "محفوظ کریں",
+      "company": "کمپنی"
+    },
+    "remove": {
+      "trigger": "ہٹائیں",
+      "title": "{name} کو ہٹائیں؟",
+      "description": "نئے خریداری آرڈرز ان کو نہیں بھیجے جا سکیں گے۔ پہلے سے بھیجے گئے خریداری آرڈرز میں ان کا پتہ برقرار رہے گا۔",
+      "cancel": "منسوخ کریں",
+      "confirm": "ہٹائیں",
+      "failed": "{name} کو ہٹایا نہیں جا سکا"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "سپلائر شامل کریں",
+      "title": "سپلائر شامل کریں",
+      "description": "ایسے سپلائر کے لیے جو ابھی Shopify میں نہیں ہے۔"
+    },
+    "edit": {
+      "title": "{name} میں ترمیم کریں",
+      "name": "نام",
+      "companyName": "کمپنی کا نام",
+      "companyNameDescription": "جیسا کہ Shopify کے Supplier فیلڈ میں ہے۔",
+      "companyNamePlaceholder": "Shopify میں نہیں",
+      "contactName": "رابطے کا نام",
+      "contactEmail": "رابطے کی ای میل",
+      "phone": "فون",
+      "website": "ویب سائٹ",
+      "websiteJoined": "{name} اپنی رابطہ تفصیلات اپنے ورک اسپیس میں رکھتے ہیں۔",
+      "leadTime": "لیڈ ٹائم (دن)",
+      "leadTimeDescription": "خریداری آرڈر سے فروخت کے قابل اسٹاک تک۔ خالی کا مطلب {days} ہے۔",
+      "cancel": "منسوخ کریں",
+      "save": "محفوظ کریں",
+      "saving": "محفوظ کیا جا رہا ہے…",
+      "failed": "سپلائر محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔"
+    },
+    "invite": {
+      "title": "{name} کو مدعو کریں",
+      "description": "وہ آپ کے شیئر کردہ خریداری آرڈرز دیکھیں گے اور جب کسی کو دستاویزات درکار ہوں تو انہیں ای میل ملے گی۔",
+      "email": "سپلائر کی ای میل",
+      "cancel": "منسوخ کریں",
+      "submit": "دعوت نامہ بھیجیں",
+      "sending": "بھیجا جا رہا ہے…",
+      "failed": "{name} کو مدعو نہیں کیا جا سکا۔ دوبارہ کوشش کریں۔"
+    }
+  },
+  "address": {
+    "editPickup": "پک اپ کے پتے میں ترمیم کریں",
+    "edit": "پتے میں ترمیم کریں",
+    "addPickup": "{name} کے لیے پک اپ کا پتہ شامل کریں",
+    "add": "{name} کے لیے پتہ شامل کریں",
+    "saveChanges": "تبدیلیاں محفوظ کریں",
+    "save": "پتہ محفوظ کریں",
+    "name": "پتے کا نام",
+    "pickupPlaceholder": "فیکٹری",
+    "placeholder": "Yiwu گودام",
+    "sheet": {
+      "supplier": "پک اپ کے پتے",
+      "forwarder": "Amazon یا آپ کے گودام کے راستے کے اسٹاپس",
+      "joinedSupplier": "اپنے پک اپ کے پتے Copacker پر خود رکھتا ہے",
+      "joinedForwarder": "اپنے پتے Copacker پر خود رکھتا ہے"
+    },
+    "empty": "ابھی کوئی پتہ نہیں",
+    "addButton": "پتہ شامل کریں",
+    "removing": "{name} کو ہٹایا جا رہا ہے",
+    "moreActions": "{name} کے لیے مزید کارروائیاں",
+    "menuEdit": "ترمیم کریں",
+    "menuRemove": "ہٹائیں",
+    "removeFailed": "{name} کو ہٹایا نہیں جا سکا"
+  },
+  "contactKinds": {
+    "delivery": "ڈیلیوری کا پتہ",
+    "forwarder": "فریٹ فارورڈر",
+    "pickup": "پک اپ کا پتہ"
+  },
+  "contactDetails": {
+    "enterEmail": "ای میل ایڈریس درج کریں"
+  },
+  "phone": {
+    "invalid": "فون نمبر درج کریں"
+  }
+}

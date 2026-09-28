@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
@@ -8,7 +9,7 @@ import { can } from "@/lib/access"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { catalogList } from "@/server/catalogs"
 
-export const generateMetadata = titleFor("Catalogs", "catalogs")
+export const generateMetadata = titleFor("supplier.pages.catalogs", "catalogs")
 
 export default async function CatalogsPage() {
   const s = await session()
@@ -16,14 +17,14 @@ export default async function CatalogsPage() {
     redirect("/")
   }
   requirePage(s, "catalogs")
-  const catalogs = await catalogList(s.org.id)
+  const [catalogs, t] = await Promise.all([catalogList(s.org.id), getTranslations("supplier.pages")])
   return (
     <>
-      <PageHeader title="Catalogs">
+      <PageHeader title={t("catalogs")}>
         {catalogs.length > 0 && can(s, "catalogs", "edit") && (
           <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
             <Plus data-icon="inline-start" />
-            Create catalog
+            {t("createCatalog")}
           </Button>
         )}
       </PageHeader>

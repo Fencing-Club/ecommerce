@@ -5,7 +5,7 @@ import { can } from "@/lib/access"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { productDetail } from "@/server/supplier-products"
 
-export const generateMetadata = titleFor("Product", "products")
+export const generateMetadata = titleFor("products.page.product", "products")
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

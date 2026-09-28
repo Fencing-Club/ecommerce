@@ -10,7 +10,9 @@ import {
   suppliers,
   variantFields
 } from "@/db/schema"
+import { type ErrorKey } from "@/i18n/errors"
 import type { Session } from "./auth"
+import { StatusError } from "./errors"
 import { syncShopifySuppliers } from "./suppliers"
 
 // Details Copacker keeps for each Shopify variation, and for each product (case quantity, and the supplier chosen on
@@ -27,14 +29,7 @@ type StockRow = {
   supplierName?: string | null
 }
 
-export class VariantFieldsError extends Error {
-  constructor(
-    message: string,
-    public readonly status: 400 | 403 | 404 | 409
-  ) {
-    super(message)
-  }
-}
+export class VariantFieldsError extends StatusError {}
 
 // The database, or a transaction reading within its own locks.
 type Executor = Pick<ReturnType<typeof db>, "select">
@@ -304,19 +299,19 @@ const inputSchema = z.strictObject({
 // Saves a variation's supplier SKU, ASIN or stock targets.
 export async function saveVariantFields(s: Session, raw: unknown) {
   if (s.org.kind !== "buyer") {
-    throw new VariantFieldsError("A buyer workspace is required", 403)
+    throw new VariantFieldsError("buyerWorkspaceRequired", 403)
   }
   const input = inputSchema.safeParse(raw)
   if (!input.success) {
     const field = input.error.issues[0]?.path[0]
-    const messages: Record<string, string> = {
-      variantId: "Choose a product variation",
-      supplierSku: "Enter a supplier SKU on one line, up to 255 characters",
-      asin: "Enter an ASIN on one line, up to 255 characters",
-      amazonStockTarget: "Enter a whole number of units, or leave it empty",
-      storeStockTarget: "Enter a whole number of units, or leave it empty"
+    const messages: Record<string, ErrorKey> = {
+      variantId: "chooseVariation",
+      supplierSku: "enterSupplierSku",
+      asin: "enterAsin",
+      amazonStockTarget: "enterWholeUnits",
+      storeStockTarget: "enterWholeUnits"
     }
-    throw new VariantFieldsError(messages[String(field)] ?? "Check the values and try again", 400)
+    throw new VariantFieldsError(messages[String(field)] ?? "checkValues", 400)
   }
   const { variantId, ...fields } = input.data
   const [account] = await db()
@@ -324,7 +319,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
     .from(connections)
     .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
   if (!account) {
-    throw new VariantFieldsError("Connect Shopify before editing products", 409)
+    throw new VariantFieldsError("connectShopifyBeforeEditing", 409)
   }
   const [stock] = await db()
     .select({ data: stockSnapshots.data })
@@ -338,10 +333,7 @@ export async function saveVariantFields(s: Session, raw: unknown) {
       )
     )
   if (stock?.data?.source !== "shopify" || !stock.data.rows.some((row) => row.variantId === variantId)) {
-    throw new VariantFieldsError(
-      "This product isn't in your synced Shopify inventory. Sync Shopify and try again.",
-      404
-    )
+    throw new VariantFieldsError("productNotSyncedSync", 404)
   }
   const values = {
     ...(fields.supplierSku !== undefined && { supplierSku: fields.supplierSku || null }),

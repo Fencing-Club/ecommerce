@@ -1,0 +1,18 @@
+{
+  "contents": "Indice",
+  "updated": "Ultimo aggiornamento: <time>{date}</time>",
+  "privacy": {
+    "title": "Informativa sulla privacy",
+    "metadata": {
+      "title": "Informativa sulla privacy | Copacker",
+      "description": "Cosa raccoglie Copacker, come vengono usati e condivisi i dati e quali scelte hai, anche per i dati di Amazon e degli altri negozi che colleghi."
+    }
+  },
+  "terms": {
+    "title": "Termini di servizio",
+    "metadata": {
+      "title": "Termini di servizio | Copacker",
+      "description": "I termini per usare Copacker: account e workspace, le tue responsabilità, i tuoi dati, le tariffe e i limiti della nostra responsabilità."
+    }
+  }
+}

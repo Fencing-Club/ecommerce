@@ -2,11 +2,12 @@ import { and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { monthlyCosts } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import type { Session } from "./auth"
 
 function requireBuyer(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new Error("A buyer workspace is required")
+    throw new LocalizedError("buyerWorkspaceRequired")
   }
 }
 
@@ -24,7 +25,7 @@ export const monthlyCostInputSchema = z
     endsOn: day.nullable().default(null)
   })
   .refine((input) => !input.startsOn || !input.endsOn || input.startsOn <= input.endsOn, {
-    message: "The end date can't be before the start date",
+    message: "errors.endBeforeStart",
     path: ["endsOn"]
   })
 
@@ -55,7 +56,7 @@ export async function removeMonthlyCost(s: Session, id: string) {
     .where(and(eq(monthlyCosts.id, z.uuid().parse(id)), eq(monthlyCosts.orgId, s.org.id)))
     .returning({ id: monthlyCosts.id })
   if (!removed.length) {
-    throw new Error("Monthly cost not found")
+    throw new LocalizedError("monthlyCostNotFound")
   }
 }
 

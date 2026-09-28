@@ -2,8 +2,9 @@ import { and, eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { supplierProducts } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { requireAccess, session } from "@/server/auth"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 
 const stockInput = z.strictObject({
@@ -17,18 +18,18 @@ const stockInput = z.strictObject({
 // revision: the supplier counted what's on the shelf now.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
     if (s.org.kind !== "supplier") {
-      return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
+      return errorResponse("supplierWorkspaceRequired", 403)
     }
     requireAccess(s, "inventory", "edit")
     const { counts } = stockInput.parse(await request.json())
     const ids = counts.map((count) => count.id)
     if (new Set(ids).size !== ids.length) {
-      throw new Error("A variant is counted twice")
+      throw new LocalizedError("variantCountedTwice")
     }
     const saved = await db().transaction(async (tx) => {
       const tracked = await tx
@@ -54,13 +55,10 @@ export async function POST(request: Request) {
       return counts.length
     })
     if (saved === null) {
-      return Response.json({ error: "A variant no longer tracks inventory. Refresh and try again" }, { status: 404 })
+      return errorResponse("variantNotTracked", 404)
     }
     return Response.json({ saved })
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Could not save stock" },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error, "stockNotSaved") }, { status: failureStatus(error) })
   }
 }

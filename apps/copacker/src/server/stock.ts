@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, stockSnapshots } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
@@ -60,7 +61,7 @@ export const stockSelection = z
     marketplaceId: z.literal("ATVPDKIKX0DER").optional()
   })
   .refine((input) => (input.source === "fba" ? input.marketplaceId !== undefined : input.marketplaceId === undefined), {
-    message: "Select the US marketplace for FBA only"
+    message: "errors.fbaMarketplaceOnly"
   })
 
 // Starts a stock refresh for one scope unless one is already waiting or running.
@@ -71,7 +72,7 @@ export async function refreshStock(
   const { source } = stockSelection.parse(selection)
   const { provider, scopeKey } = stockScopes[source]
   if (org.kind !== "buyer") {
-    throw new Error("A buyer workspace is required")
+    throw new LocalizedError("buyerWorkspaceRequired")
   }
   return db().transaction(async (tx) => {
     const [account] = await tx

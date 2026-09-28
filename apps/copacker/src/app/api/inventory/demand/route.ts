@@ -1,4 +1,5 @@
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { demandInputSchema, DemandAccessError, readSalesDemand } from "@/server/sales"
 import { isAppOrigin } from "@/server/security"
 
@@ -6,16 +7,16 @@ export const maxDuration = 300
 export async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   if (s.org.kind !== "buyer") {
-    return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+    return errorResponse("buyerWorkspaceRequired", 403, headers)
   }
   requirePage(s, "sales")
   const input = demandInputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
-    return Response.json({ error: "Choose a sales source and a valid date range" }, { status: 400, headers })
+    return errorResponse("chooseSalesRange", 400, headers)
   }
   try {
     const result = await readSalesDemand(s, input.data, async () => {
@@ -24,14 +25,8 @@ export async function POST(request: Request) {
     return Response.json(result, { headers })
   } catch (error) {
     if (error instanceof DemandAccessError) {
-      return Response.json({ error: error.message }, { status: 409, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: 409, headers })
     }
-    return Response.json(
-      {
-        error:
-          "Sales refresh failed. No partial sales result was returned. Check the connection and try a shorter window."
-      },
-      { status: 503, headers }
-    )
+    return errorResponse("salesRefreshFailed", 503, headers)
   }
 }

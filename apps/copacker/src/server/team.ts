@@ -2,14 +2,16 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { jobs, memberships, profiles, teamInvitations } from "@/db/schema"
+import { LocalizedError, type ErrorKey } from "@/i18n/errors"
 import { type Access, accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
 import type { Session } from "./auth"
 import { AccessError } from "./errors"
 import { hash, token } from "./security"
+import { requestLocale } from "./text"
 
 const week = 7 * 86400000
-const emailSchema = z.object({ email: z.email("Enter an email address").max(254) })
+const emailSchema = z.object({ email: z.email("errors.enterEmail").max(254) })
 const userSchema = z.object({ userId: z.string().min(1) })
 // What someone can do: an admin everything, a member the pages chosen for them.
 const grantSchema = z.discriminatedUnion("role", [
@@ -36,7 +38,7 @@ function grantFor(kind: Session["org"]["kind"], raw: unknown): Grant {
     }
   }
   if (!Object.keys(access).some((key) => key !== "prices")) {
-    throw new Error("Choose at least one page")
+    throw new LocalizedError("chooseOnePage")
   }
   return { role: "member", access }
 }
@@ -107,7 +109,7 @@ export async function inviteColleague(org: Pick<Session["org"], "id" | "name" | 
     .from(memberships)
     .where(and(eq(memberships.orgId, org.id), eq(memberships.email, email)))
   if (member) {
-    throw new Error(`${email} is already in this workspace`)
+    throw new LocalizedError("alreadyInWorkspace", { email })
   }
   await db().transaction((tx) => send(tx, org, email, grant))
   return { ok: true, email }
@@ -124,7 +126,7 @@ export async function resendInvitation(org: Pick<Session["org"], "id" | "name">,
       .orderBy(desc(teamInvitations.createdAt))
       .for("update")
     if (!waiting) {
-      throw new Error("This invitation was already accepted or withdrawn")
+      throw new LocalizedError("invitationAnswered")
     }
     await send(tx, org, email, waiting)
   })
@@ -142,7 +144,7 @@ async function send(tx: Transaction, org: Pick<Session["org"], "id" | "name">, e
   await tx.insert(jobs).values({
     key: `team:${row!.id}`,
     kind: "email",
-    payload: { type: "team", to: email, name: org.name, invitation }
+    payload: { type: "team", to: email, name: org.name, invitation, locale: await requestLocale() }
   })
 }
 
@@ -150,7 +152,7 @@ async function send(tx: Transaction, org: Pick<Session["org"], "id" | "name">, e
 export async function cancelInvitation(orgId: string, raw: unknown) {
   const email = emailSchema.parse(raw).email.toLowerCase()
   if (!(await db().transaction((tx) => withdraw(tx, orgId, email)))) {
-    throw new Error("This invitation was already accepted or withdrawn")
+    throw new LocalizedError("invitationAnswered")
   }
   return { ok: true }
 }
@@ -185,22 +187,22 @@ export async function changeAccess(
       .where(and(eq(teamInvitations.orgId, s.org.id), eq(teamInvitations.email, invited.data.email.toLowerCase())))
       .returning({ id: teamInvitations.id })
     if (!changed.length) {
-      throw new Error("This invitation was already accepted or withdrawn")
+      throw new LocalizedError("invitationAnswered")
     }
     return { ok: true }
   }
   const { userId } = userSchema.parse(raw)
   if (userId === s.user.id) {
-    throw new Error("You can’t change your own access")
+    throw new LocalizedError("cantChangeOwnAccess")
   }
-  await requireColleague(s.org.id, userId, "The owner’s access can’t be changed")
+  await requireColleague(s.org.id, userId, "ownerAccessFixed")
   const changed = await db()
     .update(memberships)
     .set(grant)
     .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, userId), ne(memberships.role, "owner")))
     .returning({ userId: memberships.userId })
   if (!changed.length) {
-    throw new Error("They’re no longer in this workspace")
+    throw new LocalizedError("colleagueGone")
   }
   return { ok: true }
 }
@@ -213,7 +215,7 @@ export async function transferOwnership(
 ) {
   const { userId } = userSchema.parse(raw)
   if (userId === s.user.id) {
-    throw new Error("You already own this workspace")
+    throw new LocalizedError("alreadyOwner")
   }
   await db().transaction(async (tx) => {
     const [previous] = await tx
@@ -222,7 +224,7 @@ export async function transferOwnership(
       .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, s.user.id), eq(memberships.role, "owner")))
       .returning({ userId: memberships.userId })
     if (!previous) {
-      throw new AccessError("Only the owner can do this")
+      throw new AccessError("ownerOnly")
     }
     const [next] = await tx
       .update(memberships)
@@ -230,7 +232,7 @@ export async function transferOwnership(
       .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, userId)))
       .returning({ userId: memberships.userId })
     if (!next) {
-      throw new Error("They’re no longer in this workspace")
+      throw new LocalizedError("colleagueGone")
     }
   })
   return { ok: true }
@@ -243,29 +245,29 @@ export async function removeColleague(
 ) {
   const { userId } = userSchema.parse(raw)
   if (userId === s.user.id) {
-    throw new Error("You can’t remove yourself")
+    throw new LocalizedError("cantRemoveYourself")
   }
-  await requireColleague(s.org.id, userId, "The owner can’t be removed")
+  await requireColleague(s.org.id, userId, "ownerCantBeRemoved")
   const removed = await db()
     .delete(memberships)
     .where(and(eq(memberships.orgId, s.org.id), eq(memberships.userId, userId), ne(memberships.role, "owner")))
     .returning({ userId: memberships.userId })
   if (!removed.length) {
-    throw new Error("They’re no longer in this workspace")
+    throw new LocalizedError("colleagueGone")
   }
   return { ok: true }
 }
 
 // Someone else in the workspace whose access can change: anyone but its owner.
-async function requireColleague(orgId: string, userId: string, ownerMessage: string) {
+async function requireColleague(orgId: string, userId: string, ownerMessage: ErrorKey) {
   const [member] = await db()
     .select({ role: memberships.role })
     .from(memberships)
     .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, userId)))
   if (!member) {
-    throw new Error("They’re no longer in this workspace")
+    throw new LocalizedError("colleagueGone")
   }
   if (member.role === "owner") {
-    throw new Error(ownerMessage)
+    throw new LocalizedError(ownerMessage)
   }
 }

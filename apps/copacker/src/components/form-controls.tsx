@@ -309,7 +309,7 @@ export function FormMoney({
           }}
           aria-invalid={fieldState.invalid}
           aria-describedby={`${id}-currency`}
-          className="text-right tabular-nums"
+          className="text-end tabular-nums"
         />
         <InputGroupAddon align="inline-end">
           <InputGroupText id={`${id}-currency`}>{currency}</InputGroupText>

@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
 import { ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
@@ -38,7 +39,7 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
       .where(and(eq(connections.orgId, orgId), eq(connections.provider, provider)))
       .for("update")
     if (!row) {
-      throw new Error(`Connect ${provider === "amazon" ? "Amazon" : "Shopify"} in Settings first`)
+      throw new LocalizedError("connectInSettings", { provider })
     }
     let stored = savedToken.parse(JSON.parse(decrypt(row.encryptedToken, `${orgId}:${provider}`)))
     if (provider === "shopify" && (!stored.expiresAt || stored.expiresAt < Date.now() + 60000)) {
@@ -72,14 +73,14 @@ export async function connection(orgId: string, provider: "amazon" | "shopify") 
 export async function shopifyFor(orgId: string, expectedDomain?: string) {
   const c = await connection(orgId, "shopify")
   if (expectedDomain && c.externalId !== expectedDomain) {
-    throw new Error("Reconnect the Shopify store originally selected for this purchase order")
+    throw new LocalizedError("reconnectOrderShopify")
   }
   return new Shopify(c.externalId, c.token)
 }
 export async function amazonFor(orgId: string, expectedSellerId?: string | null) {
   const c = await connection(orgId, "amazon")
   if (expectedSellerId && c.externalId !== expectedSellerId) {
-    throw new Error("Reconnect the Amazon account originally selected for this purchase order")
+    throw new LocalizedError("reconnectOrderAmazon")
   }
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
     throw new Error("Amazon developer credentials are not configured")
@@ -122,7 +123,7 @@ export async function disconnect(orgId: string, provider: "amazon" | "shopify") 
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, provider)))
     .returning({ id: connections.id })
   if (!removed.length) {
-    throw new Error(`${provider === "amazon" ? "Amazon" : "Shopify"} is already disconnected`)
+    throw new LocalizedError("alreadyDisconnected", { provider })
   }
   return { revoked }
 }
@@ -143,13 +144,13 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
   try {
     participations = await amazon.request("GET", "/sellers/v1/marketplaceParticipations")
   } catch {
-    throw new Error("Amazon didn't accept this token. Authorize the app again and paste the new refresh token")
+    throw new LocalizedError("amazonTokenRejected")
   }
   const us = z
     .object({ payload: z.array(z.object({ marketplace: z.object({ id: z.string() }) })) })
     .safeParse(participations)
   if (!us.success || !us.data.payload.some((entry) => entry.marketplace.id === "ATVPDKIKX0DER")) {
-    throw new Error("This Amazon account doesn't sell in the US marketplace")
+    throw new LocalizedError("amazonNotUs")
   }
   const encryptedToken = encrypt(JSON.stringify({ token: input.refreshToken }), `${orgId}:amazon`)
   await db()

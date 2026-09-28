@@ -1,7 +1,9 @@
+import { useLocale, useTranslations } from "next-intl"
 import { isPresent } from "ts-extras"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { change, formatMoney, formatNumber, formatPercent, wholeMoney } from "@/lib/format"
+import { rangeLabel } from "@/lib/date-range"
+import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Overview } from "@/server/overview"
 import type { SourceDay } from "@/server/overview-sales"
@@ -22,7 +24,8 @@ import {
   SlowStock,
   StockByChannel,
   Trending,
-  UpcomingSpend
+  UpcomingSpend,
+  useFigures
 } from "./overview-sections"
 import { PeriodPicker } from "./period-picker"
 
@@ -34,6 +37,8 @@ const kpiGrid = "grid grid-cols-2 gap-4 @xl/kpis:grid-cols-3 @6xl/kpis:grid-cols
 const salesRow = "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(22rem,1fr)]"
 const wide = "grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
 const halves = "grid grid-cols-1 gap-4 lg:grid-cols-2"
+// A figure inside a tile's note, as strong as the tile's other text.
+const figure = (chunks: React.ReactNode) => <span className="font-medium text-foreground tabular-nums">{chunks}</span>
 
 // One headline figure. Every tile has the same parts in the same places, so a row of them lines up: the label on one
 // line, the value, its change against the compared period (or a short note), and its trend when there's a daily series.
@@ -56,6 +61,7 @@ function Kpi({
   // The line under the figure; `id` names it on the page.
   trend?: { id: string; values: (number | null)[] }
 }) {
+  const t = useTranslations("overview.kpis")
   return (
     // Two tiles a row on a phone pad less, so each label still fits.
     <Card className="@container gap-3 @max-sm/kpis:[--card-spacing:--spacing(3)]">
@@ -64,7 +70,7 @@ function Kpi({
           <span className="truncate" title={label}>
             {label}
           </span>
-          {info && <InfoTip label={`About ${label.toLowerCase()}`}>{info}</InfoTip>}
+          {info && <InfoTip label={t("about", { label })}>{info}</InfoTip>}
         </CardDescription>
         <CardTitle
           className={cn(
@@ -138,12 +144,17 @@ function SalesKpis({
   period: Overview["period"]
   restock: Overview["restock"]
 }) {
+  const t = useTranslations("overview.kpis")
+  const figures = useFigures()
+  const periods = useTranslations("overview.period")
+  const locale = useLocale()
+  const periodLabel = period.key === "custom" ? rangeLabel(period.range, locale) : periods(`presets.${period.key}`)
   const { totals, currency, profit } = sales
   const { previous } = totals
-  const versus = period.comparison === "previousYear" ? "vs previous year" : "vs previous period"
+  const versus = t("versus", { comparison: period.comparison })
   const hasSales = sales.daily.some((row) => sales.sources.some((source) => row[source] !== null))
   // Why a sales figure is missing: no orders yet, or orders Amazon hasn't priced.
-  const missing = hasSales ? "No prices yet" : "No orders synced"
+  const missing = hasSales ? t("noPrices") : t("noOrders")
   // The change against the compared period. The comparison shows beside the pill when the tile has room for it, and
   // is always read out.
   const delta = (current: number, before: number | null | undefined) => {
@@ -163,47 +174,45 @@ function SalesKpis({
   // What gross profit leaves out, when anything.
   const caveats = [
     profit.currency && profit.revenueMinor > profit.costedRevenueMinor
-      ? `Leaves out ${wholeMoney(profit.revenueMinor - profit.costedRevenueMinor, profit.currency)} of sales without a unit cost.`
+      ? t("uncostedSales", { amount: figures.whole(profit.revenueMinor - profit.costedRevenueMinor, profit.currency) })
       : null,
-    sales.estimatedFeeOrders > 0 ? "Some fees are estimated until the platform posts them." : null
+    sales.estimatedFeeOrders > 0 ? t("estimatedFees") : null
   ].filter(isPresent)
-  let profitNote: React.ReactNode = currency ? "No unit costs" : missing
+  let profitNote: React.ReactNode = currency ? t("noUnitCosts") : missing
   if (profit.margin !== null) {
     profitNote = (
-      <span className="truncate">
-        <span className="font-medium text-foreground tabular-nums">{formatPercent(profit.margin)}</span> margin
-      </span>
+      <span className="truncate">{t.rich("margin", { percent: figures.percent(profit.margin), figure })}</span>
     )
   }
   // Sales expected to be lost to stockouts before reorders placed today arrive, at each channel's selling price.
   const expectedLoss = restock.expectedLost[0]
   let lossValue: string | null = null
   if (restock.expectedLostItems === 0) {
-    lossValue = wholeMoney(0, currency ?? "USD")
+    lossValue = figures.whole(0, currency ?? "USD")
   } else if (expectedLoss) {
-    lossValue = wholeMoney(expectedLoss.minor, expectedLoss.currency)
+    lossValue = figures.whole(expectedLoss.minor, expectedLoss.currency)
   }
   const lostInPeriod = restock.lostValue[0]
 
   return (
-    <section className="@container/kpis" aria-label={`Sales, ${period.label}`}>
+    <section className="@container/kpis" aria-label={t("label", { period: periodLabel })}>
       <div className={kpiGrid}>
         <Kpi
-          label="Sales"
-          info="After discounts, before tax and shipping."
-          value={currency ? wholeMoney(totals.revenueMinor, currency) : null}
+          label={t("sales")}
+          info={t("salesInfo")}
+          value={currency ? figures.whole(totals.revenueMinor, currency) : null}
           footnote={currency ? previous && delta(totals.revenueMinor, previous.revenueMinor) : missing}
           trend={{ id: "sales", values: trend(sales, (total, days) => perDay(total.revenueMinor, days)) }}
         />
         <Kpi
-          label="Orders"
-          value={hasSales ? formatNumber(totals.orders) : null}
+          label={t("orders")}
+          value={hasSales ? figures.number(totals.orders) : null}
           footnote={hasSales ? previous && delta(totals.orders, previous.orders) : missing}
           trend={{ id: "orders", values: trend(sales, (total, days) => perDay(total.orders, days)) }}
         />
         <Kpi
-          label="Average order value"
-          value={currency && averageOrder !== null ? formatMoney([{ minor: averageOrder, currency }]) : null}
+          label={t("averageOrder")}
+          value={currency && averageOrder !== null ? figures.money([{ minor: averageOrder, currency }]) : null}
           footnote={
             currency
               ? averageOrder !== null && previousAverage !== null && delta(averageOrder, previousAverage)
@@ -212,13 +221,13 @@ function SalesKpis({
           trend={{ id: "average", values: trend(sales, (total) => orderValue(total)) }}
         />
         <Kpi
-          label="Units sold"
-          value={hasSales ? formatNumber(totals.units) : null}
+          label={t("units")}
+          value={hasSales ? figures.number(totals.units) : null}
           footnote={hasSales ? previous && delta(totals.units, previous.units) : missing}
           trend={{ id: "units", values: trend(sales, (total, days) => perDay(total.units, days)) }}
         />
         <Kpi
-          label="Gross profit"
+          label={t("grossProfit")}
           info={
             caveats.length > 0 && (
               <span className="flex flex-col gap-1">
@@ -229,19 +238,21 @@ function SalesKpis({
             )
           }
           value={
-            profit.currency && profit.costedRevenueMinor > 0 ? wholeMoney(profit.profitMinor, profit.currency) : null
+            profit.currency && profit.costedRevenueMinor > 0 ? figures.whole(profit.profitMinor, profit.currency) : null
           }
           loss={profit.profitMinor < 0}
           footnote={profitNote}
         />
         <Kpi
-          label="Stockout losses"
-          info="Sales expected to be lost while items are out of stock, before reorders placed today arrive."
+          label={t("stockoutLosses")}
+          info={t("stockoutInfo")}
           value={lossValue}
           loss={restock.expectedLostItems > 0}
           footnote={
             lostInPeriod && (
-              <span className="truncate">{wholeMoney(lostInPeriod.minor, lostInPeriod.currency)} lost this period</span>
+              <span className="truncate">
+                {t("lostThisPeriod", { amount: figures.whole(lostInPeriod.minor, lostInPeriod.currency) })}
+              </span>
             )
           }
         />
@@ -263,6 +274,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 }
 
 function SalesByChannel({ data }: { data: Overview }) {
+  const t = useTranslations("overview.salesByChannel")
   const { sales } = data
   const hasOrders = sales.daily.some((row) => sales.sources.some((source) => row[source] !== null))
   // A Shopify location shows the orders shipped from it.
@@ -272,23 +284,16 @@ function SalesByChannel({ data }: { data: Overview }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          Sales by channel
-          <InfoTip label="About sales">
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>
             <span className="flex flex-col gap-1">
-              <span>
-                {location && `Shopify orders shipped from ${location}. `}After discounts, before tax and shipping.
-              </span>
-              {others > 0 && (
-                <span>
-                  {formatNumber(others)} Amazon {others === 1 ? "order" : "orders"} from outside North America{" "}
-                  {others === 1 ? "isn’t" : "aren’t"} counted.
-                </span>
-              )}
+              <span>{location ? t("aboutLocation", { location }) : t("about")}</span>
+              {others > 0 && <span>{t("otherMarketplaces", { count: others })}</span>}
             </span>
           </InfoTip>
         </CardTitle>
         <CardAction>
-          <CardLink href="/sales">Orders</CardLink>
+          <CardLink href="/sales">{t("orders")}</CardLink>
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
@@ -296,13 +301,13 @@ function SalesByChannel({ data }: { data: Overview }) {
           <SalesTrend
             daily={sales.daily}
             previous={sales.previousDaily}
-            previousLabel={data.period.comparisonLabel}
+            comparison={data.period.comparison}
             sources={sales.sources}
             currency={sales.currency}
           />
         ) : (
           <p className="flex min-h-64 flex-1 items-center justify-center text-sm text-muted-foreground">
-            No orders synced
+            {t("noOrders")}
           </p>
         )}
       </CardContent>
@@ -311,6 +316,7 @@ function SalesByChannel({ data }: { data: Overview }) {
 }
 
 export function OverviewDashboard({ data }: { data: Overview }) {
+  const t = useTranslations("overview.sections")
   const { sales, restock, purchasing } = data
   // Restock and stock links use the restock channel: Amazon for any Amazon marketplace.
   const channel = data.channel?.key.startsWith("amazon") ? "amazon" : (data.channel?.key ?? null)
@@ -329,21 +335,21 @@ export function OverviewDashboard({ data }: { data: Overview }) {
       <SalesKpis sales={sales} period={data.period} restock={restock} />
 
       {/* Cards grouped by what they're about: sales, purchasing, products and customers, then stock. */}
-      <Section id="overview-sales" title="Sales">
+      <Section id="overview-sales" title={t("sales")}>
         <div className={salesRow}>
           <SalesByChannel data={data} />
           <ProfitBreakdown sales={sales} />
         </div>
       </Section>
 
-      <Section id="overview-purchasing" title="Purchasing">
+      <Section id="overview-purchasing" title={t("purchasing")}>
         <div className={halves}>
           <OpenOrders purchasing={purchasing} />
           <UpcomingSpend upcoming={data.upcoming} channel={channel} />
         </div>
       </Section>
 
-      <Section id="overview-products" title={sales.customers ? "Products and customers" : "Products"}>
+      <Section id="overview-products" title={sales.customers ? t("productsAndCustomers") : t("products")}>
         {sales.customers ? (
           <div className={wide}>
             <Trending movers={sales.movers} comparable={sales.moversComparable} period={data.period} />
@@ -355,7 +361,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
         <BestSellers restock={restock} />
       </Section>
 
-      <Section id="overview-stock" title="Stock">
+      <Section id="overview-stock" title={t("stock")}>
         <div className={halves}>
           <StockByChannel restock={restock} />
           <DaysOfCover restock={restock} channel={channel} />
@@ -390,8 +396,9 @@ export function OverviewFiltersSkeleton() {
 }
 
 export function OverviewSkeleton() {
+  const t = useTranslations("overview")
   return (
-    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Loading overview">
+    <div className="flex flex-col gap-6" aria-busy="true" aria-label={t("loading")}>
       <Skeleton className="h-36 rounded-xl" />
       <div className="@container/kpis">
         <div className={kpiGrid}>

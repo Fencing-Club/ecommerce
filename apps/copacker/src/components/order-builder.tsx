@@ -5,7 +5,6 @@ import {
   adjustmentTypes,
   amazonNetworks,
   commonPaymentTerms,
-  money,
   type OrderInput,
   orderInputSchema
 } from "@repo/aisle"
@@ -21,6 +20,7 @@ import {
   Warehouse,
   X
 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
@@ -46,48 +46,42 @@ import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { CatalogProduct } from "@/lib/api"
 import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
 import { quantityProblem, type QuantityRules } from "@/lib/catalog-pricing"
-import { orderLine } from "@/lib/order-lines"
+import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddProductsDialog, type StockAt } from "./add-products-dialog"
 import { DateInput, FormCheckbox, FormInput, FormLabel, FormSelect, FormTextarea } from "./form-controls"
 
-const destinations = [
-  { value: "amazon", label: "Amazon" },
-  { value: "warehouse", label: "Your location" }
-]
+// Where a purchase order can go, each labeled under orders.builder.destinations.
+const destinations = ["amazon", "warehouse"] as const
 // Which of Amazon's networks a line goes to, when the PO ships to Amazon.
 const networkOptions = amazonNetworks.map((value) => ({ value, label: amazonNetworkNames[value] }))
-const currencies = [
-  { value: "USD", label: "US Dollar (USD $)" },
-  { value: "CNY", label: "Chinese Yuan (CNY ¥)" },
-  { value: "EUR", label: "Euro (EUR €)" },
-  { value: "GBP", label: "British Pound (GBP £)" },
-  { value: "CAD", label: "Canadian Dollar (CAD $)" },
-  { value: "AUD", label: "Australian Dollar (AUD $)" }
-]
+// The currencies a PO can be in, each named under orders.currencies.
+const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
 
-// Why a line's price isn't the supplier's quote, in a few words. A supplier without a catalog has nothing to say.
+// Why a line's price isn't the supplier's quote, in a few words, as its key under orders.builder.matchNotes. A supplier
+// without a catalog has nothing to say.
 function matchNote(status: string) {
   switch (status) {
     case "matched":
     case "supplier_catalog_unavailable":
       return null
     case "not_in_supplier_catalog":
-      return "Not in the supplier’s catalog"
+      return "notInCatalog"
     case "supplier_sku_missing":
-      return "No supplier SKU"
+      return "noSupplierSku"
     case "currency_review":
-      return "Quote is in another currency"
+      return "otherCurrency"
     case "price_missing":
-      return "No supplier price"
+      return "noPrice"
     default:
-      return "Check the price"
+      return "checkPrice"
   }
 }
 
@@ -142,6 +136,9 @@ export function OrderBuilder({
   title: string
   parents: Array<{ label: string; href: string }>
 }) {
+  const t = useTranslations("orders")
+  const tb = useTranslations("orders.builder")
+  const money = useMoney()
   const needsBarcode = new Set(needsBarcodeVariantIds)
   const router = useRouter()
   // The header's Save sits outside the form, which the header row must precede, and submits it by this id.
@@ -215,7 +212,7 @@ export function OrderBuilder({
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error("Supplier catalog lookup failed")
+          throw new Error(tb("catalogLookupFailed"))
         }
         return response.json() as Promise<Match[]>
       })
@@ -245,7 +242,7 @@ export function OrderBuilder({
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setMatchError(error instanceof Error ? error.message : "Supplier catalog lookup failed")
+          setMatchError(error instanceof Error ? error.message : tb("catalogLookupFailed"))
         }
       })
     return () => controller.abort()
@@ -301,15 +298,20 @@ export function OrderBuilder({
   }
 
   const stockAt = stockAtDestination(destination, deliveries.find((row) => row.id === deliveryId)?.shopifyLocationId)
+  const stockLabel = {
+    amazon: tb("stockAt.amazon"),
+    warehouse: tb("stockAt.location"),
+    forwarder: tb("stockAt.destination")
+  }
 
   const paymentTerms = form.getValues("paymentTerms")
   // Shopify's terms, and a draft's own when it has other terms.
   const termOptions = [
-    { value: "", label: "None" },
+    { value: "", label: t("detail.none") },
     ...[
       ...(paymentTerms && !commonPaymentTerms.some((terms) => terms === paymentTerms) ? [paymentTerms] : []),
       ...commonPaymentTerms
-    ].map((terms) => ({ value: terms, label: terms }))
+    ].map((terms) => ({ value: terms, label: knownName(paymentTermKeys, terms, t) }))
   ]
   const units = items.reduce((n, i) => n + (i?.pieces || 0), 0)
   const subtotal = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
@@ -323,7 +325,7 @@ export function OrderBuilder({
           render={<Link href={draft ? `/orders/${draft.id}` : "/orders"} />}
           nativeButton={false}
         >
-          Discard
+          {tb("discard")}
         </Button>
         <SubmitButton
           type="submit"
@@ -331,7 +333,7 @@ export function OrderBuilder({
           pending={form.formState.isSubmitting}
           disabled={!lineItems.fields.length || (!!draft && !form.formState.isDirty)}
         >
-          Save
+          {tb("save")}
         </SubmitButton>
       </PageHeader>
       <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-4">
@@ -342,12 +344,12 @@ export function OrderBuilder({
             <div className="flex flex-wrap items-center gap-1.5 p-3">
               <RoutePicker
                 name="supplierId"
-                label="Supplier"
+                label={tb("supplier")}
                 icon={<Building2 />}
-                placeholder="Choose supplier"
+                placeholder={tb("chooseSupplier")}
                 options={suppliers.map((row) => ({ value: row.id, label: row.name }))}
               />
-              <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+              <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
               {(via || addingStop) && (
                 <>
                   <Stop
@@ -357,15 +359,20 @@ export function OrderBuilder({
                       setAddingStop(false)
                     }}
                   />
-                  <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+                  <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
                 </>
               )}
-              <RoutePicker name="destination" label="Destination" icon={<MapPin />} options={destinations} />
+              <RoutePicker
+                name="destination"
+                label={tb("destination")}
+                icon={<MapPin />}
+                options={destinations.map((value) => ({ value, label: tb(`destinations.${value}`) }))}
+              />
               {destination === "warehouse" && (
                 <RoutePicker
                   name="deliveryId"
-                  label="Delivery address"
-                  placeholder={deliveries.length ? "Choose address" : "Add an address in Settings"}
+                  label={tb("deliveryAddress")}
+                  placeholder={deliveries.length ? tb("chooseAddress") : tb("addAddressInSettings")}
                   options={deliveries.map((row) => ({ value: row.id, label: row.name }))}
                 />
               )}
@@ -374,12 +381,12 @@ export function OrderBuilder({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="ml-auto text-muted-foreground"
+                  className="ms-auto text-muted-foreground"
                   disabled={!forwarderAddresses.length}
                   onClick={() => setAddingStop(true)}
                 >
                   <Plus data-icon="inline-start" />
-                  Add stop
+                  {tb("addStop")}
                 </Button>
               )}
             </div>
@@ -388,10 +395,7 @@ export function OrderBuilder({
               forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
                 <p className="flex items-center gap-1.5 px-3 pb-3 text-xs text-warning">
                   <AlertTriangle className="size-3.5" />
-                  Amazon needs a phone number at this stop for pickup.
-                  <PageLink href="/partners?type=forwarder" className="underline underline-offset-2">
-                    Add one
-                  </PageLink>
+                  {tb.rich("stopNeedsPhone", { link: forwardersLink })}
                 </p>
               )}
 
@@ -399,13 +403,13 @@ export function OrderBuilder({
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">Products</th>
-                    <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
-                    <th className="w-24 px-2 py-2 text-left font-medium">Qty</th>
-                    <th className="w-32 px-2 py-2 text-left font-medium">Cost</th>
-                    <th className="w-24 px-2 py-2 text-right font-medium">Total</th>
+                    <th className="px-3 py-2 text-start font-medium">{t("detail.columns.products")}</th>
+                    <th className="w-36 px-2 py-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
+                    <th className="w-24 px-2 py-2 text-start font-medium">{t("detail.columns.quantity")}</th>
+                    <th className="w-32 px-2 py-2 text-start font-medium">{t("detail.columns.cost")}</th>
+                    <th className="w-24 px-2 py-2 text-end font-medium">{t("detail.columns.total")}</th>
                     <th className="w-18">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("detail.columns.actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -413,7 +417,7 @@ export function OrderBuilder({
                   {!lineItems.fields.length && (
                     <tr className="border-t">
                       <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
-                        No products
+                        {tb("noProducts")}
                       </td>
                     </tr>
                   )}
@@ -434,13 +438,14 @@ export function OrderBuilder({
                             </Badge>
                           )}
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {line.buyerSku}
-                            {line.piecesPerSet > 1 && `, ${line.piecesPerSet} per unit`}
+                            {line.piecesPerSet > 1
+                              ? tb("skuPerUnit", { sku: line.buyerSku, count: line.piecesPerSet })
+                              : line.buyerSku}
                           </p>
                           {needsBarcode.has(line.variantId) && (
                             <p className="mt-1 flex items-center gap-1 text-xs text-warning">
                               <AlertTriangle className="size-3.5" />
-                              Needs an uploaded label
+                              {tb("needsLabel")}
                             </p>
                           )}
                           <FormError message={lineError?.message ?? lineError?.root?.message} />
@@ -453,13 +458,16 @@ export function OrderBuilder({
                                 .join(", ")}
                             </p>
                           ) : (
-                            <CellInput name={`items.${index}.supplierSku`} label={`Supplier SKU for ${line.name}`} />
+                            <CellInput
+                              name={`items.${index}.supplierSku`}
+                              label={tb("supplierSkuFor", { name: line.name })}
+                            />
                           )}
                         </td>
                         <td className="px-2 py-2">
                           <CellNumber
                             name={`items.${index}.pieces`}
-                            label={`Quantity of ${line.name}`}
+                            label={tb("quantityOf", { name: line.name })}
                             min={line.piecesPerSet}
                             step={line.piecesPerSet}
                           />
@@ -470,7 +478,7 @@ export function OrderBuilder({
                                 (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
                               )}
                             >
-                              {available} available
+                              {tb("available", { count: available })}
                             </p>
                           )}
                           {ruleProblem && <p className="mt-1 text-xs text-warning">{ruleProblem}</p>}
@@ -478,19 +486,19 @@ export function OrderBuilder({
                         <td className="px-2 py-2">
                           <CellNumber
                             name={`items.${index}.unitPrice`}
-                            label={`Cost of ${line.name}`}
+                            label={tb("costOf", { name: line.name })}
                             prefix="$"
                             scale={100}
                             step={0.01}
                             min={0}
                             onValueChange={() => buyerEditedPrices.current.add(line.id)}
                           />
-                          {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
+                          {note && <p className="mt-1 text-xs text-muted-foreground">{tb(`matchNotes.${note}`)}</p>}
                         </td>
-                        <td className="px-2 py-3.5 text-right tabular-nums">
+                        <td className="px-2 py-3.5 text-end tabular-nums">
                           {money((item?.unitPrice || 0) * (item?.pieces || 0), currency)}
                         </td>
-                        <td className="py-2 pr-2">
+                        <td className="py-2 pe-2">
                           <div className="flex justify-end">
                             <LineMenu
                               index={index}
@@ -503,7 +511,7 @@ export function OrderBuilder({
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              aria-label={`Remove ${line.name}`}
+                              aria-label={tb("remove", { name: line.name })}
                               onClick={() => lineItems.remove(index)}
                             >
                               <X />
@@ -517,7 +525,11 @@ export function OrderBuilder({
               </table>
             </div>
             <div className="border-t p-3">
-              <AddProductsDialog added={new Set(items.map((item) => item?.variantId))} stockAt={stockAt} onAdd={add} />
+              <AddProductsDialog
+                added={new Set(items.map((item) => item?.variantId))}
+                stockAt={{ ...stockAt, label: stockLabel[stockAt.label] }}
+                onAdd={add}
+              />
               <FormError message={itemsError?.message ?? itemsError?.root?.message} />
               {matchError && <FormError message={matchError} />}
             </div>
@@ -526,7 +538,7 @@ export function OrderBuilder({
           <div className="flex flex-col gap-4">
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Cost summary</CardTitle>
+                <CardTitle>{t("detail.costSummary")}</CardTitle>
                 <CardAction>
                   <CostSummaryDialog
                     currency={currency}
@@ -536,23 +548,20 @@ export function OrderBuilder({
                 </CardAction>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                <p className="font-medium">Order details</p>
+                <p className="font-medium">{t("detail.orderDetails")}</p>
                 <div className="flex justify-between gap-3">
-                  <span>
-                    {lineItems.fields.length} {lineItems.fields.length === 1 ? "variant" : "variants"} ({units}{" "}
-                    {units === 1 ? "unit" : "units"})
-                  </span>
+                  <span>{t("detail.variantsAndItems", { variants: lineItems.fields.length, items: units })}</span>
                   <span className="tabular-nums">{money(subtotal, currency)}</span>
                 </div>
                 {adjustments.map((adjustment, index) => (
                   <div key={index} className="flex justify-between gap-3">
-                    <span>{adjustment.description}</span>
+                    <span>{knownName(adjustmentKeys, adjustment.description, t)}</span>
                     <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between font-semibold">
-                  <span>Total</span>
+                  <span>{t("detail.columns.total")}</span>
                   <span className="tabular-nums">{money(amount, currency)}</span>
                 </div>
               </CardContent>
@@ -560,17 +569,22 @@ export function OrderBuilder({
 
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Purchase order details</CardTitle>
+                <CardTitle>{t("detail.purchaseOrderDetails")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldGroup className="gap-4">
-                  <FormInput name="reference" required label="Reference number" placeholder="PO-038" />
+                  <FormInput name="reference" required label={tb("reference")} placeholder="PO-038" />
                   <RequiredBy />
-                  <FormTextarea name="notes" label="Note to supplier" />
+                  <FormTextarea name="notes" label={t("detail.noteToSupplier")} />
                   <Separator />
-                  <p className="font-medium">Purchasing information</p>
-                  <FormSelect name="paymentTerms" label="Payment terms" options={termOptions} />
-                  <FormSelect name="currency" required label="Supplier currency" options={currencies} />
+                  <p className="font-medium">{tb("purchasingInformation")}</p>
+                  <FormSelect name="paymentTerms" label={t("detail.paymentTerms")} options={termOptions} />
+                  <FormSelect
+                    name="currency"
+                    required
+                    label={tb("supplierCurrency")}
+                    options={currencies.map((value) => ({ value, label: t(`currencies.${value}`) }))}
+                  />
                 </FieldGroup>
               </CardContent>
             </Card>
@@ -581,19 +595,31 @@ export function OrderBuilder({
   )
 }
 
-// Where the PO's stock is counted for the product picker: FBA and AWD together, or the address's Shopify location.
-function stockAtDestination(destination: OrderInput["destination"], shopifyLocationId?: string | null): StockAt {
+// Where the PO's stock is counted for the product picker: FBA and AWD together, or the address's Shopify location. Its
+// label is the destination, which the builder names.
+function stockAtDestination(
+  destination: OrderInput["destination"],
+  shopifyLocationId?: string | null
+): Omit<StockAt, "label"> & { label: "amazon" | "warehouse" | "forwarder" } {
   switch (destination) {
     case "amazon":
-      return { locationIds: ["amazon:fba", "amazon:awd"], label: "At Amazon" }
+      return { locationIds: ["amazon:fba", "amazon:awd"], label: "amazon" }
     case "warehouse":
-      return { locationIds: shopifyLocationId ? [shopifyLocationId] : null, label: "At location" }
+      return { locationIds: shopifyLocationId ? [shopifyLocationId] : null, label: "warehouse" }
     default:
-      return { locationIds: null, label: "At destination" }
+      return { locationIds: null, label: "forwarder" }
   }
 }
 
 type Option = { value: string; label: string; disabled?: boolean }
+
+// Markup in translated sentences: the link to add a forwarder's phone number, and words only screen readers say.
+const forwardersLink = (chunks: React.ReactNode) => (
+  <PageLink href="/partners?type=forwarder" className="underline underline-offset-2">
+    {chunks}
+  </PageLink>
+)
+const screenReaderOnly = (chunks: React.ReactNode) => <span className="sr-only">{chunks}</span>
 
 // A pill in the route from the supplier to the destination, which opens a menu of choices.
 function PillSelect({
@@ -669,14 +695,15 @@ function Stop({
   forwarderAddresses: Array<{ addressId: string; forwarderId: string; label: string }>
   onRemove: () => void
 }) {
+  const t = useTranslations("orders.builder")
   const { setValue, control } = useFormContext<OrderInput>()
   const via = useWatch({ control, name: "via" })
   return (
     <span className="flex min-w-0 items-center">
       <PillSelect
-        label="Stop on the way"
+        label={t("stop")}
         icon={<Warehouse />}
-        placeholder="Choose forwarder"
+        placeholder={t("chooseForwarder")}
         options={forwarderAddresses.map((row) => ({ value: row.addressId, label: row.label }))}
         value={via?.addressId ?? null}
         onChange={(addressId) => {
@@ -686,7 +713,7 @@ function Stop({
           })
         }}
       />
-      <Button type="button" variant="ghost" size="icon-xs" aria-label="Remove the stop" onClick={onRemove}>
+      <Button type="button" variant="ghost" size="icon-xs" aria-label={t("removeStop")} onClick={onRemove}>
         <X />
       </Button>
     </span>
@@ -783,6 +810,8 @@ function LineMenu({
   itemId: string
   toAmazon: boolean
 }) {
+  const t = useTranslations("orders")
+  const tShipments = useTranslations("shipments")
   const [packing, setPacking] = useState(false)
   const { getValues, setValue } = useFormContext()
   const warning = useWatch({ name: `items.${index}.suffocationWarning` }) as boolean | undefined
@@ -797,37 +826,45 @@ function LineMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${name}`} />}
+          render={<Button type="button" variant="ghost" size="icon-sm" aria-label={t("actions.moreFor", { name })} />}
         >
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           {orderId && (
             <DropdownMenuItem
-              render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label="Download label" />}
+              render={
+                <a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label={t("actions.downloadLabel")} />
+              }
             >
               <Download />
-              Download label
+              {t("actions.downloadLabel")}
             </DropdownMenuItem>
           )}
           {orderId && warning && (
             <DropdownMenuItem
-              render={<a href={`/api/orders/${orderId}/labels/warning`} download aria-label="Download hazard label" />}
+              render={
+                <a
+                  href={`/api/orders/${orderId}/labels/warning`}
+                  download
+                  aria-label={t("actions.downloadHazardLabel")}
+                />
+              }
             >
               <Download />
-              Download hazard label
+              {t("actions.downloadHazardLabel")}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={editPacking}>
             <Package />
-            Edit packing details
+            {t("builder.editPacking")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={packing} onOpenChange={setPacking}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Packing details</DialogTitle>
+            <DialogTitle>{t("builder.packingDetails")}</DialogTitle>
             <DialogDescription>{name}</DialogDescription>
           </DialogHeader>
           <FieldGroup className="gap-4">
@@ -835,21 +872,26 @@ function LineMenu({
               <FormSelect
                 name={`items.${index}.amazonNetwork`}
                 required
-                label="Amazon warehouse"
+                label={t("builder.amazonWarehouse")}
                 options={networkOptions}
               />
             )}
-            <FormSelect name={`items.${index}.prepCategory`} required label="Preparation" options={prepOptions} />
+            <FormSelect
+              name={`items.${index}.prepCategory`}
+              required
+              label={t("builder.preparation")}
+              options={prepOptions(tShipments)}
+            />
             <SkuLabel index={index} toAmazon={toAmazon} />
-            <FormCheckbox name={`items.${index}.suffocationWarning`} label="Suffocation warning label" />
+            <FormCheckbox name={`items.${index}.suffocationWarning`} label={t("builder.suffocationWarning")} />
             <FormTextarea
               name={`items.${index}.instructions`}
-              label="Instructions"
-              placeholder="Handling or labeling exceptions"
+              label={t("detail.instructions")}
+              placeholder={t("builder.instructionsPlaceholder")}
             />
           </FieldGroup>
           <DialogFooter>
-            <DialogClose render={<Button type="button" />}>Done</DialogClose>
+            <DialogClose render={<Button type="button" />}>{t("builder.done")}</DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -871,12 +913,13 @@ function CostSummaryDialog({
   adjustments: Adjustment[]
   onSave: (rows: Adjustment[]) => void
 }) {
+  const t = useTranslations("orders")
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<AdjustmentRow[]>([])
   const types = [
     ...adjustmentTypes,
     ...adjustments.map((row) => row.description).filter((type) => !adjustmentTypes.some((known) => known === type))
-  ].map((type) => ({ value: type, label: type }))
+  ].map((type) => ({ value: type, label: knownName(adjustmentKeys, type, t) }))
   const complete = rows.every((row) => row.type && row.amount !== "" && Number.isFinite(Number(row.amount)))
   function start() {
     setRows(
@@ -902,18 +945,18 @@ function CostSummaryDialog({
   return (
     <>
       <Button type="button" variant="ghost" size="sm" onClick={start}>
-        Edit<span className="sr-only"> cost summary</span>
+        {t.rich("builder.editCostSummary", { hidden: screenReaderOnly })}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit cost summary</DialogTitle>
+            <DialogTitle>{t("builder.editCostSummaryTitle")}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             {rows.length > 0 && (
               <div className="grid grid-cols-[minmax(0,1fr)_8rem_1.75rem] gap-2 text-muted-foreground">
-                <span>Adjustment</span>
-                <span>Amount</span>
+                <span>{t("builder.adjustment")}</span>
+                <span>{t("builder.amount")}</span>
               </div>
             )}
             {rows.map((row) => (
@@ -923,8 +966,12 @@ function CostSummaryDialog({
                   value={row.type || null}
                   onValueChange={(type) => update(row.key, { type: type ?? "" })}
                 >
-                  <SelectTrigger aria-label="Adjustment" className="w-full">
-                    <SelectValue>{(type: string | null) => type ?? "Select"}</SelectValue>
+                  <SelectTrigger aria-label={t("builder.adjustment")} className="w-full">
+                    <SelectValue>
+                      {(type: string | null) =>
+                        type === null ? t("builder.select") : knownName(adjustmentKeys, type, t)
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {types.map((type) => (
@@ -943,7 +990,7 @@ function CostSummaryDialog({
                     inputMode="decimal"
                     min={0}
                     step={0.01}
-                    aria-label="Amount"
+                    aria-label={t("builder.amount")}
                     value={row.amount}
                     onChange={(event) => update(row.key, { amount: event.target.value })}
                     className="tabular-nums"
@@ -953,7 +1000,7 @@ function CostSummaryDialog({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Remove adjustment"
+                  aria-label={t("builder.removeAdjustment")}
                   onClick={() => setRows((current) => current.filter((candidate) => candidate.key !== row.key))}
                 >
                   <X />
@@ -969,13 +1016,13 @@ function CostSummaryDialog({
               onClick={() => setRows((current) => [...current, { key: crypto.randomUUID(), type: "", amount: "" }])}
             >
               <Plus data-icon="inline-start" />
-              Add adjustment
+              {t("builder.addAdjustment")}
             </Button>
           </div>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>{t("actions.cancel")}</DialogClose>
             <Button type="button" disabled={!complete} onClick={save}>
-              Save
+              {t("builder.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -986,6 +1033,7 @@ function CostSummaryDialog({
 
 // Whether each unit gets its SKU label. Amazon needs every unit labeled, so POs to Amazon keep it on.
 function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
+  const t = useTranslations("orders.builder")
   const { field } = useController({ name: `items.${index}.skuLabel` })
   const id = `sku-label-${index}`
   return (
@@ -997,8 +1045,8 @@ function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
         onCheckedChange={(checked) => field.onChange(checked)}
       />
       <FieldContent>
-        <FieldLabel htmlFor={id}>SKU label</FieldLabel>
-        {toAmazon && <FieldDescription>Amazon requires it</FieldDescription>}
+        <FieldLabel htmlFor={id}>{t("skuLabel")}</FieldLabel>
+        {toAmazon && <FieldDescription>{t("amazonRequiresIt")}</FieldDescription>}
       </FieldContent>
     </Field>
   )
@@ -1007,6 +1055,7 @@ function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
 // When the goods are needed, which the purchase order's page and PDF show. A cleared date input reads "", which the
 // order keeps as no date.
 function RequiredBy() {
+  const t = useTranslations("orders.detail")
   const id = useId()
   const {
     field: { ref, value, onChange, onBlur, name },
@@ -1014,7 +1063,7 @@ function RequiredBy() {
   } = useController<OrderInput, "dueDate">({ name: "dueDate" })
   return (
     <Field data-invalid={fieldState.invalid}>
-      <FormLabel htmlFor={id} label="Required by" />
+      <FormLabel htmlFor={id} label={t("requiredBy")} />
       <DateInput
         id={id}
         ref={ref}

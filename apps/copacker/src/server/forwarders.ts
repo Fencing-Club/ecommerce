@@ -4,8 +4,10 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { contacts, forwarders, jobs, memberships, organizations } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { hash, token } from "./security"
+import { requestLocale } from "./text"
 
 const week = 7 * 86400000
 
@@ -107,7 +109,7 @@ async function queueInvite(forwarderId: string, email: string, buyerName: string
     await tx.insert(jobs).values({
       key: `forwarder-invite:${forwarderId}:${randomUUID()}`,
       kind: "email",
-      payload: { type: "forwarder", to: email, name: buyerName, invitation }
+      payload: { type: "forwarder", to: email, name: buyerName, invitation, locale: await requestLocale() }
     })
   })
 }
@@ -120,7 +122,7 @@ export async function createForwarder(buyer: { id: string; name: string }, raw: 
     .from(forwarders)
     .where(and(eq(forwarders.buyerOrgId, buyer.id), eq(forwarders.name, input.name)))
   if (existing && !existing.removedAt) {
-    throw new Error(`${input.name} is already one of your forwarders`)
+    throw new LocalizedError("forwarderAlreadyAdded", { name: input.name })
   }
   const [row] = existing
     ? await db()
@@ -142,7 +144,7 @@ export async function renameForwarder(buyerOrgId: string, id: string, raw: unkno
     .from(forwarders)
     .where(and(eq(forwarders.buyerOrgId, buyerOrgId), eq(forwarders.name, name)))
   if (taken && taken.id !== id) {
-    throw new Error("Another forwarder already has this name")
+    throw new LocalizedError("forwarderNameTaken")
   }
   const updated = await db()
     .update(forwarders)
@@ -150,7 +152,7 @@ export async function renameForwarder(buyerOrgId: string, id: string, raw: unkno
     .where(and(eq(forwarders.id, id), eq(forwarders.buyerOrgId, buyerOrgId), isNull(forwarders.removedAt)))
     .returning({ id: forwarders.id })
   if (!updated.length) {
-    throw new Error("This forwarder was removed")
+    throw new LocalizedError("forwarderRemoved")
   }
 }
 
@@ -161,7 +163,7 @@ export async function removeForwarder(buyerOrgId: string, id: string) {
     .where(and(eq(forwarders.id, id), eq(forwarders.buyerOrgId, buyerOrgId), isNull(forwarders.removedAt)))
     .returning({ id: forwarders.id })
   if (!updated.length) {
-    throw new Error("This forwarder was already removed")
+    throw new LocalizedError("forwarderAlreadyRemoved")
   }
 }
 
@@ -184,11 +186,11 @@ export async function inviteForwarder(buyer: { id: string; name: string }, id: s
       )
     )
   if (!row) {
-    throw new Error("This forwarder has already joined or was removed")
+    throw new LocalizedError("forwarderJoinedOrRemoved")
   }
   const to = email ?? row.email
   if (!to) {
-    throw new Error("Enter the forwarder's email to invite them")
+    throw new LocalizedError("enterForwarderEmail")
   }
   await queueInvite(row.id, to, buyer.name)
 }
@@ -210,10 +212,10 @@ export async function saveForwarderAddress(buyerOrgId: string, raw: unknown) {
       and(eq(forwarders.id, input.forwarderId), eq(forwarders.buyerOrgId, buyerOrgId), isNull(forwarders.removedAt))
     )
   if (!forwarder) {
-    throw new Error("This forwarder was removed")
+    throw new LocalizedError("forwarderRemoved")
   }
   if (forwarder.forwarderOrgId) {
-    throw new Error(`${forwarder.name} keeps its own addresses now that it has joined`)
+    throw new LocalizedError("forwarderKeepsAddresses", { name: forwarder.name })
   }
   const values = { name: input.name, address: input.address }
   if (input.id) {
@@ -223,7 +225,7 @@ export async function saveForwarderAddress(buyerOrgId: string, raw: unknown) {
       .where(and(eq(contacts.id, input.id), eq(contacts.orgId, buyerOrgId), eq(contacts.forwarderId, forwarder.id)))
       .returning({ id: contacts.id })
     if (!updated.length) {
-      throw new Error("This address was removed")
+      throw new LocalizedError("addressRemoved")
     }
     return
   }
@@ -241,7 +243,7 @@ export async function acceptForwarderInvitation(
   transaction?: Transaction
 ) {
   if (!user.emailVerified) {
-    throw new Error("Verify your email before accepting an invitation")
+    throw new LocalizedError("verifyEmailFirst")
   }
   const accept = async (tx: Transaction) => {
     const [workspace] = await tx
@@ -250,7 +252,7 @@ export async function acceptForwarderInvitation(
       .innerJoin(organizations, eq(organizations.id, memberships.orgId))
       .where(and(eq(memberships.userId, user.id), eq(memberships.orgId, orgId)))
     if (!workspace || !isAdmin(workspace.memberships) || workspace.organizations.kind !== "forwarder") {
-      throw new Error("Choose a forwarder workspace where you’re an admin")
+      throw new LocalizedError("chooseForwarderWorkspace")
     }
     const [row] = await tx
       .select()
@@ -258,7 +260,7 @@ export async function acceptForwarderInvitation(
       .where(eq(forwarders.invitationHash, hash(invitation)))
       .for("update")
     if (!row?.expiresAt || row.removedAt || row.expiresAt < new Date() || row.email !== user.email.toLowerCase()) {
-      throw new Error("Invitation expired or belongs to a different email address")
+      throw new LocalizedError("invitationInvalid")
     }
     await tx
       .update(forwarders)

@@ -7,9 +7,9 @@ export const selfAuthorizationSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z0-9]{8,32}$/, "Enter the seller's merchant token, such as A2CIYIV0E1FHU3"),
+    .regex(/^[A-Z0-9]{8,32}$/, "shipments.amazonAuthorization.sellerId"),
   refreshToken: z
     .string()
     .trim()
-    .regex(/^Atzr\|\S{20,}$/, "Paste the full refresh token, which starts with Atzr|")
+    .regex(/^Atzr\|\S{20,}$/, "shipments.amazonAuthorization.refreshToken")
 })

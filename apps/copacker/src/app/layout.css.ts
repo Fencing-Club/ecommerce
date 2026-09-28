@@ -2,7 +2,7 @@ import { style } from "@vanilla-extract/css"
 import { space } from "@/styles/tokens"
 import { vars } from "@/styles/theme.css"
 
-// Visually hidden until focused (was `sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 ...`).
+// Visually hidden until focused (was `sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 ...`).
 export const skipLink = style({
   position: "absolute",
   width: 1,
@@ -17,7 +17,7 @@ export const skipLink = style({
     "&:focus": {
       position: "fixed",
       top: space(2),
-      left: space(2),
+      insetInlineStart: space(2),
       zIndex: 50,
       width: "auto",
       height: "auto",

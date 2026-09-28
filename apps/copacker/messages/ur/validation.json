@@ -1,0 +1,17 @@
+{
+  "required": "یہ فیلڈ لازمی ہے",
+  "number": "نمبر درج کریں",
+  "minLength": "کم از کم {minimum} حروف درج کریں",
+  "addOne": "کم از کم ایک شامل کریں",
+  "minItems": "کم از کم {minimum} شامل کریں",
+  "atLeast": "{minimum} یا اس سے زیادہ درج کریں",
+  "greaterThan": "{minimum} سے بڑا نمبر درج کریں",
+  "maxLength": "{maximum} یا اس سے کم حروف استعمال کریں",
+  "maxItems": "{maximum} یا اس سے کم استعمال کریں",
+  "atMost": "{maximum} یا اس سے کم درج کریں",
+  "email": "ای میل ایڈریس درج کریں",
+  "date": "تاریخ درج کریں",
+  "chooseOption": "کوئی آپشن منتخب کریں",
+  "format": "فارمیٹ چیک کریں",
+  "multipleOf": "ایسا نمبر درج کریں جو {divisor} سے پورا تقسیم ہو"
+}

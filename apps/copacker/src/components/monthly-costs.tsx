@@ -1,6 +1,7 @@
 "use client"
 
 import { Ellipsis, Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { z } from "zod"
@@ -9,22 +10,27 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useActionMutation } from "@/lib/api"
 import { ActionForm } from "./actions"
 import { FormInput, FormMoney, FormSelect } from "./form-controls"
 
 const day = z.union([z.iso.date(), z.literal("")])
 const schema = z
   .object({
-    name: z.string().trim().min(1, "Enter a name").max(100),
-    amount: z.number({ error: "Enter the amount" }).int().min(1, "Enter the amount").max(100000000),
+    name: z.string().trim().min(1, "settings.monthlyCosts.enterName").max(100),
+    amount: z
+      .number({ error: "settings.monthlyCosts.enterAmount" })
+      .int()
+      .min(1, "settings.monthlyCosts.enterAmount")
+      .max(100000000),
     channel: z.enum(["", "amazon", "shopify"]),
     startsOn: day,
     endsOn: day
   })
   .refine((values) => !values.startsOn || !values.endsOn || values.startsOn <= values.endsOn, {
-    message: "The end date can't be before the start date",
+    message: "settings.monthlyCosts.endBeforeStart",
     path: ["endsOn"]
   })
 
@@ -44,14 +50,11 @@ export function MonthlyCosts({
   // Only owners and admins add and remove costs.
   admin: boolean
 }) {
-  let count = "No monthly costs"
-  if (costs.length) {
-    count = `${costs.length} ${costs.length === 1 ? "cost" : "costs"}`
-  }
+  const t = useTranslations("settings.monthlyCosts")
   return (
     <Card className="gap-0 py-0">
       <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3">
-        <p className="text-sm text-muted-foreground">{count}</p>
+        <p className="text-sm text-muted-foreground">{t("count", { count: costs.length })}</p>
         {admin && <AddMonthlyCost currency={currency} />}
       </div>
       {costs.length > 0 && (
@@ -66,6 +69,8 @@ export function MonthlyCosts({
 }
 
 function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean }) {
+  const t = useTranslations("settings.monthlyCosts")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [pending, setPending] = useState(false)
@@ -78,7 +83,7 @@ function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean
       await run({ action: "monthlyCost.delete", data: { id: cost.id } }).unwrap()
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, "Couldn't remove this cost"))
+      setError(errorMessage(e, t("removeFailed")))
       setPending(false)
     }
   }
@@ -94,22 +99,22 @@ function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean
           </p>
         )}
       </div>
-      <p className="shrink-0 text-right tabular-nums">{cost.amount}</p>
+      <p className="shrink-0 text-end tabular-nums">{cost.amount}</p>
       {admin &&
         (pending ? (
-          <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${cost.name}`}>
+          <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={t("removing", { name: cost.name })}>
             <Spinner />
           </Button>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${cost.name}`} />}
+              render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: cost.name })} />}
             >
               <Ellipsis />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
               <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
-                Remove
+                {t("remove")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -120,16 +125,17 @@ function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean
 
 // The button that opens the monthly cost form in a dialog.
 function AddMonthlyCost({ currency }: { currency: string }) {
+  const t = useTranslations("settings.monthlyCosts")
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <Plus data-icon="inline-start" />
-        Add cost
+        {t("add")}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add monthly cost</DialogTitle>
+          <DialogTitle>{t("addTitle")}</DialogTitle>
         </DialogHeader>
         <MonthlyCostForm currency={currency} onSuccess={() => setOpen(false)} />
       </DialogContent>
@@ -140,6 +146,7 @@ function AddMonthlyCost({ currency }: { currency: string }) {
 // Adds a cost paid every month, in the currency the Overview reports in. Left empty, the dates cover all the sales
 // history and every month since.
 function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess: () => void }) {
+  const t = useTranslations("settings.monthlyCosts")
   const { form, submit } = useActionForm({
     schema,
     action: "monthlyCost.create",
@@ -161,23 +168,23 @@ function MonthlyCostForm({ currency, onSuccess }: { currency: string; onSuccess:
     onSuccess
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Add cost" dialog>
+    <ActionForm form={form} onSubmit={submit} label={t("add")} dialog>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormInput name="name" required label="Name" placeholder="Marketplace Connect" />
-        <FormMoney name="amount" required label="Amount a month" currency={currency} />
+        <FormInput name="name" required label={t("name")} placeholder="Marketplace Connect" />
+        <FormMoney name="amount" required label={t("amount")} currency={currency} />
       </div>
       <FormSelect
         name="channel"
-        label="Channel"
+        label={t("channel")}
         options={[
-          { value: "", label: "All channels" },
+          { value: "", label: t("allChannels") },
           { value: "amazon", label: "Amazon" },
           { value: "shopify", label: "Shopify" }
         ]}
       />
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormInput name="startsOn" label="Paid since" type="date" />
-        <FormInput name="endsOn" label="Paid until" type="date" />
+        <FormInput name="startsOn" label={t("paidSince")} type="date" />
+        <FormInput name="endsOn" label={t("paidUntil")} type="date" />
       </div>
     </ActionForm>
   )

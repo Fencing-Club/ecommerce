@@ -1,0 +1,156 @@
+{
+  "appDescription": "خریداروں اور سپلائرز کے لیے Amazon شپمنٹس تیار کرنے کا مشترکہ ورک اسپیس۔",
+  "skipToContent": "مواد پر جائیں",
+  "breadcrumb": "بریڈکرمب",
+  "about": "{label} کے بارے میں",
+  "errors": {
+    "generic": "کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔",
+    "offline": "Copacker تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔"
+  },
+  "actions": {
+    "cancel": "منسوخ کریں"
+  },
+  "status": {
+    "draft": "ڈرافٹ",
+    "active": "فعال",
+    "archived": "آرکائیو شدہ",
+    "submitted": "سپلائر کے پاس",
+    "closed": "بند",
+    "packing": "پیکنگ جاری",
+    "approval": "منظوری درکار",
+    "creatingShipment": "شپمنٹ بن رہی ہے",
+    "waitingLabels": "شپنگ لیبلز درکار",
+    "ready": "پک اپ کے لیے تیار",
+    "shipped": "بھیج دیا گیا",
+    "forwarded": "فریٹ فارورڈر نے بھیج دیا",
+    "received": "موصول",
+    "correction": "درستگی کی درخواست",
+    "needsAttention": "توجہ درکار",
+    "cancelled": "منسوخ",
+    "working": "جاری",
+    "created": "بن گئی",
+    "readyToShip": "بھیجنے کے لیے تیار",
+    "inTransit": "راستے میں",
+    "delivered": "ڈیلیور ہو گیا",
+    "checkedIn": "چیک اِن ہو گیا",
+    "receiving": "وصولی جاری",
+    "error": "خرابی",
+    "pending": "زیر التوا",
+    "unshipped": "نہیں بھیجا گیا",
+    "unfulfilled": "مکمل نہیں ہوا",
+    "partiallyShipped": "جزوی طور پر بھیجا گیا",
+    "partiallyFulfilled": "جزوی طور پر مکمل",
+    "fulfilled": "مکمل",
+    "unfulfillable": "ناقابلِ تکمیل",
+    "inStock": "اسٹاک میں",
+    "reorderSoon": "جلد دوبارہ آرڈر کریں",
+    "reorderNow": "ابھی دوبارہ آرڈر کریں",
+    "outOfStock": "اسٹاک ختم",
+    "onCopacker": "Copacker پر",
+    "invited": "مدعو",
+    "invitationExpired": "دعوت نامے کی میعاد ختم",
+    "notInvited": "مدعو نہیں"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "آپ کا مقام"
+  },
+  "documents": {
+    "download": "ڈاؤن لوڈ کریں",
+    "purchaseOrder": "خریداری آرڈر",
+    "invoice": "کمرشل انوائس",
+    "packingList": "پیکنگ لسٹ",
+    "checklist": "پیکنگ چیک لسٹ",
+    "cartonLabel": "کارٹن لیبل",
+    "shippingLabel": "شپنگ لیبل",
+    "productLabel": "پروڈکٹ لیبل"
+  },
+  "format": {
+    "plusAmounts": "مزید {amounts}",
+    "separator": "، "
+  },
+  "address": {
+    "country": "ملک",
+    "chooseCountry": "ملک منتخب کریں",
+    "contactName": "رابطے کا نام",
+    "phoneNumber": "فون نمبر",
+    "email": "ای میل",
+    "streetAddress": "گلی کا پتہ",
+    "addressLine2": "پتہ لائن 2",
+    "city": "شہر",
+    "stateOrProvince": "ریاست یا صوبہ",
+    "postalCode": "پوسٹل کوڈ"
+  },
+  "sync": {
+    "actions": "{label} کی کارروائیاں",
+    "syncing": "سنک ہو رہا ہے…",
+    "syncNow": "ابھی سنک کریں",
+    "reconnect": "دوبارہ منسلک کریں",
+    "synced": "<time></time> سنک ہوا"
+  },
+  "disconnect": {
+    "disconnect": "منقطع کریں",
+    "title": "{name} منقطع کریں؟",
+    "shopifyEffect": "Copacker، {account} کے ساتھ پروڈکٹس، اسٹاک، سیلز اور لاگت کی سنکنگ بند کر دے گا۔ خریداری آرڈرز جوں کے توں رہیں گے۔",
+    "amazonEffect": "Copacker، {account} سے سیلز اور اسٹاک پڑھنا بند کر دے گا اور AWD شپمنٹس نہیں بنا سکے گا۔ خریداری آرڈرز جوں کے توں رہیں گے۔",
+    "failed": "{name} منقطع نہیں ہو سکا",
+    "cancel": "منسوخ کریں"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {PDF منتخب کریں} csv {CSV منتخب کریں} other {معاون فائل منتخب کریں}}",
+    "tooLarge": "{type, select, pdf {{size} تک کی PDF منتخب کریں} csv {{size} تک کی CSV منتخب کریں} other {{size} تک کی فائل منتخب کریں}}",
+    "oneFile": "{type, select, pdf {ایک PDF منتخب کریں} csv {ایک CSV منتخب کریں} other {ایک فائل منتخب کریں}}",
+    "prompt": "{type, select, pdf {PDF یہاں ڈالیں یا <browse>براؤز کریں</browse>} csv {CSV یہاں ڈالیں یا <browse>براؤز کریں</browse>} other {فائل یہاں ڈالیں یا <browse>براؤز کریں</browse>}}",
+    "upTo": "{size} تک",
+    "remove": "{name} ہٹائیں",
+    "replaceFile": "{name} تبدیل کریں",
+    "replace": "تبدیل کریں"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "سرکاری کمرشل انوائس",
+      "productLabels": "پروڈکٹ لیبلز",
+      "shippingLabels": "کیریئر شپنگ لیبلز"
+    },
+    "chooseVariationError": "پروڈکٹ ویریئنٹ منتخب کریں",
+    "enterLabelPage": "کم از کم ایک کارٹن کے لیے لیبل کا صفحہ درج کریں",
+    "failed": "اپ لوڈ ناکام ہو گیا۔ دوبارہ کوشش کریں۔",
+    "choosePdf": "PDF منتخب کریں",
+    "variation": "پروڈکٹ ویریئنٹ",
+    "chooseVariation": "ویریئنٹ منتخب کریں",
+    "productLabelHint": "ہر ویریئنٹ کے لیے ایک لیبل شیٹ، 32 MB تک",
+    "uploading": "اپ لوڈ ہو رہا ہے",
+    "uploaded": "اپ لوڈ ہو گیا",
+    "upload": "اپ لوڈ کریں",
+    "labelPages": "ہر کارٹن کے لیے لیبل کا صفحہ",
+    "labelPagesDescription": "اگر کسی کارٹن کا لیبل دوسری فائل میں ہے تو اسے خالی چھوڑ دیں",
+    "carton": "کارٹن {carton}",
+    "page": "صفحہ"
+  },
+  "ui": {
+    "close": "بند کریں",
+    "toggleSidebar": "سائیڈبار ٹوگل کریں",
+    "sidebar": "سائیڈبار",
+    "sidebarDescription": "موبائل سائیڈبار دکھاتا ہے۔"
+  },
+  "pages": {
+    "error": {
+      "title": "کچھ غلط ہو گیا",
+      "didntLoad": "یہ صفحہ لوڈ نہیں ہوا",
+      "dataUnchanged": "آپ کا ڈیٹا تبدیل نہیں ہوا",
+      "tryAgain": "دوبارہ کوشش کریں",
+      "goToOverview": "جائزہ پر جائیں"
+    },
+    "notFound": {
+      "title": "صفحہ نہیں ملا",
+      "checkAddress": "پتہ چیک کریں اور دوبارہ کوشش کریں",
+      "goToCopacker": "Copacker پر جائیں",
+      "removed": "ہو سکتا ہے اسے ہٹا دیا گیا ہو، یا یہ کسی اور ورک اسپیس میں ہو",
+      "goToOverview": "جائزہ پر جائیں"
+    },
+    "forbidden": {
+      "title": "رسائی نہیں",
+      "askAdmin": "رسائی کے لیے کسی ایڈمن سے کہیں"
+    }
+  }
+}

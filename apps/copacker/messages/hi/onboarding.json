@@ -1,0 +1,123 @@
+{
+  "title": "शुरू करें",
+  "newWorkspaceTitle": "नया वर्कस्पेस",
+  "person": {
+    "enterFirstName": "अपना पहला नाम डालें",
+    "enterLastName": "अपना उपनाम डालें",
+    "choosePosition": "अपना पद चुनें"
+  },
+  "company": {
+    "enterName": "अपनी कंपनी का नाम डालें",
+    "enterWebsite": "वेबसाइट डालें, जैसे example.com"
+  },
+  "place": {
+    "enterName": "इस पते को नाम दें"
+  },
+  "positions": {
+    "owner": "मालिक",
+    "generalManager": "जनरल मैनेजर",
+    "operationsManager": "ऑपरेशंस मैनेजर",
+    "purchasingManager": "परचेज़िंग मैनेजर",
+    "buyer": "खरीदार",
+    "salesManager": "सेल्स मैनेजर",
+    "accountManager": "अकाउंट मैनेजर",
+    "productionManager": "प्रोडक्शन मैनेजर",
+    "qualityControl": "क्वालिटी कंट्रोल",
+    "logisticsCoordinator": "लॉजिस्टिक्स कोऑर्डिनेटर",
+    "warehouseManager": "वेयरहाउस मैनेजर",
+    "customerService": "कस्टमर सर्विस",
+    "finance": "फ़ाइनेंस",
+    "other": "अन्य"
+  },
+  "steps": {
+    "about": "आपके बारे में",
+    "role": "आपकी कंपनी क्या करती है?",
+    "company": "आपकी कंपनी",
+    "address": {
+      "none": "पता",
+      "buyer": {
+        "title": "डिलीवरी पता",
+        "description": "जहां खरीद ऑर्डर डिलीवर होते हैं"
+      },
+      "supplier": {
+        "title": "पिकअप पता",
+        "description": "जहां कैरियर आपके कार्टन उठाते हैं"
+      },
+      "forwarder": {
+        "title": "वेयरहाउस पता",
+        "description": "जहां खरीदार आपके लिए सामान भेजते हैं"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "वेयरहाउस",
+    "supplier": "फ़ैक्टरी",
+    "forwarder": "वेयरहाउस"
+  },
+  "fields": {
+    "firstName": "पहला नाम",
+    "lastName": "उपनाम",
+    "position": "पद",
+    "choose": "चुनें",
+    "companyName": "कंपनी का नाम",
+    "website": "वेबसाइट",
+    "websitePlaceholder": "example.com",
+    "phone": "फ़ोन नंबर",
+    "addressName": "पते का नाम"
+  },
+  "roles": {
+    "legend": "आपकी कंपनी क्या करती है",
+    "buyer": {
+      "title": "खरीदार",
+      "description": "सप्लायर से खरीदें और Amazon या Shopify पर बेचें"
+    },
+    "supplier": {
+      "title": "सप्लायर",
+      "description": "प्रोडक्ट बनाएं और खरीद ऑर्डर पूरे करें"
+    },
+    "forwarder": {
+      "title": "फ़्रेट फ़ॉरवर्डर",
+      "description": "खरीदारों के लिए सामान लें और आगे शिप करें"
+    }
+  },
+  "wizard": {
+    "chooseRole": "कोई एक चुनें",
+    "pickupPhone": "पिकअप के लिए फ़ोन नंबर जोड़ें। पिकअप शेड्यूल करने के लिए Amazon को इसकी ज़रूरत होती है",
+    "step": "चरण {current}/{total}",
+    "invitedBy": "{name} ने आमंत्रित किया",
+    "back": "वापस",
+    "skip": "अभी छोड़ें",
+    "continue": "जारी रखें",
+    "createWorkspace": "वर्कस्पेस बनाएं",
+    "join": "{workspace} से जुड़ें",
+    "cancel": "रद्द करें",
+    "signOut": "साइन आउट करें"
+  },
+  "preview": {
+    "workspace": "वर्कस्पेस",
+    "kinds": {
+      "buyer": "खरीदार वर्कस्पेस",
+      "supplier": "सप्लायर वर्कस्पेस",
+      "forwarder": "फ़ॉरवर्डर वर्कस्पेस"
+    },
+    "groups": {
+      "store": "स्टोर",
+      "purchasing": "खरीदारी",
+      "sales": "बिक्री",
+      "products": "प्रोडक्ट"
+    },
+    "pages": {
+      "overview": "ओवरव्यू",
+      "orders": "ऑर्डर",
+      "products": "प्रोडक्ट",
+      "restock": "रीस्टॉक",
+      "purchaseOrders": "खरीद ऑर्डर",
+      "shipments": "शिपमेंट",
+      "customers": "ग्राहक",
+      "inventory": "इन्वेंटरी",
+      "catalogs": "कैटलॉग",
+      "settings": "सेटिंग्स"
+    },
+    "address": "पता"
+  }
+}

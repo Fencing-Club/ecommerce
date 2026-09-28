@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "Partners",
+    "tabsLabel": "Partner types",
+    "tabs": {
+      "all": "All",
+      "supplier": "Suppliers",
+      "forwarder": "Forwarders"
+    },
+    "search": "Search partners",
+    "columns": {
+      "name": "Name",
+      "type": "Type",
+      "status": "Status",
+      "details": "Details",
+      "actions": "Actions"
+    },
+    "empty": {
+      "noMatch": "No partners match “{query}”",
+      "all": "No partners yet",
+      "supplier": "No suppliers yet",
+      "forwarder": "No forwarders yet"
+    },
+    "hints": {
+      "forwarder": "Add a freight forwarder to ship purchase orders through it.",
+      "supplier": "Suppliers from Shopify show up here.",
+      "search": "Check the spelling, or search another tab."
+    }
+  },
+  "add": {
+    "button": "Add partner",
+    "supplier": "Supplier",
+    "forwarder": "Freight forwarder"
+  },
+  "row": {
+    "types": {
+      "supplier": "Supplier",
+      "forwarder": "Freight forwarder"
+    },
+    "addresses": "{count, plural, one {# address} other {# addresses}}",
+    "noAddresses": "No addresses yet",
+    "leadTime": "Lead time {days, plural, one {# day} other {# days}}",
+    "leadTimeAndAddresses": "Lead time {days, plural, one {# day} other {# days}}, {count, plural, one {# address} other {# addresses}}",
+    "sending": "Sending…",
+    "invitationSentTo": "Invitation sent to {email}",
+    "invitationSent": "Invitation sent",
+    "moreActions": "More actions for {name}",
+    "menu": {
+      "edit": "Edit",
+      "addresses": "Addresses",
+      "invite": "Invite",
+      "resend": "Resend invitation"
+    },
+    "standing": {
+      "joined": "On Copacker",
+      "invited": "Invited",
+      "expired": "Invitation expired",
+      "notInvited": "Not invited"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "Add forwarder",
+      "title": "Add a forwarder",
+      "description": "Picks up from your supplier and ships on to Amazon or your warehouse.",
+      "submit": "Add forwarder",
+      "company": "Company",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "Email",
+      "emailDescription": "Add one to invite them now."
+    },
+    "invite": {
+      "title": "Invite {name}",
+      "description": "They’ll keep their own warehouse addresses for your purchase orders.",
+      "submit": "Send invitation",
+      "email": "Email"
+    },
+    "rename": {
+      "trigger": "Edit",
+      "triggerLabel": "Edit {name}",
+      "title": "Edit forwarder",
+      "submit": "Save",
+      "company": "Company"
+    },
+    "remove": {
+      "trigger": "Remove",
+      "title": "Remove {name}?",
+      "description": "New purchase orders can’t ship to them. Purchase orders already sent keep their address.",
+      "cancel": "Cancel",
+      "confirm": "Remove",
+      "failed": "Couldn’t remove {name}"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "Add supplier",
+      "title": "Add a supplier",
+      "description": "For a supplier that isn’t in Shopify yet."
+    },
+    "edit": {
+      "title": "Edit {name}",
+      "name": "Name",
+      "companyName": "Company name",
+      "companyNameDescription": "As in Shopify’s Supplier field.",
+      "companyNamePlaceholder": "Not in Shopify",
+      "contactName": "Contact name",
+      "contactEmail": "Contact email",
+      "phone": "Phone",
+      "website": "Website",
+      "websiteJoined": "{name} keeps their contact details in their own workspace.",
+      "leadTime": "Lead time (days)",
+      "leadTimeDescription": "From purchase order to sellable stock. Empty means {days}.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "failed": "Couldn’t save the supplier. Try again."
+    },
+    "invite": {
+      "title": "Invite {name}",
+      "description": "They’ll see the purchase orders you share and get emailed when one needs documents.",
+      "email": "Supplier email",
+      "cancel": "Cancel",
+      "submit": "Send invitation",
+      "sending": "Sending…",
+      "failed": "Couldn’t invite {name}. Try again."
+    }
+  },
+  "address": {
+    "editPickup": "Edit pickup address",
+    "edit": "Edit address",
+    "addPickup": "Add a pickup address for {name}",
+    "add": "Add an address for {name}",
+    "saveChanges": "Save changes",
+    "save": "Save address",
+    "name": "Address name",
+    "pickupPlaceholder": "Factory",
+    "placeholder": "Yiwu warehouse",
+    "sheet": {
+      "supplier": "Pickup addresses",
+      "forwarder": "Stops on the way to Amazon or your warehouse",
+      "joinedSupplier": "Keeps its own pickup addresses on Copacker",
+      "joinedForwarder": "Keeps its own addresses on Copacker"
+    },
+    "empty": "No addresses yet",
+    "addButton": "Add address",
+    "removing": "Removing {name}",
+    "moreActions": "More actions for {name}",
+    "menuEdit": "Edit",
+    "menuRemove": "Remove",
+    "removeFailed": "Couldn’t remove {name}"
+  },
+  "contactKinds": {
+    "delivery": "Delivery address",
+    "forwarder": "Freight forwarder",
+    "pickup": "Pickup address"
+  },
+  "contactDetails": {
+    "enterEmail": "Enter an email address"
+  },
+  "phone": {
+    "invalid": "Enter a phone number"
+  }
+}

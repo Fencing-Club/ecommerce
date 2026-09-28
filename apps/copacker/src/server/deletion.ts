@@ -40,6 +40,7 @@ import {
   teamInvitations,
   variantFields
 } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import type { Session } from "./auth"
 import { workspaceCookie } from "./auth"
 import { disconnect } from "./connections"
@@ -86,11 +87,11 @@ export async function ownedWorkspaces(userId: string) {
 export async function deleteAccount(user: { id: string; email: string }, raw: unknown) {
   const { email } = z.object({ email: z.string().trim() }).parse(raw)
   if (email.toLowerCase() !== user.email.toLowerCase()) {
-    throw new Error("Enter your email to confirm")
+    throw new LocalizedError("enterEmailToConfirm")
   }
   const { handOver, closing } = await ownedWorkspaces(user.id)
   if (handOver.length) {
-    throw new Error(`Transfer ownership of ${handOver.map((row) => row.name).join(", ")} first`)
+    throw new LocalizedError("transferOwnershipFirst", { workspaces: handOver.map((row) => row.name).join(", ") })
   }
   for (const workspace of closing) {
     await disconnectStores(workspace.id)
@@ -117,7 +118,7 @@ export async function deleteAccount(user: { id: string; email: string }, raw: un
 export async function deleteWorkspace(org: Pick<Session["org"], "id" | "name" | "workosId">, raw: unknown) {
   const { name } = z.object({ name: z.string().trim() }).parse(raw)
   if (name.toLowerCase() !== org.name.trim().toLowerCase()) {
-    throw new Error("Enter the workspace’s name to confirm")
+    throw new LocalizedError("enterWorkspaceNameToConfirm")
   }
   await disconnectStores(org.id)
   const files = await db().transaction(async (tx) => {

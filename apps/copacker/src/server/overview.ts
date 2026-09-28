@@ -1,5 +1,5 @@
 import { orderTotal, type OrderInput } from "@repo/aisle"
-import { and, eq, inArray, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import {
   connections,
@@ -45,6 +45,7 @@ import type { RestockLine } from "./restock-plan"
 import { restockSettings } from "./restock-report"
 import { customerDataVersion, hasCustomerScope, salesDataVersion, type SalesSource, salesSources } from "./sales-orders"
 import { excludedShopifyTags } from "./shopify-tags"
+import { type ServerText, serverText, serverTextInEnglish } from "./text"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.
@@ -370,12 +371,17 @@ export function paymentDue(order: Pick<PurchaseOrder, "data" | "sentAt">) {
 }
 
 // The money coming due: reorders that are due now, and sent POs by when their payment falls due.
-export function upcomingSpend(list: PurchaseOrder[], reorderCost: Money, today: string) {
+export function upcomingSpend(
+  list: PurchaseOrder[],
+  reorderCost: Money,
+  today: string,
+  t: ServerText = serverTextInEnglish
+) {
   const buckets = [
-    { key: "overdue", label: "Past due", totals: new Map<string, number>(), orders: 0 },
-    { key: "next30", label: "Due in the next 30 days", totals: new Map<string, number>(), orders: 0 },
-    { key: "next60", label: "Due in 31 to 60 days", totals: new Map<string, number>(), orders: 0 },
-    { key: "later", label: "Due later", totals: new Map<string, number>(), orders: 0 }
+    { key: "overdue", label: t("overview.due.overdue"), totals: new Map<string, number>(), orders: 0 },
+    { key: "next30", label: t("overview.due.next30"), totals: new Map<string, number>(), orders: 0 },
+    { key: "next60", label: t("overview.due.next60"), totals: new Map<string, number>(), orders: 0 },
+    { key: "later", label: t("overview.due.later"), totals: new Map<string, number>(), orders: 0 }
   ]
   for (const order of list) {
     if (order.status !== "submitted") {
@@ -424,73 +430,74 @@ export type AttentionItem = {
   action: string
 }
 
-const sourceNames: Record<SalesSource, string> = { shopify: "Shopify", amazon: "Amazon" }
 const tones = { critical: 0, warning: 1, info: 2 }
 
 // What needs the buyer, most urgent first, each with where to fix it.
-export function attentionItems(input: {
-  now: Date
-  restock: {
-    stockouts: number
-    reorders: number
-    reorderCost: Money
-    sources: { source: SalesSource; error: string | null }[]
-  }
-  shipments: { waiting: number; problems: number }
-  drafts: number
-  syncs: {
-    source: SalesSource
-    status: string
-    coveredTo: Date | null
-    finishedAt: Date | null
-    feesErrorCode?: string | null
-    // Orders in the chosen period without prices, and whether a sync would copy them.
-    unpriced?: number
-    outdated?: boolean
-  }[]
-  stock: { source: string; status: string; finishedAt: Date | null }[]
-  shopifyHistoryLimited: boolean
-}): AttentionItem[] {
+export function attentionItems(
+  input: {
+    now: Date
+    restock: {
+      stockouts: number
+      reorders: number
+      reorderCost: Money
+      sources: { source: SalesSource; error: string | null }[]
+    }
+    shipments: { waiting: number; problems: number }
+    drafts: number
+    syncs: {
+      source: SalesSource
+      status: string
+      coveredTo: Date | null
+      finishedAt: Date | null
+      feesErrorCode?: string | null
+      // Orders in the chosen period without prices, and whether a sync would copy them.
+      unpriced?: number
+      outdated?: boolean
+    }[]
+    stock: { source: string; status: string; finishedAt: Date | null }[]
+    shopifyHistoryLimited: boolean
+  },
+  t: ServerText = serverTextInEnglish
+): AttentionItem[] {
   const items: AttentionItem[] = []
-  const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
   if (input.restock.stockouts) {
     items.push({
       key: "stockouts",
       tone: "critical",
-      title: `${plural(input.restock.stockouts, "item runs", "items run")} out before a reorder arrives`,
-      detail: "Reorder now to limit lost sales",
+      title: t("overview.attention.stockouts", { count: input.restock.stockouts }),
+      detail: t("overview.attention.stockoutsDetail"),
       href: "/restock?status=order",
-      action: "Plan restock"
+      action: t("overview.attention.planRestock")
     })
   }
   if (input.shipments.problems) {
     items.push({
       key: "shipment-problems",
       tone: "critical",
-      title: `${plural(input.shipments.problems, "shipment needs", "shipments need")} attention`,
-      detail: "Amazon shipment creation failed",
+      title: t("overview.attention.shipmentProblems", { count: input.shipments.problems }),
+      detail: t("overview.attention.shipmentProblemsDetail"),
       href: "/shipments",
-      action: "View shipments"
+      action: t("overview.attention.viewShipments")
     })
   }
   if (input.shipments.waiting) {
     items.push({
       key: "shipments-waiting",
       tone: "warning",
-      title: `${plural(input.shipments.waiting, "shipment needs", "shipments need")} approval or labels`,
-      detail: "Your supplier is waiting to ship",
+      title: t("overview.attention.shipmentsWaiting", { count: input.shipments.waiting }),
+      detail: t("overview.attention.shipmentsWaitingDetail"),
       href: "/shipments",
-      action: "View shipments"
+      action: t("overview.attention.viewShipments")
     })
   }
   if (input.restock.reorders) {
     items.push({
       key: "reorders",
       tone: "warning",
-      title: `${plural(input.restock.reorders, "item is", "items are")} due for a reorder`,
-      detail: "Order now to stay in stock",
+      title: t("overview.attention.reorders", { count: input.restock.reorders }),
+      detail: t("overview.attention.reordersDetail"),
       href: "/restock?status=order",
-      action: "Plan restock"
+      action: t("overview.attention.planRestock")
     })
   }
   for (const source of input.restock.sources) {
@@ -498,65 +505,71 @@ export function attentionItems(input: {
       items.push({
         key: `demand-${source.source}`,
         tone: "warning",
-        title: `Restock can't read ${sourceNames[source.source]} orders`,
+        title: t("overview.attention.demandFailed", { source: source.source }),
         detail: source.error,
         href: "/sales",
-        action: "View orders"
+        action: t("overview.attention.viewOrders")
       })
     }
   }
   for (const sync of input.syncs) {
-    const name = sourceNames[sync.source]
+    const name = sync.source
     const busy = ["queued", "running"].includes(sync.status)
     if (sync.status === "failed") {
       items.push({
         key: `sync-${sync.source}`,
         tone: "warning",
-        title: `${name} order sync failed`,
-        detail: "Sales and restock may miss recent orders",
+        title: t("overview.attention.syncFailed", { source: name }),
+        detail: t("overview.attention.syncFailedDetail"),
         href: "/sales",
-        action: "View orders"
+        action: t("overview.attention.viewOrders")
       })
     } else if (!busy && sync.coveredTo && input.now.getTime() - sync.coveredTo.getTime() > staleAfter) {
       items.push({
         key: `sync-${sync.source}`,
         tone: "info",
-        title: `${name} orders haven't synced in ${Math.floor((input.now.getTime() - sync.coveredTo.getTime()) / day)} days`,
-        detail: "Sync them to include recent orders",
+        title: t("overview.attention.syncStale", {
+          source: name,
+          days: Math.floor((input.now.getTime() - sync.coveredTo.getTime()) / day)
+        }),
+        detail: t("overview.attention.syncStaleDetail"),
         href: "/sales",
-        action: "View orders"
+        action: t("overview.attention.viewOrders")
       })
     }
     if (sync.feesErrorCode === "reconnect") {
       items.push({
         key: `fees-${sync.source}`,
         tone: "warning",
-        title: `Reconnect ${name} to include its charges`,
-        detail: "Gross profit leaves them out",
+        title: t("overview.attention.feesReconnect", { source: name }),
+        detail: t("overview.attention.feesReconnectDetail"),
         href: "/settings#integrations",
-        action: "Open settings"
+        action: t("overview.attention.openSettings")
       })
     } else if (sync.feesErrorCode) {
       items.push({
         key: `fees-${sync.source}`,
         tone: "warning",
-        title: sync.source === "amazon" ? "Amazon fees couldn't be copied" : "Shopify charges couldn't be copied",
-        detail:
+        title: t(
+          sync.source === "amazon" ? "overview.attention.amazonFeesFailed" : "overview.attention.shopifyChargesFailed"
+        ),
+        detail: t(
           sync.source === "amazon"
-            ? "Margins leave them out until the next sync"
-            : "Gross profit leaves them out until the next sync",
+            ? "overview.attention.amazonFeesFailedDetail"
+            : "overview.attention.shopifyChargesFailedDetail"
+        ),
         href: "/sales",
-        action: "View orders"
+        action: t("overview.attention.viewOrders")
       })
     }
     if (sync.unpriced && sync.outdated && !busy) {
       items.push({
         key: `prices-${sync.source}`,
         tone: "info",
-        title: `Sync ${name} orders again for prices`,
-        detail: `${plural(sync.unpriced, "order", "orders")} in this period ${sync.unpriced === 1 ? "has" : "have"} no price`,
+        title: t("overview.attention.unpriced", { source: name }),
+        detail: t("overview.attention.unpricedDetail", { count: sync.unpriced }),
         href: "/sales",
-        action: "View orders"
+        action: t("overview.attention.viewOrders")
       })
     }
   }
@@ -568,39 +581,39 @@ export function attentionItems(input: {
     items.push({
       key: "stock-failed",
       tone: "warning",
-      title: "Stock sync failed",
-      detail: "Stock counts may be out of date",
+      title: t("overview.attention.stockFailed"),
+      detail: t("overview.attention.stockFailedDetail"),
       href: "/products",
-      action: "View products"
+      action: t("overview.attention.viewProducts")
     })
   } else if (staleStock.length) {
     items.push({
       key: "stock-stale",
       tone: "info",
-      title: "Stock hasn't synced in over 2 days",
-      detail: "Sync it to update stock counts",
+      title: t("overview.attention.stockStale"),
+      detail: t("overview.attention.stockStaleDetail"),
       href: "/products",
-      action: "View products"
+      action: t("overview.attention.viewProducts")
     })
   }
   if (input.shopifyHistoryLimited) {
     items.push({
       key: "shopify-history",
       tone: "info",
-      title: "Shopify shares only 60 days of orders",
-      detail: "Reconnect with access to all orders",
+      title: t("overview.attention.shopifyHistory"),
+      detail: t("overview.attention.shopifyHistoryDetail"),
       href: "/settings#integrations",
-      action: "Open settings"
+      action: t("overview.attention.openSettings")
     })
   }
   if (input.drafts) {
     items.push({
       key: "drafts",
       tone: "info",
-      title: plural(input.drafts, "purchase order is still a draft", "purchase orders are still drafts"),
-      detail: "Send them when you're ready",
+      title: t("overview.attention.drafts", { count: input.drafts }),
+      detail: t("overview.attention.draftsDetail"),
       href: "/orders",
-      action: "View purchase orders"
+      action: t("overview.attention.viewPurchaseOrders")
     })
   }
   return items.toSorted((a, b) => tones[a.tone] - tones[b.tone])
@@ -609,47 +622,50 @@ export function attentionItems(input: {
 export type SetupStep = { key: string; title: string; detail: string; href: string; done: boolean }
 
 // The steps that make the Overview complete, in the order a new buyer takes them.
-export function setupSteps(input: {
-  connected: SalesSource[]
-  ordersCopied: SalesSource[]
-  stockSynced: boolean
-  inStock: number
-  uncosted: number
-}): SetupStep[] {
+export function setupSteps(
+  input: {
+    connected: SalesSource[]
+    ordersCopied: SalesSource[]
+    stockSynced: boolean
+    inStock: number
+    uncosted: number
+  },
+  t: ServerText = serverTextInEnglish
+): SetupStep[] {
   const allCopied = input.connected.length > 0 && input.connected.every((source) => input.ordersCopied.includes(source))
   return [
     {
       key: "shopify",
-      title: "Connect Shopify",
-      detail: "Catalog, stock, costs and orders",
+      title: t("overview.setup.shopify"),
+      detail: t("overview.setup.shopifyDetail"),
       href: "/settings#integrations",
       done: input.connected.includes("shopify")
     },
     {
       key: "amazon",
-      title: "Connect Amazon",
-      detail: "Orders, FBA and AWD stock, and fees",
+      title: t("overview.setup.amazon"),
+      detail: t("overview.setup.amazonDetail"),
       href: "/settings#integrations",
       done: input.connected.includes("amazon")
     },
     {
       key: "orders",
-      title: "Copy your orders",
-      detail: "Sales, trends and restock",
+      title: t("overview.setup.orders"),
+      detail: t("overview.setup.ordersDetail"),
       href: "/sales",
       done: allCopied
     },
     {
       key: "stock",
-      title: "Sync your stock",
-      detail: "Stock, days of cover and restock",
+      title: t("overview.setup.stock"),
+      detail: t("overview.setup.stockDetail"),
       href: "/products",
       done: input.stockSynced
     },
     {
       key: "costs",
-      title: "Add unit costs in Shopify",
-      detail: "Stock value, reorder costs and margins",
+      title: t("overview.setup.costs"),
+      detail: t("overview.setup.costsDetail"),
       href: "/products",
       done: input.inStock > 0 && input.uncosted === 0
     }
@@ -710,6 +726,7 @@ export async function overview(
   options: { channel?: string | null; period?: Record<string, string | string[] | undefined>; now?: Date } = {}
 ) {
   const now = options.now ?? new Date()
+  const t = await serverText()
   const settings = restockSettings(org)
   const orgId = org.id
   const { timeZone } = org
@@ -736,7 +753,10 @@ export async function overview(
   const channelOptions = restock.channels.flatMap((channel) => [
     { key: channel.key, label: channel.label },
     ...(channel.key === "amazon" && marketplaces.length > 1
-      ? marketplaces.map((marketplace) => ({ key: `amazon:${marketplace.code}`, label: marketplace.label }))
+      ? marketplaces.map((marketplace) => ({
+          key: `amazon:${marketplace.code}`,
+          label: t("overview.marketplace", { code: marketplace.code })
+        }))
       : [])
   ])
   const selected = channelOptions.find((channel) => channel.key === options.channel) ?? null
@@ -823,13 +843,7 @@ export async function overview(
       .select({ orderId: events.orderId, at: sql<Date>`min(${events.createdAt})`.mapWith(orders.createdAt) })
       .from(events)
       .innerJoin(orders, eq(orders.id, events.orderId))
-      .where(
-        and(
-          eq(orders.buyerOrgId, orgId),
-          // Events recorded before purchase orders were spelled out say "PO submitted to supplier".
-          inArray(events.message, ["Purchase order submitted to supplier", "PO submitted to supplier"])
-        )
-      )
+      .where(and(eq(orders.buyerOrgId, orgId), eq(events.messageKey, "submittedToSupplier")))
       .groupBy(events.orderId),
     db()
       .select({ id: contacts.id, locationId: contacts.shopifyLocationId })
@@ -866,7 +880,7 @@ export async function overview(
     addDays(period.range.to, 1)
   ).map((cost) => ({
     key: `monthly:${cost.id}`,
-    label: `${cost.name}, monthly cost`,
+    label: t("overview.monthlyCost", { name: cost.name }),
     minor: -cost.shareMinor,
     currency
   }))
@@ -915,11 +929,11 @@ export async function overview(
           new Set(linkedFreight.map((row) => row.reference))
         )
       : null
-  const profit = grossProfit(itemRows, index, fees, charges, freight)
+  const profit = grossProfit(itemRows, index, fees, charges, freight, t)
   // Trends compare the period with the one it's compared with, for sources whose orders cover both.
   const previousStart = window.previous?.from
   const comparable = previousStart ? covered.filter((source) => coverage[source]!.from <= previousStart) : []
-  const trending = movers(itemRows, index, comparable)
+  const trending = movers(itemRows, index, comparable, t)
   const priceOf = sellingPrices(priceRows, index)
 
   const scopedChannels = restock.channels.filter((channel) => !restockKey || channel.key === restockKey)
@@ -999,15 +1013,18 @@ export async function overview(
       previousLabel: period.previous ? rangeLabel(period.previous) : null,
       today
     },
-    setup: setupSteps({
-      connected: accounts.map((account) => account.provider),
-      ordersCopied: current.filter((sync) => sync.coveredTo).map((sync) => sync.source),
-      stockSynced:
-        stockSources.length > 0 &&
-        stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
-      inStock: everyChannel.unitsOnHand,
-      uncosted: everyChannel.uncosted
-    }),
+    setup: setupSteps(
+      {
+        connected: accounts.map((account) => account.provider),
+        ordersCopied: current.filter((sync) => sync.coveredTo).map((sync) => sync.source),
+        stockSynced:
+          stockSources.length > 0 &&
+          stockSources.every((source) => stock.some((row) => row.source === source && row.snapshotId)),
+        inStock: everyChannel.unitsOnHand,
+        uncosted: everyChannel.uncosted
+      },
+      t
+    ),
     sales: {
       sources,
       daily: series,
@@ -1038,30 +1055,33 @@ export async function overview(
       landedProducts: markups.size
     },
     purchasing: buying,
-    upcoming: upcomingSpend(poList, summary.reorderCost, today),
-    attention: attentionItems({
-      now,
-      restock: {
-        ...summary,
-        sources: restock.sources.filter((source) => !channelSource || source.source === channelSource)
+    upcoming: upcomingSpend(poList, summary.reorderCost, today, t),
+    attention: attentionItems(
+      {
+        now,
+        restock: {
+          ...summary,
+          sources: restock.sources.filter((source) => !channelSource || source.source === channelSource)
+        },
+        shipments: {
+          waiting: states.filter((state) => state === "approval" || state === "waiting_labels").length,
+          problems: states.filter((state) => state === "needs_attention").length
+        },
+        drafts: buying.draftCount,
+        syncs: current.map((sync) => ({
+          source: sync.source,
+          status: sync.status,
+          coveredTo: sync.coveredTo,
+          finishedAt: sync.finishedAt,
+          feesErrorCode: sync.feesErrorCode,
+          unpriced: unpricedBySource(sync.source),
+          outdated: sync.dataVersion < salesDataVersion
+        })),
+        stock: stock.map((row) => ({ source: row.source, status: row.status, finishedAt: row.finishedAt })),
+        shopifyHistoryLimited: Boolean(shopify && !shopify.scopes.split(/[,\s]+/).includes("read_all_orders"))
       },
-      shipments: {
-        waiting: states.filter((state) => state === "approval" || state === "waiting_labels").length,
-        problems: states.filter((state) => state === "needs_attention").length
-      },
-      drafts: buying.draftCount,
-      syncs: current.map((sync) => ({
-        source: sync.source,
-        status: sync.status,
-        coveredTo: sync.coveredTo,
-        finishedAt: sync.finishedAt,
-        feesErrorCode: sync.feesErrorCode,
-        unpriced: unpricedBySource(sync.source),
-        outdated: sync.dataVersion < salesDataVersion
-      })),
-      stock: stock.map((row) => ({ source: row.source, status: row.status, finishedAt: row.finishedAt })),
-      shopifyHistoryLimited: Boolean(shopify && !shopify.scopes.split(/[,\s]+/).includes("read_all_orders"))
-    })
+      t
+    )
   }
 }
 

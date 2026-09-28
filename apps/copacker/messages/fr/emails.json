@@ -1,0 +1,112 @@
+{
+  "tagline": "Le réassort, sans effort.",
+  "pasteLink": "Ou collez ce lien dans votre navigateur :",
+  "invitation": {
+    "subject": "{from} vous a invité sur Copacker",
+    "yourTeam": "Votre équipe",
+    "aBuyer": "Un acheteur",
+    "eyebrow": {
+      "supplier": "Invitation fournisseur",
+      "team": "Invitation d’équipe",
+      "forwarder": "Invitation transitaire"
+    },
+    "joining": {
+      "supplier": "Rejoignez-les en tant que fournisseur pour y recevoir leurs bons de commande.",
+      "team": "Rejoignez leur espace de travail.",
+      "forwarder": "Rejoignez-les en tant que transitaire et partagez avec eux les adresses de vos entrepôts."
+    },
+    "steps": {
+      "account": "Acceptez, puis connectez-vous ou créez votre compte",
+      "supplierWorkspace": "Configurez votre espace de travail fournisseur",
+      "supplierPack": "Emballez les bons de commande de {from} et imprimez leurs étiquettes au même endroit",
+      "teamStart": "Commencez à travailler dans {from}",
+      "forwarderAddresses": "Ajoutez les adresses de vos entrepôts",
+      "forwarderShipments": "Suivez les expéditions que {from} fait passer par vous"
+    },
+    "accept": "Accepter l’invitation",
+    "note": "Elle est destinée à {email} et expire dans 7 jours. Si vous ne l’attendiez pas, vous pouvez ignorer cet e-mail.",
+    "reason": "{from} a invité {email} sur Copacker."
+  },
+  "purchaseOrder": {
+    "subject": "Bon de commande {reference} de {buyer}",
+    "eyebrow": {
+      "new": "Nouveau bon de commande",
+      "revised": "Bon de commande modifié"
+    },
+    "heading": "{reference} de {buyer}",
+    "lead": {
+      "new": "{buyer} vous a envoyé un bon de commande de {units, plural, one {# unité} other {# unités}} pour {products, plural, one {# produit} other {# produits}}.",
+      "revised": "{buyer} a modifié ce bon de commande. La version mise à jour remplace celle que vous aviez."
+    },
+    "preview": "{units, plural, one {# unité} other {# unités}}, {total}",
+    "previewRequiredBy": "{units, plural, one {# unité} other {# unités}}, {total}, requis pour le {date}",
+    "labels": {
+      "revision": "Révision",
+      "requiredBy": "Requis pour le",
+      "shipTo": "Livrer à",
+      "paymentTerms": "Conditions de paiement",
+      "total": "Total"
+    },
+    "more": "Et {count, plural, one {# autre produit} other {# autres produits}} dans le bon de commande",
+    "open": "Ouvrir le bon de commande",
+    "note": "Le PDF du bon de commande est joint.",
+    "reason": "{buyer} a envoyé ce bon de commande via Copacker."
+  },
+  "labelsReady": {
+    "subject": "Étiquettes prêtes pour {reference}",
+    "subjectShipment": "Étiquettes prêtes pour {reference}, expédition {shipment}",
+    "eyebrow": "Prêt à expédier",
+    "heading": "Les étiquettes de {reference} sont prêtes",
+    "headingShipment": "Les étiquettes de {reference}, expédition {shipment}, sont prêtes",
+    "lead": "{buyer} a validé l’expédition : elle est prête à être étiquetée et envoyée.",
+    "labels": {
+      "cartons": "Cartons",
+      "destination": "Destination",
+      "readyForPickup": "Prêt pour l’enlèvement",
+      "amazonShipment": "Expédition Amazon"
+    },
+    "steps": {
+      "print": "Imprimez les étiquettes en taille réelle (100 %)",
+      "attach": "Collez sur chaque carton son étiquette, en couvrant tout autre code-barres",
+      "handOver": "Vérifiez la liste de contrôle d’emballage, puis remettez les cartons au transporteur"
+    },
+    "open": "Ouvrir l’expédition",
+    "reason": "{buyer} a validé cette expédition dans Copacker."
+  },
+  "customerDataRequest": {
+    "subject": "Demande de données client pour {shop}",
+    "eyebrow": "Demande de données Shopify",
+    "lead": "Shopify a envoyé à Copacker une demande de données client. Incluez ce que Copacker détient dans votre réponse au client.",
+    "noContactDetails": "Copacker ne conserve ni les noms, ni les adresses e-mail, ni les numéros de téléphone, ni les adresses postales des clients.",
+    "labels": {
+      "store": "Boutique",
+      "request": "Demande",
+      "ordersHeld": "Commandes détenues par Copacker"
+    },
+    "none": "Aucune",
+    "ordersIntro": "Uniquement les détails de commande que Copacker utilise pour planifier les réassorts :",
+    "reason": "Shopify a envoyé une demande de données client pour {shop}, qui est connectée à Copacker.",
+    "order": "Commande {number}, passée le {date}, statut {status} : {items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × article sans SKU",
+    "noItems": "aucun article",
+    "status": {
+      "unfulfilled": "Non traitée",
+      "partiallyFulfilled": "Partiellement traitée",
+      "fulfilled": "Traitée",
+      "cancelled": "Annulée"
+    }
+  },
+  "passwordReset": {
+    "subject": "Réinitialisez votre mot de passe Copacker",
+    "eyebrow": "Votre compte",
+    "heading": "Réinitialisez votre mot de passe",
+    "lead": "Choisissez un nouveau mot de passe pour {email}.",
+    "previewMinutes": "Choisissez un nouveau mot de passe pour {email}. Le lien expire dans {count, plural, one {# minute} other {# minutes}}.",
+    "previewHours": "Choisissez un nouveau mot de passe pour {email}. Le lien expire dans {count, plural, one {# heure} other {# heures}}.",
+    "action": "Choisir un nouveau mot de passe",
+    "expiresMinutes": "Le lien expire dans {count, plural, one {# minute} other {# minutes}}. Si vous n’avez pas demandé à réinitialiser votre mot de passe, vous pouvez ignorer cet e-mail ; votre mot de passe reste inchangé.",
+    "expiresHours": "Le lien expire dans {count, plural, one {# heure} other {# heures}}. Si vous n’avez pas demandé à réinitialiser votre mot de passe, vous pouvez ignorer cet e-mail ; votre mot de passe reste inchangé.",
+    "reason": "Quelqu’un a demandé à réinitialiser le mot de passe de {email} sur Copacker."
+  }
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useCan } from "@/components/access"
@@ -29,10 +30,12 @@ export function ProductActions() {
   // Importing changes products; exporting only reads them, prices included.
   const editable = useCan("products", "edit")
   const prices = useCan("prices")
+  const t = useTranslations("supplier.productTransfer")
+  const shared = useTranslations("supplier.shared")
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="More actions" />}>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={shared("moreActions")} />}>
           <Ellipsis />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
@@ -40,7 +43,7 @@ export function ProductActions() {
             <>
               <DropdownMenuItem onClick={() => setImporting(true)}>
                 <Upload />
-                Import products
+                {t("importProducts")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -48,25 +51,27 @@ export function ProductActions() {
           {prices && (
             <>
               <DropdownMenuItem
-                render={<a href="/api/supplier-catalog/export?format=xlsx" download aria-label="Export to Excel" />}
+                render={
+                  <a href="/api/supplier-catalog/export?format=xlsx" download aria-label={shared("exportExcel")} />
+                }
               >
                 <Download />
-                Export to Excel
+                {shared("exportExcel")}
               </DropdownMenuItem>
               <DropdownMenuItem
-                render={<a href="/api/supplier-catalog/export?format=csv" download aria-label="Export to CSV" />}
+                render={<a href="/api/supplier-catalog/export?format=csv" download aria-label={t("exportCsv")} />}
               >
                 <Download />
-                Export to CSV
+                {t("exportCsv")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           )}
           <DropdownMenuItem
-            render={<a href="/api/supplier-catalog/template?format=xlsx" download aria-label="Download template" />}
+            render={<a href="/api/supplier-catalog/template?format=xlsx" download aria-label={t("downloadTemplate")} />}
           >
             <FileSpreadsheet />
-            Download template
+            {t("downloadTemplate")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -98,6 +103,9 @@ function ProductImportDialog({
   const [preview, setPreview] = useState<Preview | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  const t = useTranslations("supplier.productTransfer")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
 
   async function send(mode: "preview" | "commit") {
     if (!file) {
@@ -116,19 +124,19 @@ function ProductImportDialog({
       const response = await fetch("/api/supplier-catalog/import", { method: "POST", body })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? "Import failed. Try again.")
+        throw new Error(result.error ?? t("importFailed"))
       }
       if (mode === "preview") {
         setPreview(result)
         return
       }
       if (!result.imported) {
-        throw new Error("This file was already imported.")
+        throw new Error(t("alreadyImported"))
       }
       setOpen(false)
       router.refresh()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Import failed. Try again.")
+      setError(caught instanceof Error ? caught.message : t("importFailed"))
     } finally {
       setPending(false)
     }
@@ -152,30 +160,27 @@ function ProductImportDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import products</DialogTitle>
-          <DialogDescription>
-            Use the product template: one row per variant. Matching SKUs are updated and new ones added. Products left
-            out of the file don’t change.
-          </DialogDescription>
+          <DialogTitle>{t("importProducts")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <a href="/api/supplier-catalog/template?format=xlsx" download className="underline underline-offset-4">
-              Excel template
+              {t("excelTemplate")}
             </a>
             <a href="/api/supplier-catalog/template?format=csv" download className="underline underline-offset-4">
-              CSV template
+              {t("csvTemplate")}
             </a>
             {prices && (
               <a href="/api/supplier-catalog/export?format=xlsx" download className="underline underline-offset-4">
-                Your products in Excel
+                {t("yourProducts")}
               </a>
             )}
           </div>
           <Input
             type="file"
             accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            aria-label="Product file"
+            aria-label={t("productFile")}
             onChange={(event) => {
               setFile(event.target.files?.[0] ?? null)
               setPreview(null)
@@ -186,13 +191,13 @@ function ProductImportDialog({
             <div className="flex flex-col gap-3 rounded-lg border p-3 text-sm">
               <dl className="grid grid-cols-3 gap-2 text-center">
                 {[
-                  ["New", preview.variants.created],
-                  ["Updated", preview.variants.updated],
-                  ["Unchanged", preview.variants.unchanged]
-                ].map(([label, value]) => (
+                  { label: t("newVariants"), value: preview.variants.created },
+                  { label: t("updatedVariants"), value: preview.variants.updated },
+                  { label: t("unchangedVariants"), value: preview.variants.unchanged }
+                ].map(({ label, value }) => (
                   <div key={label} className="rounded-md bg-muted/50 px-2 py-1.5">
-                    <dt className="text-xs text-muted-foreground">{label} variants</dt>
-                    <dd className="text-lg font-semibold tabular-nums">{Number(value).toLocaleString("en-US")}</dd>
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="text-lg font-semibold tabular-nums">{value.toLocaleString(locale)}</dd>
                   </div>
                 ))}
               </dl>
@@ -201,14 +206,14 @@ function ProductImportDialog({
                   <li key={row.handle} className="flex items-center justify-between gap-2">
                     <span className="truncate">{row.title}</span>
                     <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                      {row.variants} variant{row.variants === 1 ? "" : "s"}
-                      {row.isNew && <Badge variant="secondary">New</Badge>}
+                      {shared("variantCount", { count: row.variants })}
+                      {row.isNew && <Badge variant="secondary">{t("new")}</Badge>}
                     </span>
                   </li>
                 ))}
                 {preview.products > preview.sample.length && (
                   <li className="text-xs text-muted-foreground">
-                    And {(preview.products - preview.sample.length).toLocaleString("en-US")} more products
+                    {t("moreProducts", { count: preview.products - preview.sample.length })}
                   </li>
                 )}
               </ul>
@@ -222,15 +227,15 @@ function ProductImportDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={() => setOpen(false)}>
-            Cancel
+            {shared("cancel")}
           </Button>
           {preview ? (
             <Button disabled={pending || !changes} onClick={() => void send("commit")}>
-              {changes ? `Import ${changes.toLocaleString("en-US")} variants` : "Nothing to import"}
+              {changes ? t("importVariants", { count: changes }) : t("nothingToImport")}
             </Button>
           ) : (
             <Button disabled={pending || !file} onClick={() => void send("preview")}>
-              Preview
+              {t("preview")}
             </Button>
           )}
         </DialogFooter>

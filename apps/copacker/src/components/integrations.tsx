@@ -2,6 +2,7 @@
 
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
 import { ArrowRight, CircleCheck, CircleDashed } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,14 +36,10 @@ import { StoreLogo } from "./store-logos"
 type Store = "shopify" | "amazon" | "ebay"
 type Connection = { account: string; externalId: string }
 
-// What connecting each store brings.
-const stores = {
-  shopify: { name: "Shopify", description: "Products, inventory, orders, expenses" },
-  amazon: { name: "Amazon", description: "Orders, inventory, expenses, shipments" },
-  ebay: { name: "eBay", description: "Orders, inventory" }
-} as const
+// Each store's name. What connecting it brings is under settings.integrations.stores.
+const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
 
-const tile = "flex h-full w-full flex-col items-start gap-4 rounded-xl border bg-card p-4 text-left shadow-xs"
+const tile = "flex h-full w-full flex-col items-start gap-4 rounded-xl border bg-card p-4 text-start shadow-xs"
 const clickable =
   "cursor-pointer transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 
@@ -64,6 +61,7 @@ export function Integrations({
   shopifySettings: React.ReactNode
   amazonSettings: React.ReactNode
 }) {
+  const t = useTranslations("settings.integrations")
   let shopifyCard = <NotConnected store="shopify" />
   if (shopify) {
     shopifyCard = (
@@ -101,7 +99,7 @@ export function Integrations({
         {shopifyCard}
         {amazonCard}
         <div className={tile}>
-          <TileBody store="ebay" badge={<Badge variant="secondary">Coming soon</Badge>} />
+          <TileBody store="ebay" badge={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
         </div>
       </div>
     </div>
@@ -110,6 +108,7 @@ export function Integrations({
 
 // A card's logo and status on top, then the store's name and what it brings, and a footer line.
 function TileBody({ store, badge, footer }: { store: Store; badge?: React.ReactNode; footer?: React.ReactNode }) {
+  const t = useTranslations("settings.integrations.stores")
   return (
     <>
       <span className="flex w-full items-start justify-between gap-3">
@@ -117,8 +116,8 @@ function TileBody({ store, badge, footer }: { store: Store; badge?: React.ReactN
         {badge}
       </span>
       <span className="flex flex-col gap-1">
-        <span className="font-medium">{stores[store].name}</span>
-        <span className="text-sm text-muted-foreground">{stores[store].description}</span>
+        <span className="font-medium">{storeNames[store]}</span>
+        <span className="text-sm text-muted-foreground">{t(store)}</span>
       </span>
       {footer && <span className="mt-auto flex w-full min-w-0 items-center gap-1.5 text-sm">{footer}</span>}
     </>
@@ -126,16 +125,18 @@ function TileBody({ store, badge, footer }: { store: Store; badge?: React.ReactN
 }
 
 function ConnectLabel() {
+  const t = useTranslations("settings.integrations")
   return (
     <span className="inline-flex items-center gap-1 font-medium">
-      Connect
-      <ArrowRight className="size-4" />
+      {t("connect")}
+      <ArrowRight className="size-4 rtl:rotate-180" />
     </span>
   )
 }
 
 // Members see the stores the owner and admins haven't connected.
 function NotConnected({ store }: { store: Store }) {
+  const t = useTranslations("settings.integrations")
   return (
     <div className={tile}>
       <TileBody
@@ -143,7 +144,7 @@ function NotConnected({ store }: { store: Store }) {
         badge={
           <Badge variant="outline">
             <CircleDashed data-icon="inline-start" />
-            Not connected
+            {t("notConnected")}
           </Badge>
         }
       />
@@ -163,13 +164,14 @@ function Connected({
   admin: boolean
   children: React.ReactNode
 }) {
+  const t = useTranslations("settings.integrations")
   const body = (
     <TileBody
       store={store}
       badge={
         <Badge variant="outline">
           <CircleCheck data-icon="inline-start" className="text-success" />
-          Connected
+          {t("connected")}
         </Badge>
       }
       footer={<span className="truncate text-muted-foreground">{connection.account}</span>}
@@ -180,14 +182,14 @@ function Connected({
   }
   return (
     <Sheet>
-      <SheetTrigger className={cn(tile, clickable)} aria-label={`${stores[store].name} settings`}>
+      <SheetTrigger className={cn(tile, clickable)} aria-label={t("storeSettings", { store: storeNames[store] })}>
         {body}
       </SheetTrigger>
       <SheetContent className="sm:max-w-md">
         <SheetHeader className="flex-row items-center gap-3 border-b">
           <StoreLogo store={store} />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <SheetTitle>{stores[store].name}</SheetTitle>
+            <SheetTitle>{storeNames[store]}</SheetTitle>
             <SheetDescription className="truncate">{connection.account}</SheetDescription>
           </div>
         </SheetHeader>
@@ -202,6 +204,7 @@ function Connected({
 
 // Shopify's card asks for the store's address in a dialog, then goes to Shopify to approve Copacker.
 function ConnectShopify() {
+  const t = useTranslations("settings.integrations")
   const id = useId()
   const [error, setError] = useState<string>()
   return (
@@ -219,18 +222,18 @@ function ConnectShopify() {
             const shop = input instanceof HTMLInputElement ? normalizeShopDomain(input.value) : ""
             if (!shopDomainSchema.safeParse(shop).success) {
               event.preventDefault()
-              setError("Enter your store’s admin link or myshopify.com domain")
+              setError(t("shopify.enterStore"))
             }
           }}
         >
           <DialogHeader>
-            <DialogTitle>Connect Shopify</DialogTitle>
-            <DialogDescription>You’ll approve Copacker in Shopify</DialogDescription>
+            <DialogTitle>{t("shopify.title")}</DialogTitle>
+            <DialogDescription>{t("shopify.description")}</DialogDescription>
           </DialogHeader>
           <Field data-invalid={Boolean(error)}>
             <FieldLabel htmlFor={id}>
               <span>
-                Store
+                {t("shopify.store")}
                 <RequiredMark />
               </span>
             </FieldLabel>
@@ -249,12 +252,12 @@ function ConnectShopify() {
             {error ? (
               <FieldError>{error}</FieldError>
             ) : (
-              <FieldDescription>Admin link or myshopify.com domain</FieldDescription>
+              <FieldDescription>{t("shopify.storeDescription")}</FieldDescription>
             )}
           </Field>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit">Connect</Button>
+            <DialogClose render={<Button variant="outline" />}>{t("cancel")}</DialogClose>
+            <Button type="submit">{t("connect")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

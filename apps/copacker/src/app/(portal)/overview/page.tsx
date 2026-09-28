@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
@@ -16,7 +17,10 @@ import { type Overview, overview } from "@/server/overview"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { supplierOverview } from "@/server/supplier-overview"
 
-export const metadata: Metadata = { title: "Overview" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("overview")
+  return { title: t("title") }
+}
 
 type Query = Record<string, string | string[] | undefined>
 
@@ -33,20 +37,17 @@ async function load(org: Session["org"], permissions: Permissions, query: Query)
 }
 
 async function Dashboard({ data: pending, admin }: { data: Promise<Overview>; admin: boolean }) {
-  const data = await pending
+  const [data, t] = await Promise.all([pending, getTranslations("overview.noStores")])
   if (!data.connected.length) {
     return (
       <div className="flex flex-col gap-6">
         {admin && <SetupChecklist steps={data.setup} />}
         <Card>
           <CardContent>
-            <EmptyState
-              title="No stores connected"
-              description={admin ? "Connect Shopify or Amazon to see your overview" : "Ask an admin to connect them"}
-            >
+            <EmptyState title={t("title")} description={admin ? t("connectDescription") : t("askAdmin")}>
               {admin && (
                 <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-                  Connect stores
+                  {t("connect")}
                 </Button>
               )}
             </EmptyState>
@@ -59,7 +60,7 @@ async function Dashboard({ data: pending, admin }: { data: Promise<Overview>; ad
 }
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("overview")])
   // Every workspace has an Overview for links to land on; a member without it, like a forwarder, goes to their home.
   if (!can(s, "overview") || s.org.kind === "forwarder") {
     redirect(homeFor(s.org.kind, s))
@@ -68,7 +69,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     const data = await supplierOverview(s.org, await searchParams)
     return (
       <>
-        <PageHeader title="Overview">
+        <PageHeader title={t("title")}>
           <PeriodPicker period={data.period} />
         </PageHeader>
         <SupplierOverview data={data} permissions={s} />
@@ -81,7 +82,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const key = JSON.stringify(query)
   return (
     <>
-      <PageHeader title="Overview">
+      <PageHeader title={t("title")}>
         <Suspense key={key} fallback={<OverviewFiltersSkeleton />}>
           <OverviewFilters data={data} />
         </Suspense>

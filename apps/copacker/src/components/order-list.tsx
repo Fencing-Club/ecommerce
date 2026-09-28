@@ -1,22 +1,24 @@
 import { money, type OrderInput, orderTotal } from "@repo/aisle"
-import { destinationName } from "@repo/aisle/requirements"
+import { orderNetworks } from "@repo/aisle/requirements"
 import { inArray } from "drizzle-orm"
+import { getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Status } from "@/components/common"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { contacts, type orders } from "@/db/schema"
+import { requirementTranslator } from "@/server/requirements"
 import { LinkRow } from "./link-row"
 import { TabLinks } from "./tab-links"
 
 type Order = Pick<typeof orders.$inferSelect, "id" | "status" | "data" | "createdAt">
 
-// The list's tabs, each a PO status kept in the URL.
+// The list's tabs, each a PO status kept in the URL, with their label and empty text under orders.list.tabs.
 const tabs = [
-  { status: null, label: "All", empty: "No purchase orders" },
-  { status: "draft", label: "Draft", empty: "No drafts" },
-  { status: "submitted", label: "With supplier", empty: "No purchase orders with suppliers" },
-  { status: "closed", label: "Closed", empty: "No closed purchase orders" }
+  { status: null, key: "all" },
+  { status: "draft", key: "draft" },
+  { status: "submitted", key: "submitted" },
+  { status: "closed", key: "closed" }
 ] as const
 
 // Where each PO ends up, by name, as its page's route shows it: Amazon's networks, such as Amazon FBA, or the delivery
@@ -25,21 +27,22 @@ async function destinations(list: OrderInput[]) {
   const addressIds = [
     ...new Set(list.flatMap((data) => (data.destination !== "amazon" && data.deliveryId ? [data.deliveryId] : [])))
   ]
+  const text = await requirementTranslator()
   const addresses = addressIds.length
     ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
     : []
   return (data: OrderInput) =>
     data.destination === "amazon"
-      ? destinationName(data)
+      ? text.amazon(orderNetworks(data))
       : (addresses.find((row) => row.id === data.deliveryId)?.name ?? "—")
 }
 
 // "Sep 27", with the year when it isn't this year, in the workspace's time zone.
-function dayFormat(timeZone: string | undefined) {
-  const year = (at: Date) => at.toLocaleDateString("en-US", { timeZone, year: "numeric" })
+function dayFormat(locale: string, timeZone: string | undefined) {
+  const year = (at: Date) => at.toLocaleDateString(locale, { timeZone, year: "numeric" })
   const thisYear = year(new Date())
   return (at: Date) =>
-    at.toLocaleDateString("en-US", {
+    at.toLocaleDateString(locale, {
       timeZone,
       month: "short",
       day: "numeric",
@@ -67,15 +70,19 @@ export async function OrderList({
   const shownTabs = tabs.filter((tab) => drafts || tab.status !== "draft")
   const current = shownTabs.find((tab) => tab.status === status) ?? tabs[0]
   const shown = current.status ? rows.filter((row) => row.order.status === current.status) : rows
-  const destination = await destinations(shown.map((row) => row.order.data))
-  const day = dayFormat(timeZone)
+  const [destination, locale, t] = await Promise.all([
+    destinations(shown.map((row) => row.order.data)),
+    getLocale(),
+    getTranslations("orders.list")
+  ])
+  const day = dayFormat(locale, timeZone)
 
   return (
     <div className="flex flex-col gap-3">
       <TabLinks
-        label="Purchase order status"
+        label={t("statusTabs")}
         tabs={shownTabs.map((tab) => ({
-          label: tab.label,
+          label: t(`tabs.${tab.key}.label`),
           href: tab.status ? `/orders?status=${tab.status}` : "/orders",
           current: tab === current
         }))}
@@ -84,12 +91,12 @@ export async function OrderList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Purchase order</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Destination</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Created</TableHead>
-              <TableHead>Status</TableHead>
-              {showValue && <TableHead className="text-right">Value</TableHead>}
+              <TableHead>{t("columns.purchaseOrder")}</TableHead>
+              <TableHead>{t("columns.supplier")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("columns.destination")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("columns.created")}</TableHead>
+              <TableHead>{t("columns.status")}</TableHead>
+              {showValue && <TableHead className="text-end">{t("columns.value")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,9 +109,7 @@ export async function OrderList({
                       <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
                         {order.data.reference}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
-                        {lines} {lines === 1 ? "product" : "products"}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{t("products", { count: lines })}</p>
                     </TableCell>
                     <TableCell>{supplier.name}</TableCell>
                     <TableCell className="hidden @2xl:table-cell">{destination(order.data)}</TableCell>
@@ -115,8 +120,8 @@ export async function OrderList({
                       <Status status={order.status} />
                     </TableCell>
                     {showValue && (
-                      <TableCell className="text-right tabular-nums">
-                        {money(orderTotal(order.data), order.data.currency)}
+                      <TableCell className="text-end tabular-nums">
+                        {money(orderTotal(order.data), order.data.currency, locale)}
                       </TableCell>
                     )}
                   </LinkRow>
@@ -125,7 +130,7 @@ export async function OrderList({
             ) : (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={showValue ? 6 : 5} className="h-24 text-center text-muted-foreground">
-                  {current.empty}
+                  {t(`tabs.${current.key}.empty`)}
                 </TableCell>
               </TableRow>
             )}

@@ -1,6 +1,7 @@
 "use client"
 
 import { MailCheck } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
@@ -15,9 +16,15 @@ import { AuthPage, AuthSwitch } from "./auth-shell"
 import { PasswordField } from "./password-field"
 import { authFields, leaving } from "./sign-in-form"
 
+// Bold text inside a translated sentence, such as an email address.
+function strong(chunks: React.ReactNode) {
+  return <span className="font-medium text-foreground">{chunks}</span>
+}
+
 // Asks for the email to send a reset link to, then says it's on its way. Whether the email has an account isn't
 // revealed.
 export function ForgotPassword({ email = "" }: { email?: string }) {
+  const t = useTranslations("auth")
   const [sentTo, setSentTo] = useState<string | null>(null)
   const { form, submit } = useActionForm({
     schema: forgotPasswordSchema,
@@ -37,44 +44,43 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
             >
               <MailCheck className="size-6" />
             </span>
-            Check your email
+            {t("forgotPassword.sentTitle")}
           </span>
         }
-        description={
-          <>
-            If <span className="font-medium text-foreground">{sentTo}</span> has an account, a reset link is on its way.
-          </>
-        }
+        description={t.rich("forgotPassword.sentDescription", {
+          email: sentTo,
+          strong
+        })}
       >
         <Button variant="outline" className="h-10 w-full" nativeButton={false} render={<Link href="/login" />}>
-          Back to sign in
+          {t("forgotPassword.backToSignIn")}
         </Button>
       </AuthPage>
     )
   }
   return (
-    <AuthPage title="Reset your password" description="We’ll email you a link to choose a new one.">
+    <AuthPage title={t("forgotPassword.title")} description={t("forgotPassword.description")}>
       <FormProvider {...form}>
         <form onSubmit={submit} noValidate className={cn("flex flex-col gap-6", authFields)}>
           <FieldGroup>
             <FormInput
               name="email"
-              label="Email"
+              label={t("fields.email")}
               type="email"
               autoComplete="email"
               inputMode="email"
               spellCheck={false}
-              placeholder="you@company.com"
+              placeholder={t("fields.emailPlaceholder")}
             />
           </FieldGroup>
           <FormError message={form.formState.errors.root?.server?.message} />
           <SubmitButton type="submit" className="h-10 w-full" pending={form.formState.isSubmitting}>
-            Send reset link
+            {t("forgotPassword.submit")}
           </SubmitButton>
         </form>
       </FormProvider>
-      <AuthSwitch prompt="Remembered it?" href="/login">
-        Sign in
+      <AuthSwitch prompt={t("forgotPassword.remembered")} href="/login">
+        {t("switch.signIn")}
       </AuthSwitch>
     </AuthPage>
   )
@@ -82,6 +88,7 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
 
 // The new password, from the emailed link's token. Saving it signs straight in.
 export function ResetPasswordForm({ token }: { token: string }) {
+  const t = useTranslations("auth")
   const { form, submit } = useActionForm({
     schema: resetPasswordSchema,
     action: "auth.resetPassword",
@@ -91,10 +98,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <FormProvider {...form}>
       <form onSubmit={submit} noValidate className={cn("flex flex-col gap-6", authFields)}>
-        <PasswordField name="password" label="New password" autoComplete="new-password" isNew />
+        <PasswordField name="password" label={t("fields.newPassword")} autoComplete="new-password" isNew />
         <FormError message={form.formState.errors.root?.server?.message} />
         <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-          Save and sign in
+          {t("resetPassword.submit")}
         </SubmitButton>
       </form>
     </FormProvider>

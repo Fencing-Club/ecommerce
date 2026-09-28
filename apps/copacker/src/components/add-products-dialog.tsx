@@ -1,12 +1,14 @@
 "use client"
 
 import { Search } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { type CatalogProduct, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import type { CatalogProduct } from "@/lib/api"
 import { FormError } from "./actions"
 
 type Level = { locationId: string; available: number | null }
@@ -34,12 +36,14 @@ export function AddProductsDialog({
   stockAt: StockAt
   onAdd: (variants: CatalogProduct[]) => void
 }) {
+  const t = useTranslations("orders.addProducts")
+  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<{ failure: unknown; fallback: "loadFailed" | "addFailed" } | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -49,19 +53,19 @@ export function AddProductsDialog({
     const controller = new AbortController()
     const timer = setTimeout(() => {
       setLoading(true)
-      setError("")
+      setError(null)
       const params = new URLSearchParams({ pageSize: "50", ...(query.trim() && { q: query.trim() }) })
       fetch(`/api/inventory/products?${params}`, { signal: controller.signal })
         .then(async (response) => {
           if (!response.ok) {
-            throw new Error("Couldn’t load your products. Try again.")
+            throw new Error(t("loadFailed"))
           }
           const data = (await response.json()) as { products: Product[] }
           setProducts(data.products)
         })
         .catch((failure: unknown) => {
           if (!controller.signal.aborted) {
-            setError(errorMessage(failure, "Couldn’t load your products. Try again."))
+            setError({ failure, fallback: "loadFailed" })
           }
         })
         .finally(() => {
@@ -74,7 +78,7 @@ export function AddProductsDialog({
       clearTimeout(timer)
       controller.abort()
     }
-  }, [open, query])
+  }, [open, query, t])
 
   const atDestination = (variant: Variant) =>
     stockAt.locationIds === null
@@ -105,17 +109,17 @@ export function AddProductsDialog({
 
   async function add() {
     setAdding(true)
-    setError("")
+    setError(null)
     try {
       const response = await fetch(`/api/catalog?${new URLSearchParams({ ids: [...selected].join(",") })}`)
       if (!response.ok) {
-        throw new Error("Couldn’t add those products. Try again.")
+        throw new Error(t("addFailed"))
       }
       onAdd((await response.json()) as CatalogProduct[])
       setSelected(new Set())
       setOpen(false)
     } catch (failure) {
-      setError(errorMessage(failure, "Couldn’t add those products. Try again."))
+      setError({ failure, fallback: "addFailed" })
     } finally {
       setAdding(false)
     }
@@ -135,25 +139,25 @@ export function AddProductsDialog({
         render={
           <button
             type="button"
-            aria-label="Search products to add"
-            className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm text-muted-foreground transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            aria-label={t("trigger")}
+            className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-start text-sm text-muted-foreground transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           />
         }
       >
         <Search className="size-4" />
-        Search products to add
+        {t("trigger")}
       </DialogTrigger>
       <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add products</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
         <InputGroup>
           <InputGroupAddon>
             <Search />
           </InputGroupAddon>
           <InputGroupInput
-            aria-label="Search products"
-            placeholder="Search products"
+            aria-label={t("search")}
+            placeholder={t("search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -162,9 +166,9 @@ export function AddProductsDialog({
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-muted text-xs text-muted-foreground">
               <tr>
-                <th className="px-4 py-2 text-left font-medium">Product</th>
-                <th className="w-32 px-4 py-2 text-right font-medium">{stockAt.label}</th>
-                <th className="w-24 px-4 py-2 text-right font-medium">Available</th>
+                <th className="px-4 py-2 text-start font-medium">{t("product")}</th>
+                <th className="w-32 px-4 py-2 text-end font-medium">{stockAt.label}</th>
+                <th className="w-24 px-4 py-2 text-end font-medium">{t("available")}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,7 +189,7 @@ export function AddProductsDialog({
                               on
                             )
                           }
-                          aria-label={`Select all of ${product.title}`}
+                          aria-label={t("selectAllOf", { product: product.title })}
                         />
                         {product.imageUrl ? (
                           <img src={product.imageUrl} alt="" className="size-9 rounded border object-contain" />
@@ -194,7 +198,7 @@ export function AddProductsDialog({
                         )}
                         <span className="font-medium">{product.title}</span>
                         {single && added.has(product.variants[0]!.variantId) && (
-                          <span className="text-xs text-muted-foreground">Already on the purchase order</span>
+                          <span className="text-xs text-muted-foreground">{t("alreadyAdded")}</span>
                         )}
                       </label>
                     </td>
@@ -206,17 +210,17 @@ export function AddProductsDialog({
                         const already = added.has(variant.variantId)
                         return (
                           <tr key={variant.variantId} className={already ? "text-muted-foreground" : undefined}>
-                            <td className="py-1.5 pr-4 pl-12">
+                            <td className="py-1.5 pe-4 ps-12">
                               <label className="flex items-center gap-3">
                                 <Checkbox
                                   checked={already || selected.has(variant.variantId)}
                                   disabled={already}
                                   onCheckedChange={(on) => toggle([variant.variantId], on)}
-                                  aria-label={`Select ${product.title} ${variant.title ?? ""}`}
+                                  aria-label={t("select", { product: product.title, variant: variant.title ?? "" })}
                                 />
                                 <span>
                                   {variant.title}
-                                  {already && <span className="block text-xs">Already on the purchase order</span>}
+                                  {already && <span className="block text-xs">{t("alreadyAdded")}</span>}
                                 </span>
                               </label>
                             </td>
@@ -229,21 +233,21 @@ export function AddProductsDialog({
             </tbody>
           </table>
           {!loading && !products.length && !error && (
-            <p className="p-8 text-center text-sm text-muted-foreground">No products match.</p>
+            <p className="p-8 text-center text-sm text-muted-foreground">{t("noMatches")}</p>
           )}
-          {loading && !products.length && <p className="p-8 text-center text-sm text-muted-foreground">Loading…</p>}
+          {loading && !products.length && (
+            <p className="p-8 text-center text-sm text-muted-foreground">{t("loading")}</p>
+          )}
         </div>
         <DialogFooter className="mt-0 sm:items-center sm:justify-between">
-          <span className="text-muted-foreground">
-            {selected.size} {selected.size === 1 ? "variant" : "variants"} selected
-          </span>
-          <FormError message={error} />
+          <span className="text-muted-foreground">{t("selected", { count: selected.size })}</span>
+          <FormError message={error ? errorMessage(error.failure, t(error.fallback)) : undefined} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="button" disabled={!selected.size || adding} onClick={() => void add()}>
-              {adding ? "Adding…" : "Add to purchase order"}
+              {adding ? t("adding") : t("add")}
             </Button>
           </div>
         </DialogFooter>
@@ -255,8 +259,8 @@ export function AddProductsDialog({
 function Stock({ variant, at }: { variant: Variant; at: number | null }) {
   return (
     <>
-      <td className="px-4 py-1.5 text-right tabular-nums">{at ?? "—"}</td>
-      <td className="px-4 py-1.5 text-right tabular-nums">{variant.available ?? "—"}</td>
+      <td className="px-4 py-1.5 text-end tabular-nums">{at ?? "—"}</td>
+      <td className="px-4 py-1.5 text-end tabular-nums">{variant.available ?? "—"}</td>
     </>
   )
 }

@@ -7,6 +7,7 @@ import { connections, productDefaults, stockSnapshots, suppliers } from "@/db/sc
 import { type CasePack, casePackSchema } from "@/lib/case-packs"
 import { type ProductLabel, productLabels } from "@/lib/product-label"
 import type { Session } from "./auth"
+import { StatusError } from "./errors"
 import { refreshStoredStockFields } from "./product-fields"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
@@ -65,14 +66,7 @@ export const assignSupplierInputSchema = z.strictObject({
   supplierId: z.uuid().nullable()
 })
 
-export class ProductDefaultsError extends Error {
-  constructor(
-    message: string,
-    public readonly status: 403 | 404 | 409
-  ) {
-    super(message)
-  }
-}
+export class ProductDefaultsError extends StatusError {}
 
 export async function readProductDefaults(orgId: string, shopifyDomain: string) {
   const rows = await db()
@@ -100,7 +94,7 @@ export async function readProductDefaults(orgId: string, shopifyDomain: string) 
 
 export async function saveProductDefaults(s: Session, raw: unknown) {
   if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("A buyer workspace is required", 403)
+    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
   }
   const input = productDefaultsInputSchema.parse(raw)
   let domain = ""
@@ -111,7 +105,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("Connect Shopify before editing products", 409)
+      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
     }
     const [stock] = await tx
       .select({ data: stockSnapshots.data })
@@ -126,7 +120,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
       )
     const known = stock?.data?.source === "shopify" && stock.data.rows.some((row) => row.productId === input.productId)
     if (!known) {
-      throw new ProductDefaultsError("This product isn't in your synced Shopify inventory", 404)
+      throw new ProductDefaultsError("productNotSynced", 404)
     }
     domain = account.domain
     const scope = and(
@@ -136,7 +130,7 @@ export async function saveProductDefaults(s: Session, raw: unknown) {
     )
     const [previous] = await tx.select().from(productDefaults).where(scope).for("update")
     if ((previous?.revision ?? 0) !== input.expectedRevision) {
-      throw new ProductDefaultsError("Someone else changed this product. Reload and try again", 409)
+      throw new ProductDefaultsError("productChangedReload", 409)
     }
     const supplierId = input.supplierId === undefined ? (previous?.supplierId ?? null) : input.supplierId
     if (supplierId && supplierId !== previous?.supplierId) {
@@ -188,7 +182,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
     .from(suppliers)
     .where(and(eq(suppliers.id, supplierId), eq(suppliers.buyerOrgId, orgId), isNull(suppliers.removedAt)))
   if (!supplier) {
-    throw new ProductDefaultsError("Choose one of your current suppliers", 409)
+    throw new ProductDefaultsError("chooseCurrentSupplier", 409)
   }
   return supplier
 }
@@ -197,7 +191,7 @@ async function requireCurrentSupplier(tx: Transaction, orgId: string, supplierId
 // details are kept.
 export async function assignProductSupplier(s: Session, raw: unknown) {
   if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("A buyer workspace is required", 403)
+    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
   }
   const input = assignSupplierInputSchema.parse(raw)
   let domain = ""
@@ -208,7 +202,7 @@ export async function assignProductSupplier(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("Connect Shopify before editing products", 409)
+      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
     }
     domain = account.domain
     const productIds = [...new Set(input.productIds)]
@@ -251,7 +245,7 @@ export const assignProductLabelInputSchema = z.strictObject({
 // product details are kept.
 export async function assignProductLabel(s: Session, raw: unknown) {
   if (s.org.kind !== "buyer") {
-    throw new ProductDefaultsError("A buyer workspace is required", 403)
+    throw new ProductDefaultsError("buyerWorkspaceRequired", 403)
   }
   const input = assignProductLabelInputSchema.parse(raw)
   return db().transaction(async (tx) => {
@@ -261,7 +255,7 @@ export async function assignProductLabel(s: Session, raw: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("share")
     if (!account) {
-      throw new ProductDefaultsError("Connect Shopify before editing products", 409)
+      throw new ProductDefaultsError("connectShopifyBeforeEditing", 409)
     }
     const productIds = [...new Set(input.productIds)]
     await tx

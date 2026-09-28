@@ -10,6 +10,7 @@ import {
   Package,
   TriangleAlert
 } from "lucide-react"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import Image from "next/image"
 import Link from "next/link"
 import { Status } from "@/components/common"
@@ -18,12 +19,57 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { change, formatChange, formatMoney, formatNumber, otherCurrencies } from "@/lib/format"
+import { rangeLabel } from "@/lib/date-range"
+import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overview"
 import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
+
+type MoneyList = readonly { currency: string; minor: number }[]
+
+// Numbers and money in the reader's language, as the Overview shows them. Money is in minor units, and an amount in
+// several currencies shows the one most of it is in, the others named beneath.
+export function useFigures() {
+  const t = useTranslations("overview")
+  const format = useFormatter()
+  const exact = (minor: number, currency: string) => format.number(minor / 100, { style: "currency", currency })
+  return {
+    number: (value: number) => format.number(value, { maximumFractionDigits: 0 }),
+    // A headline amount in whole units, such as $16,997, shortened only from a million ($1.2M).
+    whole: (minor: number, currency: string) => {
+      const short = Math.abs(minor / 100) >= 1000000
+      return format.number(minor / 100, {
+        style: "currency",
+        currency,
+        notation: short ? "compact" : "standard",
+        maximumFractionDigits: short ? 1 : 0
+      })
+    },
+    // `fallback` is the currency to show zero in.
+    money: (value: MoneyList, fallback = "USD") => {
+      const first = value[0] ?? { minor: 0, currency: fallback }
+      return exact(first.minor, first.currency)
+    },
+    others: (value: MoneyList) =>
+      value.length > 1
+        ? t("plusCurrencies", {
+            amounts: format.list(
+              value.slice(1).map((entry) => exact(entry.minor, entry.currency)),
+              { type: "conjunction" }
+            )
+          })
+        : null,
+    percent: (value: number) => format.number(value, { style: "percent", maximumFractionDigits: 1 }),
+    change: (value: number) =>
+      format.number(value, {
+        style: "percent",
+        maximumFractionDigits: Math.abs(value) < 0.1 ? 1 : 0,
+        signDisplay: "exceptZero"
+      })
+  }
+}
 
 // Restock filtered to what a card shows. Restock opens on one channel, so a link names the channel it's about.
 export function restockHref(filters: { channel?: string | null; cover?: string; q?: string | null; status?: string }) {
@@ -46,21 +92,23 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
         size="sm"
         nativeButton={false}
         render={<Link href={href} />}
-        className="-my-1 -mr-2 text-muted-foreground"
+        className="-my-1 -me-2 text-muted-foreground"
       >
         {children}
-        <ChevronRight data-icon="inline-end" />
+        <ChevronRight data-icon="inline-end" className="rtl:rotate-180" />
       </Button>
     </IfCanOpen>
   )
 }
 
 // The one placeholder for a value that doesn't apply, with the reason on hover and for screen readers.
-export function Dash({ reason = "Not available" }: { reason?: string }) {
+export function Dash({ reason }: { reason?: string }) {
+  const t = useTranslations("overview")
+  const why = reason ?? t("notAvailable")
   return (
-    <span className="text-muted-foreground" title={reason}>
+    <span className="text-muted-foreground" title={why}>
       <span aria-hidden>—</span>
-      <span className="sr-only">{reason}</span>
+      <span className="sr-only">{why}</span>
     </span>
   )
 }
@@ -84,6 +132,8 @@ function deltaTone(value: number | null) {
 // A change as a small pill: green up, red down, grey under half a percent either way. Null reads as new, for something
 // that had nothing before.
 export function DeltaPill({ value, title }: { value: number | null; title?: string }) {
+  const t = useTranslations("overview")
+  const figures = useFigures()
   const { icon: Icon, className } = deltaTones[deltaTone(value)]
   return (
     <span
@@ -94,7 +144,7 @@ export function DeltaPill({ value, title }: { value: number | null; title?: stri
       )}
     >
       <Icon className="size-3" aria-hidden />
-      {value === null ? "New" : formatChange(value)}
+      {value === null ? t("new") : figures.change(value)}
     </span>
   )
 }
@@ -158,10 +208,11 @@ function Figure({ label, value, note }: { label: string; value: React.ReactNode;
 
 // An amount in its main currency, with any other currencies it includes beneath.
 function Amount({ value }: { value: Money }) {
-  const others = otherCurrencies(value)
+  const figures = useFigures()
+  const others = figures.others(value)
   return (
     <>
-      {formatMoney(value)}
+      {figures.money(value)}
       {others && <span className="block text-xs font-normal text-muted-foreground">{others}</span>}
     </>
   )
@@ -176,24 +227,21 @@ function combine(values: Money[]): Money {
   return [...totals].map(([currency, minor]) => ({ currency, minor })).toSorted((a, b) => b.minor - a.minor)
 }
 
-function plural(count: number, one: string, many: string) {
-  return `${formatNumber(count)} ${count === 1 ? one : many}`
-}
-
 // A table that runs edge to edge inside its card: the first and last columns line up with the card's padding.
-const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 // A card holding an edge-to-edge table or list, under a header with a rule.
 const tableCard = "@container gap-0 py-0"
 const tableCardHeader = "border-b pt-4"
 
 export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
+  const t = useTranslations("overview.setup")
   const done = steps.filter((step) => step.done).length
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Finish setting up</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardAction className="text-sm text-muted-foreground tabular-nums">
-          {done} of {steps.length} done
+          {t("progress", { done, total: steps.length })}
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -210,7 +258,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                 <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground">
                   <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />
                   <span className="truncate text-sm font-medium">{step.title}</span>
-                  <span className="sr-only">Done</span>
+                  <span className="sr-only">{t("done")}</span>
                 </div>
               ) : (
                 <PageLink
@@ -224,7 +272,7 @@ export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
                       {step.detail}
                     </span>
                   </span>
-                  <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <ChevronRight className="ms-auto size-4 rtl:rotate-180 shrink-0 text-muted-foreground" aria-hidden />
                 </PageLink>
               )}
             </li>
@@ -243,14 +291,16 @@ const toneIcons = {
 }
 
 export function Attention({ items }: { items: AttentionItem[] }) {
+  const t = useTranslations("overview.attention")
+  const figures = useFigures()
   return (
     <Card className={tableCard}>
       <CardHeader className={tableCardHeader}>
         <CardTitle className="flex items-center gap-2">
-          Needs attention
+          {t("title")}
           {items.length > 0 && (
             <Badge variant={items.some((item) => item.tone === "critical") ? "destructive" : "secondary"}>
-              {formatNumber(items.length)}
+              {figures.number(items.length)}
             </Badge>
           )}
         </CardTitle>
@@ -281,7 +331,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
                     )}
                   >
                     <span className="hidden sm:inline">{item.action}</span>
-                    <ChevronRight data-icon="inline-end" />
+                    <ChevronRight data-icon="inline-end" className="rtl:rotate-180" />
                   </span>
                 </PageLink>
               </li>
@@ -291,7 +341,7 @@ export function Attention({ items }: { items: AttentionItem[] }) {
       ) : (
         <div className="flex items-center gap-3 px-4 py-3 text-sm font-medium">
           <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />
-          All caught up
+          {t("caughtUp")}
         </div>
       )}
     </Card>
@@ -314,20 +364,19 @@ const channelFills = {
 }
 
 export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
+  const t = useTranslations("overview.inventory")
+  const figures = useFigures()
   const largest = Math.max(1, ...restock.channels.map((channel) => channel.available + channel.incoming))
   const profit = potentialProfit(restock)
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          Inventory
-          <InfoTip label="About inventory values">
-            Retail value uses what each unit recently sold for, or its Shopify price. Costs include landed costs from
-            purchase orders.
-          </InfoTip>
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
         </CardTitle>
         <CardAction>
-          <CardLink href="/products">Products</CardLink>
+          <CardLink href="/products">{t("products")}</CardLink>
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
@@ -341,7 +390,9 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
                     <span className="truncate font-medium" title={channel.label}>
                       {channel.label}
                     </span>
-                    <span className="shrink-0 font-medium tabular-nums">{formatNumber(channel.available)} on hand</span>
+                    <span className="shrink-0 font-medium tabular-nums">
+                      {t("onHand", { count: channel.available })}
+                    </span>
                   </div>
                   <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
                     <span
@@ -356,41 +407,43 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
                     )}
                   </div>
                   <div className="flex justify-between gap-3 text-xs text-muted-foreground tabular-nums">
-                    <span>{formatNumber(channel.incoming)} on the way</span>
-                    <span>{channel.value.length ? `${formatMoney(channel.value)} at cost` : "No unit costs"}</span>
+                    <span>{t("onTheWay", { count: channel.incoming })}</span>
+                    <span>
+                      {channel.value.length ? t("atCost", { amount: figures.money(channel.value) }) : t("noUnitCosts")}
+                    </span>
                   </div>
                 </div>
               )
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No stock synced</p>
+          <p className="text-sm text-muted-foreground">{t("noStock")}</p>
         )}
         <dl className="mt-auto grid grid-cols-2 gap-4 border-t pt-4">
-          <Figure label="Units on hand" value={formatNumber(restock.unitsOnHand)} />
+          <Figure label={t("unitsOnHand")} value={figures.number(restock.unitsOnHand)} />
           <Figure
-            label="Value at cost"
+            label={t("valueAtCost")}
             value={
               restock.stockValue.length || !restock.uncosted ? (
-                formatMoney(restock.stockValue)
+                figures.money(restock.stockValue)
               ) : (
-                <Dash reason="No unit costs" />
+                <Dash reason={t("noUnitCosts")} />
               )
             }
-            note={otherCurrencies(restock.stockValue)}
+            note={figures.others(restock.stockValue)}
           />
           <Figure
-            label="Retail value"
+            label={t("retailValue")}
             value={
               restock.retailValue.length || !restock.unpriced ? (
-                formatMoney(restock.retailValue)
+                figures.money(restock.retailValue)
               ) : (
-                <Dash reason="No prices" />
+                <Dash reason={t("noPrices")} />
               )
             }
-            note={otherCurrencies(restock.retailValue)}
+            note={figures.others(restock.retailValue)}
           />
-          <Figure label="Potential gross profit" value={profit ? formatMoney(profit) : <Dash />} />
+          <Figure label={t("potentialProfit")} value={profit ? figures.money(profit) : <Dash />} />
         </dl>
       </CardContent>
     </Card>
@@ -398,19 +451,21 @@ export function StockByChannel({ restock }: { restock: Overview["restock"] }) {
 }
 
 export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]; channel: string | null }) {
+  const t = useTranslations("overview.cover")
+  const buckets = useTranslations("restock.cover")
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          Days of cover
-          <InfoTip label="About days of cover">How long each item’s stock lasts at its recent sales rate.</InfoTip>
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <CoverChart
           buckets={restock.cover.map((bucket) => ({
             key: bucket.key,
-            label: bucket.label,
+            label: buckets(bucket.key),
             items: bucket.items,
             href: bucket.items ? restockHref({ channel: channel ?? bucket.channel, cover: bucket.key }) : null
           }))}
@@ -420,12 +475,18 @@ export function DaysOfCover({ restock, channel }: { restock: Overview["restock"]
   )
 }
 
+// When sent purchase orders fall due, as the server groups them for the upcoming spend.
+const dueGroups = ["overdue", "next30", "next60", "later"] as const
+const isDueGroup = (key: string): key is (typeof dueGroups)[number] => dueGroups.some((group) => group === key)
+
 export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcoming"]; channel: string | null }) {
+  const t = useTranslations("overview.upcoming")
+  const figures = useFigures()
   const rows = [
     {
       key: "reorders",
-      label: "Reorders due now",
-      detail: "Estimated from unit costs",
+      label: t("reorders"),
+      detail: t("reordersDetail"),
       value: upcoming.reorders,
       href: restockHref({ status: "order", channel })
     },
@@ -434,28 +495,26 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
       .filter((bucket) => bucket.orders > 0)
       .map((bucket) => ({
         key: bucket.key,
-        label: bucket.label,
-        detail: plural(bucket.orders, "purchase order", "purchase orders"),
+        label: isDueGroup(bucket.key) ? t(`due.${bucket.key}`) : bucket.label,
+        detail: t("purchaseOrders", { count: bucket.orders }),
         value: bucket.value,
         href: "/orders"
       }))
   ]
-  const others = otherCurrencies(upcoming.next60)
+  const others = figures.others(upcoming.next60)
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          Upcoming spend
-          <InfoTip label="About upcoming spend">
-            Reorders that are due, and sent purchase orders by their due date.
-          </InfoTip>
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-muted-foreground">Next 60 days</span>
+          <span className="text-xs text-muted-foreground">{t("next60")}</span>
           <span className="text-2xl leading-8 font-semibold tracking-tight tabular-nums">
-            {formatMoney(upcoming.next60)}
+            {figures.money(upcoming.next60)}
           </span>
           {others && <span className="text-xs text-muted-foreground">{others}</span>}
         </div>
@@ -470,7 +529,7 @@ export function UpcomingSpend({ upcoming, channel }: { upcoming: Overview["upcom
                   <span className="truncate text-sm font-medium">{row.label}</span>
                   <span className="truncate text-xs text-muted-foreground">{row.detail}</span>
                 </span>
-                <span className="shrink-0 text-right text-sm font-medium tabular-nums">
+                <span className="shrink-0 text-end text-sm font-medium tabular-nums">
                   <Amount value={row.value} />
                 </span>
               </PageLink>
@@ -491,6 +550,7 @@ function MoverList({
   movers: Overview["sales"]["movers"]["rising"]
   empty: string
 }) {
+  const t = useTranslations("overview.trending")
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
@@ -501,9 +561,11 @@ function MoverList({
               <Product
                 href={restockHref({ q: mover.sku ?? mover.product })}
                 name={mover.product}
-                detail={[mover.variant, `${formatNumber(mover.previous)} to ${formatNumber(mover.current)} units`]
-                  .filter(Boolean)
-                  .join(", ")}
+                detail={
+                  mover.variant
+                    ? t("variantUnits", { variant: mover.variant, from: mover.previous, count: mover.current })
+                    : t("units", { from: mover.previous, count: mover.current })
+                }
                 imageUrl={mover.imageUrl}
               />
               <DeltaPill value={change(mover.current, mover.previous)} />
@@ -526,24 +588,26 @@ export function Trending({
   comparable: boolean
   period: Overview["period"]
 }) {
+  const t = useTranslations("overview.trending")
+  const locale = useLocale()
   let empty: string | null = null
   if (!comparable) {
-    empty = period.previousLabel ? `No orders synced for ${period.previousLabel}` : "No comparison period"
+    empty = period.previous ? t("noPreviousOrders", { period: rangeLabel(period.previous, locale) }) : t("noComparison")
   } else if (!movers.rising.length && !movers.falling.length) {
-    empty = "No product changed by more than a few units"
+    empty = t("noChanges")
   }
   return (
     <Card className="@container">
       <CardHeader>
-        <CardTitle>Trending products</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1">
         {empty ? (
           <p className="text-sm text-muted-foreground">{empty}</p>
         ) : (
           <div className="grid grid-cols-1 gap-x-8 gap-y-6 @xl:grid-cols-2">
-            <MoverList title="Selling more" movers={movers.rising} empty="Nothing selling more" />
-            <MoverList title="Selling less" movers={movers.falling} empty="Nothing selling less" />
+            <MoverList title={t("sellingMore")} movers={movers.rising} empty={t("nothingMore")} />
+            <MoverList title={t("sellingLess")} movers={movers.falling} empty={t("nothingLess")} />
           </div>
         )}
       </CardContent>
@@ -552,20 +616,18 @@ export function Trending({
 }
 
 export function SlowStock({ restock }: { restock: Overview["restock"] }) {
+  const t = useTranslations("overview.slow")
+  const figures = useFigures()
   const { slow } = restock
-  const summary = [
-    plural(slow.items, "item", "items"),
-    plural(slow.units, "unit", "units"),
-    slow.value.length ? `${formatMoney(slow.value)} at cost` : null
-  ]
-    .filter(Boolean)
-    .join(", ")
+  const summary = slow.value.length
+    ? t("summaryAtCost", { items: slow.items, units: slow.units, amount: figures.money(slow.value) })
+    : t("summary", { items: slow.items, units: slow.units })
   return (
     <Card className={tableCard}>
       <CardHeader className={tableCardHeader}>
         <CardTitle className="flex items-center gap-1.5">
-          Slow-moving stock
-          <InfoTip label="About slow-moving stock">Stock that lasts over 3 months, or hasn’t sold recently.</InfoTip>
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
         </CardTitle>
         {slow.items > 0 && <CardDescription>{summary}</CardDescription>}
       </CardHeader>
@@ -573,10 +635,10 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
         <Table framed={false} className={edgeTable}>
           <TableHeader>
             <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead className="text-right">On hand</TableHead>
-              <TableHead className="hidden text-right @lg:table-cell">Cover</TableHead>
-              <TableHead className="text-right">At cost</TableHead>
+              <TableHead>{t("product")}</TableHead>
+              <TableHead className="text-end">{t("onHand")}</TableHead>
+              <TableHead className="hidden text-end @lg:table-cell">{t("cover")}</TableHead>
+              <TableHead className="text-end">{t("atCost")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -590,23 +652,23 @@ export function SlowStock({ restock }: { restock: Overview["restock"] }) {
                     imageUrl={item.imageUrl}
                   />
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(item.available)}</TableCell>
-                <TableCell className="hidden text-right tabular-nums @lg:table-cell">
+                <TableCell className="text-end tabular-nums">{figures.number(item.available)}</TableCell>
+                <TableCell className="hidden text-end tabular-nums @lg:table-cell">
                   {item.bucket === "unsold" || item.daysRemaining === null ? (
-                    <Dash reason="Not selling" />
+                    <Dash reason={t("notSelling")} />
                   ) : (
-                    `${formatNumber(item.daysRemaining)} days`
+                    t("days", { count: item.daysRemaining })
                   )}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {item.value ? formatMoney([item.value]) : <Dash reason="No unit cost" />}
+                <TableCell className="text-end tabular-nums">
+                  {item.value ? figures.money([item.value]) : <Dash reason={t("noUnitCost")} />}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       ) : (
-        <CardContent className="py-4 text-sm text-muted-foreground">No slow-moving stock</CardContent>
+        <CardContent className="py-4 text-sm text-muted-foreground">{t("empty")}</CardContent>
       )}
     </Card>
   )
@@ -621,23 +683,25 @@ const sellerStatus = {
 } as const
 
 export function BestSellers({ restock }: { restock: Overview["restock"] }) {
+  const t = useTranslations("overview.bestSellers")
+  const figures = useFigures()
   return (
     <Card className={tableCard}>
       <CardHeader className={tableCardHeader}>
-        <CardTitle>Best sellers</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardAction>
-          <CardLink href="/restock">Restock</CardLink>
+          <CardLink href="/restock">{t("restock")}</CardLink>
         </CardAction>
       </CardHeader>
       {restock.bestSellers.length ? (
         <Table framed={false} className={edgeTable}>
           <TableHeader>
             <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead className="text-right">Sold</TableHead>
-              <TableHead className="hidden text-right @lg:table-cell">On hand</TableHead>
-              <TableHead className="hidden text-right @lg:table-cell">Cover</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("product")}</TableHead>
+              <TableHead className="text-end">{t("sold")}</TableHead>
+              <TableHead className="hidden text-end @lg:table-cell">{t("onHand")}</TableHead>
+              <TableHead className="hidden text-end @lg:table-cell">{t("cover")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -651,12 +715,12 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
                     imageUrl={seller.imageUrl}
                   />
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(seller.sold)}</TableCell>
-                <TableCell className="hidden text-right tabular-nums @lg:table-cell">
-                  {formatNumber(seller.available)}
+                <TableCell className="text-end tabular-nums">{figures.number(seller.sold)}</TableCell>
+                <TableCell className="hidden text-end tabular-nums @lg:table-cell">
+                  {figures.number(seller.available)}
                 </TableCell>
-                <TableCell className="hidden text-right tabular-nums @lg:table-cell">
-                  {seller.daysRemaining === null ? <Dash /> : `${formatNumber(seller.daysRemaining)} days`}
+                <TableCell className="hidden text-end tabular-nums @lg:table-cell">
+                  {seller.daysRemaining === null ? <Dash /> : t("days", { count: seller.daysRemaining })}
                 </TableCell>
                 <TableCell>
                   <Status status={sellerStatus[seller.status]} />
@@ -666,30 +730,32 @@ export function BestSellers({ restock }: { restock: Overview["restock"] }) {
           </TableBody>
         </Table>
       ) : (
-        <CardContent className="py-4 text-sm text-muted-foreground">No sales yet</CardContent>
+        <CardContent className="py-4 text-sm text-muted-foreground">{t("empty")}</CardContent>
       )}
     </Card>
   )
 }
 
 export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] }) {
+  const t = useTranslations("overview.openOrders")
+  const figures = useFigures()
   const shown = purchasing.bySupplier.slice(0, 5)
   const rest = purchasing.bySupplier.slice(5)
   return (
     <Card className={tableCard}>
       <CardHeader className={tableCardHeader}>
-        <CardTitle>Open purchase orders</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardAction>
-          <CardLink href="/orders">Purchase orders</CardLink>
+          <CardLink href="/orders">{t("link")}</CardLink>
         </CardAction>
       </CardHeader>
       {shown.length ? (
         <Table framed={false} className={edgeTable}>
           <TableHeader>
             <TableRow>
-              <TableHead>Supplier</TableHead>
-              <TableHead className="text-right">Orders</TableHead>
-              <TableHead className="text-right">Open value</TableHead>
+              <TableHead>{t("supplier")}</TableHead>
+              <TableHead className="text-end">{t("orders")}</TableHead>
+              <TableHead className="text-end">{t("openValue")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -700,21 +766,19 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
                     {supplier.name}
                   </span>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(supplier.orders)}</TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="text-end tabular-nums">{figures.number(supplier.orders)}</TableCell>
+                <TableCell className="text-end tabular-nums">
                   <Amount value={supplier.value} />
                 </TableCell>
               </TableRow>
             ))}
             {rest.length > 0 && (
               <TableRow>
-                <TableCell className="text-muted-foreground">
-                  {plural(rest.length, "other supplier", "other suppliers")}
+                <TableCell className="text-muted-foreground">{t("otherSuppliers", { count: rest.length })}</TableCell>
+                <TableCell className="text-end tabular-nums">
+                  {figures.number(rest.reduce((sum, supplier) => sum + supplier.orders, 0))}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatNumber(rest.reduce((sum, supplier) => sum + supplier.orders, 0))}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="text-end tabular-nums">
                   <Amount value={combine(rest.map((supplier) => supplier.value))} />
                 </TableCell>
               </TableRow>
@@ -722,20 +786,20 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
           </TableBody>
         </Table>
       ) : (
-        <CardContent className="py-4 text-sm text-muted-foreground">No open purchase orders</CardContent>
+        <CardContent className="py-4 text-sm text-muted-foreground">{t("empty")}</CardContent>
       )}
       {/* The totals sit at the foot of the card, level with the card beside it. */}
       <CardFooter className="mt-auto">
         <dl className="grid w-full grid-cols-2 gap-4">
           <Figure
-            label="Open"
+            label={t("open")}
             value={<Amount value={purchasing.open} />}
-            note={plural(purchasing.openCount, "purchase order", "purchase orders")}
+            note={t("purchaseOrders", { count: purchasing.openCount })}
           />
           <Figure
-            label="Drafts"
+            label={t("drafts")}
             value={<Amount value={purchasing.drafts} />}
-            note={plural(purchasing.draftCount, "purchase order", "purchase orders")}
+            note={t("purchaseOrders", { count: purchasing.draftCount })}
           />
         </dl>
       </CardFooter>
@@ -744,15 +808,28 @@ export function OpenOrders({ purchasing }: { purchasing: Overview["purchasing"] 
 }
 
 // Deductions from sales, grouped so the card reads at a glance; each group's parts show on hover.
-const profitGroups: { label: string; keys: (key: string) => boolean }[] = [
-  { label: "Refunds and disputes", keys: (key) => key === "amazon-refunds" || key === "shopify-disputes" },
+const profitGroups: { name: "refunds" | "shipping" | "advertising" | "monthly"; keys: (key: string) => boolean }[] = [
+  { name: "refunds", keys: (key) => key === "amazon-refunds" || key === "shopify-disputes" },
   {
-    label: "Shipping and freight",
+    name: "shipping",
     keys: (key) => key === "amazon-freight" || key === "shopify-labels" || key === "shopify-duties"
   },
-  { label: "Advertising", keys: (key) => key === "amazon-ads" },
-  { label: "Monthly costs", keys: (key) => key.startsWith("monthly:") }
+  { name: "advertising", keys: (key) => key === "amazon-ads" },
+  { name: "monthly", keys: (key) => key.startsWith("monthly:") }
 ]
+// The platform charges the server names, by their message keys. Monthly costs keep the names people gave them.
+const chargeNames = {
+  "amazon-refunds": "amazonRefunds",
+  "amazon-ads": "amazonAds",
+  "amazon-charges": "amazonCharges",
+  "amazon-mcf": "amazonMcf",
+  "amazon-freight": "amazonFreight",
+  "shopify-labels": "shopifyLabels",
+  "shopify-bill": "shopifyBill",
+  "shopify-disputes": "shopifyDisputes",
+  "shopify-duties": "shopifyDuties"
+} as const
+const isChargeName = (key: string): key is keyof typeof chargeNames => Object.hasOwn(chargeNames, key)
 
 // One line of the gross profit breakdown, in the list's three columns: its label, its share of sales and its amount.
 // The share column is only as wide as its widest figure and sits close to the amounts, so the labels keep the rest.
@@ -771,12 +848,12 @@ function ProfitLine({
 }) {
   return (
     <div className="col-span-3 grid grid-cols-subgrid items-baseline py-2">
-      <dt className={cn("flex min-w-0 items-center gap-1.5 pr-1", strong ? "font-medium" : "text-muted-foreground")}>
+      <dt className={cn("flex min-w-0 items-center gap-1.5 pe-1", strong ? "font-medium" : "text-muted-foreground")}>
         <span className="min-w-0">{label}</span>
         {children}
       </dt>
-      {share && <dd className="text-right text-xs text-muted-foreground tabular-nums">{share}</dd>}
-      <dd className={cn("text-right tabular-nums", !share && "col-span-2", strong ? "font-semibold" : "font-medium")}>
+      {share && <dd className="text-end text-xs text-muted-foreground tabular-nums">{share}</dd>}
+      <dd className={cn("text-end tabular-nums", !share && "col-span-2", strong ? "font-semibold" : "font-medium")}>
         {value}
       </dd>
     </div>
@@ -784,20 +861,31 @@ function ProfitLine({
 }
 
 export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
+  const t = useTranslations("overview.profit")
+  const format = useFormatter()
+  const figures = useFigures()
   const { profit } = sales
   const currency = profit.currency
+  const percent = (value: number) => format.number(value, { style: "percent", maximumFractionDigits: 0 })
   const share = (minor: number) =>
-    profit.costedRevenueMinor > 0 ? `${Math.round((Math.abs(minor) / profit.costedRevenueMinor) * 100)}%` : null
-  const parts = [{ key: "fees", label: "Order fees", minor: -profit.feesMinor }, ...profit.charges]
+    profit.costedRevenueMinor > 0 ? percent(Math.abs(minor) / profit.costedRevenueMinor) : null
+  // A monthly cost is named "<name>, monthly cost"; its group already says it's monthly.
+  const charges = profit.charges.map((charge) => ({
+    ...charge,
+    label: isChargeName(charge.key)
+      ? t(`charges.${chargeNames[charge.key]}`)
+      : charge.label.replace(/, monthly cost$/, "")
+  }))
+  const parts = [{ key: "fees", label: t("orderFees"), minor: -profit.feesMinor }, ...charges]
   const grouped = profitGroups.map((group) => ({
-    label: group.label,
+    label: t(`groups.${group.name}`),
     parts: parts.filter((part) => group.keys(part.key))
   }))
   // Fees: order fees and every other platform charge.
   const fees = parts.filter((part) => !profitGroups.some((group) => group.keys(part.key)))
   const lines = [
-    { label: "Cost of goods", parts: [{ key: "cost", label: "Cost of goods", minor: -profit.costMinor }] },
-    { label: "Fees", parts: fees },
+    { label: t("costOfGoods"), parts: [{ key: "cost", label: t("costOfGoods"), minor: -profit.costMinor }] },
+    { label: t("fees"), parts: fees },
     ...grouped
   ]
     .map((line) => ({ ...line, minor: line.parts.reduce((sum, part) => sum + part.minor, 0) }))
@@ -806,37 +894,41 @@ export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Gross profit</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardAction>
-          <CardLink href="/settings#monthly-costs">Monthly costs</CardLink>
+          <CardLink href="/settings#monthly-costs">{t("monthlyCosts")}</CardLink>
         </CardAction>
       </CardHeader>
       <CardContent className="flex-1">
         {currency && profit.costedRevenueMinor > 0 ? (
           <dl className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 divide-y text-sm">
-            <ProfitLine label="Sales" value={formatMoney([{ minor: profit.costedRevenueMinor, currency }])} strong />
+            <ProfitLine
+              label={t("sales")}
+              value={figures.money([{ minor: profit.costedRevenueMinor, currency }])}
+              strong
+            />
             {lines.map((line) => (
               <ProfitLine
                 key={line.label}
                 label={line.label}
                 share={share(line.minor)}
-                value={formatMoney([{ minor: line.minor, currency }])}
+                value={figures.money([{ minor: line.minor, currency }])}
               >
                 {line.parts.length > 1 && (
                   <Tooltip>
                     <TooltipTrigger
-                      aria-label={`What’s in ${line.label.toLowerCase()}`}
+                      aria-label={t("whatsIn", { line: line.label })}
                       className="rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
                     >
                       <Info className="size-3.5" aria-hidden />
                     </TooltipTrigger>
-                    <TooltipContent side="right" align="start">
+                    <TooltipContent side="inline-end" align="start">
                       <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5">
                         {line.parts.map((part) => (
                           <div key={part.key} className="col-span-2 grid grid-cols-subgrid">
-                            <dt>{part.label.replace(/, monthly cost$/, "")}</dt>
-                            <dd className="text-right tabular-nums">
-                              {formatMoney([{ minor: part.minor, currency }])}
+                            <dt>{part.label}</dt>
+                            <dd className="text-end tabular-nums">
+                              {figures.money([{ minor: part.minor, currency }])}
                             </dd>
                           </div>
                         ))}
@@ -847,85 +939,82 @@ export function ProfitBreakdown({ sales }: { sales: Overview["sales"] }) {
               </ProfitLine>
             ))}
             <ProfitLine
-              label="Gross profit"
-              share={profit.margin === null ? null : `${Math.round(profit.margin * 100)}%`}
-              value={formatMoney([{ minor: profit.profitMinor, currency }])}
+              label={t("title")}
+              share={profit.margin === null ? null : percent(profit.margin)}
+              value={figures.money([{ minor: profit.profitMinor, currency }])}
               strong
             />
           </dl>
         ) : (
-          <p className="text-sm text-muted-foreground">Needs order prices and unit costs</p>
+          <p className="text-sm text-muted-foreground">{t("needsCosts")}</p>
         )}
       </CardContent>
     </Card>
   )
 }
 
+const settingsLink = (chunks: React.ReactNode) => (
+  <PageLink href="/settings#integrations" className="font-medium text-foreground underline underline-offset-2">
+    {chunks}
+  </PageLink>
+)
+
 // Shopify customers: who ordered in the period and how many came back, and what a customer is worth over a year.
 export function Customers({ customers }: { customers: NonNullable<Overview["sales"]["customers"]> }) {
+  const t = useTranslations("overview.customers")
+  const format = useFormatter()
+  const figures = useFigures()
   const percent = (part: number, whole: number) =>
-    whole > 0 ? `${Math.round((part / whole) * 100)}%` : <Dash reason="No customers" />
+    whole > 0 ? (
+      format.number(part / whole, { style: "percent", maximumFractionDigits: 0 })
+    ) : (
+      <Dash reason={t("noCustomers")} />
+    )
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-1.5">
-          Shopify customers
-          <InfoTip label="About customer figures">
-            Lifetime value, repeat customers and orders per customer cover the last 12 months. Guest and Amazon orders
-            aren’t counted.
-          </InfoTip>
+          {t("title")}
+          <InfoTip label={t("aboutLabel")}>{t("about")}</InfoTip>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1">
         {customers.status === "reconnect" && (
           <p className="text-sm text-muted-foreground">
-            <ForAdmins fallback="Ask an admin to reconnect Shopify to count repeat customers">
-              Reconnect Shopify in{" "}
-              <PageLink
-                href="/settings#integrations"
-                className="font-medium text-foreground underline underline-offset-2"
-              >
-                Settings
-              </PageLink>{" "}
-              to count repeat customers
-            </ForAdmins>
+            <ForAdmins fallback={t("reconnectAskAdmin")}>{t.rich("reconnect", { settings: settingsLink })}</ForAdmins>
           </p>
         )}
-        {customers.status === "syncing" && (
-          <p className="text-sm text-muted-foreground">Available after the next Shopify order sync</p>
-        )}
+        {customers.status === "syncing" && <p className="text-sm text-muted-foreground">{t("syncing")}</p>}
         {customers.status === "ready" && (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
             <Figure
-              label="Customer lifetime value"
+              label={t("lifetimeValue")}
               value={
                 customers.yearCustomers ? (
-                  formatMoney([
+                  figures.money([
                     {
                       minor: Math.round(customers.yearRevenueMinor / customers.yearCustomers),
                       currency: customers.currency
                     }
                   ])
                 ) : (
-                  <Dash reason="No customers" />
+                  <Dash reason={t("noCustomers")} />
                 )
               }
             />
             <Figure
-              label="Returning customers"
+              label={t("returning")}
               value={percent(customers.returning, customers.customers)}
-              note={`${formatNumber(customers.returning)} of ${formatNumber(customers.customers)} in this period`}
+              note={t("returningNote", { returning: customers.returning, customers: customers.customers })}
             />
-            <Figure label="Repeat customers" value={percent(customers.repeatCustomers, customers.yearCustomers)} />
+            <Figure label={t("repeat")} value={percent(customers.repeatCustomers, customers.yearCustomers)} />
             <Figure
-              label="Orders per customer"
+              label={t("ordersPerCustomer")}
               value={
                 customers.yearCustomers ? (
-                  (customers.yearOrders / customers.yearCustomers).toLocaleString("en-US", {
-                    maximumFractionDigits: 2
-                  })
+                  format.number(customers.yearOrders / customers.yearCustomers, { maximumFractionDigits: 2 })
                 ) : (
-                  <Dash reason="No customers" />
+                  <Dash reason={t("noCustomers")} />
                 )
               }
             />

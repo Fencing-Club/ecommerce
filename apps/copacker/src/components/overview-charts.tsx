@@ -2,11 +2,12 @@
 
 import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
 import { isPresent } from "ts-extras"
-import { formatNumber, monthName, shortDate, wholeMoney } from "@/lib/format"
+import type { Comparison } from "@/lib/date-range"
 import { cn } from "@/lib/utils"
 import type { DailySales, SourceDay } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
@@ -32,8 +33,8 @@ type Point = { key: string; label: string; title: string } & Partial<
   Record<SalesSource | `previous:${SalesSource}`, number | null>
 >
 type Metric = "orders" | "units" | "sales"
-// What each measure counts, named wherever a number appears so units aren't read as orders.
-const metricNames = { orders: ["order", "orders"], units: ["unit", "units"] } as const
+// Names a UTC day or month, in the reader's language: "Sep 3", "Sep", "September 2026".
+type Dates = { day: (day: string) => string; month: (month: string) => string; longMonth: (month: string) => string }
 
 // Recharts fills in `active`, `activeIndex` and `payload` when it renders the tooltip.
 function ChartTooltip({
@@ -107,11 +108,11 @@ function groups(rows: DailySales[], step: Step) {
   return result
 }
 
-const pointTitle = (first: string, step: Step) => {
+const pointTitle = (first: string, step: Step, dates: Dates, weekOf: (date: string) => string) => {
   if (step === "day") {
-    return shortDate(first)
+    return dates.day(first)
   }
-  return step === "week" ? `Week of ${shortDate(first)}` : monthName(first.slice(0, 7), true)
+  return step === "week" ? weekOf(dates.day(first)) : dates.longMonth(first.slice(0, 7))
 }
 
 // The period's points by source, and the compared period's total alongside, lined up point for point.
@@ -120,7 +121,9 @@ function points(
   previous: DailySales[] | null,
   sources: SalesSource[],
   metric: Metric,
-  step: Step
+  step: Step,
+  dates: Dates,
+  weekOf: (date: string) => string
 ): Point[] {
   const sum = (cells: (SourceDay | null)[]) =>
     cells.every((cell) => cell === null)
@@ -130,8 +133,8 @@ function points(
     const first = daily[start]!.date
     const point: Point = {
       key: first,
-      label: step === "month" ? monthName(first.slice(0, 7)) : shortDate(first),
-      title: pointTitle(first, step)
+      label: step === "month" ? dates.month(first.slice(0, 7)) : dates.day(first),
+      title: pointTitle(first, step, dates, weekOf)
     }
     for (const source of sources) {
       point[source] = sum(daily.slice(start, end).map((row) => row[source]))
@@ -147,8 +150,8 @@ function points(
 }
 
 // Axis labels in one short style from top to bottom: $0, $5K, $10K.
-function axisLabel(metric: Metric, currency: string | null) {
-  const format = new Intl.NumberFormat("en-US", {
+function axisLabel(metric: Metric, currency: string | null, locale: string) {
+  const format = new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1,
     ...(metric === "sales" && { style: "currency", currency: currency ?? "USD" })
@@ -198,27 +201,42 @@ function Segmented<T extends string>({
 export function SalesTrend({
   daily,
   previous,
-  previousLabel,
+  comparison,
   sources,
   currency
 }: {
   daily: DailySales[]
   previous: DailySales[] | null
-  previousLabel: string
+  // What the period is compared with, for the dashed lines' names.
+  comparison: Comparison
   sources: SalesSource[]
   currency: string | null
 }) {
+  const t = useTranslations("overview.salesChart")
+  const period = useTranslations("overview.period")
+  const intl = useFormatter()
+  const locale = useLocale()
+  const dates: Dates = {
+    day: (day) => intl.dateTime(new Date(`${day}T00:00:00Z`), { month: "short", day: "numeric", timeZone: "UTC" }),
+    month: (month) => intl.dateTime(new Date(`${month}-01T00:00:00Z`), { month: "short", timeZone: "UTC" }),
+    longMonth: (month) =>
+      intl.dateTime(new Date(`${month}-01T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" })
+  }
+  const previousLabel = period(`comparisons.${comparison}`)
+  const previousName = (source: SalesSource) => t("previousSeries", { source: sourceSeries[source].label, comparison })
   // Sales first when orders have prices; orders otherwise.
   const [chosen, setMetric] = useState<Metric>(currency ? "sales" : "orders")
   const metric: Metric = currency || chosen !== "sales" ? chosen : "orders"
   const step = stepFor(daily.length)
   const shown = sourceOrder.filter((source) => sources.includes(source))
-  const data = points(daily, previous, shown, metric, step)
+  const data = points(daily, previous, shown, metric, step, dates, (date) => t("weekOf", { date }))
   const compared = data.some((point) => shown.some((source) => isPresent(point[`previous:${source}`])))
-  const format = (value: number) => (metric === "sales" ? wholeMoney(value, currency ?? "USD") : formatNumber(value))
+  const format = (value: number) =>
+    metric === "sales"
+      ? intl.number(value / 100, { style: "currency", currency: currency ?? "USD", maximumFractionDigits: 0 })
+      : intl.number(value, { maximumFractionDigits: 0 })
   // "12 orders", "1 unit", "$4,203".
-  const describe = (value: number) =>
-    metric === "sales" ? format(value) : `${formatNumber(value)} ${metricNames[metric][value === 1 ? 0 : 1]}`
+  const describe = (value: number) => (metric === "sales" ? format(value) : t(metric, { count: value }))
   const totals = shown.map((source) => ({
     source,
     value: data.reduce((sum, point) => sum + (point[source] ?? 0), 0),
@@ -249,12 +267,12 @@ export function SalesTrend({
           )}
         </ul>
         <Segmented
-          label="Measure"
+          label={t("measure")}
           value={metric}
           options={[
-            ...(currency ? [{ value: "sales" as const, label: "Sales" }] : []),
-            { value: "orders" as const, label: "Orders" },
-            { value: "units" as const, label: "Units" }
+            ...(currency ? [{ value: "sales" as const, label: t("metrics.sales") }] : []),
+            { value: "orders" as const, label: t("metrics.orders") },
+            { value: "units" as const, label: t("metrics.units") }
           ]}
           onChange={setMetric}
         />
@@ -282,7 +300,7 @@ export function SalesTrend({
             width={metric === "sales" ? 44 : 36}
             tickCount={4}
             allowDecimals={false}
-            tickFormatter={axisLabel(metric, currency)}
+            tickFormatter={axisLabel(metric, currency, locale)}
           />
           <Tooltip
             cursor={{ stroke: vars.color.border, strokeWidth: 1 }}
@@ -295,7 +313,7 @@ export function SalesTrend({
                 key={`previous:${source}`}
                 type="linear"
                 dataKey={`previous:${source}`}
-                name={`${sourceSeries[source].label}, ${previousLabel.toLowerCase()}`}
+                name={previousName(source)}
                 stroke={sourceSeries[source].color}
                 strokeOpacity={0.35}
                 strokeWidth={1}
@@ -326,12 +344,10 @@ export function SalesTrend({
         </AreaChart>
       </div>
       <table className="sr-only">
-        <caption>
-          {{ orders: "Orders", units: "Units sold", sales: "Sales" }[metric]} by {step}
-        </caption>
+        <caption>{t("caption", { metric, step })}</caption>
         <thead>
           <tr>
-            <th scope="col">{{ day: "Day", week: "Week of", month: "Month" }[step]}</th>
+            <th scope="col">{t("stepColumn", { step })}</th>
             {shown.map((source) => (
               <th key={source} scope="col">
                 {sourceSeries[source].label}
@@ -340,7 +356,7 @@ export function SalesTrend({
             {compared &&
               shown.map((source) => (
                 <th key={`previous:${source}`} scope="col">
-                  {sourceSeries[source].label}, {previousLabel.toLowerCase()}
+                  {previousName(source)}
                 </th>
               ))}
           </tr>
@@ -351,12 +367,12 @@ export function SalesTrend({
               <th scope="row">{point.label}</th>
               {shown.map((source) => {
                 const value = point[source]
-                return <td key={source}>{isPresent(value) ? format(value) : "No data"}</td>
+                return <td key={source}>{isPresent(value) ? format(value) : t("noData")}</td>
               })}
               {compared &&
                 shown.map((source) => {
                   const value = point[`previous:${source}`]
-                  return <td key={`previous:${source}`}>{isPresent(value) ? format(value) : "No data"}</td>
+                  return <td key={`previous:${source}`}>{isPresent(value) ? format(value) : t("noData")}</td>
                 })}
             </tr>
           ))}
@@ -413,6 +429,8 @@ export function CoverChart({
 }: {
   buckets: { key: string; label: string; items: number; href: string | null }[]
 }) {
+  const t = useTranslations("overview.cover")
+  const intl = useFormatter()
   const largest = Math.max(1, ...buckets.map((bucket) => bucket.items))
   const row = "grid grid-cols-[7rem_minmax(0,1fr)_3rem] items-center gap-3 rounded-md px-2 py-1.5 text-sm"
   return (
@@ -427,9 +445,9 @@ export function CoverChart({
                 style={{ width: `${(bucket.items / largest) * 100}%` }}
               />
             </span>
-            <span className="text-right font-medium tabular-nums">
-              {formatNumber(bucket.items)}
-              <span className="sr-only">{bucket.items === 1 ? " item" : " items"}</span>
+            <span className="text-end font-medium tabular-nums">
+              <span aria-hidden>{intl.number(bucket.items)}</span>
+              <span className="sr-only">{t("items", { count: bucket.items })}</span>
             </span>
           </>
         )

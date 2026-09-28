@@ -1,6 +1,7 @@
 "use client"
 
 import { CheckCircle2, ChevronDown, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Plus, Send } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -14,7 +15,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { AddForwarder, InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
 import { isRowClick } from "./link-row"
@@ -23,18 +25,19 @@ import { EditSupplier, InviteSupplier, InviteSupplierByEmail } from "./supplier-
 
 // One button for adding either kind of partner.
 export function AddPartner() {
+  const t = useTranslations("partners.add")
   const [adding, setAdding] = useState<"supplier" | "forwarder" | null>(null)
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button />}>
           <Plus data-icon="inline-start" />
-          Add partner
+          {t("button")}
           <ChevronDown data-icon="inline-end" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => setAdding("supplier")}>Supplier</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setAdding("forwarder")}>Freight forwarder</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setAdding("supplier")}>{t("supplier")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setAdding("forwarder")}>{t("forwarder")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <InviteSupplier open={adding === "supplier"} onOpenChange={(open) => setAdding(open ? "supplier" : null)} />
@@ -48,11 +51,6 @@ type Standing = { joined: boolean; invited: boolean; expired: boolean }
 
 type Notice = { failed: boolean; text: string }
 
-// "1 address", "2 addresses"
-function addressCount(count: number) {
-  return `${count} ${count === 1 ? "address" : "addresses"}`
-}
-
 // "Shenzhen Tongzhi Logistics" as "ST".
 function initials(name: string) {
   return name
@@ -65,6 +63,8 @@ function initials(name: string) {
 
 // Sends a partner's invitation again, to the email it went to before.
 function useResend(action: "supplier.resend" | "forwarder.invite", id: string, email: string | null) {
+  const t = useTranslations("partners.row")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run, { isLoading }] = useActionMutation()
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -72,7 +72,7 @@ function useResend(action: "supplier.resend" | "forwarder.invite", id: string, e
     setNotice(null)
     try {
       await run({ action, data: { id } }).unwrap()
-      setNotice({ failed: false, text: email ? `Invitation sent to ${email}` : "Invitation sent" })
+      setNotice({ failed: false, text: email ? t("invitationSentTo", { email }) : t("invitationSent") })
       router.refresh()
     } catch (error) {
       setNotice({ failed: true, text: errorMessage(error) })
@@ -108,6 +108,7 @@ function PartnerRow({
   // The dialogs the row and its menu open.
   children: React.ReactNode
 }) {
+  const t = useTranslations("partners.row")
   return (
     <TableRow
       className="cursor-pointer"
@@ -117,7 +118,7 @@ function PartnerRow({
         }
       }}
     >
-      <TableCell className="pl-4">
+      <TableCell className="ps-4">
         <div className="flex items-center gap-3">
           <Avatar aria-hidden className="rounded-md after:rounded-md">
             <AvatarFallback className="rounded-md text-xs font-medium">{initials(name)}</AvatarFallback>
@@ -126,7 +127,7 @@ function PartnerRow({
             <button
               type="button"
               onClick={onOpen}
-              className="w-fit rounded-sm text-left font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="w-fit rounded-sm text-start font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {name}
             </button>
@@ -140,15 +141,15 @@ function PartnerRow({
           <StandingBadge standing={standing} />
           {/* Says an invitation sent from the menu went, or why it didn't. */}
           <output className={cn("text-xs empty:hidden", notice?.failed ? "text-destructive" : "text-muted-foreground")}>
-            {sending ? "Sending…" : notice?.text}
+            {sending ? t("sending") : notice?.text}
           </output>
         </div>
       </TableCell>
       <TableCell className="hidden text-muted-foreground @2xl:table-cell">{detail}</TableCell>
-      <TableCell className="w-12 pr-4 text-right">
+      <TableCell className="w-12 pe-4 text-end">
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={`More actions for ${name}`} />}
+            render={<Button variant="ghost" size="icon-sm" aria-label={t("moreActions", { name })} />}
           >
             <Ellipsis />
           </DropdownMenuTrigger>
@@ -164,11 +165,12 @@ function PartnerRow({
 
 // In the Status badge's styles: joined is done, a live invitation is in progress, anything else is neutral.
 function StandingBadge({ standing }: { standing: Standing }) {
+  const t = useTranslations("partners.row.standing")
   if (standing.joined) {
     return (
       <Badge variant="outline">
         <CheckCircle2 data-icon="inline-start" />
-        On Copacker
+        {t("joined")}
       </Badge>
     )
   }
@@ -176,14 +178,14 @@ function StandingBadge({ standing }: { standing: Standing }) {
     return (
       <Badge variant="secondary">
         <Clock data-icon="inline-start" />
-        Invited
+        {t("invited")}
       </Badge>
     )
   }
   return (
     <Badge variant="outline">
       <CircleDashed data-icon="inline-start" />
-      {standing.invited ? "Invitation expired" : "Not invited"}
+      {standing.invited ? t("expired") : t("notInvited")}
     </Badge>
   )
 }
@@ -217,6 +219,7 @@ export function SupplierRow({
   // The workspace lead time, for a supplier without its own.
   defaultLeadTimeDays: number
 }) {
+  const t = useTranslations("partners.row")
   const [open, setOpen] = useState<"edit" | "addresses" | "invite" | null>(null)
   const { resend, sending, notice } = useResend("supplier.resend", supplier.id, supplier.email)
   const invitable = editable && !supplier.joined
@@ -228,40 +231,40 @@ export function SupplierRow({
     .filter(Boolean)
     .join(", ")
   const count = supplier.addresses.length
-  const leadTime = `Lead time ${supplier.leadTimeDays ?? defaultLeadTimeDays} days`
+  const days = supplier.leadTimeDays ?? defaultLeadTimeDays
   return (
     <PartnerRow
       name={supplier.name}
       contactLine={contactLine}
-      type={showType ? "Supplier" : null}
+      type={showType ? t("types.supplier") : null}
       standing={supplier}
       sending={sending}
       notice={notice}
-      detail={count ? `${leadTime}, ${addressCount(count)}` : leadTime}
+      detail={count ? t("leadTimeAndAddresses", { days, count }) : t("leadTime", { days })}
       onOpen={() => setOpen(editable ? "edit" : "addresses")}
       menu={
         <>
           {editable && (
             <DropdownMenuItem onClick={() => setOpen("edit")}>
               <Pencil />
-              Edit
+              {t("menu.edit")}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={() => setOpen("addresses")}>
             <MapPin />
-            Addresses
+            {t("menu.addresses")}
           </DropdownMenuItem>
           {invitable && <DropdownMenuSeparator />}
           {invitable && !supplier.invited && (
             <DropdownMenuItem onClick={() => setOpen("invite")}>
               <Send />
-              Invite
+              {t("menu.invite")}
             </DropdownMenuItem>
           )}
           {invitable && supplier.invited && (
             <DropdownMenuItem disabled={sending} onClick={() => void resend()}>
               <Send />
-              Resend invitation
+              {t("menu.resend")}
             </DropdownMenuItem>
           )}
         </>
@@ -312,6 +315,7 @@ export function ForwarderRow({
   editable: boolean
   showType: boolean
 }) {
+  const t = useTranslations("partners.row")
   const [open, setOpen] = useState<"addresses" | "invite" | null>(null)
   const { resend, sending, notice } = useResend("forwarder.invite", forwarder.id, forwarder.email)
   const invitable = editable && !forwarder.joined
@@ -320,29 +324,29 @@ export function ForwarderRow({
     <PartnerRow
       name={forwarder.name}
       contactLine={forwarder.email ?? ""}
-      type={showType ? "Freight forwarder" : null}
+      type={showType ? t("types.forwarder") : null}
       standing={forwarder}
       sending={sending}
       notice={notice}
-      detail={count ? addressCount(count) : "No addresses yet"}
+      detail={count ? t("addresses", { count }) : t("noAddresses")}
       onOpen={() => setOpen("addresses")}
       menu={
         <>
           <DropdownMenuItem onClick={() => setOpen("addresses")}>
             <MapPin />
-            Addresses
+            {t("menu.addresses")}
           </DropdownMenuItem>
           {invitable && <DropdownMenuSeparator />}
           {invitable && !forwarder.invited && (
             <DropdownMenuItem onClick={() => setOpen("invite")}>
               <Send />
-              Invite
+              {t("menu.invite")}
             </DropdownMenuItem>
           )}
           {invitable && forwarder.invited && (
             <DropdownMenuItem disabled={sending} onClick={() => void resend()}>
               <Send />
-              Resend invitation
+              {t("menu.resend")}
             </DropdownMenuItem>
           )}
         </>

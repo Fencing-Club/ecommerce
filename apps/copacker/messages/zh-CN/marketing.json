@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "title": "Copacker：补货，轻松搞定",
+    "description": "预测库存，及时发出采购订单，避免断货，并处理与货代、Amazon FBA 和 AWD 之间的交接，每一张标签和每一份单据都为你准备好。"
+  },
+  "site": {
+    "free": "免费使用，无需信用卡。",
+    "getStarted": "开始使用",
+    "signIn": "登录",
+    "contact": "联系我们",
+    "mainNav": "主导航",
+    "sections": {
+      "forecast": "预测",
+      "handoffs": "协作交接",
+      "agents": "AI 智能体",
+      "faq": "常见问题"
+    },
+    "footer": {
+      "product": "产品",
+      "company": "公司",
+      "account": "账号",
+      "tagline": "预测、采购订单与物流，一站搞定。",
+      "privacy": "隐私",
+      "terms": "条款"
+    }
+  },
+  "film": {
+    "watch": "观看视频",
+    "title": "Copacker：补货，轻松搞定"
+  },
+  "copyButton": {
+    "copy": "复制",
+    "copied": "已复制"
+  },
+  "signup": {
+    "title": "新功能，第一时间知道。",
+    "text": "新店铺、新线路、新工具，一上线就用一封简短邮件告诉你。",
+    "done": "订阅成功。",
+    "email": "邮箱",
+    "placeholder": "you@company.com",
+    "subscribe": "订阅",
+    "subscribing": "正在订阅",
+    "failed": "订阅失败，请稍后重试。",
+    "getStartedNow": "或者现在就开始，完全免费"
+  },
+  "hero": {
+    "title": "<first>补货，</first><second>轻松搞定。</second>",
+    "text": "Copacker 预测你的库存，及时发出采购订单，避免断货，并处理与货代、Amazon FBA 和 AWD 之间的交接，每一张标签和每一份单据都为你准备好。",
+    "shotCaption": "Copacker 的补货页面：Shenzhen Metalworks 的两款产品需要补货，显示了订购数量、预估成本 {cost}，以及补货到达前约 {lost} 的销售额面临风险。"
+  },
+  "forecast": {
+    "title": "何时补货，心中有数。",
+    "text": "Copacker 根据你在 Amazon、Shopify 和 eBay 的销售预测每一款产品，再按供应商的交货周期倒推，精确算出你该下单的那一天。"
+  },
+  "agents": {
+    "title": "为 AI 智能体而生。",
+    "text": "Copacker 的 MCP 服务器兼容任何智能体，让你的智能体和你并肩规划、下单、发货。合作伙伴的智能体也会同步更新进度。"
+  },
+  "faq": {
+    "title": "常见问题",
+    "questions": {
+      "cost": {
+        "question": "Copacker 怎么收费？",
+        "answer": "目前完全免费。没有付费套餐，注册也不需要绑定银行卡。"
+      },
+      "stores": {
+        "question": "支持哪些店铺？",
+        "answer": "Amazon、Shopify 和 eBay。Copacker 会读取每个平台的销售和库存量。"
+      },
+      "warehouse": {
+        "question": "可以发货到我自己的仓库或第三方仓吗？",
+        "answer": "可以。采购订单可以发往你的任意收货地址，而不只是 Amazon。把地址关联到 Shopify 库存地点后，已订购的数量会在那里显示为已订购。"
+      },
+      "locations": {
+        "question": "补货会为我的其他库存地点做计划吗？",
+        "answer": "会。除了 Amazon，它还会为你的每个 Shopify 库存地点做计划，针对某个地点的补货会直接发往那里。"
+      },
+      "tracking": {
+        "question": "Amazon 以外的货件怎么跟踪？",
+        "answer": "供应商标记货件已发货，货代补充承运商和追踪号，你再标记已收货，全部在同一张采购订单上完成。"
+      },
+      "forwarders": {
+        "question": "支持货代吗？",
+        "answer": "支持。货代有自己的工作区，可以下载发票和标签，并为每个货件标记已发货，附上承运商、追踪号和运费。"
+      },
+      "suppliers": {
+        "question": "供应商需要注册账号吗？",
+        "answer": "不需要。他们可以免费使用 Copacker，你也可以自己替他们填写订单信息。"
+      },
+      "awd": {
+        "question": "支持发货到 AWD 吗？",
+        "answer": "支持。Copacker 可以规划发往 FBA 和 AWD 的货件，包括中国和越南的 AWD 仓库。"
+      },
+      "documents": {
+        "question": "能生成哪些单据和标签？",
+        "answer": "采购订单、装箱单，以及 FNSKU 标签、箱标、运输标签和警告标签，另外还有供应商提供的商业发票。"
+      },
+      "mcp": {
+        "question": "MCP 是什么？",
+        "answer": "即模型上下文协议（Model Context Protocol），一种将 AI 智能体连接到应用的开放标准。Copacker 的 MCP 服务器支持 ChatGPT、Claude、Cursor、VS Code 以及其他任何 MCP 客户端。"
+      },
+      "cli": {
+        "question": "有命令行工具吗？",
+        "answer": "有。copacker CLI 读取和操作的数据与应用完全相同，方便你的脚本和编程智能体使用。"
+      }
+    }
+  },
+  "agentsDiagram": {
+    "yours": "你的智能体",
+    "prompt": "把到货前会断货的产品都补上，发往 AWD。",
+    "partner": "{name} 的智能体",
+    "packingList": "已提交采购订单 {number} 的装箱单",
+    "pickup": "已预约 {date} 提货",
+    "steps": {
+      "checked": "已检查补货：{count, plural, other {# 款产品会在到货前断货}}",
+      "created": "已为 {supplier} 创建采购订单 {number}",
+      "sent": "已将采购订单 {number} 发送给供应商",
+      "planned": "已规划 Amazon AWD 货件"
+    }
+  },
+  "connect": {
+    "title": "兼容任何智能体。",
+    "text": "把 Copacker 的 MCP 服务器添加到你的智能体，它就能像你一样处理补货、订单和货件。",
+    "yourAgent": "你的智能体",
+    "anyClient": "任意 MCP 客户端",
+    "terminal": "终端",
+    "serverUrl": "服务器 URL",
+    "setups": {
+      "claude": "在 Claude 中打开“自定义”，再进入“连接器”。用此 URL 添加自定义连接器，然后连接。",
+      "chatgpt": "在网页版 ChatGPT 中，前往“设置”下的“安全与登录”开启开发者模式，然后在“插件”中添加此 URL。",
+      "claudeCode": "运行此命令，然后在 Claude Code 中用 {command} 登录。",
+      "codex": "运行此命令，并在 Codex 提示时登录。CLI、IDE 扩展和 ChatGPT 桌面应用共用这一配置。",
+      "cursor": "将 Copacker 添加到 Cursor 的 MCP 文件，然后在“自定义”中登录。",
+      "vsCode": "将 Copacker 添加到工作区的 MCP 文件，然后从文件中启动并登录。",
+      "gemini": "运行此命令，然后用 {command} 登录。",
+      "windsurf": "Windsurf 现已更名为 Devin Desktop。从 MCP 菜单打开其 MCP 配置文件，添加 Copacker。",
+      "zed": "将 Copacker 添加到 Zed 的设置中，或在“设置 > AI > MCP 服务器”下将其添加为远程服务器。",
+      "openCode": "将 Copacker 添加到 OpenCode 的配置文件。首次连接时会自动登录。",
+      "hermes": "运行此命令，并在 Hermes 首次连接时登录。",
+      "openClaw": "运行以下命令，添加 Copacker 并登录。",
+      "any": "将其他任何客户端指向此 URL，或让它用 {command} 运行 CLI 自带的服务器。"
+    },
+    "session": "使用 copacker CLI 的终端会话",
+    "cli": {
+      "title": "同样的数据，尽在终端。",
+      "text": "copacker CLI 调用与应用相同的接口，你能看到、能做的，你的脚本和编程智能体同样可以。"
+    }
+  },
+  "planner": {
+    "days": "{count, plural, other {# 天}}",
+    "inDays": "{count, plural, other {# 天后}}",
+    "inStock": "{sku}，库存 {count, number}",
+    "soldADay": "日销量",
+    "captionLate": "{product}未来 {horizon} 天的库存量。不补货的话，{out, plural, other {# 天}}后断货。今天下单，{units, number} 件会在断货后才到，损失约 {lost} 的销售额。",
+    "captionInTime": "{product}未来 {horizon} 天的库存量。不补货的话，{out, plural, other {# 天}}后断货。{orderBy, plural, other {# 天}}内下单，{units, number} 件会在断货前到货。",
+    "unitsInStock": "库存件数",
+    "holidayRush": "节日旺季",
+    "rush": "旺季",
+    "runsOut": "断货",
+    "orderToday": "今天下单",
+    "orderBy": "最晚下单",
+    "restock": "补货",
+    "restockUnits": "+{count, plural, other {# 件}}",
+    "leadTimeDays": "交货周期 {count} 天",
+    "today": "今天",
+    "withReorder": "补货后",
+    "withoutReorder": "不补货",
+    "leadTime": "交货周期",
+    "landsLate": "到货时已断货",
+    "landsInTime": "断货前到货",
+    "order": "下单",
+    "units": "{count, plural, other {# 件}}",
+    "cartons": "{count, plural, other {# 箱}}",
+    "runsOutWithout": "不补货就会断货",
+    "notThisSeason": "本季不会",
+    "todaysPace": "按当前销速",
+    "lostSales": "损失销售额",
+    "none": "无",
+    "whileOut": "断货期间",
+    "inStockThroughout": "全程有货"
+  },
+  "shot": {
+    "search": "搜索",
+    "buyerWorkspace": "买家工作区",
+    "restock": "补货",
+    "allSuppliers": "所有供应商",
+    "salesPeriod": "<muted>销售周期</muted> {count, plural, other {# <muted>天</muted>}}",
+    "leadTime": "<muted>交货周期</muted> {count, plural, other {# <muted>天</muted>}}",
+    "estimatedCost": "预估成本",
+    "lines": "行数",
+    "units": "件数",
+    "cases": "箱数",
+    "volume": "体积",
+    "weight": "重量",
+    "lostSales": "补货到达前约损失 {amount} 销售额",
+    "products": "{count, plural, other {# 个产品}}",
+    "supplierSummary": "交货周期 {days, plural, other {# 天}}，{lines, plural, other {# 行}}，{units, plural, other {# 件}}",
+    "reorder": "补货",
+    "days": "{count, plural, other {# 天}}",
+    "columns": {
+      "product": "产品",
+      "status": "状态",
+      "stockLeft": "剩余库存量",
+      "sold": "已售",
+      "available": "可用",
+      "order": "订购",
+      "cost": "成本"
+    }
+  },
+  "journey": {
+    "title": "一张采购订单，从工厂直达 Amazon 和你的仓库",
+    "steps": "步骤",
+    "purchaseOrder": "采购订单 {number}",
+    "documentCount": "{count, plural, other {# 份单据}}",
+    "saved": "已保存到采购订单：{name}",
+    "chapters": {
+      "order": {
+        "step": "下单",
+        "title": "一键补货。",
+        "text": "Copacker 自动生成采购订单，并发送给你的供应商。"
+      },
+      "pack": {
+        "step": "装箱",
+        "title": "贴好标签，装箱刚刚好。",
+        "text": "每件产品贴上 FNSKU 标签和窒息警告标签，每箱贴上箱标和运输标签，每个箱子都尺寸合适。"
+      },
+      "pickUp": {
+        "step": "提货",
+        "title": "Amazon 和货代上门提货。",
+        "text": "发往海外 AWD 的箱子由 Amazon 提走，其余交给你的货代。"
+      },
+      "ship": {
+        "step": "运输",
+        "title": "货已在路上。",
+        "text": "商业发票、提单和追踪信息，全部汇总在同一张订单上。"
+      },
+      "customs": {
+        "step": "清关",
+        "title": "顺利清关。",
+        "text": "货代凭订单上已有的提单和商业发票完成清关。"
+      },
+      "deliver": {
+        "step": "送达",
+        "title": "送达 FBA，也送到你手上。",
+        "text": "货代把 Amazon 的箱子送到 FBA，其余的由 FedEx 送到你的仓库。"
+      }
+    },
+    "documents": {
+      "purchaseOrder": "采购订单",
+      "fnskuLabels": "FNSKU 标签",
+      "chokingHazardLabels": "窒息警告标签",
+      "packingList": "装箱单",
+      "cartonLabels": "箱标",
+      "shippingLabels": "运输标签",
+      "commercialInvoice": "商业发票",
+      "billOfLading": "提单"
+    },
+    "pins": {
+      "unitLabels": "FNSKU 标签和窒息警告标签",
+      "rightSized": "按 {size} 精准装箱",
+      "boxLabels": "箱标和运输标签"
+    },
+    "places": {
+      "awdInChina": "中国 AWD",
+      "customs": "海关",
+      "yourWarehouse": "你的仓库"
+    },
+    "cards": {
+      "withSupplier": "供应商处理中",
+      "supplier": "供应商",
+      "units": "件数",
+      "total": "总计",
+      "submitted": "已提交",
+      "cartons": "箱数",
+      "cartonSize": "箱子尺寸",
+      "weight": "重量",
+      "shipments": "货件",
+      "awdByAmazon": "中国 AWD，由 Amazon 承运",
+      "unitCount": "{count, plural, other {# 件}}",
+      "pickedUp": "已由 {forwarder} 提货",
+      "onTheWater": "海运中",
+      "inTransit": "运输中",
+      "arrives": "预计到达",
+      "checkedInAwd": "已在 AWD 签收",
+      "released": "已放行",
+      "cleared": "清关日期",
+      "checkedIn": "已在 Amazon FBA 签收",
+      "delivered": "已送达你的仓库"
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "联系 Copacker",
+      "description": "有问题、想为团队预约演示，或者寻求合作？给 Copacker 留言吧。"
+    },
+    "title": "和<lit>我们</lit>聊聊。",
+    "text": "关于 Copacker 的问题、为团队预约演示，或者洽谈合作，留个言，我们会尽快回复。",
+    "waysTitle": "或者亲自看看。",
+    "tryIt": "立即试用",
+    "watchTitle": "观看视频",
+    "watchText": "不到两分钟，看完一次从预测到入仓的完整补货。",
+    "faqTitle": "查看常见问题",
+    "faqText": "店铺、Amazon 以外的发货、合作伙伴和智能体。",
+    "questions": "常见问题",
+    "form": {
+      "topic": "关于什么？",
+      "topics": {
+        "gettingStarted": "入门",
+        "walkthrough": "产品演示",
+        "support": "技术支持",
+        "partnerships": "合作",
+        "press": "媒体",
+        "other": "其他"
+      },
+      "name": "姓名",
+      "email": "邮箱",
+      "company": "公司",
+      "message": "留言",
+      "send": "发送留言",
+      "sending": "正在发送",
+      "failed": "留言发送失败，请稍后重试。",
+      "sent": "留言已发送。",
+      "writeBack": "我们会回复到 {email}。",
+      "another": "再发一条",
+      "enterName": "请输入姓名",
+      "enterEmail": "请输入有效的邮箱地址",
+      "writeMessage": "请填写留言内容",
+      "tooLong": "请控制在 5,000 字以内"
+    }
+  }
+}

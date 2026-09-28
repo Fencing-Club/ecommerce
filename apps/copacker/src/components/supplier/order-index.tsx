@@ -1,24 +1,25 @@
 "use client"
 
-import { money } from "@repo/aisle"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useMoney } from "@/hooks/use-money"
 import { formatDate } from "@/lib/format"
 import type { ListedOrder, OrderStage } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager } from "./shared"
 
 type Tab = "all" | OrderStage
-const tabs: Array<{ value: Tab; label: string; test: (stage: OrderStage) => boolean }> = [
-  { value: "all", label: "All", test: () => true },
-  { value: "pack", label: "To pack", test: (stage) => stage === "pack" },
-  { value: "waiting", label: "Waiting", test: (stage) => stage === "waiting" },
-  { value: "ship", label: "To ship", test: (stage) => stage === "ship" },
-  { value: "shipped", label: "Shipped", test: (stage) => stage === "shipped" },
-  { value: "closed", label: "Closed", test: (stage) => stage === "closed" }
+const tabs: Array<{ value: Tab; test: (stage: OrderStage) => boolean }> = [
+  { value: "all", test: () => true },
+  { value: "pack", test: (stage) => stage === "pack" },
+  { value: "waiting", test: (stage) => stage === "waiting" },
+  { value: "ship", test: (stage) => stage === "ship" },
+  { value: "shipped", test: (stage) => stage === "shipped" },
+  { value: "closed", test: (stage) => stage === "closed" }
 ]
 const pageSize = 50
 
@@ -38,6 +39,10 @@ export function SupplierOrderIndex({
   const [tab, setTab] = useState<Tab>(tabs.find((option) => option.value === initialTab)?.value ?? "all")
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(0)
+  const t = useTranslations("supplier.orderIndex")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
+  const money = useMoney()
   const test = tabs.find((option) => option.value === tab)!.test
   const shown = orders.filter(
     (order) => test(order.stage) && matches(query, order.reference, order.customer, order.firstItem)
@@ -46,7 +51,7 @@ export function SupplierOrderIndex({
   const current = Math.min(page, pages - 1)
 
   if (!orders.length) {
-    return <EmptyState title="No orders yet" description="Purchase orders your customers send appear here" />
+    return <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
   }
 
   return (
@@ -54,7 +59,7 @@ export function SupplierOrderIndex({
       <IndexToolbar
         tabs={tabs.map((option) => ({
           value: option.value,
-          label: option.label,
+          label: option.value === "all" ? shared("all") : t(`tabs.${option.value}`),
           count: orders.filter((order) => option.test(order.stage)).length
         }))}
         tab={tab}
@@ -67,18 +72,18 @@ export function SupplierOrderIndex({
           setQuery(value)
           setPage(0)
         }}
-        placeholder="Search orders"
+        placeholder={t("search")}
       />
       {shown.length ? (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Order</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Date</TableHead>
-              {showCustomer && <TableHead>Customer</TableHead>}
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden text-right @3xl:table-cell">Units</TableHead>
-              {prices && <TableHead className="text-right">Total</TableHead>}
+              <TableHead>{t("columns.order")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("columns.date")}</TableHead>
+              {showCustomer && <TableHead>{t("columns.customer")}</TableHead>}
+              <TableHead>{t("columns.status")}</TableHead>
+              <TableHead className="hidden text-end @3xl:table-cell">{t("columns.pieces")}</TableHead>
+              {prices && <TableHead className="text-end">{t("columns.total")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,11 +94,13 @@ export function SupplierOrderIndex({
                     {order.reference}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">
-                    {order.lines === 1 ? order.firstItem : `${order.firstItem} and ${order.lines - 1} more`}
+                    {order.lines === 1
+                      ? order.firstItem
+                      : t("firstAndMore", { first: order.firstItem, count: order.lines - 1 })}
                   </p>
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground @2xl:table-cell">
-                  {formatDate(order.sentAt)}
+                  {formatDate(order.sentAt, locale)}
                 </TableCell>
                 {showCustomer && (
                   <TableCell>
@@ -105,11 +112,11 @@ export function SupplierOrderIndex({
                 <TableCell>
                   <Status status={order.status} />
                 </TableCell>
-                <TableCell className="hidden text-right tabular-nums @3xl:table-cell">
-                  {order.pieces.toLocaleString("en-US")}
+                <TableCell className="hidden text-end tabular-nums @3xl:table-cell">
+                  {order.pieces.toLocaleString(locale)}
                 </TableCell>
                 {prices && (
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     {order.total === null ? null : money(order.total, order.currency)}
                   </TableCell>
                 )}
@@ -118,7 +125,7 @@ export function SupplierOrderIndex({
           </TableBody>
         </Table>
       ) : (
-        <EmptyState title="No orders here" description="Try another tab or search" />
+        <EmptyState title={t("noneHere")} description={t("noneHereDescription")} />
       )}
       <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
     </div>

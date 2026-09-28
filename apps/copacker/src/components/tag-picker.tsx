@@ -1,6 +1,7 @@
 "use client"
 
 import { Plus, X } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { type RefObject, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ export function TagPicker({
   // The text box, so a dialog can focus it when it opens.
   inputRef: RefObject<HTMLInputElement | null>
 }) {
+  const t = useTranslations("products.tagPicker")
   const [draft, setDraft] = useState("")
   const add = (...tags: string[]) => {
     const next = [...value]
@@ -50,12 +52,12 @@ export function TagPicker({
         onClick={() => input.current?.focus()}
       >
         {value.map((tag) => (
-          <Badge key={tag} variant="secondary" className="gap-0.5 pr-0.5">
+          <Badge key={tag} variant="secondary" className="gap-0.5 pe-0.5">
             {tag}
             <button
               type="button"
               className="inline-flex cursor-pointer rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`Remove ${tag}`}
+              aria-label={t("remove", { tag })}
               onClick={() => onChange(value.filter((chosen) => chosen !== tag))}
             >
               <X className="size-3" aria-hidden="true" />

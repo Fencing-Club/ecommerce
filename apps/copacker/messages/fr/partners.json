@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "Partenaires",
+    "tabsLabel": "Types de partenaires",
+    "tabs": {
+      "all": "Tous",
+      "supplier": "Fournisseurs",
+      "forwarder": "Transitaires"
+    },
+    "search": "Rechercher des partenaires",
+    "columns": {
+      "name": "Nom",
+      "type": "Type",
+      "status": "Statut",
+      "details": "Détails",
+      "actions": "Actions"
+    },
+    "empty": {
+      "noMatch": "Aucun partenaire ne correspond à « {query} »",
+      "all": "Aucun partenaire pour l’instant",
+      "supplier": "Aucun fournisseur pour l’instant",
+      "forwarder": "Aucun transitaire pour l’instant"
+    },
+    "hints": {
+      "forwarder": "Ajoutez un transitaire pour expédier vos bons de commande par son intermédiaire.",
+      "supplier": "Les fournisseurs de Shopify apparaissent ici.",
+      "search": "Vérifiez l’orthographe ou cherchez dans un autre onglet."
+    }
+  },
+  "add": {
+    "button": "Ajouter un partenaire",
+    "supplier": "Fournisseur",
+    "forwarder": "Transitaire"
+  },
+  "row": {
+    "types": {
+      "supplier": "Fournisseur",
+      "forwarder": "Transitaire"
+    },
+    "addresses": "{count, plural, one {# adresse} other {# adresses}}",
+    "noAddresses": "Aucune adresse pour l’instant",
+    "leadTime": "Délai de livraison {days, plural, one {# jour} other {# jours}}",
+    "leadTimeAndAddresses": "Délai de livraison {days, plural, one {# jour} other {# jours}}, {count, plural, one {# adresse} other {# adresses}}",
+    "sending": "Envoi…",
+    "invitationSentTo": "Invitation envoyée à {email}",
+    "invitationSent": "Invitation envoyée",
+    "moreActions": "Plus d’actions pour {name}",
+    "menu": {
+      "edit": "Modifier",
+      "addresses": "Adresses",
+      "invite": "Inviter",
+      "resend": "Renvoyer l’invitation"
+    },
+    "standing": {
+      "joined": "Sur Copacker",
+      "invited": "Invité",
+      "expired": "Invitation expirée",
+      "notInvited": "Non invité"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "Ajouter un transitaire",
+      "title": "Ajouter un transitaire",
+      "description": "Récupère la marchandise chez votre fournisseur et l’achemine jusqu’à Amazon ou votre entrepôt.",
+      "submit": "Ajouter le transitaire",
+      "company": "Entreprise",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "E-mail",
+      "emailDescription": "Ajoutez-en un pour l’inviter maintenant."
+    },
+    "invite": {
+      "title": "Inviter {name}",
+      "description": "Il gérera lui-même les adresses de ses entrepôts pour vos bons de commande.",
+      "submit": "Envoyer l’invitation",
+      "email": "E-mail"
+    },
+    "rename": {
+      "trigger": "Modifier",
+      "triggerLabel": "Modifier {name}",
+      "title": "Modifier le transitaire",
+      "submit": "Enregistrer",
+      "company": "Entreprise"
+    },
+    "remove": {
+      "trigger": "Retirer",
+      "title": "Retirer {name} ?",
+      "description": "Les nouveaux bons de commande ne pourront plus lui être expédiés. Les bons de commande déjà envoyés conservent leur adresse.",
+      "cancel": "Annuler",
+      "confirm": "Retirer",
+      "failed": "Impossible de retirer {name}"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "Ajouter un fournisseur",
+      "title": "Ajouter un fournisseur",
+      "description": "Pour un fournisseur qui n’est pas encore dans Shopify."
+    },
+    "edit": {
+      "title": "Modifier {name}",
+      "name": "Nom",
+      "companyName": "Nom de l’entreprise",
+      "companyNameDescription": "Tel qu’indiqué dans le champ Fournisseur de Shopify.",
+      "companyNamePlaceholder": "Absent de Shopify",
+      "contactName": "Nom du contact",
+      "contactEmail": "E-mail du contact",
+      "phone": "Téléphone",
+      "website": "Site web",
+      "websiteJoined": "{name} gère ses coordonnées dans son propre espace de travail.",
+      "leadTime": "Délai de livraison (jours)",
+      "leadTimeDescription": "Du bon de commande au stock vendable. Vide : {days}.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "failed": "Impossible d’enregistrer le fournisseur. Réessayez."
+    },
+    "invite": {
+      "title": "Inviter {name}",
+      "description": "Il verra les bons de commande que vous partagez et recevra un e-mail lorsqu’un bon de commande nécessite des documents.",
+      "email": "E-mail du fournisseur",
+      "cancel": "Annuler",
+      "submit": "Envoyer l’invitation",
+      "sending": "Envoi…",
+      "failed": "Impossible d’inviter {name}. Réessayez."
+    }
+  },
+  "address": {
+    "editPickup": "Modifier l’adresse d’enlèvement",
+    "edit": "Modifier l’adresse",
+    "addPickup": "Ajouter une adresse d’enlèvement pour {name}",
+    "add": "Ajouter une adresse pour {name}",
+    "saveChanges": "Enregistrer les modifications",
+    "save": "Enregistrer l’adresse",
+    "name": "Nom de l’adresse",
+    "pickupPlaceholder": "Usine",
+    "placeholder": "Entrepôt de Yiwu",
+    "sheet": {
+      "supplier": "Adresses d’enlèvement",
+      "forwarder": "Étapes vers Amazon ou votre entrepôt",
+      "joinedSupplier": "Gère ses propres adresses d’enlèvement sur Copacker",
+      "joinedForwarder": "Gère ses propres adresses sur Copacker"
+    },
+    "empty": "Aucune adresse pour l’instant",
+    "addButton": "Ajouter une adresse",
+    "removing": "Retrait de {name}",
+    "moreActions": "Plus d’actions pour {name}",
+    "menuEdit": "Modifier",
+    "menuRemove": "Retirer",
+    "removeFailed": "Impossible de retirer {name}"
+  },
+  "contactKinds": {
+    "delivery": "Adresse de livraison",
+    "forwarder": "Transitaire",
+    "pickup": "Adresse d’enlèvement"
+  },
+  "contactDetails": {
+    "enterEmail": "Saisissez une adresse e-mail"
+  },
+  "phone": {
+    "invalid": "Saisissez un numéro de téléphone"
+  }
+}

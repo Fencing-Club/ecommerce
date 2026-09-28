@@ -1,0 +1,156 @@
+{
+  "appDescription": "A shared workspace for buyers and suppliers to prepare Amazon shipments.",
+  "skipToContent": "Skip to content",
+  "breadcrumb": "Breadcrumb",
+  "about": "About: {label}",
+  "errors": {
+    "generic": "Something went wrong. Try again.",
+    "offline": "Couldn't reach Copacker. Check your connection and try again."
+  },
+  "actions": {
+    "cancel": "Cancel"
+  },
+  "status": {
+    "draft": "Draft",
+    "active": "Active",
+    "archived": "Archived",
+    "submitted": "With supplier",
+    "closed": "Closed",
+    "packing": "Packing",
+    "approval": "Approval needed",
+    "creatingShipment": "Creating shipment",
+    "waitingLabels": "Needs shipping labels",
+    "ready": "Ready for pickup",
+    "shipped": "Shipped",
+    "forwarded": "Shipped by forwarder",
+    "received": "Received",
+    "correction": "Correction requested",
+    "needsAttention": "Needs attention",
+    "cancelled": "Cancelled",
+    "working": "Working",
+    "created": "Created",
+    "readyToShip": "Ready to ship",
+    "inTransit": "In transit",
+    "delivered": "Delivered",
+    "checkedIn": "Checked in",
+    "receiving": "Receiving",
+    "error": "Error",
+    "pending": "Pending",
+    "unshipped": "Unshipped",
+    "unfulfilled": "Unfulfilled",
+    "partiallyShipped": "Partially shipped",
+    "partiallyFulfilled": "Partially fulfilled",
+    "fulfilled": "Fulfilled",
+    "unfulfillable": "Unfulfillable",
+    "inStock": "In stock",
+    "reorderSoon": "Reorder soon",
+    "reorderNow": "Reorder now",
+    "outOfStock": "Out of stock",
+    "onCopacker": "On Copacker",
+    "invited": "Invited",
+    "invitationExpired": "Invitation expired",
+    "notInvited": "Not invited"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "your location"
+  },
+  "documents": {
+    "download": "Download",
+    "purchaseOrder": "Purchase order",
+    "invoice": "Commercial invoice",
+    "packingList": "Packing list",
+    "checklist": "Packing checklist",
+    "cartonLabel": "Carton label",
+    "shippingLabel": "Shipping label",
+    "productLabel": "Product label"
+  },
+  "format": {
+    "plusAmounts": "Plus {amounts}",
+    "separator": ", "
+  },
+  "address": {
+    "country": "Country",
+    "chooseCountry": "Choose a country",
+    "contactName": "Contact name",
+    "phoneNumber": "Phone number",
+    "email": "Email",
+    "streetAddress": "Street address",
+    "addressLine2": "Address line 2",
+    "city": "City",
+    "stateOrProvince": "State or province",
+    "postalCode": "Postal code"
+  },
+  "sync": {
+    "actions": "{label} actions",
+    "syncing": "Syncing…",
+    "syncNow": "Sync now",
+    "reconnect": "Reconnect",
+    "synced": "Synced <time></time>"
+  },
+  "disconnect": {
+    "disconnect": "Disconnect",
+    "title": "Disconnect {name}?",
+    "shopifyEffect": "Copacker stops syncing products, stock, sales and costs with {account}. Purchase orders stay as they are.",
+    "amazonEffect": "Copacker stops reading sales and stock from {account} and can’t create AWD shipments. Purchase orders stay as they are.",
+    "failed": "Couldn’t disconnect {name}",
+    "cancel": "Cancel"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {Choose a PDF} csv {Choose a CSV} other {Choose a supported file}}",
+    "tooLarge": "{type, select, pdf {Choose a PDF up to {size}} csv {Choose a CSV up to {size}} other {Choose a file up to {size}}}",
+    "oneFile": "{type, select, pdf {Choose one PDF} csv {Choose one CSV} other {Choose one file}}",
+    "prompt": "{type, select, pdf {Drop a PDF or <browse>browse</browse>} csv {Drop a CSV or <browse>browse</browse>} other {Drop a file or <browse>browse</browse>}}",
+    "upTo": "Up to {size}",
+    "remove": "Remove {name}",
+    "replaceFile": "Replace {name}",
+    "replace": "Replace"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "Official commercial invoice",
+      "productLabels": "Product labels",
+      "shippingLabels": "Carrier shipping labels"
+    },
+    "chooseVariationError": "Choose a product variation",
+    "enterLabelPage": "Enter the label page for at least one carton",
+    "failed": "Upload failed. Try again.",
+    "choosePdf": "Choose a PDF",
+    "variation": "Product variation",
+    "chooseVariation": "Choose a variation",
+    "productLabelHint": "One label sheet per variation, up to 32 MB",
+    "uploading": "Uploading",
+    "uploaded": "Uploaded",
+    "upload": "Upload",
+    "labelPages": "Label page for each carton",
+    "labelPagesDescription": "Leave a carton blank if its label is in another file",
+    "carton": "Carton {carton}",
+    "page": "Page"
+  },
+  "ui": {
+    "close": "Close",
+    "toggleSidebar": "Toggle Sidebar",
+    "sidebar": "Sidebar",
+    "sidebarDescription": "Displays the mobile sidebar."
+  },
+  "pages": {
+    "error": {
+      "title": "Something went wrong",
+      "didntLoad": "This page didn’t load",
+      "dataUnchanged": "Your data hasn’t changed",
+      "tryAgain": "Try again",
+      "goToOverview": "Go to Overview"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "checkAddress": "Check the address and try again",
+      "goToCopacker": "Go to Copacker",
+      "removed": "It may have been removed, or it’s in another workspace",
+      "goToOverview": "Go to Overview"
+    },
+    "forbidden": {
+      "title": "No access",
+      "askAdmin": "Ask an admin for access"
+    }
+  }
+}

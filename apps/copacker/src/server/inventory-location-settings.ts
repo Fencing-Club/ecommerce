@@ -4,20 +4,14 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, inventoryLocationMappings, stockSnapshots } from "@/db/schema"
 import type { Session } from "./auth"
+import { StatusError } from "./errors"
 import { automaticClassification, locationClassifications, locationMappingSchema } from "./inventory-locations"
 
-export class LocationSettingsError extends Error {
-  constructor(
-    message: string,
-    public readonly status: 400 | 403 | 409
-  ) {
-    super(message)
-  }
-}
+export class LocationSettingsError extends StatusError {}
 
 export async function readLocationMappings(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new LocationSettingsError("A buyer workspace is required", 403)
+    throw new LocationSettingsError("buyerWorkspaceRequired", 403)
   }
   return db().transaction(
     async (tx) => {
@@ -98,7 +92,7 @@ const inputSchema = locationMappingSchema
 
 export async function saveLocationMapping(s: Session, input: unknown) {
   if (s.org.kind !== "buyer") {
-    throw new LocationSettingsError("A buyer workspace is required", 403)
+    throw new LocationSettingsError("buyerWorkspaceRequired", 403)
   }
   const data = inputSchema.parse(input)
   return db().transaction(async (tx) => {
@@ -109,7 +103,7 @@ export async function saveLocationMapping(s: Session, input: unknown) {
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
       .for("update")
     if (!account) {
-      throw new LocationSettingsError("Connect Shopify before assigning inventory locations", 409)
+      throw new LocationSettingsError("connectShopifyBeforeLocations", 409)
     }
     const [stock] = await tx
       .select()
@@ -124,10 +118,10 @@ export async function saveLocationMapping(s: Session, input: unknown) {
       )
       .for("update")
     if (!stock || stock.snapshotId !== data.snapshotId || stock.data?.source !== "shopify") {
-      throw new LocationSettingsError("Inventory changed; reload before assigning locations", 409)
+      throw new LocationSettingsError("inventoryChangedReload", 409)
     }
     if (!stock.data.rows.some((row) => row.levels.some((level) => level.locationId === data.locationId))) {
-      throw new LocationSettingsError("Location is not present in this store's inventory", 400)
+      throw new LocationSettingsError("locationNotInStore", 400)
     }
     const scope = and(
       eq(inventoryLocationMappings.orgId, s.org.id),
@@ -136,7 +130,7 @@ export async function saveLocationMapping(s: Session, input: unknown) {
     )
     const [previous] = await tx.select().from(inventoryLocationMappings).where(scope)
     if ((previous?.revision ?? 0) !== data.expectedRevision) {
-      throw new LocationSettingsError("Location settings changed; reload before saving", 409)
+      throw new LocationSettingsError("locationSettingsChanged", 409)
     }
     const value = {
       orgId: s.org.id,

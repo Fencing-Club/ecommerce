@@ -3,7 +3,7 @@ import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { catalogEditor } from "@/server/catalogs"
 
-export const generateMetadata = titleFor("New catalog", "catalogs", "edit")
+export const generateMetadata = titleFor("supplier.pages.newCatalog", "catalogs", "edit")
 
 export default async function NewCatalogPage() {
   const s = await session()

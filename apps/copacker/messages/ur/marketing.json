@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "title": "Copacker: ری اسٹاک کی فکر ختم",
+    "description": "اپنی انوینٹری کی پیش گوئی کریں، بروقت خریداری آرڈر بھیجیں تاکہ اسٹاک ختم نہ ہو، اور اپنے فریٹ فارورڈر، Amazon FBA اور AWD تک حوالگی سنبھالیں، ہر لیبل اور دستاویز آپ کے لیے تیار۔"
+  },
+  "site": {
+    "free": "مفت، کریڈٹ کارڈ کی ضرورت نہیں۔",
+    "getStarted": "شروع کریں",
+    "signIn": "سائن ان",
+    "contact": "رابطہ",
+    "mainNav": "مین",
+    "sections": {
+      "forecast": "پیش گوئی",
+      "handoffs": "ہینڈ آف",
+      "agents": "ایجنٹس",
+      "faq": "سوالات"
+    },
+    "footer": {
+      "product": "پروڈکٹ",
+      "company": "کمپنی",
+      "account": "اکاؤنٹ",
+      "tagline": "پیش گوئی، خریداری آرڈرز اور لاجسٹکس، سب ایک جگہ۔",
+      "privacy": "رازداری",
+      "terms": "شرائط"
+    }
+  },
+  "film": {
+    "watch": "ویڈیو دیکھیں",
+    "title": "Copacker: ری اسٹاک کی فکر ختم"
+  },
+  "copyButton": {
+    "copy": "کاپی کریں",
+    "copied": "کاپی ہو گیا"
+  },
+  "signup": {
+    "title": "آگے کیا آ رہا ہے، سب سے پہلے جانیں۔",
+    "text": "نئے اسٹورز، نئے روٹس اور نئے ٹولز، آتے ہی ایک مختصر ای میل میں۔",
+    "done": "آپ لسٹ میں شامل ہو گئے۔",
+    "email": "ای میل",
+    "placeholder": "you@company.com",
+    "subscribe": "سبسکرائب کریں",
+    "subscribing": "سبسکرائب ہو رہا ہے",
+    "failed": "سائن اپ نہیں ہو سکا۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
+    "getStartedNow": "یا ابھی شروع کریں، یہ مفت ہے"
+  },
+  "hero": {
+    "title": "<first>ری اسٹاک کی فکر</first> <second>ختم۔</second>",
+    "text": "Copacker آپ کی انوینٹری کی پیش گوئی کرتا ہے، بروقت خریداری آرڈر بھیجتا ہے تاکہ اسٹاک ختم نہ ہو، اور آپ کے فریٹ فارورڈر، Amazon FBA اور AWD تک حوالگی سنبھالتا ہے، ہر لیبل اور دستاویز آپ کے لیے تیار کر کے۔",
+    "shotCaption": "Copacker کا ری اسٹاک صفحہ: Shenzhen Metalworks کے دو پروڈکٹس دوبارہ آرڈر کرنے ہیں، آرڈر کی مقدار کے ساتھ، {cost} کی تخمینی لاگت، اور دوبارہ آرڈر پہنچنے سے پہلے تقریباً {lost} کی سیلز خطرے میں۔"
+  },
+  "forecast": {
+    "title": "جانیں کب دوبارہ آرڈر کرنا ہے۔",
+    "text": "Copacker آپ کی Amazon، Shopify اور eBay سیلز سے ہر پروڈکٹ کی پیش گوئی کرتا ہے، اور سپلائر کے لیڈ ٹائم سے حساب لگا کر بتاتا ہے کہ آرڈر کس دن دینا ہے۔"
+  },
+  "agents": {
+    "title": "AI ایجنٹس کے لیے تیار۔",
+    "text": "Copacker کا MCP سرور ہر ایجنٹ کے ساتھ کام کرتا ہے، تاکہ آپ کا ایجنٹ آپ کے ساتھ مل کر پلان، آرڈر اور شپ کر سکے۔ آپ کے پارٹنرز کے ایجنٹس بھی اپنی اپ ڈیٹس یہیں دیتے ہیں۔"
+  },
+  "faq": {
+    "title": "سوالات",
+    "questions": {
+      "cost": {
+        "question": "Copacker کی قیمت کیا ہے؟",
+        "answer": "فی الحال کچھ نہیں۔ کوئی پیڈ پلان نہیں، اور سائن اپ کے لیے کارڈ نہیں مانگا جاتا۔"
+      },
+      "stores": {
+        "question": "یہ کن اسٹورز کے ساتھ کام کرتا ہے؟",
+        "answer": "Amazon، Shopify اور eBay۔ Copacker ہر ایک سے آپ کی سیلز اور اسٹاک پڑھتا ہے۔"
+      },
+      "warehouse": {
+        "question": "کیا میں اپنے گودام یا 3PL کو مال بھیج سکتا ہوں؟",
+        "answer": "جی ہاں۔ خریداری آرڈر Amazon کے بجائے آپ کے کسی بھی ڈیلیوری پتے پر جا سکتا ہے۔ پتے کو Shopify لوکیشن سے منسلک کریں، اور جو آپ نے آرڈر کیا ہے وہ وہاں آرڈر شدہ دکھائی دے گا۔"
+      },
+      "locations": {
+        "question": "کیا ری اسٹاک میری دوسری لوکیشنز کے لیے بھی پلان کرتا ہے؟",
+        "answer": "جی ہاں۔ یہ Amazon کے ساتھ ساتھ آپ کی ہر Shopify لوکیشن کے لیے پلان کرتا ہے، اور کسی لوکیشن کا دوبارہ آرڈر سیدھا وہیں جاتا ہے۔"
+      },
+      "tracking": {
+        "question": "Amazon کے باہر شپمنٹس کیسے ٹریک کروں؟",
+        "answer": "سپلائر شپمنٹ کو بھیجی گئی کے طور پر نشان زد کرتا ہے، فریٹ فارورڈر کیریئر اور ٹریکنگ نمبر شامل کرتا ہے، اور آپ اسے موصول کے طور پر نشان زد کرتے ہیں، سب خریداری آرڈر پر۔"
+      },
+      "forwarders": {
+        "question": "کیا یہ فریٹ فارورڈرز کے ساتھ کام کرتا ہے؟",
+        "answer": "جی ہاں۔ فریٹ فارورڈر کو اپنا ورک اسپیس ملتا ہے، وہ انوائس اور لیبلز ڈاؤن لوڈ کرتا ہے، اور ہر شپمنٹ کو کیریئر، ٹریکنگ نمبر اور فریٹ لاگت کے ساتھ بھیجی گئی کے طور پر نشان زد کرتا ہے۔"
+      },
+      "suppliers": {
+        "question": "کیا میرے سپلائرز کو اکاؤنٹ چاہیے؟",
+        "answer": "نہیں۔ وہ Copacker میں مفت کام کر سکتے ہیں، یا آپ آرڈر میں ان کا حصہ خود بھر سکتے ہیں۔"
+      },
+      "awd": {
+        "question": "کیا یہ AWD کو بھیجتا ہے؟",
+        "answer": "جی ہاں۔ Copacker، FBA اور AWD کو شپمنٹس پلان کرتا ہے، بشمول چین اور ویتنام میں AWD گوداموں کے۔"
+      },
+      "documents": {
+        "question": "یہ کون سی دستاویزات اور لیبلز بناتا ہے؟",
+        "answer": "خریداری آرڈرز، پیکنگ لسٹس، اور FNSKU، کارٹن، شپنگ اور وارننگ لیبلز، سپلائر کی کمرشل انوائس کے ساتھ۔"
+      },
+      "mcp": {
+        "question": "MCP کیا ہے؟",
+        "answer": "Model Context Protocol، AI ایجنٹس کو ایپس سے جوڑنے کا ایک اوپن اسٹینڈرڈ۔ Copacker کا MCP سرور ChatGPT، Claude، Cursor، VS Code اور کسی بھی دوسرے MCP کلائنٹ کے ساتھ کام کرتا ہے۔"
+      },
+      "cli": {
+        "question": "کیا CLI بھی ہے؟",
+        "answer": "جی ہاں۔ copacker CLI ایپ والا ہی ڈیٹا پڑھتا اور اس پر کام کرتا ہے، آپ کی اسکرپٹس اور کوڈنگ ایجنٹس کے لیے۔"
+      }
+    }
+  },
+  "agentsDiagram": {
+    "yours": "آپ کا ایجنٹ",
+    "prompt": "جو بھی پہنچنے سے پہلے ختم ہو جائے اسے دوبارہ آرڈر کرو، اور AWD بھیج دو۔",
+    "partner": "{name} کا ایجنٹ",
+    "packingList": "خریداری آرڈر {number} کی پیکنگ لسٹ جمع کرائی گئی",
+    "pickup": "{date} کے لیے پک اپ بک ہو گیا",
+    "steps": {
+      "checked": "ری اسٹاک چیک کیا: {count, plural, one {# پروڈکٹ پہنچنے سے پہلے ختم ہو جائے گا} other {# پروڈکٹس پہنچنے سے پہلے ختم ہو جائیں گے}}",
+      "created": "{supplier} کے لیے خریداری آرڈر {number} بنایا",
+      "sent": "خریداری آرڈر {number} سپلائر کو بھیجا",
+      "planned": "Amazon AWD شپمنٹ پلان کی"
+    }
+  },
+  "connect": {
+    "title": "ہر ایجنٹ کے ساتھ کام کرتا ہے۔",
+    "text": "Copacker کا MCP سرور اپنے ایجنٹ میں شامل کریں، اور وہ آپ کی طرح آپ کے ری اسٹاک، آرڈرز اور شپمنٹس پر کام کرے گا۔",
+    "yourAgent": "آپ کا ایجنٹ",
+    "anyClient": "کوئی بھی MCP کلائنٹ",
+    "terminal": "ٹرمینل",
+    "serverUrl": "سرور URL",
+    "setups": {
+      "claude": "Claude میں Customize، پھر Connectors کھولیں۔ اس URL کے ساتھ کسٹم کنیکٹر شامل کریں، پھر منسلک کریں۔",
+      "chatgpt": "ویب پر ChatGPT میں Settings، Security and login کے تحت ڈیولپر موڈ آن کریں، پھر Plugins میں یہ URL شامل کریں۔",
+      "claudeCode": "یہ چلائیں، پھر Claude Code میں {command} سے سائن ان کریں۔",
+      "codex": "یہ چلائیں اور جب Codex پوچھے تو سائن ان کریں۔ CLI، IDE ایکسٹینشن اور ChatGPT ڈیسک ٹاپ ایپ اسے شیئر کرتے ہیں۔",
+      "cursor": "Copacker کو Cursor کی MCP فائل میں شامل کریں، پھر Customize سے سائن ان کریں۔",
+      "vsCode": "Copacker کو اپنے ورک اسپیس کی MCP فائل میں شامل کریں، پھر فائل سے اسے اسٹارٹ کر کے سائن ان کریں۔",
+      "gemini": "یہ چلائیں، پھر {command} سے سائن ان کریں۔",
+      "windsurf": "Windsurf اب Devin Desktop ہے۔ MCPs مینو سے اس کی MCP کنفگ فائل کھولیں اور Copacker شامل کریں۔",
+      "zed": "Copacker کو Zed کی سیٹنگز میں شامل کریں، یا Settings، AI، MCP Servers کے تحت ریموٹ سرور کے طور پر شامل کریں۔",
+      "openCode": "Copacker کو OpenCode کی کنفگ فائل میں شامل کریں۔ پہلی بار منسلک ہوتے ہی یہ سائن ان کرتا ہے۔",
+      "hermes": "یہ چلائیں، اور جب Hermes پہلی بار منسلک ہو تو سائن ان کریں۔",
+      "openClaw": "Copacker شامل کرنے اور سائن ان کرنے کے لیے یہ چلائیں۔",
+      "any": "کسی بھی دوسرے کلائنٹ کو اس URL پر پوائنٹ کریں، یا اس سے {command} کے ذریعے CLI کا سرور چلوائیں۔"
+    },
+    "session": "copacker CLI کے ساتھ ایک ٹرمینل سیشن",
+    "cli": {
+      "title": "وہی ڈیٹا، آپ کے ٹرمینل میں۔",
+      "text": "copacker CLI ایپ والے ہی اینڈ پوائنٹس تک پہنچتا ہے، تاکہ آپ کی اسکرپٹس اور کوڈنگ ایجنٹس وہ سب پڑھ اور کر سکیں جو آپ کر سکتے ہیں۔"
+    }
+  },
+  "planner": {
+    "days": "{count, plural, one {# دن} other {# دن}}",
+    "inDays": "{count, plural, one {# دن میں} other {# دنوں میں}}",
+    "inStock": "{sku}، {count, number} اسٹاک میں",
+    "soldADay": "روزانہ فروخت",
+    "captionLate": "اگلے {horizon} دنوں میں {product} کا اسٹاک۔ دوبارہ آرڈر کے بغیر یہ {out, plural, one {# دن} other {# دنوں}} میں ختم ہو جائے گا۔ آج آرڈر کرنے پر {units, number} یونٹس اس کے ختم ہونے کے بعد پہنچیں گے، اور تقریباً {lost} کی سیلز ضائع ہو گی۔",
+    "captionInTime": "اگلے {horizon} دنوں میں {product} کا اسٹاک۔ دوبارہ آرڈر کے بغیر یہ {out, plural, one {# دن} other {# دنوں}} میں ختم ہو جائے گا۔ {orderBy, plural, one {# دن} other {# دنوں}} میں آرڈر کرنے پر {units, number} یونٹس اس کے ختم ہونے سے پہلے پہنچ جائیں گے۔",
+    "unitsInStock": "اسٹاک میں یونٹس",
+    "holidayRush": "چھٹیوں کا رش",
+    "rush": "رش",
+    "runsOut": "ختم",
+    "orderToday": "آج آرڈر کریں",
+    "orderBy": "آخری تاریخ",
+    "restock": "ری اسٹاک",
+    "restockUnits": "+{count, plural, one {# یونٹ} other {# یونٹس}}",
+    "leadTimeDays": "{count} دن کا لیڈ ٹائم",
+    "today": "آج",
+    "withReorder": "دوبارہ آرڈر کے ساتھ",
+    "withoutReorder": "دوبارہ آرڈر کے بغیر",
+    "leadTime": "لیڈ ٹائم",
+    "landsLate": "ختم ہونے کے بعد پہنچے گا",
+    "landsInTime": "ختم ہونے سے پہلے پہنچے گا",
+    "order": "آرڈر",
+    "units": "{count, plural, one {# یونٹ} other {# یونٹس}}",
+    "cartons": "{count, plural, one {# کارٹن} other {# کارٹن}}",
+    "runsOutWithout": "اس کے بغیر ختم ہو جائے گا",
+    "notThisSeason": "اس سیزن نہیں",
+    "todaysPace": "آج کی رفتار سے",
+    "lostSales": "ضائع سیلز",
+    "none": "کوئی نہیں",
+    "whileOut": "جب تک اسٹاک ختم رہے",
+    "inStockThroughout": "پورا وقت اسٹاک میں"
+  },
+  "shot": {
+    "search": "تلاش کریں",
+    "buyerWorkspace": "خریدار ورک اسپیس",
+    "restock": "ری اسٹاک",
+    "allSuppliers": "تمام سپلائرز",
+    "salesPeriod": "<muted>سیلز کی مدت</muted> {count, plural, one {# <muted>دن</muted>} other {# <muted>دن</muted>}}",
+    "leadTime": "<muted>لیڈ ٹائم</muted> {count, plural, one {# <muted>دن</muted>} other {# <muted>دن</muted>}}",
+    "estimatedCost": "تخمینی لاگت",
+    "lines": "لائنیں",
+    "units": "یونٹس",
+    "cases": "کیس",
+    "volume": "حجم",
+    "weight": "وزن",
+    "lostSales": "دوبارہ آرڈر پہنچنے سے پہلے تقریباً {amount} کی ضائع سیلز",
+    "products": "{count, plural, one {# پروڈکٹ} other {# پروڈکٹس}}",
+    "supplierSummary": "لیڈ ٹائم {days, plural, one {# دن} other {# دن}}، {lines, plural, one {# لائن} other {# لائنیں}}، {units, plural, one {# یونٹ} other {# یونٹس}}",
+    "reorder": "دوبارہ آرڈر کریں",
+    "days": "{count, plural, one {# دن} other {# دن}}",
+    "columns": {
+      "product": "پروڈکٹ",
+      "status": "اسٹیٹس",
+      "stockLeft": "باقی اسٹاک",
+      "sold": "فروخت",
+      "available": "دستیاب",
+      "order": "آرڈر",
+      "cost": "لاگت"
+    }
+  },
+  "journey": {
+    "title": "ایک خریداری آرڈر، فیکٹری سے Amazon اور آپ کے گودام تک",
+    "steps": "مراحل",
+    "purchaseOrder": "خریداری آرڈر {number}",
+    "documentCount": "{count, plural, one {# دستاویز} other {# دستاویزات}}",
+    "saved": "خریداری آرڈر میں محفوظ: {name}",
+    "chapters": {
+      "order": {
+        "step": "آرڈر",
+        "title": "ایک کلک میں دوبارہ آرڈر۔",
+        "text": "Copacker خریداری آرڈر لکھ کر آپ کے سپلائر کو بھیج دیتا ہے۔"
+      },
+      "pack": {
+        "step": "پیک",
+        "title": "لیبل لگے، ناپ کے مطابق پیک۔",
+        "text": "ہر یونٹ پر FNSKU اور دم گھٹنے کے خطرے کے لیبلز، ہر ڈبے پر کارٹن اور شپنگ لیبلز، اور ہر ڈبا صحیح سائز کا۔"
+      },
+      "pickUp": {
+        "step": "پک اپ",
+        "title": "Amazon اور فریٹ فارورڈر پک اپ کرتے ہیں۔",
+        "text": "بیرونِ ملک AWD جانے والے کارٹن Amazon لے جاتا ہے، اور باقی آپ کا فریٹ فارورڈر۔"
+      },
+      "ship": {
+        "step": "شپ",
+        "title": "راستے میں۔",
+        "text": "کمرشل انوائس، بل آف لیڈنگ اور ٹریکنگ، سب ایک ہی آرڈر پر۔"
+      },
+      "customs": {
+        "step": "کسٹمز",
+        "title": "کسٹمز سے کلیئر۔",
+        "text": "فریٹ فارورڈر آرڈر پر پہلے سے موجود بل آف لیڈنگ اور کمرشل انوائس کے ساتھ اسے کلیئر کراتا ہے۔"
+      },
+      "deliver": {
+        "step": "ڈیلیور",
+        "title": "FBA تک بھی، آپ تک بھی۔",
+        "text": "فریٹ فارورڈر Amazon کے کارٹن FBA تک لے جاتا ہے، اور باقی FedEx آپ کے گودام تک پہنچاتا ہے۔"
+      }
+    },
+    "documents": {
+      "purchaseOrder": "خریداری آرڈر",
+      "fnskuLabels": "FNSKU لیبلز",
+      "chokingHazardLabels": "دم گھٹنے کے خطرے کے لیبلز",
+      "packingList": "پیکنگ لسٹ",
+      "cartonLabels": "کارٹن لیبلز",
+      "shippingLabels": "شپنگ لیبلز",
+      "commercialInvoice": "کمرشل انوائس",
+      "billOfLading": "بل آف لیڈنگ"
+    },
+    "pins": {
+      "unitLabels": "FNSKU اور دم گھٹنے کے خطرے کے لیبلز",
+      "rightSized": "{size} کے مطابق سائز",
+      "boxLabels": "کارٹن اور شپنگ لیبلز"
+    },
+    "places": {
+      "awdInChina": "چین میں AWD",
+      "customs": "کسٹمز",
+      "yourWarehouse": "آپ کا گودام"
+    },
+    "cards": {
+      "withSupplier": "سپلائر کے پاس",
+      "supplier": "سپلائر",
+      "units": "یونٹس",
+      "total": "کل",
+      "submitted": "جمع کرایا گیا",
+      "cartons": "کارٹن",
+      "cartonSize": "کارٹن کا سائز",
+      "weight": "وزن",
+      "shipments": "شپمنٹس",
+      "awdByAmazon": "چین میں AWD، بذریعہ Amazon",
+      "unitCount": "{count, plural, one {# یونٹ} other {# یونٹس}}",
+      "pickedUp": "{forwarder} نے پک اپ کیا",
+      "onTheWater": "سمندر میں",
+      "inTransit": "راستے میں",
+      "arrives": "آمد",
+      "checkedInAwd": "AWD پر چیک اِن",
+      "released": "ریلیز",
+      "cleared": "کلیئر ہوا",
+      "checkedIn": "Amazon FBA پر چیک اِن",
+      "delivered": "آپ کے گودام پہنچ گیا"
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "Copacker سے رابطہ کریں",
+      "description": "سوالات، اپنی ٹیم کے لیے واک تھرو، یا مل کر کام کرنا: Copacker کو پیغام بھیجیں۔"
+    },
+    "title": "ہم سے <lit>بات کریں۔</lit>",
+    "text": "Copacker کے بارے میں سوالات، اپنی ٹیم کے لیے واک تھرو، یا مل کر کام کرنا۔ پیغام بھیجیں، ہم جواب دیں گے۔",
+    "waysTitle": "یا خود دیکھ لیں۔",
+    "tryIt": "آزمائیں",
+    "watchTitle": "ویڈیو دیکھیں",
+    "watchText": "پیش گوئی سے گودام تک ایک ری اسٹاک، دو منٹ سے کم میں۔",
+    "faqTitle": "سوالات پڑھیں",
+    "faqText": "اسٹورز، Amazon کے علاوہ شپنگ، پارٹنرز اور ایجنٹس۔",
+    "questions": "سوالات",
+    "form": {
+      "topic": "کس بارے میں ہے؟",
+      "topics": {
+        "gettingStarted": "شروعات",
+        "walkthrough": "واک تھرو",
+        "support": "سپورٹ",
+        "partnerships": "پارٹنرشپس",
+        "press": "پریس",
+        "other": "کچھ اور"
+      },
+      "name": "نام",
+      "email": "ای میل",
+      "company": "کمپنی",
+      "message": "پیغام",
+      "send": "پیغام بھیجیں",
+      "sending": "بھیجا جا رہا ہے",
+      "failed": "آپ کا پیغام نہیں بھیجا جا سکا۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
+      "sent": "پیغام بھیج دیا گیا۔",
+      "writeBack": "ہم {email} پر جواب دیں گے۔",
+      "another": "ایک اور بھیجیں",
+      "enterName": "اپنا نام درج کریں",
+      "enterEmail": "درست ای میل ایڈریس درج کریں",
+      "writeMessage": "اپنا پیغام لکھیں",
+      "tooLong": "5,000 حروف سے کم رکھیں"
+    }
+  }
+}

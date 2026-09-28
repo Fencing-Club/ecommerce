@@ -14,6 +14,8 @@ import {
   supplierProducts,
   variantFields
 } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
 import { requireBuyer, requireSupplier, type Session } from "./auth"
 import { customerProducts } from "./catalogs"
@@ -33,7 +35,7 @@ export const proposalSchema = z.object({
         unitPrice: z.number().int().min(0).max(100_000_000)
       })
     )
-    .min(1, "Keep at least one product")
+    .min(1, "errors.keepOneProduct")
     .max(150),
   paymentTerms: z.string().trim().max(200),
   readyDate: z.iso.date().nullable(),
@@ -165,27 +167,25 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
   requireSupplier(s)
   const parsed = proposalSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Check the changes and try again")
+    throw parsed.error.issues[0] ? new z.ZodError([parsed.error.issues[0]]) : new LocalizedError("checkChanges")
   }
   const proposal = parsed.data
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted" || order.revision !== expectedRevision) {
-      throw new Error("This purchase order has changed. Refresh and try again")
+      throw new LocalizedError("orderChangedRefresh")
     }
     if (!(await changeable(tx, orderId))) {
-      throw new Error("A shipment is already packed, so this purchase order can't change")
+      throw new LocalizedError("shipmentPackedNoChange")
     }
     const ids = proposal.lines.flatMap((line) => (line.itemId ? [line.itemId] : []))
     if (new Set(ids).size !== ids.length || ids.some((id) => !order.data.items.some((item) => item.id === id))) {
-      throw new Error("This purchase order has changed. Refresh and try again")
+      throw new LocalizedError("orderChangedRefresh")
     }
     for (const line of proposal.lines) {
       const item = order.data.items.find((candidate) => candidate.id === line.itemId)
       if (item && line.pieces % item.piecesPerSet !== 0) {
-        throw new Error(
-          `${item.buyerSku} is a pack of ${item.piecesPerSet}. Order a multiple of ${item.piecesPerSet} units`
-        )
+        throw new LocalizedError("setMultiple", { sku: item.buyerSku, count: item.piecesPerSet })
       }
     }
     const added = proposal.lines.filter((line) => !line.itemId)
@@ -194,10 +194,10 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
       const offered = await customerProducts(tx, supplier, skus)
       const missing = skus.filter((sku) => !offered.some((product) => product.active && product.supplierSku === sku))
       if (missing.length) {
-        throw new Error(`Add only your active products: ${missing.join(", ")}`)
+        throw new LocalizedError("addActiveProducts", { skus: missing.join(", ") })
       }
       if (new Set(skus).size !== skus.length || order.data.items.some((item) => skus.includes(item.supplierSku))) {
-        throw new Error("A product is on the purchase order twice. Change its quantity instead")
+        throw new LocalizedError("productOnOrderTwice")
       }
     }
     const changes = proposalChanges(order.data, proposal)
@@ -208,7 +208,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
       .where(and(eq(orderProposals.orderId, orderId), eq(orderProposals.status, "pending")))
     if (!commercial) {
       if (!changes.readyDate) {
-        throw new Error("Change something before sending")
+        throw new LocalizedError("changeSomething")
       }
       // The ready date is the supplier's to set: it updates the PO as it is, without a new revision.
       const data = orderInputSchema.parse({ ...order.data, readyDate: proposal.readyDate ?? undefined })
@@ -224,9 +224,11 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
       await tx.insert(events).values({
         orderId,
         actor: s.user.id,
-        message: proposal.readyDate
-          ? `Supplier set the ready date to ${proposal.readyDate}`
-          : "Supplier cleared the ready date"
+        ...eventMessage(
+          proposal.readyDate
+            ? { key: "readyDateSet", values: { date: proposal.readyDate } }
+            : { key: "readyDateCleared", values: null }
+        )
       })
       return { approval: false }
     }
@@ -239,7 +241,11 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
     await tx.insert(events).values({
       orderId,
       actor: s.user.id,
-      message: proposal.note ? `Supplier proposed changes: ${proposal.note}` : "Supplier proposed changes"
+      ...eventMessage(
+        proposal.note
+          ? { key: "changesProposedWithNote", values: { note: proposal.note } }
+          : { key: "changesProposed", values: null }
+      )
     })
     return { approval: true }
   })
@@ -248,7 +254,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
 async function pendingFor(tx: Transaction, s: Session, proposalId: string) {
   const [proposal] = await tx.select().from(orderProposals).where(eq(orderProposals.id, proposalId)).for("update")
   if (!proposal || proposal.status !== "pending") {
-    throw new Error("These changes were already answered. Refresh to see the purchase order")
+    throw new LocalizedError("changesAlreadyAnswered")
   }
   const { order, supplier } = await accessibleOrder(s, proposal.orderId, tx, true)
   return { proposal, order, supplier }
@@ -262,9 +268,11 @@ export async function withdrawProposal(s: Session, proposalId: string) {
       .update(orderProposals)
       .set({ status: "withdrawn", decidedBy: s.user.id, decidedAt: new Date() })
       .where(eq(orderProposals.id, proposalId))
-    await tx
-      .insert(events)
-      .values({ orderId: proposal.orderId, actor: s.user.id, message: "Supplier withdrew its changes" })
+    await tx.insert(events).values({
+      orderId: proposal.orderId,
+      actor: s.user.id,
+      ...eventMessage({ key: "changesWithdrawn", values: null })
+    })
   })
 }
 
@@ -280,7 +288,9 @@ export async function declineProposal(s: Session, proposalId: string, reason: st
     await tx.insert(events).values({
       orderId: proposal.orderId,
       actor: s.user.id,
-      message: why ? `Supplier's changes declined: ${why}` : "Supplier's changes declined"
+      ...eventMessage(
+        why ? { key: "changesDeclinedWithReason", values: { reason: why } } : { key: "changesDeclined", values: null }
+      )
     })
   })
 }
@@ -291,7 +301,7 @@ export async function approveProposal(s: Session, proposalId: string) {
   requireBuyer(s)
   const [proposal] = await db().select().from(orderProposals).where(eq(orderProposals.id, proposalId))
   if (!proposal || proposal.status !== "pending") {
-    throw new Error("These changes were already answered. Refresh to see the purchase order")
+    throw new LocalizedError("changesAlreadyAnswered")
   }
   const { order } = await accessibleOrder(s, proposal.orderId)
   const added = proposal.data.lines.filter((line) => !line.itemId)
@@ -312,9 +322,7 @@ export async function approveProposal(s: Session, proposalId: string) {
     : []
   const unmatched = added.filter((line) => !matches.some((row) => row.supplierSku === line.supplierSku))
   if (unmatched.length) {
-    throw new Error(
-      `Give a Shopify variant the supplier SKU ${unmatched.map((line) => line.supplierSku).join(", ")}, then approve`
-    )
+    throw new LocalizedError("giveVariantSupplierSku", { skus: unmatched.map((line) => line.supplierSku).join(", ") })
   }
   const variants = added.length
     ? await (await shopifyFor(s.org.id, order.shopifyDomain)).variants(matches.map((row) => row.variantId))
@@ -323,7 +331,7 @@ export async function approveProposal(s: Session, proposalId: string) {
     const variantId = matches.find((row) => row.supplierSku === line.supplierSku)!.variantId
     const variant = variants.find((candidate) => candidate?.id === variantId)
     if (!variant) {
-      throw new Error(`Shopify has no variant for supplier SKU ${line.supplierSku}`)
+      throw new LocalizedError("noVariantForSupplierSku", { sku: line.supplierSku })
     }
     return {
       id: randomUUID(),
@@ -349,16 +357,14 @@ export async function approveProposal(s: Session, proposalId: string) {
       locked.status !== "submitted" ||
       !(await changeable(tx, locked.id))
     ) {
-      throw new Error(
-        "The purchase order changed since the supplier proposed this. Ask them to send their changes again"
-      )
+      throw new LocalizedError("orderChangedSinceProposal")
     }
     await checkOrder(tx, s, prepared, { stock: false })
     const revision = locked.revision + 1
     const data = prepared.input
     await tx
       .insert(orderRevisions)
-      .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "Approved supplier changes" })
+      .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "approvedSupplierChanges" })
     await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, locked.id))
     const open = await tx
       .update(shipments)
@@ -386,7 +392,7 @@ export async function approveProposal(s: Session, proposalId: string) {
     await tx.insert(events).values({
       orderId: locked.id,
       actor: s.user.id,
-      message: `Supplier's changes approved; purchase order revision ${revision} published`
+      ...eventMessage({ key: "supplierChangesApproved", values: { revision } })
     })
     return { orderId: locked.id, revision, shipmentIds: open.map((row) => row.id) }
   })

@@ -1,12 +1,13 @@
 "use client"
 
 import { useWindowEvent } from "@mantine/hooks"
-import { money } from "@repo/aisle"
 import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { StatusBadge as ToneBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useMoney } from "@/hooks/use-money"
 import { type ProductImage, imageUrl } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 
@@ -37,14 +38,14 @@ export function ProductThumb({
 
 // A product's or catalog's status in the app's status tones: active is healthy, draft and archived are idle.
 const statuses = {
-  active: { label: "Active", tone: "success" },
-  draft: { label: "Draft", tone: "neutral" },
-  archived: { label: "Archived", tone: "neutral" }
-} as const satisfies Record<string, { label: string; tone: StatusTone }>
+  active: "success",
+  draft: "neutral",
+  archived: "neutral"
+} as const satisfies Record<string, StatusTone>
 
 export function StatusBadge({ status }: { status: keyof typeof statuses }) {
-  const { label, tone } = statuses[status]
-  return <ToneBadge tone={tone}>{label}</ToneBadge>
+  const t = useTranslations("supplier.shared.status")
+  return <ToneBadge tone={statuses[status]}>{t(status)}</ToneBadge>
 }
 
 // A row's link, stretched over the whole row (which needs `relative`) so a click anywhere on it opens the record, as a
@@ -55,6 +56,7 @@ export const rowLink =
 
 // Amounts in each currency, one under another, or a dash for none.
 export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount: number }> }) {
+  const money = useMoney()
   if (!amounts.length) {
     return <span className="text-muted-foreground">—</span>
   }
@@ -85,6 +87,7 @@ export function IndexToolbar<T extends string>({
   placeholder: string
   children?: React.ReactNode
 }) {
+  const locale = useLocale()
   return (
     <div className="flex min-w-0 flex-col gap-2 @3xl:flex-row @3xl:items-center @3xl:justify-between">
       <Tabs value={tab} onValueChange={(value) => onTabChange(value as T)} className="min-w-0">
@@ -95,7 +98,7 @@ export function IndexToolbar<T extends string>({
               {option.label}
               {option.count !== undefined && (
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {option.count.toLocaleString("en-US")}
+                  {option.count.toLocaleString(locale)}
                 </span>
               )}
             </TabsTrigger>
@@ -140,33 +143,33 @@ export function Pager({
   size: number
   onPage: (page: number) => void
 }) {
+  const t = useTranslations("supplier.shared.pager")
   if (pages <= 1) {
     return null
   }
   return (
     <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
       <span className="tabular-nums">
-        {(page * size + 1).toLocaleString("en-US")}–{Math.min(total, (page + 1) * size).toLocaleString("en-US")} of{" "}
-        {total.toLocaleString("en-US")}
+        {t("range", { first: page * size + 1, last: Math.min(total, (page + 1) * size), total })}
       </span>
       <div className="flex gap-1">
         <Button
           size="icon-sm"
           variant="outline"
-          aria-label="Previous page"
+          aria-label={t("previous")}
           disabled={page === 0}
           onClick={() => onPage(page - 1)}
         >
-          <ChevronLeft />
+          <ChevronLeft className="rtl:rotate-180" />
         </Button>
         <Button
           size="icon-sm"
           variant="outline"
-          aria-label="Next page"
+          aria-label={t("next")}
           disabled={page >= pages - 1}
           onClick={() => onPage(page + 1)}
         >
-          <ChevronRight />
+          <ChevronRight className="rtl:rotate-180" />
         </Button>
       </div>
     </div>
@@ -181,7 +184,7 @@ export function SaveBar({
   onDiscard,
   onSave,
   error,
-  message = "Unsaved changes",
+  message,
   canSave = true
 }: {
   dirty: boolean
@@ -194,6 +197,7 @@ export function SaveBar({
   // False while a change can't be saved yet, such as a count that isn't a number.
   canSave?: boolean
 }) {
+  const t = useTranslations("supplier.shared.saveBar")
   useWindowEvent("beforeunload", (event) => {
     if (dirty) {
       event.preventDefault()
@@ -204,16 +208,16 @@ export function SaveBar({
   }
   return (
     <section
-      aria-label="Unsaved changes"
+      aria-label={t("unsaved")}
       className="sticky bottom-4 z-30 mx-auto flex w-full max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-lg"
     >
-      <span className={cn("text-sm font-medium", error && "text-destructive")}>{error || message}</span>
-      <div className="ml-auto flex gap-2">
+      <span className={cn("text-sm font-medium", error && "text-destructive")}>{error || message || t("unsaved")}</span>
+      <div className="ms-auto flex gap-2">
         <Button size="sm" variant="outline" disabled={pending || !dirty} onClick={onDiscard}>
-          Discard
+          {t("discard")}
         </Button>
         <Button size="sm" disabled={pending || !dirty || !canSave} onClick={onSave}>
-          {pending ? "Saving" : "Save"}
+          {pending ? t("saving") : t("save")}
         </Button>
       </div>
     </section>

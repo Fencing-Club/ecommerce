@@ -1,5 +1,6 @@
 import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { ProductDefaultsError, saveProductDefaults } from "@/server/product-defaults"
 import { isAppOrigin } from "@/server/security"
 
@@ -7,7 +8,7 @@ import { isAppOrigin } from "@/server/security"
 export async function PATCH(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   requirePage(s, "products", "edit")
@@ -15,11 +16,11 @@ export async function PATCH(request: Request) {
     return Response.json(await saveProductDefaults(s, await request.json()), { headers })
   } catch (error) {
     if (error instanceof ProductDefaultsError) {
-      return Response.json({ error: error.message }, { status: error.status, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
     }
     if (error instanceof ZodError || error instanceof SyntaxError) {
-      return Response.json({ error: "Check the product details and try again" }, { status: 400, headers })
+      return errorResponse("checkProductDetails", 400, headers)
     }
-    return Response.json({ error: "Product details couldn't be saved. Try again." }, { status: 500, headers })
+    return errorResponse("productDetailsNotSaved", 500, headers)
   }
 }

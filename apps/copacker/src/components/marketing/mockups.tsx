@@ -12,6 +12,7 @@ import {
   Search,
   TrendingDown
 } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { Status } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,7 +29,9 @@ import { cn } from "@/lib/utils"
 const nav = pagesFor("buyer")
 
 // The app's window: the header with search, the sidebar with the buyer's pages, and the page itself.
-function AppFrame({ active, children }: { active: string; children: React.ReactNode }) {
+function AppFrame({ active, children }: { active: (typeof nav)[number]["view"]; children: React.ReactNode }) {
+  const t = useTranslations("marketing.shot")
+  const pages = useTranslations("navigation")
   return (
     <div
       inert
@@ -43,8 +46,8 @@ function AppFrame({ active, children }: { active: string; children: React.ReactN
         </span>
         <span className="flex h-8 items-center gap-2 rounded-lg border bg-muted/50 px-3 text-muted-foreground">
           <Search className="size-3.5" />
-          Search
-          <span className="ml-auto flex gap-1">
+          {t("search")}
+          <span className="ms-auto flex gap-1">
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>
           </span>
@@ -52,14 +55,14 @@ function AppFrame({ active, children }: { active: string; children: React.ReactN
         <Bell className="size-4 justify-self-end text-muted-foreground" />
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-56 shrink-0 flex-col gap-4 border-r bg-sidebar p-2 text-sidebar-foreground">
+        <aside className="flex w-56 shrink-0 flex-col gap-4 border-e bg-sidebar p-2 text-sidebar-foreground">
           <div className="flex items-center gap-2 rounded-lg p-2">
             <span className="flex size-8 items-center justify-center rounded-lg border bg-background text-xs font-semibold">
               RG
             </span>
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="truncate font-medium">Ridgeline Goods</span>
-              <span className="text-xs text-muted-foreground">Buyer workspace</span>
+              <span className="text-xs text-muted-foreground">{t("buyerWorkspace")}</span>
             </span>
             <ChevronsUpDown className="size-3.5 text-muted-foreground" />
           </div>
@@ -70,17 +73,19 @@ function AppFrame({ active, children }: { active: string; children: React.ReactN
             }
             return (
               <div key={group.key} className={cn("flex flex-col gap-0.5", group.key === "workspace" && "mt-auto")}>
-                {group.label && <span className="px-2 pb-1 text-xs text-muted-foreground">{group.label}</span>}
-                {items.map(({ label, icon: Icon }) => (
+                {group.labelKey && (
+                  <span className="px-2 pb-1 text-xs text-muted-foreground">{pages(`groups.${group.labelKey}`)}</span>
+                )}
+                {items.map(({ view, labelKey, icon: Icon }) => (
                   <span
-                    key={label}
+                    key={view}
                     className={cn(
                       "flex h-8 items-center gap-2 rounded-md px-2",
-                      label === active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                      view === active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                     )}
                   >
                     <Icon className="size-4" />
-                    {label}
+                    {pages(`pages.${labelKey}`)}
                   </span>
                 ))}
               </div>
@@ -107,7 +112,7 @@ function PageTitle({ children, actions }: { children: React.ReactNode; actions?:
     <div className="flex items-center gap-3">
       <PanelLeft className="size-4 text-muted-foreground" />
       <span className="text-xl font-semibold tracking-tight">{children}</span>
-      {actions && <span className="ml-auto flex gap-2">{actions}</span>}
+      {actions && <span className="ms-auto flex gap-2">{actions}</span>}
     </div>
   )
 }
@@ -133,57 +138,41 @@ function Thumb({ icon: Icon }: { icon: typeof Box }) {
 const bottles = { name: "Steel Bottle 32 oz", sku: "SM-3201", icon: GlassWater }
 const mugs = { name: "Trail Mug 12 oz", sku: "SM-1204", icon: Coffee }
 
+// A quiet part of a filter chip's words.
+const muted = (chunks: React.ReactNode) => <span className="text-muted-foreground">{chunks}</span>
+
 // Restock: what runs out before a reorder could arrive, what it costs to order, and the sales at risk.
 export function RestockShot() {
+  const t = useTranslations("marketing.shot")
+  const format = useFormatter()
+  const dollars = (value: number) => format.number(value, { style: "currency", currency: "USD" })
   const rows = [
-    {
-      ...bottles,
-      status: "reorder_now",
-      left: "18 days",
-      sold: "1,830",
-      available: "1,140",
-      order: "2,520",
-      cost: "$11,340.00"
-    },
-    {
-      ...mugs,
-      status: "reorder_soon",
-      left: "40 days",
-      sold: "1,020",
-      available: "1,380",
-      order: "660",
-      cost: "$2,310.00"
-    }
+    { ...bottles, status: "reorder_now", left: 18, sold: 1830, available: 1140, order: 2520, cost: 11_340 },
+    { ...mugs, status: "reorder_soon", left: 40, sold: 1020, available: 1380, order: 660, cost: 2310 }
   ]
   return (
-    <AppFrame active="Restock">
-      <PageTitle>Restock</PageTitle>
+    <AppFrame active="restock">
+      <PageTitle>{t("restock")}</PageTitle>
       <div className="flex items-center gap-2">
         <Chip icon={Building2}>Ridgeline Goods</Chip>
-        <Chip icon={Factory}>All suppliers</Chip>
-        <Chip>
-          <span className="text-muted-foreground">Sales period</span> 60{" "}
-          <span className="text-muted-foreground">days</span>
-        </Chip>
-        <Chip>
-          <span className="text-muted-foreground">Lead time</span> 60{" "}
-          <span className="text-muted-foreground">days</span>
-        </Chip>
+        <Chip icon={Factory}>{t("allSuppliers")}</Chip>
+        <Chip>{t.rich("salesPeriod", { muted, count: 60 })}</Chip>
+        <Chip>{t.rich("leadTime", { muted, count: 60 })}</Chip>
       </div>
       <Card className="gap-4">
         <CardContent className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-6">
             <div className="flex flex-col gap-1">
-              <span className="text-muted-foreground">Estimated cost</span>
-              <span className="text-3xl font-semibold tracking-tight">$15,090.00</span>
+              <span className="text-muted-foreground">{t("estimatedCost")}</span>
+              <span className="text-3xl font-semibold tracking-tight">{dollars(15_090)}</span>
             </div>
-            <dl className="grid grid-cols-5 gap-x-8 gap-y-1 text-right">
+            <dl className="grid grid-cols-5 gap-x-8 gap-y-1 text-end">
               {[
-                ["Lines", "3"],
-                ["Units", "3,660"],
-                ["Cases", "180"],
-                ["Volume", "6.12 m³"],
-                ["Weight", "1,820 kg"]
+                [t("lines"), format.number(3)],
+                [t("units"), format.number(3660)],
+                [t("cases"), format.number(180)],
+                [t("volume"), `${format.number(6.12)} m³`],
+                [t("weight"), format.number(1820, { style: "unit", unit: "kilogram" })]
               ].map(([term, value]) => (
                 <div key={term} className="flex flex-col">
                   <dt className="text-xs text-muted-foreground">{term}</dt>
@@ -194,7 +183,9 @@ export function RestockShot() {
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
             <TrendingDown className="size-4" />
-            About $18,340 in lost sales before reorders arrive
+            {t("lostSales", {
+              amount: format.number(18_340, { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+            })}
           </div>
         </CardContent>
       </Card>
@@ -203,28 +194,30 @@ export function RestockShot() {
           <ChevronDown className="size-4 text-muted-foreground" />
           <span className="flex flex-col">
             <span>
-              <span className="font-semibold">Shenzhen Metalworks</span>
-              <span className="text-muted-foreground"> 2 products</span>
+              <span className="font-semibold">Shenzhen Metalworks</span>{" "}
+              <span className="text-muted-foreground">{t("products", { count: 2 })}</span>
             </span>
-            <span className="text-xs text-muted-foreground">Lead time 60 days, 2 lines, 3,180 units</span>
+            <span className="text-xs text-muted-foreground">
+              {t("supplierSummary", { days: 60, lines: 2, units: 3180 })}
+            </span>
           </span>
-          <span className="ml-auto flex flex-col items-end">
-            <span className="text-xs text-muted-foreground">Estimated cost</span>
-            <span className="font-semibold">$13,650.00</span>
+          <span className="ms-auto flex flex-col items-end">
+            <span className="text-xs text-muted-foreground">{t("estimatedCost")}</span>
+            <span className="font-semibold">{dollars(13_650)}</span>
           </span>
-          <Button>Reorder</Button>
+          <Button>{t("reorder")}</Button>
         </div>
         <Table framed={false}>
           <TableHeader>
             <TableRow>
               <TableHead className="w-10" />
-              <TableHead>Product</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Stock left</TableHead>
-              <TableHead className="text-right">Sold</TableHead>
-              <TableHead className="text-right">Available</TableHead>
-              <TableHead className="text-right">Order</TableHead>
-              <TableHead className="text-right">Cost</TableHead>
+              <TableHead>{t("columns.product")}</TableHead>
+              <TableHead>{t("columns.status")}</TableHead>
+              <TableHead className="text-end">{t("columns.stockLeft")}</TableHead>
+              <TableHead className="text-end">{t("columns.sold")}</TableHead>
+              <TableHead className="text-end">{t("columns.available")}</TableHead>
+              <TableHead className="text-end">{t("columns.order")}</TableHead>
+              <TableHead className="text-end">{t("columns.cost")}</TableHead>
               <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
@@ -246,13 +239,13 @@ export function RestockShot() {
                 <TableCell>
                   <Status status={row.status} />
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{row.left}</TableCell>
-                <TableCell className="text-right tabular-nums">{row.sold}</TableCell>
-                <TableCell className="text-right tabular-nums">{row.available}</TableCell>
-                <TableCell className="text-right font-medium tabular-nums">{row.order}</TableCell>
-                <TableCell className="text-right tabular-nums">{row.cost}</TableCell>
+                <TableCell className="text-end tabular-nums">{t("days", { count: row.left })}</TableCell>
+                <TableCell className="text-end tabular-nums">{format.number(row.sold)}</TableCell>
+                <TableCell className="text-end tabular-nums">{format.number(row.available)}</TableCell>
+                <TableCell className="text-end font-medium tabular-nums">{format.number(row.order)}</TableCell>
+                <TableCell className="text-end tabular-nums">{dollars(row.cost)}</TableCell>
                 <TableCell>
-                  <ChevronRight className="size-4 text-muted-foreground" />
+                  <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
                 </TableCell>
               </TableRow>
             ))}
@@ -261,19 +254,21 @@ export function RestockShot() {
       </Card>
       <Card className="py-0">
         <div className="flex items-center gap-3 px-4 py-3">
-          <ChevronRight className="size-4 text-muted-foreground" />
+          <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
           <span className="flex flex-col">
             <span>
-              <span className="font-semibold">Saigon Packaging Co.</span>
-              <span className="text-muted-foreground"> 1 product</span>
+              <span className="font-semibold">Saigon Packaging Co.</span>{" "}
+              <span className="text-muted-foreground">{t("products", { count: 1 })}</span>
             </span>
-            <span className="text-xs text-muted-foreground">Lead time 45 days, 1 line, 480 units</span>
+            <span className="text-xs text-muted-foreground">
+              {t("supplierSummary", { days: 45, lines: 1, units: 480 })}
+            </span>
           </span>
-          <span className="ml-auto flex flex-col items-end">
-            <span className="text-xs text-muted-foreground">Estimated cost</span>
-            <span className="font-semibold">$1,440.00</span>
+          <span className="ms-auto flex flex-col items-end">
+            <span className="text-xs text-muted-foreground">{t("estimatedCost")}</span>
+            <span className="font-semibold">{dollars(1440)}</span>
           </span>
-          <Button variant="outline">Reorder</Button>
+          <Button variant="outline">{t("reorder")}</Button>
         </div>
       </Card>
     </AppFrame>

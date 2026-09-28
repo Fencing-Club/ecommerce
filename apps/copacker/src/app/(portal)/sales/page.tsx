@@ -1,9 +1,10 @@
+import { getTranslations } from "next-intl/server"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
 import { SalesOrders } from "@/components/sales-orders"
 import { requirePage, session, titleFor } from "@/server/auth"
 
-export const generateMetadata = titleFor("Orders", "sales")
+export const generateMetadata = titleFor("sales.title", "sales")
 
 // `?q=` starts the list filtered, such as a header search for an order number. The orders API takes up to 100
 // characters.
@@ -15,9 +16,10 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
     redirect("/orders")
   }
   requirePage(s, "sales")
+  const t = await getTranslations("sales")
   return (
     <>
-      <PageHeader title="Orders" />
+      <PageHeader title={t("title")} />
       <SalesOrders initialSearch={q} />
     </>
   )

@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "Partner",
+    "tabsLabel": "Partnertypen",
+    "tabs": {
+      "all": "Alle",
+      "supplier": "Lieferanten",
+      "forwarder": "Spediteure"
+    },
+    "search": "Partner suchen",
+    "columns": {
+      "name": "Name",
+      "type": "Typ",
+      "status": "Status",
+      "details": "Details",
+      "actions": "Aktionen"
+    },
+    "empty": {
+      "noMatch": "Keine Partner für „{query}“",
+      "all": "Noch keine Partner",
+      "supplier": "Noch keine Lieferanten",
+      "forwarder": "Noch keine Spediteure"
+    },
+    "hints": {
+      "forwarder": "Fügen Sie einen Spediteur hinzu, um Bestellungen über ihn zu versenden.",
+      "supplier": "Lieferanten aus Shopify erscheinen hier.",
+      "search": "Prüfen Sie die Schreibweise oder suchen Sie in einem anderen Tab."
+    }
+  },
+  "add": {
+    "button": "Partner hinzufügen",
+    "supplier": "Lieferant",
+    "forwarder": "Spediteur"
+  },
+  "row": {
+    "types": {
+      "supplier": "Lieferant",
+      "forwarder": "Spediteur"
+    },
+    "addresses": "{count, plural, one {# Adresse} other {# Adressen}}",
+    "noAddresses": "Noch keine Adressen",
+    "leadTime": "Lieferzeit {days, plural, one {# Tag} other {# Tage}}",
+    "leadTimeAndAddresses": "Lieferzeit {days, plural, one {# Tag} other {# Tage}}, {count, plural, one {# Adresse} other {# Adressen}}",
+    "sending": "Wird gesendet…",
+    "invitationSentTo": "Einladung an {email} gesendet",
+    "invitationSent": "Einladung gesendet",
+    "moreActions": "Weitere Aktionen für {name}",
+    "menu": {
+      "edit": "Bearbeiten",
+      "addresses": "Adressen",
+      "invite": "Einladen",
+      "resend": "Einladung erneut senden"
+    },
+    "standing": {
+      "joined": "Auf Copacker",
+      "invited": "Eingeladen",
+      "expired": "Einladung abgelaufen",
+      "notInvited": "Nicht eingeladen"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "Spediteur hinzufügen",
+      "title": "Spediteur hinzufügen",
+      "description": "Holt bei Ihrem Lieferanten ab und versendet weiter an Amazon oder Ihr Lager.",
+      "submit": "Spediteur hinzufügen",
+      "company": "Unternehmen",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "E-Mail",
+      "emailDescription": "Geben Sie eine an, um ihn gleich einzuladen."
+    },
+    "invite": {
+      "title": "{name} einladen",
+      "description": "Der Spediteur verwaltet seine Lageradressen für Ihre Bestellungen selbst.",
+      "submit": "Einladung senden",
+      "email": "E-Mail"
+    },
+    "rename": {
+      "trigger": "Bearbeiten",
+      "triggerLabel": "{name} bearbeiten",
+      "title": "Spediteur bearbeiten",
+      "submit": "Speichern",
+      "company": "Unternehmen"
+    },
+    "remove": {
+      "trigger": "Entfernen",
+      "title": "{name} entfernen?",
+      "description": "Neue Bestellungen können nicht mehr an ihn gehen. Bereits gesendete Bestellungen behalten ihre Adresse.",
+      "cancel": "Abbrechen",
+      "confirm": "Entfernen",
+      "failed": "{name} konnte nicht entfernt werden"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "Lieferant hinzufügen",
+      "title": "Lieferant hinzufügen",
+      "description": "Für einen Lieferanten, der noch nicht in Shopify ist."
+    },
+    "edit": {
+      "title": "{name} bearbeiten",
+      "name": "Name",
+      "companyName": "Unternehmensname",
+      "companyNameDescription": "Wie im Feld „Lieferant“ in Shopify.",
+      "companyNamePlaceholder": "Nicht in Shopify",
+      "contactName": "Ansprechpartner",
+      "contactEmail": "Kontakt-E-Mail",
+      "phone": "Telefon",
+      "website": "Website",
+      "websiteJoined": "{name} verwaltet die Kontaktdaten im eigenen Workspace.",
+      "leadTime": "Lieferzeit (Tage)",
+      "leadTimeDescription": "Von der Bestellung bis zum verkaufsfähigen Lagerbestand. Leer bedeutet {days}.",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "failed": "Lieferant konnte nicht gespeichert werden. Versuchen Sie es erneut."
+    },
+    "invite": {
+      "title": "{name} einladen",
+      "description": "Der Lieferant sieht die Bestellungen, die Sie teilen, und erhält eine E-Mail, wenn eine Dokumente braucht.",
+      "email": "E-Mail des Lieferanten",
+      "cancel": "Abbrechen",
+      "submit": "Einladung senden",
+      "sending": "Wird gesendet…",
+      "failed": "{name} konnte nicht eingeladen werden. Versuchen Sie es erneut."
+    }
+  },
+  "address": {
+    "editPickup": "Abholadresse bearbeiten",
+    "edit": "Adresse bearbeiten",
+    "addPickup": "Abholadresse für {name} hinzufügen",
+    "add": "Adresse für {name} hinzufügen",
+    "saveChanges": "Änderungen speichern",
+    "save": "Adresse speichern",
+    "name": "Name der Adresse",
+    "pickupPlaceholder": "Fabrik",
+    "placeholder": "Lager Yiwu",
+    "sheet": {
+      "supplier": "Abholadressen",
+      "forwarder": "Stationen auf dem Weg zu Amazon oder Ihrem Lager",
+      "joinedSupplier": "Verwaltet die eigenen Abholadressen auf Copacker",
+      "joinedForwarder": "Verwaltet die eigenen Adressen auf Copacker"
+    },
+    "empty": "Noch keine Adressen",
+    "addButton": "Adresse hinzufügen",
+    "removing": "{name} wird entfernt",
+    "moreActions": "Weitere Aktionen für {name}",
+    "menuEdit": "Bearbeiten",
+    "menuRemove": "Entfernen",
+    "removeFailed": "{name} konnte nicht entfernt werden"
+  },
+  "contactKinds": {
+    "delivery": "Lieferadresse",
+    "forwarder": "Spediteur",
+    "pickup": "Abholadresse"
+  },
+  "contactDetails": {
+    "enterEmail": "Geben Sie eine E-Mail-Adresse ein"
+  },
+  "phone": {
+    "invalid": "Geben Sie eine Telefonnummer ein"
+  }
+}

@@ -39,17 +39,7 @@ function Frame({ children, className, style }: { children: ReactNode; className:
 
 // The hero: Copacker's mark and name, what kind of email it is, the title and its line, on the dark band with the
 // orange glow the landing page's hero has. Mail apps don't draw SVG, so the mark is an image the app serves.
-function Hero({
-  appUrl,
-  eyebrow,
-  heading,
-  lead
-}: {
-  appUrl: string
-  eyebrow: string
-  heading: string
-  lead: ReactNode
-}) {
+function Hero({ appUrl, eyebrow, heading, lead }: { appUrl: string; eyebrow: string; heading: string; lead: string }) {
   return (
     <Frame
       className="cp-band"
@@ -141,55 +131,63 @@ function Action({ label, href }: { label: string; href: string }) {
   )
 }
 
+// The words every email has, already in the reader's language. Each email's copy adds its own to these.
+export type EmailCopy = {
+  // The subject.
+  subject: string
+  // What kind of email it is, above the title, such as "New purchase order".
+  eyebrow: string
+  // The title.
+  heading: string
+  // The sentence under the title.
+  lead: string
+  // The line inboxes show after the subject.
+  preview: string
+  // A quiet line under the button.
+  note?: string
+  // Why this email came, for the footer, such as "Fencing Club sent this purchase order through Copacker."
+  reason: string
+  // Copacker's line under its name in the footer: "Restocking, handled."
+  tagline: string
+  // What introduces the button's link written out under the note, such as "Or paste this link into your browser:".
+  // Only an email whose link itself matters, such as an invitation's, writes the link out.
+  pasteLink?: string
+}
+
 // Every Copacker email: the hero on the dark band, then on the white card its details, one button and a quiet note,
 // and a footer that says why it came.
 export function Layout({
   action,
   appUrl,
   children,
-  eyebrow,
-  fallback,
-  heading,
-  lead,
-  note,
-  preview,
-  reason
+  copy,
+  lang
 }: {
   action?: { label: string; href: string }
   // Copacker's origin, such as https://copacker.example, which serves the mark.
   appUrl: string
   children?: ReactNode
-  // What kind of email it is, above the title, such as "New purchase order".
-  eyebrow: string
-  // Writes the button's link out under the note, where the link itself matters, such as an invitation's.
-  fallback?: boolean
-  heading: string
-  // The sentence under the title.
-  lead: ReactNode
-  // A quiet line under the button.
-  note?: ReactNode
-  // The line inboxes show after the subject.
-  preview: string
-  // Why this email came, for the footer.
-  reason: string
+  copy: EmailCopy
+  // The language the email is written in, such as "de".
+  lang: string
 }) {
   return (
-    <Html lang="en">
+    <Html lang={lang}>
       <Head>
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <meta content="light dark" name="color-scheme" />
         <meta content="light dark" name="supported-color-schemes" />
         <meta content="telephone=no, date=no, address=no, email=no, url=no" name="format-detection" />
-        <title>{heading}</title>
+        <title>{copy.heading}</title>
         <style>{css}</style>
       </Head>
       <Body className="cp-page" style={{ backgroundColor: color.page, margin: 0, padding: 0 }}>
-        <Preview useTitleTag={false}>{preview}</Preview>
+        <Preview useTitleTag={false}>{copy.preview}</Preview>
         {/* Body copies the page color to a cell of its own that has no class, so the dark styles couldn't change it; this
         cell covers it. */}
         <Frame className="cp-page cp-outer" style={{ backgroundColor: color.page, padding: "32px 16px 40px" }}>
           <Container style={{ maxWidth: 568 }}>
-            <Hero appUrl={appUrl} eyebrow={eyebrow} heading={heading} lead={lead} />
+            <Hero appUrl={appUrl} eyebrow={copy.eyebrow} heading={copy.heading} lead={copy.lead} />
             <Frame
               className="cp-card cp-content"
               style={{
@@ -202,15 +200,15 @@ export function Layout({
             >
               {children}
               {action ? <Action {...action} /> : null}
-              {note ? (
+              {copy.note ? (
                 <Text
                   className="cp-muted"
                   style={{ color: color.muted, fontFamily: font, fontSize: 14, lineHeight: "22px", margin: "20px 0 0" }}
                 >
-                  {note}
+                  {copy.note}
                 </Text>
               ) : null}
-              {fallback && action ? <LinkFallback href={action.href} /> : null}
+              {copy.pasteLink && action ? <LinkFallback href={action.href} label={copy.pasteLink} /> : null}
             </Frame>
             <Section style={{ padding: "28px 24px 0", textAlign: "center" }}>
               <Text style={{ fontFamily: font, fontSize: 13, lineHeight: "20px", margin: 0 }}>
@@ -226,13 +224,13 @@ export function Layout({
                 className="cp-muted"
                 style={{ color: color.muted, fontFamily: font, fontSize: 12, lineHeight: "18px", margin: "2px 0 12px" }}
               >
-                Restocking, handled.
+                {copy.tagline}
               </Text>
               <Text
                 className="cp-muted"
                 style={{ color: color.muted, fontFamily: font, fontSize: 12, lineHeight: "18px", margin: 0 }}
               >
-                {reason}
+                {copy.reason}
               </Text>
             </Section>
           </Container>

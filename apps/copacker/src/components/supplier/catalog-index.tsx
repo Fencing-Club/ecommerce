@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { useCan } from "@/components/access"
@@ -21,23 +22,30 @@ type CatalogRow = {
 }
 
 // Who a catalog is for, as Shopify lists a catalog's markets: the first name, then how many more.
-function assigned(customers: string[]) {
+function Assigned({ customers }: { customers: string[] }) {
+  const t = useTranslations("supplier.catalogIndex")
   if (!customers.length) {
-    return <span className="text-muted-foreground">No customers</span>
+    return <span className="text-muted-foreground">{t("noCustomers")}</span>
   }
-  return customers.length === 1 ? customers[0] : `${customers[0]} and ${customers.length - 1} more`
+  return customers.length === 1
+    ? customers[0]
+    : t("assignedMore", { first: customers[0]!, count: customers.length - 1 })
 }
 
 export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
   const [tab, setTab] = useState<"all" | CatalogRow["status"]>("all")
   const [query, setQuery] = useState("")
   const editable = useCan("catalogs", "edit")
+  const t = useTranslations("supplier.catalogIndex")
+  const shared = useTranslations("supplier.shared")
+  const pricing = useTranslations("supplier.pricing")
+  const locale = useLocale()
   if (!catalogs.length) {
     return (
-      <EmptyState title="No catalogs yet" description="Set which products each customer can order, and their prices.">
+      <EmptyState title={t("emptyTitle")} description={t("emptyDescription")}>
         {editable && (
           <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
-            Create catalog
+            {t("create")}
           </Button>
         )}
       </EmptyState>
@@ -51,27 +59,27 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
     <div className="@container flex flex-col gap-3">
       <IndexToolbar
         tabs={[
-          { value: "all", label: "All", count: catalogs.length },
-          { value: "active", label: "Active", count: count("active") },
-          { value: "draft", label: "Draft", count: count("draft") },
-          { value: "archived", label: "Archived", count: count("archived") }
+          { value: "all", label: shared("all"), count: catalogs.length },
+          { value: "active", label: shared("status.active"), count: count("active") },
+          { value: "draft", label: shared("status.draft"), count: count("draft") },
+          { value: "archived", label: shared("status.archived"), count: count("archived") }
         ]}
         tab={tab}
         onTabChange={setTab}
         query={query}
         onQueryChange={setQuery}
-        placeholder="Search catalogs"
+        placeholder={t("search")}
       />
       {shown.length ? (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Assigned to</TableHead>
-              <TableHead className="hidden text-right @3xl:table-cell">Price overrides</TableHead>
-              <TableHead className="hidden text-right @xl:table-cell">Overall adjustment</TableHead>
-              <TableHead className="text-right">Products</TableHead>
+              <TableHead>{t("columns.title")}</TableHead>
+              <TableHead>{t("columns.status")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("columns.assignedTo")}</TableHead>
+              <TableHead className="hidden text-end @3xl:table-cell">{t("columns.overrides")}</TableHead>
+              <TableHead className="hidden text-end @xl:table-cell">{t("columns.adjustment")}</TableHead>
+              <TableHead className="text-end">{t("columns.products")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -86,23 +94,27 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
                   <StatusBadge status={catalog.status} />
                 </TableCell>
                 <TableCell className="hidden max-w-64 truncate @2xl:table-cell">
-                  {assigned(catalog.customers)}
+                  <Assigned customers={catalog.customers} />
                 </TableCell>
-                <TableCell className="hidden text-right tabular-nums @3xl:table-cell">
-                  {catalog.overrides || <span className="text-muted-foreground">None</span>}
-                </TableCell>
-                <TableCell className="hidden text-right @xl:table-cell">
-                  {adjustmentLabel(catalog.adjustmentBasisPoints) ?? (
-                    <span className="text-muted-foreground">None</span>
+                <TableCell className="hidden text-end tabular-nums @3xl:table-cell">
+                  {catalog.overrides ? (
+                    catalog.overrides.toLocaleString(locale)
+                  ) : (
+                    <span className="text-muted-foreground">{shared("none")}</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{catalog.products.toLocaleString("en-US")}</TableCell>
+                <TableCell className="hidden text-end @xl:table-cell">
+                  {adjustmentLabel(catalog.adjustmentBasisPoints, pricing) ?? (
+                    <span className="text-muted-foreground">{shared("none")}</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-end tabular-nums">{catalog.products.toLocaleString(locale)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       ) : (
-        <EmptyState title="No catalogs here" description="Try another tab or search." />
+        <EmptyState title={t("noneHere")} description={shared("tryAnother")} />
       )}
     </div>
   )

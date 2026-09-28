@@ -1,7 +1,8 @@
 "use client"
 
-import { commonPaymentTerms, money } from "@repo/aisle"
+import { commonPaymentTerms } from "@repo/aisle"
 import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -15,6 +16,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
+import { useMoney } from "@/hooks/use-money"
 import { cn } from "@/lib/utils"
 import { MoneyInput } from "./pricing-controls"
 import { ChangeBadge, type LineChange } from "./proposal-panel"
@@ -79,6 +81,9 @@ export function OrderReviser({
   products: ReviserProduct[]
 }) {
   const router = useRouter()
+  const t = useTranslations("supplier.orderReviser")
+  const shared = useTranslations("supplier.shared")
+  const money = useMoney()
   const [lines, setLines] = useState<Line[]>(() =>
     items.map((item) => ({ ...item, key: item.itemId ?? item.supplierSku, removed: item.removed ?? false }))
   )
@@ -104,21 +109,25 @@ export function OrderReviser({
   const commercial = lines.some((line) => lineChange(line) !== null) || paymentTerms !== current.paymentTerms
   const readyChanged = (readyDate || null) !== current.readyDate
   const termOptions = [...new Set(["", current.paymentTerms, terms.paymentTerms, ...commonPaymentTerms])].map(
-    (value) => ({ value, label: value || "None" })
+    (value) => ({ value, label: value || shared("none") })
   )
   // The primary button says what happens: changes for approval are sent, a ready date alone is saved.
-  const action = commercial ? { idle: "Send for approval", busy: "Sending" } : { idle: "Save", busy: "Saving" }
+  const action = commercial
+    ? { idle: t("sendForApproval"), busy: t("sending") }
+    : { idle: t("save"), busy: t("saving") }
 
   async function send() {
     const problem = !kept.length
-      ? "Keep at least one product"
+      ? t("keepOne")
       : kept.find((line) => !line.pieces || line.pieces % line.piecesPerSet !== 0)
     if (problem) {
-      setError(typeof problem === "string" ? problem : `Order ${problem.name} in multiples of ${problem.piecesPerSet}`)
+      setError(
+        typeof problem === "string" ? problem : t("multiples", { name: problem.name, count: problem.piecesPerSet })
+      )
       return
     }
     if (!commercial && !readyChanged) {
-      setError("No changes to save")
+      setError(t("noChanges"))
       return
     }
     setPending(true)
@@ -144,12 +153,12 @@ export function OrderReviser({
         })
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? "Couldn't send the changes. Try again.")
+        throw new Error((await response.json()).error ?? t("sendFailed"))
       }
       router.push(`/orders/${orderId}`)
       router.refresh()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't send the changes. Try again.")
+      setError(caught instanceof Error ? caught.message : t("sendFailed"))
       setPending(false)
     }
   }
@@ -158,14 +167,14 @@ export function OrderReviser({
     <>
       <PageHeader
         parents={[
-          { label: "Orders", href: "/orders" },
+          { label: t("orders"), href: "/orders" },
           { label: reference, href: `/orders/${orderId}` }
         ]}
-        title="Edit order"
-        badge={proposalPending ? <StatusBadge tone="info">Awaiting approval</StatusBadge> : undefined}
+        title={t("editOrder")}
+        badge={proposalPending ? <StatusBadge tone="info">{t("awaitingApproval")}</StatusBadge> : undefined}
       >
         <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}`} />}>
-          Cancel
+          {shared("cancel")}
         </Button>
         <Button disabled={pending} onClick={() => void send()}>
           {pending ? action.busy : action.idle}
@@ -182,7 +191,7 @@ export function OrderReviser({
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="@container gap-0 py-0">
           <CardHeader className="border-b pt-4">
-            <CardTitle>Products</CardTitle>
+            <CardTitle>{t("products")}</CardTitle>
             <CardAction>
               <Button
                 size="sm"
@@ -192,7 +201,7 @@ export function OrderReviser({
                 disabled={!products.length}
               >
                 <Plus data-icon="inline-start" />
-                Add products
+                {t("addProducts")}
               </Button>
             </CardAction>
           </CardHeader>
@@ -201,10 +210,10 @@ export function OrderReviser({
             aria-hidden
             className="hidden h-10 items-center gap-3 border-b bg-muted px-4 text-sm font-medium @min-[40rem]:flex"
           >
-            <span className="flex-1">Product</span>
-            <span className="w-24 text-right">Quantity</span>
-            <span className="w-32 text-right">Unit price</span>
-            <span className="w-24 text-right">Total</span>
+            <span className="flex-1">{t("columns.product")}</span>
+            <span className="w-24 text-end">{t("columns.quantity")}</span>
+            <span className="w-32 text-end">{t("columns.unitPrice")}</span>
+            <span className="w-24 text-end">{t("columns.total")}</span>
             <span className="w-7" />
           </div>
           <ul className="divide-y">
@@ -237,8 +246,8 @@ export function OrderReviser({
                         min={line.piecesPerSet}
                         step={line.piecesPerSet}
                         value={line.pieces || ""}
-                        aria-label={`Quantity of ${named(line)}`}
-                        className="w-24 text-right tabular-nums"
+                        aria-label={t("quantityOf", { name: named(line) })}
+                        className="w-24 text-end tabular-nums"
                         onChange={(event) =>
                           change(line.key, { pieces: Math.max(0, Math.trunc(Number(event.target.value) || 0)) })
                         }
@@ -247,10 +256,10 @@ export function OrderReviser({
                         value={line.unitPrice}
                         onValueChange={(value) => change(line.key, { unitPrice: value ?? 0 })}
                         currency={currency}
-                        label={`Unit price of ${named(line)}`}
+                        label={t("unitPriceOf", { name: named(line) })}
                         className="w-32"
                       />
-                      <span className="w-24 text-right font-medium tabular-nums">
+                      <span className="w-24 text-end font-medium tabular-nums">
                         {money(line.pieces * line.unitPrice, currency)}
                       </span>
                     </>
@@ -259,7 +268,9 @@ export function OrderReviser({
                     <Button
                       size="icon-sm"
                       variant="ghost"
-                      aria-label={line.removed ? `Restore ${named(line)}` : `Remove ${named(line)}`}
+                      aria-label={
+                        line.removed ? t("restore", { name: named(line) }) : t("remove", { name: named(line) })
+                      }
                       onClick={() => change(line.key, { removed: !line.removed })}
                     >
                       {line.removed ? <Undo2 /> : <X />}
@@ -268,7 +279,7 @@ export function OrderReviser({
                     <Button
                       size="icon-sm"
                       variant="ghost"
-                      aria-label={`Remove ${named(line)}`}
+                      aria-label={t("remove", { name: named(line) })}
                       onClick={() => setLines((rows) => rows.filter((other) => other.key !== line.key))}
                     >
                       <X />
@@ -283,20 +294,20 @@ export function OrderReviser({
         <div className="flex flex-col gap-4">
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle>{t("summary")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-1.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Products now</span>
+                <span className="text-muted-foreground">{t("productsNow")}</span>
                 <span className="tabular-nums">{money(before, currency)}</span>
               </div>
               <div className="flex justify-between font-medium">
-                <span>After your changes</span>
+                <span>{t("afterChanges")}</span>
                 <span className="tabular-nums">{money(after, currency)}</span>
               </div>
               {after !== before && (
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Difference</span>
+                  <span>{t("difference")}</span>
                   <span className="tabular-nums">
                     {after > before ? "+" : "−"}
                     {money(Math.abs(after - before), currency)}
@@ -307,12 +318,12 @@ export function OrderReviser({
           </Card>
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Details</CardTitle>
+              <CardTitle>{t("details")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FieldGroup className="gap-4">
                 <Field>
-                  <FieldLabel htmlFor="revise-terms">Payment terms</FieldLabel>
+                  <FieldLabel htmlFor="revise-terms">{t("paymentTerms")}</FieldLabel>
                   <SelectControl
                     id="revise-terms"
                     options={termOptions}
@@ -321,22 +332,22 @@ export function OrderReviser({
                   />
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="revise-ready">Ready date</FieldLabel>
+                  <FieldLabel htmlFor="revise-ready">{t("readyDate")}</FieldLabel>
                   <DateInput
                     id="revise-ready"
                     value={readyDate}
                     onChange={(event) => setReadyDate(event.target.value)}
                   />
-                  <FieldDescription>Updates without approval</FieldDescription>
+                  <FieldDescription>{t("readyHint")}</FieldDescription>
                 </Field>
                 {/* The note goes with changes for approval; a new ready date alone saves without one. */}
                 {commercial && (
                   <Field>
-                    <FieldLabel htmlFor="revise-note">Note to {customer}</FieldLabel>
+                    <FieldLabel htmlFor="revise-note">{t("noteTo", { customer })}</FieldLabel>
                     <Textarea
                       id="revise-note"
                       value={note}
-                      placeholder="Why these changes"
+                      placeholder={t("notePlaceholder")}
                       onChange={(event) => setNote(event.target.value)}
                     />
                   </Field>
@@ -350,8 +361,8 @@ export function OrderReviser({
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add products</DialogTitle>
-            <DialogDescription>At {customer}’s prices</DialogDescription>
+            <DialogTitle>{t("addProducts")}</DialogTitle>
+            <DialogDescription>{t("atPrices", { customer })}</DialogDescription>
           </DialogHeader>
           <InputGroup>
             <InputGroupAddon>
@@ -360,8 +371,8 @@ export function OrderReviser({
             <InputGroupInput
               type="search"
               value={query}
-              placeholder="Search by product or SKU"
-              aria-label="Search products"
+              placeholder={t("search")}
+              aria-label={t("searchLabel")}
               onChange={(event) => setQuery(event.target.value)}
             />
           </InputGroup>
@@ -370,7 +381,7 @@ export function OrderReviser({
               <li key={product.supplierSku}>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                  className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-start hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                   onClick={() => {
                     setLines((rows) => [
                       ...rows,
@@ -394,13 +405,15 @@ export function OrderReviser({
                     <span className="block text-xs text-muted-foreground">{product.supplierSku}</span>
                   </span>
                   <span className="shrink-0 text-sm tabular-nums">
-                    {product.unitPrice === null ? "No price" : `${money(product.unitPrice, currency)} / unit`}
+                    {product.unitPrice === null
+                      ? shared("noPrice")
+                      : t("perPiece", { price: money(product.unitPrice, currency) })}
                   </span>
                 </button>
               </li>
             ))}
             {!available.length && (
-              <li className="px-2 py-6 text-center text-sm text-muted-foreground">No products found</li>
+              <li className="px-2 py-6 text-center text-sm text-muted-foreground">{t("noneFound")}</li>
             )}
           </ul>
         </DialogContent>

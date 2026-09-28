@@ -1,0 +1,112 @@
+{
+  "tagline": "Restocking, handled.",
+  "pasteLink": "Or paste this link into your browser:",
+  "invitation": {
+    "subject": "{from} invited you to Copacker",
+    "yourTeam": "Your team",
+    "aBuyer": "A buyer",
+    "eyebrow": {
+      "supplier": "Supplier invitation",
+      "team": "Team invitation",
+      "forwarder": "Forwarder invitation"
+    },
+    "joining": {
+      "supplier": "Join as their supplier and get their purchase orders there.",
+      "team": "Join their workspace.",
+      "forwarder": "Join as their freight forwarder and share your warehouse addresses with them."
+    },
+    "steps": {
+      "account": "Accept, and sign in or create your account",
+      "supplierWorkspace": "Set up your supplier workspace",
+      "supplierPack": "Pack {from}’s purchase orders and print their labels in one place",
+      "teamStart": "Start working in {from}",
+      "forwarderAddresses": "Add your warehouse addresses",
+      "forwarderShipments": "See the shipments {from} sends through you"
+    },
+    "accept": "Accept invitation",
+    "note": "It’s for {email} and expires in 7 days. If you weren’t expecting it, you can ignore this email.",
+    "reason": "{from} invited {email} to Copacker."
+  },
+  "purchaseOrder": {
+    "subject": "Purchase order {reference} from {buyer}",
+    "eyebrow": {
+      "new": "New purchase order",
+      "revised": "Revised purchase order"
+    },
+    "heading": "{reference} from {buyer}",
+    "lead": {
+      "new": "{buyer} sent you a purchase order for {units, plural, one {# unit} other {# units}} of {products, plural, one {# product} other {# products}}.",
+      "revised": "{buyer} changed this purchase order. The updated version replaces the one you had."
+    },
+    "preview": "{units, plural, one {# unit} other {# units}}, {total}",
+    "previewRequiredBy": "{units, plural, one {# unit} other {# units}}, {total}, required by {date}",
+    "labels": {
+      "revision": "Revision",
+      "requiredBy": "Required by",
+      "shipTo": "Ship to",
+      "paymentTerms": "Payment terms",
+      "total": "Total"
+    },
+    "more": "And {count, plural, one {# more product} other {# more products}} in the purchase order",
+    "open": "Open purchase order",
+    "note": "The purchase order PDF is attached.",
+    "reason": "{buyer} sent this purchase order through Copacker."
+  },
+  "labelsReady": {
+    "subject": "Labels ready for {reference}",
+    "subjectShipment": "Labels ready for {reference}, shipment {shipment}",
+    "eyebrow": "Ready to ship",
+    "heading": "Labels are ready for {reference}",
+    "headingShipment": "Labels are ready for {reference}, shipment {shipment}",
+    "lead": "{buyer} released the shipment, so it’s ready to label and send.",
+    "labels": {
+      "cartons": "Cartons",
+      "destination": "Destination",
+      "readyForPickup": "Ready for pickup",
+      "amazonShipment": "Amazon shipment"
+    },
+    "steps": {
+      "print": "Print the labels at actual size (100%)",
+      "attach": "Put each carton’s label on it, covering any other barcode",
+      "handOver": "Check the packing checklist, then hand the cartons to the carrier"
+    },
+    "open": "Open shipment",
+    "reason": "{buyer} released this shipment in Copacker."
+  },
+  "customerDataRequest": {
+    "subject": "Customer data request for {shop}",
+    "eyebrow": "Shopify data request",
+    "lead": "Shopify sent Copacker a customer data request. Include what Copacker holds in your reply to the customer.",
+    "noContactDetails": "Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses.",
+    "labels": {
+      "store": "Store",
+      "request": "Request",
+      "ordersHeld": "Orders Copacker holds"
+    },
+    "none": "None",
+    "ordersIntro": "Only the order details Copacker uses to plan restocks:",
+    "reason": "Shopify sent a customer data request for {shop}, which is connected to Copacker.",
+    "order": "Order {number}, placed {date}, status {status}: {items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × item without a SKU",
+    "noItems": "no items",
+    "status": {
+      "unfulfilled": "Unfulfilled",
+      "partiallyFulfilled": "Partially fulfilled",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled"
+    }
+  },
+  "passwordReset": {
+    "subject": "Reset your Copacker password",
+    "eyebrow": "Your account",
+    "heading": "Reset your password",
+    "lead": "Choose a new password for {email}.",
+    "previewMinutes": "Choose a new password for {email}. The link expires in {count, plural, one {# minute} other {# minutes}}.",
+    "previewHours": "Choose a new password for {email}. The link expires in {count, plural, one {# hour} other {# hours}}.",
+    "action": "Choose a new password",
+    "expiresMinutes": "The link expires in {count, plural, one {# minute} other {# minutes}}. If you didn’t ask to reset your password, you can ignore this email; your password stays the same.",
+    "expiresHours": "The link expires in {count, plural, one {# hour} other {# hours}}. If you didn’t ask to reset your password, you can ignore this email; your password stays the same.",
+    "reason": "Someone asked to reset the password for {email} on Copacker."
+  }
+}

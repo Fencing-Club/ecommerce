@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "Boutique",
+    "purchasing": "Achats",
+    "sales": "Ventes",
+    "catalog": "Produits"
+  },
+  "pages": {
+    "overview": "Vue d’ensemble",
+    "orders": "Commandes",
+    "products": "Produits",
+    "restock": "Réassort",
+    "purchaseOrders": "Bons de commande",
+    "shipments": "Expéditions",
+    "partners": "Partenaires",
+    "customers": "Clients",
+    "inventory": "Stock",
+    "catalogs": "Catalogues",
+    "settings": "Paramètres"
+  },
+  "sidebar": {
+    "buyerWorkspace": "Espace de travail acheteur",
+    "supplierWorkspace": "Espace de travail fournisseur",
+    "forwarderWorkspace": "Espace de travail transitaire",
+    "workspaces": "Espaces de travail",
+    "newWorkspace": "Nouvel espace de travail",
+    "signOut": "Se déconnecter",
+    "theme": "Thème",
+    "themes": {
+      "light": "Clair",
+      "dark": "Sombre",
+      "system": "Système"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification",
+    "emptyDescription": "Les mises à jour de vos commandes et expéditions s’affichent ici"
+  },
+  "search": {
+    "search": "Rechercher",
+    "ctrl": "Ctrl",
+    "toMove": "<keys></keys> pour naviguer",
+    "toOpen": "<keys></keys> pour ouvrir",
+    "toClose": "<keys></keys> pour fermer",
+    "close": "Fermer",
+    "noResults": "Aucun résultat pour « {query} »",
+    "pages": "Pages",
+    "orders": "Commandes",
+    "loadingOrders": "Chargement des commandes",
+    "loadingResults": "Chargement des résultats",
+    "recentPurchaseOrders": "Bons de commande récents",
+    "products": "Produits",
+    "purchaseOrders": "Bons de commande",
+    "shipments": "Expéditions",
+    "partners": "Partenaires",
+    "supplier": "Fournisseur",
+    "forwarder": "Transitaire",
+    "failed": "Impossible de tout rechercher. Réessayez."
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "title": "设置",
+  "delete": {
+    "title": "删除",
+    "description": "永久删除，无法撤销",
+    "workspace": {
+      "title": "删除工作区",
+      "detail": "{workspace} 及其中的所有内容，对所有人删除",
+      "confirm": "删除 {workspace}？",
+      "field": "工作区名称",
+      "buyer": "其采购订单、产品、连接和团队将对所有人删除。",
+      "supplier": "其产品、目录和团队将对所有人删除。买家会保留他们的采购订单。",
+      "forwarder": "其地址和团队将对所有人删除。买家会保留他们的采购订单。"
+    },
+    "account": {
+      "title": "删除账号",
+      "detail": "你的登录信息，以及你在所有工作区中的成员身份",
+      "confirm": "删除你的账号？",
+      "field": "你的邮箱",
+      "removed": "你将退出登录，并被移出所有工作区。",
+      "closing": "你将退出登录，并被移出所有工作区。{count, plural, other {{workspaces} 将随你的账号一起关闭。}}",
+      "handOver": "请先转让 {workspaces} 的所有权。"
+    },
+    "cancel": "取消",
+    "close": "关闭"
+  },
+  "language": {
+    "title": "语言",
+    "description": "仅对你生效",
+    "label": "语言",
+    "system": "系统（{language}）"
+  },
+  "form": {
+    "save": "保存",
+    "saved": "已保存"
+  },
+  "profile": {
+    "title": "个人资料",
+    "firstName": "名字",
+    "lastName": "姓氏",
+    "position": "职位",
+    "choose": "选择",
+    "company": "公司",
+    "website": "公司网站",
+    "enterCompany": "请输入你的公司名称"
+  },
+  "team": {
+    "title": "团队",
+    "description": "{workspace} 的成员",
+    "people": "{count, plural, other {# 人}}",
+    "invite": "邀请",
+    "inviteTo": "邀请加入 {workspace}",
+    "sendInvitation": "发送邀请",
+    "email": "邮箱",
+    "enterEmail": "请输入邮箱地址",
+    "role": "角色",
+    "roles": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "member": "成员"
+    },
+    "roleDescriptions": {
+      "admin": "所有权限，包括团队和设置",
+      "member": "仅限你选择的页面"
+    },
+    "pages": "页面",
+    "choosePage": "至少选择一个页面",
+    "seePrices": "查看价格和成本",
+    "needsPrices": "需要价格和成本权限",
+    "levels": {
+      "none": "无权限",
+      "view": "查看",
+      "edit": "编辑"
+    },
+    "changeAccess": "更改权限",
+    "changeAccessFor": "更改 {who} 的权限",
+    "save": "保存",
+    "you": "你",
+    "more": "{name} 的更多操作",
+    "remove": "移除",
+    "removeTitle": "移除 {name}？",
+    "removeDescription": "对方将立即失去 {workspace} 的访问权限。",
+    "transferOwnership": "转让所有权",
+    "transferTitle": "将所有权转让给 {name}？",
+    "transferDescription": "对方将成为 {workspace} 的所有者，你仍为管理员。",
+    "cancel": "取消",
+    "invitationExpired": "邀请已过期",
+    "invited": "已邀请，{expires}过期",
+    "invitationSent": "邀请已发送，{expires}过期",
+    "updating": "正在更新 {email}",
+    "sendAgain": "重新发送",
+    "cancelInvitation": "取消邀请"
+  },
+  "integrations": {
+    "title": "集成",
+    "description": "与 Copacker 同步的店铺",
+    "marketplaces": "站点",
+    "marketplacesUnavailable": "无法从 Amazon 加载",
+    "stores": {
+      "shopify": "产品、库存、订单、费用",
+      "amazon": "订单、库存、费用、货件",
+      "ebay": "订单、库存"
+    },
+    "comingSoon": "即将推出",
+    "connect": "连接",
+    "notConnected": "未连接",
+    "connected": "已连接",
+    "storeSettings": "{store} 设置",
+    "cancel": "取消",
+    "shopify": {
+      "title": "连接 Shopify",
+      "description": "你将在 Shopify 中授权 Copacker",
+      "store": "店铺",
+      "storeDescription": "后台链接或 myshopify.com 域名",
+      "enterStore": "请输入你店铺的后台链接或 myshopify.com 域名"
+    },
+    "amazonSelfAuthorize": {
+      "title": "连接 Amazon",
+      "description": "在 Amazon 的 Solution Provider Portal 中，打开 Copacker 应用旁的菜单，选择 Authorize 并复制刷新令牌。商家令牌位于 Seller Central 的“设置”>“账户信息”中。",
+      "connect": "连接",
+      "merchantToken": "商家令牌",
+      "refreshToken": "刷新令牌"
+    }
+  },
+  "excludedTags": {
+    "title": "排除的订单标签",
+    "syncing": "正在从 Shopify 同步标签",
+    "none": "无",
+    "edit": "编辑",
+    "editLabel": "编辑排除的订单标签",
+    "description": "带有这些标签的 Shopify 订单不计入统计。",
+    "tags": "标签",
+    "addTag": "添加标签",
+    "wildcard": "可用 * 作为通配符，例如 amazon*",
+    "saveFailed": "无法保存标签，请重试。",
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "正在保存…"
+  },
+  "restock": {
+    "title": "补货",
+    "description": "用于补货和概览",
+    "salesPeriod": "销售周期",
+    "leadTime": "交货周期",
+    "days": "{count, plural, other {# 天}}",
+    "salesPeriodDays": "销售周期（天）",
+    "leadTimeDays": "交货周期（天）",
+    "leadTimeDescription": "适用于未设置交货周期的供应商",
+    "enterDays": "请输入天数"
+  },
+  "timeZone": {
+    "title": "时区",
+    "description": "用于概览中的日和月",
+    "label": "店铺时区",
+    "automatic": "自动",
+    "automaticZone": "自动（{zone}）"
+  },
+  "monthlyCosts": {
+    "title": "月度费用",
+    "description": "Shopify 和 Amazon 未报告的费用",
+    "count": "{count, plural, =0 {无月度费用} other {# 项费用}}",
+    "allChannels": "所有渠道",
+    "between": "{channel}，{start} 至 {end}",
+    "since": "{channel}，自 {start} 起",
+    "until": "{channel}，至 {end} 止",
+    "removeFailed": "无法移除此费用",
+    "removing": "正在移除 {name}",
+    "more": "{name} 的更多操作",
+    "remove": "移除",
+    "add": "添加费用",
+    "addTitle": "添加月度费用",
+    "name": "名称",
+    "amount": "每月金额",
+    "channel": "渠道",
+    "paidSince": "开始支付日期",
+    "paidUntil": "结束支付日期",
+    "enterName": "请输入名称",
+    "enterAmount": "请输入金额",
+    "endBeforeStart": "结束日期不能早于开始日期"
+  },
+  "supplierProfile": {
+    "title": "供应商资料",
+    "description": "买家可见的联系方式",
+    "contactName": "联系人",
+    "contactEmail": "联系人邮箱",
+    "phone": "电话",
+    "website": "网站"
+  },
+  "supplierForm": {
+    "submit": "添加供应商",
+    "company": "供应商公司",
+    "email": "邮箱",
+    "emailDescription": "填写后可立即邀请对方。"
+  },
+  "addresses": {
+    "title": "地址",
+    "description": "采购订单的收货地址",
+    "pickupTitle": "提货地址",
+    "pickupDescription": "承运商上门提货的地点",
+    "count": "{count, plural, =0 {无地址} other {# 个地址}}",
+    "noPickupAddresses": "无提货地址",
+    "add": "添加地址",
+    "editTitle": "编辑地址",
+    "edit": "编辑",
+    "remove": "移除",
+    "more": "{name} 的更多操作",
+    "removing": "正在移除 {name}",
+    "removeFailed": "无法移除此地址",
+    "stockArrivesAt": "库存送达 {location}",
+    "stockArrivesAtShopify": "库存送达 Shopify 地点",
+    "addPhone": "添加电话号码后才能用于货件",
+    "supplierKeepsPickups": "提货地址现由你的供应商管理，待对方添加后请移除此地址",
+    "saveChanges": "保存更改",
+    "saveAddress": "保存地址",
+    "name": "地址名称",
+    "namePlaceholder": "深圳仓库",
+    "kind": "地址类型",
+    "shopifyLocation": "Shopify 地点",
+    "shopifyLocationDescription": "发往此处的采购订单会在该地点显示为已订购",
+    "notLinked": "未关联"
+  }
+}

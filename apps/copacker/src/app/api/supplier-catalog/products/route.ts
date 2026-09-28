@@ -1,12 +1,12 @@
 import { requireAccess, session } from "@/server/auth"
-import { AccessError } from "@/server/errors"
+import { AccessError, errorResponse, failureMessage } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 import { saveProduct } from "@/server/supplier-products"
 
 // Creates or saves a product and its variants from the product page.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
@@ -15,10 +15,14 @@ export async function POST(request: Request) {
     requireAccess(s, "prices")
     return Response.json(await saveProduct(s, await request.json()))
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save product"
+    const message = await failureMessage(error, "productNotSaved")
     if (error instanceof AccessError) {
       return Response.json({ error: message }, { status: 403 })
     }
-    return Response.json({ error: message }, { status: message.includes("changed") ? 409 : 400 })
+    // A product or variant someone else changed; the English message says so in every language.
+    return Response.json(
+      { error: message },
+      { status: error instanceof Error && error.message.includes("changed") ? 409 : 400 }
+    )
   }
 }

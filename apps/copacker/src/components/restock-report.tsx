@@ -2,7 +2,6 @@
 
 import { useDebouncedValue, useLocalStorage, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
-import { money } from "@repo/aisle"
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -20,6 +19,7 @@ import {
   Warehouse,
   X
 } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -38,9 +38,9 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api, errorMessage, type SupplierOption, useSuppliersQuery } from "@/lib/api"
-import { type CoverBucket, coverBucket, coverBuckets, isCoverBucket } from "@/lib/cover"
-import { formatNumber } from "@/lib/format"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api, type SupplierOption, useSuppliersQuery } from "@/lib/api"
+import { type CoverBucket, coverBucket, isCoverBucket } from "@/lib/cover"
 import { cn } from "@/lib/utils"
 import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
 import { dayRange } from "@/server/restock-report"
@@ -92,22 +92,22 @@ const restockApi = api.injectEndpoints({
 })
 
 const sourceNames = { shopify: "Shopify", amazon: "Amazon" } as const
-// The stock statuses every page shares (Status in common.tsx); the others read as neutral badges.
-const stockStatuses: Record<RestockStatus, { status: string } | { label: string }> = {
+// The stock statuses every page shares (Status in common.tsx); the others read as neutral badges, named by their
+// message keys.
+const stockStatuses: Record<RestockStatus, { status: string } | { label: "blocked" | "notStocked" | "noListing" }> = {
   stockout: { status: "reorder_now" },
   reorder: { status: "reorder_soon" },
   stocked: { status: "in_stock" },
-  blocked: { label: "Can’t calculate" },
-  not_stocked: { label: "Not stocked" },
-  no_listing: { label: "No Amazon listing" }
+  blocked: { label: "blocked" },
+  not_stocked: { label: "notStocked" },
+  no_listing: { label: "noListing" }
 }
-const blockNames: Record<BlockReason, string> = {
-  stock_unknown: "stock count unknown",
-  demand_unknown: "sales couldn’t be counted",
-  incoming_unknown: "incoming stock unknown",
-  sku_ambiguous: "SKU matches more than one product"
-}
-const notStocked = "Minimum stock at Amazon is 0 in Shopify"
+const blockNames = {
+  stock_unknown: "stockUnknown",
+  demand_unknown: "demandUnknown",
+  incoming_unknown: "incomingUnknown",
+  sku_ambiguous: "skuAmbiguous"
+} as const satisfies Record<BlockReason, string>
 const statusRank: Record<RestockStatus, number> = {
   stockout: 0,
   reorder: 1,
@@ -118,17 +118,35 @@ const statusRank: Record<RestockStatus, number> = {
 }
 // A PO holds up to 100 lines.
 const poLineLimit = 100
-const volumeFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const weightFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-
-const plural = (count: number, word: string) => `${formatNumber(count)} ${word}${count === 1 ? "" : "s"}`
+// The page's words, numbers and money in the reader's language. Money is in minor units.
+function useText() {
+  const t = useTranslations("restock")
+  const format = useFormatter()
+  const separator = useTranslations("common.format")("separator")
+  const decimals = (value: number, digits: number) =>
+    format.number(value, { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  return {
+    t,
+    number: (value: number) => format.number(value),
+    decimals,
+    money: (minor: number, currency: string) => format.number(minor / 100, { style: "currency", currency }),
+    volume: (volume: number) => t("volume", { value: decimals(volume, 2) }),
+    weight: (weight: number) => t("weight", { value: decimals(weight, 1) }),
+    // "a, b, c", with the reader's language's separator.
+    list: (parts: string[]) => parts.join(separator),
+    // "30 or 45".
+    either: (parts: string[]) => format.list(parts, { type: "disjunction" })
+  }
+}
+type Text = ReturnType<typeof useText>
 
 // The one mark for a value that doesn't apply. The reason, when it matters, shows on hover and is read out instead.
 function Blank({ reason }: { reason?: string }) {
+  const t = useTranslations("restock")
   return (
     <span className="text-muted-foreground" title={reason}>
       <span aria-hidden="true">—</span>
-      <span className="sr-only">{reason ?? "None"}</span>
+      <span className="sr-only">{reason ?? t("none")}</span>
     </span>
   )
 }
@@ -154,15 +172,15 @@ function Thumbnail({ url }: { url: string | null }) {
 }
 
 // The SKU and, for a multipack, its pieces.
-function detail(line: RestockLine) {
+function detail(line: RestockLine, { t }: Text) {
   if (!line.packOf) {
     return line.sku
   }
-  return line.sku ? `${line.sku}, pack of ${line.packOf}` : `Pack of ${line.packOf}`
+  return line.sku ? t("skuPack", { sku: line.sku, count: line.packOf }) : t("pack", { count: line.packOf })
 }
 
 function Name({ line }: { line: RestockLine }) {
-  const text = detail(line)
+  const text = detail(line, useText())
   return (
     <span className="flex min-w-0 items-center gap-3">
       <Thumbnail url={line.imageUrl} />
@@ -179,32 +197,39 @@ function Name({ line }: { line: RestockLine }) {
 
 const isOut = (line: RestockLine) => line.available !== null && line.available <= 0
 
-function blockedText(line: RestockLine) {
-  return ["Can’t calculate", line.blocked.map((reason) => blockNames[reason]).join(", ")].filter(Boolean).join(": ")
+function blockedText(line: RestockLine, { t, list }: Text) {
+  return line.blocked.length
+    ? t("blockedBecause", { reasons: list(line.blocked.map((reason) => t(`blockReasons.${blockNames[reason]}`))) })
+    : t("statuses.blocked")
 }
 
 // Why a line has its status, on hover.
-function statusHint(line: RestockLine) {
+function statusHint(line: RestockLine, text: Text) {
   if (line.status === "stockout" && !isOut(line)) {
-    return "Runs out before an order placed today arrives"
+    return text.t("runsOut")
   }
   if (line.status === "blocked") {
-    return blockedText(line)
+    return blockedText(line, text)
   }
-  return line.status === "not_stocked" ? notStocked : undefined
+  return line.status === "not_stocked" ? text.t("notStockedHint") : undefined
 }
 
 function LineStatus({ line }: { line: RestockLine }) {
+  const text = useText()
   const shown = line.status === "stockout" && isOut(line) ? { status: "out_of_stock" } : stockStatuses[line.status]
   return (
-    <span className="inline-flex" title={statusHint(line)}>
-      {"status" in shown ? <Status status={shown.status} /> : <StatusBadge tone="neutral">{shown.label}</StatusBadge>}
+    <span className="inline-flex" title={statusHint(line, text)}>
+      {"status" in shown ? (
+        <Status status={shown.status} />
+      ) : (
+        <StatusBadge tone="neutral">{text.t(`statuses.${shown.label}`)}</StatusBadge>
+      )}
     </span>
   )
 }
 
 // Expected lost sales, per currency: "$1,240", or "" when no line's loss has a price.
-function lostText(lines: RestockLine[]) {
+function lostText(lines: RestockLine[], { money }: Text) {
   const byCurrency = new Map<string, number>()
   for (const line of lines) {
     if (line.lostSalesMinor && line.priceCurrency) {
@@ -218,40 +243,42 @@ type Step = { label: string; value: string; sign?: "+" | "−" | "="; result?: b
 const signNames = { "+": "plus", "−": "minus", "=": "equals" } as const
 
 // How the suggested quantity was reached: the sales rate, then the sum, ending in the quantity to order.
-function calculation(line: RestockLine): Step[] {
+function calculation(line: RestockLine, { t, number, decimals }: Text): Step[] {
   const sold = line.sold ?? 0
   const perDay = sold / line.rateDays
   const steps: Step[] = [
-    { label: `Sold in ${line.salesDays} days`, value: formatNumber(sold) },
-    ...(line.stockoutDays ? [{ label: "Out of stock", value: plural(line.stockoutDays, "day") }] : []),
-    { label: "Sales rate", value: `${perDay.toFixed(1)} a day` },
+    { label: t("calculation.sold", { days: line.salesDays }), value: number(sold) },
+    ...(line.stockoutDays
+      ? [{ label: t("calculation.outOfStock"), value: t("days", { count: line.stockoutDays }) }]
+      : []),
+    { label: t("calculation.salesRate"), value: t("calculation.perDay", { rate: decimals(perDay, 1) }) },
     {
-      label: `Needed for the ${line.leadTimeDays}-day lead time`,
-      value: formatNumber(Math.ceil((sold * line.leadTimeDays) / line.rateDays))
+      label: t("calculation.leadTimeNeed", { days: line.leadTimeDays }),
+      value: number(Math.ceil((sold * line.leadTimeDays) / line.rateDays))
     }
   ]
   if (line.targetStock) {
     steps.push({
-      label: `Minimum stock at ${line.targetWhere ?? "this location"}`,
-      value: formatNumber(line.targetStock),
+      label: line.targetWhere ? t("calculation.minimumAt", { where: line.targetWhere }) : t("calculation.minimumHere"),
+      value: number(line.targetStock),
       sign: "+"
     })
   }
   steps.push(
-    { label: "Available", value: formatNumber(line.available ?? 0), sign: "−" },
-    { label: "Incoming and on order", value: formatNumber(line.incoming ?? 0), sign: "−" }
+    { label: t("calculation.available"), value: number(line.available ?? 0), sign: "−" },
+    { label: t("calculation.incoming"), value: number(line.incoming ?? 0), sign: "−" }
   )
   // Rounded up past what's needed: to whole cases, or to the minimum order.
-  let rounded = ""
+  let label = t("calculation.toOrder")
   if (line.purchaseUnits !== null && line.need !== null && line.purchaseUnits !== line.need) {
-    rounded =
+    label =
       line.caseCount && line.caseQuantity && line.caseQuantity > 1
-        ? ` (${line.caseCount} cases of ${line.caseQuantity})`
-        : " (minimum order)"
+        ? t("calculation.toOrderCases", { cases: line.caseCount, size: line.caseQuantity })
+        : t("calculation.toOrderMinimum")
   }
   steps.push({
-    label: `To order${rounded}`,
-    value: formatNumber(line.purchaseUnits ?? line.need ?? 0),
+    label,
+    value: number(line.purchaseUnits ?? line.need ?? 0),
     sign: "=",
     result: true
   })
@@ -260,18 +287,18 @@ function calculation(line: RestockLine): Step[] {
 
 // What an order placed today can't prevent: the days out of stock before it arrives, and the sales lost in them, in
 // units alone without prices.
-function lossSteps(line: RestockLine, prices: boolean): Step[] {
+function lossSteps(line: RestockLine, prices: boolean, { t, number, money }: Text): Step[] {
   if (!line.lostUnits || !line.lostDays) {
     return []
   }
-  const units = plural(line.lostUnits, "unit")
+  const units = t("units", { count: line.lostUnits })
   return [
-    { label: "Days out of stock", value: formatNumber(line.lostDays) },
+    { label: t("calculation.daysOut"), value: number(line.lostDays) },
     {
-      label: "Lost sales",
+      label: t("calculation.lostSales"),
       value:
         prices && line.lostSalesMinor !== null && line.priceCurrency
-          ? `${money(line.lostSalesMinor, line.priceCurrency)} (${units})`
+          ? t("calculation.lostValue", { amount: money(line.lostSalesMinor, line.priceCurrency), units })
           : units
     }
   ]
@@ -279,6 +306,7 @@ function lossSteps(line: RestockLine, prices: boolean): Step[] {
 
 // Rows of a calculation on the grid of `Explanation`: the label, the operator in its own column, then the figure.
 function Steps({ steps, loss = false }: { steps: Step[]; loss?: boolean }) {
+  const t = useTranslations("restock.calculation")
   return (
     <dl className="col-span-3 grid grid-cols-subgrid gap-y-1">
       {steps.map((step) => (
@@ -295,11 +323,11 @@ function Steps({ steps, loss = false }: { steps: Step[]; loss?: boolean }) {
               {step.sign && (
                 <>
                   <span aria-hidden="true">{step.sign}</span>
-                  <span className="sr-only">{signNames[step.sign]}</span>
+                  <span className="sr-only">{t(signNames[step.sign])}</span>
                 </>
               )}
             </span>
-            <span className={cn("text-right tabular-nums", loss && "text-destructive")}>{step.value}</span>
+            <span className={cn("text-end tabular-nums", loss && "text-destructive")}>{step.value}</span>
           </dd>
         </div>
       ))}
@@ -309,19 +337,22 @@ function Steps({ steps, loss = false }: { steps: Step[]; loss?: boolean }) {
 
 function Explanation({ line }: { line: RestockLine }) {
   const prices = useCan("prices")
+  const text = useText()
   if (line.status === "not_stocked") {
-    return <p className="text-sm text-muted-foreground">{notStocked}</p>
+    return <p className="text-sm text-muted-foreground">{text.t("notStockedHint")}</p>
   }
   if (line.status === "blocked") {
-    return <p className="text-sm text-muted-foreground">{blockedText(line)}</p>
+    return <p className="text-sm text-muted-foreground">{blockedText(line, text)}</p>
   }
-  const loss = lossSteps(line, prices)
+  const loss = lossSteps(line, prices, text)
   return (
     <div className="grid max-w-sm grid-cols-[minmax(0,1fr)_1ch_auto] gap-x-3 text-sm">
-      <Steps steps={calculation(line)} />
+      <Steps steps={calculation(line, text)} />
       {loss.length > 0 && (
         <>
-          <p className="col-span-3 mt-4 mb-1 text-xs font-medium text-muted-foreground">Until today’s order arrives</p>
+          <p className="col-span-3 mt-4 mb-1 text-xs font-medium text-muted-foreground">
+            {text.t("calculation.untilArrival")}
+          </p>
           <Steps steps={loss} loss />
         </>
       )}
@@ -378,24 +409,21 @@ function orderTotals(lines: RestockLine[], edits: ReadonlyMap<string, Edit>) {
 type OrderTotals = ReturnType<typeof orderTotals>
 
 // The cost per currency, or null when no selected line has a unit cost.
-function costText(totals: OrderTotals) {
+function costText(totals: OrderTotals, { money }: Text) {
   const amounts = [...totals.cost].map(([currency, minor]) => money(minor, currency))
   return amounts.length ? amounts.join(" + ") : null
 }
 
-const volumeText = (volume: number) => `${volumeFormat.format(volume)} m³`
-const weightText = (weight: number) => `${weightFormat.format(weight)} kg`
-
 // A selection's size for a meta line: lines and units, then cases, volume and weight when case packs are known.
-function sizeParts(totals: OrderTotals) {
+function sizeParts(totals: OrderTotals, { t, volume, weight }: Text) {
   if (!totals.count) {
-    return ["nothing selected"]
+    return [t("nothingSelected")]
   }
-  const parts = [plural(totals.count, "line"), plural(totals.units, "unit")]
+  const parts = [t("lines", { count: totals.count }), t("units", { count: totals.units })]
   if (totals.cases) {
-    parts.push(plural(totals.cases, "case"), volumeText(totals.volume))
+    parts.push(t("cases", { count: totals.cases }), volume(totals.volume))
     if (totals.weight) {
-      parts.push(weightText(totals.weight))
+      parts.push(weight(totals.weight))
     }
   }
   return parts
@@ -423,8 +451,9 @@ function createPoHref(
 }
 
 function LostSales({ line }: { line: RestockLine }) {
+  const { t, money } = useText()
   if (line.lostUnits === null) {
-    return <Blank reason="Sales rate unknown" />
+    return <Blank reason={t("rateUnknown")} />
   }
   if (line.lostUnits === 0) {
     return <Blank />
@@ -432,36 +461,39 @@ function LostSales({ line }: { line: RestockLine }) {
   return line.lostSalesMinor !== null && line.priceCurrency ? (
     <span className="text-destructive">{money(line.lostSalesMinor, line.priceCurrency)}</span>
   ) : (
-    <span className="text-muted-foreground" title="No Shopify price">
-      {plural(line.lostUnits, "unit")}
+    <span className="text-muted-foreground" title={t("noShopifyPrice")}>
+      {t("units", { count: line.lostUnits })}
     </span>
   )
 }
 
 // How long the stock on hand lasts at the sales rate. Days are rounded down, so under a day says so rather than 0.
 function StockLeft({ line }: { line: RestockLine }) {
+  const t = useTranslations("restock")
   if (isOut(line)) {
-    return <Blank reason="Out of stock" />
+    return <Blank reason={t("outOfStock")} />
   }
   if (line.daysRemaining !== null) {
-    return line.daysRemaining === 0 ? "Under a day" : plural(line.daysRemaining, "day")
+    return line.daysRemaining === 0 ? t("underADay") : t("days", { count: line.daysRemaining })
   }
-  return <Blank reason={line.sold === 0 ? "No sales" : "Unknown"} />
+  return <Blank reason={line.sold === 0 ? t("noSales") : t("unknown")} />
 }
 
 function Count({ value }: { value: number | null }) {
-  return value === null ? <Blank reason="Unknown" /> : formatNumber(value)
+  const { t, number } = useText()
+  return value === null ? <Blank reason={t("unknown")} /> : number(value)
 }
 
 // What the units in the Order column cost; `units` is null for a line that can't be ordered.
 function LineCost({ line, units }: { line: RestockLine; units: string | null }) {
+  const { t, money } = useText()
   if (units === null) {
     return <Blank />
   }
   return line.estimatedCostMinor !== null && line.costCurrency && line.unitCostMinor !== null ? (
     money(Number(units || 0) * line.unitCostMinor, line.costCurrency)
   ) : (
-    <Blank reason="No unit cost" />
+    <Blank reason={t("noUnitCost")} />
   )
 }
 
@@ -493,13 +525,14 @@ function LineRows({
 }) {
   // Lost sales and costs are money, which a member sees only with prices.
   const prices = useCan("prices")
+  const { t, number, money } = useText()
   const orderable = line.status !== "blocked" && line.status !== "not_stocked"
   const suggested = line.purchaseUnits ?? 0
   const current = edit ?? {
     selected: line.status === "stockout" || line.status === "reorder",
     units: String(suggested)
   }
-  const label = `${line.product}${line.variant ? `, ${line.variant}` : ""}`
+  const label = line.variant ? t("productVariant", { product: line.product, variant: line.variant }) : line.product
   const invalid = current.selected && !(Number.isInteger(Number(current.units)) && Number(current.units) > 0)
   const lost =
     prices && line.lostSalesMinor !== null && line.lostSalesMinor > 0 && line.priceCurrency
@@ -508,12 +541,12 @@ function LineRows({
   return (
     <>
       <TableRow className="@max-md:flex @max-md:flex-wrap @max-md:items-center @max-md:gap-x-2 @max-md:px-4 @max-md:py-3">
-        <TableCell className="w-8 pl-4 @max-md:w-auto @max-md:p-0">
+        <TableCell className="w-8 ps-4 @max-md:w-auto @max-md:p-0">
           {orderable && (
             <Checkbox
               checked={current.selected}
               onCheckedChange={(checked) => onEdit({ ...current, selected: checked })}
-              aria-label={`Order ${label}`}
+              aria-label={t("orderLine", { product: label })}
             />
           )}
         </TableCell>
@@ -521,44 +554,42 @@ function LineRows({
           <Name line={line} />
           {/* Until the table is wide enough for their columns, the status, stock left and lost sales show under the
               name. */}
-          <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 pl-12 text-xs text-muted-foreground @4xl:hidden">
+          <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 ps-12 text-xs text-muted-foreground @4xl:hidden">
             <LineStatus line={line} />
-            {!isOut(line) && line.daysRemaining !== null && (
-              <span>{line.daysRemaining === 0 ? "Under a day left" : `${plural(line.daysRemaining, "day")} left`}</span>
-            )}
-            {lost && <span className="text-destructive">{lost} lost sales</span>}
+            {!isOut(line) && line.daysRemaining !== null && <span>{t("daysLeft", { count: line.daysRemaining })}</span>}
+            {lost && <span className="text-destructive">{t("lostSales", { amount: lost })}</span>}
           </span>
           {lost && (
-            <span className="mt-1 hidden pl-12 text-xs text-destructive @4xl:block @6xl:hidden">{lost} lost sales</span>
+            <span className="mt-1 hidden ps-12 text-xs text-destructive @4xl:block @6xl:hidden">
+              {t("lostSales", { amount: lost })}
+            </span>
           )}
         </TableCell>
         <TableCell className={columns.status}>
           <LineStatus line={line} />
         </TableCell>
-        <TableCell className={cn("text-right tabular-nums", columns.stockLeft)}>
+        <TableCell className={cn("text-end tabular-nums", columns.stockLeft)}>
           <StockLeft line={line} />
         </TableCell>
         {prices && (
-          <TableCell className={cn("text-right tabular-nums", columns.lostSales)}>
+          <TableCell className={cn("text-end tabular-nums", columns.lostSales)}>
             <LostSales line={line} />
           </TableCell>
         )}
-        <TableCell className={cn("text-right tabular-nums", columns.sold)}>
+        <TableCell className={cn("text-end tabular-nums", columns.sold)}>
           <Count value={line.sold} />
         </TableCell>
-        <TableCell className={cn("text-right tabular-nums", columns.daysOut)}>
-          <span className={cn(line.stockoutDays === 0 && "text-muted-foreground")}>
-            {formatNumber(line.stockoutDays)}
-          </span>
-          <span className="sr-only"> of {line.salesDays} days</span>
+        <TableCell className={cn("text-end tabular-nums", columns.daysOut)}>
+          <span className={cn(line.stockoutDays === 0 && "text-muted-foreground")}>{number(line.stockoutDays)}</span>
+          <span className="sr-only"> {t("ofDays", { days: line.salesDays })}</span>
         </TableCell>
-        <TableCell className={cn("text-right tabular-nums", columns.available)}>
+        <TableCell className={cn("text-end tabular-nums", columns.available)}>
           <Count value={line.available} />
         </TableCell>
-        <TableCell className={cn("text-right tabular-nums", columns.incoming)}>
+        <TableCell className={cn("text-end tabular-nums", columns.incoming)}>
           <Count value={line.incoming} />
         </TableCell>
-        <TableCell className="text-right @max-md:ml-auto @max-md:p-0">
+        <TableCell className="text-end @max-md:ms-auto @max-md:p-0">
           {orderable ? (
             <div className="flex flex-col items-end">
               {/* Borderless until hovered or focused, so the column reads as figures rather than a form. */}
@@ -568,13 +599,15 @@ function LineRows({
                 min={1}
                 step={line.caseQuantity ?? 1}
                 value={current.units}
-                aria-label={`Units of ${label} to order`}
+                aria-label={t("unitsToOrder", { product: label })}
                 aria-invalid={invalid}
-                className="h-8 w-20 border-transparent bg-transparent text-right tabular-nums shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
+                className="h-8 w-20 border-transparent bg-transparent text-end tabular-nums shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
                 onChange={(event) => onEdit({ selected: true, units: event.target.value })}
               />
               {Number(current.units) !== suggested && (
-                <span className="pr-2.5 text-xs text-muted-foreground">Suggested {formatNumber(suggested)}</span>
+                <span className="pe-2.5 text-xs text-muted-foreground">
+                  {t("suggested", { units: number(suggested) })}
+                </span>
               )}
             </div>
           ) : (
@@ -582,21 +615,21 @@ function LineRows({
           )}
         </TableCell>
         {prices && (
-          <TableCell className="text-right tabular-nums @max-md:p-0">
+          <TableCell className="text-end tabular-nums @max-md:p-0">
             <LineCost line={line} units={orderable ? current.units : null} />
           </TableCell>
         )}
-        <TableCell className="w-10 pr-4 @max-md:w-auto @max-md:p-0">
+        <TableCell className="w-10 pe-4 @max-md:w-auto @max-md:p-0">
           <Button
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground"
             onClick={onToggle}
             aria-expanded={expanded}
-            aria-label={`Calculation for ${label}`}
-            title="Calculation"
+            aria-label={t("calculationFor", { product: label })}
+            title={t("calculation.title")}
           >
-            {expanded ? <ChevronDown /> : <ChevronRight />}
+            {expanded ? <ChevronDown /> : <ChevronRight className="rtl:rotate-180" />}
           </Button>
         </TableCell>
       </TableRow>
@@ -606,12 +639,12 @@ function LineRows({
           {/* Spans the columns after the checkbox: four when narrow; when wide, the eleven there can be, which covers
               however many show (a span past the last column adds no width). Without prices, Cost and Lost sales
               aren't among them. */}
-          <TableCell colSpan={prices ? 11 : 9} className="hidden py-3 pr-4 whitespace-normal @4xl:table-cell">
+          <TableCell colSpan={prices ? 11 : 9} className="hidden py-3 pe-4 whitespace-normal @4xl:table-cell">
             <Explanation line={line} />
           </TableCell>
           <TableCell
             colSpan={prices ? 4 : 3}
-            className="py-3 pr-4 whitespace-normal @4xl:hidden @max-md:block @max-md:p-0"
+            className="py-3 pe-4 whitespace-normal @4xl:hidden @max-md:block @max-md:p-0"
           >
             <Explanation line={line} />
           </TableCell>
@@ -625,19 +658,20 @@ function LineRows({
 function Reorder({ supplierId, po }: { supplierId: string | null; po: ReturnType<typeof createPoHref> }) {
   // Reordering makes a purchase order.
   const reorders = useCan("orders", "edit")
+  const t = useTranslations("restock")
   if (!supplierId) {
-    return <span className="text-xs text-muted-foreground">Ordered outside Copacker</span>
+    return <span className="text-xs text-muted-foreground">{t("orderedOutside")}</span>
   }
   if (!reorders) {
     return null
   }
   return po.count > 0 ? (
     <Button variant="outline" size="sm" nativeButton={false} render={<Link href={po.href} />}>
-      Reorder
+      {t("reorder")}
     </Button>
   ) : (
     <Button variant="outline" size="sm" disabled>
-      Reorder
+      {t("reorder")}
     </Button>
   )
 }
@@ -645,10 +679,10 @@ function Reorder({ supplierId, po }: { supplierId: string | null; po: ReturnType
 // A group's name as the button that shows or hides its table, after a chevron that turns while it's open.
 function GroupTrigger({ children }: { children: React.ReactNode }) {
   return (
-    <CollapsibleTrigger className="group/trigger flex items-center gap-2 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+    <CollapsibleTrigger className="group/trigger flex items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
       <ChevronRight
         aria-hidden="true"
-        className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 in-data-panel-open:rotate-90"
+        className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 in-data-panel-open:rotate-90 rtl:not-in-data-panel-open:rotate-180"
       />
       <span className="underline-offset-4 group-hover/trigger:underline">{children}</span>
     </CollapsibleTrigger>
@@ -678,14 +712,17 @@ function SupplierGroup({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const text = useText()
+  const { t } = text
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const prices = useCan("prices")
   const po = createPoHref(lines, edits, channel, supplierId)
   const headingId = `supplier-${groupKey.replace(/[^A-Za-z0-9-]/g, "-")}`
   const leadTimes = [...new Set(lines.map((line) => line.leadTimeDays))]
   const totals = orderTotals(lines, edits)
-  const cost = costText(totals)
-  const lost = prices ? lostText(lines) : ""
+  const cost = costText(totals, text)
+  const lost = prices ? lostText(lines, text) : ""
+  const leadTime = t("leadTime", { days: text.either(leadTimes.map(text.number)) })
   return (
     <Collapsible open={open} onOpenChange={onOpenChange} render={<section aria-labelledby={headingId} />}>
       <Card className="gap-0 py-0">
@@ -696,24 +733,19 @@ function SupplierGroup({
               <h2 id={headingId} className="font-semibold">
                 <GroupTrigger>{name}</GroupTrigger>
               </h2>
-              <span className="text-xs text-muted-foreground">{plural(lines.length, "product")}</span>
+              <span className="text-xs text-muted-foreground">{t("products", { count: lines.length })}</span>
             </div>
             {/* Indented past the chevron, under the name. */}
-            <CardDescription className="pl-6 text-xs">
-              {[`Lead time ${leadTimes.join(" or ")} days`, ...sizeParts(totals)].join(", ")}
-              {lost && (
-                <>
-                  , <span className="text-destructive">{lost} lost sales</span>
-                </>
-              )}
+            <CardDescription className="ps-6 text-xs">
+              {text.list([leadTime, ...sizeParts(totals, text), ...(lost ? [t("lostSales", { amount: lost })] : [])])}
             </CardDescription>
           </div>
           {/* Empty without prices or Reorder, and then hidden so it can't wrap onto a line of its own. */}
-          <div className="ml-auto flex items-center gap-4 empty:hidden">
+          <div className="ms-auto flex items-center gap-4 empty:hidden">
             {prices && (
               <div className="flex flex-col items-end">
-                <span className="text-xs text-muted-foreground">Estimated cost</span>
-                <span className="font-semibold tabular-nums">{cost ?? <Blank reason="No unit costs" />}</span>
+                <span className="text-xs text-muted-foreground">{t("estimatedCost")}</span>
+                <span className="font-semibold tabular-nums">{cost ?? <Blank reason={t("noUnitCosts")} />}</span>
               </div>
             )}
             <Reorder supplierId={supplierId} po={po} />
@@ -723,35 +755,29 @@ function SupplierGroup({
           <Table framed={false} className="@max-md:block">
             <TableHeader className="@max-md:hidden">
               <TableRow>
-                <TableHead className="w-8 pl-4">
-                  <span className="sr-only">Order</span>
+                <TableHead className="w-8 ps-4">
+                  <span className="sr-only">{t("columns.order")}</span>
                 </TableHead>
-                <TableHead className="@4xl:min-w-64">Product</TableHead>
-                <TableHead className={columns.status}>Status</TableHead>
-                <TableHead className={cn("text-right", columns.stockLeft)}>Stock left</TableHead>
+                <TableHead className="@4xl:min-w-64">{t("columns.product")}</TableHead>
+                <TableHead className={columns.status}>{t("columns.status")}</TableHead>
+                <TableHead className={cn("text-end", columns.stockLeft)}>{t("columns.stockLeft")}</TableHead>
                 {prices && (
-                  <TableHead
-                    className={cn("text-right", columns.lostSales)}
-                    title="Sales lost before an order placed today arrives, at the Shopify price"
-                  >
-                    Lost sales
+                  <TableHead className={cn("text-end", columns.lostSales)} title={t("columns.lostSalesHint")}>
+                    {t("columns.lostSales")}
                   </TableHead>
                 )}
-                <TableHead className={cn("text-right", columns.sold)}>Sold</TableHead>
-                <TableHead className={cn("text-right", columns.daysOut)}>
-                  <abbr
-                    title="Days out of stock in the sales period, left out of the sales rate"
-                    className="no-underline"
-                  >
-                    Days out
+                <TableHead className={cn("text-end", columns.sold)}>{t("columns.sold")}</TableHead>
+                <TableHead className={cn("text-end", columns.daysOut)}>
+                  <abbr title={t("columns.daysOutHint")} className="no-underline">
+                    {t("columns.daysOut")}
                   </abbr>
                 </TableHead>
-                <TableHead className={cn("text-right", columns.available)}>Available</TableHead>
-                <TableHead className={cn("text-right", columns.incoming)}>Incoming</TableHead>
-                <TableHead className="pr-5 text-right">Order</TableHead>
-                {prices && <TableHead className="text-right">Cost</TableHead>}
-                <TableHead className="w-10 pr-4">
-                  <span className="sr-only">Calculation</span>
+                <TableHead className={cn("text-end", columns.available)}>{t("columns.available")}</TableHead>
+                <TableHead className={cn("text-end", columns.incoming)}>{t("columns.incoming")}</TableHead>
+                <TableHead className="pe-5 text-end">{t("columns.order")}</TableHead>
+                {prices && <TableHead className="text-end">{t("columns.cost")}</TableHead>}
+                <TableHead className="w-10 pe-4">
+                  <span className="sr-only">{t("calculation.title")}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -777,9 +803,7 @@ function SupplierGroup({
             </TableBody>
           </Table>
           {po.capped && (
-            <p className="border-t px-4 py-3 text-xs text-muted-foreground">
-              The purchase order takes the first 100 lines
-            </p>
+            <p className="border-t px-4 py-3 text-xs text-muted-foreground">{t("lineLimit", { count: poLineLimit })}</p>
           )}
         </CollapsibleContent>
       </Card>
@@ -800,7 +824,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 // Without prices, it's only the selection's size.
 function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
   const prices = useCan("prices")
-  const cost = costText(totals)
+  const text = useText()
+  const { t, number } = text
+  const cost = costText(totals, text)
   const noUnitCost = prices ? totals.unknownCost : 0
   const noCaseCount = totals.cases > 0 ? totals.unknownSize : 0
   return (
@@ -809,30 +835,30 @@ function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4" aria-live="polite">
           {prices && (
             <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Estimated cost</span>
+              <span className="text-sm text-muted-foreground">{t("estimatedCost")}</span>
               <span className="text-3xl font-semibold tracking-tight tabular-nums">
-                {cost ?? <Blank reason="No unit costs" />}
+                {cost ?? <Blank reason={t("noUnitCosts")} />}
               </span>
             </div>
           )}
           <dl className="flex flex-wrap gap-x-8 gap-y-3">
-            <Stat label="Lines" value={formatNumber(totals.count)} />
-            <Stat label="Units" value={formatNumber(totals.units)} />
-            {totals.cases > 0 && <Stat label="Cases" value={formatNumber(totals.cases)} />}
-            {totals.cases > 0 && <Stat label="Volume" value={volumeText(totals.volume)} />}
-            {totals.weight > 0 && <Stat label="Weight" value={weightText(totals.weight)} />}
+            <Stat label={t("summary.lines")} value={number(totals.count)} />
+            <Stat label={t("summary.units")} value={number(totals.units)} />
+            {totals.cases > 0 && <Stat label={t("summary.cases")} value={number(totals.cases)} />}
+            {totals.cases > 0 && <Stat label={t("summary.volume")} value={text.volume(totals.volume)} />}
+            {totals.weight > 0 && <Stat label={t("summary.weight")} value={text.weight(totals.weight)} />}
           </dl>
         </div>
         {(noUnitCost > 0 || noCaseCount > 0) && (
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {noUnitCost > 0 && <WarningNote>{plural(noUnitCost, "line")} without a unit cost</WarningNote>}
-            {noCaseCount > 0 && <WarningNote>{plural(noCaseCount, "line")} without a case pack</WarningNote>}
+            {noUnitCost > 0 && <WarningNote>{t("summary.withoutCost", { count: noUnitCost })}</WarningNote>}
+            {noCaseCount > 0 && <WarningNote>{t("summary.withoutCasePack", { count: noCaseCount })}</WarningNote>}
           </div>
         )}
         {lost && (
           <Alert variant="destructive" role="note">
             <TrendingDown />
-            <AlertTitle>About {lost} in lost sales before reorders arrive</AlertTitle>
+            <AlertTitle>{t("summary.lost", { amount: lost })}</AlertTitle>
           </Alert>
         )}
       </CardContent>
@@ -844,17 +870,16 @@ function OrderSummary({ totals, lost }: { totals: OrderTotals; lost: string }) {
 function EmptyResults({ report, searching }: { report: Report; searching: boolean }) {
   // Suppliers are set on the Products page, by those who can change products.
   const setsSuppliers = useCan("products", "edit")
-  const supplier =
-    report.supplier !== "all" && report.lines.length === 0
-      ? (report.suppliers.find((row) => row.id === report.supplier)?.name ?? "this supplier")
-      : null
-  let title = "Nothing to reorder"
+  const t = useTranslations("restock.empty")
+  const supplier = report.supplier !== "all" && report.lines.length === 0
+  let title = t("nothing")
   let Icon = PackageCheck
   if (searching) {
-    title = "No products match"
+    title = t("noMatches")
     Icon = Search
   } else if (supplier) {
-    title = `No products linked to ${supplier}`
+    const name = report.suppliers.find((row) => row.id === report.supplier)?.name
+    title = name ? t("noLinked", { supplier: name }) : t("noLinkedHere")
     Icon = PackageOpen
   }
   // Styled like EmptyState, which always has a description.
@@ -866,12 +891,12 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
             <Icon aria-hidden className="size-5" />
           </EmptyMedia>
           <EmptyTitle>{title}</EmptyTitle>
-          {searching && <EmptyDescription>Only products with a supplier are listed</EmptyDescription>}
+          {searching && <EmptyDescription>{t("onlyWithSupplier")}</EmptyDescription>}
         </EmptyHeader>
         {(searching || supplier) && setsSuppliers && (
           <EmptyContent>
             <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/products" />}>
-              Set suppliers
+              {t("setSuppliers")}
             </Button>
           </EmptyContent>
         )}
@@ -882,6 +907,7 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
 
 // Items Shopify says to keep at Amazon, but Amazon has no inventory for: there's nothing to send stock to yet.
 function NoListing({ lines }: { lines: RestockLine[] }) {
+  const t = useTranslations("restock")
   const [open, setOpen] = useState(false)
   if (!lines.length) {
     return null
@@ -892,34 +918,32 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
         <CardHeader className={cn("flex flex-col gap-0.5 py-4", open && "border-b")}>
           <div className="flex flex-wrap items-center gap-x-2">
             <h2 id="restock-no-listing" className="font-semibold">
-              <GroupTrigger>No Amazon listing</GroupTrigger>
+              <GroupTrigger>{t("statuses.noListing")}</GroupTrigger>
             </h2>
             <AlertTriangle className="size-3.5 text-warning" aria-hidden="true" />
-            <span className="text-xs text-muted-foreground">{plural(lines.length, "product")}</span>
+            <span className="text-xs text-muted-foreground">{t("products", { count: lines.length })}</span>
           </div>
-          <CardDescription className="pl-6 text-xs">
-            Create the FBA listing with the same SKU, or set the Amazon minimum to 0 in Shopify
-          </CardDescription>
+          <CardDescription className="ps-6 text-xs">{t("noListingHint")}</CardDescription>
         </CardHeader>
         <CollapsibleContent>
           <Table framed={false}>
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-4">Product</TableHead>
-                <TableHead className="text-right">Minimum at Amazon</TableHead>
-                <TableHead className="pr-4 text-right">Sold</TableHead>
+                <TableHead className="ps-4">{t("columns.product")}</TableHead>
+                <TableHead className="text-end">{t("columns.minimumAtAmazon")}</TableHead>
+                <TableHead className="pe-4 text-end">{t("columns.sold")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lines.map((line) => (
                 <TableRow key={line.variantId}>
-                  <TableCell className="pl-4">
+                  <TableCell className="ps-4">
                     <Name line={line} />
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     <Count value={line.targetStock} />
                   </TableCell>
-                  <TableCell className="pr-4 text-right tabular-nums">
+                  <TableCell className="pe-4 text-end tabular-nums">
                     <Count value={line.sold} />
                   </TableCell>
                 </TableRow>
@@ -933,13 +957,12 @@ function NoListing({ lines }: { lines: RestockLine[] }) {
 }
 
 type Sort = "urgency" | "quantity" | "name"
-const sortOptions: ReadonlyArray<{ value: Sort; label: string }> = [
-  { value: "urgency", label: "Most urgent" },
-  { value: "quantity", label: "Largest order" },
-  { value: "name", label: "Product name" }
-]
+const sorts: readonly Sort[] = ["urgency", "quantity", "name"]
 
 function Results({ report, filters }: { report: Report; filters: LinkFilters }) {
+  const text = useText()
+  const { t } = text
+  const sortOptions = sorts.map((value) => ({ value, label: t(`sort.${value}`) }))
   const [search, setSearch] = useState(filters.q)
   const [cover, setCover] = useState(filters.cover)
   const [onlyOrders, setOnlyOrders] = useState(filters.onlyOrders)
@@ -1002,7 +1025,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
   )
   const selected = orderTotals(visible, edits)
   // Without prices, the summary shows only once something is selected, and never lost sales.
-  const lost = prices ? lostText(visible) : ""
+  const lost = prices ? lostText(visible, text) : ""
   // The toggle expands every group until they're all open, then collapses them all.
   const allOpen = ordered.every((group) => openGroups.has(group.key))
   return (
@@ -1016,8 +1039,8 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
             </InputGroupAddon>
             <InputGroupInput
               type="search"
-              aria-label="Search products"
-              placeholder="Search products or SKUs"
+              aria-label={t("searchLabel")}
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -1031,7 +1054,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
               }
             }}
           >
-            <SelectTrigger aria-label="Sort by">
+            <SelectTrigger aria-label={t("sortBy")}>
               <ArrowDownUp className="text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
@@ -1043,35 +1066,35 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
               ))}
             </SelectContent>
           </Select>
-          <Field orientation="horizontal" className="w-auto pl-1">
+          <Field orientation="horizontal" className="w-auto ps-1">
             <Checkbox id="restock-show-all" checked={showAll} onCheckedChange={setShowAll} />
             <FieldLabel htmlFor="restock-show-all" className="font-normal">
-              Show products with enough stock
+              {t("showAll")}
             </FieldLabel>
           </Field>
           {cover && (
             <Button variant="outline" size="sm" onClick={() => setCover(null)}>
-              Days of cover: {coverBuckets.find((bucket) => bucket.key === cover)?.label}
+              {t("coverFilter", { cover: t(`cover.${cover}`) })}
               <X data-icon="inline-end" aria-hidden />
-              <span className="sr-only">Clear filter</span>
+              <span className="sr-only">{t("clearFilter")}</span>
             </Button>
           )}
           {onlyOrders && (
             <Button variant="outline" size="sm" onClick={() => setOnlyOrders(false)}>
-              Items to reorder
+              {t("itemsToReorder")}
               <X data-icon="inline-end" aria-hidden />
-              <span className="sr-only">Clear filter</span>
+              <span className="sr-only">{t("clearFilter")}</span>
             </Button>
           )}
           {ordered.length > 1 && (
             <Button
               variant="ghost"
               size="sm"
-              className="ml-auto text-muted-foreground"
+              className="ms-auto text-muted-foreground"
               onClick={() => setOpenGroups(allOpen ? new Set() : new Set(ordered.map((group) => group.key)))}
             >
               {allOpen ? <ChevronsDownUp data-icon="inline-start" /> : <ChevronsUpDown data-icon="inline-start" />}
-              {allOpen ? "Collapse all" : "Expand all"}
+              {allOpen ? t("collapseAll") : t("expandAll")}
             </Button>
           )}
         </div>
@@ -1112,22 +1135,28 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
   )
 }
 
+const productsLink = (chunks: React.ReactNode) => (
+  <Link href="/products" className="underline underline-offset-4 hover:text-muted-foreground">
+    {chunks}
+  </Link>
+)
+
 // The result in a line under the settings, or why the sales it needs couldn't be read; and the products left out
 // for having no supplier.
 function ResultSummary({ report }: { report: Report }) {
   const setsSuppliers = useCan("products", "edit")
   const prices = useCan("prices")
-  const errors = report.sources.flatMap(({ source, error }) => (error ? [`${sourceNames[source]}: ${error}`] : []))
+  const { t, list } = useText()
+  const errors = report.sources.flatMap(({ source, error }) =>
+    error ? [t("sourceError", { source: sourceNames[source], error })] : []
+  )
   const count = (statuses: RestockStatus[]) => report.lines.filter((line) => statuses.includes(line.status)).length
   const blocked = count(["blocked"])
-  const fine = count(["stocked", "not_stocked"])
-  const summary = [
-    `${formatNumber(count(["stockout", "reorder"]))} to reorder`,
-    blocked > 0 && `${formatNumber(blocked)} can’t be calculated`,
-    `${formatNumber(fine)} ${fine === 1 ? "has" : "have"} enough stock`
-  ]
-    .filter(Boolean)
-    .join(", ")
+  const summary = list([
+    t("result.toReorder", { count: count(["stockout", "reorder"]) }),
+    ...(blocked > 0 ? [t("result.blocked", { count: blocked })] : []),
+    t("result.enough", { count: count(["stocked", "not_stocked"]) })
+  ])
   return (
     <>
       {errors.length ? (
@@ -1140,20 +1169,13 @@ function ResultSummary({ report }: { report: Report }) {
       ) : (
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           {summary}
-          <InfoTip label="How quantities are worked out">
-            Enough to last each supplier’s lead time at the last {report.days} days’ rate, after stock, incoming stock
-            and open purchase orders, rounded up to the minimum order and whole cases.
-            {prices && " Costs are Shopify’s unit costs, without freight, duties or fees."}
+          <InfoTip label={t("result.howLabel")}>
+            {t("result.how", { days: report.days, prices: prices ? "yes" : "no" })}
           </InfoTip>
         </p>
       )}
       {report.needsSupplier > 0 && setsSuppliers && (
-        <WarningNote>
-          <Link href="/products" className="underline underline-offset-4 hover:text-muted-foreground">
-            Set a supplier
-          </Link>{" "}
-          for {plural(report.needsSupplier, "more product")} to reorder
-        </WarningNote>
+        <WarningNote>{t.rich("needsSupplier", { count: report.needsSupplier, link: productsLink })}</WarningNote>
       )}
     </>
   )
@@ -1171,7 +1193,7 @@ function Loading() {
           <Skeleton className="size-4" />
           <Skeleton className="size-9" />
           <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="ml-auto h-4 w-16" />
+          <Skeleton className="ms-auto h-4 w-16" />
         </div>
       ))}
     </Card>
@@ -1198,6 +1220,7 @@ function DaysField({
   value: string
   onChange: (value: string) => void
 }) {
+  const t = useTranslations("restock")
   return (
     <InputGroup className="w-auto">
       <InputGroupAddon>
@@ -1217,7 +1240,7 @@ function DaysField({
         className="w-10 flex-none text-center tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <InputGroupAddon align="inline-end">
-        <InputGroupText>days</InputGroupText>
+        <InputGroupText>{t("daysUnit")}</InputGroupText>
       </InputGroupAddon>
     </InputGroup>
   )
@@ -1225,6 +1248,8 @@ function DaysField({
 
 // `settings` are the workspace's sales period and default lead time (Settings), which the page starts from.
 export function RestockReport({ settings }: { settings: { days: number; leadTimeDays: number } }) {
+  const t = useTranslations("restock")
+  const errorMessage = useErrorMessage()
   // Kept as typed so the fields can be cleared while editing; validated before loading. Changes here are for this
   // visit; the workspace's settings are changed in Settings.
   const [daysText, setDaysText] = useState(String(settings.days))
@@ -1243,7 +1268,7 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
   // A remembered choice that no longer exists, such as a removed supplier, falls back to all suppliers.
   const supplierChoice = supplier === "all" || suppliers.some((row) => row.id === supplier)
   const supplierItems = [
-    { value: "all", label: "All suppliers" },
+    { value: "all", label: t("allSuppliers") },
     ...suppliers.map((row) => ({ value: row.id, label: row.name }))
   ]
   const request: Request | null =
@@ -1282,9 +1307,9 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
             }}
             disabled={!channels.length}
           >
-            <SelectTrigger aria-label="Restock location" className="min-w-40">
+            <SelectTrigger aria-label={t("location")} className="min-w-40">
               <Warehouse className="text-muted-foreground" />
-              <SelectValue placeholder={channelsLoading ? "Loading…" : "Sync inventory first"} />
+              <SelectValue placeholder={channelsLoading ? t("loading") : t("syncFirst")} />
             </SelectTrigger>
             <SelectContent>
               {channels.map((item) => (
@@ -1303,7 +1328,7 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
               }
             }}
           >
-            <SelectTrigger aria-label="Supplier" className="min-w-40">
+            <SelectTrigger aria-label={t("supplier")} className="min-w-40">
               <Factory className="text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
@@ -1315,22 +1340,22 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
               ))}
             </SelectContent>
           </Select>
-          <DaysField id="restock-days" label="Sales period" value={daysText} onChange={setDaysText} />
+          <DaysField id="restock-days" label={t("salesPeriod")} value={daysText} onChange={setDaysText} />
           <DaysField
             id="restock-lead-time"
-            label="Lead time"
-            hint="For suppliers without their own lead time"
+            label={t("leadTimeLabel")}
+            hint={t("leadTimeHint")}
             value={leadTimeText}
             onChange={setLeadTimeText}
           />
         </div>
-        {calculating && <p className="text-sm text-muted-foreground">Calculating…</p>}
+        {calculating && <p className="text-sm text-muted-foreground">{t("calculating")}</p>}
         {result.currentData && <ResultSummary report={result.currentData} />}
       </div>
       {result.isError && (
         <Alert variant="destructive">
           <CircleAlert />
-          <AlertTitle>{errorMessage(result.error, "Restock couldn’t be calculated. Try again.")}</AlertTitle>
+          <AlertTitle>{errorMessage(result.error, t("failed"))}</AlertTitle>
         </Alert>
       )}
       {calculating && <Loading />}

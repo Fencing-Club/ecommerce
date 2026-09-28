@@ -1,5 +1,6 @@
 import { contactSchema } from "@/lib/contact"
 import { sendContactMessage } from "@/server/contact"
+import { errorResponse } from "@/server/errors"
 import { clientAddress, rateLimit } from "@/server/rate-limit"
 
 // A few messages from one address in a short while is plenty.
@@ -14,15 +15,15 @@ export async function POST(request: Request) {
   }
   const parsed = contactSchema.safeParse(body)
   if (!parsed.success) {
-    return Response.json({ error: "Check the form and try again." }, { status: 400 })
+    return errorResponse("checkForm", 400)
   }
   if (limited(clientAddress(request))) {
-    return Response.json({ error: "Too many messages. Try again in a few minutes." }, { status: 429 })
+    return errorResponse("tooManyMessages", 429)
   }
   try {
     await sendContactMessage(parsed.data)
   } catch {
-    return Response.json({ error: "Couldn’t send your message. Try again in a moment." }, { status: 502 })
+    return errorResponse("messageNotSent", 502)
   }
   return Response.json({ ok: true })
 }

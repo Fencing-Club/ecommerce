@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { OnboardingWizard, type WizardValues } from "@/components/onboarding/onboarding-wizard"
@@ -12,7 +13,10 @@ import { findInvitation, invitationKind, invitationPath } from "@/server/invitat
 import { ownProfile } from "@/server/profile"
 import { returnPath } from "@/server/security"
 
-export const metadata: Metadata = { title: "Get started" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("onboarding")
+  return { title: t("title") }
+}
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"

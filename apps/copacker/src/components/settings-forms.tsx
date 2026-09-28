@@ -2,6 +2,7 @@
 
 import { type Address, addressSchema } from "@repo/aisle"
 import { Check } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useId, useSyncExternalStore } from "react"
 import {
   type FieldValues,
@@ -25,8 +26,9 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { useActionForm } from "@/hooks/useActionForm"
+import { type Locale, localeNames, locales } from "@/i18n/locales"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import { type ContactKind, contactKindLabels, contactKinds, contactKindsFor } from "@/lib/contacts"
+import { type ContactKind, contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { websiteSchema } from "@/lib/onboarding"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
@@ -44,6 +46,7 @@ type FormLayoutProps<Values extends FieldValues> = {
 // disabled until something changes, so a page of these cards doesn't read as a column of orange buttons. The form
 // state is read here rather than passed in, so the footer follows edits however the parent is memoized.
 export function SettingsForm<Values extends FieldValues>({ form, onSubmit, children }: FormLayoutProps<Values>) {
+  const t = useTranslations("settings.form")
   const { isDirty, isSubmitting, isSubmitSuccessful, errors } = useFormState({ control: form.control })
   return (
     <FormProvider {...form}>
@@ -59,7 +62,7 @@ export function SettingsForm<Values extends FieldValues>({ form, onSubmit, child
             {isSubmitSuccessful && !isDirty && (
               <output className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Check className="size-3.5" aria-hidden />
-                Saved
+                {t("saved")}
               </output>
             )}
             <SubmitButton
@@ -68,7 +71,7 @@ export function SettingsForm<Values extends FieldValues>({ form, onSubmit, child
               pending={isSubmitting}
               disabled={!isDirty}
             >
-              Save
+              {t("save")}
             </SubmitButton>
           </CardFooter>
         </Card>
@@ -83,6 +86,7 @@ const supplierSchema = z.object({
 })
 
 export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
+  const t = useTranslations("settings.supplierForm")
   const { form, submit } = useActionForm({
     schema: supplierSchema,
     action: "supplier.create",
@@ -90,15 +94,15 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
     onSuccess
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Add supplier" dialog>
-      <FormInput name="name" required label="Supplier company" placeholder="Ok Fencing" autoComplete="off" />
+    <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
+      <FormInput name="name" required label={t("company")} placeholder="Ok Fencing" autoComplete="off" />
       <FormInput
         name="email"
-        label="Email"
+        label={t("email")}
         type="email"
         placeholder="supplier@example.com"
         autoComplete="off"
-        description="Add one to invite them now."
+        description={t("emailDescription")}
       />
     </ActionForm>
   )
@@ -106,6 +110,7 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
 
 // The supplier's contact details, which their buyers see. All optional.
 export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema>) {
+  const t = useTranslations("settings.supplierProfile")
   const { form, submit } = useActionForm({
     schema: contactDetailsSchema,
     action: "supplier.profile",
@@ -118,12 +123,12 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
   return (
     <SettingsForm form={form} onSubmit={submit}>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormInput name="contactName" label="Contact name" autoComplete="name" />
-        <FormInput name="contactEmail" label="Contact email" type="email" autoComplete="email" />
-        <FormInput name="phoneNumber" label="Phone" type="tel" autoComplete="tel" />
+        <FormInput name="contactName" label={t("contactName")} autoComplete="name" />
+        <FormInput name="contactEmail" label={t("contactEmail")} type="email" autoComplete="email" />
+        <FormInput name="phoneNumber" label={t("phone")} type="tel" autoComplete="tel" />
         <FormInput
           name="website"
-          label="Website"
+          label={t("website")}
           inputMode="url"
           autoComplete="url"
           spellCheck={false}
@@ -137,12 +142,13 @@ export function SupplierProfileForm(profile: z.input<typeof contactDetailsSchema
 // The browser's time zone doesn't change while the page is open, so there's nothing to subscribe to.
 const noSubscription = () => () => undefined
 const restockSchema = z.object({
-  salesDays: z.number({ error: "Enter the days" }).int().min(dayRange.min).max(dayRange.max),
-  leadTimeDays: z.number({ error: "Enter the days" }).int().min(dayRange.min).max(dayRange.max)
+  salesDays: z.number({ error: "settings.restock.enterDays" }).int().min(dayRange.min).max(dayRange.max),
+  leadTimeDays: z.number({ error: "settings.restock.enterDays" }).int().min(dayRange.min).max(dayRange.max)
 })
 
 // The sales period and default lead time Restock starts from and the Overview uses.
 export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
+  const t = useTranslations("settings.restock")
   const { form, submit } = useActionForm({
     schema: restockSchema,
     action: "workspace.restock",
@@ -155,7 +161,7 @@ export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
         <FormNumber
           name="salesDays"
           required
-          label="Sales period (days)"
+          label={t("salesPeriodDays")}
           min={dayRange.min}
           max={dayRange.max}
           step={1}
@@ -163,8 +169,8 @@ export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
         <FormNumber
           name="leadTimeDays"
           required
-          label="Lead time (days)"
-          description="For suppliers without their own"
+          label={t("leadTimeDays")}
+          description={t("leadTimeDescription")}
           min={dayRange.min}
           max={dayRange.max}
           step={1}
@@ -177,6 +183,35 @@ export function RestockSettingsForm(values: z.input<typeof restockSchema>) {
 const timeZoneSchema = z.object({ timeZone: z.string() })
 
 // The store's time zone: the Overview counts days and months in it. Left empty, it follows each viewer's computer.
+// The choice that follows the computer's language, which is saved as an empty value.
+const systemLanguage = "system"
+
+const languageSchema = z.object({ locale: z.union([z.literal(systemLanguage), z.enum(locales)]) })
+
+// The person's own language, in every workspace: the computer's, or one chosen here. Saving re-renders the page in it.
+export function LanguageForm({ locale, systemLocale }: { locale: Locale | null; systemLocale: Locale }) {
+  const t = useTranslations("settings.language")
+  const { form, submit } = useActionForm({
+    schema: languageSchema,
+    action: "profile.locale",
+    defaultValues: { locale: locale ?? systemLanguage },
+    toPayload: (values) => ({ locale: values.locale === systemLanguage ? "" : values.locale }),
+    keepSaved: true
+  })
+  return (
+    <SettingsForm form={form} onSubmit={submit}>
+      <FormSelect
+        name="locale"
+        label={t("label")}
+        options={[
+          { value: systemLanguage, label: t("system", { language: localeNames[systemLocale] }) },
+          ...locales.map((value) => ({ value, label: localeNames[value] }))
+        ]}
+      />
+    </SettingsForm>
+  )
+}
+
 export function TimeZoneForm({
   timeZone,
   computerZone,
@@ -188,6 +223,7 @@ export function TimeZoneForm({
   // Every zone with its label, such as "America/Los Angeles (UTC−07:00)".
   zones: Zone[]
 }) {
+  const t = useTranslations("settings.timeZone")
   const { form, submit } = useActionForm({
     schema: timeZoneSchema,
     action: "workspace.timeZone",
@@ -202,7 +238,7 @@ export function TimeZoneForm({
   )
   return (
     <SettingsForm form={form} onSubmit={submit}>
-      <TimeZoneField name="timeZone" label="Store time zone" zones={zones} computerZone={timeZoneLabel(browserZone)} />
+      <TimeZoneField name="timeZone" label={t("label")} zones={zones} computerZone={timeZoneLabel(browserZone)} />
     </SettingsForm>
   )
 }
@@ -253,6 +289,7 @@ function TimeZoneField({
   // The viewer's computer's zone, as its label.
   computerZone: string
 }) {
+  const t = useTranslations("settings.timeZone")
   const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur },
@@ -264,7 +301,7 @@ function TimeZoneField({
   const choices = listed ? zones : [{ value, label: timeZoneLabel(value) }, ...zones]
   const { loose, regions } = zoneGroups(choices)
   const labels = new Map([
-    [automatic, `Automatic, ${computerZone}`],
+    [automatic, t("automaticZone", { zone: computerZone })],
     ...choices.map((zone): [string, string] => [zone.value, zone.label])
   ])
   return (
@@ -276,9 +313,9 @@ function TimeZoneField({
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false} className="max-h-[min(20rem,var(--available-height))]">
           <SelectGroup>
-            <SelectItem value={automatic} label="Automatic">
-              Automatic
-              <span className="ml-auto text-muted-foreground">{computerZone}</span>
+            <SelectItem value={automatic} label={t("automatic")}>
+              {t("automatic")}
+              <span className="ms-auto text-muted-foreground">{computerZone}</span>
             </SelectItem>
             {loose.map((zone) => (
               <SelectItem key={zone.value} value={zone.value}>
@@ -293,7 +330,7 @@ function TimeZoneField({
               {group.zones.map((zone) => (
                 <SelectItem key={zone.value} value={zone.value} label={zone.city}>
                   {zone.city}
-                  <span className="ml-auto text-muted-foreground tabular-nums">{zone.offset}</span>
+                  <span className="ms-auto text-muted-foreground tabular-nums">{zone.offset}</span>
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -332,6 +369,8 @@ export function ContactForm({
   supplier?: boolean
   locations?: { id: string; name: string }[]
 }) {
+  const t = useTranslations("settings.addresses")
+  const partners = useTranslations("partners")
   const { form, submit } = useActionForm({
     schema: contactSchema,
     action: contact ? "contact.update" : "contact.create",
@@ -353,24 +392,24 @@ export function ContactForm({
   const kind = useWatch({ control: form.control, name: "kind" })
   const kinds = supplier ? [] : contactKindsFor("buyer")
   return (
-    <ActionForm form={form} onSubmit={submit} label={contact ? "Save changes" : "Save address"} dialog>
+    <ActionForm form={form} onSubmit={submit} label={contact ? t("saveChanges") : t("saveAddress")} dialog>
       <div className={kinds.length > 1 ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
-        <FormInput name="name" required label="Address name" placeholder="Shenzhen warehouse" autoComplete="off" />
+        <FormInput name="name" required label={t("name")} placeholder={t("namePlaceholder")} autoComplete="off" />
         {kinds.length > 1 && (
           <FormSelect
             name="kind"
             required
-            label="Address type"
-            options={kinds.map((option) => ({ value: option, label: contactKindLabels[option] }))}
+            label={t("kind")}
+            options={kinds.map((option) => ({ value: option, label: partners(contactKindLabelKeys[option]) }))}
           />
         )}
       </div>
       {!supplier && kind === "delivery" && locations.length > 0 && (
         <FormSelect
           name="shopifyLocationId"
-          label="Shopify location"
-          description="Purchase orders sent here show as on order there"
-          placeholder="Not linked"
+          label={t("shopifyLocation")}
+          description={t("shopifyLocationDescription")}
+          placeholder={t("notLinked")}
           options={locations.map((location) => ({ value: location.id, label: location.name }))}
         />
       )}

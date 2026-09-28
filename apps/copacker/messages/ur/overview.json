@@ -1,0 +1,267 @@
+{
+  "title": "جائزہ",
+  "loading": "جائزہ لوڈ ہو رہا ہے",
+  "notAvailable": "دستیاب نہیں",
+  "new": "نیا",
+  "plusCurrencies": "مزید {amounts}",
+  "noStores": {
+    "title": "کوئی اسٹور منسلک نہیں",
+    "connectDescription": "اپنا جائزہ دیکھنے کے لیے Shopify یا Amazon منسلک کریں",
+    "askAdmin": "کسی ایڈمن سے انہیں منسلک کرنے کو کہیں",
+    "connect": "اسٹورز منسلک کریں"
+  },
+  "period": {
+    "choose": "مدت منتخب کریں",
+    "presets": {
+      "today": "آج",
+      "yesterday": "کل",
+      "last7": "پچھلے 7 دن",
+      "last30": "پچھلے 30 دن",
+      "last90": "پچھلے 90 دن",
+      "last365": "پچھلے 365 دن",
+      "lastWeek": "پچھلا ہفتہ",
+      "lastMonth": "پچھلا مہینہ",
+      "lastQuarter": "پچھلی سہ ماہی",
+      "last12Months": "پچھلے 12 مہینے",
+      "lastYear": "پچھلا سال",
+      "weekToDate": "اس ہفتے اب تک",
+      "monthToDate": "اس مہینے اب تک",
+      "quarterToDate": "اس سہ ماہی اب تک",
+      "yearToDate": "اس سال اب تک"
+    },
+    "comparisons": {
+      "previousPeriod": "پچھلی مدت",
+      "previousYear": "پچھلا سال",
+      "none": "کوئی موازنہ نہیں"
+    },
+    "last": "پچھلے",
+    "toDate": "مدت کے آغاز سے اب تک",
+    "custom": "اپنی مرضی کی مدت",
+    "startDate": "آغاز کی تاریخ",
+    "endDate": "اختتام کی تاریخ",
+    "previousMonth": "پچھلا مہینہ",
+    "nextMonth": "اگلا مہینہ",
+    "cancel": "منسوخ کریں",
+    "apply": "لاگو کریں"
+  },
+  "channel": {
+    "label": "چینل",
+    "all": "تمام چینلز",
+    "shopifyLocation": "Shopify: {location}"
+  },
+  "kpis": {
+    "label": "سیلز، {period}",
+    "about": "{label} کے بارے میں",
+    "versus": "{comparison, select, previousYear {پچھلے سال کے مقابلے میں} other {پچھلی مدت کے مقابلے میں}}",
+    "noPrices": "ابھی کوئی قیمت نہیں",
+    "noOrders": "کوئی آرڈر سنک نہیں ہوا",
+    "noUnitCosts": "یونٹ لاگت موجود نہیں",
+    "uncostedSales": "یونٹ لاگت کے بغیر {amount} کی سیلز شامل نہیں۔",
+    "estimatedFees": "کچھ فیسیں تخمینی ہیں جب تک پلیٹ فارم انہیں درج نہ کر دے۔",
+    "margin": "<figure>{percent}</figure> مارجن",
+    "sales": "سیلز",
+    "salesInfo": "رعایت کے بعد، ٹیکس اور شپنگ سے پہلے۔",
+    "orders": "آرڈرز",
+    "averageOrder": "اوسط آرڈر ویلیو",
+    "units": "فروخت شدہ یونٹس",
+    "grossProfit": "مجموعی منافع",
+    "stockoutLosses": "اسٹاک ختم ہونے سے نقصان",
+    "stockoutInfo": "اسٹاک ختم رہنے کے دوران متوقع ضائع ہونے والی سیلز، آج دیے گئے دوبارہ آرڈرز پہنچنے سے پہلے۔",
+    "lostThisPeriod": "اس مدت میں {amount} کا نقصان"
+  },
+  "sections": {
+    "sales": "سیلز",
+    "purchasing": "خریداری",
+    "productsAndCustomers": "پروڈکٹس اور کسٹمرز",
+    "products": "پروڈکٹس",
+    "stock": "اسٹاک"
+  },
+  "salesByChannel": {
+    "title": "چینل کے لحاظ سے سیلز",
+    "aboutLabel": "سیلز کے بارے میں",
+    "about": "رعایت کے بعد، ٹیکس اور شپنگ سے پہلے۔",
+    "aboutLocation": "{location} سے بھیجے گئے Shopify آرڈرز۔ رعایت کے بعد، ٹیکس اور شپنگ سے پہلے۔",
+    "otherMarketplaces": "{count, plural, one {شمالی امریکہ سے باہر کا # Amazon آرڈر شمار نہیں کیا گیا۔} other {شمالی امریکہ سے باہر کے # Amazon آرڈرز شمار نہیں کیے گئے۔}}",
+    "orders": "آرڈرز",
+    "noOrders": "کوئی آرڈر سنک نہیں ہوا"
+  },
+  "salesChart": {
+    "measure": "پیمانہ",
+    "metrics": {
+      "sales": "سیلز",
+      "orders": "آرڈرز",
+      "units": "یونٹس"
+    },
+    "orders": "{count, plural, one {# آرڈر} other {# آرڈرز}}",
+    "units": "{count, plural, one {# یونٹ} other {# یونٹس}}",
+    "weekOf": "{date} کا ہفتہ",
+    "previousSeries": "{source}، {comparison, select, previousYear {پچھلا سال} other {پچھلی مدت}}",
+    "caption": "{step, select, week {ہفتہ وار} month {ماہانہ} other {یومیہ}} {metric, select, orders {آرڈرز} units {فروخت شدہ یونٹس} other {سیلز}}",
+    "stepColumn": "{step, select, week {ہفتہ} month {مہینہ} other {دن}}",
+    "noData": "کوئی ڈیٹا نہیں"
+  },
+  "setup": {
+    "title": "سیٹ اپ مکمل کریں",
+    "progress": "{total} میں سے {done} مکمل",
+    "done": "مکمل"
+  },
+  "attention": {
+    "title": "توجہ درکار",
+    "caughtUp": "سب کچھ مکمل ہے"
+  },
+  "inventory": {
+    "title": "انوینٹری",
+    "aboutLabel": "انوینٹری ویلیو کے بارے میں",
+    "about": "ریٹیل ویلیو میں ہر یونٹ کی حالیہ فروخت کی قیمت، یا اس کی Shopify قیمت استعمال ہوتی ہے۔ لاگت میں خریداری آرڈرز کی لینڈڈ کاسٹ شامل ہے۔",
+    "products": "پروڈکٹس",
+    "onHand": "{count, number} موجود",
+    "onTheWay": "{count, number} راستے میں",
+    "atCost": "لاگت پر {amount}",
+    "noUnitCosts": "یونٹ لاگت موجود نہیں",
+    "noPrices": "کوئی قیمت نہیں",
+    "noStock": "کوئی اسٹاک سنک نہیں ہوا",
+    "unitsOnHand": "موجود یونٹس",
+    "valueAtCost": "لاگت پر ویلیو",
+    "retailValue": "ریٹیل ویلیو",
+    "potentialProfit": "ممکنہ مجموعی منافع"
+  },
+  "cover": {
+    "title": "اسٹاک کے دن",
+    "aboutLabel": "اسٹاک کے دنوں کے بارے میں",
+    "about": "ہر آئٹم کا اسٹاک اس کی حالیہ فروخت کی رفتار پر کتنے دن چلے گا۔",
+    "items": "{count, plural, one {# آئٹم} other {# آئٹمز}}"
+  },
+  "upcoming": {
+    "title": "آنے والے اخراجات",
+    "aboutLabel": "آنے والے اخراجات کے بارے میں",
+    "about": "واجب الادا دوبارہ آرڈرز، اور بھیجے گئے خریداری آرڈرز ان کی مقررہ تاریخ کے لحاظ سے۔",
+    "next60": "اگلے 60 دن",
+    "reorders": "ابھی واجب دوبارہ آرڈرز",
+    "reordersDetail": "یونٹ لاگت سے تخمینہ",
+    "purchaseOrders": "{count, plural, one {# خریداری آرڈر} other {# خریداری آرڈرز}}",
+    "due": {
+      "overdue": "تاریخ گزر گئی",
+      "next30": "اگلے 30 دنوں میں واجب",
+      "next60": "31 سے 60 دنوں میں واجب",
+      "later": "بعد میں واجب"
+    }
+  },
+  "trending": {
+    "title": "ٹرینڈنگ پروڈکٹس",
+    "sellingMore": "زیادہ فروخت",
+    "sellingLess": "کم فروخت",
+    "nothingMore": "کسی کی فروخت زیادہ نہیں ہوئی",
+    "nothingLess": "کسی کی فروخت کم نہیں ہوئی",
+    "noPreviousOrders": "{period} کے لیے کوئی آرڈر سنک نہیں ہوا",
+    "noComparison": "موازنے کی کوئی مدت نہیں",
+    "noChanges": "کسی پروڈکٹ میں چند یونٹس سے زیادہ تبدیلی نہیں ہوئی",
+    "units": "{from, number} سے {count, plural, one {# یونٹ} other {# یونٹس}}",
+    "variantUnits": "{variant}، {from, number} سے {count, plural, one {# یونٹ} other {# یونٹس}}"
+  },
+  "slow": {
+    "title": "سست رفتار اسٹاک",
+    "aboutLabel": "سست رفتار اسٹاک کے بارے میں",
+    "about": "وہ اسٹاک جو 3 مہینے سے زیادہ چلے، یا حال ہی میں فروخت نہ ہوا ہو۔",
+    "summary": "{items, plural, one {# آئٹم} other {# آئٹمز}}، {units, plural, one {# یونٹ} other {# یونٹس}}",
+    "summaryAtCost": "{items, plural, one {# آئٹم} other {# آئٹمز}}، {units, plural, one {# یونٹ} other {# یونٹس}}، لاگت پر {amount}",
+    "product": "پروڈکٹ",
+    "onHand": "موجود",
+    "cover": "اسٹاک کے دن",
+    "atCost": "لاگت پر",
+    "days": "{count, plural, one {# دن} other {# دن}}",
+    "notSelling": "فروخت نہیں ہو رہا",
+    "noUnitCost": "یونٹ لاگت نہیں",
+    "empty": "کوئی سست رفتار اسٹاک نہیں"
+  },
+  "bestSellers": {
+    "title": "سب سے زیادہ فروخت",
+    "restock": "ری اسٹاک",
+    "product": "پروڈکٹ",
+    "sold": "فروخت",
+    "onHand": "موجود",
+    "cover": "اسٹاک کے دن",
+    "status": "اسٹیٹس",
+    "days": "{count, plural, one {# دن} other {# دن}}",
+    "empty": "ابھی کوئی سیلز نہیں"
+  },
+  "openOrders": {
+    "title": "کھلے خریداری آرڈرز",
+    "link": "خریداری آرڈرز",
+    "supplier": "سپلائر",
+    "orders": "آرڈرز",
+    "openValue": "کھلی ویلیو",
+    "otherSuppliers": "{count, plural, one {# دیگر سپلائر} other {# دیگر سپلائرز}}",
+    "empty": "کوئی کھلا خریداری آرڈر نہیں",
+    "open": "کھلے",
+    "drafts": "ڈرافٹس",
+    "purchaseOrders": "{count, plural, one {# خریداری آرڈر} other {# خریداری آرڈرز}}"
+  },
+  "profit": {
+    "title": "مجموعی منافع",
+    "monthlyCosts": "ماہانہ اخراجات",
+    "sales": "سیلز",
+    "orderFees": "آرڈر فیس",
+    "costOfGoods": "مال کی لاگت",
+    "fees": "فیسیں",
+    "groups": {
+      "refunds": "ریفنڈز اور تنازعات",
+      "shipping": "شپنگ اور فریٹ",
+      "advertising": "اشتہارات",
+      "monthly": "ماہانہ اخراجات"
+    },
+    "charges": {
+      "amazonRefunds": "Amazon ریفنڈز",
+      "amazonAds": "Amazon اشتہارات",
+      "amazonCharges": "Amazon اکاؤنٹ چارجز",
+      "amazonMcf": "Shopify آرڈرز کے لیے Amazon فل فلمنٹ",
+      "amazonFreight": "Amazon ان باؤنڈ فریٹ",
+      "shopifyLabels": "Shopify شپنگ لیبلز",
+      "shopifyBill": "Shopify بل (پلان اور ایپس)",
+      "shopifyDisputes": "Shopify تنازعات",
+      "shopifyDuties": "ڈیوٹیز اور درآمدی ٹیکس"
+    },
+    "whatsIn": "{line} میں کیا شامل ہے",
+    "needsCosts": "آرڈر کی قیمتیں اور یونٹ لاگت درکار ہیں"
+  },
+  "customers": {
+    "title": "Shopify کسٹمرز",
+    "aboutLabel": "کسٹمر کے اعداد و شمار کے بارے میں",
+    "about": "لائف ٹائم ویلیو، دوبارہ خریدنے والے کسٹمرز اور فی کسٹمر آرڈرز پچھلے 12 مہینوں پر مبنی ہیں۔ گیسٹ اور Amazon آرڈرز شمار نہیں ہوتے۔",
+    "reconnect": "دوبارہ خریدنے والے کسٹمرز گننے کے لیے <settings>سیٹنگز</settings> میں Shopify دوبارہ منسلک کریں",
+    "reconnectAskAdmin": "دوبارہ خریدنے والے کسٹمرز گننے کے لیے کسی ایڈمن سے Shopify دوبارہ منسلک کرنے کو کہیں",
+    "syncing": "اگلے Shopify آرڈر سنک کے بعد دستیاب",
+    "noCustomers": "کوئی کسٹمر نہیں",
+    "lifetimeValue": "کسٹمر لائف ٹائم ویلیو",
+    "returning": "واپس آنے والے کسٹمرز",
+    "returningNote": "اس مدت میں {customers, number} میں سے {returning, number}",
+    "repeat": "دوبارہ خریدنے والے کسٹمرز",
+    "ordersPerCustomer": "فی کسٹمر آرڈرز"
+  },
+  "landedCosts": {
+    "title": "لینڈڈ کاسٹ",
+    "aboutLabel": "لینڈڈ کاسٹ کے بارے میں",
+    "about": "یہ مال آپ تک پہنچانے کا فریٹ، ڈیوٹی اور دیگر اخراجات، جو جائزہ میں یونٹ لاگت میں شامل کیے جاتے ہیں۔ اس خریداری آرڈر کی شپمنٹس کا Amazon فریٹ خود بخود شامل ہو جاتا ہے۔ یہ صرف آپ کی ٹیم دیکھتی ہے۔",
+    "amazonFreight": "Amazon ان باؤنڈ فریٹ",
+    "shipment": "شپمنٹ {reference}",
+    "supplierTotal": "سپلائر کل",
+    "landedTotal": "لینڈڈ کل",
+    "markup": "مارک اپ",
+    "markupValue": "پروڈکٹ لاگت پر {percent}",
+    "empty": "ابھی کوئی لاگت نہیں",
+    "kinds": {
+      "freight": "فریٹ",
+      "duty": "ڈیوٹی",
+      "other": "دیگر"
+    },
+    "moreActions": "{kind} لاگت کے لیے مزید کارروائیاں",
+    "remove": "ہٹائیں",
+    "add": "لاگت شامل کریں",
+    "addTitle": "لینڈڈ کاسٹ شامل کریں",
+    "addDescription": "کسی دوسری کرنسی کے بل کو اس ریٹ پر {currency} میں تبدیل کریں جو آپ نے ادا کیا۔",
+    "type": "قسم",
+    "amount": "رقم",
+    "description": "تفصیل",
+    "descriptionPlaceholder": "فریٹ فارورڈر کی انوائس، کسٹمز انٹری…",
+    "enterAmount": "رقم درج کریں"
+  }
+}

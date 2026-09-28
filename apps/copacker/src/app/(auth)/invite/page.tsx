@@ -1,5 +1,6 @@
 import { and, eq, ne } from "drizzle-orm"
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AcceptInvitation } from "@/components/auth/accept-invitation"
@@ -11,24 +12,21 @@ import { Button } from "@/components/ui/button"
 import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
 import { signedInUser } from "@/server/auth"
-import { findInvitation, type InvitationKind, invitationKind, invitationPath } from "@/server/invitations"
+import { findInvitation, invitationKind, invitationPath } from "@/server/invitations"
 import { ownProfile } from "@/server/profile"
 import { hasAccount } from "@/server/sign-in"
 
-export const metadata: Metadata = { title: "Invitation" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("auth.invite")
+  return { title: t("title") }
+}
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
 
-const joining: Record<InvitationKind, string> = {
-  team: "Join their workspace on Copacker.",
-  supplier: "Join Copacker as their supplier.",
-  forwarder: "Join Copacker as their freight forwarder."
-}
-// For someone already on Copacker with a workspace of the invited kind, which then picks the workspace.
-const choosing = {
-  supplier: "Choose the workspace that supplies them.",
-  forwarder: "Choose the workspace that ships for them."
+// Bold text inside a translated sentence, such as an email address.
+function strong(chunks: React.ReactNode) {
+  return <span className="font-medium text-foreground">{chunks}</span>
 }
 
 function initials(name: string) {
@@ -59,21 +57,22 @@ export default async function Invitation({
     signedInUser()
   ])
   const home = user ? "/" : "/login"
+  const t = await getTranslations("auth.invite")
 
   if (!invitation) {
     return (
-      <AuthPage title="This invitation isn’t valid" description="It was used already, or a newer one replaced it.">
+      <AuthPage title={t("invalidTitle")} description={t("invalidDescription")}>
         <Button className="h-10 w-full" nativeButton={false} render={<Link href={home} />}>
-          {user ? "Open Copacker" : "Sign in"}
+          {user ? t("openCopacker") : t("signIn")}
         </Button>
       </AuthPage>
     )
   }
   if (invitation.expired) {
     return (
-      <AuthPage title="This invitation expired" description={`Ask ${invitation.from} to send a new one.`}>
+      <AuthPage title={t("expiredTitle")} description={t("expiredDescription", { name: invitation.from })}>
         <Button className="h-10 w-full" nativeButton={false} render={<Link href={home} />}>
-          {user ? "Open Copacker" : "Sign in"}
+          {user ? t("openCopacker") : t("signIn")}
         </Button>
       </AuthPage>
     )
@@ -81,6 +80,8 @@ export default async function Invitation({
 
   const here = invitationPath(kind, token)
   const setUp = `/onboarding?${new URLSearchParams({ invite: token, kind: kind === "supplier" ? "invite" : kind })}`
+  // What accepting makes them: a colleague, or the inviting buyer's supplier or forwarder.
+  const joining = t(`joining.${kind}`)
   const title = (
     <span className="flex flex-col gap-5">
       <span
@@ -89,7 +90,7 @@ export default async function Invitation({
       >
         {initials(invitation.from)}
       </span>
-      {invitation.from} invited you
+      {t("invitedYou", { name: invitation.from })}
     </span>
   )
 
@@ -102,8 +103,9 @@ export default async function Invitation({
       console.error("Couldn’t look up the invited email", error)
     }
     const signIn = query.mode ? query.mode === "signin" : existing
+    const other = await getTranslations("auth.switch")
     return (
-      <AuthPage title={title} description={joining[kind]}>
+      <AuthPage title={title} description={joining}>
         <div className="flex flex-col gap-6">
           <SocialSignIn next={here} email={invitation.email} />
           {signIn ? (
@@ -113,12 +115,12 @@ export default async function Invitation({
           )}
         </div>
         {signIn ? (
-          <AuthSwitch prompt="New to Copacker?" href={`${here}&mode=signup`}>
-            Create an account
+          <AuthSwitch prompt={other("newToCopacker")} href={`${here}&mode=signup`}>
+            {other("createAccount")}
           </AuthSwitch>
         ) : (
-          <AuthSwitch prompt="Already have an account?" href={`${here}&mode=signin`}>
-            Sign in
+          <AuthSwitch prompt={other("haveAccount")} href={`${here}&mode=signin`}>
+            {other("signIn")}
           </AuthSwitch>
         )}
       </AuthPage>
@@ -128,18 +130,17 @@ export default async function Invitation({
   if (user.email.toLowerCase() !== invitation.email) {
     return (
       <AuthPage
-        title="This invitation is for another email"
-        description={
-          <>
-            It was sent to <span className="font-medium text-foreground">{invitation.email}</span>. You’re signed in as{" "}
-            <span className="font-medium text-foreground">{user.email}</span>.
-          </>
-        }
+        title={t("otherEmailTitle")}
+        description={t.rich("otherEmailDescription", {
+          invited: invitation.email,
+          current: user.email,
+          strong
+        })}
       >
         <form action="/logout" method="post">
           <input type="hidden" name="next" value={here} />
           <Button type="submit" className="h-10 w-full">
-            Sign out and continue
+            {t("signOutAndContinue")}
           </Button>
         </form>
       </AuthPage>
@@ -152,8 +153,8 @@ export default async function Invitation({
       redirect(setUp)
     }
     return (
-      <AuthPage title={title} description={joining[kind]}>
-        <AcceptInvitation kind="team" token={token} label={`Join ${invitation.company}`} />
+      <AuthPage title={title} description={joining}>
+        <AcceptInvitation kind="team" token={token} label={t("join", { company: invitation.company })} />
       </AuthPage>
     )
   }
@@ -169,8 +170,8 @@ export default async function Invitation({
     redirect(setUp)
   }
   return (
-    <AuthPage title={title} description={choosing[kind]}>
-      <AcceptInvitation kind={kind} token={token} label="Accept invitation" workspaces={owned} setUp={setUp} />
+    <AuthPage title={title} description={t(`choosing.${kind}`)}>
+      <AcceptInvitation kind={kind} token={token} label={t("accept")} workspaces={owned} setUp={setUp} />
     </AuthPage>
   )
 }

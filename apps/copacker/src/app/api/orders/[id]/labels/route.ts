@@ -1,6 +1,7 @@
 import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { ProductBarcodeError, orderLabelsPdf } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
@@ -9,7 +10,7 @@ const headers = { "Cache-Control": "private, no-store" }
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
-    return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
+    return errorResponse("orderNotFound", 404, headers)
   }
   const s = await session()
   requirePage(s, "orders")
@@ -28,8 +29,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     // Lets a PO the workspace can't see become Next's not-found response.
     unstable_rethrow(error)
     if (error instanceof ProductBarcodeError) {
-      return Response.json({ error: error.message }, { status: error.status, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
     }
-    return Response.json({ error: "The labels couldn’t be combined. Try again." }, { status: 500, headers })
+    return errorResponse("labelsNotCombined", 500, headers)
   }
 }

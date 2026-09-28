@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 
 // Reads through the given database or transaction.
 type Reader = Pick<ReturnType<typeof db>, "select">
@@ -60,10 +61,10 @@ async function waitingSupplier(buyerOrgId: string, id: string) {
     .from(suppliers)
     .where(and(eq(suppliers.id, id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
   if (!supplier) {
-    throw new Error("This supplier was removed")
+    throw new LocalizedError("supplierRemoved")
   }
   if (supplier.supplierOrgId) {
-    throw new Error(`${supplier.name} keeps its own pickup addresses now that it has joined`)
+    throw new LocalizedError("supplierKeepsAddresses", { name: supplier.name })
   }
   return supplier
 }
@@ -87,7 +88,7 @@ export async function saveSupplierAddress(buyerOrgId: string, raw: unknown) {
       .where(and(eq(contacts.id, input.id), eq(contacts.orgId, buyerOrgId), eq(contacts.supplierId, supplier.id)))
       .returning({ id: contacts.id })
     if (!updated.length) {
-      throw new Error("This address was removed")
+      throw new LocalizedError("addressRemoved")
     }
     return { id: input.id }
   }
@@ -106,7 +107,7 @@ export async function removeSupplierAddress(buyerOrgId: string, raw: unknown) {
     .where(and(eq(contacts.id, input.id), eq(contacts.orgId, buyerOrgId), eq(contacts.supplierId, supplier.id)))
     .returning({ id: contacts.id })
   if (!removed.length) {
-    throw new Error("This address was already removed")
+    throw new LocalizedError("addressAlreadyRemoved")
   }
   return { id: input.id }
 }

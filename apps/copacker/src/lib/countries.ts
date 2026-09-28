@@ -250,3 +250,12 @@ export const countries = [
   { value: "ZM", label: "Zambia" },
   { value: "ZW", label: "Zimbabwe" }
 ]
+
+// The countries named in a language, such as "Allemagne" for DE in French, from the runtime's own names, sorted by
+// name as that language sorts them. A code the runtime can't name keeps its English name.
+export function countriesIn(locale: string) {
+  const names = new Intl.DisplayNames([locale], { type: "region", fallback: "none" })
+  return countries
+    .map((country) => ({ value: country.value, label: names.of(country.value) ?? country.label }))
+    .toSorted((a, b) => a.label.localeCompare(b.label, locale))
+}

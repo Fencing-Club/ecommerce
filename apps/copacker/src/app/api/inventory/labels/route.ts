@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { ProductBarcodeError, productsLabelsPdf } from "@/server/product-barcodes"
 import { isAppOrigin } from "@/server/security"
 
@@ -16,13 +17,13 @@ const inputSchema = z.strictObject({
 // variations left out because they have no label yet.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   requirePage(s, "products")
   const input = inputSchema.safeParse(await request.json().catch(() => null))
   if (!input.success) {
-    return Response.json({ error: "Choose the products to print labels for" }, { status: 400, headers })
+    return errorResponse("chooseProductsToLabel", 400, headers)
   }
   try {
     const { bytes, skipped } = await productsLabelsPdf(s, input.data.productIds)
@@ -37,8 +38,8 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     if (error instanceof ProductBarcodeError) {
-      return Response.json({ error: error.message }, { status: error.status, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
     }
-    return Response.json({ error: "The labels couldn’t be made. Try again." }, { status: 500, headers })
+    return errorResponse("labelsNotMade", 500, headers)
   }
 }

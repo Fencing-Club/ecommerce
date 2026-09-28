@@ -1,6 +1,7 @@
 "use client"
 
 import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,8 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
 import { FormError } from "./actions"
 
@@ -70,11 +72,11 @@ export function DetailRow({
   )
 }
 
-// Why an app-managed location is usually left out.
-const notes: Partial<Record<ShopifyLocationKind, string>> = {
-  amazon_fulfillment: "Amazon FBA stock, read from Amazon directly",
-  shopify_collective: "A partner’s stock through Shopify Collective",
-  fulfillment_service: "Run by an app, such as a third-party warehouse"
+// Why an app-managed location is usually left out, as its message's key under "inventory.locations.notes".
+const notes: Partial<Record<ShopifyLocationKind, "amazonFulfillment" | "shopifyCollective" | "fulfillmentService">> = {
+  amazon_fulfillment: "amazonFulfillment",
+  shopify_collective: "shopifyCollective",
+  fulfillment_service: "fulfillmentService"
 }
 
 // Left out, Amazon's location still marks FBA mirror stock for sales attribution; other locations are excluded.
@@ -91,56 +93,68 @@ function LocationRow({
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }) {
+  const t = useTranslations("inventory.locations")
   const id = `location-${location.locationId.split("/").at(-1)}`
+  const note = location.kind && notes[location.kind]
   return (
     <Field orientation="horizontal">
       <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} />
       <FieldContent>
         <FieldLabel htmlFor={id}>{location.name}</FieldLabel>
-        {location.kind && notes[location.kind] && <FieldDescription>{notes[location.kind]}</FieldDescription>}
+        {note && <FieldDescription>{t(`notes.${note}`)}</FieldDescription>}
       </FieldContent>
     </Field>
+  )
+}
+
+function productsLink(chunks: React.ReactNode) {
+  return (
+    <Link href="/products" className="underline underline-offset-4 hover:text-foreground">
+      {chunks}
+    </Link>
   )
 }
 
 // The Shopify locations that count as the buyer's stock, with a dialog to choose them. Locations run by apps start
 // unticked, and Amazon's FBA stock comes from Amazon directly.
 export function InventoryLocations() {
+  const t = useTranslations("inventory.locations")
+  const errorMessage = useErrorMessage()
   const { data, isLoading, isError, error } = locationsApi.useInventoryLocationSettingsQuery()
   const snapshotId = data?.snapshotId
   const included = data?.locations.filter((location) => location.classification === "merchant") ?? []
   return (
     <DetailRow
-      title="Inventory locations"
+      title={t("title")}
       action={snapshotId && data && <EditLocations locations={data.locations} snapshotId={snapshotId} />}
     >
       {isLoading && (
         <output className="block">
           <Skeleton className="h-5 w-48" />
-          <span className="sr-only">Loading locations</span>
+          <span className="sr-only">{t("loading")}</span>
         </output>
       )}
       {isError && (
         <p role="alert" className="text-destructive">
-          {errorMessage(error, "Locations couldn't be loaded")}
+          {errorMessage(error, t("loadFailed"))}
         </p>
       )}
       {data && !snapshotId && (
         <p>
-          Sync Shopify on{" "}
-          <Link href="/products" className="underline underline-offset-4 hover:text-foreground">
-            Products
-          </Link>{" "}
-          first
+          {t.rich("syncFirst", {
+            link: productsLink
+          })}
         </p>
       )}
-      {snapshotId && <p>{included.length > 0 ? included.map((location) => location.name).join(", ") : "None"}</p>}
+      {snapshotId && <p>{included.length > 0 ? included.map((location) => location.name).join(", ") : t("none")}</p>}
     </DetailRow>
   )
 }
 
 // Ticks are kept in the dialog until Save, which saves each location whose tick changed.
 function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]; snapshotId: string }) {
+  const t = useTranslations("inventory.locations")
+  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [ticked, setTicked] = useState(new Set<string>())
   const [error, setError] = useState<string>()
@@ -163,7 +177,7 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
       }
       setOpen(false)
     } catch (saveError) {
-      setError(errorMessage(saveError, "Couldn’t save the locations. Try again."))
+      setError(errorMessage(saveError, t("saveFailed")))
     }
   }
   return (
@@ -177,14 +191,14 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
         setOpen(next)
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label="Edit inventory locations" />}>
-        Edit
+      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("editLabel")} />}>
+        {t("edit")}
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Inventory locations</DialogTitle>
-            <DialogDescription>Stock at the ticked locations counts as yours in Restock.</DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             {/* The store's own locations first, then those run by apps. */}
@@ -211,9 +225,9 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
           </div>
           <FormError message={error} />
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
             <Button type="submit" disabled={saving.isLoading || changed.length === 0}>
-              {saving.isLoading ? "Saving…" : "Save"}
+              {saving.isLoading ? t("saving") : t("save")}
             </Button>
           </DialogFooter>
         </form>

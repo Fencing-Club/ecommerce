@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest"
+import CustomerDataRequest from "../src/emails/customer-data-request"
+import Invitation from "../src/emails/invitation"
+import LabelsReady from "../src/emails/labels-ready"
+import PasswordReset from "../src/emails/password-reset"
+import PurchaseOrder from "../src/emails/purchase-order"
 import {
   customerDataRequestEmail,
   invitationEmail,
@@ -9,7 +14,6 @@ import {
 } from "../src/index"
 
 const appUrl = "https://copacker.example"
-const to = "sales@unic.example"
 
 // How the HTML has a piece of copy: with its ampersands and straight apostrophes escaped.
 const escaped = (copy: string) => copy.replaceAll("&", "&amp;").replaceAll("'", "&#x27;")
@@ -24,65 +28,56 @@ function expectInBoth(email: Email, ...copy: string[]) {
 }
 
 describe("invitation", () => {
-  it.each([
-    ["supplier", "Join as their supplier and get their purchase orders there.", "Set up your supplier workspace"],
-    ["team", "Join their workspace.", "Start working in Fencing Club"],
-    [
-      "forwarder",
-      "Join as their freight forwarder and share your warehouse addresses with them.",
-      "Add your warehouse addresses"
-    ]
-  ] as const)("invites a %s, with what comes next and a button to accept", async (kind, joining, step) => {
-    const email = await invitationEmail({ appUrl, kind, from: "Fencing Club", to, token: "token-1" })
-    expect(email.subject).toBe("Fencing Club invited you to Copacker")
-    expectInBoth(
-      email,
-      email.subject,
-      joining,
-      step,
-      "Accept invitation",
-      `${appUrl}/invite?token=token-1&kind=${kind}`,
-      `It’s for ${to} and expires in 7 days.`,
-      `Fencing Club invited ${to} to Copacker.`
-    )
-  })
+  const { copy } = Invitation.PreviewProps
+
+  it.each(["supplier", "team", "forwarder"] as const)(
+    "invites a %s, with what comes next and a button to accept",
+    async (kind) => {
+      const email = await invitationEmail({ ...Invitation.PreviewProps, appUrl, kind, token: "token-1" })
+      expect(email.subject).toBe(copy.subject)
+      expectInBoth(
+        email,
+        copy.eyebrow,
+        copy.heading,
+        copy.lead,
+        ...copy.steps,
+        copy.action,
+        `${appUrl}/invite?token=token-1&kind=${kind}`,
+        copy.note,
+        copy.reason
+      )
+    }
+  )
 
   it("writes the link out under the button, but only once in the plain text", async () => {
-    const email = await invitationEmail({ appUrl, kind: "supplier", from: "Fencing Club", to, token: "token-1" })
+    const email = await invitationEmail({ ...Invitation.PreviewProps, appUrl, token: "token-1" })
     const link = `${appUrl}/invite?token=token-1&kind=supplier`
-    expect(email.html).toContain("Or paste this link into your browser:")
+    expect(email.html).toContain(copy.pasteLink)
     expect(email.text.split(link)).toHaveLength(2)
-    expect(email.text).not.toContain("Or paste this link")
+    expect(email.text).not.toContain(copy.pasteLink)
   })
 })
 
 describe("purchase order", () => {
   const item = (quantity: number, name: string, amount: string) => ({ quantity, name, detail: "#5, UF-9035", amount })
   const order = {
+    ...PurchaseOrder.PreviewProps,
     appUrl,
     orderId: "5b0e8d52-7c0f-4f4e-9d4a-3f1f5f0b8c11",
-    reference: "TEST-UNIC-1",
-    buyer: "Fencing Club",
-    revision: 1,
     items: [item(14, "Unic Epee Arrow Blade", "$1,120.00"), item(10, "Unic Foil Blade", "$785.00")],
-    units: 24,
     total: "$1,905.00",
-    to
+    copy: { ...PurchaseOrder.PreviewProps.copy, more: undefined }
   }
+  const { copy } = order
 
   it("says who sent it, what it's for and that the PDF is attached", async () => {
-    const email = await purchaseOrderEmail({
-      ...order,
-      dueDate: "2026-12-01",
-      shipTo: "Fencing Club warehouse",
-      paymentTerms: "Net 30"
-    })
-    expect(email.subject).toBe("Purchase order TEST-UNIC-1 from Fencing Club")
+    const email = await purchaseOrderEmail(order)
+    expect(email.subject).toBe(copy.subject)
     expectInBoth(
       email,
-      "New purchase order",
-      "TEST-UNIC-1 from Fencing Club",
-      "Fencing Club sent you a purchase order for 24 units of 2 products.",
+      copy.eyebrow,
+      copy.heading,
+      copy.lead,
       "Dec 1, 2026",
       "Fencing Club warehouse",
       "Net 30",
@@ -90,146 +85,123 @@ describe("purchase order", () => {
       "Unic Epee Arrow Blade",
       "#5, UF-9035",
       "$1,120.00",
-      "The purchase order PDF is attached.",
-      "Open purchase order",
-      `${appUrl}/orders/${order.orderId}`
+      copy.note,
+      copy.action,
+      `${appUrl}/orders/${order.orderId}`,
+      copy.reason
     )
     // The plain text lines each label up with its value.
     expect(email.text).toMatch(/Required by +Dec 1, 2026\n/)
     expect(email.text).toMatch(/Total +\$1,905\.00\n/)
-    expect(email.text).not.toContain("pieces")
+    expect(email.text).not.toContain(copy.labels.revision)
   })
 
   it("leaves out what the buyer didn't set", async () => {
-    const email = await purchaseOrderEmail(order)
-    expectInBoth(email, "The purchase order PDF is attached.")
+    const email = await purchaseOrderEmail({ ...order, dueDate: undefined, shipTo: undefined, paymentTerms: undefined })
+    expectInBoth(email, copy.note)
     for (const label of ["Required by", "Ship to", "Payment terms", "Revision"]) {
       expect(email.text).not.toContain(label)
     }
   })
 
-  it("lists the first four lines and counts the rest", async () => {
+  it("lists the first four lines and says how many more there are", async () => {
     const items = Array.from({ length: 6 }, (_, index) => item(1, `Blade ${index + 1}`, "$10.00"))
-    const email = await purchaseOrderEmail({ ...order, items, units: 6, total: "$60.00" })
-    expectInBoth(email, "Blade 4", "And 2 more products in the purchase order")
+    const more = "And 2 more products in the purchase order"
+    const email = await purchaseOrderEmail({ ...order, items, copy: { ...copy, more } })
+    expectInBoth(email, "Blade 4", more)
     expect(email.text).not.toContain("Blade 5")
   })
 
-  it("says a revision replaces the one the supplier had", async () => {
-    const email = await purchaseOrderEmail({ ...order, revision: 2 })
-    expectInBoth(email, "Revised purchase order", "Fencing Club changed this purchase order.")
+  it("numbers a revision, and writes dates in the reader's language", async () => {
+    const email = await purchaseOrderEmail({ ...order, revision: 2, lang: "de" })
     expect(email.text).toMatch(/Revision +2\n/)
+    expect(email.text).toContain("1. Dez. 2026")
   })
 })
 
 describe("labels ready", () => {
-  const shipment = {
-    appUrl,
-    shipmentId: "0c5a9f3e-2b1d-4c8e-a7f6-9d2e4b6c8a10",
-    reference: "TEST-UNIC-1",
-    buyer: "Fencing Club",
-    to
-  }
+  const shipment = { ...LabelsReady.PreviewProps, appUrl, shipmentId: "0c5a9f3e-2b1d-4c8e-a7f6-9d2e4b6c8a10" }
+  const { copy } = shipment
 
-  it("names the shipment by its number, with its cartons and what to do next", async () => {
-    const email = await labelsReadyEmail({
-      ...shipment,
-      shipment: 1,
-      cartons: 6,
-      destination: "Amazon AWD US",
-      readyDate: "2026-11-20",
-      amazonShipments: ["STAR-1", "STAR-2"]
-    })
-    expect(email.subject).toBe("Labels ready for TEST-UNIC-1, shipment 1")
+  it("lists the shipment's cartons and what to do next", async () => {
+    const email = await labelsReadyEmail({ ...shipment, amazonShipments: ["STAR-1", "STAR-2"] })
+    expect(email.subject).toBe(copy.subject)
     expectInBoth(
       email,
-      "Labels are ready for TEST-UNIC-1, shipment 1",
-      "Fencing Club released the shipment, so it’s ready to label and send.",
+      copy.heading,
+      copy.lead,
       "Amazon AWD US",
       "Nov 20, 2026",
       "STAR-1, STAR-2",
-      "Print the labels at actual size (100%)",
-      "Open shipment",
-      `${appUrl}/shipments/${shipment.shipmentId}`
+      ...copy.steps,
+      copy.action,
+      `${appUrl}/shipments/${shipment.shipmentId}`,
+      copy.reason
     )
     expect(email.text).toMatch(/Cartons +6\n/)
   })
 
-  it("names only the purchase order when the shipment's number isn't known", async () => {
-    const email = await labelsReadyEmail(shipment)
-    expect(email.subject).toBe("Labels ready for TEST-UNIC-1")
-    expectInBoth(email, "Labels are ready for TEST-UNIC-1")
-    expect(email.text).not.toContain("Cartons")
+  it("leaves out what isn't known yet", async () => {
+    const email = await labelsReadyEmail({
+      ...shipment,
+      cartons: undefined,
+      destination: undefined,
+      readyDate: undefined,
+      amazonShipments: undefined
+    })
+    for (const label of Object.values(copy.labels)) {
+      expect(email.text).not.toContain(label)
+    }
   })
 })
 
 describe("password reset", () => {
   it("links to the reset page and says when the link expires", async () => {
+    const { copy } = PasswordReset.PreviewProps
     const link = `${appUrl}/reset-password?token=reset%2Ftoken`
-    const email = await passwordResetEmail({ appUrl, link, expiresIn: "15 minutes", to: "ann@example.net" })
-    expect(email.subject).toBe("Reset your Copacker password")
-    expectInBoth(
-      email,
-      "Reset your password",
-      "Choose a new password for ann@example.net.",
-      "Choose a new password",
-      link,
-      "The link expires in 15 minutes."
-    )
+    const email = await passwordResetEmail({ ...PasswordReset.PreviewProps, appUrl, link })
+    expect(email.subject).toBe(copy.subject)
+    expectInBoth(email, copy.heading, copy.lead, copy.action, link, copy.note, copy.reason)
   })
 })
 
 describe("customer data request", () => {
-  const request = { appUrl, shop: "club.myshopify.com", requestId: 42, to: "owner@club.example" }
+  const request = { ...CustomerDataRequest.PreviewProps, appUrl }
+  const { copy } = request
 
   it("lists the requested orders Copacker holds, one a line", async () => {
-    const orders = [
-      "Order #1001, placed 2026-09-01, status Unfulfilled: 2 × CORD-2",
-      "Order #1003, placed 2026-09-04, status Fulfilled: 1 × MASK-1"
-    ]
-    const email = await customerDataRequestEmail({ ...request, orders })
-    expect(email.subject).toBe("Customer data request for club.myshopify.com")
-    expectInBoth(
-      email,
-      email.subject,
-      "Shopify sent Copacker a customer data request.",
-      "Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses.",
-      "Only the order details Copacker uses to plan restocks:",
-      ...orders
-    )
+    const email = await customerDataRequestEmail(request)
+    expect(email.subject).toBe(copy.subject)
+    expectInBoth(email, copy.heading, copy.lead, copy.note, copy.ordersIntro, ...request.orders, copy.reason)
     expect(email.text).toMatch(/Request +42\n/)
-    expect(email.text).toContain(orders.join("\n"))
+    expect(email.text).toContain(request.orders.join("\n"))
   })
 
   it("says when Copacker holds none of the orders", async () => {
     const email = await customerDataRequestEmail({ ...request, orders: [] })
     expect(email.text).toMatch(/Orders Copacker holds +None/)
-    expect(email.text).not.toContain("Only the order details")
+    expect(email.text).not.toContain(copy.ordersIntro)
   })
 })
 
 describe("layout", () => {
+  const email = () => labelsReadyEmail({ ...LabelsReady.PreviewProps, appUrl })
+
   it("shows the mark from the app, and starts the plain text with what kind of email it is and its title", async () => {
-    const email = await labelsReadyEmail({
-      appUrl,
-      shipmentId: "1",
-      reference: "TEST-UNIC-1",
-      buyer: "Fencing Club",
-      to
-    })
-    expect(email.html).toContain(`src="${appUrl}/email/mark.png"`)
-    expect(email.text.startsWith("Ready to ship\n\nLabels are ready for TEST-UNIC-1\n")).toBe(true)
+    const { copy } = LabelsReady.PreviewProps
+    const { html, text } = await email()
+    expect(html).toContain(`src="${appUrl}/email/mark.png"`)
+    expect(text.startsWith(`${copy.eyebrow}\n\n${copy.heading}\n`)).toBe(true)
   })
 
   it("names Copacker in the footer without writing out its address", async () => {
-    const email = await labelsReadyEmail({
-      appUrl,
-      shipmentId: "1",
-      reference: "TEST-UNIC-1",
-      buyer: "Fencing Club",
-      to
-    })
-    expect(email.text).toMatch(/\nCopacker\n\nRestocking, handled\.\n/)
-    expect(email.text).not.toContain(`Copacker ${appUrl}`)
+    const { text } = await email()
+    expect(text).toMatch(/\nCopacker\n\nRestocking, handled\.\n/)
+    expect(text).not.toContain(`Copacker ${appUrl}`)
+  })
+
+  it("names the language", async () => {
+    const { html } = await labelsReadyEmail({ ...LabelsReady.PreviewProps, appUrl, lang: "de" })
+    expect(html).toMatch(/<html[^>]* lang="de"/)
   })
 })

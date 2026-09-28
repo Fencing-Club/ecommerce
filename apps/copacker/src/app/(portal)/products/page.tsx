@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
 import { Plus } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/common"
@@ -13,21 +14,22 @@ import { can } from "@/lib/access"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { productList, withoutPrices } from "@/server/supplier-products"
 
-export const generateMetadata = titleFor("Products", "products")
+export const generateMetadata = titleFor("products.page.title", "products")
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const s = await session()
   requirePage(s, "products")
+  const t = await getTranslations("products.page")
   if (s.org.kind === "supplier") {
     const products = await productList(s.org.id)
     return (
       <>
-        <PageHeader title="Products">
+        <PageHeader title={t("title")}>
           <ProductActions />
           {can(s, "products", "edit") && (
             <Button nativeButton={false} render={<Link href="/products/new" />}>
               <Plus data-icon="inline-start" />
-              Add product
+              {t("addProduct")}
             </Button>
           )}
         </PageHeader>
@@ -47,7 +49,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const search = typeof q === "string" ? q.trim().slice(0, 200) : ""
   return (
     <>
-      <PageHeader title="Products" />
+      <PageHeader title={t("title")} />
       <InventorySync providers={linked.map((row) => row.provider)} search={search} />
     </>
   )

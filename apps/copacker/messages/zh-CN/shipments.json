@@ -1,0 +1,180 @@
+{
+  "list": {
+    "title": "货件",
+    "stats": {
+      "packing": "装箱中",
+      "actionNeeded": "需要处理",
+      "waitingOnBuyer": "等待买家",
+      "readyForPickup": "待提货"
+    },
+    "amazonFailed": {
+      "title": "Amazon 货件未能加载",
+      "description": "刷新页面重试。"
+    },
+    "tabsLabel": "货件状态",
+    "tabs": {
+      "active": "进行中",
+      "received": "已收货",
+      "cancelled": "已取消",
+      "all": "全部"
+    },
+    "empty": {
+      "active": "没有进行中的货件",
+      "received": "没有已收货的货件",
+      "cancelled": "没有已取消的货件",
+      "all": "没有货件"
+    },
+    "columns": {
+      "shipment": "货件",
+      "supplier": "供应商",
+      "customer": "客户",
+      "destination": "目的地",
+      "cartons": "箱数",
+      "readyDate": "就绪日期",
+      "status": "状态"
+    },
+    "shipmentNumber": "货件 {number}",
+    "opensInSellerCentral": "（在 Seller Central 中打开）",
+    "none": {
+      "title": "还没有货件",
+      "buyerDescription": "从已发送的采购订单创建货件",
+      "supplierDescription": "从订单创建货件",
+      "viewPurchaseOrders": "查看采购订单",
+      "viewOrders": "查看订单"
+    }
+  },
+  "detail": {
+    "metaTitle": "货件",
+    "title": "货件 {number}",
+    "cartonCount": "{count, plural, other {# 箱}}",
+    "parents": {
+      "purchaseOrders": "采购订单",
+      "orders": "订单"
+    },
+    "opensInSellerCentral": "（在 Seller Central 中打开）",
+    "actions": {
+      "markShipped": "标记为已发货",
+      "markReceived": "标记为已收货",
+      "retry": "重试货件",
+      "cancelInAmazon": "在 Amazon 中取消"
+    },
+    "needsAttention": "需要处理",
+    "changesWaiting": {
+      "title": "修改待审批",
+      "buyer": "回复采购订单上的修改提议后即可开始装箱。",
+      "supplier": "客户回复订单上的修改提议后即可开始装箱。",
+      "viewPurchaseOrder": "查看采购订单",
+      "viewOrder": "查看订单"
+    },
+    "invoiceChanges": {
+      "title": "发票修改",
+      "pricePerUnit": "单价",
+      "supplierSku": "供应商 SKU",
+      "changedTo": "改为",
+      "waitingForBuyer": "等待买家审批"
+    },
+    "labels": {
+      "title": "运输标签",
+      "waiting": "等待运输标签",
+      "fba": "预订发往 Amazon 的运输，然后上传运输标签",
+      "agl": "在 Amazon 中预订 AGL 运输，然后上传运输标签"
+    },
+    "creating": {
+      "title": "正在创建 Amazon 货件",
+      "description": "通常需要几分钟"
+    },
+    "packet": {
+      "title": "供应商资料包已就绪",
+      "description": "按实际尺寸打印标签",
+      "downloadLabel": "下载供应商资料包",
+      "download": "下载资料包",
+      "incompleteTitle": "供应商资料包不完整",
+      "waitingForLabels": "等待买家的标签"
+    },
+    "cartons": {
+      "title": "箱",
+      "carton": "箱",
+      "product": "产品",
+      "units": "件数",
+      "dimensions": "尺寸（cm）",
+      "weight": "重量（kg）",
+      "amazonLabel": "Amazon 标签"
+    },
+    "pickup": {
+      "title": "提货",
+      "ready": "{date} 就绪"
+    },
+    "documents": {
+      "title": "文件",
+      "empty": "还没有文件"
+    }
+  },
+  "actions": {
+    "approve": {
+      "updateCost": "同时更新 Shopify 单位成本",
+      "updateCostDescription": "Shopify 成本须使用采购订单的币种",
+      "submit": "批准修改"
+    },
+    "release": {
+      "submit": "向供应商发放标签",
+      "bookingReference": "Amazon 运输预订编号"
+    },
+    "correction": {
+      "trigger": "申请更正",
+      "submit": "申请更正",
+      "reason": "需要更改什么？",
+      "reasonDescription": "此货件的文件将失效"
+    },
+    "reconcile": {
+      "submit": "验证并继续",
+      "fbaLabel": "现有 FBA 入库计划 ID",
+      "awdLabel": "现有 Amazon AWD 订单 ID",
+      "awdInvalid": "请输入以 STAR- 开头的 Amazon 订单 ID",
+      "fbaInvalid": "请输入以 wf 开头的入库计划 ID"
+    }
+  },
+  "forward": {
+    "markShipped": "标记为已发货",
+    "title": "标记为已发货",
+    "description": "运费将计入采购订单的到岸成本。",
+    "freightCost": "运费",
+    "carrier": "承运商",
+    "reference": "追踪号或预订号",
+    "cancel": "取消",
+    "enterCarrier": "请输入承运商",
+    "enterReference": "请输入追踪号或预订号",
+    "enterFreightCost": "请输入运费"
+  },
+  "prep": {
+    "polybag": "密封塑料袋（默认）",
+    "noPrep": "无需预处理（例外）",
+    "bubbleWrap": "气泡膜包裹",
+    "taping": "胶带封装"
+  },
+  "amazonAuthorization": {
+    "sellerId": "输入卖家的商户令牌，例如 A2CIYIV0E1FHU3",
+    "refreshToken": "粘贴完整的刷新令牌，以 Atzr| 开头"
+  },
+  "requirements": {
+    "prep": {
+      "polybag": "将每件商品密封在透明塑料袋中。",
+      "noPrep": "无需单件预处理。",
+      "bubbleWrap": "用气泡膜包裹每件商品。",
+      "tape": "用胶带封好每件商品。",
+      "blackShrinkWrap": "用黑色收缩膜包裹每件商品。",
+      "hanger": "将每件服装挂在衣架上。",
+      "label": "为每件商品贴标签。"
+    },
+    "fbaCartons": "FBA 箱：允许混装 SKU；每边不超过 63.5 厘米（25 英寸），重量不超过 22.68 千克（50 磅），单件商品更大时除外。",
+    "awdUsCartons": "AWD US 箱：每箱一个 SKU，最多 150 件，同一 SKU 的每箱装法相同；每边不超过 63.5 厘米（25 英寸），重量不超过 22.68 千克（50 磅）。",
+    "separateCartons": "将 {networks} 的产品分箱包装。",
+    "unitLabels": "为每件商品贴上其 FNSKU 条形码，并覆盖其他条形码。",
+    "suffocationWarnings": "开口为 5 英寸（12.7 厘米）或更宽的塑料袋需要窒息警告。",
+    "multiPacks": "将每个多件装保持在一起，并在包装上只贴一个标签。",
+    "packFor": "按 {network} 要求包装。",
+    "bundle": "{count, plural, other {将 # 件捆绑成一个包装。}}",
+    "fnskuLabel": "贴上 FNSKU {fnsku} 标签。",
+    "suffocationLabel": "在每个塑料袋上贴窒息警告标签。",
+    "amazonDestination": "Amazon {networks}"
+  }
+}

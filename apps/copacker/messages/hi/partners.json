@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "पार्टनर",
+    "tabsLabel": "पार्टनर के प्रकार",
+    "tabs": {
+      "all": "सभी",
+      "supplier": "सप्लायर",
+      "forwarder": "फ़ॉरवर्डर"
+    },
+    "search": "पार्टनर खोजें",
+    "columns": {
+      "name": "नाम",
+      "type": "प्रकार",
+      "status": "स्थिति",
+      "details": "विवरण",
+      "actions": "कार्रवाइयां"
+    },
+    "empty": {
+      "noMatch": "“{query}” से कोई पार्टनर मेल नहीं खाता",
+      "all": "अभी कोई पार्टनर नहीं",
+      "supplier": "अभी कोई सप्लायर नहीं",
+      "forwarder": "अभी कोई फ़ॉरवर्डर नहीं"
+    },
+    "hints": {
+      "forwarder": "खरीद ऑर्डर उसके ज़रिए शिप करने के लिए फ़्रेट फ़ॉरवर्डर जोड़ें।",
+      "supplier": "Shopify के सप्लायर यहां दिखते हैं।",
+      "search": "स्पेलिंग जांचें, या किसी दूसरे टैब में खोजें।"
+    }
+  },
+  "add": {
+    "button": "पार्टनर जोड़ें",
+    "supplier": "सप्लायर",
+    "forwarder": "फ़्रेट फ़ॉरवर्डर"
+  },
+  "row": {
+    "types": {
+      "supplier": "सप्लायर",
+      "forwarder": "फ़्रेट फ़ॉरवर्डर"
+    },
+    "addresses": "{count, plural, one {# पता} other {# पते}}",
+    "noAddresses": "अभी कोई पता नहीं",
+    "leadTime": "लीड टाइम {days, plural, one {# दिन} other {# दिन}}",
+    "leadTimeAndAddresses": "लीड टाइम {days, plural, one {# दिन} other {# दिन}}, {count, plural, one {# पता} other {# पते}}",
+    "sending": "भेजा जा रहा है…",
+    "invitationSentTo": "{email} को आमंत्रण भेजा गया",
+    "invitationSent": "आमंत्रण भेजा गया",
+    "moreActions": "{name} के लिए और कार्रवाइयां",
+    "menu": {
+      "edit": "एडिट करें",
+      "addresses": "पते",
+      "invite": "आमंत्रित करें",
+      "resend": "आमंत्रण फिर से भेजें"
+    },
+    "standing": {
+      "joined": "Copacker पर है",
+      "invited": "आमंत्रित",
+      "expired": "आमंत्रण की अवधि खत्म",
+      "notInvited": "आमंत्रित नहीं"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "फ़ॉरवर्डर जोड़ें",
+      "title": "फ़ॉरवर्डर जोड़ें",
+      "description": "आपके सप्लायर से पिकअप करके Amazon या आपके वेयरहाउस तक शिप करता है।",
+      "submit": "फ़ॉरवर्डर जोड़ें",
+      "company": "कंपनी",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "ईमेल",
+      "emailDescription": "उन्हें अभी आमंत्रित करने के लिए ईमेल जोड़ें।"
+    },
+    "invite": {
+      "title": "{name} को आमंत्रित करें",
+      "description": "वे आपके खरीद ऑर्डर के लिए अपने वेयरहाउस के पते खुद रखेंगे।",
+      "submit": "आमंत्रण भेजें",
+      "email": "ईमेल"
+    },
+    "rename": {
+      "trigger": "एडिट करें",
+      "triggerLabel": "{name} एडिट करें",
+      "title": "फ़ॉरवर्डर एडिट करें",
+      "submit": "सेव करें",
+      "company": "कंपनी"
+    },
+    "remove": {
+      "trigger": "हटाएं",
+      "title": "{name} को हटाएं?",
+      "description": "नए खरीद ऑर्डर उन्हें शिप नहीं हो सकेंगे। पहले से भेजे गए खरीद ऑर्डर का पता वही रहेगा।",
+      "cancel": "रद्द करें",
+      "confirm": "हटाएं",
+      "failed": "{name} को हटाया नहीं जा सका"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "सप्लायर जोड़ें",
+      "title": "सप्लायर जोड़ें",
+      "description": "उस सप्लायर के लिए जो अभी Shopify में नहीं है।"
+    },
+    "edit": {
+      "title": "{name} एडिट करें",
+      "name": "नाम",
+      "companyName": "कंपनी का नाम",
+      "companyNameDescription": "जैसा Shopify के Supplier फ़ील्ड में है।",
+      "companyNamePlaceholder": "Shopify में नहीं",
+      "contactName": "संपर्क व्यक्ति का नाम",
+      "contactEmail": "संपर्क ईमेल",
+      "phone": "फ़ोन",
+      "website": "वेबसाइट",
+      "websiteJoined": "{name} अपने संपर्क विवरण अपने वर्कस्पेस में रखते हैं।",
+      "leadTime": "लीड टाइम (दिन)",
+      "leadTimeDescription": "खरीद ऑर्डर से बिकने लायक स्टॉक तक। खाली छोड़ने पर {days}।",
+      "cancel": "रद्द करें",
+      "save": "सेव करें",
+      "saving": "सेव हो रहा है…",
+      "failed": "सप्लायर सेव नहीं हो सका। फिर से कोशिश करें।"
+    },
+    "invite": {
+      "title": "{name} को आमंत्रित करें",
+      "description": "वे आपके शेयर किए गए खरीद ऑर्डर देखेंगे और जब किसी के लिए दस्तावेज़ चाहिए होंगे तो उन्हें ईमेल मिलेगा।",
+      "email": "सप्लायर का ईमेल",
+      "cancel": "रद्द करें",
+      "submit": "आमंत्रण भेजें",
+      "sending": "भेजा जा रहा है…",
+      "failed": "{name} को आमंत्रित नहीं किया जा सका। फिर से कोशिश करें।"
+    }
+  },
+  "address": {
+    "editPickup": "पिकअप पता एडिट करें",
+    "edit": "पता एडिट करें",
+    "addPickup": "{name} के लिए पिकअप पता जोड़ें",
+    "add": "{name} के लिए पता जोड़ें",
+    "saveChanges": "बदलाव सेव करें",
+    "save": "पता सेव करें",
+    "name": "पते का नाम",
+    "pickupPlaceholder": "फ़ैक्टरी",
+    "placeholder": "Yiwu वेयरहाउस",
+    "sheet": {
+      "supplier": "पिकअप पते",
+      "forwarder": "Amazon या आपके वेयरहाउस तक के रास्ते के पड़ाव",
+      "joinedSupplier": "Copacker पर अपने पिकअप पते खुद रखता है",
+      "joinedForwarder": "Copacker पर अपने पते खुद रखता है"
+    },
+    "empty": "अभी कोई पता नहीं",
+    "addButton": "पता जोड़ें",
+    "removing": "{name} हटाया जा रहा है",
+    "moreActions": "{name} के लिए और कार्रवाइयां",
+    "menuEdit": "एडिट करें",
+    "menuRemove": "हटाएं",
+    "removeFailed": "{name} को हटाया नहीं जा सका"
+  },
+  "contactKinds": {
+    "delivery": "डिलीवरी पता",
+    "forwarder": "फ़्रेट फ़ॉरवर्डर",
+    "pickup": "पिकअप पता"
+  },
+  "contactDetails": {
+    "enterEmail": "ईमेल पता डालें"
+  },
+  "phone": {
+    "invalid": "फ़ोन नंबर डालें"
+  }
+}

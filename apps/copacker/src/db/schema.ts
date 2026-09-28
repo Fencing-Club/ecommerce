@@ -10,6 +10,7 @@ import type { Amazon } from "@repo/aisle/amazon"
 import type { CartonLabel } from "@repo/aisle/labels"
 import type { AmazonSale, ShopifySale } from "@repo/aisle/sales"
 import type { Shopify } from "@repo/aisle/shopify"
+import { sql } from "drizzle-orm"
 import {
   pgTable,
   uuid,
@@ -22,13 +23,15 @@ import {
   primaryKey,
   date,
   numeric,
-  boolean
+  boolean,
+  check
 } from "drizzle-orm/pg-core"
 import type { Access } from "../lib/access"
 import type { CasePack } from "../lib/case-packs"
 import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../lib/catalog-pricing"
 import { contactKinds } from "../lib/contacts"
 import type { ProductImage } from "../lib/supplier-product"
+import { revisionReasons, type TimelineEvent, type TimelineEventKey } from "../lib/timeline-events"
 import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
@@ -342,7 +345,7 @@ export const orderRevisions = pgTable(
     revision: integer().notNull(),
     data: jsonb().$type<OrderInput>().notNull(),
     actor: text().notNull(),
-    reason: text().notNull(),
+    reason: text({ enum: revisionReasons }).notNull(),
     createdAt: createdAt()
   },
   (t) => [uniqueIndex("order_revision").on(t.orderId, t.revision)]
@@ -473,24 +476,34 @@ export const profiles = pgTable("profiles", {
   lastName: text().notNull(),
   position: text().notNull().default(""),
   company: text().notNull().default(""),
+  // The language chosen in Settings, such as "de"; null follows the computer's language.
+  locale: text(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
-export const events = pgTable("events", {
-  id: uuid().defaultRandom().primaryKey(),
-  orderId: uuid()
-    .notNull()
-    .references(() => orders.id),
-  actor: text().notNull(),
-  message: text().notNull(),
-  // What the PO did, or a comment someone left on its timeline.
-  kind: text({ enum: ["event", "comment"] })
-    .notNull()
-    .default("event"),
-  // Who left a comment and their workspace, as named when they wrote it.
-  author: text(),
-  authorOrg: text(),
-  createdAt: createdAt()
-})
+export const events = pgTable(
+  "events",
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    orderId: uuid()
+      .notNull()
+      .references(() => orders.id),
+    actor: text().notNull(),
+    // What happened, as a key in orders.timeline.events and its values, read in each reader's language.
+    messageKey: text().$type<TimelineEventKey>(),
+    messageValues: jsonb().$type<TimelineEvent["values"]>(),
+    // A comment as its author wrote it, or an event recorded as English text before events had keys.
+    message: text(),
+    // What the PO did, or a comment someone left on its timeline.
+    kind: text({ enum: ["event", "comment"] })
+      .notNull()
+      .default("event"),
+    // Who left a comment and their workspace, as named when they wrote it.
+    author: text(),
+    authorOrg: text(),
+    createdAt: createdAt()
+  },
+  (t) => [check("events_message", sql`${t.messageKey} IS NOT NULL OR ${t.message} IS NOT NULL`)]
+)
 export const jobs = pgTable(
   "jobs",
   {

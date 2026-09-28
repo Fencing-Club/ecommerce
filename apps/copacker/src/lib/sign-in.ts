@@ -2,7 +2,8 @@ import { z } from "zod"
 
 // What the sign-in pages ask for, checked the same way in the browser and on the server.
 
-// WorkOS's own minimum; it also turns down common and breached passwords.
+// WorkOS's own minimum; it also turns down common and breached passwords. The auth.validation.passwordTooShort
+// message states it.
 export const passwordMinimum = 10
 
 export const oauthProviders = {
@@ -15,18 +16,18 @@ export function isOAuthProvider(value: string): value is OAuthProvider {
   return Object.hasOwn(oauthProviders, value)
 }
 
-const email = z.email("Enter an email address").max(254)
+const email = z.email("auth.validation.enterEmail").max(254)
 
 export const newPasswordSchema = z
   .string()
-  .min(passwordMinimum, `Use at least ${passwordMinimum} characters`)
-  .max(256, "Use 256 characters or fewer")
+  .min(passwordMinimum, "auth.validation.passwordTooShort")
+  .max(256, "auth.validation.passwordTooLong")
 
-export const signInSchema = z.object({ email, password: z.string().min(1, "Enter your password").max(256) })
+export const signInSchema = z.object({ email, password: z.string().min(1, "auth.validation.enterPassword").max(256) })
 
 export const signUpSchema = z.object({ email, password: newPasswordSchema })
 
-export const codeSchema = z.object({ code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code") })
+export const codeSchema = z.object({ code: z.string().regex(/^\d{6}$/, "auth.validation.enterCode") })
 
 export const forgotPasswordSchema = z.object({ email })
 

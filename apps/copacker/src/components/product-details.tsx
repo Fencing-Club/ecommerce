@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { amazonNetworkNames, amazonNetworks, type PrepCategory, prepCategories } from "@repo/aisle"
 import { ImageOff, Plus, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Image from "next/image"
 import { useId, useState } from "react"
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form"
@@ -20,11 +21,11 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet"
-import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { api, useSuppliersQuery } from "@/lib/api"
 import { casePackSchema } from "@/lib/case-packs"
-import { formErrorMap } from "@/lib/form-errors"
 import { prepOptions } from "@/lib/prep"
-import { type ProductLabel, productLabels } from "@/lib/product-label"
+import { productLabels } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { ProductDefaults } from "@/server/product-defaults"
 import { FormError, SubmitButton } from "./actions"
@@ -55,20 +56,8 @@ const detailsApi = api.injectEndpoints({
 
 // New PO lines get a sealed polybag when the product has no preparation of its own, so that's what an unset one shows.
 const defaultPrep: PrepCategory = "POLYBAGGING"
-// An empty supplier leaves restock to find one: from Shopify, the last PO, or a supplier catalog.
-const automaticSupplier = { value: "", label: "Automatic" }
 const networkOptions = amazonNetworks.map((network) => ({ value: network, label: amazonNetworkNames[network] }))
-const labelOptions = [
-  { value: "standard", label: "Standard label" },
-  { value: "uploaded", label: "Uploaded label" },
-  { value: "none", label: "No label" }
-]
-const labelHints: Record<ProductLabel, string> = {
-  standard: "FNSKU barcode, or the SKU without Amazon",
-  uploaded: "A one-page PDF for each variation",
-  none: "Purchase orders to Amazon still get the FNSKU label"
-}
-const wholeNumber = "Enter a whole number"
+const wholeNumber = "products.details.enterWholeNumber"
 
 const schema = z.object({
   supplierId: z.string(),
@@ -181,12 +170,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function CasePacks() {
+  const t = useTranslations("products.details")
   const packs = useFieldArray<Values, "casePacks">({ name: "casePacks" })
   const caseQuantity = useWatch<Values, "caseQuantity">({ name: "caseQuantity" })
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-medium">Case packs</h4>
+        <h4 className="text-sm font-medium">{t("casePacks")}</h4>
         <Button
           type="button"
           variant="outline"
@@ -194,7 +184,7 @@ function CasePacks() {
           disabled={packs.fields.length >= 10}
           onClick={() =>
             packs.append({
-              name: packs.fields.length ? `Case ${packs.fields.length + 1}` : "Standard case",
+              name: packs.fields.length ? t("caseName", { number: packs.fields.length + 1 }) : t("standardCase"),
               units: caseQuantity ?? 1,
               lengthCm: 0,
               widthCm: 0,
@@ -203,32 +193,32 @@ function CasePacks() {
           }
         >
           <Plus data-icon="inline-start" />
-          Add case pack
+          {t("addCasePack")}
         </Button>
       </div>
       {packs.fields.map((field, index) => (
         <fieldset key={field.id} className="grid grid-cols-2 gap-3 rounded-lg border p-3 sm:grid-cols-4">
-          <legend className="sr-only">Case pack {index + 1}</legend>
-          <FormInput name={`casePacks.${index}.name`} required label="Name" className="col-span-2" />
-          <FormNumber name={`casePacks.${index}.units`} required label="Units per case" min={1} step={1} />
+          <legend className="sr-only">{t("casePack", { number: index + 1 })}</legend>
+          <FormInput name={`casePacks.${index}.name`} required label={t("name")} className="col-span-2" />
+          <FormNumber name={`casePacks.${index}.units`} required label={t("unitsPerCase")} min={1} step={1} />
           <div className="flex items-center justify-end gap-2 self-start">
             {/* Restock rounds orders up to the first case pack. */}
-            {index === 0 && packs.fields.length > 1 && <Badge variant="secondary">Default</Badge>}
+            {index === 0 && packs.fields.length > 1 && <Badge variant="secondary">{t("defaultCasePack")}</Badge>}
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
-              aria-label={`Remove case pack ${index + 1}`}
+              aria-label={t("removeCasePack", { number: index + 1 })}
               onClick={() => packs.remove(index)}
             >
               <Trash2 />
             </Button>
           </div>
-          <FormNumber name={`casePacks.${index}.lengthCm`} required label="Length (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.widthCm`} required label="Width (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.heightCm`} required label="Height (cm)" min={0} step={0.1} />
-          <FormNumber name={`casePacks.${index}.weightKg`} label="Weight (kg)" min={0} step={0.01} />
+          <FormNumber name={`casePacks.${index}.lengthCm`} required label={t("lengthCm")} min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.widthCm`} required label={t("widthCm")} min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.heightCm`} required label={t("heightCm")} min={0} step={0.1} />
+          <FormNumber name={`casePacks.${index}.weightKg`} label={t("weightKg")} min={0} step={0.01} />
         </fieldset>
       ))}
     </div>
@@ -244,6 +234,8 @@ function DetailsForm({
   onSaved: () => void
   onDone: () => void
 }) {
+  const t = useTranslations("products")
+  const shipments = useTranslations("shipments")
   const { productId, title, defaults, variants } = product
   const [saveProduct] = detailsApi.useSaveProductDefaultsMutation()
   const [saveVariation] = useSaveVariationDetailsMutation()
@@ -251,11 +243,14 @@ function DetailsForm({
   // Someone who can only view products sees the details with their fields turned off; labels still preview and
   // download.
   const editable = useCan("products", "edit")
+  const errorMap = useFormErrorMap()
+  const errorMessage = useErrorMessage()
   const form = useForm<Values, unknown, Output>({
-    resolver: zodResolver(schema, { error: formErrorMap }),
+    resolver: zodResolver(schema, { error: errorMap }),
     defaultValues: formValues(product)
   })
   const productLabel = useWatch({ control: form.control, name: "productLabel" })
+  const labelOptions = productLabels.map((value) => ({ value, label: t(`labelTypes.${value}`) }))
   // What the server holds, so saving again after a failure sends only what didn't save.
   const [saved, setSaved] = useState(() => ({
     revision: defaults.revision,
@@ -299,7 +294,7 @@ function DetailsForm({
         changed = true
       } catch (error) {
         const name = variants.find((variant) => variant.variantId === variation.variantId)?.title
-        fail(name ? `${name}: ${errorMessage(error)}` : errorMessage(error))
+        fail(name ? t("details.variationError", { name, message: errorMessage(error) }) : errorMessage(error))
         return
       }
     }
@@ -312,45 +307,58 @@ function DetailsForm({
   return (
     <FormProvider {...form}>
       <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
-        <SheetHeader className="flex-row items-center gap-3 border-b pr-12">
+        <SheetHeader className="flex-row items-center gap-3 border-b pe-12">
           <ProductImage url={product.imageUrl} />
           <div className="flex min-w-0 flex-col gap-0.5">
             <SheetTitle className="line-clamp-2">{title}</SheetTitle>
             <SheetDescription className="text-xs">
-              {only ? (only.sku ?? "No SKU") : `${variants.length} variations`}
+              {only ? (only.sku ?? t("details.noSku")) : t("details.variationCount", { count: variants.length })}
             </SheetDescription>
           </div>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
           <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-6">
-            <Section title="Purchasing">
+            <Section title={t("details.purchasing")}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormSelect
                   name="supplierId"
-                  label="Supplier"
+                  label={t("details.supplier")}
                   options={[
-                    automaticSupplier,
+                    // An empty supplier leaves restock to find one: from Shopify, the last PO, or a supplier catalog.
+                    { value: "", label: t("details.automaticSupplier") },
                     ...suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
                   ]}
-                  placeholder={loadingSuppliers ? "Loading…" : "—"}
+                  placeholder={loadingSuppliers ? t("details.loading") : "—"}
                 />
                 {only && (
                   <FormInput
                     name="variations.0.supplierSku"
-                    label="Supplier SKU"
+                    label={t("details.supplierSku")}
                     maxLength={255}
                     autoComplete="off"
                     spellCheck={false}
                   />
                 )}
-                <FormNumber name="minimumOrder" label="Minimum order quantity" min={1} step={1} />
-                {only && <FormNumber name="variations.0.storeStockTarget" label="Warehouse minimum" min={0} step={1} />}
+                <FormNumber name="minimumOrder" label={t("details.minimumOrder")} min={1} step={1} />
+                {only && (
+                  <FormNumber
+                    name="variations.0.storeStockTarget"
+                    label={t("details.warehouseMinimum")}
+                    min={0}
+                    step={1}
+                  />
+                )}
               </div>
             </Section>
             <Separator />
             <Section title="Amazon">
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormSelect name="amazonNetwork" required label="Amazon warehouse" options={networkOptions} />
+                <FormSelect
+                  name="amazonNetwork"
+                  required
+                  label={t("details.amazonWarehouse")}
+                  options={networkOptions}
+                />
                 {only && (
                   <FormInput
                     name="variations.0.asin"
@@ -363,8 +371,8 @@ function DetailsForm({
                 {only && (
                   <FormNumber
                     name="variations.0.amazonStockTarget"
-                    label="Amazon minimum"
-                    description="0 keeps it off Amazon"
+                    label={t("details.amazonMinimum")}
+                    description={t("details.amazonMinimumHint")}
                     min={0}
                     step={1}
                   />
@@ -372,30 +380,39 @@ function DetailsForm({
               </div>
             </Section>
             <Separator />
-            <Section title="Packing">
+            <Section title={t("details.packing")}>
               <div className="grid gap-4 sm:grid-cols-2">
-                <FormSelect name="prepCategory" required label="Preparation" options={prepOptions} />
+                <FormSelect
+                  name="prepCategory"
+                  required
+                  label={t("details.preparation")}
+                  options={prepOptions(shipments)}
+                />
                 <FormNumber
                   name="caseQuantity"
-                  label="Case quantity"
-                  description="Used without a case pack"
+                  label={t("details.caseQuantity")}
+                  description={t("details.caseQuantityHint")}
                   min={1}
                   step={1}
                 />
               </div>
-              <FormCheckbox name="suffocationWarning" label="Suffocation warning label" />
-              <FormTextarea name="description" label="Instructions" placeholder="Handling or labeling exceptions" />
+              <FormCheckbox name="suffocationWarning" label={t("details.suffocationWarning")} />
+              <FormTextarea
+                name="description"
+                label={t("details.instructions")}
+                placeholder={t("details.instructionsPlaceholder")}
+              />
               <CasePacks />
             </Section>
             <Separator />
           </fieldset>
-          <Section title="Labels">
+          <Section title={t("details.labels")}>
             <fieldset disabled={!editable} className="grid min-w-0 gap-4 sm:grid-cols-2">
               <FormSelect
                 name="productLabel"
                 required
-                label="Product label"
-                description={labelHints[productLabel]}
+                label={t("details.productLabel")}
+                description={t(`details.labelHints.${productLabel}`)}
                 options={labelOptions}
               />
             </fieldset>
@@ -409,7 +426,7 @@ function DetailsForm({
           {!only && (
             <>
               <Separator />
-              <Section title="Variations">
+              <Section title={t("details.variations")}>
                 <fieldset disabled={!editable} className="min-w-0">
                   <VariationDetails productTitle={title} variations={variants} />
                 </fieldset>
@@ -420,10 +437,12 @@ function DetailsForm({
         <SheetFooter className="border-t">
           <FormError message={form.formState.errors.root?.server?.message} />
           <div className="flex justify-end gap-2">
-            <SheetClose render={<Button type="button" variant="outline" />}>{editable ? "Cancel" : "Close"}</SheetClose>
+            <SheetClose render={<Button type="button" variant="outline" />}>
+              {editable ? t("details.cancel") : t("details.close")}
+            </SheetClose>
             {editable && (
               <SubmitButton type="submit" pending={form.formState.isSubmitting} disabled={!form.formState.isDirty}>
-                Save
+                {t("details.save")}
               </SubmitButton>
             )}
           </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useClipboard, useInViewport, useReducedMotion } from "@mantine/hooks"
+import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
@@ -61,6 +62,7 @@ function useTyping(start: boolean) {
 }
 
 function Terminal() {
+  const t = useTranslations("marketing.connect")
   const { ref, inViewport } = useInViewport()
   const [started, setStarted] = useState(false)
   useEffect(() => {
@@ -80,10 +82,11 @@ function Terminal() {
         {[0, 1, 2].map((dot) => (
           <span key={dot} className="size-2.5 rounded-full bg-white/15" />
         ))}
-        <span className="ml-2 text-xs text-white/40">copacker</span>
+        <span className="ms-2 text-xs text-white/40">copacker</span>
       </div>
       <pre
-        aria-label="A terminal session with the copacker CLI"
+        dir="ltr"
+        aria-label={t("session")}
         className="min-h-[21.5rem] overflow-x-auto p-5 font-mono text-[0.8125rem] leading-6 text-white/85 [scrollbar-width:none]"
       >
         {session.map((line, i) => {
@@ -119,6 +122,7 @@ function Terminal() {
 
 // Any MCP client can connect. Picking an agent shows exactly how to add Copacker to it.
 function Agents() {
+  const t = useTranslations("marketing.connect")
   const [chosen, setChosen] = useState(setups[0]?.name ?? "")
   const clipboard = useClipboard({ timeout: 1800 })
   const setup = setups.find((entry) => entry.name === chosen) ?? setups[0]
@@ -128,13 +132,11 @@ function Agents() {
   return (
     <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
       <div className="flex flex-col gap-3">
-        <h3 className="text-2xl font-semibold tracking-tight">Works with any agent.</h3>
-        <p className="text-pretty text-white/60">
-          Add Copacker’s MCP server to your agent, and it works with your restock, orders and shipments like you do.
-        </p>
+        <h3 className="text-2xl font-semibold tracking-tight">{t("title")}</h3>
+        <p className="text-pretty text-white/60">{t("text")}</p>
       </div>
       <fieldset className="flex flex-wrap gap-2">
-        <legend className="sr-only">Your agent</legend>
+        <legend className="sr-only">{t("yourAgent")}</legend>
         {setups.map((entry) => (
           <label
             key={entry.name}
@@ -159,23 +161,30 @@ function Agents() {
               }}
               className="sr-only"
             />
-            {entry.name}
+            {entry.any ? t("anyClient") : entry.name}
           </label>
         ))}
       </fieldset>
       <div className="flex flex-col gap-3">
-        <p className="min-h-10 text-sm text-pretty text-white/55">{setup.how}</p>
+        <p className="min-h-10 text-sm text-pretty text-white/55">
+          {t(`setups.${setup.key}`, { command: setup.command ?? "" })}
+        </p>
         <div
           className={cn(
             "overflow-hidden rounded-xl bg-black/30 ring-1 transition-[box-shadow] duration-500",
             clipboard.copied ? "shadow-[0_0_0_4px_rgb(52_211_153/0.15)] ring-emerald-400/50" : "ring-white/10"
           )}
         >
-          <div className="flex items-center gap-3 border-b border-white/[0.06] py-2 pr-2 pl-4">
-            <span className="min-w-0 flex-1 truncate font-mono text-xs text-white/45">{setup.where}</span>
+          <div className="flex items-center gap-3 border-b border-white/[0.06] py-2 pe-2 ps-4">
+            <span className="min-w-0 flex-1 truncate font-mono text-xs text-white/45">
+              {typeof setup.where === "string" ? setup.where : t(setup.where.place)}
+            </span>
             <CopyButton copied={clipboard.copied} onCopy={() => clipboard.copy(setup.code)} />
           </div>
-          <pre className="min-h-52 p-4 font-mono text-[0.8125rem] leading-6 whitespace-pre-wrap text-white/85 [overflow-wrap:anywhere]">
+          <pre
+            dir="ltr"
+            className="min-h-52 p-4 font-mono text-[0.8125rem] leading-6 whitespace-pre-wrap text-white/85 [overflow-wrap:anywhere]"
+          >
             {setup.code}
           </pre>
         </div>
@@ -185,16 +194,14 @@ function Agents() {
 }
 
 export function Connect() {
+  const t = useTranslations("marketing.connect")
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Agents />
       <div className="flex flex-col gap-6 rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 sm:p-8">
         <div className="flex flex-col gap-3">
-          <h3 className="text-2xl font-semibold tracking-tight">The same data, in your terminal.</h3>
-          <p className="text-pretty text-white/60">
-            The copacker CLI reaches the same endpoints as the app, so your scripts and coding agents can read and act
-            on everything you can.
-          </p>
+          <h3 className="text-2xl font-semibold tracking-tight">{t("cli.title")}</h3>
+          <p className="text-pretty text-white/60">{t("cli.text")}</p>
         </div>
         <div className={cn("mt-auto")}>
           <Terminal />

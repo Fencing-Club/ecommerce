@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { errorResponse } from "@/server/errors"
 import { joinMailingList } from "@/server/mailing-list"
 import { clientAddress, rateLimit } from "@/server/rate-limit"
 
@@ -19,15 +20,15 @@ export async function POST(request: Request) {
   }
   const parsed = signup.safeParse(body)
   if (!parsed.success) {
-    return Response.json({ error: "Enter a valid email address." }, { status: 400 })
+    return errorResponse("enterValidEmail", 400)
   }
   if (limited(clientAddress(request))) {
-    return Response.json({ error: "Too many signups. Try again in a few minutes." }, { status: 429 })
+    return errorResponse("tooManySignups", 429)
   }
   try {
     await joinMailingList(parsed.data.email)
   } catch {
-    return Response.json({ error: "Couldn’t sign you up. Try again in a moment." }, { status: 502 })
+    return errorResponse("signupFailed", 502)
   }
   return Response.json({ ok: true })
 }

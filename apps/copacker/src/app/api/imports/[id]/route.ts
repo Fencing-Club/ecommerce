@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { jobs, poImports } from "@/db/schema"
 import { session, requireBuyer, requirePage } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
+import { errorResponse } from "@/server/errors"
 import { importProposalSchema } from "@/server/import-proposal"
 import { isAppOrigin } from "@/server/security"
 
@@ -13,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
-    return Response.json({ error: "Import not found" }, { status: 404 })
+    return errorResponse("importNotFound", 404)
   }
   const [row] = await db()
     .select({
@@ -29,18 +30,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     })
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
-  return row ? Response.json(row) : Response.json({ error: "Import not found" }, { status: 404 })
+  return row ? Response.json(row) : errorResponse("importNotFound", 404)
 }
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
-    return Response.json({ error: "Import not found" }, { status: 404 })
+    return errorResponse("importNotFound", 404)
   }
   const result = await db().transaction(async (tx) => {
     const [row] = await tx
@@ -57,38 +58,36 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       .where(eq(poImports.id, id))
     return true
   })
-  return Response.json(result ? { status: "cancelled" } : { error: "Import cannot be cancelled" }, {
-    status: result ? 200 : 409
-  })
+  return result ? Response.json({ status: "cancelled" }) : errorResponse("importCannotBeCancelled", 409)
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
-    return Response.json({ error: "Import not found" }, { status: 404 })
+    return errorResponse("importNotFound", 404)
   }
   const input = z
     .object({ revision: z.number().int().positive(), proposal: importProposalSchema })
     .strict()
     .safeParse(await request.json().catch(() => null))
   if (!input.success) {
-    return Response.json({ error: "Review fields are invalid" }, { status: 400 })
+    return errorResponse("reviewFieldsInvalid", 400)
   }
   const [record] = await db()
     .select()
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   if (!record || record.status !== "review") {
-    return Response.json({ error: "Import is not ready for review" }, { status: 409 })
+    return errorResponse("importNotReady", 409)
   }
   if (record.revision !== input.data.revision) {
-    return Response.json({ error: "Import changed. Refresh before saving corrections" }, { status: 409 })
+    return errorResponse("importChangedCorrections", 409)
   }
   const ids = [
     ...new Set(
@@ -111,13 +110,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
     }
   } catch {
-    return Response.json(
-      { error: "Catalog verification is unavailable. Your corrections have not been saved. Try again." },
-      { status: 503 }
-    )
+    return errorResponse("catalogVerificationUnavailable", 503)
   }
   if (ids.some((id) => !verified.has(id))) {
-    return Response.json({ error: "Choose products from the connected Shopify store" }, { status: 400 })
+    return errorResponse("chooseConnectedStoreProducts", 400)
   }
   const updated = await db()
     .update(poImports)
@@ -131,21 +127,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       )
     )
     .returning({ revision: poImports.revision })
-  return updated[0]
-    ? Response.json(updated[0])
-    : Response.json({ error: "Import changed. Refresh before saving corrections" }, { status: 409 })
+  return updated[0] ? Response.json(updated[0]) : errorResponse("importChangedCorrections", 409)
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
-    return Response.json({ error: "Import not found" }, { status: 404 })
+    return errorResponse("importNotFound", 404)
   }
   const retried = await db().transaction(async (tx) => {
     const [row] = await tx
@@ -164,7 +158,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await tx.insert(jobs).values({ key: `import:${id}:${revision}`, kind: "import", payload: { id, revision } })
     return { id, revision, status: "queued" }
   })
-  return retried
-    ? Response.json(retried, { status: 202 })
-    : Response.json({ error: "Only failed imports can be retried" }, { status: 409 })
+  return retried ? Response.json(retried, { status: 202 }) : errorResponse("onlyFailedImportsRetry", 409)
 }

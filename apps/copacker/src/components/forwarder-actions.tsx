@@ -1,6 +1,7 @@
 "use client"
 
 import { Pencil, Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { z } from "zod"
@@ -24,8 +25,9 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useActionMutation } from "@/lib/api"
 import { ActionForm, FormError } from "./actions"
 import { FormInput } from "./form-controls"
 
@@ -42,6 +44,7 @@ export function AddForwarder({
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
+  const t = useTranslations("partners.forwarder.add")
   const [own, setOwn] = useState(false)
   const open = shown ?? own
   const setOpen = onOpenChange ?? setOwn
@@ -56,23 +59,29 @@ export function AddForwarder({
       {shown === undefined && (
         <DialogTrigger render={<Button />}>
           <Plus data-icon="inline-start" />
-          Add forwarder
+          {t("trigger")}
         </DialogTrigger>
       )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a forwarder</DialogTitle>
-          <DialogDescription>Picks up from your supplier and ships on to Amazon or your warehouse.</DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label="Add forwarder" dialog>
-          <FormInput name="name" required label="Company" placeholder="Shenzhen Logistics" autoComplete="off" />
+        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
+          <FormInput
+            name="name"
+            required
+            label={t("company")}
+            placeholder={t("companyPlaceholder")}
+            autoComplete="off"
+          />
           <FormInput
             name="email"
-            label="Email"
+            label={t("email")}
             type="email"
             placeholder="ops@forwarder.example"
             autoComplete="off"
-            description="Add one to invite them now."
+            description={t("emailDescription")}
           />
         </ActionForm>
       </DialogContent>
@@ -96,6 +105,7 @@ export function InviteForwarder({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useTranslations("partners.forwarder.invite")
   const { form, submit } = useActionForm({
     schema: inviteSchema,
     action: "forwarder.invite",
@@ -115,11 +125,11 @@ export function InviteForwarder({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite {name}</DialogTitle>
-          <DialogDescription>They’ll keep their own warehouse addresses for your purchase orders.</DialogDescription>
+          <DialogTitle>{t("title", { name })}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label="Send invitation" dialog>
-          <FormInput name="email" required label="Email" type="email" autoComplete="off" />
+        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
+          <FormInput name="email" required label={t("email")} type="email" autoComplete="off" />
         </ActionForm>
       </DialogContent>
     </Dialog>
@@ -129,6 +139,7 @@ export function InviteForwarder({
 const renameSchema = z.object({ name: z.string().trim().min(2).max(120) })
 
 export function RenameForwarder({ id, name }: { id: string; name: string }) {
+  const t = useTranslations("partners.forwarder.rename")
   const [open, setOpen] = useState(false)
   const { form, submit } = useActionForm({
     schema: renameSchema,
@@ -140,16 +151,16 @@ export function RenameForwarder({ id, name }: { id: string; name: string }) {
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={`Edit ${name}`} />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("triggerLabel", { name })} />}>
         <Pencil data-icon="inline-start" />
-        Edit
+        {t("trigger")}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit forwarder</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label="Save" dialog>
-          <FormInput name="name" required label="Company" autoComplete="off" />
+        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
+          <FormInput name="name" required label={t("company")} autoComplete="off" />
         </ActionForm>
       </DialogContent>
     </Dialog>
@@ -157,6 +168,8 @@ export function RenameForwarder({ id, name }: { id: string; name: string }) {
 }
 
 export function RemoveForwarder({ id, name }: { id: string; name: string }) {
+  const t = useTranslations("partners.forwarder.remove")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [open, setOpen] = useState(false)
@@ -171,7 +184,7 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
       setOpen(false)
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, `Couldn’t remove ${name}`))
+      setError(errorMessage(e, t("failed", { name })))
     } finally {
       setPending(false)
     }
@@ -179,19 +192,17 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" size="sm" />}>Remove</AlertDialogTrigger>
+      <AlertDialogTrigger render={<Button variant="ghost" size="sm" />}>{t("trigger")}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove {name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            New purchase orders can’t ship to them. Purchase orders already sent keep their address.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("title", { name })}</AlertDialogTitle>
+          <AlertDialogDescription>{t("description")}</AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-            Remove
+            {t("confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

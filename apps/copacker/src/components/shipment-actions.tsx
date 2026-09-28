@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronDown } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { FormProvider } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import * as styles from "./shipment-actions.css"
 const approveSchema = z.object({ updateCost: z.boolean() })
 
 export function ApproveInvoice({ id, revision }: { id: string; revision: number }) {
+  const t = useTranslations("shipments.actions.approve")
   const { form, submit } = useActionForm({
     schema: approveSchema,
     action: "shipment.approve",
@@ -26,15 +28,11 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
     <FormProvider {...form}>
       <form onSubmit={submit} noValidate>
         <FieldGroup>
-          <FormCheckbox
-            name="updateCost"
-            label="Also update Shopify unit costs"
-            description="Shopify costs must be in the purchase order’s currency"
-          />
+          <FormCheckbox name="updateCost" label={t("updateCost")} description={t("updateCostDescription")} />
           <FormError message={form.formState.errors.root?.server?.message} />
           <div>
             <SubmitButton type="submit" pending={form.formState.isSubmitting}>
-              Approve changes
+              {t("submit")}
             </SubmitButton>
           </div>
         </FieldGroup>
@@ -46,6 +44,7 @@ export function ApproveInvoice({ id, revision }: { id: string; revision: number 
 const releaseSchema = z.object({ bookingReference: z.string().trim().min(1).max(100) })
 
 export function ReleaseLabels({ id, revision }: { id: string; revision: number }) {
+  const t = useTranslations("shipments.actions.release")
   const { form, submit } = useActionForm({
     schema: releaseSchema,
     action: "shipment.release",
@@ -53,8 +52,8 @@ export function ReleaseLabels({ id, revision }: { id: string; revision: number }
     toPayload: (values) => ({ id, revision, ...values })
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Release labels to supplier">
-      <FormInput name="bookingReference" required label="Amazon transport booking reference" />
+    <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+      <FormInput name="bookingReference" required label={t("bookingReference")} />
     </ActionForm>
   )
 }
@@ -62,6 +61,7 @@ export function ReleaseLabels({ id, revision }: { id: string; revision: number }
 const correctionSchema = z.object({ reason: z.string().trim().min(3).max(2000) })
 
 export function CorrectionForm({ id }: { id: string }) {
+  const t = useTranslations("shipments.actions.correction")
   const { form, submit } = useActionForm({
     schema: correctionSchema,
     action: "shipment.correct",
@@ -72,19 +72,14 @@ export function CorrectionForm({ id }: { id: string }) {
     <Collapsible render={<Card />}>
       <CardHeader>
         <CollapsibleTrigger render={<Button variant="ghost" className={styles.trigger} />}>
-          Request a correction
+          {t("trigger")}
           <ChevronDown data-icon="inline-end" className={styles.chevron} />
         </CollapsibleTrigger>
       </CardHeader>
       <CollapsibleContent>
         <CardContent>
-          <ActionForm form={form} onSubmit={submit} label="Request correction">
-            <FormTextarea
-              name="reason"
-              required
-              label="What needs to change?"
-              description="This shipment’s documents become outdated"
-            />
+          <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+            <FormTextarea name="reason" required label={t("reason")} description={t("reasonDescription")} />
           </ActionForm>
         </CardContent>
       </CollapsibleContent>
@@ -97,18 +92,19 @@ const awdReconcileSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^STAR-[A-Z0-9]+$/, "Enter the Amazon order ID, which starts with STAR-")
+    .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.reconcile.awdInvalid")
 })
 const fbaReconcileSchema = z.object({
   amazonOrderId: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^wf[0-9a-f-]{36}$/, "Enter the inbound plan ID, which starts with wf")
+    .regex(/^wf[0-9a-f-]{36}$/, "shipments.actions.reconcile.fbaInvalid")
 })
 
 // Links a shipment to the AWD order or FBA inbound plan Amazon made when Copacker lost its reply.
 export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {
+  const t = useTranslations("shipments.actions.reconcile")
   const { form, submit } = useActionForm({
     schema: fba ? fbaReconcileSchema : awdReconcileSchema,
     action: "shipment.reconcile",
@@ -116,11 +112,11 @@ export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {
     toPayload: (values) => ({ id, ...values })
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Verify and resume">
+    <ActionForm form={form} onSubmit={submit} label={t("submit")}>
       <FormInput
         name="amazonOrderId"
         required
-        label={fba ? "Existing FBA inbound plan ID" : "Existing Amazon AWD order ID"}
+        label={fba ? t("fbaLabel") : t("awdLabel")}
         placeholder={fba ? "wf" : "STAR-"}
       />
     </ActionForm>

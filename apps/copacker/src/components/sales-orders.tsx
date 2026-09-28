@@ -1,8 +1,8 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { money } from "@repo/aisle"
 import { ChevronLeft, ChevronRight, ExternalLink, Repeat, Search } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { useCan, useIsAdmin } from "@/components/access"
@@ -13,8 +13,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api, errorMessage } from "@/lib/api"
-import { formatNumber } from "@/lib/format"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
 import { DetailRow } from "./inventory-locations"
@@ -59,36 +59,43 @@ const isSource = (value: unknown): value is SalesSource => value === "shopify" |
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
 
+const settingsLink = (chunks: React.ReactNode) => (
+  <Link href="/settings#integrations" className="underline underline-offset-2">
+    {chunks}
+  </Link>
+)
+// A count in the summary strip, stronger than the word after it.
+const figure = (chunks: React.ReactNode) => <span className="font-medium text-foreground">{chunks}</span>
+
 // Why a source's last sync failed, and what to do about it: the owner and admins reconnect in Settings.
-function failure(errorCode: string | null, title: string, admin: boolean) {
+function Failure({ errorCode, title, admin }: { errorCode: string | null; title: string; admin: boolean }) {
+  const t = useTranslations("sales.sync")
   if ((errorCode === "reconnect" || errorCode === "shopify_permissions") && !admin) {
-    return `Ask an admin to reconnect ${title}`
+    return t("askAdminToReconnect", { source: title })
   }
   if (errorCode === "reconnect" || errorCode === "shopify_permissions") {
-    return (
-      <>
-        Reconnect {title} in{" "}
-        <Link href="/settings#integrations" className="underline underline-offset-2">
-          Settings
-        </Link>
-      </>
-    )
+    return t.rich("reconnect", { source: title, settings: settingsLink })
   }
-  return errorCode === "provider_unavailable" ? `Couldn’t reach ${title}` : "Sync failed"
+  return errorCode === "provider_unavailable" ? t("unreachable", { source: title }) : t("failed")
 }
 
 // One source in the summary strip: its sync state and the last 30 days' orders and units. Syncs run on their own; Sync
 // now is in the store's Settings.
 function SourceSummary({ state }: { state: SyncState }) {
+  const t = useTranslations("sales.sync")
   const title = titles[state.source]
   const admin = useIsAdmin()
   const active = state.status === "queued" || state.status === "running"
   const syncedAt = state.finishedAt ?? state.coveredTo
-  let detail: React.ReactNode = "Not synced"
+  let detail: React.ReactNode = t("notSynced")
   if (active) {
-    detail = "Syncing…"
+    detail = t("syncing")
   } else if (state.status === "failed") {
-    detail = <span className="text-destructive">{failure(state.errorCode, title, admin)}</span>
+    detail = (
+      <span className="text-destructive">
+        <Failure errorCode={state.errorCode} title={title} admin={admin} />
+      </span>
+    )
   } else if (syncedAt) {
     detail = <SyncedAt at={syncedAt} />
   }
@@ -102,15 +109,13 @@ function SourceSummary({ state }: { state: SyncState }) {
           </span>
         </div>
         <dl className="flex flex-col">
-          <dt className="text-xs text-muted-foreground">Last 30 days</dt>
+          <dt className="text-xs text-muted-foreground">{t("last30")}</dt>
           <dd className="flex gap-4 whitespace-nowrap tabular-nums">
-            <span>
-              <span className="font-medium">{formatNumber(state.recent.orders)}</span>{" "}
-              <span className="text-muted-foreground">{state.recent.orders === 1 ? "order" : "orders"}</span>
+            <span className="text-muted-foreground">
+              {t.rich("recentOrders", { count: state.recent.orders, figure })}
             </span>
-            <span>
-              <span className="font-medium">{formatNumber(state.recent.units)}</span>{" "}
-              <span className="text-muted-foreground">{state.recent.units === 1 ? "unit" : "units"}</span>
+            <span className="text-muted-foreground">
+              {t.rich("recentUnits", { count: state.recent.units, figure })}
             </span>
           </dd>
         </dl>
@@ -121,6 +126,8 @@ function SourceSummary({ state }: { state: SyncState }) {
 
 // A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
 export function OrdersSyncRow({ source }: { source: SalesSource }) {
+  const t = useTranslations("sales.sync")
+  const errorMessage = useErrorMessage()
   const { currentData, isLoading, refetch } = salesApi.useSalesStatusQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
@@ -138,17 +145,17 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
     }
   }
   const syncedAt = state ? (state.finishedAt ?? state.coveredTo) : null
-  let text: React.ReactNode = "Not synced yet"
+  let text: React.ReactNode = t("notSyncedYet")
   if (isLoading) {
-    text = "Loading…"
+    text = t("loading")
   } else if (syncing) {
-    text = "Syncing…"
+    text = t("syncing")
   } else if (mutation.isError) {
-    text = <span className="text-destructive">{errorMessage(mutation.error, "Couldn’t start the sync")}</span>
+    text = <span className="text-destructive">{errorMessage(mutation.error, t("couldNotStart"))}</span>
   } else if (state?.status === "failed") {
     text = (
       <span className="text-destructive">
-        {state.errorCode === "provider_unavailable" ? `Couldn’t reach ${title}` : "Last sync failed"}
+        {state.errorCode === "provider_unavailable" ? t("unreachable", { source: title }) : t("lastFailed")}
       </span>
     )
   } else if (syncedAt) {
@@ -163,10 +170,10 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
   }
   return (
     <DetailRow
-      title="Orders"
+      title={t("orders")}
       action={
         <SyncMenu
-          label={`${title} orders`}
+          label={t("sourceOrders", { source: title })}
           syncing={syncing || isLoading}
           onSync={() => void startSync()}
           reconnect={reconnect}
@@ -197,16 +204,19 @@ function Amount({
   value: SalesOrderSummary["sales"]
   pending: string
 }) {
+  const t = useTranslations("sales.list")
+  const format = useFormatter()
   if (value) {
-    return money(value.minor, value.currency)
+    return format.number(value.minor / 100, { style: "currency", currency: value.currency })
   }
   if (order.source === "amazon" && !closedStatuses.has(order.status)) {
-    return <Placeholder title={pending}>Pending</Placeholder>
+    return <Placeholder title={pending}>{t("pending")}</Placeholder>
   }
   return <Placeholder />
 }
 
 function Items({ items }: { items: SalesOrderSummary["items"] }) {
+  const t = useTranslations("sales.list")
   if (items.length === 0) {
     return <Placeholder />
   }
@@ -216,14 +226,16 @@ function Items({ items }: { items: SalesOrderSummary["items"] }) {
       {shown.map((item, index) => (
         <li key={`${item.sku}:${index}`} className="flex flex-col">
           <span>
-            {item.name ?? item.sku ?? "Bundle"}{" "}
-            <span className="whitespace-nowrap text-muted-foreground">× {item.quantity}</span>
+            {item.name ?? item.sku ?? t("bundle")}{" "}
+            <span className="whitespace-nowrap text-muted-foreground">
+              {t("quantity", { quantity: item.quantity })}
+            </span>
           </span>
           {item.name && item.sku && <span className="text-xs break-all text-muted-foreground">{item.sku}</span>}
         </li>
       ))}
       {items.length > shown.length && (
-        <li className="text-xs text-muted-foreground">{items.length - shown.length} more</li>
+        <li className="text-xs text-muted-foreground">{t("more", { count: items.length - shown.length })}</li>
       )}
     </ul>
   )
@@ -233,9 +245,11 @@ function Items({ items }: { items: SalesOrderSummary["items"] }) {
 // fees show only to someone who sees prices; without them, the last column shown keeps the table's right inset.
 function OrderRow({ order }: { order: SalesOrderSummary }) {
   const prices = useCan("prices")
+  const t = useTranslations("sales.list")
+  const format = useFormatter()
   return (
     <TableRow className="group/row @max-md:flex @max-md:flex-col @max-md:gap-2 @max-md:px-4 @max-md:py-3">
-      <TableCell className="pl-4 align-top @max-md:p-0">
+      <TableCell className="ps-4 align-top @max-md:p-0">
         <div className="flex flex-col gap-0.5">
           <a
             href={order.url}
@@ -248,15 +262,15 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
               aria-hidden="true"
               className="size-3 text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 pointer-coarse:opacity-100"
             />
-            <span className="sr-only"> (opens in {titles[order.source]})</span>
+            <span className="sr-only"> {t("opensIn", { source: titles[order.source] })}</span>
           </a>
           <time dateTime={order.orderedAt} className="text-xs text-muted-foreground">
-            {new Date(order.orderedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+            {format.dateTime(new Date(order.orderedAt), { dateStyle: "medium", timeStyle: "short" })}
           </time>
           {order.replacementOf && (
             <span className="flex items-center gap-1 text-xs whitespace-normal text-muted-foreground">
               <Repeat aria-hidden="true" className="size-3 shrink-0" />
-              Replacement for {order.replacementOf}
+              {t("replacementFor", { order: order.replacementOf })}
             </span>
           )}
           <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground @2xl:hidden">
@@ -266,7 +280,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
         </div>
       </TableCell>
       <TableCell
-        className={cn("min-w-40 align-top whitespace-normal @max-md:min-w-0 @max-md:p-0", !prices && "pr-4 @2xl:pr-2")}
+        className={cn("min-w-40 align-top whitespace-normal @max-md:min-w-0 @max-md:p-0", !prices && "pe-4 @2xl:pe-2")}
       >
         <Items items={order.items} />
       </TableCell>
@@ -274,20 +288,20 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
       <TableCell className="hidden align-top @2xl:table-cell">
         <SalesStatus status={order.status} />
       </TableCell>
-      <TableCell className={cn("hidden text-right align-top tabular-nums @2xl:table-cell", !prices && "pr-4")}>
-        {formatNumber(order.units)}
+      <TableCell className={cn("hidden text-end align-top tabular-nums @2xl:table-cell", !prices && "pe-4")}>
+        {format.number(order.units)}
       </TableCell>
       {prices && (
         <>
-          <TableCell className="pr-4 text-right align-top tabular-nums @2xl:pr-2 @max-md:p-0 @max-md:text-left">
+          <TableCell className="pe-4 text-end align-top tabular-nums @2xl:pe-2 @max-md:p-0 @max-md:text-start">
             {closedStatuses.has(order.status) ? (
               <Placeholder />
             ) : (
-              <Amount order={order} value={order.sales} pending="Amazon hasn’t priced this order yet" />
+              <Amount order={order} value={order.sales} pending={t("salesPending")} />
             )}
           </TableCell>
-          <TableCell className="hidden pr-4 text-right align-top tabular-nums @2xl:table-cell">
-            <Amount order={order} value={order.fees} pending="Amazon hasn’t posted its fees yet" />
+          <TableCell className="hidden pe-4 text-end align-top tabular-nums @2xl:table-cell">
+            <Amount order={order} value={order.fees} pending={t("feesPending")} />
           </TableCell>
         </>
       )}
@@ -304,6 +318,9 @@ function OrderList({
   syncKey: string
   initialSearch: string
 }) {
+  const t = useTranslations("sales.list")
+  const format = useFormatter()
+  const errorMessage = useErrorMessage()
   const [source, setSource] = useState<SalesSource | null>(null)
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState(initialSearch)
@@ -319,20 +336,20 @@ function OrderList({
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const sourceItems = [
-    { value: "all", label: "All sources" },
+    { value: "all", label: t("allSources") },
     ...sources.map((state) => ({ value: state.source, label: titles[state.source] }))
   ]
   let body: React.ReactNode
   if (isError) {
     body = (
       <p role="alert" className="p-4 text-destructive">
-        {errorMessage(error, "Couldn’t load orders")}
+        {errorMessage(error, t("loadFailed"))}
       </p>
     )
   } else if (!data) {
     body = (
       <div className="flex flex-col gap-3 p-4">
-        <span className="sr-only">Loading orders…</span>
+        <span className="sr-only">{t("loading")}</span>
         {Array.from({ length: 6 }, (_, index) => (
           <Skeleton key={index} className="h-9 w-full" />
         ))}
@@ -342,7 +359,7 @@ function OrderList({
     body = (
       <Empty className="py-12">
         <EmptyHeader>
-          <EmptyTitle>{q ? "No matching orders" : "No orders yet"}</EmptyTitle>
+          <EmptyTitle>{q ? t("noMatches") : t("empty")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -352,20 +369,20 @@ function OrderList({
         aria-busy={isFetching}
         className={cn("@container transition-opacity", isFetching ? "opacity-60 delay-300" : "delay-0")}
       >
-        <Table framed={false} aria-label="Orders" className="@max-md:block">
+        <Table framed={false} aria-label={t("label")} className="@max-md:block">
           <TableHeader className="@max-md:hidden">
             <TableRow>
-              <TableHead className="pl-4">Order</TableHead>
-              <TableHead className={cn("w-full", !prices && "pr-4 @2xl:pr-2")}>Items</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Channel</TableHead>
-              <TableHead className="hidden @2xl:table-cell">Status</TableHead>
-              <TableHead className={cn("hidden text-right @2xl:table-cell", !prices && "pr-4")}>Units</TableHead>
+              <TableHead className="ps-4">{t("order")}</TableHead>
+              <TableHead className={cn("w-full", !prices && "pe-4 @2xl:pe-2")}>{t("items")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("channel")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("status")}</TableHead>
+              <TableHead className={cn("hidden text-end @2xl:table-cell", !prices && "pe-4")}>{t("units")}</TableHead>
               {prices && (
                 <>
-                  <TableHead className="pr-4 text-right @2xl:pr-2" title="After discounts, before tax and shipping">
-                    Sales
+                  <TableHead className="pe-4 text-end @2xl:pe-2" title={t("salesHint")}>
+                    {t("sales")}
                   </TableHead>
-                  <TableHead className="hidden pr-4 text-right @2xl:table-cell">Fees</TableHead>
+                  <TableHead className="hidden pe-4 text-end @2xl:table-cell">{t("fees")}</TableHead>
                 </>
               )}
             </TableRow>
@@ -388,8 +405,8 @@ function OrderList({
           </InputGroupAddon>
           <InputGroupInput
             type="search"
-            aria-label="Search orders"
-            placeholder="Search orders, products, or SKUs"
+            aria-label={t("searchLabel")}
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
@@ -406,7 +423,7 @@ function OrderList({
               setPage(0)
             }}
           >
-            <SelectTrigger aria-label="Source" className="w-32">
+            <SelectTrigger aria-label={t("source")} className="w-32">
               <SelectValue>
                 {(value: string | null) => sourceItems.find((item) => item.value === value)?.label}
               </SelectValue>
@@ -425,18 +442,21 @@ function OrderList({
       {data && !isError && total > 0 && (
         <CardFooter className="flex-wrap justify-between gap-3 py-3">
           <p className="text-muted-foreground tabular-nums">
-            {formatNumber(page * pageSize + 1)}–{formatNumber(Math.min((page + 1) * pageSize, total))} of{" "}
-            {formatNumber(total)}
+            {t("range", {
+              from: format.number(page * pageSize + 1),
+              to: format.number(Math.min((page + 1) * pageSize, total)),
+              total: format.number(total)
+            })}
           </p>
           {totalPages > 1 && (
-            <nav aria-label="Order pages" className="flex items-center gap-2">
+            <nav aria-label={t("pages")} className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                <ChevronLeft data-icon="inline-start" />
-                Previous
+                <ChevronLeft data-icon="inline-start" className="rtl:rotate-180" />
+                {t("previous")}
               </Button>
               <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>
-                Next
-                <ChevronRight data-icon="inline-end" />
+                {t("next")}
+                <ChevronRight data-icon="inline-end" className="rtl:rotate-180" />
               </Button>
             </nav>
           )}
@@ -449,6 +469,8 @@ function OrderList({
 // Copies each source's orders into Copacker and lists them, so restock reads stored orders instead of waiting on
 // Shopify and Amazon. `initialSearch` starts the list filtered, such as from the header search.
 export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) {
+  const t = useTranslations("sales.list")
+  const errorMessage = useErrorMessage()
   const { currentData, isLoading, error } = salesApi.useSalesStatusQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
@@ -458,7 +480,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4">
-        <span className="sr-only">Loading orders…</span>
+        <span className="sr-only">{t("loading")}</span>
         <Skeleton className="h-16 rounded-xl" />
         <Skeleton className="h-96 rounded-xl" />
       </div>
@@ -468,7 +490,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
   if (!currentData) {
     return (
       <p role="alert" className="text-sm text-destructive">
-        {errorMessage(error, "Couldn’t load orders")}
+        {errorMessage(error, t("loadFailed"))}
       </p>
     )
   }
@@ -477,13 +499,13 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
       <Card>
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>{admin ? "Connect Shopify or Amazon" : "No store connected"}</EmptyTitle>
-            {!admin && <EmptyDescription>Ask an admin to connect one</EmptyDescription>}
+            <EmptyTitle>{admin ? t("connect") : t("noStore")}</EmptyTitle>
+            {!admin && <EmptyDescription>{t("askAdminToConnect")}</EmptyDescription>}
           </EmptyHeader>
           {admin && (
             <EmptyContent>
               <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-                Go to settings
+                {t("goToSettings")}
               </Button>
             </EmptyContent>
           )}
@@ -497,7 +519,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
     <div className="flex flex-col gap-4">
       <Card className="@container/sources gap-0 py-0">
         <ul
-          aria-label="Sources"
+          aria-label={t("sources")}
           className="grid divide-y @3xl/sources:auto-cols-fr @3xl/sources:grid-flow-col @3xl/sources:divide-x @3xl/sources:divide-y-0"
         >
           {currentData.sources.map((state) => (

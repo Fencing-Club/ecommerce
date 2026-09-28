@@ -64,13 +64,20 @@ export const {
   useUploadDocumentMutation
 } = api
 
-export function errorMessage(error: unknown, fallback = "Something went wrong. Try again.") {
+// What went wrong with a request, to show the person: the server's message, or `fallback` when there isn't one. The
+// English defaults are for code without a translator; client components use useErrorMessage() from
+// "@/hooks/use-error-text", which passes both in the person's language.
+export function errorMessage(
+  error: unknown,
+  fallback = "Something went wrong. Try again.",
+  offline = "Couldn't reach Copacker. Check your connection and try again."
+) {
   if (typeof error === "object" && error !== null) {
     if ("data" in error && typeof error.data === "object" && error.data !== null && "error" in error.data) {
       return String(error.data.error)
     }
     if ("status" in error && error.status === "FETCH_ERROR") {
-      return "Couldn't reach Copacker. Check your connection and try again."
+      return offline
     }
     if (error instanceof Error) {
       return error.message

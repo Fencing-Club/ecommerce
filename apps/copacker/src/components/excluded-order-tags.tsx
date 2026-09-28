@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +17,8 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
@@ -32,15 +34,16 @@ export function ExcludedOrderTags({
   // Some orders were copied before tags were read; the next Shopify sync reads them.
   copying: boolean
 }) {
+  const t = useTranslations("settings.excludedTags")
   return (
     <DetailRow
       title={
         <>
-          Excluded order tags
+          {t("title")}
           {copying && (
-            <output title="Syncing tags from Shopify" className="inline-flex">
+            <output title={t("syncing")} className="inline-flex">
               <Spinner className="size-3.5 text-muted-foreground" />
-              <span className="sr-only">Syncing tags from Shopify</span>
+              <span className="sr-only">{t("syncing")}</span>
             </output>
           )}
         </>
@@ -56,13 +59,15 @@ export function ExcludedOrderTags({
           ))}
         </ul>
       ) : (
-        <p>None</p>
+        <p>{t("none")}</p>
       )}
     </DetailRow>
   )
 }
 
 function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[] }) {
+  const t = useTranslations("settings.excludedTags")
+  const errorMessage = useErrorMessage()
   const id = useId()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -78,7 +83,7 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
       setOpen(false)
       router.refresh()
     } catch (saveError) {
-      setError(errorMessage(saveError, "Couldn’t save the tags. Try again."))
+      setError(errorMessage(saveError, t("saveFailed")))
     }
   }
   return (
@@ -92,33 +97,33 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
         setOpen(next)
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label="Edit excluded order tags" />}>
-        Edit
+      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("editLabel")} />}>
+        {t("edit")}
       </DialogTrigger>
       {/* Typing goes straight into the tags, not to the first chip's remove button. */}
       <DialogContent initialFocus={input}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Excluded order tags</DialogTitle>
-            <DialogDescription>Shopify orders with these tags aren’t counted.</DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
           <Field>
-            <FieldLabel htmlFor={id}>Tags</FieldLabel>
+            <FieldLabel htmlFor={id}>{t("tags")}</FieldLabel>
             <TagPicker
               id={id}
               value={value}
               onChange={setValue}
               suggestions={suggestions}
-              placeholder="Add a tag"
+              placeholder={t("addTag")}
               inputRef={input}
             />
-            <FieldDescription>Use * as a wildcard, like amazon*</FieldDescription>
+            <FieldDescription>{t("wildcard")}</FieldDescription>
           </Field>
           <FormError message={error} />
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>{t("cancel")}</DialogClose>
             <Button type="submit" disabled={saving.isLoading}>
-              {saving.isLoading ? "Saving…" : "Save"}
+              {saving.isLoading ? t("saving") : t("save")}
             </Button>
           </DialogFooter>
         </form>

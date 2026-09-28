@@ -1,12 +1,14 @@
 "use client"
 
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
 import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { api, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import type { ProductLabel } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget, ProductBarcode } from "@/server/product-barcodes"
@@ -35,35 +37,37 @@ export type BarcodeVariation = {
 }
 
 // The variation's label as a PDF: its uploaded barcode, or else the standard FNSKU sheet. It's fetched first so a label
-// that can't be made, such as one whose FNSKU Amazon doesn't list, explains why in the row.
-async function fetchLabel(variantId: string) {
+// that can't be made, such as one whose FNSKU Amazon doesn't list, explains why in the row. `fallback` is the failure
+// and file name to show when the server gives neither.
+async function fetchLabel(variantId: string, fallback: { error: string; name: string }) {
   const response = await fetch(`/api/inventory/barcodes?${new URLSearchParams({ variantId })}`)
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => null)
     throw new Error(
       typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
         ? body.error
-        : "The label couldn't be loaded. Try again."
+        : fallback.error
     )
   }
   const disposition = response.headers.get("content-disposition") ?? ""
-  const name = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1] ?? "Label.pdf")
+  const name = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(disposition)?.[1] ?? fallback.name)
   return { blob: await response.blob(), name }
 }
 
 // What a PO line for this variation gets as its product label. Without an FNSKU, the standard label shows the SKU.
 function LabelSource({ variation, productLabel }: { variation: BarcodeVariation; productLabel: ProductLabel }) {
+  const t = useTranslations("products.barcodes")
   if (variation.barcode) {
-    return <>Uploaded, {variation.barcode.name}</>
+    return <>{t("uploadedSource", { name: variation.barcode.name })}</>
   }
   if (productLabel === "uploaded") {
-    return <WarningNote>Label missing</WarningNote>
+    return <WarningNote>{t("labelMissing")}</WarningNote>
   }
-  const fnsku = variation.fnsku ? `FNSKU ${variation.fnsku}` : null
+  const { fnsku } = variation
   if (productLabel === "none") {
-    return <>{fnsku ? `Amazon only, ${fnsku}` : "Amazon only"}</>
+    return <>{fnsku ? t("amazonOnlyFnsku", { fnsku }) : t("amazonOnly")}</>
   }
-  return <>{`Standard, ${fnsku ?? "SKU barcode"}`}</>
+  return <>{fnsku ? t("standardFnsku", { fnsku }) : t("standardSku")}</>
 }
 
 // A small ghost icon button with its name in a tooltip.
@@ -119,6 +123,8 @@ function BarcodeRow({
   productLabel: ProductLabel
   onChanged: () => void
 }) {
+  const t = useTranslations("products.barcodes")
+  const errorMessage = useErrorMessage()
   const input = useRef<HTMLInputElement>(null)
   const [upload, { isLoading: uploading }] = barcodesApi.useUploadBarcodeMutation()
   const [remove, { isLoading: removing }] = barcodesApi.useRemoveBarcodeMutation()
@@ -129,7 +135,7 @@ function BarcodeRow({
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState<"preview" | "download" | null>(null)
   const { barcode } = variation
-  const verb = barcode ? "Replace" : "Upload"
+  const fallback = { error: t("loadFailed"), name: t("fileName") }
   // There's a label to show when one was uploaded, or the standard label applies. Its FNSKU is looked up if needed.
   const viewable = barcode !== null || productLabel !== "uploaded"
 
@@ -148,10 +154,10 @@ function BarcodeRow({
     setError("")
     setLoading("preview")
     try {
-      const { blob } = await fetchLabel(variation.variantId)
+      const { blob } = await fetchLabel(variation.variantId, fallback)
       setPreview(URL.createObjectURL(blob))
     } catch (e) {
-      setError(errorMessage(e, "The label couldn't be loaded. Try again."))
+      setError(errorMessage(e, t("loadFailed")))
     } finally {
       setLoading(null)
     }
@@ -161,7 +167,7 @@ function BarcodeRow({
     setError("")
     setLoading("download")
     try {
-      const { blob, name } = await fetchLabel(variation.variantId)
+      const { blob, name } = await fetchLabel(variation.variantId, fallback)
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
@@ -169,7 +175,7 @@ function BarcodeRow({
       link.click()
       URL.revokeObjectURL(url)
     } catch (e) {
-      setError(errorMessage(e, "The label couldn't be downloaded. Try again."))
+      setError(errorMessage(e, t("downloadFailed")))
     } finally {
       setLoading(null)
     }
@@ -185,7 +191,7 @@ function BarcodeRow({
       closePreview()
       onChanged()
     } catch (e) {
-      setError(errorMessage(e, "The barcode couldn't be uploaded. Try again."))
+      setError(errorMessage(e, t("uploadFailed")))
     }
   }
 
@@ -196,12 +202,12 @@ function BarcodeRow({
       closePreview()
       onChanged()
     } catch (e) {
-      setError(errorMessage(e, "The barcode couldn't be removed. Try again."))
+      setError(errorMessage(e, t("removeFailed")))
     }
   }
 
   return (
-    <li className="flex flex-col gap-2 py-2 pr-2 pl-3">
+    <li className="flex flex-col gap-2 py-2 pe-2 ps-3">
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {variation.title && <span className="text-sm font-medium [overflow-wrap:anywhere]">{variation.title}</span>}
@@ -216,7 +222,7 @@ function BarcodeRow({
           type="file"
           accept="application/pdf"
           hidden
-          aria-label={`Label PDF for ${label}`}
+          aria-label={t("fileInput", { label })}
           onChange={(event) => {
             const file = event.target.files?.[0]
             event.target.value = ""
@@ -228,8 +234,8 @@ function BarcodeRow({
         <div className="flex shrink-0 items-center">
           {viewable && (
             <IconAction
-              tip={preview ? "Hide preview" : "Preview"}
-              label={`${preview ? "Hide" : "Preview"} label for ${label}`}
+              tip={preview ? t("hidePreview") : t("preview")}
+              label={preview ? t("hideLabelFor", { label }) : t("previewLabelFor", { label })}
               busy={loading === "preview"}
               expanded={preview !== null}
               disabled={loading !== null}
@@ -240,8 +246,8 @@ function BarcodeRow({
           )}
           {viewable && (
             <IconAction
-              tip="Download"
-              label={`Download label for ${label}`}
+              tip={t("download")}
+              label={t("downloadLabelFor", { label })}
               busy={loading === "download"}
               disabled={loading !== null}
               onClick={() => void download()}
@@ -251,8 +257,8 @@ function BarcodeRow({
           )}
           {editable && (
             <IconAction
-              tip={verb}
-              label={`${verb} label for ${label}`}
+              tip={barcode ? t("replace") : t("upload")}
+              label={barcode ? t("replaceLabelFor", { label }) : t("uploadLabelFor", { label })}
               busy={uploading}
               disabled={uploading || removing}
               onClick={() => input.current?.click()}
@@ -262,8 +268,8 @@ function BarcodeRow({
           )}
           {editable && barcode && (
             <IconAction
-              tip="Remove"
-              label={`Remove uploaded label for ${label}`}
+              tip={t("remove")}
+              label={t("removeLabelFor", { label })}
               busy={removing}
               disabled={uploading || removing}
               onClick={() => void clear()}
@@ -276,7 +282,7 @@ function BarcodeRow({
       {preview && (
         <iframe
           src={`${preview}#toolbar=0&view=FitH`}
-          title={`Label for ${label}`}
+          title={t("labelFor", { label })}
           className="h-72 w-full rounded-md border bg-muted"
         />
       )}
@@ -301,8 +307,9 @@ export function ProductBarcodes({
   variations: BarcodeVariation[]
   onChanged: () => void
 }) {
+  const t = useTranslations("products.barcodes")
   return (
-    <ul aria-label="Labels" className="divide-y rounded-lg border">
+    <ul aria-label={t("list")} className="divide-y rounded-lg border">
       {variations.map((variation) => (
         <BarcodeRow
           key={variation.variantId}

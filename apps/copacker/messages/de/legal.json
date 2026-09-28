@@ -1,0 +1,18 @@
+{
+  "contents": "Inhalt",
+  "updated": "Zuletzt aktualisiert am <time>{date}</time>",
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "metadata": {
+      "title": "Datenschutzerklärung | Copacker",
+      "description": "Welche Daten Copacker erhebt, wie sie verwendet und weitergegeben werden und welche Wahlmöglichkeiten Sie haben, auch für Daten von Amazon und den anderen Shops, die Sie verbinden."
+    }
+  },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "metadata": {
+      "title": "Nutzungsbedingungen | Copacker",
+      "description": "Die Bedingungen für die Nutzung von Copacker: Konten und Workspaces, Ihre Pflichten, Ihre Daten, Gebühren und die Grenzen unserer Haftung."
+    }
+  }
+}

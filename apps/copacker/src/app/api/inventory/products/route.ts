@@ -2,11 +2,13 @@ import { forbidden } from "next/navigation"
 import { z } from "zod"
 import { can } from "@/lib/access"
 import { session } from "@/server/auth"
+import { errorResponse } from "@/server/errors"
 import { inventoryContext } from "@/server/inventory-context"
 import { type AmazonOnlyStock, groupInventory, isCollective, pageSizes } from "@/server/inventory-products"
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 import { readVariantFields } from "@/server/product-fields"
+import { serverText } from "@/server/text"
 
 const querySchema = z.strictObject({
   q: z.string().trim().max(100).optional(),
@@ -57,7 +59,7 @@ export async function GET(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
-    return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+    return errorResponse("buyerWorkspaceRequired", 403, headers)
   }
   // The Products page, and purchase orders' product picker.
   if (!can(s, "products") && !can(s, "orders", "edit")) {
@@ -65,13 +67,14 @@ export async function GET(request: Request) {
   }
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
   if (!query.success) {
-    return Response.json({ error: "Invalid inventory query" }, { status: 400, headers })
+    return errorResponse("invalidInventoryQuery", 400, headers)
   }
   const { page, pageSize, q, barcode, country } = query.data
   const { domain, data, rows, inventoryRows, inventoryClassifications, onOrder, amazonOnly, fbaRows } =
     await inventoryContext(s.org.id)
   // Every Shopify product is listed, including those stocked only at locations that don't count toward the totals.
   const grouped = groupInventory(inventoryRows, {
+    untitled: (await serverText())("untitledProduct"),
     everyProduct: true,
     query: q,
     classifications: inventoryClassifications,

@@ -1,6 +1,7 @@
 "use client"
 
 import { ArrowRight, Check } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils"
 
 // The page's close: a signup for product news, on the orange stage, with the way in for anyone ready now.
 export function Signup() {
+  const t = useTranslations("marketing.signup")
   const [state, setState] = useState<"idle" | "sending" | "done" | "failed">("idle")
   const [problem, setProblem] = useState("")
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -26,9 +28,7 @@ export function Signup() {
     }
     const body: unknown = await response?.json().catch(() => null)
     setProblem(
-      typeof body === "object" && body && "error" in body && typeof body.error === "string"
-        ? body.error
-        : "Couldn’t sign you up. Try again in a moment."
+      typeof body === "object" && body && "error" in body && typeof body.error === "string" ? body.error : t("failed")
     )
     setState("failed")
   }
@@ -39,11 +39,9 @@ export function Signup() {
           id="signup-title"
           className="text-[clamp(2.75rem,6.5vw,5.25rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance"
         >
-          Hear what ships next.
+          {t("title")}
         </h2>
-        <p className="mt-6 max-w-md text-lg text-pretty text-white/80">
-          New stores, new routes and new tools, in a short email when they land.
-        </p>
+        <p className="mt-6 max-w-md text-lg text-pretty text-white/80">{t("text")}</p>
       </div>
       <div className="flex flex-col gap-4">
         {state === "done" ? (
@@ -51,12 +49,12 @@ export function Signup() {
             <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#f54a00]">
               <Check className="size-5" strokeWidth={3} />
             </span>
-            You’re on the list.
+            {t("done")}
           </output>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
             <label htmlFor="signup-email" className="sr-only">
-              Email
+              {t("email")}
             </label>
             <Input
               id="signup-email"
@@ -64,7 +62,7 @@ export function Signup() {
               type="email"
               required
               autoComplete="email"
-              placeholder="you@company.com"
+              placeholder={t("placeholder")}
               aria-invalid={state === "failed" || undefined}
               aria-describedby={state === "failed" ? "signup-problem" : undefined}
               className="h-12 flex-1 rounded-xl border-white/25 bg-white/10 px-4 text-base text-white placeholder:text-white/60 focus-visible:border-white focus-visible:ring-white/30"
@@ -83,7 +81,7 @@ export function Signup() {
               disabled={state === "sending"}
               className="h-12 rounded-xl bg-white px-5 text-base text-[#1c1917] hover:bg-white/90"
             >
-              {state === "sending" ? "Subscribing" : "Subscribe"}
+              {state === "sending" ? t("subscribing") : t("subscribe")}
             </Button>
           </form>
         )}
@@ -98,8 +96,8 @@ export function Signup() {
           href="/signup"
           className="group flex w-fit items-center gap-1.5 rounded-sm text-sm font-medium text-white/85 outline-none hover:text-white focus-visible:ring-3 focus-visible:ring-white/40"
         >
-          Or get started now, it’s free
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          {t("getStartedNow")}
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
         </Link>
       </div>
     </div>

@@ -1,0 +1,180 @@
+{
+  "list": {
+    "title": "Spedizioni",
+    "stats": {
+      "packing": "In imballaggio",
+      "actionNeeded": "Azione richiesta",
+      "waitingOnBuyer": "In attesa dell’acquirente",
+      "readyForPickup": "Pronte per il ritiro"
+    },
+    "amazonFailed": {
+      "title": "Le spedizioni Amazon non sono state caricate",
+      "description": "Aggiorna la pagina per riprovare."
+    },
+    "tabsLabel": "Stato della spedizione",
+    "tabs": {
+      "active": "Attive",
+      "received": "Ricevute",
+      "cancelled": "Annullate",
+      "all": "Tutte"
+    },
+    "empty": {
+      "active": "Nessuna spedizione attiva",
+      "received": "Nessuna spedizione ricevuta",
+      "cancelled": "Nessuna spedizione annullata",
+      "all": "Nessuna spedizione"
+    },
+    "columns": {
+      "shipment": "Spedizione",
+      "supplier": "Fornitore",
+      "customer": "Cliente",
+      "destination": "Destinazione",
+      "cartons": "Cartoni",
+      "readyDate": "Data di disponibilità",
+      "status": "Stato"
+    },
+    "shipmentNumber": "Spedizione {number}",
+    "opensInSellerCentral": "(si apre in Seller Central)",
+    "none": {
+      "title": "Ancora nessuna spedizione",
+      "buyerDescription": "Creane una da un ordine di acquisto inviato",
+      "supplierDescription": "Creane una da un ordine",
+      "viewPurchaseOrders": "Vedi ordini di acquisto",
+      "viewOrders": "Vedi ordini"
+    }
+  },
+  "detail": {
+    "metaTitle": "Spedizione",
+    "title": "Spedizione {number}",
+    "cartonCount": "{count, plural, one {# cartone} other {# cartoni}}",
+    "parents": {
+      "purchaseOrders": "Ordini di acquisto",
+      "orders": "Ordini"
+    },
+    "opensInSellerCentral": "(si apre in Seller Central)",
+    "actions": {
+      "markShipped": "Segna come spedita",
+      "markReceived": "Segna come ricevuta",
+      "retry": "Riprova spedizione",
+      "cancelInAmazon": "Annulla su Amazon"
+    },
+    "needsAttention": "Richiede attenzione",
+    "changesWaiting": {
+      "title": "Modifiche in attesa di approvazione",
+      "buyer": "L’imballaggio si sblocca quando rispondi alle modifiche proposte sull’ordine di acquisto.",
+      "supplier": "L’imballaggio si sblocca quando il cliente risponde alle modifiche proposte sull’ordine.",
+      "viewPurchaseOrder": "Vedi ordine di acquisto",
+      "viewOrder": "Vedi ordine"
+    },
+    "invoiceChanges": {
+      "title": "Modifiche alla fattura",
+      "pricePerUnit": "Prezzo per unità",
+      "supplierSku": "SKU del fornitore",
+      "changedTo": "cambiato in",
+      "waitingForBuyer": "In attesa dell’approvazione dell’acquirente"
+    },
+    "labels": {
+      "title": "Etichette di spedizione",
+      "waiting": "In attesa delle etichette di spedizione",
+      "fba": "Prenota il trasporto verso Amazon, poi carica le etichette di spedizione",
+      "agl": "Prenota il trasporto AGL su Amazon, poi carica le etichette di spedizione"
+    },
+    "creating": {
+      "title": "Creazione della spedizione Amazon",
+      "description": "Di solito qualche minuto"
+    },
+    "packet": {
+      "title": "Pacchetto fornitore pronto",
+      "description": "Stampa le etichette a dimensione reale",
+      "downloadLabel": "Scarica il pacchetto fornitore",
+      "download": "Scarica pacchetto",
+      "incompleteTitle": "Pacchetto fornitore incompleto",
+      "waitingForLabels": "In attesa delle etichette dell’acquirente"
+    },
+    "cartons": {
+      "title": "Cartoni",
+      "carton": "Cartone",
+      "product": "Prodotto",
+      "units": "Unità",
+      "dimensions": "Dimensioni (cm)",
+      "weight": "Peso (kg)",
+      "amazonLabel": "Etichetta Amazon"
+    },
+    "pickup": {
+      "title": "Ritiro",
+      "ready": "Pronta il {date}"
+    },
+    "documents": {
+      "title": "Documenti",
+      "empty": "Ancora nessun documento"
+    }
+  },
+  "actions": {
+    "approve": {
+      "updateCost": "Aggiorna anche i costi unitari su Shopify",
+      "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto",
+      "submit": "Approva modifiche"
+    },
+    "release": {
+      "submit": "Rilascia etichette al fornitore",
+      "bookingReference": "Riferimento della prenotazione del trasporto Amazon"
+    },
+    "correction": {
+      "trigger": "Richiedi una correzione",
+      "submit": "Richiedi correzione",
+      "reason": "Cosa deve cambiare?",
+      "reasonDescription": "I documenti di questa spedizione non saranno più validi"
+    },
+    "reconcile": {
+      "submit": "Verifica e riprendi",
+      "fbaLabel": "ID del piano di invio FBA esistente",
+      "awdLabel": "ID dell’ordine Amazon AWD esistente",
+      "awdInvalid": "Inserisci l’ID dell’ordine Amazon, che inizia con STAR-",
+      "fbaInvalid": "Inserisci l’ID del piano di invio, che inizia con wf"
+    }
+  },
+  "forward": {
+    "markShipped": "Segna come spedita",
+    "title": "Segna come spedita",
+    "description": "Il costo del trasporto viene aggiunto ai costi di sbarco dell’ordine di acquisto.",
+    "freightCost": "Costo del trasporto",
+    "carrier": "Corriere",
+    "reference": "Numero di tracciamento o di prenotazione",
+    "cancel": "Annulla",
+    "enterCarrier": "Inserisci il corriere",
+    "enterReference": "Inserisci il numero di tracciamento o di prenotazione",
+    "enterFreightCost": "Inserisci il costo del trasporto"
+  },
+  "prep": {
+    "polybag": "Busta di plastica sigillata (predefinita)",
+    "noPrep": "Nessuna preparazione (eccezione)",
+    "bubbleWrap": "Pluriball",
+    "taping": "Nastratura"
+  },
+  "amazonAuthorization": {
+    "sellerId": "Inserisci il merchant token del venditore, ad esempio A2CIYIV0E1FHU3",
+    "refreshToken": "Incolla il refresh token completo, che inizia con Atzr|"
+  },
+  "requirements": {
+    "prep": {
+      "polybag": "Sigilla ogni unità in una busta di plastica trasparente.",
+      "noPrep": "Nessuna preparazione delle unità.",
+      "bubbleWrap": "Avvolgi ogni unità nel pluriball.",
+      "tape": "Chiudi ogni unità con nastro adesivo.",
+      "blackShrinkWrap": "Avvolgi ogni unità in film termoretraibile nero.",
+      "hanger": "Metti ogni capo su una gruccia.",
+      "label": "Etichetta ogni unità."
+    },
+    "fbaCartons": "Cartoni FBA: SKU misti consentiti; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb), a meno che una singola unità sia più grande.",
+    "awdUsCartons": "Cartoni AWD US: un SKU per cartone, massimo 150 unità, tutti i cartoni di uno SKU imballati allo stesso modo; massimo 63,5 cm (25 in) per lato e 22,68 kg (50 lb).",
+    "separateCartons": "Imballa i prodotti {networks} in cartoni separati.",
+    "unitLabels": "Etichetta ogni unità con il suo codice a barre FNSKU, coprendo qualsiasi altro codice a barre.",
+    "suffocationWarnings": "Le buste di plastica richiedono un avviso di soffocamento quando l’apertura è di 5 in (12,7 cm) o più.",
+    "multiPacks": "Tieni unita ogni confezione multipla, con una sola etichetta sulla confezione.",
+    "packFor": "Imballa per {network}.",
+    "bundle": "{count, plural, one {Raggruppa # unità in una confezione.} other {Raggruppa # unità in una confezione.}}",
+    "fnskuLabel": "Etichetta con FNSKU {fnsku}.",
+    "suffocationLabel": "Applica un’etichetta di avviso di soffocamento su ogni busta di plastica.",
+    "amazonDestination": "Amazon {networks}"
+  }
+}

@@ -1,9 +1,11 @@
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { readFile } from "node:fs/promises"
+import { PGlite } from "@electric-sql/pglite"
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api"
 import { describe, expect, it } from "vitest"
 import journal from "../drizzle/meta/_journal.json"
 import * as schema from "../src/db/schema"
+import { migrationSql } from "./migrations"
 
 // Migrations that have run in production. Deploys skip a migration that already ran, so editing one here would leave
 // production without the change; add a new migration with `pnpm db:generate` instead. Line endings are normalized
@@ -58,5 +60,73 @@ describe("migrations", () => {
     const statements = await generateMigration(snapshot, generateDrizzleJson(schema, snapshot.id))
     // Any statement here means schema.ts changed without a migration; run pnpm db:generate.
     expect(statements).toEqual([])
+  })
+
+  it("keys the timeline events and revisions recorded as English text", async () => {
+    const pg = new PGlite()
+    const steps = await migrationSql()
+    const keyed = journal.entries.findIndex((entry) => entry.tag === "0041_localization")
+    for (const step of steps.slice(0, keyed)) {
+      await pg.exec(step)
+    }
+    // Rows without their order, which the foreign keys would otherwise need.
+    await pg.exec("SET session_replication_role = replica")
+    const orderId = randomUUID()
+    const recorded = [
+      "PO submitted to supplier",
+      "Supplier set the ready date to 2026-10-20",
+      "Supplier proposed changes: Two weeks later",
+      "Supplier's changes approved; PO revision 3 published",
+      "Packing submitted; split into FBA and AWD US shipments and queued for Amazon",
+      "Packing submitted; Amazon AWD US creation queued",
+      "Pacific Link shipped the goods: UPS 1Z999",
+      "Something no one recognizes"
+    ]
+    for (const message of recorded) {
+      await pg.query(`INSERT INTO "events" ("orderId", "actor", "message") VALUES ($1, 'user', $2)`, [orderId, message])
+    }
+    await pg.query(
+      `INSERT INTO "events" ("orderId", "actor", "message", "kind") VALUES ($1, 'user', 'PO looks good', 'comment')`,
+      [orderId]
+    )
+    for (const [index, reason] of [
+      "PO created",
+      "Purchase order edited",
+      "Approved supplier commercial changes"
+    ].entries()) {
+      await pg.query(
+        `INSERT INTO "order_revisions" ("orderId", "revision", "data", "actor", "reason") VALUES ($1, $2, '{}', 'user', $3)`,
+        [orderId, index + 1, reason]
+      )
+    }
+    await pg.exec(steps[keyed]!)
+    const events = await pg.query<{ message: string | null; messageKey: string | null; messageValues: unknown }>(
+      `SELECT "message", "messageKey", "messageValues" FROM "events" ORDER BY "created_at", "id"`
+    )
+    const byKey = (key: string | null) => events.rows.find((row) => row.messageKey === key)
+    expect(byKey("submittedToSupplier")).toEqual({
+      message: null,
+      messageKey: "submittedToSupplier",
+      messageValues: null
+    })
+    expect(byKey("readyDateSet")?.messageValues).toEqual({ date: "2026-10-20" })
+    expect(byKey("changesProposedWithNote")?.messageValues).toEqual({ note: "Two weeks later" })
+    expect(byKey("supplierChangesApproved")?.messageValues).toEqual({ revision: 3 })
+    expect(byKey("packingSplit")?.messageValues).toEqual({ networks: ["FBA", "AWD US"] })
+    expect(byKey("packingQueued")?.messageValues).toEqual({ network: "AWD US" })
+    expect(byKey("forwarderShipped")?.messageValues).toEqual({ forwarder: "Pacific Link", tracking: "UPS 1Z999" })
+    // What isn't recognized keeps its text, and a comment stays as its author wrote it.
+    expect(
+      events.rows
+        .filter((row) => !row.messageKey)
+        .map((row) => row.message)
+        .toSorted()
+    ).toEqual(["PO looks good", "Something no one recognizes"])
+    const revisions = await pg.query<{ reason: string }>(`SELECT "reason" FROM "order_revisions"`)
+    expect(revisions.rows.map((row) => row.reason).toSorted()).toEqual([
+      "approvedCommercialChanges",
+      "created",
+      "edited"
+    ])
   })
 })

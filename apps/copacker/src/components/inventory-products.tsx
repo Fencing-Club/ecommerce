@@ -14,6 +14,7 @@ import {
   TriangleAlert,
   X
 } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { PageLink, useCan } from "@/components/access"
@@ -31,8 +32,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api, errorMessage } from "@/lib/api"
-import { formatNumber } from "@/lib/format"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   type AmazonOnlyStock,
@@ -102,15 +103,15 @@ const productsApi = api.injectEndpoints({
 })
 
 // Cells at the edges of a table that runs edge to edge in its card line up with the card's padding.
-const firstCell = "pl-4"
-const lastCell = "pr-4"
+const firstCell = "ps-4"
+const lastCell = "pe-4"
 
 // A problem with some products, as a card that opens to list them.
 export function IssuePanel({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <Card className="gap-0 overflow-hidden py-0">
       <Collapsible>
-        <CollapsibleTrigger className="group flex w-full items-center gap-3 px-4 py-3 text-left text-sm outline-none hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset">
+        <CollapsibleTrigger className="group flex w-full items-center gap-3 px-4 py-3 text-start text-sm outline-none hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset">
           <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
           <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
             <span className="font-medium">{title}</span>
@@ -129,23 +130,17 @@ export function IssuePanel({ title, hint, children }: { title: string; hint?: st
 
 // SKUs several Shopify variations share. Uploads by file name and Amazon matching can't tell them apart.
 function DuplicateSkus({ duplicates }: { duplicates: DuplicateSku[] }) {
+  const t = useTranslations("inventory.list")
   if (!duplicates.length) {
     return null
   }
   return (
-    <IssuePanel
-      title={
-        duplicates.length === 1
-          ? "1 SKU is used by more than one variation"
-          : `${duplicates.length} SKUs are used by more than one variation`
-      }
-      hint="Give each variation its own SKU in Shopify"
-    >
+    <IssuePanel title={t("duplicateSkus", { count: duplicates.length })} hint={t("duplicateSkusHint")}>
       <Table framed={false}>
         <TableHeader>
           <TableRow>
             <TableHead className={firstCell}>SKU</TableHead>
-            <TableHead className={lastCell}>Variations</TableHead>
+            <TableHead className={lastCell}>{t("variations")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -156,7 +151,9 @@ function DuplicateSkus({ duplicates }: { duplicates: DuplicateSku[] }) {
                 <ul className="flex flex-col gap-0.5">
                   {duplicate.variants.map((variant) => (
                     <li key={variant.variantId}>
-                      {variant.variant ? `${variant.product}, ${variant.variant}` : variant.product}
+                      {variant.variant
+                        ? t("productVariant", { product: variant.product, variant: variant.variant })
+                        : variant.product}
                     </li>
                   ))}
                 </ul>
@@ -181,33 +178,32 @@ function Dash({ reason }: { reason: string }) {
 
 // Amazon seller SKUs that don't match a single Shopify variant, such as listings with a different SKU.
 function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
+  const t = useTranslations("inventory.list")
+  const format = useFormatter()
   if (!stock.length) {
     return null
   }
   const amount = (value: number | null | undefined) =>
-    value === null || value === undefined ? <Dash reason="None" /> : formatNumber(value)
+    value === null || value === undefined ? <Dash reason={t("reasons.none")} /> : format.number(value)
   return (
-    <IssuePanel
-      title={`${stock.length} Amazon ${stock.length === 1 ? "SKU doesn't" : "SKUs don't"} match a Shopify product`}
-      hint="Not in the totals"
-    >
+    <IssuePanel title={t("amazonOnly", { count: stock.length })} hint={t("amazonOnlyHint")}>
       <Table framed={false}>
         <TableHeader>
           <TableRow>
-            <TableHead className={firstCell}>Amazon SKU</TableHead>
-            <TableHead className="text-right">FBA available</TableHead>
-            <TableHead className="text-right">AWD available</TableHead>
-            <TableHead className={cn(lastCell, "text-right")}>Incoming</TableHead>
+            <TableHead className={firstCell}>{t("amazonSku")}</TableHead>
+            <TableHead className="text-end">{t("fbaAvailable")}</TableHead>
+            <TableHead className="text-end">{t("awdAvailable")}</TableHead>
+            <TableHead className={cn(lastCell, "text-end")}>{t("incoming")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {stock.map((row) => (
             <TableRow key={row.sku}>
               <TableCell className={cn(firstCell, "whitespace-normal")}>{row.sku}</TableCell>
-              <TableCell className="text-right tabular-nums">{amount(row.fba?.available)}</TableCell>
-              <TableCell className="text-right tabular-nums">{amount(row.awd?.available)}</TableCell>
-              <TableCell className={cn(lastCell, "text-right tabular-nums")}>
-                {formatNumber((row.fba?.incoming ?? 0) + (row.awd?.incoming ?? 0))}
+              <TableCell className="text-end tabular-nums">{amount(row.fba?.available)}</TableCell>
+              <TableCell className="text-end tabular-nums">{amount(row.awd?.available)}</TableCell>
+              <TableCell className={cn(lastCell, "text-end tabular-nums")}>
+                {format.number((row.fba?.incoming ?? 0) + (row.awd?.incoming ?? 0))}
               </TableCell>
             </TableRow>
           ))}
@@ -217,16 +213,15 @@ function AmazonOnly({ stock }: { stock: AmazonOnlyStock[] }) {
   )
 }
 
-// Why a count isn't shown.
-const notCounted = { bundle: "Not stocked separately", untracked: "Not tracked" } as const
-
 // A stock figure in its column: negative in red, a dash when it's unknown or isn't counted for this item.
 function Count({ value, reason, className }: { value: number | null; reason?: string; className?: string }) {
-  let shown = <Dash reason={reason ?? "Unknown"} />
+  const t = useTranslations("inventory.list")
+  const format = useFormatter()
+  let shown = <Dash reason={reason ?? t("reasons.unknown")} />
   if (!reason && value !== null) {
-    shown = <span className={cn(value < 0 && "text-destructive")}>{formatNumber(value)}</span>
+    shown = <span className={cn(value < 0 && "text-destructive")}>{format.number(value)}</span>
   }
-  return <TableCell className={cn("text-right tabular-nums", className)}>{shown}</TableCell>
+  return <TableCell className={cn("text-end tabular-nums", className)}>{shown}</TableCell>
 }
 
 // Whether a variation still needs its label uploaded: the standard FNSKU label doesn't suit its product.
@@ -239,6 +234,7 @@ const needsCountry = (product: ListedProduct, variant: ListedVariant) =>
 
 // Stock at each location, once a variation is stocked at more than one.
 function Locations({ variant }: { variant: InventoryVariant }) {
+  const format = useFormatter()
   if (variant.levels.length <= 1 || variant.stock !== "tracked") {
     return null
   }
@@ -248,7 +244,7 @@ function Locations({ variant }: { variant: InventoryVariant }) {
         <Badge key={level.locationId} variant="outline" className="font-normal text-muted-foreground">
           {level.locationName}
           <span className="text-foreground tabular-nums">
-            {level.available === null ? "—" : formatNumber(level.available)}
+            {level.available === null ? "—" : format.number(level.available)}
           </span>
         </Badge>
       ))}
@@ -266,14 +262,17 @@ function Quantities({
   item: InventoryProduct | InventoryVariant
   orders?: PurchaseOrderLink[]
 }) {
-  const reason = item.stock === "tracked" ? undefined : notCounted[item.stock]
+  const t = useTranslations("inventory.list")
+  const format = useFormatter()
+  // Why a count isn't shown.
+  const reason = item.stock === "tracked" ? undefined : t(`reasons.${item.stock}`)
   return (
     <>
       <Count value={item.available} reason={item.stock === "untracked" ? reason : undefined} />
       <Count value={item.onHand} reason={reason} className={wideOnly} />
       <Count value={item.incoming} reason={reason} className={wideOnly} />
-      <TableCell className={cn(wideOnly, "text-right tabular-nums")}>
-        {formatNumber(item.onOrder.units)}
+      <TableCell className={cn(wideOnly, "text-end tabular-nums")}>
+        {format.number(item.onOrder.units)}
         {orders.length > 0 && (
           <span className="block text-xs whitespace-normal">
             {orders.map((order, index) => (
@@ -294,21 +293,26 @@ function Quantities({
   )
 }
 
-// The kind of stock and the Amazon minimum follow a comma in the line under a name, so they start lowercase.
-const stockKinds = { tracked: null, bundle: "bundle", untracked: "not tracked" } as const
-
-function amazonMinimum(target: number | null) {
-  if (target === null) {
-    return null
+// The line under a name: a variation's SKU, its Amazon minimum, and its kind of stock when that's unusual, or a
+// product's number of variations and its kind of stock, as a list in the person's language. The kind of stock and the
+// Amazon minimum follow a comma, so they start lowercase.
+function useDetailLine() {
+  const t = useTranslations("inventory.list")
+  const stockKind = (stock: InventoryVariant["stock"]) => (stock === "tracked" ? null : t(`stockKinds.${stock}`))
+  const separator = useTranslations("common.format")("separator")
+  const line = (parts: (string | null | false)[]) => parts.filter(Boolean).join(separator)
+  const amazonMinimum = (target: number | null) => {
+    if (target === null) {
+      return null
+    }
+    return target === 0 ? t("notAtAmazon") : t("amazonMin", { count: target })
   }
-  return target === 0 ? "not stocked at Amazon" : `Amazon min ${formatNumber(target)}`
-}
-
-// The line under a variation's name: its SKU, its Amazon minimum, and its kind of stock when that's unusual.
-function variantDetail(variant: InventoryVariant, withKind: boolean) {
-  return [variant.sku ?? "No SKU", amazonMinimum(variant.amazonStockTarget), withKind && stockKinds[variant.stock]]
-    .filter(Boolean)
-    .join(", ")
+  return {
+    variant: (variant: InventoryVariant, withKind: boolean) =>
+      line([variant.sku ?? t("noSku"), amazonMinimum(variant.amazonStockTarget), withKind && stockKind(variant.stock)]),
+    product: (product: Pick<InventoryProduct, "stock">, count: number) =>
+      line([t("variationCount", { count }), stockKind(product.stock)])
+  }
 }
 
 // Opens a new PO with these variations already added.
@@ -330,6 +334,7 @@ function isRowClick(event: React.MouseEvent<HTMLTableRowElement>) {
 
 // Reorder for someone who can make purchase orders, and Edit for someone who can change products.
 function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => void }) {
+  const t = useTranslations("inventory.list")
   const reorders = useCan("orders", "edit")
   const editable = useCan("products", "edit")
   if (!reorders && !editable) {
@@ -343,7 +348,7 @@ function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => vo
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
-            aria-label={`More for ${product.title}`}
+            aria-label={t("moreFor", { product: product.title })}
           />
         }
       >
@@ -353,13 +358,13 @@ function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => vo
         {reorders && (
           <DropdownMenuItem render={<Link href={reorderHref(product.variants)} />}>
             <PackagePlus />
-            Reorder
+            {t("reorder")}
           </DropdownMenuItem>
         )}
         {editable && (
           <DropdownMenuItem onClick={onEdit}>
             <Pencil />
-            Edit
+            {t("edit")}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
@@ -370,6 +375,8 @@ function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => vo
 // A product's row, and its variations' rows beneath it once opened. A product with a single, untitled variation is
 // that variation. Clicking a row opens the product's details.
 function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (product: ListedProduct) => void }) {
+  const t = useTranslations("inventory.list")
+  const detailLine = useDetailLine()
   const [open, setOpen] = useState(false)
   const edit = () => onEdit(product)
   const only = product.variants.length === 1 && product.variants[0]?.title === null ? product.variants[0] : null
@@ -377,9 +384,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
   const unlabelled = product.variants.filter((variant) => needsLabel(product, variant)).length
   const noCountry = product.variants.filter((variant) => needsCountry(product, variant)).length
   const variationsId = `variations-${product.productId.split("/").at(-1)}`
-  const detail = only
-    ? variantDetail(only, true)
-    : [`${count} variations`, stockKinds[product.stock]].filter(Boolean).join(", ")
+  const detail = only ? detailLine.variant(only, true) : detailLine.product(product, count)
   return (
     <>
       <TableRow
@@ -390,7 +395,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
           }
         }}
       >
-        <TableCell className="w-10 pr-0 pl-3">
+        <TableCell className="w-10 pe-0 ps-3">
           {!only && (
             <Button
               variant="ghost"
@@ -398,10 +403,14 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
               className="text-muted-foreground hover:text-foreground"
               aria-expanded={open}
               aria-controls={variationsId}
-              aria-label={`${open ? "Hide" : "Show"} the ${count} variations of ${product.title}`}
+              aria-label={
+                open
+                  ? t("hideVariations", { count, product: product.title })
+                  : t("showVariations", { count, product: product.title })
+              }
               onClick={() => setOpen(!open)}
             >
-              <ChevronRight className={cn("transition-transform", open && "rotate-90")} />
+              <ChevronRight className={cn("transition-transform", open ? "rotate-90" : "rtl:rotate-180")} />
             </Button>
           )}
         </TableCell>
@@ -412,19 +421,17 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
               <button
                 type="button"
                 onClick={edit}
-                className="w-fit rounded-sm text-left font-medium [overflow-wrap:anywhere] underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="w-fit rounded-sm text-start font-medium [overflow-wrap:anywhere] underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {product.title}
               </button>
               <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{detail}</span>
               {unlabelled > 0 && (
-                <WarningNote>
-                  {only ? "Label missing" : `${unlabelled} ${unlabelled === 1 ? "label" : "labels"} missing`}
-                </WarningNote>
+                <WarningNote>{only ? t("labelMissing") : t("labelsMissing", { count: unlabelled })}</WarningNote>
               )}
               {noCountry > 0 && (
                 <WarningNote>
-                  {only || noCountry === count ? "No country of origin" : `${noCountry} without country of origin`}
+                  {only || noCountry === count ? t("noCountry") : t("withoutCountry", { count: noCountry })}
                 </WarningNote>
               )}
               {only && <Locations variant={only} />}
@@ -432,7 +439,7 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
           </div>
         </TableCell>
         <Quantities item={product} orders={product.onOrder.orders} />
-        <TableCell className="w-12 pr-3 pl-0 text-right">
+        <TableCell className="w-12 pe-3 ps-0 text-end">
           <RowMenu product={product} onEdit={edit} />
         </TableCell>
       </TableRow>
@@ -448,23 +455,23 @@ function ProductRow({ product, onEdit }: { product: ListedProduct; onEdit: (prod
               }
             }}
           >
-            <TableCell className="w-10 pr-0 pl-3" />
+            <TableCell className="w-10 pe-0 ps-3" />
             <TableCell className="py-2 whitespace-normal">
-              <div className="flex items-start gap-3 pl-6">
+              <div className="flex items-start gap-3 ps-6">
                 <ProductImage url={variant.imageUrl} small />
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="[overflow-wrap:anywhere]">{variant.title ?? product.title}</span>
                   <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
-                    {variantDetail(variant, product.stock !== variant.stock)}
+                    {detailLine.variant(variant, product.stock !== variant.stock)}
                   </span>
-                  {needsLabel(product, variant) && <WarningNote>Label missing</WarningNote>}
-                  {needsCountry(product, variant) && <WarningNote>No country of origin</WarningNote>}
+                  {needsLabel(product, variant) && <WarningNote>{t("labelMissing")}</WarningNote>}
+                  {needsCountry(product, variant) && <WarningNote>{t("noCountry")}</WarningNote>}
                   <Locations variant={variant} />
                 </div>
               </div>
             </TableCell>
             <Quantities item={variant} />
-            <TableCell className="w-12 pr-3 pl-0" />
+            <TableCell className="w-12 pe-3 ps-0" />
           </TableRow>
         ))}
     </>
@@ -514,16 +521,18 @@ function ListFooter({
   onPageSize: (size: number) => void
   onPage: (page: number) => void
 }) {
-  const products = `${formatNumber(data.totalProducts)} ${data.totalProducts === 1 ? "product" : "products"}`
+  const t = useTranslations("inventory.list")
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t px-4 py-2.5 text-sm text-muted-foreground">
       <p aria-live="polite" className="tabular-nums">
-        {filtered ? products : `${products}, ${formatNumber(data.totalVariants)} variations`}
+        {filtered
+          ? t("productCount", { count: data.totalProducts })
+          : t("productAndVariationCount", { products: data.totalProducts, variations: data.totalVariants })}
       </p>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         {data.totalProducts > pageSizes[0] && (
           <div className="flex items-center gap-2">
-            <span id="inventory-page-size">Rows per page</span>
+            <span id="inventory-page-size">{t("rowsPerPage")}</span>
             <Select
               items={sizeItems}
               value={String(pageSize)}
@@ -547,27 +556,25 @@ function ListFooter({
           </div>
         )}
         {data.totalPages > 1 && (
-          <nav aria-label="Product pages" className="flex items-center gap-2">
-            <span className="tabular-nums">
-              Page {data.page} of {data.totalPages}
-            </span>
+          <nav aria-label={t("pages")} className="flex items-center gap-2">
+            <span className="tabular-nums">{t("pageOf", { page: data.page, total: data.totalPages })}</span>
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Previous page"
+              aria-label={t("previousPage")}
               disabled={data.page <= 1}
               onClick={() => onPage(data.page - 1)}
             >
-              <ChevronLeft />
+              <ChevronLeft className="rtl:rotate-180" />
             </Button>
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Next page"
+              aria-label={t("nextPage")}
               disabled={data.page >= data.totalPages}
               onClick={() => onPage(data.page + 1)}
             >
-              <ChevronRight />
+              <ChevronRight className="rtl:rotate-180" />
             </Button>
           </nav>
         )}
@@ -578,9 +585,10 @@ function ListFooter({
 
 // The product list's shape while it loads.
 export function ProductsSkeleton() {
+  const t = useTranslations("inventory.list")
   return (
     <Card className="gap-0 overflow-hidden py-0" aria-busy="true">
-      <span className="sr-only">Loading products</span>
+      <span className="sr-only">{t("loading")}</span>
       <div className="border-b p-4">
         <Skeleton className="h-8 w-full max-w-sm" />
       </div>
@@ -605,6 +613,8 @@ const searchLength = 100
 
 // `search` starts the search box, such as a product chosen in the header's search.
 export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syncKey: string; search?: string }) {
+  const t = useTranslations("inventory.list")
+  const errorMessage = useErrorMessage()
   const [search, setSearch] = useState(initialSearch.slice(0, searchLength))
   const [q] = useDebouncedValue(search.trim(), 300)
   const [page, setPage] = useState(1)
@@ -639,10 +649,10 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
     return (
       <Alert variant="destructive">
         <CircleAlert />
-        <AlertDescription>{errorMessage(error, "Products couldn’t be loaded.")}</AlertDescription>
+        <AlertDescription>{errorMessage(error, t("loadFailed"))}</AlertDescription>
         <AlertAction>
           <Button variant="outline" size="xs" onClick={refresh}>
-            Try again
+            {t("tryAgain")}
           </Button>
         </AlertAction>
       </Alert>
@@ -662,8 +672,8 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
             </InputGroupAddon>
             <InputGroupInput
               type="search"
-              aria-label="Search products"
-              placeholder="Search products or SKUs"
+              aria-label={t("search")}
+              placeholder={t("searchPlaceholder")}
               maxLength={searchLength}
               value={search}
               onChange={(event) => {
@@ -679,8 +689,8 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
                 setMissingBarcode(pressed)
                 setPage(1)
               }}
-              label={`${formatNumber(data.missingBarcodes)} need a label`}
-              description="Variations whose label has to be uploaded"
+              label={t("needLabel", { count: data.missingBarcodes })}
+              description={t("needLabelHint")}
             />
           )}
           {(data.missingCountries > 0 || missingCountry) && (
@@ -690,11 +700,11 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
                 setMissingCountry(pressed)
                 setPage(1)
               }}
-              label={`${formatNumber(data.missingCountries)} without a country`}
-              description="Variations with no country of origin in Shopify, so their labels leave out “Made in”"
+              label={t("withoutCountryFilter", { count: data.missingCountries })}
+              description={t("withoutCountryHint")}
             />
           )}
-          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:ms-auto">
             {editable && <BulkBarcodeUpload onChanged={refresh} />}
             <ProductLabelBulk onChanged={refresh} />
           </div>
@@ -702,28 +712,28 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
         {data.needsResync && (
           <p className="flex items-center gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
             <Info className="size-3.5 shrink-0" aria-hidden="true" />
-            Sync Shopify to load the latest product details
+            {t("needsResync")}
           </p>
         )}
         {data.products.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {filtered ? "No products match" : "No products"}
+            {filtered ? t("noMatch") : t("noProducts")}
           </p>
         ) : (
           <div className="@container" aria-busy={isFetching}>
             <Table framed={false}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10 pr-0 pl-3">
-                    <span className="sr-only">Variations</span>
+                  <TableHead className="w-10 pe-0 ps-3">
+                    <span className="sr-only">{t("variations")}</span>
                   </TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="text-right">Available</TableHead>
-                  <TableHead className={cn("text-right", wideOnly)}>On hand</TableHead>
-                  <TableHead className={cn("text-right", wideOnly)}>Incoming</TableHead>
-                  <TableHead className={cn("text-right", wideOnly)}>On order</TableHead>
-                  <TableHead className="w-12 pr-3 pl-0">
-                    <span className="sr-only">Actions</span>
+                  <TableHead>{t("product")}</TableHead>
+                  <TableHead className="text-end">{t("available")}</TableHead>
+                  <TableHead className={cn("text-end", wideOnly)}>{t("onHand")}</TableHead>
+                  <TableHead className={cn("text-end", wideOnly)}>{t("incoming")}</TableHead>
+                  <TableHead className={cn("text-end", wideOnly)}>{t("onOrder")}</TableHead>
+                  <TableHead className="w-12 pe-3 ps-0">
+                    <span className="sr-only">{t("actions")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>

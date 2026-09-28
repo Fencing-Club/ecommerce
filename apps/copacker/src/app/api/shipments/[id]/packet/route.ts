@@ -6,6 +6,7 @@ import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireMembership, requirePage } from "@/server/auth"
 import { packingDocuments } from "@/server/documents"
+import { errorTextResponse } from "@/server/errors"
 import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
@@ -18,11 +19,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   requirePage(s, "shipments")
   const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!shipment) {
-    return new Response("Shipment not found", { status: 404 })
+    return errorTextResponse("shipmentNotFound", 404)
   }
   const { order } = await accessibleOrder(s, shipment.orderId)
   if (!releasedStates.includes(shipment.status)) {
-    return new Response("Shipment packet has not been released", { status: 409 })
+    return errorTextResponse("packetNotReleased", 409)
   }
   const docs = await db()
     .select()
@@ -32,7 +33,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const labels = await lineLabels(order)
   const missingLabels = new Set(labels.flatMap((label) => (label.state === "missing" ? [label.itemId] : [])))
   if (releaseIssues(shipment, docs, missingLabels).length) {
-    return new Response("Shipment packet is incomplete. Ask the buyer to review its documents", { status: 409 })
+    return errorTextResponse("packetIncomplete", 409)
   }
   const itemIds = new Set(shipment.packing?.cartons.flatMap((c) => c.items.map((i) => i.itemId)))
   // A shipment to Amazon keeps its packing list and checklist, made with Amazon's carton labels, and its carton and
@@ -71,7 +72,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   await accessibleOrder(s, shipment.orderId)
   const [current] = await db().select().from(shipments).where(eq(shipments.id, id))
   if (!current || !releasedStates.includes(current.status) || current.revision !== shipment.revision) {
-    return new Response("Shipment packet changed. Refresh before downloading", { status: 409 })
+    return errorTextResponse("packetChanged", 409)
   }
   const currentDocs = await db()
     .select()
@@ -83,7 +84,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       (doc) => !currentDocs.some((currentDoc) => currentDoc.id === doc.id && currentDoc.objectKey === doc.objectKey)
     )
   ) {
-    return new Response("Shipment documents changed. Refresh before downloading", { status: 409 })
+    return errorTextResponse("shipmentDocumentsChanged", 409)
   }
   await requireMembership(s.user.id, s.org.id)
   return new Response(Buffer.from(result), {

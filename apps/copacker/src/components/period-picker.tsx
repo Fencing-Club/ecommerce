@@ -2,6 +2,7 @@
 
 import { Popover } from "@base-ui/react/popover"
 import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,8 @@ import {
   type PresetKey,
   periodQuery,
   presetGroups,
-  presetRange
+  presetRange,
+  rangeLabel
 } from "@/lib/date-range"
 import { addDays, addMonths } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
@@ -26,13 +28,20 @@ export type PickerPeriod = Selection & {
   today: string
 }
 
-const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+// A week of days from Sunday, for naming the calendar's columns in the reader's language.
+const week = Array.from({ length: 7 }, (_, index) => new Date(Date.UTC(2026, 8, 20 + index)))
 // A preset in the list beside the calendar; the chosen one is shaded.
 const presetClass =
-  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:font-medium"
+  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-start text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:font-medium"
 const divider = <div aria-hidden className="my-1 h-px bg-border" />
-const monthLabel = (month: string) =>
-  new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })
+
+// A period's name in the reader's language: its preset, or its range of days.
+function usePeriodLabel() {
+  const t = useTranslations("overview.period")
+  const locale = useLocale()
+  return (period: Pick<Selection, "key" | "range">) =>
+    period.key === "custom" ? rangeLabel(period.range, locale) : t(`presets.${period.key}`)
+}
 
 // Opens the Overview on another period or comparison, keeping the channel.
 function useNavigate() {
@@ -53,6 +62,9 @@ function useNavigate() {
 // The period every sales figure on the Overview covers, like Shopify's analytics: a preset relative to today in the
 // store's time zone, or any range picked on the calendar. The change applies on Apply.
 export function PeriodPicker({ period }: { period: PickerPeriod }) {
+  const t = useTranslations("overview.period")
+  const format = useFormatter()
+  const periodLabel = usePeriodLabel()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Selection>(period)
@@ -93,7 +105,9 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
     setAnchor(null)
   }
 
-  const presetButton = (option: { key: PresetKey; label: string }) => (
+  const monthLabel = (month: string) =>
+    format.dateTime(new Date(`${month}-01T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" })
+  const presetButton = (option: { key: PresetKey }) => (
     <button
       key={option.key}
       type="button"
@@ -101,7 +115,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
       aria-pressed={draft.key === option.key}
       onClick={() => choosePreset(option.key)}
     >
-      {option.label}
+      {t(`presets.${option.key}`)}
     </button>
   )
   const groupButton = (key: "last" | "toDate", label: string) => (
@@ -112,7 +126,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
       onClick={() => setGroup(key)}
     >
       {label}
-      <ChevronRight aria-hidden size={16} />
+      <ChevronRight aria-hidden size={16} className="rtl:rotate-180" />
     </button>
   )
 
@@ -134,23 +148,23 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
     >
       <Popover.Trigger render={<Button variant="outline" />}>
         <CalendarDays data-icon="inline-start" className="text-muted-foreground" />
-        {period.label}
+        {periodLabel(period)}
         <ChevronDown data-icon="inline-end" className="text-muted-foreground" />
       </Popover.Trigger>
-      {/* The picker sits at the page's right edge, so the popup opens leftward from it. */}
+      {/* The picker sits at the page's end edge, so the popup lines up with its end. */}
       <Popover.Portal>
         <Popover.Positioner className="isolate z-50 outline-none" side="bottom" align="end" sideOffset={4}>
           <Popover.Popup
-            aria-label="Choose a period"
+            aria-label={t("choose")}
             className="grid max-h-(--available-height) max-w-[calc(100vw-1rem)] origin-(--transform-origin) grid-cols-1 overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 sm:grid-cols-[11rem_minmax(0,1fr)]"
           >
-            <div className="flex flex-col gap-0.5 border-b p-2 sm:border-r sm:border-b-0">
+            <div className="flex flex-col gap-0.5 border-b p-2 sm:border-e sm:border-b-0">
               {group === "main" ? (
                 <>
                   {presetGroups.single.map(presetButton)}
                   {divider}
-                  {groupButton("last", "Last")}
-                  {groupButton("toDate", "Period to date")}
+                  {groupButton("last", t("last"))}
+                  {groupButton("toDate", t("toDate"))}
                   {divider}
                   <button
                     type="button"
@@ -158,7 +172,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                     aria-pressed={draft.key === "custom"}
                     onClick={() => setDraft({ key: "custom", range: draft.range })}
                   >
-                    Custom range
+                    {t("custom")}
                   </button>
                 </>
               ) : (
@@ -168,8 +182,8 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                     className={cn(presetClass, "justify-start font-medium text-muted-foreground")}
                     onClick={() => setGroup("main")}
                   >
-                    <ArrowLeft aria-hidden size={16} />
-                    {group === "last" ? "Last" : "Period to date"}
+                    <ArrowLeft aria-hidden size={16} className="rtl:rotate-180" />
+                    {group === "last" ? t("last") : t("toDate")}
                   </button>
                   {presetGroups[group].map(presetButton)}
                 </>
@@ -179,15 +193,15 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
               <div className="flex items-center gap-2">
                 <DateInput
                   className="flex-1"
-                  aria-label="Start date"
+                  aria-label={t("startDate")}
                   value={draft.range.from}
                   max={period.today}
                   onChange={(event) => typeDate("from", event.target.value)}
                 />
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <ArrowRight className="size-4 shrink-0 rtl:rotate-180 text-muted-foreground" aria-hidden />
                 <DateInput
                   className="flex-1"
-                  aria-label="End date"
+                  aria-label={t("endDate")}
                   value={draft.range.to}
                   max={period.today}
                   onChange={(event) => typeDate("to", event.target.value)}
@@ -197,10 +211,10 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Previous month"
+                  aria-label={t("previousMonth")}
                   onClick={() => setMonth(addMonths(month, -1))}
                 >
-                  <ChevronLeft />
+                  <ChevronLeft className="rtl:rotate-180" />
                 </Button>
                 <span className="text-sm font-semibold" aria-live="polite">
                   {monthLabel(month)}
@@ -208,17 +222,17 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Next month"
+                  aria-label={t("nextMonth")}
                   disabled={month >= period.today.slice(0, 7)}
                   onClick={() => setMonth(addMonths(month, 1))}
                 >
-                  <ChevronRight />
+                  <ChevronRight className="rtl:rotate-180" />
                 </Button>
               </div>
               <div className="grid grid-cols-7 gap-y-0.5 text-center" role="grid" aria-label={monthLabel(month)}>
-                {weekdays.map((name) => (
-                  <span key={name} className="py-1 text-xs text-muted-foreground" aria-hidden>
-                    {name}
+                {week.map((day) => (
+                  <span key={day.getUTCDay()} className="py-1 text-xs text-muted-foreground" aria-hidden>
+                    {format.dateTime(day, { weekday: "short", timeZone: "UTC" })}
                   </span>
                 ))}
                 {Array.from({ length: lead }, (_, index) => (
@@ -240,7 +254,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                       )}
                       disabled={day > period.today}
                       aria-pressed={edge}
-                      aria-label={new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
+                      aria-label={format.dateTime(new Date(`${day}T00:00:00Z`), {
                         weekday: "long",
                         month: "long",
                         day: "numeric",
@@ -249,14 +263,14 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                       })}
                       onClick={() => chooseDay(day)}
                     >
-                      {Number(day.slice(8, 10))}
+                      {format.number(Number(day.slice(8, 10)))}
                     </button>
                   )
                 })}
               </div>
               <div className="flex justify-end gap-2 border-t pt-3">
                 <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -265,7 +279,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                     navigate({ ...draft, comparison: period.comparison })
                   }}
                 >
-                  Apply
+                  {t("apply")}
                 </Button>
               </div>
             </div>

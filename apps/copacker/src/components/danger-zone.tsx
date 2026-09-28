@@ -1,5 +1,6 @@
 "use client"
 
+import { useFormatter, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import {
@@ -17,16 +18,13 @@ import { Card } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
-// What deleting a workspace takes with it. The purchase orders are the buyer's, so a supplier's or forwarder's buyers
-// keep theirs.
-const workspaceDeletes = {
-  buyer: "Its purchase orders, products, connections and team are deleted for everyone.",
-  supplier: "Its products, catalogs and team are deleted for everyone. Buyers keep their purchase orders.",
-  forwarder: "Its addresses and team are deleted for everyone. Buyers keep their purchase orders."
-}
+// The kinds of workspace, each of which says what deleting it takes with it. The purchase orders are the buyer's, so a
+// supplier's or forwarder's buyers keep theirs.
+type WorkspaceKind = "buyer" | "supplier" | "forwarder"
 
 // Deleting for good, at the bottom of Settings: the workspace, for its owner, and the person's own account. Each opens a
 // confirmation that asks them to type what's being deleted.
@@ -39,7 +37,7 @@ export function DangerZone({
   closing
 }: {
   workspace: string
-  kind: keyof typeof workspaceDeletes
+  kind: WorkspaceKind
   // Whether the signed-in person owns the workspace, and so can delete it.
   owner: boolean
   email: string
@@ -48,35 +46,37 @@ export function DangerZone({
   // Workspaces only the person uses, which close with the account.
   closing: string[]
 }) {
-  let accountDescription = "You’re signed out and removed from every workspace."
+  const t = useTranslations("settings.delete")
+  const format = useFormatter()
+  let accountDescription = t("account.removed")
   if (handOver.length) {
-    accountDescription = `Transfer ownership of ${list(handOver)} first.`
+    accountDescription = t("account.handOver", { workspaces: format.list(handOver) })
   } else if (closing.length) {
-    accountDescription += ` ${list(closing)} ${closing.length === 1 ? "closes" : "close"} with your account.`
+    accountDescription = t("account.closing", { count: closing.length, workspaces: format.list(closing) })
   }
   return (
     <Card className="gap-0 divide-y border-destructive/40 py-0 ring-destructive/40">
       {owner && (
-        <Row title="Delete workspace" detail={`${workspace} and everything in it, for everyone`}>
+        <Row title={t("workspace.title")} detail={t("workspace.detail", { workspace })}>
           <Confirm
             action="workspace.delete"
-            label="Delete workspace"
-            title={`Delete ${workspace}?`}
-            description={workspaceDeletes[kind]}
+            label={t("workspace.title")}
+            title={t("workspace.confirm", { workspace })}
+            description={t(`workspace.${kind}`)}
             field="name"
-            fieldLabel="Workspace name"
+            fieldLabel={t("workspace.field")}
             expected={workspace}
           />
         </Row>
       )}
-      <Row title="Delete account" detail="Your sign-in and your place in every workspace">
+      <Row title={t("account.title")} detail={t("account.detail")}>
         <Confirm
           action="account.delete"
-          label="Delete account"
-          title="Delete your account?"
+          label={t("account.title")}
+          title={t("account.confirm")}
           description={accountDescription}
           field="email"
-          fieldLabel="Your email"
+          fieldLabel={t("account.field")}
           expected={email}
           blocked={handOver.length > 0}
         />
@@ -95,11 +95,6 @@ function Row({ title, detail, children }: { title: string; detail: string; child
       {children}
     </div>
   )
-}
-
-// "Guanda", "Guanda and Ok Fencing", or "Guanda, Ok Fencing and Unic Fencing".
-function list(names: string[]) {
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "")
 }
 
 // A destructive button and its confirmation, which deletes once what's typed matches. `blocked` explains why it can't
@@ -123,6 +118,8 @@ function Confirm({
   expected: string
   blocked?: boolean
 }) {
+  const t = useTranslations("settings.delete")
+  const errorMessage = useErrorMessage()
   const id = useId()
   const router = useRouter()
   const [run] = useActionMutation()
@@ -182,7 +179,7 @@ function Confirm({
           <FormError message={error} />
           <AlertDialogFooter>
             <AlertDialogCancel type="button" disabled={pending}>
-              {blocked ? "Close" : "Cancel"}
+              {blocked ? t("close") : t("cancel")}
             </AlertDialogCancel>
             {!blocked && (
               <Button type="submit" variant="destructive" disabled={!matches || pending} aria-busy={pending}>

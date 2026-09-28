@@ -1,7 +1,9 @@
 "use client"
 
 import { Factory, Ship, Store } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
+import { objectKeys } from "ts-extras"
 import { AddressFields } from "@/components/address-fields"
 import { FormInput, FormSelect } from "@/components/form-controls"
 import {
@@ -15,48 +17,39 @@ import {
   FieldTitle
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { positions, type WorkspaceKind } from "@/lib/onboarding"
+import { positionKeys, type WorkspaceKind } from "@/lib/onboarding"
 
 // Getting started's steps, in the order they come. Which ones a person sees depends on how they arrived.
 export type WizardStep = "about" | "role" | "company" | "address"
 
 // Each step's title, and for the address, what it's for.
-export function stepHeading(step: WizardStep, kind: WorkspaceKind | "") {
-  switch (step) {
-    case "about":
-      return { title: "About you" }
-    case "role":
-      return { title: "What does your company do?" }
-    case "company":
-      return { title: "Your company" }
-    case "address":
-      return {
-        buyer: { title: "Delivery address", description: "Where purchase orders are delivered" },
-        supplier: { title: "Pickup address", description: "Where carriers collect your cartons" },
-        forwarder: { title: "Warehouse address", description: "Where buyers send goods for you" },
-        "": { title: "Address" }
-      }[kind]
+export function useStepHeading(step: WizardStep, kind: WorkspaceKind | ""): { title: string; description?: string } {
+  const t = useTranslations("onboarding.steps")
+  if (step !== "address") {
+    return { title: t(step) }
   }
-}
-
-// The saved address's name to start from, which the person can change.
-export const addressNames: Record<WorkspaceKind, string> = {
-  buyer: "Warehouse",
-  supplier: "Factory",
-  forwarder: "Warehouse"
+  if (!kind) {
+    return { title: t("address.none") }
+  }
+  return { title: t(`address.${kind}.title`), description: t(`address.${kind}.description`) }
 }
 
 export function AboutFields() {
+  const t = useTranslations("onboarding")
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <FormInput name="person.firstName" required label="First name" autoComplete="given-name" />
-      <FormInput name="person.lastName" required label="Last name" autoComplete="family-name" />
+      <FormInput name="person.firstName" required label={t("fields.firstName")} autoComplete="given-name" />
+      <FormInput name="person.lastName" required label={t("fields.lastName")} autoComplete="family-name" />
       <FormSelect
         name="person.position"
         required
-        label="Position"
-        placeholder="Choose"
-        options={positions.map((position) => ({ value: position, label: position }))}
+        label={t("fields.position")}
+        placeholder={t("fields.choose")}
+        // The position saves in English; only its label is translated.
+        options={objectKeys(positionKeys).map((position) => ({
+          value: position,
+          label: t(`positions.${positionKeys[position]}`)
+        }))}
         className="sm:col-span-2"
       />
     </div>
@@ -64,25 +57,21 @@ export function AboutFields() {
 }
 
 const roles = [
-  { kind: "buyer", title: "Buyer", description: "Buy from suppliers and sell on Amazon or Shopify", icon: Store },
-  { kind: "supplier", title: "Supplier", description: "Make products and fill purchase orders", icon: Factory },
-  {
-    kind: "forwarder",
-    title: "Freight forwarder",
-    description: "Receive goods and ship them on for buyers",
-    icon: Ship
-  }
+  { kind: "buyer", icon: Store },
+  { kind: "supplier", icon: Factory },
+  { kind: "forwarder", icon: Ship }
 ] as const
 
 // Buyer, supplier or freight forwarder, as cards to choose from. Arrow keys move between them.
 export function RoleFields() {
+  const t = useTranslations("onboarding.roles")
   const {
     field: { value, onChange, ref },
     fieldState
   } = useController({ name: "kind" })
   return (
     <FieldSet data-invalid={fieldState.invalid}>
-      <FieldLegend className="sr-only">What your company does</FieldLegend>
+      <FieldLegend className="sr-only">{t("legend")}</FieldLegend>
       <RadioGroup
         ref={ref}
         value={value}
@@ -108,8 +97,8 @@ export function RoleFields() {
                 <role.icon className="size-5" aria-hidden />
               </span>
               <FieldContent>
-                <FieldTitle>{role.title}</FieldTitle>
-                <FieldDescription>{role.description}</FieldDescription>
+                <FieldTitle>{t(`${role.kind}.title`)}</FieldTitle>
+                <FieldDescription>{t(`${role.kind}.description`)}</FieldDescription>
               </FieldContent>
               <RadioGroupItem value={role.kind} id={`role-${role.kind}`} />
             </Field>
@@ -122,28 +111,30 @@ export function RoleFields() {
 }
 
 export function CompanyFields({ kind }: { kind: WorkspaceKind | "" }) {
+  const t = useTranslations("onboarding.fields")
   return (
     <div className="grid gap-4">
-      <FormInput name="company.name" required label="Company name" autoComplete="organization" />
+      <FormInput name="company.name" required label={t("companyName")} autoComplete="organization" />
       <FormInput
         name="company.website"
-        label="Website"
+        label={t("website")}
         inputMode="url"
         autoComplete="url"
         spellCheck={false}
-        placeholder="example.com"
+        placeholder={t("websitePlaceholder")}
       />
       {/* Buyers see a supplier's phone number; nobody sees a buyer's or a forwarder's. */}
-      {kind === "supplier" && <FormInput name="company.phone" label="Phone number" type="tel" autoComplete="tel" />}
+      {kind === "supplier" && <FormInput name="company.phone" label={t("phone")} type="tel" autoComplete="tel" />}
     </div>
   )
 }
 
 // Amazon needs a pickup phone number to schedule a supplier's collections.
 export function AddressStepFields({ kind }: { kind: WorkspaceKind | "" }) {
+  const t = useTranslations("onboarding.fields")
   return (
     <div className="flex flex-col gap-5">
-      <FormInput name="address.name" required label="Address name" autoComplete="off" />
+      <FormInput name="address.name" required label={t("addressName")} autoComplete="off" />
       <AddressFields path="address.address" requirePhone={kind === "supplier"} />
     </div>
   )

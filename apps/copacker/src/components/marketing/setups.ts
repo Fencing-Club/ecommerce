@@ -4,47 +4,69 @@
 // client changes how it adds servers.
 
 export type Setup = {
+  // Its key under marketing.connect.setups, which holds the one line on what to do with the snippet.
+  key: SetupKey
+  // The agent's name. The catch-all's is translated (marketing.connect.anyClient).
   name: string
-  // Where the snippet goes: a menu, the terminal, or a file's path.
-  where: string
-  // One line on what to do with it.
-  how: string
+  // Where the snippet goes: a menu or a file's path as the agent names it, or the terminal or a server URL field, which
+  // are translated.
+  where: string | { place: "terminal" | "serverUrl" }
   code: string
+  // A command the line names, kept as it is in every language.
+  command?: string
   // The catch-all, drawn apart from the named agents.
   any?: boolean
 }
+
+type SetupKey =
+  | "claude"
+  | "chatgpt"
+  | "claudeCode"
+  | "codex"
+  | "cursor"
+  | "vsCode"
+  | "gemini"
+  | "windsurf"
+  | "zed"
+  | "openCode"
+  | "hermes"
+  | "openClaw"
+  | "any"
+
+const terminal = { place: "terminal" } as const
 
 const url = "https://copacker.ai/mcp"
 
 export const setups: Setup[] = [
   {
+    key: "claude",
     name: "Claude",
     where: "Customize, Connectors",
-    how: "In Claude, open Customize, then Connectors. Add a custom connector with this URL, then connect.",
     code: url
   },
   {
+    key: "chatgpt",
     name: "ChatGPT",
     where: "Plugins, Developer mode",
-    how: "In ChatGPT on the web, turn on developer mode under Settings, Security and login, then add this URL in Plugins.",
     code: url
   },
   {
+    key: "claudeCode",
     name: "Claude Code",
-    where: "Terminal",
-    how: "Run this, then sign in with /mcp in Claude Code.",
+    where: terminal,
+    command: "/mcp",
     code: `claude mcp add --transport http --scope user copacker ${url}`
   },
   {
+    key: "codex",
     name: "Codex",
-    where: "Terminal",
-    how: "Run this and sign in when Codex asks. The CLI, the IDE extension and the ChatGPT desktop app share it.",
+    where: terminal,
     code: `codex mcp add copacker --url ${url}`
   },
   {
+    key: "cursor",
     name: "Cursor",
     where: "~/.cursor/mcp.json",
-    how: "Add Copacker to Cursor’s MCP file, then sign in from Customize.",
     code: `{
   "mcpServers": {
     "copacker": {
@@ -54,9 +76,9 @@ export const setups: Setup[] = [
 }`
   },
   {
+    key: "vsCode",
     name: "VS Code",
     where: ".vscode/mcp.json",
-    how: "Add Copacker to your workspace’s MCP file, then start it from the file and sign in.",
     code: `{
   "servers": {
     "copacker": {
@@ -67,15 +89,16 @@ export const setups: Setup[] = [
 }`
   },
   {
+    key: "gemini",
     name: "Gemini CLI",
-    where: "Terminal",
-    how: "Run this, then sign in with /mcp auth copacker.",
+    where: terminal,
+    command: "/mcp auth copacker",
     code: `gemini mcp add --scope user --transport http copacker ${url}`
   },
   {
+    key: "windsurf",
     name: "Windsurf",
     where: "mcp_config.json",
-    how: "Windsurf is now Devin Desktop. Open its MCP config file from the MCPs menu and add Copacker.",
     code: `{
   "mcpServers": {
     "copacker": {
@@ -85,9 +108,9 @@ export const setups: Setup[] = [
 }`
   },
   {
+    key: "zed",
     name: "Zed",
     where: "settings.json",
-    how: "Add Copacker to Zed’s settings, or add it as a remote server under Settings, AI, MCP Servers.",
     code: `{
   "context_servers": {
     "copacker": {
@@ -97,9 +120,9 @@ export const setups: Setup[] = [
 }`
   },
   {
+    key: "openCode",
     name: "OpenCode",
     where: "~/.config/opencode/opencode.json",
-    how: "Add Copacker to OpenCode’s config file. It signs in the first time it connects.",
     code: `{
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
@@ -111,22 +134,23 @@ export const setups: Setup[] = [
 }`
   },
   {
+    key: "hermes",
     name: "Hermes",
-    where: "Terminal",
-    how: "Run this, and sign in when Hermes first connects.",
+    where: terminal,
     code: `hermes mcp add copacker --url ${url} --auth oauth`
   },
   {
+    key: "openClaw",
     name: "OpenClaw",
-    where: "Terminal",
-    how: "Run these to add Copacker and sign in.",
+    where: terminal,
     code: `openclaw mcp add copacker --url ${url} --transport streamable-http --auth oauth
 openclaw mcp login copacker`
   },
   {
+    key: "any",
     name: "Any MCP client",
-    where: "Server URL",
-    how: "Point any other client at this URL, or have it run the CLI’s server with copacker mcp serve.",
+    where: { place: "serverUrl" },
+    command: "copacker mcp serve",
     code: url,
     any: true
   }

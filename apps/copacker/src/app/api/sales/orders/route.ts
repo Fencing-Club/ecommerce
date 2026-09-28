@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse } from "@/server/errors"
 import { listSalesOrders, salesSources } from "@/server/sales-orders"
 
 const inputSchema = z.object({
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   const s = await session()
   if (s.org.kind !== "buyer") {
-    return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+    return errorResponse("buyerWorkspaceRequired", 403, headers)
   }
   requirePage(s, "sales")
   const params = new URL(request.url).searchParams
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     q: params.get("q") || undefined
   })
   if (!input.success) {
-    return Response.json({ error: "Check the filters and try again" }, { status: 400, headers })
+    return errorResponse("checkFilters", 400, headers)
   }
   const prices = can(s, "prices")
   const list = await listSalesOrders(s.org.id, input.data, { prices })

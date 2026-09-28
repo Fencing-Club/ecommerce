@@ -1,0 +1,123 @@
+{
+  "title": "Inizia",
+  "newWorkspaceTitle": "Nuovo workspace",
+  "person": {
+    "enterFirstName": "Inserisci il tuo nome",
+    "enterLastName": "Inserisci il tuo cognome",
+    "choosePosition": "Scegli la tua qualifica"
+  },
+  "company": {
+    "enterName": "Inserisci il nome della tua azienda",
+    "enterWebsite": "Inserisci un sito web, ad esempio example.com"
+  },
+  "place": {
+    "enterName": "Dai un nome a questo indirizzo"
+  },
+  "positions": {
+    "owner": "Titolare",
+    "generalManager": "Direttore generale",
+    "operationsManager": "Responsabile operativo",
+    "purchasingManager": "Responsabile acquisti",
+    "buyer": "Buyer",
+    "salesManager": "Responsabile vendite",
+    "accountManager": "Account manager",
+    "productionManager": "Responsabile produzione",
+    "qualityControl": "Controllo qualità",
+    "logisticsCoordinator": "Coordinatore logistico",
+    "warehouseManager": "Responsabile magazzino",
+    "customerService": "Assistenza clienti",
+    "finance": "Amministrazione e finanza",
+    "other": "Altro"
+  },
+  "steps": {
+    "about": "Su di te",
+    "role": "Di cosa si occupa la tua azienda?",
+    "company": "La tua azienda",
+    "address": {
+      "none": "Indirizzo",
+      "buyer": {
+        "title": "Indirizzo di consegna",
+        "description": "Dove vengono consegnati gli ordini di acquisto"
+      },
+      "supplier": {
+        "title": "Indirizzo di ritiro",
+        "description": "Dove i corrieri ritirano i tuoi cartoni"
+      },
+      "forwarder": {
+        "title": "Indirizzo del magazzino",
+        "description": "Dove gli acquirenti ti inviano la merce"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Magazzino",
+    "supplier": "Stabilimento",
+    "forwarder": "Magazzino"
+  },
+  "fields": {
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "position": "Qualifica",
+    "choose": "Scegli",
+    "companyName": "Nome dell’azienda",
+    "website": "Sito web",
+    "websitePlaceholder": "example.com",
+    "phone": "Numero di telefono",
+    "addressName": "Nome dell’indirizzo"
+  },
+  "roles": {
+    "legend": "Di cosa si occupa la tua azienda",
+    "buyer": {
+      "title": "Acquirente",
+      "description": "Acquisti dai fornitori e vendi su Amazon o Shopify"
+    },
+    "supplier": {
+      "title": "Fornitore",
+      "description": "Produci articoli ed evadi ordini di acquisto"
+    },
+    "forwarder": {
+      "title": "Spedizioniere",
+      "description": "Ricevi la merce e la inoltri per conto degli acquirenti"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Scegline uno",
+    "pickupPhone": "Aggiungi un numero di telefono per il ritiro. Amazon ne ha bisogno per programmarlo",
+    "step": "Passaggio {current} di {total}",
+    "invitedBy": "Invitato da {name}",
+    "back": "Indietro",
+    "skip": "Salta per ora",
+    "continue": "Continua",
+    "createWorkspace": "Crea workspace",
+    "join": "Unisciti a {workspace}",
+    "cancel": "Annulla",
+    "signOut": "Esci"
+  },
+  "preview": {
+    "workspace": "Workspace",
+    "kinds": {
+      "buyer": "Workspace acquirente",
+      "supplier": "Workspace fornitore",
+      "forwarder": "Workspace spedizioniere"
+    },
+    "groups": {
+      "store": "Negozio",
+      "purchasing": "Acquisti",
+      "sales": "Vendite",
+      "products": "Prodotti"
+    },
+    "pages": {
+      "overview": "Panoramica",
+      "orders": "Ordini",
+      "products": "Prodotti",
+      "restock": "Riassortimento",
+      "purchaseOrders": "Ordini di acquisto",
+      "shipments": "Spedizioni",
+      "customers": "Clienti",
+      "inventory": "Inventario",
+      "catalogs": "Cataloghi",
+      "settings": "Impostazioni"
+    },
+    "address": "Indirizzo"
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "title": "Налаштування",
+  "delete": {
+    "title": "Видалити",
+    "description": "Назавжди, без можливості скасувати",
+    "workspace": {
+      "title": "Видалити робочий простір",
+      "detail": "{workspace} і все, що в ньому, для всіх",
+      "confirm": "Видалити {workspace}?",
+      "field": "Назва робочого простору",
+      "buyer": "Його замовлення на закупівлю, товари, підключення та команду буде видалено для всіх.",
+      "supplier": "Його товари, каталоги та команду буде видалено для всіх. Покупці збережуть свої замовлення на закупівлю.",
+      "forwarder": "Його адреси та команду буде видалено для всіх. Покупці збережуть свої замовлення на закупівлю."
+    },
+    "account": {
+      "title": "Видалити обліковий запис",
+      "detail": "Ваш вхід і ваше місце в кожному робочому просторі",
+      "confirm": "Видалити ваш обліковий запис?",
+      "field": "Ваша електронна пошта",
+      "removed": "Ви вийдете з системи, і вас буде видалено з усіх робочих просторів.",
+      "closing": "Ви вийдете з системи, і вас буде видалено з усіх робочих просторів. {count, plural, one {{workspaces} закриється разом з вашим обліковим записом.} few {{workspaces} закриються разом з вашим обліковим записом.} many {{workspaces} закриються разом з вашим обліковим записом.} other {{workspaces} закриються разом з вашим обліковим записом.}}",
+      "handOver": "Спочатку передайте право власності на {workspaces}."
+    },
+    "cancel": "Скасувати",
+    "close": "Закрити"
+  },
+  "language": {
+    "title": "Мова",
+    "description": "Лише для вас",
+    "label": "Мова",
+    "system": "Системна ({language})"
+  },
+  "form": {
+    "save": "Зберегти",
+    "saved": "Збережено"
+  },
+  "profile": {
+    "title": "Профіль",
+    "firstName": "Ім’я",
+    "lastName": "Прізвище",
+    "position": "Посада",
+    "choose": "Виберіть",
+    "company": "Компанія",
+    "website": "Вебсайт компанії",
+    "enterCompany": "Введіть назву компанії"
+  },
+  "team": {
+    "title": "Команда",
+    "description": "Люди в {workspace}",
+    "people": "{count, plural, one {# людина} few {# людини} many {# людей} other {# людини}}",
+    "invite": "Запросити",
+    "inviteTo": "Запросити до {workspace}",
+    "sendInvitation": "Надіслати запрошення",
+    "email": "Електронна пошта",
+    "enterEmail": "Введіть адресу електронної пошти",
+    "role": "Роль",
+    "roles": {
+      "owner": "Власник",
+      "admin": "Адміністратор",
+      "member": "Учасник"
+    },
+    "roleDescriptions": {
+      "admin": "Усе, зокрема команда й налаштування",
+      "member": "Лише вибрані вами сторінки"
+    },
+    "pages": "Сторінки",
+    "choosePage": "Виберіть принаймні одну сторінку",
+    "seePrices": "Бачити ціни та витрати",
+    "needsPrices": "Потрібен доступ до цін і витрат",
+    "levels": {
+      "none": "Немає доступу",
+      "view": "Перегляд",
+      "edit": "Редагування"
+    },
+    "changeAccess": "Змінити доступ",
+    "changeAccessFor": "Змінити доступ для {who}",
+    "save": "Зберегти",
+    "you": "Ви",
+    "more": "Інші дії для {name}",
+    "remove": "Видалити",
+    "removeTitle": "Видалити {name}?",
+    "removeDescription": "Доступ до {workspace} буде втрачено одразу.",
+    "transferOwnership": "Передати право власності",
+    "transferTitle": "Передати право власності {name}?",
+    "transferDescription": "Ця людина стане власником {workspace}, а ви залишитеся адміністратором.",
+    "cancel": "Скасувати",
+    "invitationExpired": "Запрошення прострочене",
+    "invited": "Запрошено, дійсне до {expires}",
+    "invitationSent": "Запрошення надіслано, дійсне до {expires}",
+    "updating": "Оновлення {email}",
+    "sendAgain": "Надіслати ще раз",
+    "cancelInvitation": "Скасувати запрошення"
+  },
+  "integrations": {
+    "title": "Інтеграції",
+    "description": "Магазини, з якими синхронізується Copacker",
+    "marketplaces": "Маркетплейси",
+    "marketplacesUnavailable": "Не вдалося завантажити з Amazon",
+    "stores": {
+      "shopify": "Товари, запаси, замовлення, витрати",
+      "amazon": "Замовлення, запаси, витрати, відправлення",
+      "ebay": "Замовлення, запаси"
+    },
+    "comingSoon": "Незабаром",
+    "connect": "Підключити",
+    "notConnected": "Не підключено",
+    "connected": "Підключено",
+    "storeSettings": "Налаштування {store}",
+    "cancel": "Скасувати",
+    "shopify": {
+      "title": "Підключити Shopify",
+      "description": "Ви схвалите Copacker у Shopify",
+      "store": "Магазин",
+      "storeDescription": "Посилання на адмінпанель або домен myshopify.com",
+      "enterStore": "Введіть посилання на адмінпанель магазину або домен myshopify.com"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Підключити Amazon",
+      "description": "У Solution Provider Portal Amazon відкрийте меню біля застосунку Copacker, виберіть Authorize і скопіюйте refresh token. Ваш merchant token є в Seller Central у розділі Settings, Account Info.",
+      "connect": "Підключити",
+      "merchantToken": "Merchant token",
+      "refreshToken": "Refresh token"
+    }
+  },
+  "excludedTags": {
+    "title": "Виключені теги замовлень",
+    "syncing": "Синхронізація тегів із Shopify",
+    "none": "Немає",
+    "edit": "Редагувати",
+    "editLabel": "Редагувати виключені теги замовлень",
+    "description": "Замовлення Shopify з цими тегами не враховуються.",
+    "tags": "Теги",
+    "addTag": "Додайте тег",
+    "wildcard": "Використовуйте * як шаблон, наприклад amazon*",
+    "saveFailed": "Не вдалося зберегти теги. Спробуйте ще раз.",
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "saving": "Збереження…"
+  },
+  "restock": {
+    "title": "Поповнення",
+    "description": "Для сторінок «Поповнення» та «Огляд»",
+    "salesPeriod": "Період продажів",
+    "leadTime": "Термін постачання",
+    "days": "{count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+    "salesPeriodDays": "Період продажів (днів)",
+    "leadTimeDays": "Термін постачання (днів)",
+    "leadTimeDescription": "Для постачальників без власного",
+    "enterDays": "Введіть кількість днів"
+  },
+  "timeZone": {
+    "title": "Часовий пояс",
+    "description": "Для днів і місяців на сторінці «Огляд»",
+    "label": "Часовий пояс магазину",
+    "automatic": "Автоматично",
+    "automaticZone": "Автоматично, {zone}"
+  },
+  "monthlyCosts": {
+    "title": "Щомісячні витрати",
+    "description": "Витрати, про які Shopify та Amazon не звітують",
+    "count": "{count, plural, =0 {Немає щомісячних витрат} one {# витрата} few {# витрати} many {# витрат} other {# витрати}}",
+    "allChannels": "Усі канали",
+    "between": "{channel}, з {start} до {end}",
+    "since": "{channel}, з {start}",
+    "until": "{channel}, до {end}",
+    "removeFailed": "Не вдалося видалити цю витрату",
+    "removing": "Видалення {name}",
+    "more": "Інші дії для {name}",
+    "remove": "Видалити",
+    "add": "Додати витрату",
+    "addTitle": "Додати щомісячну витрату",
+    "name": "Назва",
+    "amount": "Сума на місяць",
+    "channel": "Канал",
+    "paidSince": "Оплачується з",
+    "paidUntil": "Оплачується до",
+    "enterName": "Введіть назву",
+    "enterAmount": "Введіть суму",
+    "endBeforeStart": "Дата завершення не може бути раніше за дату початку"
+  },
+  "supplierProfile": {
+    "title": "Профіль постачальника",
+    "description": "Контакти, які бачать покупці",
+    "contactName": "Контактна особа",
+    "contactEmail": "Контактна електронна пошта",
+    "phone": "Телефон",
+    "website": "Вебсайт"
+  },
+  "supplierForm": {
+    "submit": "Додати постачальника",
+    "company": "Компанія постачальника",
+    "email": "Електронна пошта",
+    "emailDescription": "Додайте, щоб запросити одразу."
+  },
+  "addresses": {
+    "title": "Адреси",
+    "description": "Куди доставляються замовлення на закупівлю",
+    "pickupTitle": "Адреси забору",
+    "pickupDescription": "Звідки перевізники забирають ваші коробки",
+    "count": "{count, plural, =0 {Немає адрес} one {# адреса} few {# адреси} many {# адрес} other {# адреси}}",
+    "noPickupAddresses": "Немає адрес забору",
+    "add": "Додати адресу",
+    "editTitle": "Редагувати адресу",
+    "edit": "Редагувати",
+    "remove": "Видалити",
+    "more": "Інші дії для {name}",
+    "removing": "Видалення {name}",
+    "removeFailed": "Не вдалося видалити цю адресу",
+    "stockArrivesAt": "Товар надходить у {location}",
+    "stockArrivesAtShopify": "Товар надходить у локацію Shopify",
+    "addPhone": "Додайте номер телефону, щоб використовувати адресу у відправленнях",
+    "supplierKeepsPickups": "Тепер адреси забору веде ваш постачальник, видаліть цю, щойно він її додасть",
+    "saveChanges": "Зберегти зміни",
+    "saveAddress": "Зберегти адресу",
+    "name": "Назва адреси",
+    "namePlaceholder": "Склад у Шеньчжені",
+    "kind": "Тип адреси",
+    "shopifyLocation": "Локація Shopify",
+    "shopifyLocationDescription": "Замовлення на закупівлю, надіслані сюди, відображаються там як замовлені",
+    "notLinked": "Не пов’язано"
+  }
+}

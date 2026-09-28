@@ -2,15 +2,17 @@ import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { catalogProducts, catalogs, supplierProductGroups, supplierProducts } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { imageTypes, variantsProblem, variantTitle } from "@/lib/supplier-product"
 import { requireSupplier, type Session } from "./auth"
 import { addToCatalogs } from "./catalogs"
+import { pricingText } from "./text"
 
 const count = z.number().int().positive().max(2_147_483_647)
 const variantSchema = z.object({
   id: z.uuid().optional(),
-  supplierSku: z.string().trim().min(1, "Add a SKU").max(255),
+  supplierSku: z.string().trim().min(1, "errors.addSku").max(255),
   options: z.record(z.string(), z.string().trim().max(255)),
   currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
   priceMinor: z.number().int().nonnegative().max(2_147_483_647).nullable(),
@@ -27,17 +29,17 @@ const variantSchema = z.object({
 export const productInputSchema = z.object({
   id: z.uuid().optional(),
   revision: z.number().int().positive().optional(),
-  title: z.string().trim().min(1, "Add a title").max(500),
+  title: z.string().trim().min(1, "errors.addTitle").max(500),
   status: z.enum(["active", "archived"]),
   category: z.string().trim().max(255),
   productCode: z.string().trim().max(255),
   url: z.union([z.literal(""), z.url().max(2000)]),
   description: z.string().max(8000),
-  optionNames: z.array(z.string().trim().min(1, "Name the option").max(255)).max(4),
+  optionNames: z.array(z.string().trim().min(1, "errors.nameOption").max(255)).max(4),
   images: z
     .array(z.object({ key: z.string().min(1).max(500), name: z.string().max(255), contentType: z.enum(imageTypes) }))
     .max(50),
-  variants: z.array(variantSchema).min(1, "Add a variant").max(500)
+  variants: z.array(variantSchema).min(1, "errors.addVariant").max(500)
 })
 
 // Saves a product and its variants from the product page. Variants left out are archived, so earlier POs and stock
@@ -45,14 +47,14 @@ export const productInputSchema = z.object({
 export async function saveProduct(s: Session, raw: unknown) {
   requireSupplier(s)
   const input = productInputSchema.parse(raw)
-  const problem = variantsProblem(input)
+  const problem = variantsProblem(input, await pricingText())
   if (problem) {
     throw new Error(problem)
   }
   const orgId = s.org.id
   const imagePrefix = `supplier-images/${orgId}/`
   if (input.images.some((image) => !image.key.startsWith(imagePrefix))) {
-    throw new Error("Upload photos from this workspace")
+    throw new LocalizedError("uploadOwnPhotos")
   }
   return db().transaction(async (tx) => {
     const group = {
@@ -80,7 +82,7 @@ export async function saveProduct(s: Session, raw: unknown) {
         )
         .returning({ revision: supplierProductGroups.revision })
       if (!updated) {
-        throw new Error("This product changed. Refresh and try again")
+        throw new LocalizedError("productChangedRefresh")
       }
       revision = updated.revision
     } else {
@@ -109,7 +111,7 @@ export async function saveProduct(s: Session, raw: unknown) {
       const { id: variantId, ...fields } = variant
       const owner = existing.find((row) => row.supplierSku === variant.supplierSku)
       if (owner && owner.groupId !== id) {
-        throw new Error(`Another product uses SKU ${variant.supplierSku}`)
+        throw new LocalizedError("skuTaken", { sku: variant.supplierSku })
       }
       const targetId = variantId ?? owner?.id
       const values = {
@@ -126,7 +128,7 @@ export async function saveProduct(s: Session, raw: unknown) {
           .where(and(eq(supplierProducts.id, targetId), eq(supplierProducts.groupId, id)))
           .returning({ id: supplierProducts.id })
         if (!updated) {
-          throw new Error("A variant changed. Refresh and try again")
+          throw new LocalizedError("variantChangedRefresh")
         }
         kept.push(targetId)
       } else {

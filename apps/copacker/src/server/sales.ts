@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { requireBuyer, type Session } from "./auth"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
@@ -11,27 +12,25 @@ import { amazonSalesMarketplaces } from "./sales-orders"
 import { excludedShopifyTags, hasExcludedTag } from "./shopify-tags"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
-export class DemandAccessError extends Error {}
+export class DemandAccessError extends LocalizedError {}
 export async function readSalesDemand(s: Session, raw: unknown, assertActive?: () => Promise<void>) {
   requireBuyer(s)
   const { source, window } = demandInputSchema.parse(raw)
   const now = Date.now()
   if (Date.parse(window.to) > now - 120000) {
-    throw new DemandAccessError("End the sales window at least two minutes before now")
+    throw new DemandAccessError("salesWindowTooRecent")
   }
   if (source === "amazon" && Date.parse(window.from) < now - 730 * 86400000) {
-    throw new DemandAccessError("Amazon US sales history supports the last two years")
+    throw new DemandAccessError("amazonHistoryLimit")
   }
   const account = await connection(s.org.id, source)
   if (source === "shopify") {
     const scopes = new Set(account.scopes.split(/[,\s]+/))
     if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
-      throw new DemandAccessError("Reconnect Shopify to grant order history access")
+      throw new DemandAccessError("reconnectShopifyOrders")
     }
     if (Date.parse(window.from) < now - 60 * 86400000 && !scopes.has("read_all_orders")) {
-      throw new DemandAccessError(
-        "Shopify shares only the last 60 days of orders until Copacker is allowed to read all orders. Choose 60 days or fewer for now"
-      )
+      throw new DemandAccessError("shopify60Days")
     }
   }
   const check = async () => {
@@ -41,7 +40,7 @@ export async function readSalesDemand(s: Session, raw: unknown, assertActive?: (
       .from(connections)
       .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, source)))
     if (current?.externalId !== account.externalId) {
-      throw new DemandAccessError("The connected account changed. Restart the sales refresh")
+      throw new DemandAccessError("accountChangedRestart")
     }
   }
   await check()

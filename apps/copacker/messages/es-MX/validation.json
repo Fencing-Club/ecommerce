@@ -1,0 +1,17 @@
+{
+  "required": "Este campo es obligatorio",
+  "number": "Ingresa un número",
+  "minLength": "Ingresa al menos {minimum} caracteres",
+  "addOne": "Agrega al menos uno",
+  "minItems": "Agrega al menos {minimum}",
+  "atLeast": "Ingresa {minimum} o más",
+  "greaterThan": "Ingresa un número mayor que {minimum}",
+  "maxLength": "Usa {maximum} caracteres o menos",
+  "maxItems": "Usa {maximum} o menos",
+  "atMost": "Ingresa {maximum} o menos",
+  "email": "Ingresa un correo electrónico",
+  "date": "Ingresa una fecha",
+  "chooseOption": "Elige una opción",
+  "format": "Revisa el formato",
+  "multipleOf": "Ingresa un múltiplo de {divisor}"
+}

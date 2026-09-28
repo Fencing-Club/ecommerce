@@ -1,0 +1,156 @@
+{
+  "appDescription": "खरीदारों और सप्लायरों के लिए Amazon शिपमेंट तैयार करने का साझा वर्कस्पेस।",
+  "skipToContent": "कंटेंट पर जाएं",
+  "breadcrumb": "ब्रेडक्रंब",
+  "about": "{label} के बारे में",
+  "errors": {
+    "generic": "कुछ गड़बड़ हो गई। फिर से कोशिश करें।",
+    "offline": "Copacker से कनेक्ट नहीं हो सका। अपना कनेक्शन जांचें और फिर से कोशिश करें।"
+  },
+  "actions": {
+    "cancel": "रद्द करें"
+  },
+  "status": {
+    "draft": "ड्राफ़्ट",
+    "active": "सक्रिय",
+    "archived": "आर्काइव",
+    "submitted": "सप्लायर के पास",
+    "closed": "बंद",
+    "packing": "पैकिंग",
+    "approval": "मंज़ूरी ज़रूरी",
+    "creatingShipment": "शिपमेंट बन रहा है",
+    "waitingLabels": "शिपिंग लेबल चाहिए",
+    "ready": "पिकअप के लिए तैयार",
+    "shipped": "भेजा गया",
+    "forwarded": "फ़ॉरवर्डर ने भेजा",
+    "received": "प्राप्त",
+    "correction": "सुधार का अनुरोध",
+    "needsAttention": "ध्यान देना ज़रूरी",
+    "cancelled": "रद्द",
+    "working": "प्रोसेस हो रहा है",
+    "created": "बनाया गया",
+    "readyToShip": "भेजने के लिए तैयार",
+    "inTransit": "रास्ते में",
+    "delivered": "डिलीवर हुआ",
+    "checkedIn": "चेक इन हुआ",
+    "receiving": "रिसीव हो रहा है",
+    "error": "गड़बड़ी",
+    "pending": "लंबित",
+    "unshipped": "नहीं भेजा गया",
+    "unfulfilled": "पूरा नहीं हुआ",
+    "partiallyShipped": "आंशिक रूप से भेजा गया",
+    "partiallyFulfilled": "आंशिक रूप से पूरा",
+    "fulfilled": "पूरा हुआ",
+    "unfulfillable": "पूरा नहीं हो सकता",
+    "inStock": "स्टॉक में",
+    "reorderSoon": "जल्द रीऑर्डर करें",
+    "reorderNow": "अभी रीऑर्डर करें",
+    "outOfStock": "स्टॉक खत्म",
+    "onCopacker": "Copacker पर",
+    "invited": "आमंत्रित",
+    "invitationExpired": "आमंत्रण की अवधि खत्म",
+    "notInvited": "आमंत्रित नहीं"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "आपकी लोकेशन"
+  },
+  "documents": {
+    "download": "डाउनलोड करें",
+    "purchaseOrder": "खरीद ऑर्डर",
+    "invoice": "कमर्शियल इनवॉइस",
+    "packingList": "पैकिंग लिस्ट",
+    "checklist": "पैकिंग चेकलिस्ट",
+    "cartonLabel": "कार्टन लेबल",
+    "shippingLabel": "शिपिंग लेबल",
+    "productLabel": "प्रोडक्ट लेबल"
+  },
+  "format": {
+    "plusAmounts": "साथ में {amounts}",
+    "separator": ", "
+  },
+  "address": {
+    "country": "देश",
+    "chooseCountry": "देश चुनें",
+    "contactName": "संपर्क व्यक्ति का नाम",
+    "phoneNumber": "फ़ोन नंबर",
+    "email": "ईमेल",
+    "streetAddress": "पता",
+    "addressLine2": "पता लाइन 2",
+    "city": "शहर",
+    "stateOrProvince": "राज्य या प्रांत",
+    "postalCode": "पिन कोड"
+  },
+  "sync": {
+    "actions": "{label} के ऐक्शन",
+    "syncing": "सिंक हो रहा है…",
+    "syncNow": "अभी सिंक करें",
+    "reconnect": "फिर से कनेक्ट करें",
+    "synced": "<time></time> सिंक हुआ"
+  },
+  "disconnect": {
+    "disconnect": "डिस्कनेक्ट करें",
+    "title": "{name} को डिस्कनेक्ट करें?",
+    "shopifyEffect": "Copacker, {account} के साथ प्रोडक्ट, स्टॉक, बिक्री और लागत सिंक करना बंद कर देगा। खरीद ऑर्डर जैसे हैं वैसे ही रहेंगे।",
+    "amazonEffect": "Copacker, {account} से बिक्री और स्टॉक पढ़ना बंद कर देगा और AWD शिपमेंट नहीं बना पाएगा। खरीद ऑर्डर जैसे हैं वैसे ही रहेंगे।",
+    "failed": "{name} को डिस्कनेक्ट नहीं किया जा सका",
+    "cancel": "रद्द करें"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {PDF चुनें} csv {CSV चुनें} other {सपोर्टेड फ़ाइल चुनें}}",
+    "tooLarge": "{type, select, pdf {{size} तक की PDF चुनें} csv {{size} तक की CSV चुनें} other {{size} तक की फ़ाइल चुनें}}",
+    "oneFile": "{type, select, pdf {एक PDF चुनें} csv {एक CSV चुनें} other {एक फ़ाइल चुनें}}",
+    "prompt": "{type, select, pdf {PDF यहां छोड़ें या <browse>ब्राउज़ करें</browse>} csv {CSV यहां छोड़ें या <browse>ब्राउज़ करें</browse>} other {फ़ाइल यहां छोड़ें या <browse>ब्राउज़ करें</browse>}}",
+    "upTo": "{size} तक",
+    "remove": "{name} हटाएं",
+    "replaceFile": "{name} बदलें",
+    "replace": "बदलें"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "आधिकारिक कमर्शियल इनवॉइस",
+      "productLabels": "प्रोडक्ट लेबल",
+      "shippingLabels": "कैरियर शिपिंग लेबल"
+    },
+    "chooseVariationError": "प्रोडक्ट वैरिएंट चुनें",
+    "enterLabelPage": "कम से कम एक कार्टन का लेबल पेज डालें",
+    "failed": "अपलोड नहीं हो सका। फिर से कोशिश करें।",
+    "choosePdf": "PDF चुनें",
+    "variation": "प्रोडक्ट वैरिएंट",
+    "chooseVariation": "वैरिएंट चुनें",
+    "productLabelHint": "हर वैरिएंट के लिए एक लेबल शीट, 32 MB तक",
+    "uploading": "अपलोड हो रहा है",
+    "uploaded": "अपलोड हो गया",
+    "upload": "अपलोड करें",
+    "labelPages": "हर कार्टन का लेबल पेज",
+    "labelPagesDescription": "अगर किसी कार्टन का लेबल दूसरी फ़ाइल में है, तो उसे खाली छोड़ दें",
+    "carton": "कार्टन {carton}",
+    "page": "पेज"
+  },
+  "ui": {
+    "close": "बंद करें",
+    "toggleSidebar": "साइडबार दिखाएं/छिपाएं",
+    "sidebar": "साइडबार",
+    "sidebarDescription": "मोबाइल साइडबार दिखाता है।"
+  },
+  "pages": {
+    "error": {
+      "title": "कुछ गड़बड़ हो गई",
+      "didntLoad": "यह पेज लोड नहीं हुआ",
+      "dataUnchanged": "आपका डेटा नहीं बदला है",
+      "tryAgain": "फिर से कोशिश करें",
+      "goToOverview": "ओवरव्यू पर जाएं"
+    },
+    "notFound": {
+      "title": "पेज नहीं मिला",
+      "checkAddress": "पता जांचें और फिर से कोशिश करें",
+      "goToCopacker": "Copacker पर जाएं",
+      "removed": "शायद इसे हटा दिया गया है, या यह किसी दूसरे वर्कस्पेस में है",
+      "goToOverview": "ओवरव्यू पर जाएं"
+    },
+    "forbidden": {
+      "title": "एक्सेस नहीं है",
+      "askAdmin": "किसी एडमिन से एक्सेस मांगें"
+    }
+  }
+}

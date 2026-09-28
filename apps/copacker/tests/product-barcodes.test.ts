@@ -351,7 +351,12 @@ describe("standard product labels", () => {
 
     await setProductLabel("uploaded")
     expect(await lineLabels(po)).toEqual([
-      { itemId: line, state: "missing", problem: "Upload its label on the Products page" }
+      {
+        itemId: line,
+        state: "missing",
+        problem: "Upload its label on the Products page",
+        problemKey: "uploadLabelOnProducts"
+      }
     ])
     expect((await downloadLine(po.id, line)).status).toBe(404)
     const preview = await GET(new Request(barcodeUrl(variantA)))
@@ -368,7 +373,12 @@ describe("standard product labels", () => {
     const line = randomUUID()
     const amazonBound = await order([item(line, variantA)], "amazon")
     expect(await lineLabels(amazonBound)).toEqual([
-      { itemId: line, state: "missing", problem: "Its FNSKU is looked up when the purchase order is sent" }
+      {
+        itemId: line,
+        state: "missing",
+        problem: "Its FNSKU is looked up when the purchase order is sent",
+        problemKey: "fnskuLookedUpOnSend"
+      }
     ])
   })
 })

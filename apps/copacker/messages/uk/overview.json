@@ -1,0 +1,267 @@
+{
+  "title": "Огляд",
+  "loading": "Завантаження огляду",
+  "notAvailable": "Недоступно",
+  "new": "Нове",
+  "plusCurrencies": "Плюс {amounts}",
+  "noStores": {
+    "title": "Немає підключених магазинів",
+    "connectDescription": "Підключіть Shopify або Amazon, щоб бачити огляд",
+    "askAdmin": "Попросіть адміністратора підключити їх",
+    "connect": "Підключити магазини"
+  },
+  "period": {
+    "choose": "Виберіть період",
+    "presets": {
+      "today": "Сьогодні",
+      "yesterday": "Учора",
+      "last7": "Останні 7 днів",
+      "last30": "Останні 30 днів",
+      "last90": "Останні 90 днів",
+      "last365": "Останні 365 днів",
+      "lastWeek": "Минулий тиждень",
+      "lastMonth": "Минулий місяць",
+      "lastQuarter": "Минулий квартал",
+      "last12Months": "Останні 12 місяців",
+      "lastYear": "Минулий рік",
+      "weekToDate": "З початку тижня",
+      "monthToDate": "З початку місяця",
+      "quarterToDate": "З початку кварталу",
+      "yearToDate": "З початку року"
+    },
+    "comparisons": {
+      "previousPeriod": "Попередній період",
+      "previousYear": "Попередній рік",
+      "none": "Без порівняння"
+    },
+    "last": "Останні",
+    "toDate": "З початку періоду",
+    "custom": "Власний діапазон",
+    "startDate": "Дата початку",
+    "endDate": "Дата завершення",
+    "previousMonth": "Попередній місяць",
+    "nextMonth": "Наступний місяць",
+    "cancel": "Скасувати",
+    "apply": "Застосувати"
+  },
+  "channel": {
+    "label": "Канал",
+    "all": "Усі канали",
+    "shopifyLocation": "Shopify: {location}"
+  },
+  "kpis": {
+    "label": "Продажі, {period}",
+    "about": "Про показник «{label}»",
+    "versus": "{comparison, select, previousYear {порівняно з попереднім роком} other {порівняно з попереднім періодом}}",
+    "noPrices": "Цін ще немає",
+    "noOrders": "Замовлення не синхронізовано",
+    "noUnitCosts": "Немає собівартості одиниці",
+    "uncostedSales": "Не враховано {amount} продажів без собівартості одиниці.",
+    "estimatedFees": "Деякі комісії оцінено, доки платформа їх не опублікує.",
+    "margin": "Маржа <figure>{percent}</figure>",
+    "sales": "Продажі",
+    "salesInfo": "Після знижок, без податків і доставки.",
+    "orders": "Замовлення",
+    "averageOrder": "Середня вартість замовлення",
+    "units": "Продано одиниць",
+    "grossProfit": "Валовий прибуток",
+    "stockoutLosses": "Втрати через дефіцит",
+    "stockoutInfo": "Продажі, які очікувано буде втрачено, поки товарів немає в наявності, до надходження сьогоднішніх дозамовлень.",
+    "lostThisPeriod": "{amount} втрачено за цей період"
+  },
+  "sections": {
+    "sales": "Продажі",
+    "purchasing": "Закупівлі",
+    "productsAndCustomers": "Товари та клієнти",
+    "products": "Товари",
+    "stock": "Залишок"
+  },
+  "salesByChannel": {
+    "title": "Продажі за каналами",
+    "aboutLabel": "Про продажі",
+    "about": "Після знижок, без податків і доставки.",
+    "aboutLocation": "Замовлення Shopify, відправлені з {location}. Після знижок, без податків і доставки.",
+    "otherMarketplaces": "{count, plural, one {# замовлення Amazon за межами Північної Америки не враховано.} few {# замовлення Amazon за межами Північної Америки не враховано.} many {# замовлень Amazon за межами Північної Америки не враховано.} other {# замовлення Amazon за межами Північної Америки не враховано.}}",
+    "orders": "Замовлення",
+    "noOrders": "Замовлення не синхронізовано"
+  },
+  "salesChart": {
+    "measure": "Показник",
+    "metrics": {
+      "sales": "Продажі",
+      "orders": "Замовлення",
+      "units": "Одиниці"
+    },
+    "orders": "{count, plural, one {# замовлення} few {# замовлення} many {# замовлень} other {# замовлення}}",
+    "units": "{count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+    "weekOf": "Тиждень від {date}",
+    "previousSeries": "{source}, {comparison, select, previousYear {попередній рік} other {попередній період}}",
+    "caption": "{metric, select, orders {Замовлення} units {Продано одиниць} other {Продажі}} за {step, select, week {тижнями} month {місяцями} other {днями}}",
+    "stepColumn": "{step, select, week {Тиждень від} month {Місяць} other {День}}",
+    "noData": "Немає даних"
+  },
+  "setup": {
+    "title": "Завершіть налаштування",
+    "progress": "Виконано {done} з {total}",
+    "done": "Готово"
+  },
+  "attention": {
+    "title": "Потребує уваги",
+    "caughtUp": "Усе виконано"
+  },
+  "inventory": {
+    "title": "Запаси",
+    "aboutLabel": "Про вартість запасів",
+    "about": "Роздрібна вартість ґрунтується на нещодавній ціні продажу кожної одиниці або на її ціні в Shopify. Собівартість включає вартість із доставкою із замовлень на закупівлю.",
+    "products": "Товари",
+    "onHand": "{count, number} у наявності",
+    "onTheWay": "{count, number} у дорозі",
+    "atCost": "{amount} за собівартістю",
+    "noUnitCosts": "Немає собівартості одиниці",
+    "noPrices": "Немає цін",
+    "noStock": "Залишки не синхронізовано",
+    "unitsOnHand": "Одиниць у наявності",
+    "valueAtCost": "Вартість за собівартістю",
+    "retailValue": "Роздрібна вартість",
+    "potentialProfit": "Потенційний валовий прибуток"
+  },
+  "cover": {
+    "title": "Днів запасу",
+    "aboutLabel": "Про дні запасу",
+    "about": "На скільки вистачить залишку кожного товару за поточного темпу продажів.",
+    "items": "{count, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}"
+  },
+  "upcoming": {
+    "title": "Майбутні витрати",
+    "aboutLabel": "Про майбутні витрати",
+    "about": "Дозамовлення, які вже час зробити, та надіслані замовлення на закупівлю за датою оплати.",
+    "next60": "Наступні 60 днів",
+    "reorders": "Дозамовлення на зараз",
+    "reordersDetail": "Оцінка за собівартістю одиниці",
+    "purchaseOrders": "{count, plural, one {# замовлення на закупівлю} few {# замовлення на закупівлю} many {# замовлень на закупівлю} other {# замовлення на закупівлю}}",
+    "due": {
+      "overdue": "Прострочено",
+      "next30": "Протягом наступних 30 днів",
+      "next60": "Через 31–60 днів",
+      "later": "Пізніше"
+    }
+  },
+  "trending": {
+    "title": "Товари в тренді",
+    "sellingMore": "Продаються краще",
+    "sellingLess": "Продаються гірше",
+    "nothingMore": "Немає товарів із ростом продажів",
+    "nothingLess": "Немає товарів зі спадом продажів",
+    "noPreviousOrders": "Немає синхронізованих замовлень за {period}",
+    "noComparison": "Немає періоду для порівняння",
+    "noChanges": "Продажі жодного товару не змінилися більш ніж на кілька одиниць",
+    "units": "з {from, number} до {count, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}",
+    "variantUnits": "{variant}, з {from, number} до {count, plural, one {# одиниці} few {# одиниць} many {# одиниць} other {# одиниці}}"
+  },
+  "slow": {
+    "title": "Неліквідний залишок",
+    "aboutLabel": "Про неліквідний залишок",
+    "about": "Залишок, якого вистачить понад 3 місяці або який останнім часом не продавався.",
+    "summary": "{items, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
+    "summaryAtCost": "{items, plural, one {# товар} few {# товари} many {# товарів} other {# товару}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}, {amount} за собівартістю",
+    "product": "Товар",
+    "onHand": "У наявності",
+    "cover": "Запас",
+    "atCost": "За собівартістю",
+    "days": "{count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+    "notSelling": "Не продається",
+    "noUnitCost": "Немає собівартості одиниці",
+    "empty": "Немає неліквідного залишку"
+  },
+  "bestSellers": {
+    "title": "Бестселери",
+    "restock": "Поповнення",
+    "product": "Товар",
+    "sold": "Продано",
+    "onHand": "У наявності",
+    "cover": "Запас",
+    "status": "Статус",
+    "days": "{count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+    "empty": "Продажів ще немає"
+  },
+  "openOrders": {
+    "title": "Відкриті замовлення на закупівлю",
+    "link": "Замовлення на закупівлю",
+    "supplier": "Постачальник",
+    "orders": "Замовлення",
+    "openValue": "Відкрита сума",
+    "otherSuppliers": "{count, plural, one {# інший постачальник} few {# інші постачальники} many {# інших постачальників} other {# іншого постачальника}}",
+    "empty": "Немає відкритих замовлень на закупівлю",
+    "open": "Відкриті",
+    "drafts": "Чернетки",
+    "purchaseOrders": "{count, plural, one {# замовлення на закупівлю} few {# замовлення на закупівлю} many {# замовлень на закупівлю} other {# замовлення на закупівлю}}"
+  },
+  "profit": {
+    "title": "Валовий прибуток",
+    "monthlyCosts": "Щомісячні витрати",
+    "sales": "Продажі",
+    "orderFees": "Комісії із замовлень",
+    "costOfGoods": "Собівартість товарів",
+    "fees": "Комісії",
+    "groups": {
+      "refunds": "Повернення коштів і спори",
+      "shipping": "Доставка та фрахт",
+      "advertising": "Реклама",
+      "monthly": "Щомісячні витрати"
+    },
+    "charges": {
+      "amazonRefunds": "Повернення коштів Amazon",
+      "amazonAds": "Реклама Amazon",
+      "amazonCharges": "Збори облікового запису Amazon",
+      "amazonMcf": "Виконання замовлень Shopify через Amazon",
+      "amazonFreight": "Вхідний фрахт Amazon",
+      "shopifyLabels": "Транспортні етикетки Shopify",
+      "shopifyBill": "Рахунок Shopify (тариф і застосунки)",
+      "shopifyDisputes": "Спори Shopify",
+      "shopifyDuties": "Мита та імпортні податки"
+    },
+    "whatsIn": "Що входить у «{line}»",
+    "needsCosts": "Потрібні ціни замовлень і собівартість одиниць"
+  },
+  "customers": {
+    "title": "Клієнти Shopify",
+    "aboutLabel": "Про показники клієнтів",
+    "about": "Довічна цінність клієнта, повторні клієнти та замовлення на клієнта охоплюють останні 12 місяців. Гостьові замовлення та замовлення Amazon не враховуються.",
+    "reconnect": "Повторно підключіть Shopify у розділі <settings>Налаштування</settings>, щоб рахувати повторних клієнтів",
+    "reconnectAskAdmin": "Попросіть адміністратора повторно підключити Shopify, щоб рахувати повторних клієнтів",
+    "syncing": "Буде доступно після наступної синхронізації замовлень Shopify",
+    "noCustomers": "Немає клієнтів",
+    "lifetimeValue": "Довічна цінність клієнта",
+    "returning": "Постійні клієнти",
+    "returningNote": "{returning, number} з {customers, number} за цей період",
+    "repeat": "Повторні клієнти",
+    "ordersPerCustomer": "Замовлень на клієнта"
+  },
+  "landedCosts": {
+    "title": "Вартість із доставкою",
+    "aboutLabel": "Про вартість із доставкою",
+    "about": "Фрахт, мито та інші витрати на доставку цих товарів до вас, що додаються до собівартості одиниці на сторінці «Огляд». Фрахт Amazon для відправлень за цим замовленням на закупівлю додається автоматично. Їх бачить лише ваша команда.",
+    "amazonFreight": "Вхідний фрахт Amazon",
+    "shipment": "Відправлення {reference}",
+    "supplierTotal": "Сума постачальника",
+    "landedTotal": "Сума з доставкою",
+    "markup": "Націнка",
+    "markupValue": "{percent} до вартості товару",
+    "empty": "Витрат ще немає",
+    "kinds": {
+      "freight": "Фрахт",
+      "duty": "Мито",
+      "other": "Інше"
+    },
+    "moreActions": "Інші дії для витрати «{kind}»",
+    "remove": "Видалити",
+    "add": "Додати витрату",
+    "addTitle": "Додати витрату на доставку",
+    "addDescription": "Перерахуйте рахунок в іншій валюті в {currency} за курсом, за яким ви платили.",
+    "type": "Тип",
+    "amount": "Сума",
+    "description": "Опис",
+    "descriptionPlaceholder": "Рахунок експедитора, митна декларація…",
+    "enterAmount": "Введіть суму"
+  }
+}

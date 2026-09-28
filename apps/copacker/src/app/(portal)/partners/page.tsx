@@ -1,4 +1,5 @@
 import { Search } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 import { EmptyState, PageHeader } from "@/components/common"
 import { AddPartner, ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import { TabLinks } from "@/components/tab-links"
@@ -10,13 +11,9 @@ import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
 import { listPartners, type PartnerForwarder, type PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 
-export const generateMetadata = titleFor("Partners", "partners")
+export const generateMetadata = titleFor("partners.page.title", "partners")
 
-const tabs = [
-  { key: "all", label: "All" },
-  { key: "supplier", label: "Suppliers" },
-  { key: "forwarder", label: "Forwarders" }
-] as const
+const tabs = [{ key: "all" }, { key: "supplier" }, { key: "forwarder" }] as const
 
 // A partner's address, without the workspace and partner it's stored with.
 function addressDetails(contact: PartnerSupplier["addresses"][number]) {
@@ -67,6 +64,7 @@ export default async function PartnersPage({
   const s = await session()
   requireBuyer(s)
   requirePage(s, "partners")
+  const t = await getTranslations("partners.page")
   const editable = can(s, "partners", "edit")
   const params = await searchParams
   const tab = tabs.find((candidate) => candidate.key === params.type)?.key ?? "all"
@@ -81,30 +79,27 @@ export default async function PartnersPage({
         (row.type === "supplier" && (row.supplier.shopifySupplierName ?? "").toLowerCase().includes(needle)))
   )
   const defaultLeadTimeDays = restockSettings(s.org).leadTimeDays
-  let emptyHint =
-    tab === "forwarder"
-      ? "Add a freight forwarder to ship purchase orders through it."
-      : "Suppliers from Shopify show up here."
+  let emptyHint = tab === "forwarder" ? t("hints.forwarder") : t("hints.supplier")
   if (q) {
-    emptyHint = "Check the spelling, or search another tab."
+    emptyHint = t("hints.search")
   }
   const showType = tab === "all"
 
   return (
     <>
-      <PageHeader title="Partners">{editable && <AddPartner />}</PageHeader>
+      <PageHeader title={t("title")}>{editable && <AddPartner />}</PageHeader>
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks
-            label="Partner types"
+            label={t("tabsLabel")}
             tabs={tabs.map((candidate) => ({
-              label: candidate.label,
+              label: t(`tabs.${candidate.key}`),
               href: tabHref(candidate.key, q),
               current: candidate.key === tab
             }))}
           />
           {/* A plain GET form: Enter searches, and the tab stays. Keyed by q so a new header search refills it. */}
-          <form action="/partners" className="ml-auto w-full sm:w-64">
+          <form action="/partners" className="ms-auto w-full sm:w-64">
             {tab !== "all" && <input type="hidden" name="type" value={tab} />}
             <InputGroup className="h-8">
               <InputGroupAddon>
@@ -115,8 +110,8 @@ export default async function PartnersPage({
                 type="search"
                 name="q"
                 defaultValue={q}
-                placeholder="Search partners"
-                aria-label="Search partners"
+                placeholder={t("search")}
+                aria-label={t("search")}
               />
             </InputGroup>
           </form>
@@ -126,12 +121,12 @@ export default async function PartnersPage({
             <Table framed={false}>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="pl-4">Name</TableHead>
-                  {showType && <TableHead className="hidden @2xl:table-cell">Type</TableHead>}
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden @2xl:table-cell">Details</TableHead>
-                  <TableHead className="w-12 pr-4">
-                    <span className="sr-only">Actions</span>
+                  <TableHead className="ps-4">{t("columns.name")}</TableHead>
+                  {showType && <TableHead className="hidden @2xl:table-cell">{t("columns.type")}</TableHead>}
+                  <TableHead>{t("columns.status")}</TableHead>
+                  <TableHead className="hidden @2xl:table-cell">{t("columns.details")}</TableHead>
+                  <TableHead className="w-12 pe-4">
+                    <span className="sr-only">{t("columns.actions")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -158,14 +153,7 @@ export default async function PartnersPage({
             </Table>
           </div>
         ) : (
-          <EmptyState
-            title={
-              q
-                ? `No partners match “${q}”`
-                : { all: "No partners yet", supplier: "No suppliers yet", forwarder: "No forwarders yet" }[tab]
-            }
-            description={emptyHint}
-          />
+          <EmptyState title={q ? t("empty.noMatch", { query: q }) : t(`empty.${tab}`)} description={emptyHint} />
         )}
       </Card>
     </>

@@ -1,4 +1,5 @@
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { saveVariantFields, VariantFieldsError } from "@/server/product-fields"
 import { isAppOrigin } from "@/server/security"
 
@@ -6,7 +7,7 @@ import { isAppOrigin } from "@/server/security"
 export async function PATCH(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   requirePage(s, "products", "edit")
@@ -14,11 +15,11 @@ export async function PATCH(request: Request) {
     return Response.json(await saveVariantFields(s, await request.json()), { headers })
   } catch (error) {
     if (error instanceof VariantFieldsError) {
-      return Response.json({ error: error.message }, { status: error.status, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
     }
     if (error instanceof SyntaxError) {
-      return Response.json({ error: "Check the values and try again" }, { status: 400, headers })
+      return errorResponse("checkValues", 400, headers)
     }
-    return Response.json({ error: "The product details couldn't be saved. Try again." }, { status: 500, headers })
+    return errorResponse("variantFieldsNotSaved", 500, headers)
   }
 }

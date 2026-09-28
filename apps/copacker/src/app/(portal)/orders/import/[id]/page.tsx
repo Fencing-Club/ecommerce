@@ -8,7 +8,7 @@ import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
 
-export const generateMetadata = titleFor("Review import", "orders", "edit")
+export const generateMetadata = titleFor("orders.review.title", "orders", "edit")
 
 export default async function ReviewImport({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { requireBuyer, type Session } from "./auth"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
@@ -31,27 +32,25 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   const scope = and(eq(poImports.id, id), eq(poImports.orgId, s.org.id))
   const [record] = await db().select().from(poImports).where(scope)
   if (!record) {
-    throw new Error("Import not found")
+    throw new LocalizedError("importNotFound")
   }
   if (record.status === "saved" && record.orderId) {
     return { id: record.orderId }
   }
   if (record.status !== "review" || record.revision !== input.revision) {
-    throw new Error("Import changed. Refresh before saving")
+    throw new LocalizedError("importChanged")
   }
   const proposal = importProposalSchema.parse(record.proposal)
   if (!proposal.currency) {
-    throw new Error("Confirm the document currency before saving")
+    throw new LocalizedError("confirmCurrency")
   }
   const items = proposal.items.map((item, index) => {
     if (!item.selectedVariantId || item.pieces === null || item.piecesPerSet === null || item.pricePerPiece === null) {
-      throw new Error(`Resolve the product, quantity, pack size and price on line ${index + 1}`)
+      throw new LocalizedError("resolveImportLine", { line: index + 1 })
     }
     const unitPrice = priceInMinorUnits(item.pricePerPiece)
     if (item.sourceLineTotal !== null && priceInMinorUnits(item.sourceLineTotal) !== item.pieces * unitPrice) {
-      throw new Error(
-        `Line ${index + 1} total differs from its quantity and price. Correct the conversion before saving`
-      )
+      throw new LocalizedError("importLineTotalDiffers", { line: index + 1 })
     }
     return {
       id: randomUUID(),
@@ -71,7 +70,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   })
   const adjustments = proposal.adjustments.map((adjustment) => {
     if (adjustment.amount === null) {
-      throw new Error("Confirm every additional charge and discount")
+      throw new LocalizedError("confirmAdjustments")
     }
     const negative = adjustment.amount.startsWith("-")
     return {
@@ -81,14 +80,14 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
   })
   const proposed = orderInputSchema.parse({ ...input, currency: proposal.currency, items, adjustments })
   if (proposal.documentTotal !== null && priceInMinorUnits(proposal.documentTotal) !== orderTotal(proposed)) {
-    throw new Error("Document total differs from the reviewed items and adjustments")
+    throw new LocalizedError("documentTotalDiffers")
   }
   const prepared = await prepareOrder(s, proposed)
   if (
     prepared.shopifyDomain !== record.shopifyDomain ||
     (record.amazonSellerId && prepared.amazonSellerId !== record.amazonSellerId)
   ) {
-    throw new Error("The connected merchant account changed. Import against the correct accounts before saving")
+    throw new LocalizedError("merchantChangedImport")
   }
   const saved = await db().transaction(async (tx) => {
     const [current] = await tx.select().from(poImports).where(scope).for("update")
@@ -96,7 +95,7 @@ export async function saveImportedOrder(s: Session, id: string, raw: unknown) {
       return { id: current.orderId }
     }
     if (!current || current.status !== "review" || current.revision !== input.revision) {
-      throw new Error("Import changed. Refresh before saving")
+      throw new LocalizedError("importChanged")
     }
     const order = await persistOrder(tx, s, prepared)
     await tx

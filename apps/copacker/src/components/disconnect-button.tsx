@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
@@ -15,30 +16,22 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
-// What stops when each account is disconnected.
-const providers = {
-  shopify: {
-    name: "Shopify",
-    effect: (account: string) => `Copacker stops syncing products, stock, sales and costs with ${account}.`
-  },
-  amazon: {
-    name: "Amazon",
-    effect: (account: string) =>
-      `Copacker stops reading sales and stock from ${account} and can’t create AWD shipments.`
-  }
-}
+const names = { shopify: "Shopify", amazon: "Amazon" }
 
 // A quiet, red Disconnect that asks first.
 export function DisconnectButton({ provider, account }: { provider: "shopify" | "amazon"; account: string }) {
+  const t = useTranslations("common.disconnect")
   const router = useRouter()
   const [run] = useActionMutation()
+  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  const { name, effect } = providers[provider]
+  const name = names[provider]
 
   async function disconnect() {
     setPending(true)
@@ -48,7 +41,7 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
       setOpen(false)
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, `Couldn’t disconnect ${name}`))
+      setError(errorMessage(e, t("failed", { name })))
     } finally {
       setPending(false)
     }
@@ -64,19 +57,22 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
           />
         }
       >
-        Disconnect
+        {t("disconnect")}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Disconnect {name}?</AlertDialogTitle>
-          <AlertDialogDescription>{effect(account)} Purchase orders stay as they are.</AlertDialogDescription>
+          <AlertDialogTitle>{t("title", { name })}</AlertDialogTitle>
+          {/* What stops when each account is disconnected. */}
+          <AlertDialogDescription>
+            {provider === "shopify" ? t("shopifyEffect", { account }) : t("amazonEffect", { account })}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={pending} aria-busy={pending} onClick={disconnect}>
             {pending && <Spinner data-icon="inline-start" />}
-            Disconnect
+            {t("disconnect")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

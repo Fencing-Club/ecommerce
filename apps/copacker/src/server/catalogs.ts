@@ -9,6 +9,7 @@ import {
   supplierProducts,
   suppliers
 } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import {
   catalogPricing,
   type PriceBasis,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
 import { requireSupplier, type Session } from "./auth"
+import { pricingText } from "./text"
 
 type Executor = Transaction | ReturnType<typeof db>
 
@@ -137,7 +139,7 @@ const money = z.number().int().nonnegative().max(2_147_483_647)
 export const catalogInputSchema = z.object({
   id: z.uuid().optional(),
   revision: z.number().int().positive().optional(),
-  title: z.string().trim().min(1, "Add a title").max(255),
+  title: z.string().trim().min(1, "errors.addTitle").max(255),
   status: z.enum(["active", "draft", "archived"]),
   // Up to 100% off, or up to ten times the price.
   adjustmentBasisPoints: z.number().int().min(-10_000).max(100_000),
@@ -160,9 +162,10 @@ export const catalogInputSchema = z.object({
 export async function saveCatalog(s: Session, raw: unknown) {
   requireSupplier(s)
   const input = catalogInputSchema.parse(raw)
+  const pricingT = await pricingText()
   const productIds = input.products.map((entry) => entry.productId)
   if (new Set(productIds).size !== productIds.length) {
-    throw new Error("A product is in the catalog twice")
+    throw new LocalizedError("productInCatalogTwice")
   }
   return db().transaction(async (tx) => {
     const [clash] = await tx
@@ -176,7 +179,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
         )
       )
     if (clash) {
-      throw new Error("Another catalog has this title")
+      throw new LocalizedError("catalogTitleTaken")
     }
     const products = await tx
       .select()
@@ -185,15 +188,15 @@ export async function saveCatalog(s: Session, raw: unknown) {
     for (const entry of input.products) {
       const product = products.find((candidate) => candidate.id === entry.productId)
       if (!product) {
-        throw new Error("A product in this catalog was archived or removed. Refresh and try again")
+        throw new LocalizedError("catalogProductRemoved")
       }
       if (entry.priceMinor === null && entry.priceBreaks === null && entry.quantityRules === null) {
         continue
       }
       const pricing = catalogPricing(product, input.adjustmentBasisPoints, entry)
-      const problem = pricingProblem(pricing.priceMinor, pricing.priceBreaks, pricing.quantityRules)
+      const problem = pricingProblem(pricing.priceMinor, pricing.priceBreaks, pricing.quantityRules, pricingT)
       if (problem) {
-        throw new Error(`${product.title}: ${problem}`)
+        throw new LocalizedError("productProblem", { product: product.title, problem })
       }
     }
     const settings = {
@@ -231,7 +234,7 @@ export async function saveCatalog(s: Session, raw: unknown) {
           )
       : []
     if (customers.length !== customerIds.length) {
-      throw new Error("A customer is no longer linked to this workspace. Refresh and try again")
+      throw new LocalizedError("customerNotLinkedRefresh")
     }
     await tx
       .update(suppliers)
@@ -258,7 +261,7 @@ async function writeSettings(
     return created!
   }
   if (!input.revision) {
-    throw new Error("Catalog revision is required")
+    throw new LocalizedError("catalogRevisionRequired")
   }
   const [updated] = await tx
     .update(catalogs)
@@ -266,7 +269,7 @@ async function writeSettings(
     .where(and(eq(catalogs.id, input.id), eq(catalogs.supplierOrgId, s.org.id), eq(catalogs.revision, input.revision)))
     .returning({ id: catalogs.id, revision: catalogs.revision })
   if (!updated) {
-    throw new Error("This catalog changed. Refresh and try again")
+    throw new LocalizedError("catalogChanged")
   }
   return updated
 }
@@ -279,7 +282,7 @@ export async function deleteCatalog(s: Session, id: string) {
     .where(and(eq(catalogs.id, id), eq(catalogs.supplierOrgId, s.org.id)))
     .returning({ id: catalogs.id })
   if (!deleted) {
-    throw new Error("This catalog was already deleted")
+    throw new LocalizedError("catalogAlreadyDeleted")
   }
 }
 
@@ -292,7 +295,7 @@ export async function assignCatalog(s: Session, customerId: string, catalogId: s
       .from(catalogs)
       .where(and(eq(catalogs.id, catalogId), eq(catalogs.supplierOrgId, s.org.id)))
     if (!catalog) {
-      throw new Error("Choose one of your catalogs")
+      throw new LocalizedError("chooseYourCatalog")
     }
   }
   const [updated] = await db()
@@ -301,7 +304,7 @@ export async function assignCatalog(s: Session, customerId: string, catalogId: s
     .where(and(eq(suppliers.id, customerId), eq(suppliers.supplierOrgId, s.org.id), isNull(suppliers.removedAt)))
     .returning({ id: suppliers.id })
   if (!updated) {
-    throw new Error("This customer is no longer linked to your workspace")
+    throw new LocalizedError("customerNotLinked")
   }
 }
 

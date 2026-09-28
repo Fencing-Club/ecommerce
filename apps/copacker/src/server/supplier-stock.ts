@@ -2,6 +2,8 @@ import type { OrderInput, OrderItem, Packing } from "@repo/aisle"
 import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm"
 import { db, type Transaction } from "@/db"
 import { orders, shipments, supplierProducts, suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import { errorText } from "./errors"
 
 type Line = Pick<OrderItem, "id" | "supplierSku" | "pieces" | "piecesPerSet" | "components">
 
@@ -152,13 +154,14 @@ export async function checkSupplierStock(
     return
   }
   const needed = supplierSkuPieces(data.items)
+  const t = await errorText()
   const available = await availableStock(tx, supplierOrgId, [...needed.keys()], orderId)
   const short = [...needed].flatMap(([sku, pieces]) => {
     const left = available.get(sku)
-    return left !== undefined && pieces > left ? [`${sku}: ${left} available, ${pieces} ordered`] : []
+    return left !== undefined && pieces > left ? [t("stockShortLine", { sku, available: left, ordered: pieces })] : []
   })
   if (short.length) {
-    throw new Error(`The supplier doesn't have enough stock. ${short.join(". ")}`)
+    throw new LocalizedError("notEnoughStock", { lines: short.join(". ") })
   }
 }
 

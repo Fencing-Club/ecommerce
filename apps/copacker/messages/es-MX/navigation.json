@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "Tienda",
+    "purchasing": "Compras",
+    "sales": "Ventas",
+    "catalog": "Productos"
+  },
+  "pages": {
+    "overview": "Resumen",
+    "orders": "Pedidos",
+    "products": "Productos",
+    "restock": "Reabastecimiento",
+    "purchaseOrders": "Órdenes de compra",
+    "shipments": "Envíos",
+    "partners": "Socios",
+    "customers": "Clientes",
+    "inventory": "Inventario",
+    "catalogs": "Catálogos",
+    "settings": "Configuración"
+  },
+  "sidebar": {
+    "buyerWorkspace": "Espacio de trabajo de comprador",
+    "supplierWorkspace": "Espacio de trabajo de proveedor",
+    "forwarderWorkspace": "Espacio de trabajo de agente de carga",
+    "workspaces": "Espacios de trabajo",
+    "newWorkspace": "Nuevo espacio de trabajo",
+    "signOut": "Cerrar sesión",
+    "theme": "Tema",
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "emptyDescription": "Aquí aparecen las novedades de tus pedidos y envíos"
+  },
+  "search": {
+    "search": "Buscar",
+    "ctrl": "Ctrl",
+    "toMove": "<keys></keys> para moverte",
+    "toOpen": "<keys></keys> para abrir",
+    "toClose": "<keys></keys> para cerrar",
+    "close": "Cerrar",
+    "noResults": "Sin resultados para “{query}”",
+    "pages": "Páginas",
+    "orders": "Pedidos",
+    "loadingOrders": "Cargando pedidos",
+    "loadingResults": "Cargando resultados",
+    "recentPurchaseOrders": "Órdenes de compra recientes",
+    "products": "Productos",
+    "purchaseOrders": "Órdenes de compra",
+    "shipments": "Envíos",
+    "partners": "Socios",
+    "supplier": "Proveedor",
+    "forwarder": "Agente de carga",
+    "failed": "No se pudo buscar en todo. Inténtalo de nuevo."
+  }
+}

@@ -2,6 +2,7 @@ import { and, eq, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { orders, suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { contactDetailsSchema } from "@/lib/contact-details"
 
 // Removes a supplier from a buyer's workspace. Its invitation stops working and its workspace loses access to the
@@ -14,7 +15,7 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
       .where(and(eq(suppliers.id, supplierId), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
       .for("update")
     if (!supplier) {
-      throw new Error("This supplier was already removed")
+      throw new LocalizedError("supplierAlreadyRemoved")
     }
     const open = await tx
       .select({ data: orders.data })
@@ -22,7 +23,7 @@ export async function removeSupplier(buyerOrgId: string, supplierId: string) {
       .where(and(eq(orders.supplierId, supplierId), eq(orders.status, "submitted")))
     if (open.length) {
       const references = open.map((order) => order.data.reference).join(", ")
-      throw new Error(`${supplier.name} is working on ${references}. Close ${open.length === 1 ? "it" : "them"} first`)
+      throw new LocalizedError("supplierHasOpenOrders", { name: supplier.name, references, count: open.length })
     }
     await tx
       .update(suppliers)
@@ -67,7 +68,7 @@ export async function updateSupplier(buyerOrgId: string, raw: unknown) {
     .from(suppliers)
     .where(and(eq(suppliers.buyerOrgId, buyerOrgId), eq(suppliers.name, input.name), ne(suppliers.id, input.id)))
   if (taken) {
-    throw new Error("Another supplier already has this name")
+    throw new LocalizedError("supplierNameTaken")
   }
   const [current] = await db()
     .select({ supplierOrgId: suppliers.supplierOrgId })
@@ -92,7 +93,7 @@ export async function updateSupplier(buyerOrgId: string, raw: unknown) {
     .where(and(eq(suppliers.id, input.id), eq(suppliers.buyerOrgId, buyerOrgId), isNull(suppliers.removedAt)))
     .returning({ id: suppliers.id })
   if (!updated.length) {
-    throw new Error("This supplier was removed")
+    throw new LocalizedError("supplierRemoved")
   }
 }
 

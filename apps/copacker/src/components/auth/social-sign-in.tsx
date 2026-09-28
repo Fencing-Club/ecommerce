@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { objectKeys } from "ts-extras"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ const logos: Record<OAuthProvider, () => React.ReactNode> = { google: GoogleLogo
 export function SocialSignIn({ next, email }: { next: string; email?: string }) {
   // The provider being opened, which shows a spinner until the browser leaves.
   const [opening, setOpening] = useState<OAuthProvider | null>(null)
+  const t = useTranslations("auth.social")
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3">
@@ -63,7 +65,7 @@ export function SocialSignIn({ next, email }: { next: string; email?: string }) 
               render={
                 <a
                   href={`/login/${provider}?${query}`}
-                  aria-label={`Continue with ${oauthProviders[provider].name}`}
+                  aria-label={t("continueWith", { provider: oauthProviders[provider].name })}
                   onClick={() => setOpening(provider)}
                 />
               }
@@ -74,7 +76,7 @@ export function SocialSignIn({ next, email }: { next: string; email?: string }) 
           )
         })}
       </div>
-      <FieldSeparator className="text-xs">or</FieldSeparator>
+      <FieldSeparator className="text-xs">{t("or")}</FieldSeparator>
     </div>
   )
 }

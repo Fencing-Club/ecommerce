@@ -204,7 +204,7 @@ describe("finance links", () => {
     ])
     await expect(
       addMonthlyCost(buyer, { name: "App", amount: 100, currency: "USD", startsOn: "2026-02-01", endsOn: "2026-01-01" })
-    ).rejects.toThrow("end date")
+    ).rejects.toThrow("errors.endBeforeStart")
     await expect(
       addMonthlyCost(session(randomUUID(), "supplier"), { name: "App", amount: 1, currency: "USD" })
     ).rejects.toThrow("buyer")

@@ -1,0 +1,112 @@
+{
+  "tagline": "रीस्टॉक, अब बेफ़िक्र।",
+  "pasteLink": "या यह लिंक अपने ब्राउज़र में पेस्ट करें:",
+  "invitation": {
+    "subject": "{from} ने आपको Copacker पर आमंत्रित किया है",
+    "yourTeam": "आपकी टीम",
+    "aBuyer": "एक खरीदार",
+    "eyebrow": {
+      "supplier": "सप्लायर आमंत्रण",
+      "team": "टीम आमंत्रण",
+      "forwarder": "फ़ॉरवर्डर आमंत्रण"
+    },
+    "joining": {
+      "supplier": "उनके सप्लायर के रूप में जुड़ें और उनके खरीद ऑर्डर वहीं पाएं।",
+      "team": "उनके वर्कस्पेस से जुड़ें।",
+      "forwarder": "उनके फ़्रेट फ़ॉरवर्डर के रूप में जुड़ें और अपने वेयरहाउस के पते उनके साथ शेयर करें।"
+    },
+    "steps": {
+      "account": "आमंत्रण स्वीकार करें, फिर साइन इन करें या अपना अकाउंट बनाएं",
+      "supplierWorkspace": "अपना सप्लायर वर्कस्पेस सेट अप करें",
+      "supplierPack": "{from} के खरीद ऑर्डर पैक करें और उनके लेबल एक ही जगह प्रिंट करें",
+      "teamStart": "{from} में काम शुरू करें",
+      "forwarderAddresses": "अपने वेयरहाउस के पते जोड़ें",
+      "forwarderShipments": "वे शिपमेंट देखें जो {from} आपके ज़रिए भेजता है"
+    },
+    "accept": "आमंत्रण स्वीकार करें",
+    "note": "यह {email} के लिए है और 7 दिनों में समाप्त हो जाएगा। अगर आपको इसकी उम्मीद नहीं थी, तो आप इस ईमेल को अनदेखा कर सकते हैं।",
+    "reason": "{from} ने {email} को Copacker पर आमंत्रित किया है।"
+  },
+  "purchaseOrder": {
+    "subject": "{buyer} से खरीद ऑर्डर {reference}",
+    "eyebrow": {
+      "new": "नया खरीद ऑर्डर",
+      "revised": "बदला गया खरीद ऑर्डर"
+    },
+    "heading": "{buyer} से {reference}",
+    "lead": {
+      "new": "{buyer} ने आपको {products, plural, one {# प्रोडक्ट} other {# प्रोडक्ट}} की {units, plural, one {# यूनिट} other {# यूनिट}} का खरीद ऑर्डर भेजा है।",
+      "revised": "{buyer} ने यह खरीद ऑर्डर बदला है। अपडेट किया गया वर्शन आपके पास मौजूद वर्शन की जगह लेता है।"
+    },
+    "preview": "{units, plural, one {# यूनिट} other {# यूनिट}}, {total}",
+    "previewRequiredBy": "{units, plural, one {# यूनिट} other {# यूनिट}}, {total}, {date} तक ज़रूरी",
+    "labels": {
+      "revision": "संशोधन",
+      "requiredBy": "इस तारीख तक ज़रूरी",
+      "shipTo": "यहां भेजें",
+      "paymentTerms": "भुगतान की शर्तें",
+      "total": "कुल"
+    },
+    "more": "खरीद ऑर्डर में {count, plural, one {# और प्रोडक्ट} other {# और प्रोडक्ट}} हैं",
+    "open": "खरीद ऑर्डर खोलें",
+    "note": "खरीद ऑर्डर का PDF अटैच है।",
+    "reason": "{buyer} ने यह खरीद ऑर्डर Copacker के ज़रिए भेजा है।"
+  },
+  "labelsReady": {
+    "subject": "{reference} के लेबल तैयार हैं",
+    "subjectShipment": "{reference}, शिपमेंट {shipment} के लेबल तैयार हैं",
+    "eyebrow": "भेजने के लिए तैयार",
+    "heading": "{reference} के लेबल तैयार हैं",
+    "headingShipment": "{reference}, शिपमेंट {shipment} के लेबल तैयार हैं",
+    "lead": "{buyer} ने शिपमेंट रिलीज़ कर दिया है, इसलिए यह लेबल लगाने और भेजने के लिए तैयार है।",
+    "labels": {
+      "cartons": "कार्टन",
+      "destination": "गंतव्य",
+      "readyForPickup": "पिकअप के लिए तैयार",
+      "amazonShipment": "Amazon शिपमेंट"
+    },
+    "steps": {
+      "print": "लेबल असली साइज़ (100%) में प्रिंट करें",
+      "attach": "हर कार्टन पर उसका लेबल लगाएं, ताकि कोई दूसरा बारकोड ढक जाए",
+      "handOver": "पैकिंग चेकलिस्ट जांचें, फिर कार्टन कैरियर को सौंपें"
+    },
+    "open": "शिपमेंट खोलें",
+    "reason": "{buyer} ने यह शिपमेंट Copacker में रिलीज़ किया है।"
+  },
+  "customerDataRequest": {
+    "subject": "{shop} के लिए ग्राहक डेटा अनुरोध",
+    "eyebrow": "Shopify डेटा अनुरोध",
+    "lead": "Shopify ने Copacker को ग्राहक डेटा अनुरोध भेजा है। ग्राहक को अपने जवाब में वह जानकारी शामिल करें जो Copacker के पास है।",
+    "noContactDetails": "Copacker ग्राहकों के नाम, ईमेल पते, फ़ोन नंबर या डाक पते सेव नहीं करता।",
+    "labels": {
+      "store": "स्टोर",
+      "request": "अनुरोध",
+      "ordersHeld": "Copacker के पास ऑर्डर"
+    },
+    "none": "कोई नहीं",
+    "ordersIntro": "सिर्फ़ वे ऑर्डर विवरण जिनका इस्तेमाल Copacker रीस्टॉक प्लान करने में करता है:",
+    "reason": "Shopify ने {shop} के लिए ग्राहक डेटा अनुरोध भेजा है, जो Copacker से कनेक्टेड है।",
+    "order": "ऑर्डर {number}, {date} को दिया गया, स्थिति {status}: {items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × बिना SKU वाला आइटम",
+    "noItems": "कोई आइटम नहीं",
+    "status": {
+      "unfulfilled": "पूरा नहीं हुआ",
+      "partiallyFulfilled": "आंशिक रूप से पूरा हुआ",
+      "fulfilled": "पूरा हुआ",
+      "cancelled": "रद्द"
+    }
+  },
+  "passwordReset": {
+    "subject": "अपना Copacker पासवर्ड रीसेट करें",
+    "eyebrow": "आपका अकाउंट",
+    "heading": "अपना पासवर्ड रीसेट करें",
+    "lead": "{email} के लिए नया पासवर्ड चुनें।",
+    "previewMinutes": "{email} के लिए नया पासवर्ड चुनें। यह लिंक {count, plural, one {# मिनट} other {# मिनट}} में समाप्त हो जाएगा।",
+    "previewHours": "{email} के लिए नया पासवर्ड चुनें। यह लिंक {count, plural, one {# घंटे} other {# घंटे}} में समाप्त हो जाएगा।",
+    "action": "नया पासवर्ड चुनें",
+    "expiresMinutes": "यह लिंक {count, plural, one {# मिनट} other {# मिनट}} में समाप्त हो जाएगा। अगर आपने पासवर्ड रीसेट करने के लिए नहीं कहा था, तो आप इस ईमेल को अनदेखा कर सकते हैं; आपका पासवर्ड वही रहेगा।",
+    "expiresHours": "यह लिंक {count, plural, one {# घंटे} other {# घंटे}} में समाप्त हो जाएगा। अगर आपने पासवर्ड रीसेट करने के लिए नहीं कहा था, तो आप इस ईमेल को अनदेखा कर सकते हैं; आपका पासवर्ड वही रहेगा।",
+    "reason": "किसी ने Copacker पर {email} का पासवर्ड रीसेट करने के लिए कहा है।"
+  }
+}

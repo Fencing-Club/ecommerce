@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { PageLink, useCan } from "@/components/access"
 import { IssuePanel } from "@/components/inventory-products"
@@ -8,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api, errorMessage, useSuppliersQuery } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api, useSuppliersQuery } from "@/lib/api"
 import type { ProductWithoutSupplier } from "@/server/product-suppliers"
 
 const productSuppliersApi = api.injectEndpoints({
@@ -25,9 +27,19 @@ const productSuppliersApi = api.injectEndpoints({
   })
 })
 
+function partnersLink(chunks: React.ReactNode) {
+  return (
+    <PageLink href="/partners" className="text-foreground underline underline-offset-4">
+      {chunks}
+    </PageLink>
+  )
+}
+
 // Restock only suggests products with a known supplier, so this lists the ones without, and sets their supplier in
 // bulk. `syncKey` reloads the list after a stock sync brings in new products.
 export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
+  const t = useTranslations("products.withoutSupplier")
+  const errorMessage = useErrorMessage()
   const { currentData: products = [] } = productSuppliersApi.useProductsWithoutSupplierQuery(syncKey)
   const { data: suppliers = [] } = useSuppliersQuery()
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
@@ -41,25 +53,22 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
   const chosen = products.filter((product) => ticked.has(product.productId)).map((product) => product.productId)
   const allTicked = chosen.length === products.length
   const options = suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))
-  let assignLabel = "Assign"
+  let assignLabel = t("assign")
   if (result.isLoading) {
-    assignLabel = "Assigning…"
+    assignLabel = t("assigning")
   } else if (chosen.length) {
-    assignLabel = `Assign to ${chosen.length} ${chosen.length === 1 ? "product" : "products"}`
+    assignLabel = t("assignTo", { count: chosen.length })
   }
   return (
-    <IssuePanel
-      title={`${products.length} ${products.length === 1 ? "product has" : "products have"} no supplier`}
-      hint="Restock skips them"
-    >
+    <IssuePanel title={t("title", { count: products.length })} hint={t("hint")}>
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         {suppliers.length ? (
           <>
             <Select items={options} value={supplierId || null} onValueChange={(value) => setSupplierId(value ?? "")}>
-              <SelectTrigger size="sm" aria-label="Supplier for the selected products" className="w-56">
+              <SelectTrigger size="sm" aria-label={t("supplierLabel")} className="w-56">
                 <SelectValue>
                   {(value: string | null) =>
-                    options.find((option) => option.value === value)?.label ?? "Choose a supplier"
+                    options.find((option) => option.value === value)?.label ?? t("chooseSupplier")
                   }
                 </SelectValue>
               </SelectTrigger>
@@ -87,41 +96,39 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
             </Button>
             {result.isError && (
               <p role="alert" className="basis-full text-sm text-destructive">
-                {errorMessage(result.error, "The supplier couldn’t be saved. Try again.")}
+                {errorMessage(result.error, t("saveFailed"))}
               </p>
             )}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Add a supplier in{" "}
-            <PageLink href="/partners" className="text-foreground underline underline-offset-4">
-              Partners
-            </PageLink>{" "}
-            first
+            {t.rich("addSupplierFirst", {
+              link: partnersLink
+            })}
           </p>
         )}
       </div>
       <Table framed={false}>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-10 pl-4">
+            <TableHead className="w-10 ps-4">
               <Checkbox
                 checked={allTicked}
                 indeterminate={chosen.length > 0 && !allTicked}
                 onCheckedChange={(checked) =>
                   setTicked(checked ? new Set(products.map((product) => product.productId)) : new Set())
                 }
-                aria-label="Select all products"
+                aria-label={t("selectAll")}
               />
             </TableHead>
-            <TableHead>Product</TableHead>
-            <TableHead className="pr-4">SKUs</TableHead>
+            <TableHead>{t("product")}</TableHead>
+            <TableHead className="pe-4">{t("skus")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.map((product) => (
             <TableRow key={product.productId}>
-              <TableCell className="w-10 pl-4">
+              <TableCell className="w-10 ps-4">
                 <Checkbox
                   checked={ticked.has(product.productId)}
                   onCheckedChange={(checked) =>
@@ -135,7 +142,7 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
                       return next
                     })
                   }
-                  aria-label={`Select ${product.title}`}
+                  aria-label={t("select", { product: product.title })}
                 />
               </TableCell>
               <TableCell className="whitespace-normal">
@@ -144,16 +151,17 @@ export function ProductsWithoutSupplier({ syncKey }: { syncKey: string }) {
                   <span className="font-medium [overflow-wrap:anywhere]">{product.title}</span>
                 </span>
               </TableCell>
-              <TableCell className="pr-4 text-xs whitespace-normal text-muted-foreground">
+              <TableCell className="pe-4 text-xs whitespace-normal text-muted-foreground">
                 {product.skus.length ? (
                   <>
-                    {product.skus.slice(0, 3).join(", ")}
-                    {product.skus.length > 3 && ` and ${product.skus.length - 3} more`}
+                    {product.skus.length > 3
+                      ? t("moreSkus", { skus: product.skus.slice(0, 3).join(", "), count: product.skus.length - 3 })
+                      : product.skus.join(", ")}
                   </>
                 ) : (
                   <>
                     <span aria-hidden="true">—</span>
-                    <span className="sr-only">None set in Shopify</span>
+                    <span className="sr-only">{t("noSkus")}</span>
                   </>
                 )}
               </TableCell>

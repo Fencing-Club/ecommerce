@@ -1,12 +1,14 @@
 "use client"
 
 import { useInterval } from "@mantine/hooks"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
 import { FormError, SubmitButton } from "@/components/actions"
 import { Button } from "@/components/ui/button"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useActionMutation } from "@/lib/api"
 import { codeSchema } from "@/lib/sign-in"
 import { CodeField } from "./code-field"
 import { leaving } from "./sign-in-form"
@@ -16,6 +18,7 @@ const cooldown = 30
 
 // The code WorkOS emailed. It sends itself once all six digits are in; a wrong one clears for another try.
 export function VerifyEmailForm() {
+  const t = useTranslations("auth")
   const { form, submit } = useActionForm({
     schema: codeSchema,
     action: "auth.verifyEmail",
@@ -42,10 +45,10 @@ export function VerifyEmailForm() {
           noValidate
           className="flex flex-col gap-6"
         >
-          <CodeField name="code" label="Verification code" onComplete={() => void send()} />
+          <CodeField name="code" label={t("fields.verificationCode")} onComplete={() => void send()} />
           <FormError message={form.formState.errors.root?.server?.message} />
           <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-            Verify email
+            {t("verifyEmail.submit")}
           </SubmitButton>
         </form>
       </FormProvider>
@@ -55,7 +58,9 @@ export function VerifyEmailForm() {
 }
 
 function ResendCode() {
+  const t = useTranslations("auth.verifyEmail")
   const [run, { isLoading }] = useActionMutation()
+  const errorMessage = useErrorMessage()
   const [wait, setWait] = useState(cooldown)
   const [status, setStatus] = useState("")
   useInterval(() => setWait((seconds) => Math.max(0, seconds - 1)), 1000, { autoInvoke: true })
@@ -64,7 +69,7 @@ function ResendCode() {
     try {
       await run({ action: "auth.resendCode", data: {} }).unwrap()
       setWait(cooldown)
-      setStatus("New code sent")
+      setStatus(t("newCodeSent"))
     } catch (error) {
       setStatus(errorMessage(error))
     }
@@ -72,14 +77,14 @@ function ResendCode() {
   return (
     <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
       <p>
-        Didn’t get it?{" "}
+        {t("didntGetIt")}{" "}
         <Button
           variant="link"
           className="h-auto p-0 font-medium text-foreground"
           disabled={wait > 0 || isLoading}
           onClick={() => void resend()}
         >
-          {wait > 0 ? `Send again in ${wait}s` : "Send a new code"}
+          {wait > 0 ? t("sendAgainIn", { seconds: wait }) : t("sendNewCode")}
         </Button>
       </p>
       <output aria-live="polite" className="min-h-5 text-xs">

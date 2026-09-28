@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { PageLink, useCan } from "@/components/access"
@@ -11,14 +12,15 @@ import { cn } from "@/lib/utils"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar } from "./shared"
 
-async function post(url: string, body: unknown) {
+// Sends a change; a failure throws the server's message, or `fallback`.
+async function post(url: string, body: unknown, fallback: string) {
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   })
   if (!response.ok) {
-    throw new Error((await response.json()).error ?? "Couldn't save. Try again.")
+    throw new Error((await response.json()).error ?? fallback)
   }
 }
 
@@ -40,6 +42,8 @@ function OnHand({
   value: string | undefined
   onChange: (value: string | undefined) => void
 }) {
+  const t = useTranslations("supplier.inventory")
+  const locale = useLocale()
   const text = value ?? String(row.onHand)
   const next = count(text)
   const delta = next === null ? 0 : next - row.onHand
@@ -54,8 +58,8 @@ function OnHand({
             )}
           >
             {delta > 0 ? "+" : "−"}
-            {Math.abs(delta).toLocaleString("en-US")}
-            <span className="sr-only"> from {row.onHand.toLocaleString("en-US")}</span>
+            {Math.abs(delta).toLocaleString(locale)}
+            <span className="sr-only"> {t("from", { count: row.onHand })}</span>
           </span>
         )}
       </span>
@@ -64,10 +68,10 @@ function OnHand({
         step={1}
         inputMode="numeric"
         value={text}
-        aria-label={`On hand for ${row.supplierSku}`}
+        aria-label={t("onHandFor", { sku: row.supplierSku })}
         aria-invalid={next === null || undefined}
         className={cn(
-          "w-24 text-right tabular-nums",
+          "w-24 text-end tabular-nums",
           delta > 0 && "border-success focus-visible:border-success",
           delta < 0 && "border-destructive focus-visible:border-destructive"
         )}
@@ -89,9 +93,11 @@ function Toggle({
 }: {
   row: InventoryRow
   field: "trackInventory" | "continueSelling"
+  // What the switch does, for the variant: "Track inventory for UF-1".
   label: string
 }) {
   const router = useRouter()
+  const shared = useTranslations("supplier.shared")
   const [pending, setPending] = useState(false)
   const [failed, setFailed] = useState(false)
   const editable = useCan("inventory", "edit")
@@ -100,13 +106,13 @@ function Toggle({
       size="sm"
       checked={row[field]}
       disabled={pending || !editable}
-      aria-label={`${label} for ${row.supplierSku}`}
+      aria-label={label}
       aria-invalid={failed}
       onCheckedChange={async (checked) => {
         setPending(true)
         setFailed(false)
         try {
-          await post("/api/supplier-catalog/tracking", { id: row.id, [field]: checked })
+          await post("/api/supplier-catalog/tracking", { id: row.id, [field]: checked }, shared("couldNotSave"))
           router.refresh()
         } catch {
           setFailed(true)
@@ -138,6 +144,9 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
   const [error, setError] = useState("")
   // Someone who can only view inventory sees each count without a field to change it.
   const editable = useCan("inventory", "edit")
+  const t = useTranslations("supplier.inventory")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
   const changes = rows.flatMap((row) => {
     const text = edits[row.id]
     const next = text === undefined ? row.onHand : count(text)
@@ -157,18 +166,18 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     setPending(true)
     setError("")
     try {
-      await post("/api/supplier-catalog/stock", { counts: changes })
+      await post("/api/supplier-catalog/stock", { counts: changes }, shared("couldNotSave"))
       setEdits({})
       router.refresh()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't save. Try again.")
+      setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {
       setPending(false)
     }
   }
 
   if (!rows.length) {
-    return <EmptyState title="No products yet" description="Add products to count their stock here." />
+    return <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
   }
   const shown = rows.filter((row) => tests[tab](row) && matches(query, row.title, row.variant, row.supplierSku))
   const pages = Math.max(1, Math.ceil(shown.length / pageSize))
@@ -177,10 +186,10 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
     <div className="@container flex flex-col gap-3">
       <IndexToolbar
         tabs={[
-          { value: "all", label: "All", count: rows.length },
-          { value: "tracked", label: "Tracked", count: rows.filter(tests.tracked).length },
-          { value: "short", label: "Short", count: rows.filter(tests.short).length },
-          { value: "untracked", label: "Not tracked", count: rows.filter(tests.untracked).length }
+          { value: "all", label: shared("all"), count: rows.length },
+          { value: "tracked", label: t("tabs.tracked"), count: rows.filter(tests.tracked).length },
+          { value: "short", label: t("tabs.short"), count: rows.filter(tests.short).length },
+          { value: "untracked", label: t("tabs.untracked"), count: rows.filter(tests.untracked).length }
         ]}
         tab={tab}
         onTabChange={(value) => {
@@ -192,19 +201,19 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
           setQuery(value)
           setPage(0)
         }}
-        placeholder="Search by product or SKU"
+        placeholder={t("search")}
       />
       {shown.length ? (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead className="hidden @2xl:table-cell">SKU</TableHead>
-              <TableHead className="hidden text-center @4xl:table-cell">Tracked</TableHead>
-              <TableHead className="hidden text-center @4xl:table-cell">Sell when out</TableHead>
-              <TableHead className="hidden text-right @xl:table-cell">Committed</TableHead>
-              <TableHead className="hidden text-right @md:table-cell">Available</TableHead>
-              <TableHead className="text-right">On hand</TableHead>
+              <TableHead>{t("columns.product")}</TableHead>
+              <TableHead className="hidden @2xl:table-cell">{t("columns.sku")}</TableHead>
+              <TableHead className="hidden text-center @4xl:table-cell">{t("columns.tracked")}</TableHead>
+              <TableHead className="hidden text-center @4xl:table-cell">{t("columns.sellWhenOut")}</TableHead>
+              <TableHead className="hidden text-end @xl:table-cell">{t("columns.committed")}</TableHead>
+              <TableHead className="hidden text-end @md:table-cell">{t("columns.available")}</TableHead>
+              <TableHead className="text-end">{t("columns.onHand")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -234,7 +243,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                               available < 0 && "font-medium text-destructive"
                             )}
                           >
-                            {available.toLocaleString("en-US")} available
+                            {t("available", { count: available })}
                           </p>
                         )}
                       </div>
@@ -242,30 +251,32 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                   </TableCell>
                   <TableCell className="hidden font-mono text-xs @2xl:table-cell">{row.supplierSku}</TableCell>
                   <TableCell className="hidden text-center @4xl:table-cell">
-                    <Toggle row={row} field="trackInventory" label="Track inventory" />
+                    <Toggle row={row} field="trackInventory" label={t("trackFor", { sku: row.supplierSku })} />
                   </TableCell>
                   <TableCell className="hidden text-center @4xl:table-cell">
-                    {row.trackInventory && <Toggle row={row} field="continueSelling" label="Continue selling" />}
+                    {row.trackInventory && (
+                      <Toggle row={row} field="continueSelling" label={t("continueFor", { sku: row.supplierSku })} />
+                    )}
                   </TableCell>
-                  <TableCell className="hidden text-right tabular-nums @xl:table-cell">
-                    {row.committed.toLocaleString("en-US")}
+                  <TableCell className="hidden text-end tabular-nums @xl:table-cell">
+                    {row.committed.toLocaleString(locale)}
                   </TableCell>
                   <TableCell
                     className={cn(
-                      "hidden text-right tabular-nums @md:table-cell",
+                      "hidden text-end tabular-nums @md:table-cell",
                       row.trackInventory && available < 0 && "font-medium text-destructive"
                     )}
                   >
-                    {row.trackInventory ? available.toLocaleString("en-US") : "—"}
+                    {row.trackInventory ? available.toLocaleString(locale) : "—"}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     {row.trackInventory && editable && (
                       <OnHand row={row} value={edits[row.id]} onChange={(value) => edit(row.id, value)} />
                     )}
                     {row.trackInventory && !editable && (
-                      <span className="tabular-nums">{row.onHand.toLocaleString("en-US")}</span>
+                      <span className="tabular-nums">{row.onHand.toLocaleString(locale)}</span>
                     )}
-                    {!row.trackInventory && <span className="text-muted-foreground">Not tracked</span>}
+                    {!row.trackInventory && <span className="text-muted-foreground">{t("notTracked")}</span>}
                   </TableCell>
                 </TableRow>
               )
@@ -273,14 +284,14 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
           </TableBody>
         </Table>
       ) : (
-        <EmptyState title="Nothing here" description="Try another tab or search." />
+        <EmptyState title={t("nothingHere")} description={shared("tryAnother")} />
       )}
       <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
       <SaveBar
         dirty={changes.length > 0}
         pending={pending}
-        error={error || (invalid ? "Enter whole numbers to save" : "")}
-        message={`${changes.length} unsaved ${changes.length === 1 ? "change" : "changes"}`}
+        error={error || (invalid ? t("wholeNumbers") : "")}
+        message={t("unsavedChanges", { count: changes.length })}
         canSave={!invalid}
         onDiscard={() => {
           setEdits({})

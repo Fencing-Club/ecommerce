@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
 import { Button } from "@/components/ui/button"
@@ -6,7 +7,10 @@ import { blankPlace } from "@/lib/onboarding"
 import { session } from "@/server/auth"
 import { ownProfile } from "@/server/profile"
 
-export const metadata: Metadata = { title: "New workspace" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("onboarding")
+  return { title: t("newWorkspaceTitle") }
+}
 
 export const dynamic = "force-dynamic"
 
@@ -15,6 +19,7 @@ export const dynamic = "force-dynamic"
 export default async function NewWorkspace() {
   const s = await session()
   const { profile, complete } = await ownProfile(s.user.id)
+  const t = await getTranslations("onboarding.wizard")
   return (
     <OnboardingWizard
       steps={complete ? ["role", "company", "address"] : ["about", "role", "company", "address"]}
@@ -33,7 +38,7 @@ export default async function NewWorkspace() {
       invitedBy={null}
       account={
         <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/" />}>
-          Cancel
+          {t("cancel")}
         </Button>
       }
     />

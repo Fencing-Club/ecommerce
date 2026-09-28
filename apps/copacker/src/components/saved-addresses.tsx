@@ -2,6 +2,7 @@
 
 import type { Address } from "@repo/aisle"
 import { Ellipsis, Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -10,8 +11,9 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useActionMutation } from "@/lib/api"
-import { type ContactKind, contactKindLabels } from "@/lib/contacts"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
+import { type ContactKind, contactKindLabelKeys } from "@/lib/contacts"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { ContactForm } from "./settings-forms"
 
@@ -35,11 +37,9 @@ export function SavedAddresses({
   // Owners and admins add, edit and remove the workspace's addresses; everyone else sees them.
   admin: boolean
 }) {
+  const t = useTranslations("settings.addresses")
   const [open, setOpen] = useState(false)
-  let count = supplier ? "No pickup addresses" : "No addresses"
-  if (contacts.length) {
-    count = `${contacts.length} ${contacts.length === 1 ? "address" : "addresses"}`
-  }
+  const count = supplier && !contacts.length ? t("noPickupAddresses") : t("count", { count: contacts.length })
 
   return (
     <Card className="gap-0 py-0">
@@ -49,11 +49,11 @@ export function SavedAddresses({
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger render={<Button variant="outline" size="sm" />}>
               <Plus data-icon="inline-start" />
-              Add address
+              {t("add")}
             </DialogTrigger>
             <DialogContent className={dialog}>
               <DialogHeader>
-                <DialogTitle>Add address</DialogTitle>
+                <DialogTitle>{t("add")}</DialogTitle>
               </DialogHeader>
               <ContactForm supplier={supplier} locations={locations} onSuccess={() => setOpen(false)} />
             </DialogContent>
@@ -82,6 +82,9 @@ function SavedAddress({
   locations: ShopifyLocation[]
   admin: boolean
 }) {
+  const t = useTranslations("settings.addresses")
+  const partners = useTranslations("partners")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [editing, setEditing] = useState(false)
@@ -99,10 +102,11 @@ function SavedAddress({
   ]
     .filter(Boolean)
     .join(", ")
-  const location =
-    contact.kind === "delivery" && contact.shopifyLocationId
-      ? (locations.find((candidate) => candidate.id === contact.shopifyLocationId)?.name ?? "a Shopify location")
-      : null
+  let location: string | null = null
+  if (contact.kind === "delivery" && contact.shopifyLocationId) {
+    const linked = locations.find((candidate) => candidate.id === contact.shopifyLocationId)
+    location = linked ? t("stockArrivesAt", { location: linked.name }) : t("stockArrivesAtShopify")
+  }
 
   async function remove() {
     setPending(true)
@@ -111,7 +115,7 @@ function SavedAddress({
       await run({ action: "contact.delete", data: { id: contact.id } }).unwrap()
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, "Couldn't remove this address"))
+      setError(errorMessage(e, t("removeFailed")))
       setPending(false)
     }
   }
@@ -121,7 +125,7 @@ function SavedAddress({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="flex flex-wrap items-center gap-2 font-medium">
           {contact.name}
-          {contact.kind !== usual && <Badge variant="secondary">{contactKindLabels[contact.kind]}</Badge>}
+          {contact.kind !== usual && <Badge variant="secondary">{partners(contactKindLabelKeys[contact.kind])}</Badge>}
         </p>
         <p className="text-muted-foreground">{street}</p>
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
@@ -137,12 +141,12 @@ function SavedAddress({
             </a>
           )}
         </p>
-        {location && <p className="text-xs text-muted-foreground">Stock arrives at {location}</p>}
+        {location && <p className="text-xs text-muted-foreground">{location}</p>}
         {supplier && contact.kind === "pickup" && !address.phoneNumber && (
-          <p className="text-xs text-destructive">Add a phone number to use it on shipments</p>
+          <p className="text-xs text-destructive">{t("addPhone")}</p>
         )}
         {!supplier && contact.kind === "pickup" && (
-          <p className="text-xs text-destructive">Your supplier keeps pickups now, remove this once they’ve added it</p>
+          <p className="text-xs text-destructive">{t("supplierKeepsPickups")}</p>
         )}
         {error && (
           <p role="alert" className="text-xs text-destructive">
@@ -151,21 +155,21 @@ function SavedAddress({
         )}
       </div>
       {admin && pending && (
-        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Removing ${contact.name}`}>
+        <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={t("removing", { name: contact.name })}>
           <Spinner />
         </Button>
       )}
       {admin && !pending && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${contact.name}`} />}
+            render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: contact.name })} />}
           >
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => setEditing(true)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEditing(true)}>{t("edit")}</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
-              Remove
+              {t("remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -173,7 +177,7 @@ function SavedAddress({
       <Dialog open={admin && editing} onOpenChange={setEditing}>
         <DialogContent className={dialog}>
           <DialogHeader>
-            <DialogTitle>Edit address</DialogTitle>
+            <DialogTitle>{t("editTitle")}</DialogTitle>
           </DialogHeader>
           <ContactForm
             contact={contact}

@@ -19,7 +19,7 @@ export async function Shell({ children, ...sidebar }: AppSidebarProps & { childr
             id="main-content"
             className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] content-start items-center gap-x-2 gap-y-6 p-4 *:col-span-full md:p-6 lg:p-8 [&>[data-sidebar=trigger]]:col-span-1 [&>[data-sidebar=trigger]+*]:col-span-1"
           >
-            <SidebarTrigger className="-ml-1.5" />
+            <SidebarTrigger className="-ms-1.5" />
             {children}
           </div>
         </SidebarInset>

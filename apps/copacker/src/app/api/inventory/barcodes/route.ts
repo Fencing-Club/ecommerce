@@ -1,4 +1,6 @@
+import { type ErrorKey } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import {
   ProductBarcodeError,
   productLabelFile,
@@ -10,11 +12,11 @@ import { isAppOrigin } from "@/server/security"
 
 const headers = { "Cache-Control": "private, no-store" }
 
-function failure(error: unknown, fallback: string) {
+async function failure(error: unknown, fallback: ErrorKey) {
   if (error instanceof ProductBarcodeError) {
-    return Response.json({ error: error.message }, { status: error.status, headers })
+    return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
   }
-  return Response.json({ error: fallback }, { status: 500, headers })
+  return errorResponse(fallback, 500, headers)
 }
 
 function variantFrom(request: Request) {
@@ -24,20 +26,20 @@ function variantFrom(request: Request) {
 // Uploads a variation's barcode label: form fields variantId and file, a one-page PDF.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   requirePage(s, "products", "edit")
   if (Number(request.headers.get("content-length") ?? 0) > 34 * 1024 * 1024) {
-    return Response.json({ error: "Choose a PDF smaller than 32 MB" }, { status: 400, headers })
+    return errorResponse("choosePdfUnder32", 400, headers)
   }
   try {
     const form = await request.formData().catch(() => {
-      throw new ProductBarcodeError("Choose a PDF to upload", 400)
+      throw new ProductBarcodeError("choosePdfToUpload", 400)
     })
     return Response.json(await saveProductBarcode(s, form), { headers })
   } catch (error) {
-    return failure(error, "The barcode couldn't be uploaded. Try again.")
+    return failure(error, "barcodeNotUploaded")
   }
 }
 
@@ -46,7 +48,7 @@ export async function GET(request: Request) {
   requirePage(s, "products")
   const variantId = variantFrom(request)
   if (!variantId.success) {
-    return Response.json({ error: "Choose a product variation" }, { status: 400, headers })
+    return errorResponse("chooseVariation", 400, headers)
   }
   try {
     const file = await productLabelFile(s, variantId.data)
@@ -62,24 +64,24 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    return failure(error, "The barcode couldn't be downloaded. Try again.")
+    return failure(error, "barcodeNotDownloaded")
   }
 }
 
 export async function DELETE(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403, headers })
+    return errorResponse("invalidOrigin", 403, headers)
   }
   const s = await session()
   requirePage(s, "products", "edit")
   const variantId = variantFrom(request)
   if (!variantId.success) {
-    return Response.json({ error: "Choose a product variation" }, { status: 400, headers })
+    return errorResponse("chooseVariation", 400, headers)
   }
   try {
     await removeProductBarcode(s, variantId.data)
     return Response.json({ ok: true }, { headers })
   } catch (error) {
-    return failure(error, "The barcode couldn't be removed. Try again.")
+    return failure(error, "barcodeNotRemoved")
   }
 }

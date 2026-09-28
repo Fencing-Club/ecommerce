@@ -1,6 +1,7 @@
 import { amazonNetworkNames } from "@repo/aisle"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { AddressSummary } from "@/components/partner-address"
@@ -15,7 +16,7 @@ import { releasedStates } from "@/server/readiness"
 
 // The products table runs edge to edge in its card, its first and last columns in line with the route above it and
 // with the other cards' content.
-const edgeTable = "[&_td:first-child]:pl-3 [&_td:last-child]:pr-3 [&_th:first-child]:pl-3 [&_th:last-child]:pr-3"
+const edgeTable = "[&_td:first-child]:ps-3 [&_td:last-child]:pe-3 [&_th:first-child]:ps-3 [&_th:last-child]:pe-3"
 
 // The shipping documents a forwarder gets, in the order they're made, as the purchase order page lists them.
 const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
@@ -38,12 +39,14 @@ export async function ForwarderView({
   editable: boolean
 }) {
   const { order, supplier, forwarder } = row
-  const [shipmentRows, docs] = await Promise.all([
+  const [shipmentRows, docs, t, common] = await Promise.all([
     db().select().from(shipments).where(eq(shipments.orderId, order.id)).orderBy(asc(shipments.createdAt)),
     db()
       .select()
       .from(documents)
-      .where(and(eq(documents.orderId, order.id), eq(documents.outdated, 0), inArray(documents.kind, documentOrder)))
+      .where(and(eq(documents.orderId, order.id), eq(documents.outdated, 0), inArray(documents.kind, documentOrder))),
+    getTranslations("orders"),
+    getTranslations("common")
   ])
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
   const places = addressIds.length
@@ -71,7 +74,7 @@ export async function ForwarderView({
     { key: "order", title: null, shipmentId: null },
     ...shipmentRows.map((shipment, index) => ({
       key: shipment.id,
-      title: `Shipment ${index + 1}`,
+      title: t("detail.shipment", { number: index + 1 }),
       shipmentId: shipment.id
     }))
   ].flatMap((group) => {
@@ -88,7 +91,7 @@ export async function ForwarderView({
   return (
     <>
       <PageHeader
-        parents={[{ label: "Purchase orders", href: "/orders" }]}
+        parents={[{ label: t("index.title"), href: "/orders" }]}
         title={order.data.reference}
         badge={<Status status={order.status} />}
       />
@@ -97,25 +100,25 @@ export async function ForwarderView({
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center gap-1.5 border-b p-3">
             <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
-            <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+            <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
             {order.data.via && (
               <>
                 <RoutePill icon={<Warehouse />}>
                   {[forwarder.name, place(order.data.via.addressId)].filter(Boolean).join(", ")}
                 </RoutePill>
-                <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
+                <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
               </>
             )}
             <RoutePill icon={<MapPin />}>
-              {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
+              {place(order.data.deliveryId) ?? formatDestination(order.data.destination, common)}
             </RoutePill>
           </div>
           {onward && <AddressSummary address={onward.address} className="border-b p-3" />}
           <Table framed={false} className={edgeTable}>
             <TableHeader>
               <TableRow>
-                <TableHead>Products</TableHead>
-                <TableHead className="w-24 text-right">Qty</TableHead>
+                <TableHead>{t("detail.columns.products")}</TableHead>
+                <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -129,11 +132,15 @@ export async function ForwarderView({
                       </Badge>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {item.buyerSku}
-                      {order.data.destination === "amazon" && `, to Amazon ${amazonNetworkNames[item.amazonNetwork]}`}
+                      {order.data.destination === "amazon"
+                        ? t("detail.skuToAmazon", {
+                            sku: item.buyerSku,
+                            network: amazonNetworkNames[item.amazonNetwork]
+                          })
+                        : item.buyerSku}
                     </p>
                   </TableCell>
-                  <TableCell className="py-2.5 text-right align-top tabular-nums">{item.pieces}</TableCell>
+                  <TableCell className="py-2.5 text-end align-top tabular-nums">{item.pieces}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -142,7 +149,7 @@ export async function ForwarderView({
 
         <Card size="sm" className="gap-0 pb-0">
           <CardHeader className="pb-3">
-            <CardTitle>Shipments</CardTitle>
+            <CardTitle>{t("detail.shipments")}</CardTitle>
           </CardHeader>
           {shipmentRows.length ? (
             <ul>
@@ -150,10 +157,19 @@ export async function ForwarderView({
                 <li key={shipment.id} className="flex items-center gap-3 border-t px-3 py-2.5">
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="font-medium">
-                      Shipment {index + 1}
-                      {shipment.amazonNetwork && ` to Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`}
+                      {shipment.amazonNetwork
+                        ? t("detail.shipmentToAmazon", {
+                            number: index + 1,
+                            network: amazonNetworkNames[shipment.amazonNetwork]
+                          })
+                        : t("detail.shipment", { number: index + 1 })}
                     </span>
-                    <ShipmentDetails shipment={shipment} />
+                    <ShipmentDetails
+                      shipment={shipment}
+                      cartons={
+                        shipment.packing ? t("detail.cartons", { count: shipment.packing.cartons.length }) : undefined
+                      }
+                    />
                   </span>
                   <Status status={shipment.status} />
                   {editable && shipment.status === "shipped" && (
@@ -163,14 +179,14 @@ export async function ForwarderView({
               ))}
             </ul>
           ) : (
-            <p className="px-3 pb-3 text-muted-foreground">No shipments yet</p>
+            <p className="px-3 pb-3 text-muted-foreground">{t("detail.noShipmentsYet")}</p>
           )}
         </Card>
 
         {documentGroups.length > 0 && (
           <Card size="sm">
             <CardHeader>
-              <CardTitle>Documents</CardTitle>
+              <CardTitle>{t("detail.documents")}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {documentGroups.map((group) => (
@@ -188,10 +204,9 @@ export async function ForwarderView({
 }
 
 // Under a shipment's name: its cartons once they're packed, and the carrier and tracking number once it's shipped on.
-function ShipmentDetails({ shipment }: { shipment: typeof shipments.$inferSelect }) {
-  const cartons = shipment.packing?.cartons.length
+function ShipmentDetails({ shipment, cartons }: { shipment: typeof shipments.$inferSelect; cartons?: string }) {
   const details = [
-    cartons !== undefined && `${cartons} ${cartons === 1 ? "carton" : "cartons"}`,
+    cartons,
     shipment.forwarderCarrier && [shipment.forwarderCarrier, shipment.forwarderReference].filter(Boolean).join(" ")
   ].filter(Boolean)
   return details.length ? <span className="text-xs text-muted-foreground">{details.join(", ")}</span> : null

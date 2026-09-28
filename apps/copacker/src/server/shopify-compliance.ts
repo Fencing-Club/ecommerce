@@ -2,7 +2,18 @@ import { shopDomainSchema } from "@repo/aisle/shopify"
 import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { connections, jobs, memberships, salesOrders, salesSyncs, stockDays, stockSnapshots } from "@/db/schema"
+import {
+  connections,
+  jobs,
+  memberships,
+  profiles,
+  salesOrders,
+  salesSyncs,
+  stockDays,
+  stockSnapshots
+} from "@/db/schema"
+import { defaultLocale, isLocale, type Locale } from "@/i18n/locales"
+import { translatorFor } from "@/i18n/translator"
 import { summarizeSalesOrder } from "./sales-orders"
 
 // Shopify's mandatory privacy webhooks. Copacker copies orders for restock planning and sales figures: order numbers,
@@ -123,30 +134,66 @@ async function reportCustomerData(shop: string, orders: number[], requestId: num
     return
   }
   const owners = await db()
-    .select({ orgId: memberships.orgId, email: memberships.email })
+    .select({ orgId: memberships.orgId, email: memberships.email, locale: profiles.locale })
     .from(memberships)
+    .leftJoin(profiles, eq(profiles.userId, memberships.userId))
     .where(and(inArray(memberships.orgId, orgIds), eq(memberships.role, "owner")))
-  const emails = owners.map((owner) => ({
-    key: `email:data-request:${requestId}:${owner.orgId}:${owner.email}`,
-    kind: "email" as const,
-    payload: {
-      type: "data_request",
-      to: owner.email,
-      shop,
-      requestId,
-      orders: stored
-        .filter((row) => row.orgId === owner.orgId)
-        .map((row) => describeOrder(summarizeSalesOrder("shopify", row.orderedAt, row.data, shop)))
-    }
-  }))
+  // Each owner reads the order lines in their own language, as the email job writes the rest of the email.
+  const emails = await Promise.all(
+    owners.map(async (owner) => {
+      const locale = isLocale(owner.locale) ? owner.locale : defaultLocale
+      const t = await translatorFor(locale)
+      return {
+        key: `email:data-request:${requestId}:${owner.orgId}:${owner.email}`,
+        kind: "email" as const,
+        payload: {
+          type: "data_request",
+          to: owner.email,
+          shop,
+          requestId,
+          orders: stored
+            .filter((row) => row.orgId === owner.orgId)
+            .map((row) => describeOrder(t, locale, summarizeSalesOrder("shopify", row.orderedAt, row.data, shop)))
+        }
+      }
+    })
+  )
   if (emails.length) {
     await db().insert(jobs).values(emails).onConflictDoNothing()
   }
 }
 
-function describeOrder(order: ReturnType<typeof summarizeSalesOrder>) {
-  const items = order.items.map((item) => `${item.quantity} × ${item.sku ?? "item without a SKU"}`).join(", ")
-  return `Order ${order.number}, placed ${order.orderedAt.slice(0, 10)}, status ${order.status}: ${items || "no items"}`
+// A Shopify order's status as the sales summary names it, and its key in the email's messages.
+const statuses = {
+  Unfulfilled: "unfulfilled",
+  "Partially fulfilled": "partiallyFulfilled",
+  Fulfilled: "fulfilled",
+  Cancelled: "cancelled"
+} as const
+
+function isStatus(status: string): status is keyof typeof statuses {
+  return Object.hasOwn(statuses, status)
+}
+
+// "Order #1001, placed 2026-09-01, status Unfulfilled: 2 × CORD-2", in the owner's language.
+function describeOrder(
+  t: Awaited<ReturnType<typeof translatorFor>>,
+  locale: Locale,
+  order: ReturnType<typeof summarizeSalesOrder>
+) {
+  const items = order.items.map((item) =>
+    item.sku
+      ? t("emails.customerDataRequest.item", { quantity: item.quantity, sku: item.sku })
+      : t("emails.customerDataRequest.itemWithoutSku", { quantity: item.quantity })
+  )
+  return t("emails.customerDataRequest.order", {
+    number: order.number,
+    date: order.orderedAt.slice(0, 10),
+    status: isStatus(order.status) ? t(`emails.customerDataRequest.status.${statuses[order.status]}`) : order.status,
+    items: items.length
+      ? new Intl.ListFormat(locale, { style: "short", type: "unit" }).format(items)
+      : t("emails.customerDataRequest.noItems")
+  })
 }
 
 // Removes a customer's Shopify ID from the store's copied orders: theirs by customer, and the ones Shopify names.

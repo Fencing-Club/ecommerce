@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { FormProvider } from "react-hook-form"
 import { FormError, SubmitButton } from "@/components/actions"
 import { FormInput } from "@/components/form-controls"
@@ -13,6 +14,7 @@ import { authFields, leaving } from "./sign-in-form"
 // A new account: an email and a password. A code sent to the email confirms it next; everything else about the person
 // and their company comes after, in getting started.
 export function SignUpForm({ next, email = "", locked = false }: { next: string; email?: string; locked?: boolean }) {
+  const t = useTranslations("auth")
   const { form, submit } = useActionForm({
     schema: signUpSchema,
     action: "auth.signUp",
@@ -25,19 +27,19 @@ export function SignUpForm({ next, email = "", locked = false }: { next: string;
         <FieldGroup>
           <FormInput
             name="email"
-            label="Work email"
+            label={t("fields.workEmail")}
             type="email"
             autoComplete="email"
             inputMode="email"
             spellCheck={false}
             readOnly={locked}
-            placeholder="you@company.com"
+            placeholder={t("fields.emailPlaceholder")}
           />
-          <PasswordField name="password" label="Password" autoComplete="new-password" isNew />
+          <PasswordField name="password" label={t("fields.password")} autoComplete="new-password" isNew />
         </FieldGroup>
         <FormError message={form.formState.errors.root?.server?.message} />
         <SubmitButton type="submit" className="h-10 w-full" pending={leaving(form.formState)}>
-          Create account
+          {t("signup.submit")}
         </SubmitButton>
       </form>
     </FormProvider>

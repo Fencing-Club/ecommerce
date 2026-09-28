@@ -1,6 +1,7 @@
 "use client"
 
 import { Check, FileText, GlassWater, Ship } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"
@@ -14,62 +15,34 @@ import { through } from "./scroll"
 // reduced motion, the trip steps from chapter to chapter instead of moving. The points on the trip follow the world's
 // beats.
 
-type Chapter = { at: number; step: string; title: string; text: string }
+type Translate = ReturnType<typeof useTranslations<"marketing.journey">>
+type Format = ReturnType<typeof useFormatter>
 
-const chapters: Chapter[] = [
-  {
-    at: 0,
-    step: "Order",
-    title: "Reorder in one click.",
-    text: "Copacker writes the purchase order and sends it to your supplier."
-  },
-  {
-    at: 0.1,
-    step: "Pack",
-    title: "Labeled, and packed to fit.",
-    text: "FNSKU and choking hazard labels go on each unit, carton and shipping labels on each box, and every box is sized to fit."
-  },
-  {
-    at: 0.34,
-    step: "Pick up",
-    title: "Amazon and your forwarder pick up.",
-    text: "Amazon takes the cartons bound for AWD overseas, and your forwarder takes the rest."
-  },
-  {
-    at: 0.48,
-    step: "Ship",
-    title: "On its way.",
-    text: "The commercial invoice, the bill of lading and the tracking all land on the same order."
-  },
-  {
-    at: 0.7,
-    step: "Customs",
-    title: "Through customs.",
-    text: "Your forwarder clears it with the bill of lading and commercial invoice already on the order."
-  },
-  {
-    at: 0.82,
-    step: "Deliver",
-    title: "Delivered to FBA, and to you.",
-    text: "Your forwarder takes Amazon’s cartons to FBA, and FedEx brings the rest to your warehouse."
-  }
-]
+// Each chapter's step, title and words are under marketing.journey.chapters.<key>.
+const chapters = [
+  { at: 0, key: "order" },
+  { at: 0.1, key: "pack" },
+  { at: 0.34, key: "pickUp" },
+  { at: 0.48, key: "ship" },
+  { at: 0.7, key: "customs" },
+  { at: 0.82, key: "deliver" }
+] as const
 
 // Where each chapter's still frame sits, for reduced motion.
 const stills = [0.09, 0.3, 0.47, 0.69, 0.815, 1]
 
 // The order's documents, each saved to it at the point on the trip where it's made. The carrier issues the bill of
-// lading once the container is aboard.
+// lading once the container is aboard. Their names are under marketing.journey.documents.
 const documents = [
-  { at: 0.06, name: "Purchase order", file: "PO-1043.pdf" },
-  { at: 0.138, name: "FNSKU labels", file: "PO-1043-fnsku-labels.pdf" },
-  { at: 0.146, name: "Choking hazard labels", file: "PO-1043-choking-hazard.pdf" },
-  { at: 0.212, name: "Packing list", file: "PO-1043-packing-list.pdf" },
-  { at: 0.232, name: "Carton labels", file: "PO-1043-carton-labels.pdf" },
-  { at: 0.237, name: "Shipping labels", file: "PO-1043-shipping-labels.pdf" },
-  { at: 0.5, name: "Commercial invoice", file: "PO-1043-invoice.pdf" },
-  { at: 0.558, name: "Bill of lading", file: "PO-1043-bill-of-lading.pdf" }
-]
+  { at: 0.06, key: "purchaseOrder", file: "PO-1043.pdf" },
+  { at: 0.138, key: "fnskuLabels", file: "PO-1043-fnsku-labels.pdf" },
+  { at: 0.146, key: "chokingHazardLabels", file: "PO-1043-choking-hazard.pdf" },
+  { at: 0.212, key: "packingList", file: "PO-1043-packing-list.pdf" },
+  { at: 0.232, key: "cartonLabels", file: "PO-1043-carton-labels.pdf" },
+  { at: 0.237, key: "shippingLabels", file: "PO-1043-shipping-labels.pdf" },
+  { at: 0.5, key: "commercialInvoice", file: "PO-1043-invoice.pdf" },
+  { at: 0.558, key: "billOfLading", file: "PO-1043-bill-of-lading.pdf" }
+] as const
 
 // A card or a pin, pinned to a place in the world, or held at `spot` on the screen when the place moves too much for a
 // card to follow it.
@@ -78,7 +51,7 @@ type Note = {
   shown: [number, number][]
   kind: "card" | "pin"
   spot?: { x: number; y: number }
-  content: React.ReactNode
+  content: (t: Translate, format: Format) => React.ReactNode
 }
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -108,14 +81,14 @@ function Rows({ rows }: { rows: [string, string][] }) {
 }
 
 // What a delivery added to stock there: the product, and its units in green, like the forecast's restock.
-function Arrived({ units }: { units: number }) {
+function Arrived({ units }: { units: string }) {
   return (
     <div className="mt-3 flex items-center gap-2.5 border-t pt-2.5">
       <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
         <GlassWater className="size-3.5 text-muted-foreground" />
       </span>
       <span className="min-w-0 flex-1 truncate font-medium">Steel Bottle 32 oz</span>
-      <span className="font-semibold text-success tabular-nums">+{units.toLocaleString("en-US")}</span>
+      <span className="font-semibold text-success tabular-nums">+{units}</span>
     </div>
   )
 }
@@ -125,45 +98,50 @@ const notes: Note[] = [
     place: "order",
     kind: "card",
     shown: [[0.015, 0.1]],
-    content: (
+    content: (t, format) => (
       <Card className="w-72">
         <div className="flex items-center gap-2">
           <FileText className="size-4 text-muted-foreground" />
-          <span className="font-semibold">Purchase order 1043</span>
-          <span className="ml-auto">
-            <StatusBadge tone="info">With supplier</StatusBadge>
+          <span className="font-semibold">{t("purchaseOrder", { number: 1043 })}</span>
+          <span className="ms-auto">
+            <StatusBadge tone="info">{t("cards.withSupplier")}</StatusBadge>
           </span>
         </div>
         <Rows
           rows={[
-            ["Supplier", "Shenzhen Metalworks"],
-            ["Units", "3,180"],
-            ["Total", "$13,650.00"]
+            [t("cards.supplier"), "Shenzhen Metalworks"],
+            [t("cards.units"), format.number(3180)],
+            [t("cards.total"), format.number(13_650, { style: "currency", currency: "USD" })]
           ]}
         />
       </Card>
     )
   },
-  { place: "stickers", kind: "pin", shown: [[0.12, 0.19]], content: "FNSKU and choking hazard labels" },
-  { place: "fit", kind: "pin", shown: [[0.19, 0.225]], content: "Right-sized to 40 × 28 × 29 cm" },
-  { place: "labels", kind: "pin", shown: [[0.232, 0.265]], content: "Carton and shipping labels" },
+  { place: "stickers", kind: "pin", shown: [[0.12, 0.19]], content: (t) => t("pins.unitLabels") },
+  {
+    place: "fit",
+    kind: "pin",
+    shown: [[0.19, 0.225]],
+    content: (t) => t("pins.rightSized", { size: "40 × 28 × 29 cm" })
+  },
+  { place: "labels", kind: "pin", shown: [[0.232, 0.265]], content: (t) => t("pins.boxLabels") },
   {
     place: "packing",
     kind: "card",
     shown: [[0.27, 0.34]],
-    content: (
+    content: (t, format) => (
       <Card>
         <div className="flex items-center gap-2">
-          <span className="font-semibold">Packing list</span>
-          <span className="ml-auto">
-            <StatusBadge tone="success">Submitted</StatusBadge>
+          <span className="font-semibold">{t("documents.packingList")}</span>
+          <span className="ms-auto">
+            <StatusBadge tone="success">{t("cards.submitted")}</StatusBadge>
           </span>
         </div>
         <Rows
           rows={[
-            ["Cartons", "160"],
-            ["Carton size", "40 × 28 × 29 cm"],
-            ["Weight", "1,610 kg"]
+            [t("cards.cartons"), format.number(160)],
+            [t("cards.cartonSize"), "40 × 28 × 29 cm"],
+            [t("cards.weight"), format.number(1610, { style: "unit", unit: "kilogram" })]
           ]}
         />
       </Card>
@@ -174,14 +152,14 @@ const notes: Note[] = [
     kind: "card",
     spot: { x: 0.86, y: 0.34 },
     shown: [[0.35, 0.465]],
-    content: (
+    content: (t) => (
       <Card className="w-72">
-        <span className="font-semibold">Shipments</span>
+        <span className="font-semibold">{t("cards.shipments")}</span>
         <Rows
           rows={[
-            ["AWD in China, by Amazon", "1,440 units"],
-            ["Amazon FBA", "1,260 units"],
-            ["Your warehouse", "480 units"]
+            [t("cards.awdByAmazon"), t("cards.unitCount", { count: 1440 })],
+            ["Amazon FBA", t("cards.unitCount", { count: 1260 })],
+            [t("places.yourWarehouse"), t("cards.unitCount", { count: 480 })]
           ]}
         />
       </Card>
@@ -191,10 +169,10 @@ const notes: Note[] = [
     place: "china",
     kind: "card",
     shown: [[0.475, 0.52]],
-    content: (
+    content: (t, format) => (
       <Card>
-        <span className="font-semibold">Checked in at AWD</span>
-        <Arrived units={1440} />
+        <span className="font-semibold">{t("cards.checkedInAwd")}</span>
+        <Arrived units={format.number(1440)} />
       </Card>
     )
   },
@@ -202,15 +180,23 @@ const notes: Note[] = [
     place: "quay",
     kind: "card",
     shown: [[0.52, 0.56]],
-    content: (
+    content: (t, format) => (
       <Card className="w-72">
         <div className="flex items-center gap-3">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
             <Ship className="size-4" />
           </span>
           <span className="flex flex-col leading-snug">
-            <span className="font-medium">Picked up by Pacific Link Logistics</span>
-            <span className="text-muted-foreground">Oct 6, 4:12 PM</span>
+            <span className="font-medium">{t("cards.pickedUp", { forwarder: "Pacific Link Logistics" })}</span>
+            <span className="text-muted-foreground">
+              {format.dateTime(new Date(Date.UTC(2026, 9, 6, 16, 12)), {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                timeZone: "UTC"
+              })}
+            </span>
           </span>
         </div>
       </Card>
@@ -220,15 +206,22 @@ const notes: Note[] = [
     place: "ship",
     kind: "card",
     shown: [[0.6, 0.7]],
-    content: (
+    content: (t, format) => (
       <Card className="w-56">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">On the water</span>
-          <span className="ml-auto">
-            <StatusBadge tone="info">In transit</StatusBadge>
+          <span className="font-semibold">{t("cards.onTheWater")}</span>
+          <span className="ms-auto">
+            <StatusBadge tone="info">{t("cards.inTransit")}</StatusBadge>
           </span>
         </div>
-        <Rows rows={[["Arrives", "Nov 24"]]} />
+        <Rows
+          rows={[
+            [
+              t("cards.arrives"),
+              format.dateTime(new Date(Date.UTC(2026, 10, 24)), { month: "short", day: "numeric", timeZone: "UTC" })
+            ]
+          ]}
+        />
       </Card>
     )
   },
@@ -236,18 +229,21 @@ const notes: Note[] = [
     place: "customs",
     kind: "card",
     shown: [[0.808, 0.852]],
-    content: (
+    content: (t, format) => (
       <Card>
         <div className="flex items-center gap-2">
-          <span className="font-semibold">Customs</span>
-          <span className="ml-auto">
-            <StatusBadge tone="success">Released</StatusBadge>
+          <span className="font-semibold">{t("places.customs")}</span>
+          <span className="ms-auto">
+            <StatusBadge tone="success">{t("cards.released")}</StatusBadge>
           </span>
         </div>
         <Rows
           rows={[
-            ["Bill of lading", "PLL204815"],
-            ["Cleared", "Nov 26"]
+            [t("documents.billOfLading"), "PLL204815"],
+            [
+              t("cards.cleared"),
+              format.dateTime(new Date(Date.UTC(2026, 10, 26)), { month: "short", day: "numeric", timeZone: "UTC" })
+            ]
           ]}
         />
       </Card>
@@ -257,10 +253,10 @@ const notes: Note[] = [
     place: "fba",
     kind: "card",
     shown: [[0.862, 0.905]],
-    content: (
+    content: (t, format) => (
       <Card>
-        <span className="font-semibold">Checked in at Amazon FBA</span>
-        <Arrived units={1260} />
+        <span className="font-semibold">{t("cards.checkedIn")}</span>
+        <Arrived units={format.number(1260)} />
       </Card>
     )
   },
@@ -268,10 +264,10 @@ const notes: Note[] = [
     place: "yours",
     kind: "card",
     shown: [[0.94, 0.975]],
-    content: (
+    content: (t, format) => (
       <Card>
-        <span className="font-semibold">Delivered to your warehouse</span>
-        <Arrived units={480} />
+        <span className="font-semibold">{t("cards.delivered")}</span>
+        <Arrived units={format.number(480)} />
       </Card>
     )
   },
@@ -284,7 +280,7 @@ const notes: Note[] = [
       [0.3, 0.475],
       [0.96, 1]
     ],
-    content: "Shenzhen Metalworks"
+    content: () => "Shenzhen Metalworks"
   },
   {
     place: "china",
@@ -293,7 +289,7 @@ const notes: Note[] = [
       [0.44, 0.475],
       [0.96, 1]
     ],
-    content: "AWD in China"
+    content: (t) => t("places.awdInChina")
   },
   {
     place: "customs",
@@ -302,7 +298,7 @@ const notes: Note[] = [
       [0.7, 0.808],
       [0.96, 1]
     ],
-    content: "Customs"
+    content: (t) => t("places.customs")
   },
   {
     place: "fba",
@@ -311,7 +307,7 @@ const notes: Note[] = [
       [0.78, 0.862],
       [0.96, 1]
     ],
-    content: "Amazon FBA"
+    content: () => "Amazon FBA"
   },
   {
     place: "yours",
@@ -320,11 +316,16 @@ const notes: Note[] = [
       [0.8, 0.94],
       [0.975, 1]
     ],
-    content: "Your warehouse"
+    content: (t) => t("places.yourWarehouse")
   }
 ]
 
 export function Journey() {
+  const t = useTranslations("marketing.journey")
+  const format = useFormatter()
+  // The world paints the purchase order's name onto its page, and the customs house's sign, in the reader's language.
+  const orderName = t("purchaseOrder", { number: 1043 })
+  const customsSign = t("places.customs")
   const section = useRef<HTMLElement>(null)
   const surface = useRef<HTMLCanvasElement>(null)
   const pinned = useRef<(HTMLDivElement | null)[]>([])
@@ -353,7 +354,13 @@ export function Journey() {
 
     const layout = () => {
       const wide = innerWidth >= 1024
-      world?.resize(canvas.clientWidth, canvas.clientHeight, wide ? { x: 0.66, y: 0.6 } : { x: 0.5, y: 0.34 })
+      // The subject sits across from the words, which start on the right in a right-to-left language.
+      const rtl = getComputedStyle(canvas).direction === "rtl"
+      world?.resize(
+        canvas.clientWidth,
+        canvas.clientHeight,
+        wide ? { x: rtl ? 0.34 : 0.66, y: 0.6 } : { x: 0.5, y: 0.34 }
+      )
     }
     const tick = (now: number) => {
       frame = 0
@@ -422,7 +429,7 @@ export function Journey() {
           if (!surface.current) {
             return
           }
-          world = createWorld(canvas)
+          world = createWorld(canvas, { purchaseOrder: orderName, customs: customsSign })
           layout()
           setReady(true)
           request()
@@ -457,7 +464,7 @@ export function Journey() {
       removeEventListener("scroll", request)
       world?.dispose()
     }
-  }, [])
+  }, [orderName, customsSign])
 
   // Scrolls to where a chapter begins.
   const go = (index: number) => {
@@ -479,13 +486,13 @@ export function Journey() {
       className="relative h-[900svh] motion-reduce:h-[500svh]"
     >
       <h2 id="journey-title" className="sr-only">
-        One purchase order, from the factory to Amazon and your warehouse
+        {t("title")}
       </h2>
       <ol className="sr-only">
         {chapters.map((entry) => (
-          <li key={entry.step}>
-            <h3>{entry.title}</h3>
-            <p>{entry.text}</p>
+          <li key={entry.key}>
+            <h3>{t(`chapters.${entry.key}.title`)}</h3>
+            <p>{t(`chapters.${entry.key}.text`)}</p>
           </li>
         ))}
       </ol>
@@ -519,13 +526,13 @@ export function Journey() {
                     <span className="absolute bottom-0 left-0 h-3 w-px -translate-x-1/2 bg-foreground/25 transition-opacity duration-500 group-data-[shown=false]/note:opacity-0" />
                   )}
                   <div className="absolute bottom-3 left-1/2 origin-bottom -translate-x-1/2 transition-[opacity,scale,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=false]/note:translate-y-2 group-data-[shown=false]/note:scale-95 group-data-[shown=false]/note:opacity-0">
-                    {note.content}
+                    {note.content(t, format)}
                   </div>
                 </>
               ) : (
                 <span className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#26221f] px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white shadow-lg transition-[opacity,translate] duration-500 group-data-[shown=false]/note:translate-y-1 group-data-[shown=false]/note:opacity-0">
                   <span className="size-1.5 rounded-full bg-[#ff8f45]" />
-                  {note.content}
+                  {note.content(t, format)}
                 </span>
               )}
             </div>
@@ -535,20 +542,20 @@ export function Journey() {
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-0 hidden w-[calc(max(1.5rem,(100vw-72rem)/2+1.5rem)+42rem)] bg-[linear-gradient(to_right,var(--paper)_45%,color-mix(in_oklab,var(--paper)_70%,transparent)_65%,transparent)] transition-opacity duration-700 lg:block",
+            "pointer-events-none absolute inset-y-0 start-0 hidden w-[calc(max(1.5rem,(100vw-72rem)/2+1.5rem)+42rem)] bg-[linear-gradient(to_right,var(--paper)_45%,color-mix(in_oklab,var(--paper)_70%,transparent)_65%,transparent)] rtl:bg-[linear-gradient(to_left,var(--paper)_45%,color-mix(in_oklab,var(--paper)_70%,transparent)_65%,transparent)] transition-opacity duration-700 lg:block",
             ending && "opacity-0"
           )}
         />
         <div
           className={cn(
-            "pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end bg-[linear-gradient(to_top,var(--paper)_50%,transparent)] px-6 pt-24 pb-8 transition-opacity duration-700 lg:inset-y-0 lg:right-auto lg:left-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] lg:w-[26rem] lg:justify-center lg:bg-none lg:p-0",
+            "pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end bg-[linear-gradient(to_top,var(--paper)_50%,transparent)] px-6 pt-24 pb-8 transition-opacity duration-700 lg:inset-y-0 lg:end-auto lg:start-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))] lg:w-[26rem] lg:justify-center lg:bg-none lg:p-0",
             ending && "opacity-0"
           )}
         >
-          <nav aria-label="Steps" className={cn("mb-7 flex flex-wrap gap-1.5", !ending && "pointer-events-auto")}>
+          <nav aria-label={t("steps")} className={cn("mb-7 flex flex-wrap gap-1.5", !ending && "pointer-events-auto")}>
             {chapters.map((entry, i) => (
               <button
-                key={entry.step}
+                key={entry.key}
                 type="button"
                 onClick={() => go(i)}
                 aria-current={i === chapter ? "step" : undefined}
@@ -559,14 +566,14 @@ export function Journey() {
                     : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                 )}
               >
-                {entry.step}
+                {t(`chapters.${entry.key}.step`)}
               </button>
             ))}
           </nav>
           <div aria-hidden className="grid">
             {chapters.map((entry, i) => (
               <div
-                key={entry.step}
+                key={entry.key}
                 className={cn(
                   "col-start-1 row-start-1 transition-[opacity,translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   i === chapter ? "opacity-100" : "pointer-events-none opacity-0",
@@ -575,9 +582,11 @@ export function Journey() {
                 )}
               >
                 <p className="text-[clamp(2rem,4vw,3.25rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance">
-                  {entry.title}
+                  {t(`chapters.${entry.key}.title`)}
                 </p>
-                <p className="mt-4 max-w-sm text-lg text-pretty text-muted-foreground">{entry.text}</p>
+                <p className="mt-4 max-w-sm text-lg text-pretty text-muted-foreground">
+                  {t(`chapters.${entry.key}.text`)}
+                </p>
               </div>
             ))}
           </div>
@@ -587,14 +596,12 @@ export function Journey() {
             className="light mt-8 hidden rounded-2xl bg-background/80 p-2 text-sm shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_20px_40px_-24px_rgb(60_30_10/0.3)] backdrop-blur lg:block"
           >
             <div className="flex items-center justify-between px-2 pt-1 pb-2">
-              <span className="font-semibold">Purchase order 1043</span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {saved} {saved === 1 ? "document" : "documents"}
-              </span>
+              <span className="font-semibold">{orderName}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{t("documentCount", { count: saved })}</span>
             </div>
             {documents.map((document, i) => (
               <div
-                key={document.name}
+                key={document.key}
                 className={cn(
                   "grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   i < saved ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
@@ -609,7 +616,7 @@ export function Journey() {
                   >
                     <FileText className="size-4 shrink-0 text-muted-foreground" />
                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                      <span className="font-medium">{document.name}</span>
+                      <span className="font-medium">{t(`documents.${document.key}`)}</span>
                       <span className="truncate text-xs text-muted-foreground">{document.file}</span>
                     </span>
                     <Check className="size-4 shrink-0 text-success" />
@@ -622,7 +629,7 @@ export function Journey() {
             {latest && (
               <>
                 <Check className="size-4 text-success" />
-                Saved to the purchase order: {latest.name}
+                {t("saved", { name: t(`documents.${latest.key}`) })}
               </>
             )}
           </p>

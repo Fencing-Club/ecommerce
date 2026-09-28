@@ -1,4 +1,10 @@
-import { type PriceBreak, pricingProblem, type QuantityRules } from "./catalog-pricing"
+import {
+  englishPricing,
+  type PriceBreak,
+  type PricingText,
+  pricingProblem,
+  type QuantityRules
+} from "./catalog-pricing"
 
 // A supplier product's photo in document storage, under supplier-images/<supplier workspace>/.
 export type ProductImage = { key: string; name: string; contentType: string }
@@ -31,35 +37,38 @@ type VariantFields = {
   quantityRules: QuantityRules
 }
 // What's wrong with a product's options and variants, or null: every variant needs a value for each option, and no two
-// variants can have the same values or SKU.
-export function variantsProblem(input: { optionNames: string[]; variants: VariantFields[] }) {
+// variants can have the same values or SKU. `t` translates the messages, in English by default.
+export function variantsProblem(
+  input: { optionNames: string[]; variants: VariantFields[] },
+  t: PricingText = englishPricing
+) {
   if (new Set(input.optionNames.map((name) => name.toLowerCase())).size !== input.optionNames.length) {
-    return "Each option needs its own name"
+    return t("optionNamesDistinct")
   }
   if (!input.optionNames.length && input.variants.length > 1) {
-    return "Add an option to tell the variants apart"
+    return t("optionNeeded")
   }
   const seen = new Set<string>()
   for (const variant of input.variants) {
     if (input.optionNames.some((name) => !variant.options[name])) {
-      return `Give ${variant.supplierSku} a value for every option`
+      return t("optionValues", { sku: variant.supplierSku })
     }
     const key = JSON.stringify(input.optionNames.map((name) => variant.options[name]!.toLowerCase()))
     if (seen.has(key)) {
-      return "Two variants have the same options"
+      return t("sameOptions")
     }
     seen.add(key)
-    const problem = pricingProblem(variant.priceMinor, variant.priceBreaks, variant.quantityRules)
+    const problem = pricingProblem(variant.priceMinor, variant.priceBreaks, variant.quantityRules, t)
     if (problem) {
-      return `${variant.supplierSku}: ${problem}`
+      return t("variantProblem", { sku: variant.supplierSku, problem })
     }
     if (
       variant.sellablePacksPerCase !== null &&
       !Number.isSafeInteger(variant.piecesPerSellablePack * variant.sellablePacksPerCase)
     ) {
-      return `${variant.supplierSku}: pack quantity exceeds the supported range`
+      return t("packRange", { sku: variant.supplierSku })
     }
   }
   const skus = input.variants.map((variant) => variant.supplierSku)
-  return new Set(skus).size === skus.length ? null : "Two variants have the same SKU"
+  return new Set(skus).size === skus.length ? null : t("sameSku")
 }

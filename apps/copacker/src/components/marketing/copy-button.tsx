@@ -1,11 +1,13 @@
 "use client"
 
 import { Check, Copy } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 
 // A copy button that says when it worked: the copy icon spins out as a check spins in, and "Copy" rolls over to
 // "Copied". Whoever holds the clipboard says when it's `copied`, so the snippet it belongs to can light up with it.
 export function CopyButton({ copied, onCopy, className }: { copied: boolean; onCopy: () => void; className?: string }) {
+  const t = useTranslations("marketing.copyButton")
   return (
     <button
       type="button"
@@ -42,7 +44,7 @@ export function CopyButton({ copied, onCopy, className }: { copied: boolean; onC
             copied && "-translate-y-3 opacity-0"
           )}
         >
-          Copy
+          {t("copy")}
         </span>
         <span
           aria-hidden
@@ -51,11 +53,11 @@ export function CopyButton({ copied, onCopy, className }: { copied: boolean; onC
             !copied && "translate-y-3 opacity-0"
           )}
         >
-          Copied
+          {t("copied")}
         </span>
       </span>
       <span className="sr-only" aria-live="polite">
-        {copied ? "Copied" : ""}
+        {copied ? t("copied") : ""}
       </span>
     </button>
   )

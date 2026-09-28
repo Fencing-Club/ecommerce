@@ -1,0 +1,18 @@
+{
+  "contents": "Contenido",
+  "updated": "Última actualización: <time>{date}</time>",
+  "privacy": {
+    "title": "Aviso de privacidad",
+    "metadata": {
+      "title": "Aviso de privacidad | Copacker",
+      "description": "Qué recopila Copacker, cómo se usa y se comparte, y tus opciones, incluidos los datos de Amazon y de las demás tiendas que conectes."
+    }
+  },
+  "terms": {
+    "title": "Términos del servicio",
+    "metadata": {
+      "title": "Términos del servicio | Copacker",
+      "description": "Los términos para usar Copacker: cuentas y espacios de trabajo, tus responsabilidades, tus datos, tarifas y los límites de nuestra responsabilidad."
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { useFormatter, useTranslations } from "next-intl"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
@@ -9,7 +10,7 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
-import { free, GetStarted, lit, rise, Site, stage } from "./site"
+import { GetStarted, lit, rise, Site, stage } from "./site"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
@@ -44,9 +45,26 @@ function Shot({
   )
 }
 
+// The headline's two halves rise in one after the other, and the second is lit.
+const firstWords = (chunks: React.ReactNode) => (
+  <span className={cn("inline-block", rise)} style={{ animationDelay: "150ms" }}>
+    {chunks}
+  </span>
+)
+const secondWords = (chunks: React.ReactNode) => (
+  <span className={cn("inline-block", rise, lit)} style={{ animationDelay: "320ms" }}>
+    {chunks}
+  </span>
+)
+
 // The hero's stage ends partway down the product shot, which carries on over the paper below. The shot's overhang is a
 // share of its width, as margins and padding in percent are, so the space kept for it below matches at any size.
 function Hero() {
+  const t = useTranslations("marketing.hero")
+  const site = useTranslations("marketing.site")
+  const format = useFormatter()
+  const dollars = (value: number) =>
+    format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 0 })
   return (
     <section className="relative -mt-16">
       <div
@@ -64,19 +82,13 @@ function Hero() {
             className="pointer-events-none absolute -inset-x-56 -top-8 -bottom-40 -z-10 bg-[radial-gradient(closest-side,oklch(0.145_0_0/0.65),oklch(0.145_0_0/0.5)_35%,oklch(0.145_0_0/0.25)_65%,oklch(0.145_0_0/0.08)_85%,transparent)]"
           />
           <h1 className="text-[clamp(3.5rem,11vw,8rem)] leading-[0.92] font-semibold tracking-[-0.055em]">
-            <span className={cn("inline-block", rise)} style={{ animationDelay: "150ms" }}>
-              Restocking,
-            </span>{" "}
-            <span className={cn("inline-block", rise, lit)} style={{ animationDelay: "320ms" }}>
-              handled.
-            </span>
+            {t.rich("title", { first: firstWords, second: secondWords })}
           </h1>
           <p
             className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
             style={{ animationDelay: "520ms" }}
           >
-            Copacker forecasts your inventory, sends purchase orders just in time so you don’t run out, and handles the
-            handoffs to your forwarder, Amazon FBA and AWD, with every label and document made for you.
+            {t("text")}
           </p>
           <div
             className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}
@@ -86,7 +98,7 @@ function Hero() {
             <Film />
           </div>
           <p className={cn("mt-4 text-sm text-white/40", rise)} style={{ animationDelay: "800ms" }}>
-            {free}
+            {site("free")}
           </p>
         </div>
         <div className={cn("mx-auto max-w-6xl px-6 pt-20 sm:pt-24", rise)} style={{ animationDelay: "900ms" }}>
@@ -95,7 +107,7 @@ function Hero() {
               <Shot
                 width={1280}
                 height={800}
-                caption="Copacker’s Restock page: two products from Shenzhen Metalworks to reorder, with order quantities, a $15,090 estimated cost, and about $18,340 in sales at risk before reorders arrive."
+                caption={t("shotCaption", { cost: dollars(15_090), lost: dollars(18_340) })}
               >
                 <RestockShot />
               </Shot>
@@ -153,47 +165,23 @@ function Island({ className, children }: { className?: string; children: React.R
   )
 }
 
+// The questions the FAQ answers, each a key under marketing.faq.questions with its question and answer.
+const questions = [
+  "cost",
+  "stores",
+  "warehouse",
+  "locations",
+  "tracking",
+  "forwarders",
+  "suppliers",
+  "awd",
+  "documents",
+  "mcp",
+  "cli"
+] as const
+
 function Faq() {
-  const questions = [
-    ["What does Copacker cost?", "Nothing right now. There are no paid plans, and signing up doesn’t ask for a card."],
-    ["Which stores does it work with?", "Amazon, Shopify and eBay. Copacker reads your sales and stock from each."],
-    [
-      "Can I ship to my own warehouse or a 3PL?",
-      "Yes. A purchase order can go to any of your delivery addresses instead of Amazon. Link an address to a Shopify location, and what you’ve ordered shows as on order there."
-    ],
-    [
-      "Does Restock plan for my other locations?",
-      "Yes. It plans for each of your Shopify locations as well as Amazon, and a reorder for a location goes straight to it."
-    ],
-    [
-      "How do I track shipments outside Amazon?",
-      "Your supplier marks the shipment shipped, your forwarder adds the carrier and tracking number, and you mark it received, all on the purchase order."
-    ],
-    [
-      "Does it work with freight forwarders?",
-      "Yes. Your forwarder gets its own workspace, downloads the invoice and labels, and marks each shipment shipped with its carrier, tracking number and freight cost."
-    ],
-    [
-      "Do my suppliers need an account?",
-      "No. They can work in Copacker for free, or you can fill in their side of the order yourself."
-    ],
-    [
-      "Does it ship to AWD?",
-      "Yes. Copacker plans shipments to FBA and AWD, including AWD warehouses in China and Vietnam."
-    ],
-    [
-      "Which documents and labels does it make?",
-      "Purchase orders, packing lists, and FNSKU, carton, shipping and warning labels, alongside the commercial invoice from your supplier."
-    ],
-    [
-      "What’s MCP?",
-      "The Model Context Protocol, an open standard for connecting AI agents to apps. Copacker’s MCP server works with ChatGPT, Claude, Cursor, VS Code and any other MCP client."
-    ],
-    [
-      "Is there a CLI?",
-      "Yes. The copacker CLI reads and acts on the same data as the app, for your scripts and coding agents."
-    ]
-  ]
+  const t = useTranslations("marketing.faq")
   return (
     <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-28 sm:py-36">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-16">
@@ -201,21 +189,21 @@ function Faq() {
           id="faq-title"
           className="text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[1.02] font-semibold tracking-[-0.04em]"
         >
-          Questions
+          {t("title")}
         </h2>
         {/* All closed to start, so people open the ones they care about. Closed answers stay in the page, hidden
             until found, so find in page and search engines still reach them. */}
         <Accordion multiple className="border-t border-foreground/10">
-          {questions.map(([question, answer]) => (
+          {questions.map((question) => (
             <AccordionItem key={question} value={question} className="border-b border-foreground/10">
               <AccordionTrigger className="gap-6 py-6 text-lg font-medium tracking-[-0.01em] transition-colors hover:text-foreground/70 hover:no-underline **:data-[slot=accordion-trigger-icon]:mt-1 **:data-[slot=accordion-trigger-icon]:size-5">
-                {question}
+                {t(`questions.${question}.question`)}
               </AccordionTrigger>
               <AccordionContent
                 hiddenUntilFound
                 className="max-w-[60ch] pb-7 text-base text-pretty text-muted-foreground"
               >
-                {answer}
+                {t(`questions.${question}.answer`)}
               </AccordionContent>
             </AccordionItem>
           ))}
@@ -245,15 +233,12 @@ function Closing() {
 }
 
 export function Landing() {
+  const t = useTranslations("marketing")
   return (
     <Site>
       <main id="main-content">
         <Hero />
-        <Section
-          id="forecast"
-          title="Know when to reorder."
-          text="Copacker forecasts every product from your Amazon, Shopify and eBay sales, and works back from your supplier’s lead time to the day you need to order."
-        >
+        <Section id="forecast" title={t("forecast.title")} text={t("forecast.text")}>
           <div className="relative isolate">
             <div
               aria-hidden
@@ -264,11 +249,7 @@ export function Landing() {
         </Section>
         <Journey />
         <Island>
-          <Section
-            id="agents"
-            title="Built for AI agents."
-            text="Copacker’s MCP server works with any agent, so yours can plan, order and ship right alongside you. Your partners’ agents post their updates too."
-          >
+          <Section id="agents" title={t("agents.title")} text={t("agents.text")}>
             <Agents />
             <div className="mt-20 sm:mt-24">
               <Connect />

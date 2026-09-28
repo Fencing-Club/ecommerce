@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Address, type OrderInput, type PackingDraft, packingSchema } from "@repo/aisle"
 import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
@@ -21,8 +22,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { errorMessage, useActionMutation } from "@/lib/api"
-import { formErrorMap } from "@/lib/form-errors"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
@@ -41,12 +42,8 @@ const withoutBlanks = (values: Values): Values =>
     JSON.stringify(values, (_, value) => (typeof value === "number" && Number.isNaN(value) ? undefined : value))
   )
 
-const cartonDimensions = [
-  { key: "length", label: "Length (cm)" },
-  { key: "width", label: "Width (cm)" },
-  { key: "height", label: "Height (cm)" },
-  { key: "weight", label: "Weight (kg)" }
-] as const
+// A carton's measurements, each labeled under orders.packing.dimensions.
+const cartonDimensions = ["length", "width", "height", "weight"] as const
 
 const checkResult = z.object({
   canSubmit: z.boolean(),
@@ -57,7 +54,7 @@ const checkResult = z.object({
 // In the invoice table each field sits under its column's name, so its own label is only read out.
 const cellField = "[&>[data-slot=field-label]]:sr-only"
 // The invoice table's first and last columns line up with the card's header.
-const edgeCells = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+const edgeCells = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 // On a wide card the carton rows line up under one row of column names, so each field's own label is only read out.
 // On a narrow card every field keeps its label.
 const cartonColumns = {
@@ -67,7 +64,6 @@ const cartonColumns = {
 }
 const cartonLabel = "@4xl/cartons:[&>[data-slot=field-label]]:sr-only"
 
-const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`
 const productName = (item: { name: string; variant: string }) =>
   [item.name, item.variant === "Default Title" ? "" : item.variant].filter(Boolean).join(" / ")
 
@@ -118,6 +114,9 @@ export function PackingForm({
   // The supplier that hasn't joined, when the buyer's owner fills this in for it and can save addresses to it.
   addAddressTo?: { id: string; name: string }
 }) {
+  const t = useTranslations("orders.packing")
+  const errorMessage = useErrorMessage()
+  const formErrorMap = useFormErrorMap()
   const router = useRouter()
   const [run] = useActionMutation()
   const formId = useId()
@@ -190,7 +189,7 @@ export function PackingForm({
     setNotice("")
     try {
       const nextRevision = await saveDraft(values)
-      setNotice("Draft saved")
+      setNotice(t("draftSaved"))
       if (mode === "save") {
         return
       }
@@ -198,24 +197,26 @@ export function PackingForm({
       if (!checked.canSubmit) {
         setServerError(
           checked.issues
-            .map((issue) => (issue.cartonId ? `Carton ${issue.cartonId}: ${issue.message}` : issue.message))
+            .map((issue) =>
+              issue.cartonId ? t("cartonIssue", { carton: issue.cartonId, message: issue.message }) : issue.message
+            )
             .join("\n")
         )
         return
       }
       if (mode === "check") {
         // The buyer's own changes apply at once; a supplier's wait for the buyer.
-        let approval = "changes go to the buyer for approval"
-        if (enteringFor) {
-          approval = "changes update the purchase order"
+        let ready = t("readyToSubmit")
+        if (checked.requiresApproval) {
+          ready = enteringFor ? t("readyToSubmitUpdates") : t("readyToSubmitApproval")
         }
-        setNotice(checked.requiresApproval ? `Ready to submit, ${approval}` : "Ready to submit")
+        setNotice(ready)
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
       router.refresh()
     } catch (error) {
-      setServerError(errorMessage(error, "Couldn’t save the packing list"))
+      setServerError(errorMessage(error, t("saveFailed")))
     } finally {
       setWorking(null)
     }
@@ -229,7 +230,7 @@ export function PackingForm({
         if (errors.origin) {
           setPickup("")
         }
-        setServerError("Fix the highlighted fields")
+        setServerError(t("fixFields"))
       }
     )
 
@@ -262,21 +263,19 @@ export function PackingForm({
         >
           <Card className="gap-0 overflow-hidden py-0">
             <CardHeader className="border-b p-4">
-              <CardTitle>Invoice details</CardTitle>
-              <CardDescription>
-                {enteringFor ? "Changes update the purchase order" : "Changes go to the buyer for approval"}
-              </CardDescription>
+              <CardTitle>{t("invoiceDetails")}</CardTitle>
+              <CardDescription>{enteringFor ? t("changesUpdate") : t("changesForApproval")}</CardDescription>
             </CardHeader>
             {/* An editing grid: on a narrow card it scrolls sideways rather than squeezing its fields. */}
             <Table framed={false} className={cn("min-w-160", edgeCells)}>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="text-right">Packed</TableHead>
-                  <TableHead className="w-52">Supplier SKU</TableHead>
+                  <TableHead>{t("product")}</TableHead>
+                  <TableHead className="text-end">{t("packed")}</TableHead>
+                  <TableHead className="w-52">{t("supplierSku")}</TableHead>
                   {prices && (
                     <TableHead className="w-44">
-                      Price per unit
+                      {t("pricePerUnit")}
                       <RequiredMark />
                     </TableHead>
                   )}
@@ -294,9 +293,9 @@ export function PackingForm({
                         <p className="text-xs text-muted-foreground">{item.buyerSku}</p>
                       </TableCell>
                       <TableCell
-                        className={cn("pt-3.5 text-right tabular-nums", count > available && "text-destructive")}
+                        className={cn("pt-3.5 text-end tabular-nums", count > available && "text-destructive")}
                       >
-                        {count} of {available}
+                        {t("packedOf", { count, available })}
                       </TableCell>
                       <TableCell className="whitespace-normal">
                         {item.components?.length ? (
@@ -308,7 +307,11 @@ export function PackingForm({
                             ))}
                           </div>
                         ) : (
-                          <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" className={cellField} />
+                          <FormInput
+                            name={`changes.${index}.supplierSku`}
+                            label={t("supplierSku")}
+                            className={cellField}
+                          />
                         )}
                       </TableCell>
                       {prices && (
@@ -316,7 +319,7 @@ export function PackingForm({
                           <FormMoney
                             name={`changes.${index}.unitPrice`}
                             required
-                            label="Price per unit"
+                            label={t("pricePerUnit")}
                             currency={order.currency}
                             className={cellField}
                           />
@@ -333,7 +336,7 @@ export function PackingForm({
 
           <Card className="gap-0 overflow-hidden py-0">
             <CardHeader className="border-b p-4">
-              <CardTitle>Cartons</CardTitle>
+              <CardTitle>{t("cartons")}</CardTitle>
             </CardHeader>
             {cartons.fields.length ? (
               <div className="@container/cartons">
@@ -344,12 +347,12 @@ export function PackingForm({
                     multipleProducts ? cartonColumns.products : cartonColumns.product
                   )}
                 >
-                  <span>Carton number</span>
+                  <span>{t("cartonNumber")}</span>
                   {cartonDimensions.map((field) => (
-                    <span key={field.key}>{field.label}</span>
+                    <span key={field}>{t(`dimensions.${field}`)}</span>
                   ))}
-                  {multipleProducts && <span>Product</span>}
-                  <span>Units</span>
+                  {multipleProducts && <span>{t("product")}</span>}
+                  <span>{t("units")}</span>
                   <span />
                 </div>
                 {cartons.fields.map((carton, index) => {
@@ -365,14 +368,14 @@ export function PackingForm({
                       <FormInput
                         name={`cartons.${index}.cartonId`}
                         required
-                        label="Carton number"
+                        label={t("cartonNumber")}
                         className={cartonLabel}
                       />
                       {cartonDimensions.map((field) => (
                         <FormNumber
-                          key={field.key}
-                          name={`cartons.${index}.${field.key}`}
-                          label={field.label}
+                          key={field}
+                          name={`cartons.${index}.${field}`}
+                          label={t(`dimensions.${field}`)}
                           required
                           min={0}
                           step="any"
@@ -383,7 +386,7 @@ export function PackingForm({
                         <FormSelect
                           name={`cartons.${index}.items.0.itemId`}
                           required
-                          label="Product"
+                          label={t("product")}
                           options={order.items.map((item) => ({
                             value: item.id,
                             label: `${productName(item)} / ${item.buyerSku}`
@@ -394,7 +397,7 @@ export function PackingForm({
                       <FormNumber
                         name={`cartons.${index}.items.0.pieces`}
                         required
-                        label="Units"
+                        label={t("units")}
                         min={1}
                         step={1}
                         className={cartonLabel}
@@ -404,7 +407,7 @@ export function PackingForm({
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Duplicate carton ${name}`}
+                          aria-label={t("duplicateCarton", { name })}
                           onClick={() =>
                             cartons.append({ ...structuredClone(form.getValues(`cartons.${index}`)), cartonId: "" })
                           }
@@ -415,7 +418,7 @@ export function PackingForm({
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Remove carton ${name}`}
+                          aria-label={t("removeCarton", { name })}
                           onClick={() => cartons.remove(index)}
                         >
                           <Trash2 />
@@ -427,15 +430,15 @@ export function PackingForm({
                 <div className="px-4 py-2">
                   <Button type="button" variant="ghost" size="sm" onClick={addCarton}>
                     <Plus data-icon="inline-start" />
-                    Add carton
+                    {t("addCarton")}
                   </Button>
                 </div>
               </div>
             ) : (
-              <EmptyState title="No cartons yet" description="Add a carton, then duplicate identical ones">
+              <EmptyState title={t("noCartons")} description={t("noCartonsDescription")}>
                 <Button type="button" variant="outline" onClick={addCarton}>
                   <Plus data-icon="inline-start" />
-                  Add carton
+                  {t("addCarton")}
                 </Button>
               </EmptyState>
             )}
@@ -456,7 +459,7 @@ export function PackingForm({
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div className="flex flex-col px-1">
               <p className="font-medium tabular-nums">
-                {plural(cartons.fields.length, "carton")}, {plural(pieces, "unit")}
+                {t("cartonsAndUnits", { cartons: cartons.fields.length, units: pieces })}
               </p>
               {notice && <output className="text-xs text-muted-foreground">{notice}</output>}
             </div>
@@ -467,7 +470,7 @@ export function PackingForm({
                 pending={working === "save"}
                 onClick={() => void perform("save", form.getValues())}
               >
-                Save draft
+                {t("saveDraft")}
               </SubmitButton>
               <SubmitButton
                 type="button"
@@ -475,7 +478,7 @@ export function PackingForm({
                 pending={working === "check"}
                 onClick={() => void validated("check")()}
               >
-                Check packing
+                {t("check")}
               </SubmitButton>
               <SubmitButton
                 type="submit"
@@ -483,7 +486,7 @@ export function PackingForm({
                 pending={working === "submit"}
                 disabled={!cartons.fields.length}
               >
-                Submit packing list
+                {t("submit")}
               </SubmitButton>
             </div>
           </div>
@@ -506,6 +509,7 @@ function InvoiceCard({
   invoice?: { id: string; name: string; bytes: number }
   enteringFor?: string
 }) {
+  const t = useTranslations("orders.packing")
   const form = useFormContext<Values>()
   const {
     field: { ref, value },
@@ -524,9 +528,9 @@ function InvoiceCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Commercial invoice</CardTitle>
+        <CardTitle>{t("commercialInvoice")}</CardTitle>
         <CardDescription>
-          {enteringFor ? `${enteringFor}’s invoice for these cartons` : "Your invoice for these cartons"}
+          {enteringFor ? t("theirInvoice", { supplier: enteringFor }) : t("yourInvoice")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -537,7 +541,7 @@ function InvoiceCard({
           kind="invoice"
           label={null}
           current={invoice && { id: invoice.id, name: invoice.name, size: invoice.bytes }}
-          error={fieldState.invalid ? "Upload the commercial invoice" : undefined}
+          error={fieldState.invalid ? t("uploadInvoice") : undefined}
         />
       </CardContent>
     </Card>
@@ -557,6 +561,7 @@ function PickupCard({
   pickup: string
   onPickupChange: (id: string) => void
 }) {
+  const t = useTranslations("orders.packing")
   const form = useFormContext<Values>()
   const selectId = useId()
   const [adding, setAdding] = useState(false)
@@ -581,12 +586,12 @@ function PickupCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pickup</CardTitle>
+        <CardTitle>{t("pickup")}</CardTitle>
         {addAddressTo && (
           <CardAction>
             <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
               <MapPinPlus data-icon="inline-start" />
-              Add address
+              {t("addAddress")}
             </Button>
             <PartnerAddressDialog
               partner={{ kind: "supplier", ...addAddressTo }}
@@ -609,7 +614,7 @@ function PickupCard({
           <div className="grid gap-4 sm:grid-cols-2">
             {saved.length > 0 && (
               <SelectField
-                label="Pickup address"
+                label={t("pickupAddress")}
                 id={selectId}
                 value={chosen?.id ?? ""}
                 onChange={(event) => {
@@ -620,11 +625,11 @@ function PickupCard({
                 }}
                 options={[
                   ...saved.map((address) => ({ value: address.id, label: address.name })),
-                  { value: "", label: "Other address" }
+                  { value: "", label: t("otherAddress") }
                 ]}
               />
             )}
-            <FormInput name="readyDate" required label="Ready for pickup" type="date" />
+            <FormInput name="readyDate" required label={t("readyForPickup")} type="date" />
           </div>
           {chosen && !errors.origin ? (
             <AddressSummary address={origin} className="rounded-lg bg-muted/50 p-3" />

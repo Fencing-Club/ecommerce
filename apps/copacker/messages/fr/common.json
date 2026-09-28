@@ -1,0 +1,156 @@
+{
+  "appDescription": "Un espace de travail partagé où acheteurs et fournisseurs préparent leurs expéditions Amazon.",
+  "skipToContent": "Aller au contenu",
+  "breadcrumb": "Fil d’Ariane",
+  "about": "À propos de : {label}",
+  "errors": {
+    "generic": "Une erreur s’est produite. Réessayez.",
+    "offline": "Impossible de joindre Copacker. Vérifiez votre connexion et réessayez."
+  },
+  "actions": {
+    "cancel": "Annuler"
+  },
+  "status": {
+    "draft": "Brouillon",
+    "active": "Actif",
+    "archived": "Archivé",
+    "submitted": "Chez le fournisseur",
+    "closed": "Clôturé",
+    "packing": "Emballage",
+    "approval": "À approuver",
+    "creatingShipment": "Création de l’expédition",
+    "waitingLabels": "Étiquettes d’expédition requises",
+    "ready": "Prêt pour l’enlèvement",
+    "shipped": "Expédié",
+    "forwarded": "Expédié par le transitaire",
+    "received": "Reçu",
+    "correction": "Correction demandée",
+    "needsAttention": "À traiter",
+    "cancelled": "Annulé",
+    "working": "En cours",
+    "created": "Créé",
+    "readyToShip": "Prêt à expédier",
+    "inTransit": "En transit",
+    "delivered": "Livré",
+    "checkedIn": "Enregistré",
+    "receiving": "En réception",
+    "error": "Erreur",
+    "pending": "En attente",
+    "unshipped": "Non expédié",
+    "unfulfilled": "Non traité",
+    "partiallyShipped": "Partiellement expédié",
+    "partiallyFulfilled": "Partiellement traité",
+    "fulfilled": "Traité",
+    "unfulfillable": "Non traitable",
+    "inStock": "En stock",
+    "reorderSoon": "Réassort à prévoir",
+    "reorderNow": "Réassort urgent",
+    "outOfStock": "En rupture de stock",
+    "onCopacker": "Sur Copacker",
+    "invited": "Invité",
+    "invitationExpired": "Invitation expirée",
+    "notInvited": "Non invité"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "votre site"
+  },
+  "documents": {
+    "download": "Télécharger",
+    "purchaseOrder": "Bon de commande",
+    "invoice": "Facture commerciale",
+    "packingList": "Liste de colisage",
+    "checklist": "Liste de contrôle d’emballage",
+    "cartonLabel": "Étiquette de carton",
+    "shippingLabel": "Étiquette d’expédition",
+    "productLabel": "Étiquette produit"
+  },
+  "format": {
+    "plusAmounts": "Plus {amounts}",
+    "separator": ", "
+  },
+  "address": {
+    "country": "Pays",
+    "chooseCountry": "Choisissez un pays",
+    "contactName": "Nom du contact",
+    "phoneNumber": "Numéro de téléphone",
+    "email": "E-mail",
+    "streetAddress": "Adresse",
+    "addressLine2": "Complément d’adresse",
+    "city": "Ville",
+    "stateOrProvince": "État ou province",
+    "postalCode": "Code postal"
+  },
+  "sync": {
+    "actions": "Actions pour {label}",
+    "syncing": "Synchronisation…",
+    "syncNow": "Synchroniser",
+    "reconnect": "Reconnecter",
+    "synced": "Synchronisé <time></time>"
+  },
+  "disconnect": {
+    "disconnect": "Déconnecter",
+    "title": "Déconnecter {name} ?",
+    "shopifyEffect": "Copacker ne synchronisera plus les produits, le stock, les ventes et les coûts avec {account}. Les bons de commande restent inchangés.",
+    "amazonEffect": "Copacker ne lira plus les ventes ni le stock de {account} et ne pourra plus créer d’expéditions AWD. Les bons de commande restent inchangés.",
+    "failed": "Impossible de déconnecter {name}",
+    "cancel": "Annuler"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {Choisissez un PDF} csv {Choisissez un CSV} other {Choisissez un fichier compatible}}",
+    "tooLarge": "{type, select, pdf {Choisissez un PDF de {size} maximum} csv {Choisissez un CSV de {size} maximum} other {Choisissez un fichier de {size} maximum}}",
+    "oneFile": "{type, select, pdf {Choisissez un seul PDF} csv {Choisissez un seul CSV} other {Choisissez un seul fichier}}",
+    "prompt": "{type, select, pdf {Déposez un PDF ou <browse>parcourez</browse>} csv {Déposez un CSV ou <browse>parcourez</browse>} other {Déposez un fichier ou <browse>parcourez</browse>}}",
+    "upTo": "{size} maximum",
+    "remove": "Retirer {name}",
+    "replaceFile": "Remplacer {name}",
+    "replace": "Remplacer"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "Facture commerciale officielle",
+      "productLabels": "Étiquettes produit",
+      "shippingLabels": "Étiquettes d’expédition du transporteur"
+    },
+    "chooseVariationError": "Choisissez une variante de produit",
+    "enterLabelPage": "Indiquez la page d’étiquette d’au moins un carton",
+    "failed": "Échec de l’import. Réessayez.",
+    "choosePdf": "Choisissez un PDF",
+    "variation": "Variante de produit",
+    "chooseVariation": "Choisissez une variante",
+    "productLabelHint": "Une planche d’étiquettes par variante, 32 Mo maximum",
+    "uploading": "Import en cours",
+    "uploaded": "Importé",
+    "upload": "Importer",
+    "labelPages": "Page d’étiquette de chaque carton",
+    "labelPagesDescription": "Laissez un carton vide si son étiquette se trouve dans un autre fichier",
+    "carton": "Carton {carton}",
+    "page": "Page"
+  },
+  "ui": {
+    "close": "Fermer",
+    "toggleSidebar": "Afficher ou masquer la barre latérale",
+    "sidebar": "Barre latérale",
+    "sidebarDescription": "Affiche la barre latérale mobile."
+  },
+  "pages": {
+    "error": {
+      "title": "Une erreur s’est produite",
+      "didntLoad": "Cette page ne s’est pas chargée",
+      "dataUnchanged": "Vos données n’ont pas été modifiées",
+      "tryAgain": "Réessayer",
+      "goToOverview": "Aller à la Vue d’ensemble"
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "checkAddress": "Vérifiez l’adresse et réessayez",
+      "goToCopacker": "Aller sur Copacker",
+      "removed": "Elle a peut-être été supprimée, ou elle se trouve dans un autre espace de travail",
+      "goToOverview": "Aller à la Vue d’ensemble"
+    },
+    "forbidden": {
+      "title": "Accès refusé",
+      "askAdmin": "Demandez l’accès à un administrateur"
+    }
+  }
+}

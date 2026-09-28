@@ -1,6 +1,7 @@
 "use client"
 
 import { CircleAlert } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useIsAdmin } from "@/components/access"
 import { EmptyState } from "@/components/common"
@@ -9,7 +10,8 @@ import { ProductsWithoutSupplier } from "@/components/products-without-supplier"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { api, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import { DetailRow } from "./inventory-locations"
 import { SyncedAt, SyncMenu } from "./sync-menu"
 
@@ -43,17 +45,18 @@ const sources = [
 ] as const satisfies { title: string; provider: string; selections: Selection[] }[]
 type Source = (typeof sources)[number]
 
-// What went wrong with the last sync, and whether signing in again fixes it.
+// What went wrong with the last sync, as its message's key under "inventory.sync.failures", and whether signing in
+// again fixes it.
 function failure(errorCode: string | null) {
   switch (errorCode) {
     case "shopify_permissions":
-      return { message: "Needs access to location names", reconnect: true }
+      return { reason: "shopifyPermissions", reconnect: true } as const
     case "reconnect":
-      return { message: "Sign-in expired", reconnect: true }
+      return { reason: "signInExpired", reconnect: true } as const
     case "provider_unavailable":
-      return { message: "Unavailable, try again in a few minutes", reconnect: false }
+      return { reason: "unavailable", reconnect: false } as const
     default:
-      return { message: "Last sync failed", reconnect: false }
+      return { reason: "failed", reconnect: false } as const
   }
 }
 
@@ -89,6 +92,8 @@ function sourceState(statuses: Status[]) {
 
 // A store's inventory sync in its Settings: when it last synced or what went wrong, with Sync now and Reconnect.
 export function InventorySyncRow({ provider }: { provider: Source["provider"] }) {
+  const t = useTranslations("inventory.sync")
+  const errorMessage = useErrorMessage()
   const source = sources.find((item) => item.provider === provider)!
   const selections: readonly Selection[] = source.selections
   const first = useSelection(selections[0]!, true)
@@ -107,17 +112,17 @@ export function InventorySyncRow({ provider }: { provider: Source["provider"] })
       // RTK Query retains the failure for the inline message.
     }
   }
-  let text: React.ReactNode = "Not synced yet"
+  let text: React.ReactNode = t("notSynced")
   if (syncing) {
-    text = "Syncing…"
+    text = t("syncing")
   } else if (mutation.isError) {
-    text = <span className="text-destructive">{errorMessage(mutation.error, "Couldn’t start the sync")}</span>
+    text = <span className="text-destructive">{errorMessage(mutation.error, t("startFailed"))}</span>
   } else if (state.problem) {
-    text = <span className="text-destructive">{state.problem.message}</span>
+    text = <span className="text-destructive">{t(`failures.${state.problem.reason}`)}</span>
   } else if (state.loading) {
-    text = "Loading…"
+    text = t("loading")
   } else if (state.unavailable) {
-    text = "Status unavailable"
+    text = t("statusUnavailable")
   } else if (state.observedAt) {
     text = <SyncedAt at={state.observedAt} />
   }
@@ -130,10 +135,10 @@ export function InventorySyncRow({ provider }: { provider: Source["provider"] })
   }
   return (
     <DetailRow
-      title="Inventory"
+      title={t("title")}
       action={
         <SyncMenu
-          label={`${source.title} inventory`}
+          label={t("sourceInventory", { source: source.title })}
           syncing={syncing || state.loading || !state.externalAccountId}
           onSync={() => void startSync()}
           reconnect={reconnect}
@@ -148,6 +153,7 @@ export function InventorySyncRow({ provider }: { provider: Source["provider"] })
 // Stock across Shopify and Amazon: each source's sync in one strip, then the combined product list. `search` starts
 // the list's search, such as a product chosen in the header's search.
 export function InventorySync({ providers, search = "" }: { providers: string[]; search?: string }) {
+  const t = useTranslations("inventory.sync")
   const shopify = useSelection(sources[0].selections[0], providers.includes("shopify"))
   const fba = useSelection(sources[1].selections[0], providers.includes("amazon"))
   const awd = useSelection(sources[1].selections[1], providers.includes("amazon"))
@@ -156,13 +162,10 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
   if (providers.length === 0) {
     return (
       <Card>
-        <EmptyState
-          title="No store connected"
-          description={admin ? "Connect Shopify or Amazon to see your products" : "Ask an admin to connect one"}
-        >
+        <EmptyState title={t("noStore")} description={admin ? t("noStoreHint") : t("noStoreAskAdmin")}>
           {admin && (
             <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-              Open settings
+              {t("openSettings")}
             </Button>
           )}
         </EmptyState>
@@ -192,7 +195,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
       {!anySynced && all.some(isPending) && <ProductsSkeleton />}
       {!anySynced && !all.some(isPending) && (
         <Card>
-          <EmptyState title="No products yet" description="They appear after the first sync" />
+          <EmptyState title={t("noProducts")} description={t("noProductsHint")} />
         </Card>
       )}
     </div>
@@ -202,6 +205,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
 // A store whose last inventory sync failed, so its stock may be out of date. Settings has Reconnect and Sync now, for
 // the owner and admins.
 function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] }) {
+  const t = useTranslations("inventory.sync")
   const { problem } = sourceState(statuses)
   const admin = useIsAdmin()
   if (!problem) {
@@ -210,12 +214,12 @@ function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] 
   return (
     <Alert variant="destructive">
       <CircleAlert />
-      <AlertTitle>{source.title} inventory didn’t sync</AlertTitle>
-      <AlertDescription>{problem.message}</AlertDescription>
+      <AlertTitle>{t("didntSync", { source: source.title })}</AlertTitle>
+      <AlertDescription>{t(`failures.${problem.reason}`)}</AlertDescription>
       {admin && (
         <AlertAction>
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
-            Open settings
+            {t("openSettings")}
           </Button>
         </AlertAction>
       )}

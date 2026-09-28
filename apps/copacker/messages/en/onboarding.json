@@ -1,0 +1,123 @@
+{
+  "title": "Get started",
+  "newWorkspaceTitle": "New workspace",
+  "person": {
+    "enterFirstName": "Enter your first name",
+    "enterLastName": "Enter your last name",
+    "choosePosition": "Choose your position"
+  },
+  "company": {
+    "enterName": "Enter your company’s name",
+    "enterWebsite": "Enter a website, such as example.com"
+  },
+  "place": {
+    "enterName": "Name this address"
+  },
+  "positions": {
+    "owner": "Owner",
+    "generalManager": "General manager",
+    "operationsManager": "Operations manager",
+    "purchasingManager": "Purchasing manager",
+    "buyer": "Buyer",
+    "salesManager": "Sales manager",
+    "accountManager": "Account manager",
+    "productionManager": "Production manager",
+    "qualityControl": "Quality control",
+    "logisticsCoordinator": "Logistics coordinator",
+    "warehouseManager": "Warehouse manager",
+    "customerService": "Customer service",
+    "finance": "Finance",
+    "other": "Other"
+  },
+  "steps": {
+    "about": "About you",
+    "role": "What does your company do?",
+    "company": "Your company",
+    "address": {
+      "none": "Address",
+      "buyer": {
+        "title": "Delivery address",
+        "description": "Where purchase orders are delivered"
+      },
+      "supplier": {
+        "title": "Pickup address",
+        "description": "Where carriers collect your cartons"
+      },
+      "forwarder": {
+        "title": "Warehouse address",
+        "description": "Where buyers send goods for you"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Warehouse",
+    "supplier": "Factory",
+    "forwarder": "Warehouse"
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "position": "Position",
+    "choose": "Choose",
+    "companyName": "Company name",
+    "website": "Website",
+    "websitePlaceholder": "example.com",
+    "phone": "Phone number",
+    "addressName": "Address name"
+  },
+  "roles": {
+    "legend": "What your company does",
+    "buyer": {
+      "title": "Buyer",
+      "description": "Buy from suppliers and sell on Amazon or Shopify"
+    },
+    "supplier": {
+      "title": "Supplier",
+      "description": "Make products and fill purchase orders"
+    },
+    "forwarder": {
+      "title": "Freight forwarder",
+      "description": "Receive goods and ship them on for buyers"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Choose one",
+    "pickupPhone": "Add a pickup phone number. Amazon needs it to schedule pickup",
+    "step": "Step {current} of {total}",
+    "invitedBy": "Invited by {name}",
+    "back": "Back",
+    "skip": "Skip for now",
+    "continue": "Continue",
+    "createWorkspace": "Create workspace",
+    "join": "Join {workspace}",
+    "cancel": "Cancel",
+    "signOut": "Sign out"
+  },
+  "preview": {
+    "workspace": "Workspace",
+    "kinds": {
+      "buyer": "Buyer workspace",
+      "supplier": "Supplier workspace",
+      "forwarder": "Forwarder workspace"
+    },
+    "groups": {
+      "store": "Store",
+      "purchasing": "Purchasing",
+      "sales": "Sales",
+      "products": "Products"
+    },
+    "pages": {
+      "overview": "Overview",
+      "orders": "Orders",
+      "products": "Products",
+      "restock": "Restock",
+      "purchaseOrders": "Purchase orders",
+      "shipments": "Shipments",
+      "customers": "Customers",
+      "inventory": "Inventory",
+      "catalogs": "Catalogs",
+      "settings": "Settings"
+    },
+    "address": "Address"
+  }
+}

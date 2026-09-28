@@ -14,15 +14,17 @@ import {
   type ReadinessIssue
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
+import { type ServerKey, serverText } from "./text"
 
-const finishedMessages: Partial<Record<ShipmentState, string>> = {
-  received: "The goods have arrived",
-  cancelled: "Shipment cancellation has been verified"
+const finishedMessages: Partial<Record<ShipmentState, ServerKey>> = {
+  received: "workflow.arrived",
+  cancelled: "workflow.cancelled"
 }
 
 export async function orderWorkflow(s: Session, orderId: string) {
   // Lines whose product can't make a label yet hold back the packet's release.
   const missingLabels = await linesMissingLabels(s, orderId)
+  const t = await serverText()
   return db().transaction(async (tx) => {
     const { order, supplier } = await accessibleOrder(s, orderId, tx)
     // Whether the goods pass through a forwarder, whose leg comes after the supplier's.
@@ -50,9 +52,10 @@ export async function orderWorkflow(s: Session, orderId: string) {
           shipment.packingDraft ?? shipment.packing ?? {},
           docs,
           reservedPieces(rows, shipment.id),
-          order.revision
+          order.revision,
+          t
         )
-        const release = releaseIssues(shipment, docs, missingLabels)
+        const release = releaseIssues(shipment, docs, missingLabels, t)
         let next: {
           owner: "buyer" | "supplier" | "forwarder" | "system" | null
           step: string
@@ -64,63 +67,63 @@ export async function orderWorkflow(s: Session, orderId: string) {
             owner: "supplier",
             step: "packing",
             action: "shipment.submit",
-            message: "Complete the packing list and upload the commercial invoice"
+            message: t("workflow.packing")
           }
         } else if (shipment.status === "approval") {
           next = {
             owner: "buyer",
             step: "approval",
             action: "shipment.approve",
-            message: "Review the supplier's proposed prices and supplier SKUs"
+            message: t("workflow.approval")
           }
         } else if (["queued", "creating"].includes(shipment.status)) {
-          next = { owner: "system", step: "processing", message: "Amazon is processing the shipment and carton labels" }
+          next = { owner: "system", step: "processing", message: t("workflow.processing") }
         } else if (shipment.status === "waiting_labels") {
           next = release.length
             ? {
                 owner: "buyer",
                 step: "labels",
-                message: "Book shipping and add the missing documents below"
+                message: t("workflow.labels")
               }
             : {
                 owner: "buyer",
                 step: "release",
                 action: "shipment.release",
-                message: "Enter the booking reference and release the supplier packet"
+                message: t("workflow.release")
               }
         } else if (shipment.status === "ready") {
           next = {
             owner: "supplier",
             step: "ship",
             action: "shipment.ship",
-            message: "Print the packet, pack the cartons and mark them shipped"
+            message: t("workflow.ship")
           }
         } else if (shipment.status === "shipped" && leg) {
           next = {
             owner: "forwarder",
             step: "forward",
             action: "shipment.forward",
-            message: "The forwarder ships the goods on with its freight cost, carrier and tracking"
+            message: t("workflow.forward")
           }
         } else if (["shipped", "forwarded"].includes(shipment.status)) {
           next = {
             owner: "buyer",
             step: "receive",
             action: "shipment.received",
-            message: "Mark the goods received when they arrive"
+            message: t("workflow.receive")
           }
         } else if (finishedStates.includes(shipment.status)) {
           next = {
             owner: null,
             step: "complete",
-            message: finishedMessages[shipment.status] ?? "Shipment complete"
+            message: t(finishedMessages[shipment.status] ?? "workflow.complete")
           }
         } else if (shipment.status === "correction") {
           next = {
             owner: "buyer",
             step: "cancellation",
             action: "shipment.cancelAmazon",
-            message: "Cancel the existing Amazon shipment before creating a replacement"
+            message: t("workflow.cancellation")
           }
         } else {
           next =
@@ -129,13 +132,13 @@ export async function orderWorkflow(s: Session, orderId: string) {
                   owner: "buyer",
                   step: "reconcile",
                   action: "shipment.reconcile",
-                  message: "Find and link the Amazon order before continuing"
+                  message: t("workflow.reconcile")
                 }
               : {
                   owner: "buyer",
                   step: "retry",
                   action: "shipment.retry",
-                  message: "Resolve the reported problem, then retry the shipment"
+                  message: t("workflow.retry")
                 }
         }
         // Released shipments report what their packet lacks, such as a product label the buyer hasn't added yet.

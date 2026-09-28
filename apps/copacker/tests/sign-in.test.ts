@@ -42,8 +42,9 @@ vi.mock("../src/server/workos", () => ({
 }))
 const sendEmail = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<void>>())
 vi.mock("../src/server/email", () => ({ sendEmail }))
-// The workspaces WorkOS organizations belong to, for picking the one a session is for.
-const workspaces = vi.hoisted(() => ({ rows: [] as Array<{ workosId: string | null }> }))
+// The rows any query finds: the workspaces WorkOS organizations belong to, for picking the one a session is for, or a
+// profile's chosen language.
+const workspaces = vi.hoisted(() => ({ rows: [] as Array<{ workosId?: string | null; locale?: string | null }> }))
 vi.mock("@/db", () => ({
   db: () => ({ select: () => ({ from: () => ({ where: async () => workspaces.rows }) }) })
 }))
@@ -149,7 +150,7 @@ describe("signing in with a password", () => {
     )
     await expect(verifyEmail({ code: "000000" })).rejects.toThrow("That code isn’t right")
     expect(await pendingVerification()).not.toBeNull()
-    await expect(verifyEmail({ code: "12345" })).rejects.toThrow("Enter the 6-digit code")
+    await expect(verifyEmail({ code: "12345" })).rejects.toThrow("auth.validation.enterCode")
   })
 
   it("asks to sign in again once the code has gone", async () => {
@@ -250,7 +251,9 @@ describe("creating an account", () => {
   })
 
   it("checks the password's length before asking WorkOS", async () => {
-    await expect(signUp({ email: "ann@example.net", password: "short" })).rejects.toThrow("Use at least 10 characters")
+    await expect(signUp({ email: "ann@example.net", password: "short" })).rejects.toThrow(
+      "auth.validation.passwordTooShort"
+    )
     expect(client.createUser).not.toHaveBeenCalled()
   })
 })
@@ -285,6 +288,16 @@ describe("resetting a password", () => {
     await requestPasswordReset({ email: "ann@example.net" })
     const [email] = sendEmail.mock.calls[0] as [{ text: string }]
     expect(email.text).toContain("expires in 1 hour.")
+  })
+
+  it("writes the email in the language the person chose", async () => {
+    client.createPasswordReset.mockResolvedValue(reset(15))
+    sendEmail.mockResolvedValue()
+    workspaces.rows = [{ locale: "de" }]
+    await requestPasswordReset({ email: "ann@example.net" })
+    const [email] = sendEmail.mock.calls[0] as [{ subject: string; text: string }]
+    expect(email.subject).toBe("Setzen Sie Ihr Copacker-Passwort zurück")
+    expect(email.text).toContain("läuft in 15 Minuten ab")
   })
 
   it("answers the same whether or not the email has an account", async () => {

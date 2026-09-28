@@ -64,7 +64,7 @@ const layout = defineProperties({
       itemPriceSku: "minmax(0, 1fr) 180px 160px"
     },
     gridColumn: { full: "1 / -1", span2: "span 2 / span 2", span3: "span 3 / span 3" },
-    textAlign: ["left", "center", "right"],
+    textAlign: ["start", "center", "end"],
     width: { full: "100%", fit: "fit-content", auto: "auto", ...iconSizes },
     height: iconSizes,
     maxWidth: { sm: "24rem", md: "28rem", lg: "32rem", xl: "36rem", "2xl": "42rem", "7xl": "80rem" },

@@ -1,7 +1,7 @@
 "use client"
 
-import { money } from "@repo/aisle"
 import { ChevronDown, Download, Ellipsis, Pencil, SlidersHorizontal, Trash2 } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import { EmptyState, PageHeader } from "@/components/common"
@@ -43,10 +43,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
-import { currencySymbol, moneyText, parseMoney, PricingRulesDialog, rulesSummary } from "./pricing-controls"
+import { currencySymbol, moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar, StatusBadge } from "./shared"
 
 type Product = CatalogEditorData["products"][number]
@@ -61,22 +62,15 @@ type Settings = {
   customerIds: string[]
 }
 
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "draft", label: "Draft" },
-  { value: "archived", label: "Archived" }
-]
+const statuses = ["active", "draft", "archived"] as const
 // Read with the percentage after it, as one phrase: Decrease by 10%.
-const directionOptions = [
-  { value: "decrease", label: "Decrease by" },
-  { value: "increase", label: "Increase by" }
-]
+const directions = ["decrease", "increase"] as const
 const pageSize = 25
 const emptyEntry: CatalogEntry = { priceMinor: null, priceBreaks: null, quantityRules: null }
 // The products table runs edge to edge in its card. On a narrow card the rules hide, and the price ends each row.
 const columns = {
-  price: "@max-2xl:pr-4",
-  rules: "hidden pr-4 @2xl:table-cell"
+  price: "@max-2xl:pe-4",
+  rules: "hidden pe-4 @2xl:table-cell"
 }
 
 function initialSettings(catalog: CatalogEditorData["catalog"], customers: CatalogEditorData["customers"]): Settings {
@@ -103,12 +97,15 @@ function basisPoints(settings: Settings) {
   return Math.round(percent * 100) * (settings.direction === "decrease" ? -1 : 1)
 }
 
-function adjustmentHelp(bps: number | null, direction: Settings["direction"]) {
+function AdjustmentHelp({ bps, direction }: { bps: number | null; direction: Settings["direction"] }) {
+  const t = useTranslations("supplier.catalogEditor")
+  const money = useMoney()
   if (bps === null) {
-    return direction === "decrease" ? "Enter 0 to 100." : "Enter 0 to 1,000."
+    return t("enterRange", { max: direction === "decrease" ? 100 : 1000 })
   }
-  const rule = "Applies to every price you don’t fix below."
-  return bps ? `${rule} ${money(10_000)} becomes ${money(adjustPrice(10_000, bps))}.` : rule
+  return bps
+    ? t("adjustmentExample", { before: money(10_000), after: money(adjustPrice(10_000, bps)) })
+    : t("adjustmentRule")
 }
 
 function overridden(entry: CatalogEntry | undefined) {
@@ -116,14 +113,31 @@ function overridden(entry: CatalogEntry | undefined) {
 }
 
 // Prices as one amount or a range, or null for none.
-function priceText(prices: number[], currency: string) {
-  if (!prices.length) {
-    return null
+function usePriceText() {
+  const shared = useTranslations("supplier.shared")
+  const money = useMoney()
+  return (prices: number[], currency: string) => {
+    if (!prices.length) {
+      return null
+    }
+    const low = Math.min(...prices)
+    const high = Math.max(...prices)
+    return low === high
+      ? money(low, currency)
+      : shared("range", { low: money(low, currency), high: money(high, currency) })
   }
-  const low = Math.min(...prices)
-  const high = Math.max(...prices)
-  return low === high ? money(low, currency) : `${money(low, currency)} – ${money(high, currency)}`
 }
+
+// What a fixed price replaces, the product's own price or the catalog's adjusted one, for one variant or several.
+const basisText = {
+  adjusted: {
+    one: "adjustedPrice",
+    several: "adjustedPrices",
+    useOne: "useAdjustedPrice",
+    useSeveral: "useAdjustedPrices"
+  },
+  product: { one: "productPrice", several: "productPrices", useOne: "useProductPrice", useSeveral: "useProductPrices" }
+} as const
 
 // Catalog prices as text: each variant's fixed price, or its own price moved by the catalog's adjustment. The button
 // opens a field to fix the price of the row's variants, one or all of a product's, or to go back to adjusted prices. A
@@ -148,9 +162,13 @@ function PriceCell({
   const id = useId()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState("")
+  const t = useTranslations("supplier.catalogEditor")
+  const shared = useTranslations("supplier.shared")
+  const locale = useLocale()
+  const priceText = usePriceText()
   const currency = variants[0]!.currency
   if (variants.some((variant) => variant.currency !== currency)) {
-    return <span className="text-muted-foreground">Several currencies</span>
+    return <span className="text-muted-foreground">{t("severalCurrencies")}</span>
   }
   const included = variants.filter((variant) => entries.has(variant.id))
   const shown = priceText(
@@ -162,7 +180,7 @@ function PriceCell({
   const fixed = included.flatMap((variant) => entries.get(variant.id)?.priceMinor ?? [])
   const allFixed = included.length > 0 && fixed.length === included.length
   const several = included.length > 1
-  const basis = adjustment ? "Adjusted" : "Product"
+  const basis = adjustment ? basisText.adjusted : basisText.product
   const adjusted = priceText(
     included.flatMap((variant) => (variant.priceMinor === null ? [] : [adjustPrice(variant.priceMinor, adjustment)])),
     currency
@@ -171,8 +189,8 @@ function PriceCell({
   if (readOnly) {
     return (
       <span className="tabular-nums">
-        {allFixed && <span className="mr-1.5 text-xs text-muted-foreground">Fixed</span>}
-        {shown ?? <span className="text-muted-foreground">No price</span>}
+        {allFixed && <span className="me-1.5 text-xs text-muted-foreground">{t("fixed")}</span>}
+        {shown ?? <span className="text-muted-foreground">{shared("noPrice")}</span>}
       </span>
     )
   }
@@ -202,13 +220,13 @@ function PriceCell({
             type="button"
             variant="ghost"
             disabled={!included.length}
-            aria-label={`Price for ${name}: ${shown ?? "no price"}${allFixed ? ", fixed" : ""}`}
-            className="-mr-2 font-normal tabular-nums"
+            aria-label={t(allFixed ? "fixedPriceFor" : "priceFor", { name, price: shown ?? t("noPriceLower") })}
+            className="-me-2 font-normal tabular-nums"
           />
         }
       >
-        {allFixed && <span className="text-xs text-muted-foreground">Fixed</span>}
-        {shown ?? <span className="text-muted-foreground">No price</span>}
+        {allFixed && <span className="text-xs text-muted-foreground">{t("fixed")}</span>}
+        {shown ?? <span className="text-muted-foreground">{shared("noPrice")}</span>}
         <Pencil data-icon="inline-end" className="text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
@@ -222,12 +240,10 @@ function PriceCell({
           }}
         >
           <Field>
-            <FieldLabel htmlFor={id}>
-              {several ? `Fixed price for ${included.length} variants` : "Fixed price"}
-            </FieldLabel>
+            <FieldLabel htmlFor={id}>{t("fixedPrice", { count: included.length })}</FieldLabel>
             <InputGroup>
               <InputGroupAddon>
-                <InputGroupText>{currencySymbol(currency)}</InputGroupText>
+                <InputGroupText>{currencySymbol(currency, locale)}</InputGroupText>
               </InputGroupAddon>
               <InputGroupInput
                 id={id}
@@ -235,22 +251,22 @@ function PriceCell({
                 autoComplete="off"
                 value={text}
                 aria-invalid={typed === undefined || undefined}
-                className="text-right tabular-nums"
+                className="text-end tabular-nums"
                 onChange={(event) => setText(event.target.value)}
               />
             </InputGroup>
             <FieldDescription>
-              {adjusted ? `${basis} ${several ? "prices" : "price"}: ${adjusted}` : "No product price"}
+              {adjusted ? t(several ? basis.several : basis.one, { prices: adjusted }) : t("noProductPrice")}
             </FieldDescription>
           </Field>
           <div className="flex flex-wrap justify-end gap-2">
             {fixed.length > 0 && (
               <Button type="button" variant="ghost" size="sm" onClick={() => commit(null)}>
-                Use {basis.toLowerCase()} {several ? "prices" : "price"}
+                {t(several ? basis.useSeveral : basis.useOne)}
               </Button>
             )}
             <Button type="submit" size="sm" disabled={typed === undefined}>
-              Done
+              {shared("done")}
             </Button>
           </div>
         </form>
@@ -293,6 +309,14 @@ export function CatalogEditor({
   const [error, setError] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
   const anchor = useComboboxAnchor()
+  const t = useTranslations("supplier.catalogEditor")
+  const shared = useTranslations("supplier.shared")
+  const rulesSummary = useRulesSummary()
+  const statusOptions = statuses.map((value) => ({ value, label: shared(`status.${value}`) }))
+  const directionOptions = directions.map((value) => ({
+    value,
+    label: value === "decrease" ? t("decreaseBy") : t("increaseBy")
+  }))
 
   const bps = basisPoints(settings)
   const adjustment = bps ?? 0
@@ -355,11 +379,11 @@ export function CatalogEditor({
 
   async function save() {
     if (!settings.title.trim()) {
-      setError("Add a title")
+      setError(t("addTitle"))
       return
     }
     if (bps === null) {
-      setError(settings.direction === "decrease" ? "Decrease by 0 to 100%" : "Increase by 0 to 1,000%")
+      setError(settings.direction === "decrease" ? t("decreaseRange") : t("increaseRange"))
       return
     }
     setPending(true)
@@ -380,7 +404,7 @@ export function CatalogEditor({
       })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? "Couldn't save the catalog. Try again.")
+        throw new Error(result.error ?? t("saveFailed"))
       }
       setSaved({ settings, entries })
       if (catalog) {
@@ -389,7 +413,7 @@ export function CatalogEditor({
         router.replace(`/catalogs/${result.id}`)
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't save the catalog. Try again.")
+      setError(caught instanceof Error ? caught.message : t("saveFailed"))
     } finally {
       setPending(false)
     }
@@ -406,7 +430,7 @@ export function CatalogEditor({
       router.push("/catalogs")
       router.refresh()
     } else {
-      setError((await response.json()).error ?? "Couldn't delete the catalog. Try again.")
+      setError((await response.json()).error ?? t("deleteFailed"))
       setPending(false)
       setConfirmDelete(false)
     }
@@ -449,7 +473,7 @@ export function CatalogEditor({
     const effective = pricing(variant)
     const summary = rulesSummary(effective.priceBreaks, effective.quantityRules, variant.priceBasis)
     const own = !!entry && (entry.priceBreaks !== null || entry.quantityRules !== null)
-    const label = `Quantity rules and volume pricing for ${variant.label ? `${product.title}, ${variant.label}` : product.title}`
+    const label = t("rulesFor", { name: variant.label ? `${product.title}, ${variant.label}` : product.title })
     if (readOnly) {
       return <span className="text-muted-foreground">{summary || "—"}</span>
     }
@@ -459,12 +483,19 @@ export function CatalogEditor({
         size="sm"
         variant="ghost"
         disabled={!entry}
-        aria-label={summary ? `${label}: ${summary}` : label}
-        className="max-w-56 justify-start text-left text-muted-foreground"
+        aria-label={
+          summary
+            ? t("rulesForSummary", {
+                name: variant.label ? `${product.title}, ${variant.label}` : product.title,
+                summary
+              })
+            : label
+        }
+        className="max-w-56 justify-start text-start text-muted-foreground"
         onClick={() => setEditing({ product, variant })}
       >
         <SlidersHorizontal data-icon="inline-start" className={cn(own && "text-primary")} />
-        <span className="truncate">{summary || "Add"}</span>
+        <span className="truncate">{summary || t("addRules")}</span>
       </Button>
     )
   }
@@ -477,40 +508,44 @@ export function CatalogEditor({
   return (
     <>
       <PageHeader
-        parents={[{ label: "Catalogs", href: "/catalogs" }]}
-        title={catalog ? saved.settings.title : "New catalog"}
+        parents={[{ label: t("catalogs"), href: "/catalogs" }]}
+        title={catalog ? saved.settings.title : t("newCatalog")}
         badge={catalog ? <StatusBadge status={saved.settings.status} /> : undefined}
       >
         {catalog && (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="More actions" />}>
+            <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label={shared("moreActions")} />}>
               <Ellipsis />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem
                 disabled={dirty}
                 render={
-                  <a href={`/api/catalogs/${catalog.id}/export?format=xlsx`} download aria-label="Export to Excel" />
+                  <a
+                    href={`/api/catalogs/${catalog.id}/export?format=xlsx`}
+                    download
+                    aria-label={shared("exportExcel")}
+                  />
                 }
               >
                 <Download />
-                Export to Excel
+                {shared("exportExcel")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={dirty}
                 render={
-                  <a href={`/api/catalogs/${catalog.id}/export?format=pdf`} download aria-label="Export to PDF" />
+                  <a href={`/api/catalogs/${catalog.id}/export?format=pdf`} download aria-label={t("exportPdf")} />
                 }
               >
                 <Download />
-                Export to PDF
+                {t("exportPdf")}
               </DropdownMenuItem>
               {!readOnly && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem variant="destructive" onClick={() => setConfirmDelete(true)}>
                     <Trash2 />
-                    Delete catalog
+                    {t("delete")}
                   </DropdownMenuItem>
                 </>
               )}
@@ -526,7 +561,7 @@ export function CatalogEditor({
                 <Field>
                   <FieldLabel htmlFor="catalog-title">
                     <span>
-                      Title
+                      {t("title")}
                       <span aria-hidden className="text-destructive">
                         *
                       </span>
@@ -546,7 +581,7 @@ export function CatalogEditor({
                   </InputGroup>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="catalog-status">Status</FieldLabel>
+                  <FieldLabel htmlFor="catalog-status">{t("status")}</FieldLabel>
                   <Select
                     items={statusOptions}
                     value={settings.status}
@@ -566,7 +601,7 @@ export function CatalogEditor({
                 </Field>
               </div>
               <Field>
-                <FieldLabel>Customers</FieldLabel>
+                <FieldLabel>{t("customers")}</FieldLabel>
                 {customers.length ? (
                   <Combobox
                     items={customers}
@@ -584,15 +619,15 @@ export function CatalogEditor({
                               <ComboboxChip key={customer.id}>{customer.name}</ComboboxChip>
                             ))}
                             <ComboboxChipsInput
-                              placeholder={value.length ? "" : "Add customers"}
-                              aria-label="Add customers"
+                              placeholder={value.length ? "" : t("addCustomers")}
+                              aria-label={t("addCustomers")}
                             />
                           </>
                         )}
                       </ComboboxValue>
                     </ComboboxChips>
                     <ComboboxContent anchor={anchor}>
-                      <ComboboxEmpty>No customers found.</ComboboxEmpty>
+                      <ComboboxEmpty>{t("noCustomersFound")}</ComboboxEmpty>
                       <ComboboxList>
                         {(customer: (typeof customers)[number]) => (
                           <ComboboxItem key={customer.id} value={customer}>
@@ -600,7 +635,7 @@ export function CatalogEditor({
                               <span className="truncate">{customer.name}</span>
                               {customer.otherCatalog && (
                                 <span className="truncate text-xs text-muted-foreground">
-                                  Moves from {customer.otherCatalog}
+                                  {t("movesFrom", { catalog: customer.otherCatalog })}
                                 </span>
                               )}
                             </span>
@@ -610,12 +645,10 @@ export function CatalogEditor({
                     </ComboboxContent>
                   </Combobox>
                 ) : (
-                  <FieldDescription>Customers appear once a buyer adds you as their supplier.</FieldDescription>
+                  <FieldDescription>{t("customersAppear")}</FieldDescription>
                 )}
                 {settings.status !== "active" && settings.customerIds.length > 0 && (
-                  <FieldDescription>
-                    Customers see every active product at its own price until the catalog is active.
-                  </FieldDescription>
+                  <FieldDescription>{t("inactiveNote")}</FieldDescription>
                 )}
               </Field>
             </CardContent>
@@ -623,11 +656,11 @@ export function CatalogEditor({
 
           <Card>
             <CardHeader>
-              <CardTitle>Pricing</CardTitle>
+              <CardTitle>{t("pricing")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Field>
-                <FieldLabel htmlFor="catalog-adjustment">Price adjustment</FieldLabel>
+                <FieldLabel htmlFor="catalog-adjustment">{t("priceAdjustment")}</FieldLabel>
                 {/* One phrase: Decrease by 10%. */}
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
@@ -635,7 +668,7 @@ export function CatalogEditor({
                     value={settings.direction}
                     onValueChange={(value) => value && change({ direction: value as Settings["direction"] })}
                   >
-                    <SelectTrigger aria-label="Adjustment direction" className="w-32">
+                    <SelectTrigger aria-label={t("adjustmentDirection")} className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -652,7 +685,7 @@ export function CatalogEditor({
                       inputMode="decimal"
                       value={settings.percent}
                       aria-invalid={bps === null || undefined}
-                      className="text-right tabular-nums"
+                      className="text-end tabular-nums"
                       onChange={(event) => change({ percent: event.target.value })}
                     />
                     <InputGroupAddon align="inline-end">
@@ -660,7 +693,9 @@ export function CatalogEditor({
                     </InputGroupAddon>
                   </InputGroup>
                 </div>
-                <FieldDescription>{adjustmentHelp(bps, settings.direction)}</FieldDescription>
+                <FieldDescription>
+                  <AdjustmentHelp bps={bps} direction={settings.direction} />
+                </FieldDescription>
               </Field>
             </CardContent>
           </Card>
@@ -669,7 +704,7 @@ export function CatalogEditor({
         <Card className="@container gap-0 py-0">
           <div className="flex flex-col gap-3 border-b p-4">
             <CardHeader className="px-0">
-              <CardTitle>Products</CardTitle>
+              <CardTitle>{t("products")}</CardTitle>
               <CardAction>
                 <div className="flex items-center gap-2 text-sm">
                   <Switch
@@ -678,15 +713,15 @@ export function CatalogEditor({
                     checked={settings.includeNewProducts}
                     onCheckedChange={(checked) => change({ includeNewProducts: checked })}
                   />
-                  <label htmlFor="catalog-include-new">Automatically include new products</label>
+                  <label htmlFor="catalog-include-new">{t("includeNew")}</label>
                 </div>
               </CardAction>
             </CardHeader>
             <IndexToolbar
               tabs={[
-                { value: "included", label: "Included", count: includedCount },
-                { value: "excluded", label: "Excluded", count: products.length - includedCount },
-                { value: "all", label: "All", count: products.length }
+                { value: "included", label: t("included"), count: includedCount },
+                { value: "excluded", label: t("excluded"), count: products.length - includedCount },
+                { value: "all", label: shared("all"), count: products.length }
               ]}
               tab={tab}
               onTabChange={(value) => {
@@ -699,12 +734,12 @@ export function CatalogEditor({
                 setQuery(value)
                 setPage(0)
               }}
-              placeholder="Search products"
+              placeholder={t("searchProducts")}
             />
             {selected.size > 0 && (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-                <span className="font-medium">{selected.size} selected</span>
-                <div className="ml-auto flex flex-wrap gap-2">
+                <span className="font-medium">{shared("selected", { count: selected.size })}</span>
+                <div className="ms-auto flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -715,7 +750,7 @@ export function CatalogEditor({
                       )
                     }
                   >
-                    Include
+                    {t("include")}
                   </Button>
                   <Button
                     size="sm"
@@ -727,14 +762,14 @@ export function CatalogEditor({
                       )
                     }
                   >
-                    Exclude
+                    {t("exclude")}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => clearOverrides(products.filter((row) => selected.has(row.id)))}
                   >
-                    Clear price overrides
+                    {t("clearOverrides")}
                   </Button>
                 </div>
               </div>
@@ -745,9 +780,9 @@ export function CatalogEditor({
               <TableHeader>
                 <TableRow>
                   {!readOnly && (
-                    <TableHead className="w-10 pl-4">
+                    <TableHead className="w-10 ps-4">
                       <Checkbox
-                        aria-label="Select all products on this page"
+                        aria-label={shared("selectAllOnPage")}
                         checked={chosen.length > 0 && chosen.length === rows.length}
                         indeterminate={chosen.length > 0 && chosen.length < rows.length}
                         onCheckedChange={(checked) =>
@@ -756,9 +791,9 @@ export function CatalogEditor({
                       />
                     </TableHead>
                   )}
-                  <TableHead>Product</TableHead>
-                  <TableHead className={cn("text-right", columns.price)}>Price</TableHead>
-                  <TableHead className={columns.rules}>Rules</TableHead>
+                  <TableHead>{t("columns.product")}</TableHead>
+                  <TableHead className={cn("text-end", columns.price)}>{t("columns.price")}</TableHead>
+                  <TableHead className={columns.rules}>{t("columns.rules")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -769,9 +804,9 @@ export function CatalogEditor({
                   return [
                     <TableRow key={product.id} data-state={selected.has(product.id) ? "selected" : undefined}>
                       {!readOnly && (
-                        <TableCell className="pl-4">
+                        <TableCell className="ps-4">
                           <Checkbox
-                            aria-label={`Select ${product.title}`}
+                            aria-label={shared("select", { name: product.title })}
                             checked={selected.has(product.id)}
                             onCheckedChange={(checked) => {
                               const next = new Set(selected)
@@ -785,7 +820,7 @@ export function CatalogEditor({
                           />
                         </TableCell>
                       )}
-                      <TableCell className={cn("whitespace-normal", readOnly && "pl-4")}>
+                      <TableCell className={cn("whitespace-normal", readOnly && "ps-4")}>
                         <div className="flex items-center gap-3">
                           <ProductThumb
                             image={product.image}
@@ -812,14 +847,14 @@ export function CatalogEditor({
                                   setExpanded(next)
                                 }}
                               >
-                                {product.variants.length} variants
+                                {shared("variantCount", { count: product.variants.length })}
                                 <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} />
                               </button>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className={cn("text-right", columns.price)}>
+                      <TableCell className={cn("text-end", columns.price)}>
                         {priceCell(product, product.variants)}
                       </TableCell>
                       <TableCell className={columns.rules}>
@@ -828,7 +863,7 @@ export function CatalogEditor({
                         ) : (
                           <span className="text-xs text-muted-foreground">
                             {product.variants.some((variant) => overridden(entries.get(variant.id)))
-                              ? "Set per variant"
+                              ? t("setPerVariant")
                               : ""}
                           </span>
                         )}
@@ -837,14 +872,14 @@ export function CatalogEditor({
                     ...(open && !single
                       ? product.variants.map((variant) => (
                           <TableRow key={variant.id} className="bg-muted/20">
-                            {!readOnly && <TableCell className="pl-4" />}
-                            <TableCell className="pl-6 whitespace-normal @sm:pl-14">
+                            {!readOnly && <TableCell className="ps-4" />}
+                            <TableCell className="ps-6 whitespace-normal @sm:ps-14">
                               <p className={cn(!entries.has(variant.id) && "text-muted-foreground")}>
                                 {variant.label ?? variant.supplierSku}
                               </p>
                               <p className="text-xs text-muted-foreground">{variant.supplierSku}</p>
                             </TableCell>
-                            <TableCell className={cn("text-right", columns.price)}>
+                            <TableCell className={cn("text-end", columns.price)}>
                               {priceCell(product, [variant])}
                             </TableCell>
                             <TableCell className={columns.rules}>{rulesCell(product, variant)}</TableCell>
@@ -857,8 +892,8 @@ export function CatalogEditor({
             </Table>
           ) : (
             <EmptyState
-              title={products.length ? "No products here" : "No products yet"}
-              description={products.length ? "Try another tab or search." : "Add products before building a catalog."}
+              title={products.length ? t("noProductsHere") : t("noProductsYet")}
+              description={products.length ? shared("tryAnother") : t("addProductsFirst")}
             />
           )}
           {pages > 1 && (
@@ -919,15 +954,13 @@ export function CatalogEditor({
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {saved.settings.title}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Its customers will see every active product at its own price. This can’t be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("deleteTitle", { title: saved.settings.title })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("deleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{shared("cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" disabled={pending} onClick={() => void remove()}>
-              Delete catalog
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

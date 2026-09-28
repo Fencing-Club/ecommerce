@@ -10,6 +10,7 @@ import {
   suppliers,
   teamInvitations
 } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { hash } from "./security"
 
@@ -118,11 +119,9 @@ type Invitee = { id: string; email: string; emailVerified: boolean }
 
 function requireVerified(user: Invitee) {
   if (!user.emailVerified) {
-    throw new Error("Verify your email before accepting an invitation")
+    throw new LocalizedError("verifyEmailFirst")
   }
 }
-
-const unavailable = "Invitation expired or belongs to a different email address"
 
 // Each acceptance runs in the given transaction, such as the one that creates the new workspace, or in its own.
 function inTransaction<T>(tx: Transaction | undefined, work: (tx: Transaction) => Promise<T>) {
@@ -139,7 +138,7 @@ export async function acceptTeamInvitation(user: Invitee, token: string, tx?: Tr
       .where(eq(teamInvitations.hash, hash(token)))
       .for("update")
     if (!row || row.email !== user.email.toLowerCase() || row.expiresAt < new Date()) {
-      throw new Error(unavailable)
+      throw new LocalizedError("invitationInvalid")
     }
     // They join as the invitation made them: an admin, or a member with its pages.
     await tx
@@ -161,7 +160,7 @@ export async function acceptSupplierInvitation(user: Invitee, orgId: string, inv
       .innerJoin(organizations, eq(organizations.id, memberships.orgId))
       .where(and(eq(memberships.userId, user.id), eq(memberships.orgId, orgId)))
     if (!workspace || !isAdmin(workspace.memberships) || workspace.organizations.kind !== "supplier") {
-      throw new Error("Choose a supplier workspace where you’re an admin")
+      throw new LocalizedError("chooseSupplierWorkspace")
     }
     const [supplier] = await tx
       .select()
@@ -174,7 +173,7 @@ export async function acceptSupplierInvitation(user: Invitee, orgId: string, inv
       supplier.expiresAt < new Date() ||
       supplier.email !== user.email.toLowerCase()
     ) {
-      throw new Error(unavailable)
+      throw new LocalizedError("invitationInvalid")
     }
     await tx
       .update(suppliers)

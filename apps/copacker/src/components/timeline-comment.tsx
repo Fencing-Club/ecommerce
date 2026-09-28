@@ -1,15 +1,17 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/useActionForm"
 import { FormError, SubmitButton } from "./actions"
 
-const schema = z.object({ message: z.string().trim().min(1, "Write a comment").max(4000) })
+const schema = z.object({ message: z.string().trim().min(1, "orders.timeline.comment.required").max(4000) })
 
 // The comment box at the top of a PO's timeline, like Shopify's.
 export function TimelineComment({ orderId }: { orderId: string }) {
+  const t = useTranslations("orders.timeline.comment")
   const { form, submit } = useActionForm({
     schema,
     action: "order.comment",
@@ -22,8 +24,8 @@ export function TimelineComment({ orderId }: { orderId: string }) {
       <div className="rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
         <Textarea
           {...field}
-          aria-label="Comment"
-          placeholder="Leave a comment…"
+          aria-label={t("label")}
+          placeholder={t("placeholder")}
           className="min-h-16 resize-none border-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
           onKeyDown={(event) => {
             if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
@@ -39,7 +41,7 @@ export function TimelineComment({ orderId }: { orderId: string }) {
             pending={form.formState.isSubmitting}
             disabled={!field.value.trim()}
           >
-            Post
+            {t("post")}
           </SubmitButton>
         </div>
       </div>

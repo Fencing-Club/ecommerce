@@ -7,9 +7,11 @@ import { and, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, productBarcodes, stockSnapshots } from "@/db/schema"
+import { LocalizedError, type ErrorKey } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
+import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
 import { isCollective } from "./inventory-products"
 import { type ProductDefaults, readProductDefaults } from "./product-defaults"
@@ -21,27 +23,20 @@ export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }
 
 export const variantIdSchema = z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+$/)
 
-export class ProductBarcodeError extends Error {
-  constructor(
-    message: string,
-    public readonly status: 400 | 403 | 404 | 409
-  ) {
-    super(message)
-  }
-}
+export class ProductBarcodeError extends StatusError {}
 
 const maxBytes = 32 * 1024 * 1024
 
 async function shopifyDomain(s: Session) {
   if (s.org.kind !== "buyer") {
-    throw new ProductBarcodeError("A buyer workspace is required", 403)
+    throw new ProductBarcodeError("buyerWorkspaceRequired", 403)
   }
   const [account] = await db()
     .select({ domain: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, s.org.id), eq(connections.provider, "shopify")))
   if (!account) {
-    throw new ProductBarcodeError("Connect Shopify before editing products", 409)
+    throw new ProductBarcodeError("connectShopifyBeforeEditing", 409)
   }
   return account.domain
 }
@@ -118,22 +113,19 @@ function resolveVariant(rows: StockRow[], variantId: string | null, sku: string)
   if (variantId) {
     const row = rows.find((item) => item.variantId === variantId)
     if (!row?.productId) {
-      throw new ProductBarcodeError("This product isn't in your synced Shopify inventory", 404)
+      throw new ProductBarcodeError("productNotSynced", 404)
     }
     return row
   }
   if (!sku) {
-    throw new ProductBarcodeError("Enter the variation's SKU", 400)
+    throw new ProductBarcodeError("enterVariationSku", 400)
   }
   const matches = rows.filter((item) => item.buyerSku?.trim().toLowerCase() === sku.toLowerCase())
   if (matches.length > 1) {
-    throw new ProductBarcodeError(
-      `${matches.length} variations share the SKU "${sku}". Upload this barcode from the product's Edit panel.`,
-      409
-    )
+    throw new ProductBarcodeError("skuShared", 409, { count: matches.length, sku })
   }
   if (!matches[0]?.productId) {
-    throw new ProductBarcodeError(`No variation has the SKU "${sku}"`, 404)
+    throw new ProductBarcodeError("noVariationWithSku", 404, { sku })
   }
   return matches[0]
 }
@@ -154,11 +146,11 @@ export async function saveProductBarcode(s: Session, form: FormData) {
   const rawVariant = form.get("variantId")
   const variantId = rawVariant === null ? null : variantIdSchema.safeParse(rawVariant)
   if (variantId && !variantId.success) {
-    throw new ProductBarcodeError("Choose a product variation", 400)
+    throw new ProductBarcodeError("chooseVariation", 400)
   }
   const file = form.get("file")
   if (!(file instanceof File) || file.size > maxBytes) {
-    throw new ProductBarcodeError("Choose a PDF smaller than 32 MB", 400)
+    throw new ProductBarcodeError("choosePdfUnder32", 400)
   }
   const rawSku = form.get("sku")
   const sku = typeof rawSku === "string" && rawSku.trim() ? rawSku.trim() : skuFromFileName(file.name)
@@ -167,10 +159,12 @@ export async function saveProductBarcode(s: Session, form: FormData) {
   try {
     await validatePdf(bytes)
   } catch (error) {
-    throw new ProductBarcodeError(error instanceof Error ? error.message : "Upload a PDF smaller than 32 MB", 400)
+    throw error instanceof LocalizedError
+      ? new ProductBarcodeError(error.key, 400, error.values)
+      : new ProductBarcodeError("uploadPdfUnder32", 400)
   }
   if ((await splitPdfPages(bytes)).length !== 1) {
-    throw new ProductBarcodeError("Upload a barcode PDF with one page", 400)
+    throw new ProductBarcodeError("barcodeOnePage", 400)
   }
   const objectKey = `barcodes/${s.org.id}/${randomUUID()}.pdf`
   await putFile(objectKey, bytes)
@@ -240,7 +234,7 @@ export async function removeProductBarcode(s: Session, variantId: string) {
 }
 
 // A variation's product label, or why it has none.
-type LabelFile = { variantId: string; name: string; bytes: Uint8Array } | { variantId: string; problem: string }
+type LabelFile = { variantId: string; name: string; bytes: Uint8Array } | { variantId: string; problem: ErrorKey }
 
 // Variations' product labels: each one's uploaded barcode, or else the standard label sheet, unless its product needs
 // an uploaded one. Lookups are batched, so a whole catalog's labels need a few Amazon and Shopify requests, not one per
@@ -262,7 +256,7 @@ export async function productLabelFiles(s: Session, variantIds: string[]): Promi
     : []
   const context = await inventoryContext(s.org.id)
   const defaults = await readProductDefaults(s.org.id, domain)
-  const problems = new Map<string, string>()
+  const problems = new Map<string, ErrorKey>()
   const standard: StockRow[] = []
   for (const id of ids) {
     if (uploads.some((upload) => upload.variantId === id)) {
@@ -270,11 +264,11 @@ export async function productLabelFiles(s: Session, variantIds: string[]): Promi
     }
     const row = context.rows.find((item) => item.variantId === id)
     if (!row) {
-      problems.set(id, "This product isn't in your synced Shopify inventory")
+      problems.set(id, "productNotSynced")
     } else if (needsUpload(defaults, row.productId)) {
-      problems.set(id, "This product needs an uploaded label")
+      problems.set(id, "productNeedsUploadedLabel")
     } else if (!row.buyerSku) {
-      problems.set(id, "This variation has no SKU to print. Add one in Shopify.")
+      problems.set(id, "variationNoSku")
     } else {
       standard.push(row)
     }
@@ -316,7 +310,7 @@ export async function productLabelFiles(s: Session, variantIds: string[]): Promi
 export async function productLabelFile(s: Session, variantId: string) {
   const [file] = await productLabelFiles(s, [variantId])
   if (!file || "problem" in file) {
-    throw new ProductBarcodeError(file?.problem ?? "This variation has no label", 404)
+    throw new ProductBarcodeError(file?.problem ?? "variationNoLabel", 404)
   }
   return file
 }
@@ -360,7 +354,7 @@ async function labelCodes(orgId: string, fbaRows: { sellerSku: string; fnSku?: s
       }
     } catch (error) {
       console.error(JSON.stringify({ event: "label_fnsku_lookup_failed", orgId, error: describeError(error) }))
-      throw new ProductBarcodeError("Amazon couldn't be reached to look up the FNSKU. Try again.", 409)
+      throw new ProductBarcodeError("amazonFnskuUnreachable", 409)
     }
   }
   for (const sku of unsynced) {
@@ -405,7 +399,7 @@ async function countriesOfOrigin(orgId: string, domain: string, variantIds: stri
     })
   } catch (error) {
     console.error(JSON.stringify({ event: "label_origin_lookup_failed", orgId, error: describeError(error) }))
-    throw new ProductBarcodeError("Shopify couldn't be reached to look up the country of origin. Try again.", 409)
+    throw new ProductBarcodeError("shopifyOriginUnreachable", 409)
   }
 }
 
@@ -428,16 +422,17 @@ export function fnskuFor(rows: { sellerSku: string; fnSku?: string }[], sku: str
 
 // What a PO line prints as its product label. It's worked out from the product whenever it's needed, so it follows
 // changes to the product's barcode, label setting, title or FNSKU: an uploaded label, the standard FNSKU (or SKU)
-// label, none, or why there's none yet.
+// label, none, or why there's none yet: its key under the "errors" messages, and that message in the request's language.
 export type LineLabel =
   | { itemId: string; state: "uploaded"; name: string; objectKey: string }
   | { itemId: string; state: "standard"; variantId: string; code: string; title: string }
   | { itemId: string; state: "none" }
-  | { itemId: string; state: "missing"; problem: string }
+  | { itemId: string; state: "missing"; problem: string; problemKey: ErrorKey }
 
 type LabelOrder = { buyerOrgId: string; shopifyDomain: string; data: OrderInput }
 
 export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
+  const t = await errorText()
   const variantIds = [...new Set(order.data.items.map((item) => item.variantId))]
   const [barcodes, defaults, rows] = await Promise.all([
     db()
@@ -469,11 +464,16 @@ export async function lineLabels(order: LabelOrder): Promise<LineLabel[]> {
       return { itemId: item.id, state: "none" }
     }
     if (needsUpload(defaults, productId)) {
-      return { itemId: item.id, state: "missing", problem: "Upload its label on the Products page" }
+      return {
+        itemId: item.id,
+        state: "missing",
+        problem: t("uploadLabelOnProducts"),
+        problemKey: "uploadLabelOnProducts"
+      }
     }
     const code = item.fnsku || (forAmazon ? "" : item.buyerSku)
     if (!code) {
-      return { itemId: item.id, state: "missing", problem: "Its FNSKU is looked up when the purchase order is sent" }
+      return { itemId: item.id, state: "missing", problem: t("fnskuLookedUpOnSend"), problemKey: "fnskuLookedUpOnSend" }
     }
     return {
       itemId: item.id,
@@ -531,13 +531,13 @@ export async function orderLineLabel(s: Session, orderId: string, itemId: string
   const { order } = await accessibleOrder(s, orderId)
   const label = (await lineLabels(order)).find((row) => row.itemId === itemId)
   if (!label) {
-    throw new ProductBarcodeError("This line isn't on the purchase order", 404)
+    throw new ProductBarcodeError("lineNotOnOrder", 404)
   }
   if (label.state === "none") {
-    throw new ProductBarcodeError("This product doesn't need a label", 404)
+    throw new ProductBarcodeError("productNeedsNoLabel", 404)
   }
   if (label.state === "missing") {
-    throw new ProductBarcodeError(label.problem, 404)
+    throw new ProductBarcodeError(label.problemKey, 404)
   }
   const [file] = await lineLabelFiles(order, [label])
   return file!
@@ -553,7 +553,7 @@ export async function orderLabelsPdf(s: Session, orderId: string) {
     files.push({ itemId: "", ...warnings })
   }
   if (!files.length) {
-    throw new ProductBarcodeError("This purchase order has no product labels", 404)
+    throw new ProductBarcodeError("orderHasNoLabels", 404)
   }
   return {
     name: labelFileName(`${order.data.reference} product labels`),
@@ -570,12 +570,12 @@ export async function productsLabelsPdf(s: Session, productIds: string[]) {
     rows.filter((row) => row.productId === productId).map((row) => row.variantId)
   )
   if (variantIds.length > 1000) {
-    throw new ProductBarcodeError("Choose fewer products. One download holds up to 1,000 variations.", 400)
+    throw new ProductBarcodeError("tooManyLabelVariations", 400)
   }
   const files = await productLabelFiles(s, variantIds)
   const sheets = files.flatMap((file) => ("bytes" in file ? [file.bytes] : []))
   if (!sheets.length) {
-    throw new ProductBarcodeError("None of these variations has a label yet", 404)
+    throw new ProductBarcodeError("noVariationLabels", 404)
   }
   return { bytes: await combinePdfs(sheets), skipped: files.length - sheets.length }
 }

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { generatePo } from "@/server/documents"
+import { errorResponse } from "@/server/errors"
 
 const headers = { "Cache-Control": "private, no-store" }
 
@@ -10,7 +11,7 @@ const headers = { "Cache-Control": "private, no-store" }
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
-    return Response.json({ error: "Purchase order not found" }, { status: 404, headers })
+    return errorResponse("orderNotFound", 404, headers)
   }
   const s = await session()
   requirePage(s, "orders")
@@ -30,6 +31,6 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     })
   } catch (error) {
     unstable_rethrow(error)
-    return Response.json({ error: "The purchase order couldn’t be created. Try again." }, { status: 500, headers })
+    return errorResponse("orderDocumentNotCreated", 500, headers)
   }
 }

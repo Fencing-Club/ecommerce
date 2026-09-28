@@ -1,10 +1,12 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useId } from "react"
 import { useController } from "react-hook-form"
 import { z } from "zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useMessageText } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
@@ -38,7 +40,8 @@ const variationDetailsApi = api.injectEndpoints({
 export const { useSaveVariationDetailsMutation } = variationDetailsApi
 
 const text = z.string().trim().max(255)
-const minimum = z.number("Enter a whole number").int("Enter a whole number").min(0).max(1000000).optional()
+const wholeNumber = "products.details.enterWholeNumber"
+const minimum = z.number(wholeNumber).int(wholeNumber).min(0).max(1000000).optional()
 export const variationSchema = z.object({
   variantId: z.string(),
   supplierSku: text,
@@ -81,6 +84,11 @@ export function sameVariation(a: VariationInput, b: VariationInput) {
 // its own label.
 const columns = "@lg:grid-cols-[minmax(0,1fr)_repeat(4,6.5rem)]"
 
+// The part of a field's label only screen readers read.
+function hidden(chunks: React.ReactNode) {
+  return <span className="sr-only">{chunks}</span>
+}
+
 // Whole units from a number field, or nothing while it's empty.
 function units(input: HTMLInputElement) {
   return input.value === "" ? undefined : input.valueAsNumber
@@ -97,6 +105,8 @@ function Cell({
   variation: string
   numeric?: boolean
 }) {
+  const t = useTranslations("products.variations")
+  const messageText = useMessageText()
   const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
@@ -109,8 +119,11 @@ function Cell({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={id} className="text-xs font-normal text-muted-foreground @lg:sr-only">
-        {label}
-        <span className="sr-only"> for {variation}</span>
+        {t.rich("fieldFor", {
+          label,
+          variation,
+          hidden
+        })}
       </Label>
       <Input
         id={id}
@@ -127,9 +140,9 @@ function Cell({
         placeholder={numeric ? "—" : undefined}
         autoComplete="off"
         aria-invalid={fieldState.invalid}
-        className={cn(numeric && "text-right tabular-nums")}
+        className={cn(numeric && "text-end tabular-nums")}
       />
-      {fieldState.error?.message && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+      {fieldState.error?.message && <p className="text-xs text-destructive">{messageText(fieldState.error.message)}</p>}
     </div>
   )
 }
@@ -142,19 +155,20 @@ export function VariationDetails({
   productTitle: string
   variations: { variantId: string; title: string | null }[]
 }) {
+  const t = useTranslations("products.variations")
   return (
     <div className="@container">
       <div
         aria-hidden="true"
         className={cn("hidden gap-2 px-3 pb-1.5 text-xs font-medium text-muted-foreground @lg:grid", columns)}
       >
-        <span>Variation</span>
-        <span>Supplier SKU</span>
+        <span>{t("variation")}</span>
+        <span>{t("supplierSku")}</span>
         <span>ASIN</span>
-        <span className="text-right" title="0 keeps it off Amazon">
-          Amazon min
+        <span className="text-end" title={t("amazonMinimumHint")}>
+          {t("amazonMin")}
         </span>
-        <span className="text-right">Warehouse min</span>
+        <span className="text-end">{t("warehouseMin")}</span>
       </div>
       <ul className="divide-y rounded-lg border">
         {variations.map((variation, index) => {
@@ -163,12 +177,17 @@ export function VariationDetails({
             <li key={variation.variantId} className={cn("grid gap-2 p-3 @lg:items-start @lg:py-2", columns)}>
               <span className="text-sm font-medium [overflow-wrap:anywhere] @lg:pt-1.5">{label}</span>
               <div className="grid grid-cols-2 gap-2 @lg:contents">
-                <Cell name={`variations.${index}.supplierSku`} label="Supplier SKU" variation={label} />
+                <Cell name={`variations.${index}.supplierSku`} label={t("supplierSku")} variation={label} />
                 <Cell name={`variations.${index}.asin`} label="ASIN" variation={label} />
-                <Cell name={`variations.${index}.amazonStockTarget`} label="Amazon minimum" variation={label} numeric />
+                <Cell
+                  name={`variations.${index}.amazonStockTarget`}
+                  label={t("amazonMinimum")}
+                  variation={label}
+                  numeric
+                />
                 <Cell
                   name={`variations.${index}.storeStockTarget`}
-                  label="Warehouse minimum"
+                  label={t("warehouseMinimum")}
                   variation={label}
                   numeric
                 />

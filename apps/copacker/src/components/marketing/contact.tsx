@@ -1,12 +1,16 @@
 import { ArrowRight, BookOpen, Film as FilmIcon, Sparkles } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { ContactForm } from "./contact-form"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
-import { free, GetStarted, lit, rise, Site, stage } from "./site"
+import { GetStarted, lit, rise, Site, stage } from "./site"
 
 // The contact page, in the home page's language: a dark stage with the settled field of points, and the form set across
 // its lower edge the way the hero's product shot is, then other ways in on the paper below.
+
+// The title's lit words.
+const litWords = (chunks: React.ReactNode) => <span className={lit}>{chunks}</span>
 
 function Way({
   icon: Icon,
@@ -34,6 +38,8 @@ function Way({
 }
 
 export function Contact() {
+  const t = useTranslations("marketing.contact")
+  const site = useTranslations("marketing.site")
   return (
     <Site>
       <main id="main-content">
@@ -52,14 +58,13 @@ export function Contact() {
                 className={cn("text-[clamp(3.25rem,9vw,7rem)] leading-[0.92] font-semibold tracking-[-0.055em]", rise)}
                 style={{ animationDelay: "100ms" }}
               >
-                Talk to <span className={lit}>us.</span>
+                {t.rich("title", { lit: litWords })}
               </h1>
               <p
                 className={cn("mt-6 max-w-xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
                 style={{ animationDelay: "250ms" }}
               >
-                Questions about Copacker, a walkthrough for your team, or working together. Send a note and we’ll write
-                back.
+                {t("text")}
               </p>
             </div>
             <div className={cn("mx-auto max-w-6xl px-6 pt-14 sm:pt-16", rise)} style={{ animationDelay: "400ms" }}>
@@ -75,26 +80,22 @@ export function Contact() {
             id="ways-title"
             className="text-[clamp(2rem,4vw,3rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance"
           >
-            Or see for yourself.
+            {t("waysTitle")}
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <Way icon={Sparkles} title="Try it" text={free}>
+            <Way icon={Sparkles} title={t("tryIt")} text={site("free")}>
               <GetStarted />
             </Way>
-            <Way
-              icon={FilmIcon}
-              title="Watch the video"
-              text="A restock from forecast to warehouse, in under two minutes."
-            >
+            <Way icon={FilmIcon} title={t("watchTitle")} text={t("watchText")}>
               <Film className="border-border bg-transparent text-foreground hover:bg-muted" />
             </Way>
-            <Way icon={BookOpen} title="Read the FAQ" text="Stores, shipping beyond Amazon, partners and agents.">
+            <Way icon={BookOpen} title={t("faqTitle")} text={t("faqText")}>
               <a
                 href="/#faq"
                 className="group inline-flex h-11 items-center gap-2 rounded-xl border px-5 text-[0.9375rem] font-medium transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                Questions
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                {t("questions")}
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
               </a>
             </Way>
           </div>

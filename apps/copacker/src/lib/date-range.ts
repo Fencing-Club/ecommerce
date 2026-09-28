@@ -1,7 +1,8 @@
 import { addDays, addMonths } from "./time-zone"
 
 // The periods the Overview reports on, like Shopify's analytics: a preset relative to today in the store's time zone, or
-// any range of days. Days are "YYYY-MM-DD" keys and both ends are included.
+// any range of days. Days are "YYYY-MM-DD" keys and both ends are included. The labels here are English; pages show
+// each preset and comparison by its key from the "overview" messages (overview.period), and ranges in their language.
 
 export type DayRange = { from: string; to: string }
 
@@ -178,17 +179,17 @@ export function periodQuery(period: Pick<Period, "key" | "range" | "comparison">
   return query
 }
 
-const dayFormat = (withYear: boolean) =>
-  new Intl.DateTimeFormat("en-US", {
+const dayFormat = (withYear: boolean, locale: string) =>
+  new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     ...(withYear && { year: "numeric" }),
     timeZone: "UTC"
   })
 
-// "Sep 26, 2026", or "Aug 27 – Sep 25, 2026" (with both years when they differ).
-export function rangeLabel(range: DayRange) {
-  const day = (key: string, withYear: boolean) => dayFormat(withYear).format(new Date(`${key}T00:00:00Z`))
+// "Sep 26, 2026", or "Aug 27 – Sep 25, 2026" (with both years when they differ), in the given language.
+export function rangeLabel(range: DayRange, locale = "en-US") {
+  const day = (key: string, withYear: boolean) => dayFormat(withYear, locale).format(new Date(`${key}T00:00:00Z`))
   if (range.from === range.to) {
     return day(range.from, true)
   }

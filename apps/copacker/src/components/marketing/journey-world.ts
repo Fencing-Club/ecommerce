@@ -169,7 +169,8 @@ const beat = {
 } satisfies Record<string, [number, number]>
 const during = (p: number, [from, to]: [number, number]) => span(p, from, to)
 
-export function createWorld(canvas: HTMLCanvasElement): World {
+// `words` are the ones painted into the world in the reader's language: the purchase order's name on its page.
+export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: string; customs: string }): World {
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
@@ -497,10 +498,13 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     keep(
       drawn(512, 64, (context) => {
         context.fillStyle = "#ffffff"
-        context.font = `700 40px ${font}`
         context.textAlign = "center"
         context.letterSpacing = "6px"
-        context.fillText("CUSTOMS", 256, 46)
+        // The sign is in the reader's language, and a long word shrinks to fit it.
+        const sign = words.customs.toLocaleUpperCase()
+        context.font = `700 40px ${font}`
+        context.font = `700 ${Math.min(40, (40 * 470) / Math.max(1, context.measureText(sign).width))}px ${font}`
+        context.fillText(sign, 256, 46)
       })
     ),
     3.2,
@@ -964,8 +968,11 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       context.fillStyle = palette.orange
       context.fillRect(0, 0, 384, 96)
       context.fillStyle = "#ffffff"
+      // The name shrinks to fit the page's header when a language needs more room.
       context.font = `600 34px ${font}`
-      context.fillText("Purchase order 1043", 28, 60)
+      const size = Math.min(34, (34 * 328) / Math.max(1, context.measureText(words.purchaseOrder).width))
+      context.font = `600 ${size.toFixed(1)}px ${font}`
+      context.fillText(words.purchaseOrder, 28, 60)
       context.fillStyle = "#e9e3da"
       for (let i = 0; i < 5; i++) {
         context.fillRect(30, 140 + i * 56, i % 2 ? 230 : 320, 20)

@@ -38,7 +38,7 @@ describe("websiteSchema", () => {
       "https://user:secret@fencing.club",
       "mailto:sales@fencing.club"
     ]) {
-      expect(message(value)).toBe("Enter a website, such as example.com")
+      expect(message(value)).toBe("onboarding.company.enterWebsite")
     }
   })
 
@@ -57,8 +57,8 @@ describe("company details", () => {
     })
     const result = companySchema.safeParse({ name: "Harbor Metalworks", website: "harbor", phone: "12345" })
     expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([
-      ["website", "Enter a website, such as example.com"],
-      ["phone", "Enter a phone number"]
+      ["website", "onboarding.company.enterWebsite"],
+      ["phone", "partners.phone.invalid"]
     ])
   })
 })
@@ -89,9 +89,9 @@ describe("contactDetailsSchema", () => {
       { error: formErrorMap }
     )
     expect(result.error?.issues.map((issue) => [issue.path.join("."), issue.message])).toEqual([
-      ["contactEmail", "Enter an email address"],
-      ["phoneNumber", "Enter a phone number"],
-      ["website", "Enter a website, such as example.com"]
+      ["contactEmail", "partners.contactDetails.enterEmail"],
+      ["phoneNumber", "partners.phone.invalid"],
+      ["website", "onboarding.company.enterWebsite"]
     ])
   })
 })

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { and, eq, isNull } from "drizzle-orm"
+import { getTranslations } from "next-intl/server"
 import { z } from "zod"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
@@ -12,7 +13,7 @@ import { variantsNeedingBarcode } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
 import { withVariantFields } from "@/server/product-fields"
 
-export const generateMetadata = titleFor("New purchase order", "orders", "edit")
+export const generateMetadata = titleFor("orders.builder.newTitle", "orders", "edit")
 
 const variantIds = z
   .array(z.string().regex(/^gid:\/\/shopify\/ProductVariant\/\d+(@[1-9]\d{0,5})?$/))
@@ -46,7 +47,7 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
 }
 
 export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   const params = await searchParams
@@ -70,8 +71,8 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
   // The builder renders the page's header row first, then its form.
   return (
     <OrderBuilder
-      title="New purchase order"
-      parents={[{ label: "Purchase orders", href: "/orders" }]}
+      title={t("builder.newTitle")}
+      parents={[{ label: t("index.title"), href: "/orders" }]}
       suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
       deliveries={deliveries}
       forwarderAddresses={forwarding.map((row) => ({

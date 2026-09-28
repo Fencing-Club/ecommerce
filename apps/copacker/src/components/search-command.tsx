@@ -4,6 +4,7 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
 import { defaultFilter } from "cmdk"
 import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useDeferredValue, useRef, useState } from "react"
@@ -44,10 +45,37 @@ function best<T>(items: readonly T[], words: (item: T) => string[], query: strin
     .map((match) => match.item)
 }
 
+// The keys the panel's hints name, placed in their translated sentences.
+function moveKeys() {
+  return (
+    <KbdGroup>
+      <Kbd>
+        <ArrowUp />
+      </Kbd>
+      <Kbd>
+        <ArrowDown />
+      </Kbd>
+    </KbdGroup>
+  )
+}
+
+function openKey() {
+  return (
+    <Kbd>
+      <CornerDownLeft />
+    </Kbd>
+  )
+}
+
+function closeKey() {
+  return <Kbd>Esc</Kbd>
+}
+
 // The search in the app header, like Shopify's: clicking it, or Ctrl+K (⌘K on a Mac) from anywhere, opens a panel over
 // the bar with the text box where the bar was and results under it. The bar shrinks with the window and becomes a
 // button on a phone.
 export function SearchCommand({ kind }: { kind: string }) {
+  const t = useTranslations("navigation.search")
   const [open, setOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -72,9 +100,9 @@ export function SearchCommand({ kind }: { kind: string }) {
         }
       >
         <Search />
-        <span className="max-[30rem]:sr-only">Search</span>
-        <KbdGroup aria-hidden="true" className="ml-auto max-sm:hidden">
-          <Kbd>{mac ? "⌘" : "Ctrl"}</Kbd>
+        <span className="max-[30rem]:sr-only">{t("search")}</span>
+        <KbdGroup aria-hidden="true" className="ms-auto max-sm:hidden">
+          <Kbd>{mac ? "⌘" : t("ctrl")}</Kbd>
           <Kbd>K</Kbd>
         </KbdGroup>
       </PopoverPrimitive.Trigger>
@@ -88,7 +116,7 @@ export function SearchCommand({ kind }: { kind: string }) {
           className="isolate z-50"
         >
           <PopoverPrimitive.Popup
-            aria-label="Search"
+            aria-label={t("search")}
             initialFocus={input}
             className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           >
@@ -99,30 +127,12 @@ export function SearchCommand({ kind }: { kind: string }) {
               aria-hidden="true"
               className="flex items-center gap-4 border-t px-4 py-1.5 text-xs text-muted-foreground max-sm:hidden"
             >
-              <span className="flex items-center gap-1.5">
-                <KbdGroup>
-                  <Kbd>
-                    <ArrowUp />
-                  </Kbd>
-                  <Kbd>
-                    <ArrowDown />
-                  </Kbd>
-                </KbdGroup>
-                to move
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Kbd>
-                  <CornerDownLeft />
-                </Kbd>
-                to open
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Kbd>Esc</Kbd>
-                to close
-              </span>
+              <span className="flex items-center gap-1.5">{t.rich("toMove", { keys: moveKeys })}</span>
+              <span className="flex items-center gap-1.5">{t.rich("toOpen", { keys: openKey })}</span>
+              <span className="flex items-center gap-1.5">{t.rich("toClose", { keys: closeKey })}</span>
             </div>
             {/* A modal popover only keeps focus inside when it has a close button. */}
-            <PopoverPrimitive.Close className="sr-only">Close</PopoverPrimitive.Close>
+            <PopoverPrimitive.Close className="sr-only">{t("close")}</PopoverPrimitive.Close>
           </PopoverPrimitive.Popup>
         </PopoverPrimitive.Positioner>
       </PopoverPrimitive.Portal>
@@ -143,6 +153,7 @@ function SearchResults({
   input: React.RefObject<HTMLInputElement | null>
   onSelect: (href: string) => void
 }) {
+  const t = useTranslations("navigation")
   const [text, setText] = useState("")
   const query = useDeferredValue(text.trim())
   const [typed] = useDebouncedValue(query.slice(0, 100), 250)
@@ -154,7 +165,7 @@ function SearchResults({
   const sales = useSalesSearchQuery(typed, { skip: !searchesSales || typed.length < 2 })
   const data = index.data
   const navigation = navigationFor(kind, usePermissions())
-  const pages = query ? best(navigation, (page) => [page.label], query) : navigation
+  const pages = query ? best(navigation, (page) => [t(`pages.${page.labelKey}`)], query) : navigation
   // Only this search's orders: an earlier search's stay out while this one is on its way.
   const salesOrders = query && typed === query ? (sales.currentData?.orders ?? []).slice(0, shown) : []
   const products = query
@@ -182,27 +193,27 @@ function SearchResults({
 
   return (
     <Command shouldFilter={false} loop value={highlighted} onValueChange={(value) => setPicked({ value, query })}>
-      <CommandInput ref={input} value={text} onValueChange={setText} placeholder="Search" />
+      <CommandInput ref={input} value={text} onValueChange={setText} placeholder={t("search.search")} />
       <CommandList className="max-h-[min(28rem,calc(100svh-6rem))]">
         {/* Nothing matches only once something is typed; before that, the pages show. */}
-        {!loading && <CommandEmpty className="px-4 break-words">No results for “{query}”</CommandEmpty>}
+        {!loading && <CommandEmpty className="px-4 break-words">{t("search.noResults", { query })}</CommandEmpty>}
         {pages.length > 0 && (
-          <CommandGroup heading="Pages">
+          <CommandGroup heading={t("search.pages")}>
             {pages.map((page) => (
               <CommandItem key={page.view} value={`page:${page.view}`} onSelect={() => onSelect(`/${page.view}`)}>
                 <page.icon />
-                {page.label}
+                {t(`pages.${page.labelKey}`)}
               </CommandItem>
             ))}
           </CommandGroup>
         )}
         {searchingSales && !salesOrders.length && (
-          <CommandLoading label="Loading orders">
-            <Placeholder heading="Orders" rows={2} badge />
+          <CommandLoading label={t("search.loadingOrders")}>
+            <Placeholder heading={t("search.orders")} rows={2} badge />
           </CommandLoading>
         )}
         {salesOrders.length > 0 && (
-          <CommandGroup heading="Orders">
+          <CommandGroup heading={t("search.orders")}>
             {salesOrders.map((order) => (
               <CommandItem
                 key={`${order.source}:${order.orderId}`}
@@ -214,7 +225,7 @@ function SearchResults({
                 <Receipt />
                 <span className="shrink-0 font-medium">{order.number}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.channel}</span>
-                <span className="ml-auto flex shrink-0">
+                <span className="ms-auto flex shrink-0">
                   <SalesStatus status={order.status} />
                 </span>
               </CommandItem>
@@ -223,12 +234,16 @@ function SearchResults({
         )}
         {/* Until the first load arrives, which groups will match is unknown, except for the newest purchase orders. */}
         {index.isLoading && (
-          <CommandLoading label="Loading results">
-            {query ? <Placeholder rows={3} /> : <Placeholder heading="Recent purchase orders" rows={3} badge />}
+          <CommandLoading label={t("search.loadingResults")}>
+            {query ? (
+              <Placeholder rows={3} />
+            ) : (
+              <Placeholder heading={t("search.recentPurchaseOrders")} rows={3} badge />
+            )}
           </CommandLoading>
         )}
         {products.length > 0 && (
-          <CommandGroup heading="Products">
+          <CommandGroup heading={t("search.products")}>
             {products.map((product) => (
               <CommandItem
                 key={product.id}
@@ -253,7 +268,7 @@ function SearchResults({
           </CommandGroup>
         )}
         {orders.length > 0 && (
-          <CommandGroup heading={query ? "Purchase orders" : "Recent purchase orders"}>
+          <CommandGroup heading={query ? t("search.purchaseOrders") : t("search.recentPurchaseOrders")}>
             {orders.map((order) => (
               <CommandItem
                 key={order.id}
@@ -264,7 +279,7 @@ function SearchResults({
                 <ClipboardList />
                 <span className="shrink-0 font-medium">{order.reference}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.supplier}</span>
-                <span className="ml-auto flex shrink-0">
+                <span className="ms-auto flex shrink-0">
                   <Status status={order.status} />
                 </span>
               </CommandItem>
@@ -272,7 +287,7 @@ function SearchResults({
           </CommandGroup>
         )}
         {shipments.length > 0 && (
-          <CommandGroup heading="Shipments">
+          <CommandGroup heading={t("search.shipments")}>
             {shipments.map((shipment) => (
               <CommandItem
                 key={shipment.id}
@@ -283,7 +298,7 @@ function SearchResults({
                 <Truck />
                 <span className="shrink-0 font-medium">{shipment.title}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{shipment.reference}</span>
-                <span className="ml-auto flex shrink-0">
+                <span className="ms-auto flex shrink-0">
                   <Status status={shipment.status} />
                 </span>
               </CommandItem>
@@ -291,7 +306,7 @@ function SearchResults({
           </CommandGroup>
         )}
         {partners.length > 0 && (
-          <CommandGroup heading="Partners">
+          <CommandGroup heading={t("search.partners")}>
             {partners.map((partner) => (
               <CommandItem
                 key={partner.id}
@@ -301,16 +316,14 @@ function SearchResults({
               >
                 <Users />
                 <span className="min-w-0 truncate">{partner.name}</span>
-                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                  {partner.type === "supplier" ? "Supplier" : "Forwarder"}
+                <span className="ms-auto shrink-0 text-xs text-muted-foreground">
+                  {partner.type === "supplier" ? t("search.supplier") : t("search.forwarder")}
                 </span>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
-        {(index.isError || sales.isError) && (
-          <p className="px-3 py-2 text-sm text-destructive">Couldn&apos;t search everything. Try again.</p>
-        )}
+        {(index.isError || sales.isError) && <p className="px-3 py-2 text-sm text-destructive">{t("search.failed")}</p>}
       </CommandList>
     </Command>
   )
@@ -334,7 +347,7 @@ function Placeholder({ heading, rows, badge }: { heading?: string; rows: number;
         <div key={width} className="flex h-8 items-center gap-2 px-2">
           <Skeleton className="size-4 shrink-0 rounded-sm" />
           <Skeleton className={cn("h-3.5", width)} />
-          {badge && <Skeleton className="ml-auto h-5 w-20 rounded-full" />}
+          {badge && <Skeleton className="ms-auto h-5 w-20 rounded-full" />}
         </div>
       ))}
     </>

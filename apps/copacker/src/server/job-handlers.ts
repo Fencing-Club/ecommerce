@@ -6,12 +6,15 @@ import {
   invitationEmail,
   labelsReadyEmail,
   purchaseOrderEmail,
+  shownLines,
   type Email
 } from "@repo/copacker-emails"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
-import { shipments, orders, orderRevisions, organizations } from "../db/schema"
+import { shipments, orders, orderRevisions, organizations, memberships, profiles } from "../db/schema"
+import { defaultLocale, isLocale, type Locale } from "../i18n/locales"
+import { translatorFor } from "../i18n/translator"
 import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
@@ -189,6 +192,22 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
   await db().update(shipments).set({ status: "waiting_labels" }).where(eq(shipments.id, shipmentId))
 }
 
+// The language an email is written in: the one its reader chose in Settings, found by their address. A reader with an
+// account who follows their computer's language gets English, since the worker can't know it. Someone without an
+// account yet, such as an invited supplier, gets the language the email was queued in, such as the inviter's.
+async function readerLocale(email: string, queued: string | undefined): Promise<Locale> {
+  const accounts = await db()
+    .select({ locale: profiles.locale })
+    .from(memberships)
+    .leftJoin(profiles, eq(profiles.userId, memberships.userId))
+    .where(eq(sql`lower(${memberships.email})`, email.toLowerCase()))
+  const chosen = accounts.map((account) => account.locale).find(isLocale)
+  if (chosen) {
+    return chosen
+  }
+  return !accounts.length && isLocale(queued) ? queued : defaultLocale
+}
+
 export async function emailJob(payload: Record<string, unknown>, key: string, assertOwned: () => Promise<void>) {
   if (!process.env.EMAIL_API_KEY || !process.env.EMAIL_FROM) {
     throw new Error("Email sender is not configured")
@@ -197,6 +216,8 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     .object({
       type: z.enum(["invite", "forwarder", "team", "po", "ready", "data_request"]),
       to: z.email(),
+      // The language of the request that queued it, for a reader without an account.
+      locale: z.string().optional(),
       orderId: z.uuid().optional(),
       revision: z.number().int().positive().optional(),
       shipmentId: z.uuid().optional(),
@@ -207,16 +228,50 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
       orders: z.array(z.string()).max(1000).optional()
     })
     .parse(payload)
+  const lang = await readerLocale(input.to, input.locale)
+  const t = await translatorFor(lang)
+  const tagline = t("emails.tagline")
   const attachments: Array<{ filename: string; content: string }> = []
   let email: Email
   if (input.type === "invite" || input.type === "team" || input.type === "forwarder") {
     // The link's page signs the person up or in with this email, then sets up what's still missing.
+    const kind = input.type === "invite" ? "supplier" : input.type
+    const from = input.name ?? (input.type === "team" ? t("emails.invitation.yourTeam") : t("emails.invitation.aBuyer"))
+    const subject = t("emails.invitation.subject", { from })
+    const lead = t(`emails.invitation.joining.${kind}`)
+    const account = t("emails.invitation.steps.account")
+    // What comes after accepting.
+    const steps = {
+      supplier: [
+        account,
+        t("emails.invitation.steps.supplierWorkspace"),
+        t("emails.invitation.steps.supplierPack", { from })
+      ],
+      team: [account, t("emails.invitation.steps.teamStart", { from })],
+      forwarder: [
+        account,
+        t("emails.invitation.steps.forwarderAddresses"),
+        t("emails.invitation.steps.forwarderShipments", { from })
+      ]
+    }
     email = await invitationEmail({
       appUrl: appUrl(),
-      kind: input.type === "invite" ? "supplier" : input.type,
-      from: input.name ?? (input.type === "team" ? "Your team" : "A buyer"),
-      to: input.to,
-      token: input.invitation!
+      kind,
+      token: input.invitation!,
+      lang,
+      copy: {
+        subject,
+        eyebrow: t(`emails.invitation.eyebrow.${kind}`),
+        heading: subject,
+        lead,
+        preview: lead,
+        action: t("emails.invitation.accept"),
+        note: t("emails.invitation.note", { email: input.to }),
+        pasteLink: t("emails.pasteLink"),
+        reason: t("emails.invitation.reason", { from, email: input.to }),
+        tagline,
+        steps: steps[kind]
+      }
     })
   } else if (input.type === "po") {
     const po = await generatePo(input.orderId!, input.revision)
@@ -230,13 +285,16 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     if (!sent) {
       throw new Error("Purchase order revision is unavailable")
     }
-    const { order } = sent
+    const { order, buyer } = sent
+    const { reference } = order
+    const revision = po.doc.orderRevision
+    const units = order.items.reduce((sum, item) => sum + item.pieces, 0)
+    const total = money(orderTotal(order), order.currency)
+    const values = { reference, buyer }
     email = await purchaseOrderEmail({
       appUrl: appUrl(),
       orderId: input.orderId!,
-      reference: order.reference,
-      buyer: sent.buyer,
-      revision: po.doc.orderRevision,
+      revision,
       dueDate: order.dueDate,
       shipTo: po.shipTo,
       paymentTerms: order.paymentTerms || undefined,
@@ -249,18 +307,64 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
           detail: [item.variant === "Default Title" ? "" : item.variant, item.supplierSku].filter(Boolean).join(", "),
           amount: money(item.pieces * item.unitPrice, order.currency)
         })),
-      units: order.items.reduce((sum, item) => sum + item.pieces, 0),
-      total: money(orderTotal(order), order.currency),
-      to: input.to
+      total,
+      lang,
+      copy: {
+        subject: t("emails.purchaseOrder.subject", values),
+        eyebrow: revision > 1 ? t("emails.purchaseOrder.eyebrow.revised") : t("emails.purchaseOrder.eyebrow.new"),
+        heading: t("emails.purchaseOrder.heading", values),
+        // A later revision replaces the one the supplier had.
+        lead:
+          revision > 1
+            ? t("emails.purchaseOrder.lead.revised", { buyer })
+            : t("emails.purchaseOrder.lead.new", { buyer, units, products: order.items.length }),
+        preview: order.dueDate
+          ? t("emails.purchaseOrder.previewRequiredBy", { units, total, date: day(order.dueDate, lang) })
+          : t("emails.purchaseOrder.preview", { units, total }),
+        action: t("emails.purchaseOrder.open"),
+        note: t("emails.purchaseOrder.note"),
+        reason: t("emails.purchaseOrder.reason", { buyer }),
+        tagline,
+        labels: {
+          revision: t("emails.purchaseOrder.labels.revision"),
+          requiredBy: t("emails.purchaseOrder.labels.requiredBy"),
+          shipTo: t("emails.purchaseOrder.labels.shipTo"),
+          paymentTerms: t("emails.purchaseOrder.labels.paymentTerms"),
+          total: t("emails.purchaseOrder.labels.total")
+        },
+        ...(order.items.length > shownLines && {
+          more: t("emails.purchaseOrder.more", { count: order.items.length - shownLines })
+        })
+      }
     })
     attachments.push({ filename: po.doc.name, content: Buffer.from(po.bytes).toString("base64") })
   } else if (input.type === "data_request") {
+    const shop = input.shop!
+    const subject = t("emails.customerDataRequest.subject", { shop })
+    const lead = t("emails.customerDataRequest.lead")
     email = await customerDataRequestEmail({
       appUrl: appUrl(),
-      shop: input.shop!,
+      shop,
       requestId: input.requestId!,
       orders: input.orders ?? [],
-      to: input.to
+      lang,
+      copy: {
+        subject,
+        eyebrow: t("emails.customerDataRequest.eyebrow"),
+        heading: subject,
+        lead,
+        preview: lead,
+        note: t("emails.customerDataRequest.noContactDetails"),
+        reason: t("emails.customerDataRequest.reason", { shop }),
+        tagline,
+        labels: {
+          store: t("emails.customerDataRequest.labels.store"),
+          request: t("emails.customerDataRequest.labels.request"),
+          ordersHeld: t("emails.customerDataRequest.labels.ordersHeld")
+        },
+        none: t("emails.customerDataRequest.none"),
+        ordersIntro: t("emails.customerDataRequest.ordersIntro")
+      }
     })
   } else {
     // A purchase order's shipments are numbered oldest first, as the app numbers them.
@@ -280,23 +384,61 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     if (!released) {
       throw new Error("Shipment is missing")
     }
-    const { shipment } = released
+    const { shipment, buyer } = released
+    const { reference } = released.order
+    const number = numbered.findIndex((row) => row.id === shipment.id) + 1
+    const lead = t("emails.labelsReady.lead", { buyer })
     email = await labelsReadyEmail({
       appUrl: appUrl(),
       shipmentId: shipment.id,
-      reference: released.order.reference,
-      buyer: released.buyer,
-      shipment: numbered.findIndex((row) => row.id === shipment.id) + 1 || undefined,
       cartons: shipment.packing?.cartons.length,
       destination: await shipmentDestination(shipment),
       readyDate: shipment.packing?.readyDate,
       amazonShipments: shipment.amazonShipmentId?.split(", "),
-      to: input.to
+      lang,
+      copy: {
+        // Only the purchase order when the shipment's number isn't known.
+        subject: number
+          ? t("emails.labelsReady.subjectShipment", { reference, shipment: number })
+          : t("emails.labelsReady.subject", { reference }),
+        eyebrow: t("emails.labelsReady.eyebrow"),
+        heading: number
+          ? t("emails.labelsReady.headingShipment", { reference, shipment: number })
+          : t("emails.labelsReady.heading", { reference }),
+        lead,
+        preview: lead,
+        action: t("emails.labelsReady.open"),
+        reason: t("emails.labelsReady.reason", { buyer }),
+        tagline,
+        labels: {
+          cartons: t("emails.labelsReady.labels.cartons"),
+          destination: t("emails.labelsReady.labels.destination"),
+          readyForPickup: t("emails.labelsReady.labels.readyForPickup"),
+          amazonShipment: t("emails.labelsReady.labels.amazonShipment")
+        },
+        steps: [
+          t("emails.labelsReady.steps.print"),
+          t("emails.labelsReady.steps.attach"),
+          t("emails.labelsReady.steps.handOver")
+        ]
+      }
     })
   }
   await assertOwned()
   await sendEmail({ to: input.to, ...email, key, attachments })
 }
+
+// A date such as "Dec 1, 2026" in the reader's language. It has no time of day, so it's read in UTC to stay the same
+// day everywhere.
+function day(date: string, locale: Locale) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  })
+}
+
 export async function shopifyJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   await assertOwned()
   const input = z

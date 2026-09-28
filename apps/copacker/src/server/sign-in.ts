@@ -13,7 +13,10 @@ import { eq } from "drizzle-orm"
 import { cookies, headers } from "next/headers"
 import { z } from "zod"
 import { db } from "@/db"
-import { organizations } from "@/db/schema"
+import { organizations, profiles } from "@/db/schema"
+import { LocalizedError, type ErrorKey } from "@/i18n/errors"
+import { isLocale, negotiateLocale } from "@/i18n/locales"
+import { translatorFor } from "@/i18n/translator"
 import {
   codeSchema,
   forgotPasswordSchema,
@@ -86,12 +89,12 @@ async function requestContext() {
 const text = (value: unknown) => (typeof value === "string" ? value : "")
 
 // Messages for the WorkOS error codes a person can cause.
-const messages: Record<string, string> = {
-  invalid_credentials: "Incorrect email or password.",
-  invalid_one_time_code: "That code isn’t right. Check the email and try again.",
-  invalid_pending_authentication_token: "This code expired. Sign in again to get a new one.",
-  password_reset_token_not_found: "This link expired. Request a new one.",
-  password_reset_token_expired: "This link expired. Request a new one."
+const messages: Record<string, ErrorKey> = {
+  invalid_credentials: "incorrectCredentials",
+  invalid_one_time_code: "wrongCode",
+  invalid_pending_authentication_token: "codeExpired",
+  password_reset_token_not_found: "linkExpired",
+  password_reset_token_expired: "linkExpired"
 }
 
 const detailsSchema = z
@@ -108,20 +111,22 @@ const detailsSchema = z
 // What to tell someone when WorkOS turns a request down. Anything unexpected is logged and asks for a retry.
 function explain(error: unknown) {
   if (error instanceof RateLimitExceededException) {
-    return new Error("Too many attempts. Try again in a minute.")
+    return new LocalizedError("tooManyAttempts")
   }
   if (error instanceof BadRequestException) {
     const details = detailsSchema.parse(error.errors)
     const short = details.find((detail) => detail.code === "password_too_short")
     if (short) {
-      return new Error(`Use at least ${short.minimum_length ?? passwordMinimum} characters.`)
+      return new LocalizedError("passwordTooShort", { count: short.minimum_length ?? passwordMinimum })
     }
     const weak = details.find((detail) => detail.code === "password_too_weak")
     if (weak) {
-      return new Error([weak.warning, "Choose a stronger password."].filter(Boolean).join(" "))
+      return weak.warning
+        ? new LocalizedError("passwordWeakBecause", { warning: weak.warning })
+        : new LocalizedError("passwordWeak")
     }
     if (details.some((detail) => detail.code === "email_not_available")) {
-      return new Error("This email already has an account. Sign in instead.")
+      return new LocalizedError("emailTaken")
     }
     const described = details.find((detail) => detail.message)?.message
     if (described) {
@@ -133,10 +138,10 @@ function explain(error: unknown) {
     error.code &&
     messages[error.code]
   ) {
-    return new Error(messages[error.code])
+    return new LocalizedError(messages[error.code]!)
   }
   console.error("Sign-in failed", error)
-  return new Error("Couldn’t sign in. Try again.")
+  return new LocalizedError("signInFailed")
 }
 
 // The person belongs to one WorkOS organization per workspace, and WorkOS asks which one the session is for. Copacker
@@ -155,7 +160,7 @@ async function chooseOrganization(choices: ReadonlyArray<{ id: string }>) {
   }
   const [first] = choices
   if (!first) {
-    throw new Error("Couldn’t sign in. Try again.")
+    throw new LocalizedError("signInFailed")
   }
   return first.id
 }
@@ -250,7 +255,7 @@ export async function verifyEmail(raw: unknown) {
   const { code } = codeSchema.parse(raw)
   const pending = await pendingVerification()
   if (!pending) {
-    throw new Error(messages.invalid_pending_authentication_token)
+    throw new LocalizedError("codeExpired")
   }
   const context = await requestContext()
   return complete(
@@ -269,7 +274,7 @@ export async function verifyEmail(raw: unknown) {
 export async function resendCode() {
   const pending = await pendingVerification()
   if (!pending?.verification) {
-    throw new Error(messages.invalid_pending_authentication_token)
+    throw new LocalizedError("codeExpired")
   }
   try {
     const { userId } = await workos().userManagement.getEmailVerification(pending.verification)
@@ -278,16 +283,6 @@ export async function resendCode() {
     throw explain(error)
   }
   return { ok: true }
-}
-
-// How long a link lasts, from WorkOS's expiry: "15 minutes" or "1 hour".
-function lasting(expiresAt: string) {
-  const minutes = Math.max(1, Math.round((Date.parse(expiresAt) - Date.now()) / 60000))
-  if (minutes < 60) {
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
-  }
-  const hours = Math.round(minutes / 60)
-  return `${hours} ${hours === 1 ? "hour" : "hours"}`
 }
 
 // Emails a link to Copacker's own reset page. Whether the email has an account isn't revealed: the reply is the same
@@ -306,10 +301,41 @@ export async function requestPasswordReset(raw: unknown) {
   }
   const link = `${await siteUrl()}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
   try {
+    // In the language the person chose in Settings, or else their computer's, from the request.
+    const [profile] = await db()
+      .select({ locale: profiles.locale })
+      .from(profiles)
+      .where(eq(profiles.userId, reset.userId))
+    const lang = isLocale(profile?.locale) ? profile.locale : negotiateLocale((await headers()).get("accept-language"))
+    const t = await translatorFor(lang)
+    // How long the link lasts, from WorkOS's expiry: minutes, or hours for an hour or more.
+    const minutes = Math.max(1, Math.round((Date.parse(reset.expiresAt) - Date.now()) / 60000))
     await sendEmail({
       to: reset.email,
       key: `password-reset:${reset.id}`,
-      ...(await passwordResetEmail({ appUrl: appUrl(), link, expiresIn: lasting(reset.expiresAt), to: reset.email }))
+      ...(await passwordResetEmail({
+        appUrl: appUrl(),
+        link,
+        lang,
+        copy: {
+          subject: t("emails.passwordReset.subject"),
+          eyebrow: t("emails.passwordReset.eyebrow"),
+          heading: t("emails.passwordReset.heading"),
+          lead: t("emails.passwordReset.lead", { email: reset.email }),
+          preview:
+            minutes < 60
+              ? t("emails.passwordReset.previewMinutes", { email: reset.email, count: minutes })
+              : t("emails.passwordReset.previewHours", { email: reset.email, count: Math.round(minutes / 60) }),
+          action: t("emails.passwordReset.action"),
+          note:
+            minutes < 60
+              ? t("emails.passwordReset.expiresMinutes", { count: minutes })
+              : t("emails.passwordReset.expiresHours", { count: Math.round(minutes / 60) }),
+          pasteLink: t("emails.pasteLink"),
+          reason: t("emails.passwordReset.reason", { email: reset.email }),
+          tagline: t("emails.tagline")
+        }
+      }))
     })
   } catch (error) {
     console.error("Couldn’t send the password reset email", error)

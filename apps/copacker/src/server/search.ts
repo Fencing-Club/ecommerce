@@ -7,6 +7,7 @@ import { forwarderOrders, orderVisibleTo } from "./access"
 import type { Session } from "./auth"
 import { isCollective } from "./inventory-products"
 import { stockScopes } from "./stock"
+import { serverText } from "./text"
 
 export type SearchOrder = {
   id: string
@@ -162,6 +163,7 @@ async function searchProducts(orgId: string): Promise<SearchProduct[]> {
     )
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, provider)))
   const rows = current?.data?.source === "shopify" ? current.data.rows : []
+  const t = await serverText()
   const products = new Map<string, SearchProduct>()
   for (const row of rows) {
     if (isCollective(row)) {
@@ -170,7 +172,7 @@ async function searchProducts(orgId: string): Promise<SearchProduct[]> {
     const id = row.productId ?? row.variantId
     const product = products.get(id) ?? {
       id,
-      title: row.productTitle ?? row.buyerSku ?? "Untitled product",
+      title: row.productTitle ?? row.buyerSku ?? t("untitledProduct"),
       imageUrl: null,
       keywords: []
     }

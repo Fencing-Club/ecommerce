@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "Магазин",
+    "purchasing": "Закупівлі",
+    "sales": "Продажі",
+    "catalog": "Товари"
+  },
+  "pages": {
+    "overview": "Огляд",
+    "orders": "Замовлення",
+    "products": "Товари",
+    "restock": "Поповнення",
+    "purchaseOrders": "Замовлення на закупівлю",
+    "shipments": "Відправлення",
+    "partners": "Партнери",
+    "customers": "Клієнти",
+    "inventory": "Запаси",
+    "catalogs": "Каталоги",
+    "settings": "Налаштування"
+  },
+  "sidebar": {
+    "buyerWorkspace": "Робочий простір покупця",
+    "supplierWorkspace": "Робочий простір постачальника",
+    "forwarderWorkspace": "Робочий простір експедитора",
+    "workspaces": "Робочі простори",
+    "newWorkspace": "Новий робочий простір",
+    "signOut": "Вийти",
+    "theme": "Тема",
+    "themes": {
+      "light": "Світла",
+      "dark": "Темна",
+      "system": "Системна"
+    }
+  },
+  "notifications": {
+    "title": "Сповіщення",
+    "empty": "Немає сповіщень",
+    "emptyDescription": "Тут з’являтимуться оновлення щодо ваших замовлень і відправлень"
+  },
+  "search": {
+    "search": "Пошук",
+    "ctrl": "Ctrl",
+    "toMove": "<keys></keys> — переміщення",
+    "toOpen": "<keys></keys> — відкрити",
+    "toClose": "<keys></keys> — закрити",
+    "close": "Закрити",
+    "noResults": "Немає результатів для «{query}»",
+    "pages": "Сторінки",
+    "orders": "Замовлення",
+    "loadingOrders": "Завантаження замовлень",
+    "loadingResults": "Завантаження результатів",
+    "recentPurchaseOrders": "Останні замовлення на закупівлю",
+    "products": "Товари",
+    "purchaseOrders": "Замовлення на закупівлю",
+    "shipments": "Відправлення",
+    "partners": "Партнери",
+    "supplier": "Постачальник",
+    "forwarder": "Експедитор",
+    "failed": "Не вдалося виконати повний пошук. Спробуйте ще раз."
+  }
+}

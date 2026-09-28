@@ -1,0 +1,123 @@
+{
+  "title": "Empieza",
+  "newWorkspaceTitle": "Nuevo espacio de trabajo",
+  "person": {
+    "enterFirstName": "Ingresa tu nombre",
+    "enterLastName": "Ingresa tus apellidos",
+    "choosePosition": "Elige tu puesto"
+  },
+  "company": {
+    "enterName": "Ingresa el nombre de tu empresa",
+    "enterWebsite": "Ingresa un sitio web, como example.com"
+  },
+  "place": {
+    "enterName": "Ponle nombre a esta dirección"
+  },
+  "positions": {
+    "owner": "Dueño",
+    "generalManager": "Gerente general",
+    "operationsManager": "Gerente de operaciones",
+    "purchasingManager": "Gerente de compras",
+    "buyer": "Comprador",
+    "salesManager": "Gerente de ventas",
+    "accountManager": "Ejecutivo de cuenta",
+    "productionManager": "Gerente de producción",
+    "qualityControl": "Control de calidad",
+    "logisticsCoordinator": "Coordinador de logística",
+    "warehouseManager": "Gerente de almacén",
+    "customerService": "Atención al cliente",
+    "finance": "Finanzas",
+    "other": "Otro"
+  },
+  "steps": {
+    "about": "Sobre ti",
+    "role": "¿A qué se dedica tu empresa?",
+    "company": "Tu empresa",
+    "address": {
+      "none": "Dirección",
+      "buyer": {
+        "title": "Dirección de entrega",
+        "description": "Donde se entregan las órdenes de compra"
+      },
+      "supplier": {
+        "title": "Dirección de recolección",
+        "description": "Donde las paqueterías recogen tus cajas"
+      },
+      "forwarder": {
+        "title": "Dirección del almacén",
+        "description": "Donde los compradores te envían la mercancía"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Almacén",
+    "supplier": "Fábrica",
+    "forwarder": "Almacén"
+  },
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "position": "Puesto",
+    "choose": "Elegir",
+    "companyName": "Nombre de la empresa",
+    "website": "Sitio web",
+    "websitePlaceholder": "example.com",
+    "phone": "Número de teléfono",
+    "addressName": "Nombre de la dirección"
+  },
+  "roles": {
+    "legend": "A qué se dedica tu empresa",
+    "buyer": {
+      "title": "Comprador",
+      "description": "Compra a proveedores y vende en Amazon o Shopify"
+    },
+    "supplier": {
+      "title": "Proveedor",
+      "description": "Fabrica productos y surte órdenes de compra"
+    },
+    "forwarder": {
+      "title": "Agente de carga",
+      "description": "Recibe mercancía y la reenvía para los compradores"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Elige una opción",
+    "pickupPhone": "Agrega un teléfono para la recolección. Amazon lo necesita para programarla",
+    "step": "Paso {current} de {total}",
+    "invitedBy": "Invitación de {name}",
+    "back": "Atrás",
+    "skip": "Omitir por ahora",
+    "continue": "Continuar",
+    "createWorkspace": "Crear espacio de trabajo",
+    "join": "Unirte a {workspace}",
+    "cancel": "Cancelar",
+    "signOut": "Cerrar sesión"
+  },
+  "preview": {
+    "workspace": "Espacio de trabajo",
+    "kinds": {
+      "buyer": "Espacio de trabajo de comprador",
+      "supplier": "Espacio de trabajo de proveedor",
+      "forwarder": "Espacio de trabajo de agente de carga"
+    },
+    "groups": {
+      "store": "Tienda",
+      "purchasing": "Compras",
+      "sales": "Ventas",
+      "products": "Productos"
+    },
+    "pages": {
+      "overview": "Resumen",
+      "orders": "Pedidos",
+      "products": "Productos",
+      "restock": "Reabastecimiento",
+      "purchaseOrders": "Órdenes de compra",
+      "shipments": "Envíos",
+      "customers": "Clientes",
+      "inventory": "Inventario",
+      "catalogs": "Catálogos",
+      "settings": "Configuración"
+    },
+    "address": "Dirección"
+  }
+}

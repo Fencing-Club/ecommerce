@@ -1,12 +1,14 @@
 "use client"
 
 import { Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { FormError, SubmitButton } from "@/components/actions"
 import { FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 
 function initials(name: string) {
   return name
@@ -34,8 +36,10 @@ export function AcceptInvitation({
   // Where making a new workspace for the invitation starts.
   setUp?: string
 }) {
+  const t = useTranslations("auth.invite")
   const router = useRouter()
   const [run] = useActionMutation()
+  const errorMessage = useErrorMessage()
   const [choice, setChoice] = useState(workspaces[0]?.id ?? "")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -62,8 +66,8 @@ export function AcceptInvitation({
   return (
     <div className="flex flex-col gap-6">
       {workspaces.length > 0 && (
-        <RadioGroup value={choice} onValueChange={setChoice} aria-label="Workspace" className="gap-2">
-          {[...workspaces, ...(setUp ? [{ id: "new", name: "New workspace" }] : [])].map((workspace) => (
+        <RadioGroup value={choice} onValueChange={setChoice} aria-label={t("workspace")} className="gap-2">
+          {[...workspaces, ...(setUp ? [{ id: "new", name: t("newWorkspace") }] : [])].map((workspace) => (
             <FieldLabel
               key={workspace.id}
               htmlFor={`workspace-${workspace.id}`}
@@ -85,7 +89,7 @@ export function AcceptInvitation({
         disabled={!choice && kind !== "team"}
         onClick={() => void accept()}
       >
-        {choice === "new" ? "Continue" : label}
+        {choice === "new" ? t("continue") : label}
       </SubmitButton>
     </div>
   )

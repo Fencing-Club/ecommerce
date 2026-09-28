@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { connections, stockSnapshots } from "@/db/schema"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse } from "@/server/errors"
 import { stockSource, stockScopes, stockSelection } from "@/server/stock"
 
 const cursorSchema = z.strictObject({
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
-    return Response.json({ error: "A buyer workspace is required" }, { status: 403, headers })
+    return errorResponse("buyerWorkspaceRequired", 403, headers)
   }
   requirePage(s, "products")
   const search = new URL(request.url).searchParams
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
       cursor = cursorSchema.parse(JSON.parse(Buffer.from(query.data.cursor, "base64url").toString("utf8")))
     }
   } catch {
-    return Response.json({ error: "Invalid stock query or cursor" }, { status: 400, headers })
+    return errorResponse("invalidStockQuery", 400, headers)
   }
   const source = query.data.source
   const { provider, scopeKey } = stockScopes[source]
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
     }
   }
   if (locationId && stock?.data && !locations.has(locationId)) {
-    return Response.json({ error: "Location is not present in this inventory snapshot" }, { status: 400, headers })
+    return errorResponse("locationNotInSnapshot", 400, headers)
   }
   let allRows = stock?.data?.rows ?? []
   if (locationId && stock?.data?.source === "shopify") {
@@ -100,7 +101,7 @@ export async function GET(request: Request) {
       !stock.data ||
       cursor.offset > allRows.length)
   ) {
-    return Response.json({ error: "Stock snapshot or location changed; restart pagination" }, { status: 409, headers })
+    return errorResponse("stockSnapshotChanged", 409, headers)
   }
   const offset = cursor?.offset ?? 0
   // Someone who doesn't see prices gets each variation without what it costs and sells for.

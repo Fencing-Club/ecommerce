@@ -12,7 +12,7 @@ export const menuTrigger = style({
   }
 })
 
-export const trailingIcon = style({ marginLeft: "auto" })
+export const trailingIcon = style({ marginInlineStart: "auto" })
 
 export const menuContent = style({ selectors: { "&&": { minWidth: space(56) } } })
 
@@ -48,7 +48,7 @@ export const identityLabel = style({
       alignItems: "center",
       gap: space(2),
       paddingBlock: space(1.5),
-      textAlign: "left",
+      textAlign: "start",
       ...fontSize.sm,
       fontWeight: 400,
       color: vars.color.foreground

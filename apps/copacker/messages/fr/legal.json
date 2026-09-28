@@ -1,0 +1,18 @@
+{
+  "contents": "Sommaire",
+  "updated": "Dernière mise à jour : <time>{date}</time>",
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "metadata": {
+      "title": "Politique de confidentialité | Copacker",
+      "description": "Ce que Copacker collecte, comment ces données sont utilisées et partagées, et vos choix, y compris pour les données d’Amazon et des autres boutiques que vous connectez."
+    }
+  },
+  "terms": {
+    "title": "Conditions d’utilisation",
+    "metadata": {
+      "title": "Conditions d’utilisation | Copacker",
+      "description": "Les conditions d’utilisation de Copacker : comptes et espaces de travail, vos responsabilités, vos données, les frais et les limites de notre responsabilité."
+    }
+  }
+}

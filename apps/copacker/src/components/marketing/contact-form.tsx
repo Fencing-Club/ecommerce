@@ -2,26 +2,29 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, Check, Handshake, LifeBuoy, MessageCircle, Newspaper, Presentation, Rocket } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 import { Controller, FormProvider, useForm } from "react-hook-form"
 import type { z } from "zod"
 import { FormInput, FormTextarea } from "@/components/form-controls"
 import { Button } from "@/components/ui/button"
-import { contactSchema, contactTopics } from "@/lib/contact"
-import { formErrorMap } from "@/lib/form-errors"
+import { useFormErrorMap } from "@/hooks/use-error-text"
+import { type ContactTopic, contactSchema, contactTopics } from "@/lib/contact"
 import { cn } from "@/lib/utils"
 
 // The contact page's form: what it's about as a set of tiles, then who's writing and the message. Once it's sent, a
 // parcel addressed to Copacker drops into its place.
 
-const icons: Record<(typeof contactTopics)[number], typeof Rocket> = {
-  "Getting started": Rocket,
-  "A walkthrough": Presentation,
-  Support: LifeBuoy,
-  Partnerships: Handshake,
-  Press: Newspaper,
-  "Something else": MessageCircle
+// Each topic's icon, and its key under marketing.contact.form.topics.
+const topics: Record<ContactTopic, { icon: typeof Rocket; key: TopicKey }> = {
+  "Getting started": { icon: Rocket, key: "gettingStarted" },
+  "A walkthrough": { icon: Presentation, key: "walkthrough" },
+  Support: { icon: LifeBuoy, key: "support" },
+  Partnerships: { icon: Handshake, key: "partnerships" },
+  Press: { icon: Newspaper, key: "press" },
+  "Something else": { icon: MessageCircle, key: "other" }
 }
+type TopicKey = "gettingStarted" | "walkthrough" | "support" | "partnerships" | "press" | "other"
 
 const blank = { topic: "Getting started", name: "", email: "", company: "", message: "" } as const
 
@@ -53,23 +56,26 @@ function Parcel() {
 }
 
 function Sent({ email, onAnother }: { email: string; onAnother: () => void }) {
+  const t = useTranslations("marketing.contact.form")
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center sm:py-20">
       <Parcel />
       <h2 ref={heading} tabIndex={-1} className="mt-8 text-3xl font-semibold tracking-tight outline-none">
-        Message sent.
+        {t("sent")}
       </h2>
-      <p className="mt-3 max-w-sm text-pretty text-muted-foreground">We’ll write back to {email}.</p>
+      <p className="mt-3 max-w-sm text-pretty text-muted-foreground">{t("writeBack", { email })}</p>
       <Button variant="outline" className="mt-8" onClick={onAnother}>
-        Send another
+        {t("another")}
       </Button>
     </div>
   )
 }
 
 export function ContactForm() {
+  const t = useTranslations("marketing.contact.form")
+  const formErrorMap = useFormErrorMap()
   const form = useForm<z.input<typeof contactSchema>, unknown, z.output<typeof contactSchema>>({
     resolver: zodResolver(contactSchema, { error: formErrorMap }),
     defaultValues: blank
@@ -89,9 +95,7 @@ export function ContactForm() {
     const body: unknown = await response?.json().catch(() => null)
     form.setError("root.server", {
       message:
-        typeof body === "object" && body && "error" in body && typeof body.error === "string"
-          ? body.error
-          : "Couldn’t send your message. Try again in a moment."
+        typeof body === "object" && body && "error" in body && typeof body.error === "string" ? body.error : t("failed")
     })
   })
   const problem = form.formState.errors.root?.server?.message
@@ -109,15 +113,15 @@ export function ContactForm() {
       ) : (
         <FormProvider {...form}>
           <form onSubmit={submit} noValidate className="grid lg:grid-cols-[19rem_minmax(0,1fr)]">
-            <fieldset className="border-b bg-muted/40 p-6 sm:p-8 lg:border-r lg:border-b-0">
-              <legend className="float-left mb-4 w-full text-sm font-medium">What’s it about?</legend>
+            <fieldset className="border-b bg-muted/40 p-6 sm:p-8 lg:border-e lg:border-b-0">
+              <legend className="float-start mb-4 w-full text-sm font-medium">{t("topic")}</legend>
               <Controller
                 name="topic"
                 control={form.control}
                 render={({ field }) => (
                   <div className="clear-both grid grid-cols-2 gap-2 lg:grid-cols-1">
                     {contactTopics.map((topic) => {
-                      const Icon = icons[topic]
+                      const { icon: Icon, key } = topics[topic]
                       const chosen = field.value === topic
                       return (
                         <label
@@ -145,7 +149,7 @@ export function ContactForm() {
                           >
                             <Icon className="size-4" />
                           </span>
-                          <span className="font-medium">{topic}</span>
+                          <span className="font-medium">{t(`topics.${key}`)}</span>
                         </label>
                       )
                     })}
@@ -155,11 +159,17 @@ export function ContactForm() {
             </fieldset>
             <div className="flex flex-col gap-5 p-6 sm:p-8">
               <div className="grid gap-5 sm:grid-cols-2">
-                <FormInput name="name" required label="Name" autoComplete="name" />
-                <FormInput name="email" required label="Email" type="email" autoComplete="email" />
+                <FormInput name="name" required label={t("name")} autoComplete="name" />
+                <FormInput name="email" required label={t("email")} type="email" autoComplete="email" />
               </div>
-              <FormInput name="company" label="Company" autoComplete="organization" />
-              <FormTextarea name="message" required label="Message" rows={6} className="flex-1 [&_textarea]:min-h-44" />
+              <FormInput name="company" label={t("company")} autoComplete="organization" />
+              <FormTextarea
+                name="message"
+                required
+                label={t("message")}
+                rows={6}
+                className="flex-1 [&_textarea]:min-h-44"
+              />
               {/* A field people never see, for telling bots apart. */}
               <input
                 name="website"
@@ -171,7 +181,7 @@ export function ContactForm() {
               />
               <div className="flex flex-wrap items-center justify-end gap-4">
                 {problem && (
-                  <p role="alert" className="mr-auto text-sm text-destructive">
+                  <p role="alert" className="me-auto text-sm text-destructive">
                     {problem}
                   </p>
                 )}
@@ -181,8 +191,8 @@ export function ContactForm() {
                   disabled={form.formState.isSubmitting}
                   className="h-11 gap-2 rounded-xl px-5 text-[0.9375rem]"
                 >
-                  {form.formState.isSubmitting ? "Sending" : "Send message"}
-                  <ArrowRight />
+                  {form.formState.isSubmitting ? t("sending") : t("send")}
+                  <ArrowRight className="rtl:rotate-180" />
                 </Button>
               </div>
             </div>

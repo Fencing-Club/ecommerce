@@ -1,6 +1,7 @@
 "use client"
 
 import { Check, Eye, EyeOff } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
 import { useController, useWatch } from "react-hook-form"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -23,6 +24,7 @@ export function PasswordField({
   action?: React.ReactNode
   isNew?: boolean
 }) {
+  const t = useTranslations("auth.fields")
   const id = useId()
   const [visible, setVisible] = useState(false)
   const {
@@ -54,7 +56,7 @@ export function PasswordField({
         <InputGroupAddon align="inline-end">
           <InputGroupButton
             size="icon-xs"
-            aria-label="Show password"
+            aria-label={t("showPassword")}
             aria-pressed={visible}
             onClick={() => setVisible(!visible)}
           >
@@ -72,7 +74,7 @@ export function PasswordField({
           )}
         >
           <Check className={cn("size-3.5 transition-opacity", long ? "opacity-100" : "opacity-40")} aria-hidden />
-          At least {passwordMinimum} characters
+          {t("passwordRule", { count: passwordMinimum })}
         </p>
       )}
       <FieldError errors={[fieldState.error]} />

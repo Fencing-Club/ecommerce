@@ -1,22 +1,25 @@
 "use client"
 
 import { CheckCircle2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { errorMessage, useUploadDocumentMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useUploadDocumentMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { FileDropzone, pdfFiles } from "./file-dropzone"
 import { SelectField } from "./form-fields"
 
+// Each document's name, as its key under the "common" messages' `upload.titles`.
 const titles = {
-  invoice: "Official commercial invoice",
-  product_label: "Product labels",
-  shipping_label: "Carrier shipping labels"
-}
+  invoice: "invoice",
+  product_label: "productLabels",
+  shipping_label: "shippingLabels"
+} as const
 
 // The documents route takes one PDF of up to 32 MB.
 const maxBytes = 32 * 1024 * 1024
@@ -50,7 +53,9 @@ export function Upload({
   // The button that chooses the file, for a form to focus when the document is required.
   ref?: React.Ref<HTMLButtonElement>
 }) {
+  const t = useTranslations("common.upload")
   const router = useRouter()
+  const errorMessage = useErrorMessage()
   const [upload] = useUploadDocumentMutation()
   const form = useRef<HTMLFormElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -72,7 +77,7 @@ export function Upload({
   async function send(chosen: File, target: HTMLFormElement) {
     setError("")
     if (items.length > 0 && !itemId) {
-      setError("Choose a product variation")
+      setError(t("chooseVariationError"))
       return
     }
     const data = new FormData(target)
@@ -91,7 +96,7 @@ export function Upload({
         return page > 0 ? [{ cartonId: c.cartonId, page }] : []
       })
       if (!assignments.length) {
-        setError("Enter the label page for at least one carton")
+        setError(t("enterLabelPage"))
         return
       }
       data.set("assignments", JSON.stringify(assignments))
@@ -105,7 +110,7 @@ export function Upload({
       router.refresh()
     } catch (e) {
       setStatus("ready")
-      setError(errorMessage(e, "Upload failed. Try again."))
+      setError(errorMessage(e, t("failed")))
     }
   }
 
@@ -125,7 +130,7 @@ export function Upload({
       onSubmit={(event) => {
         event.preventDefault()
         if (!file) {
-          setError("Choose a PDF")
+          setError(t("choosePdf"))
         } else if (status === "ready") {
           void send(file, event.currentTarget)
         }
@@ -134,10 +139,10 @@ export function Upload({
       <FieldGroup>
         {items.length > 0 && (
           <SelectField
-            label="Product variation"
+            label={t("variation")}
             id={`${id}-item`}
             required
-            placeholder="Choose a variation"
+            placeholder={t("chooseVariation")}
             options={items.map((i) => ({ value: i.id, label: `${i.name} / ${i.variant}` }))}
             value={itemId}
             onChange={(event) => setItemId(event.target.value)}
@@ -145,8 +150,8 @@ export function Upload({
         )}
         <FileDropzone
           id={`${id}-drop`}
-          label={label === undefined ? titles[kind] : label}
-          hint={kind === "product_label" ? "One label sheet per variation, up to 32 MB" : undefined}
+          label={label === undefined ? t(`titles.${titles[kind]}`) : label}
+          hint={kind === "product_label" ? t("productLabelHint") : undefined}
           accept={pdfFiles}
           maxBytes={maxBytes}
           file={file}
@@ -169,30 +174,30 @@ export function Upload({
             {status === "uploading" && (
               <>
                 <Spinner />
-                Uploading
+                {t("uploading")}
               </>
             )}
             {status === "uploaded" && (
               <>
                 <CheckCircle2 aria-hidden className="text-success" />
-                Uploaded
+                {t("uploaded")}
               </>
             )}
           </span>
           {status === "ready" && (
             <Button type="submit" variant="outline" size="sm">
-              Upload
+              {t("upload")}
             </Button>
           )}
         </FileDropzone>
         {kind === "shipping_label" && (
           <FieldSet>
-            <FieldLegend variant="label">Label page for each carton</FieldLegend>
-            <FieldDescription>Leave a carton blank if its label is in another file</FieldDescription>
+            <FieldLegend variant="label">{t("labelPages")}</FieldLegend>
+            <FieldDescription>{t("labelPagesDescription")}</FieldDescription>
             <div className="grid gap-3 sm:grid-cols-3">
               {cartons.map((c) => (
                 <Field key={c.cartonId}>
-                  <FieldLabel htmlFor={`${id}-page-${c.cartonId}`}>Carton {c.cartonId}</FieldLabel>
+                  <FieldLabel htmlFor={`${id}-page-${c.cartonId}`}>{t("carton", { carton: c.cartonId })}</FieldLabel>
                   <Input
                     id={`${id}-page-${c.cartonId}`}
                     name={`page:${c.cartonId}`}
@@ -200,7 +205,7 @@ export function Upload({
                     inputMode="numeric"
                     min="1"
                     step="1"
-                    placeholder="Page"
+                    placeholder={t("page")}
                   />
                 </Field>
               ))}

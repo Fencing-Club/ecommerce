@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto"
 import { db } from "@/db"
 import { supplierCatalogImports } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { requireAccess, session } from "@/server/auth"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { commitImport, previewImport } from "@/server/product-import"
 import { readSheet } from "@/server/product-sheet"
 import { isAppOrigin } from "@/server/security"
@@ -18,12 +19,12 @@ const types = {
 // which the preview's hash guards against changes made in between. Each file is imported once.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
     if (s.org.kind !== "supplier") {
-      return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
+      return errorResponse("supplierWorkspaceRequired", 403)
     }
     requireAccess(s, "products", "edit")
     // The sheet sets prices.
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       !file.size ||
       file.size > maxBytes
     ) {
-      throw new Error("Upload the product template as a CSV or Excel file of up to 5 MB")
+      throw new LocalizedError("uploadProductTemplate")
     }
     if (mode !== "preview" && mode !== "commit") {
       throw new Error("Choose preview or import")
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     }
     const expected = String(form.get("revisionHash") ?? "")
     if (form.get("fileHash") !== fileHash) {
-      throw new Error("The file changed after the preview. Preview it again before importing")
+      throw new LocalizedError("fileChangedAfterPreview")
     }
     const objectKey = `supplier-catalogs/${s.org.id}/${fileHash}.${extension}`
     await putFile(objectKey, bytes, types[extension])
@@ -75,9 +76,6 @@ export async function POST(request: Request) {
     })
     return Response.json(result)
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Import failed" },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error, "importFailed") }, { status: failureStatus(error) })
   }
 }

@@ -1,0 +1,222 @@
+{
+  "title": "Impostazioni",
+  "delete": {
+    "title": "Elimina",
+    "description": "Definitivo e irreversibile",
+    "workspace": {
+      "title": "Elimina workspace",
+      "detail": "{workspace} e tutto ciò che contiene, per tutti",
+      "confirm": "Eliminare {workspace}?",
+      "field": "Nome del workspace",
+      "buyer": "I suoi ordini di acquisto, prodotti, collegamenti e il team vengono eliminati per tutti.",
+      "supplier": "I suoi prodotti, cataloghi e il team vengono eliminati per tutti. Gli acquirenti conservano i loro ordini di acquisto.",
+      "forwarder": "I suoi indirizzi e il team vengono eliminati per tutti. Gli acquirenti conservano i loro ordini di acquisto."
+    },
+    "account": {
+      "title": "Elimina account",
+      "detail": "Il tuo accesso e il tuo posto in ogni workspace",
+      "confirm": "Eliminare il tuo account?",
+      "field": "La tua email",
+      "removed": "Esci e vieni rimosso da tutti i workspace.",
+      "closing": "Esci e vieni rimosso da tutti i workspace. {count, plural, one {{workspaces} viene chiuso con il tuo account.} other {{workspaces} vengono chiusi con il tuo account.}}",
+      "handOver": "Prima trasferisci la proprietà di {workspaces}."
+    },
+    "cancel": "Annulla",
+    "close": "Chiudi"
+  },
+  "language": {
+    "title": "Lingua",
+    "description": "Solo per te",
+    "label": "Lingua",
+    "system": "Sistema ({language})"
+  },
+  "form": {
+    "save": "Salva",
+    "saved": "Salvato"
+  },
+  "profile": {
+    "title": "Profilo",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "position": "Qualifica",
+    "choose": "Scegli",
+    "company": "Azienda",
+    "website": "Sito web aziendale",
+    "enterCompany": "Inserisci la tua azienda"
+  },
+  "team": {
+    "title": "Team",
+    "description": "Persone in {workspace}",
+    "people": "{count, plural, one {# persona} other {# persone}}",
+    "invite": "Invita",
+    "inviteTo": "Invita in {workspace}",
+    "sendInvitation": "Invia invito",
+    "email": "Email",
+    "enterEmail": "Inserisci un indirizzo email",
+    "role": "Ruolo",
+    "roles": {
+      "owner": "Proprietario",
+      "admin": "Amministratore",
+      "member": "Membro"
+    },
+    "roleDescriptions": {
+      "admin": "Tutto, compresi team e impostazioni",
+      "member": "Solo le pagine che scegli"
+    },
+    "pages": "Pagine",
+    "choosePage": "Scegli almeno una pagina",
+    "seePrices": "Vedere prezzi e costi",
+    "needsPrices": "Richiede prezzi e costi",
+    "levels": {
+      "none": "Nessun accesso",
+      "view": "Visualizza",
+      "edit": "Modifica"
+    },
+    "changeAccess": "Modifica accesso",
+    "changeAccessFor": "Modifica accesso per {who}",
+    "save": "Salva",
+    "you": "Tu",
+    "more": "Altre azioni per {name}",
+    "remove": "Rimuovi",
+    "removeTitle": "Rimuovere {name}?",
+    "removeDescription": "Perderà subito l’accesso a {workspace}.",
+    "transferOwnership": "Trasferisci la proprietà",
+    "transferTitle": "Trasferire la proprietà a {name}?",
+    "transferDescription": "Diventa proprietario di {workspace} e tu resti amministratore.",
+    "cancel": "Annulla",
+    "invitationExpired": "Invito scaduto",
+    "invited": "Invitato, scade il {expires}",
+    "invitationSent": "Invito inviato, scade il {expires}",
+    "updating": "Aggiornamento di {email}",
+    "sendAgain": "Invia di nuovo",
+    "cancelInvitation": "Annulla invito"
+  },
+  "integrations": {
+    "title": "Integrazioni",
+    "description": "Negozi sincronizzati con Copacker",
+    "marketplaces": "Marketplace",
+    "marketplacesUnavailable": "Impossibile caricare da Amazon",
+    "stores": {
+      "shopify": "Prodotti, inventario, ordini, spese",
+      "amazon": "Ordini, inventario, spese, spedizioni",
+      "ebay": "Ordini, inventario"
+    },
+    "comingSoon": "Presto disponibile",
+    "connect": "Collega",
+    "notConnected": "Non collegato",
+    "connected": "Collegato",
+    "storeSettings": "Impostazioni di {store}",
+    "cancel": "Annulla",
+    "shopify": {
+      "title": "Collega Shopify",
+      "description": "Approverai Copacker in Shopify",
+      "store": "Negozio",
+      "storeDescription": "Link dell’admin o dominio myshopify.com",
+      "enterStore": "Inserisci il link dell’admin del tuo negozio o il dominio myshopify.com"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Collega Amazon",
+      "description": "Nel Solution Provider Portal di Amazon, apri il menu accanto all’app di Copacker, scegli Authorize e copia il refresh token. Il merchant token si trova in Seller Central, in Impostazioni, Informazioni sull’account.",
+      "connect": "Collega",
+      "merchantToken": "Merchant token",
+      "refreshToken": "Refresh token"
+    }
+  },
+  "excludedTags": {
+    "title": "Tag degli ordini esclusi",
+    "syncing": "Sincronizzazione dei tag da Shopify",
+    "none": "Nessuno",
+    "edit": "Modifica",
+    "editLabel": "Modifica i tag degli ordini esclusi",
+    "description": "Gli ordini Shopify con questi tag non vengono conteggiati.",
+    "tags": "Tag",
+    "addTag": "Aggiungi un tag",
+    "wildcard": "Usa * come carattere jolly, ad esempio amazon*",
+    "saveFailed": "Impossibile salvare i tag. Riprova.",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "saving": "Salvataggio…"
+  },
+  "restock": {
+    "title": "Riassortimento",
+    "description": "Usato da Riassortimento e Panoramica",
+    "salesPeriod": "Periodo di vendita",
+    "leadTime": "Tempo di consegna",
+    "days": "{count, plural, one {# giorno} other {# giorni}}",
+    "salesPeriodDays": "Periodo di vendita (giorni)",
+    "leadTimeDays": "Tempo di consegna (giorni)",
+    "leadTimeDescription": "Per i fornitori che non ne hanno uno proprio",
+    "enterDays": "Inserisci i giorni"
+  },
+  "timeZone": {
+    "title": "Fuso orario",
+    "description": "Per giorni e mesi nella Panoramica",
+    "label": "Fuso orario del negozio",
+    "automatic": "Automatico",
+    "automaticZone": "Automatico, {zone}"
+  },
+  "monthlyCosts": {
+    "title": "Costi mensili",
+    "description": "Costi che Shopify e Amazon non riportano",
+    "count": "{count, plural, =0 {Nessun costo mensile} one {# costo} other {# costi}}",
+    "allChannels": "Tutti i canali",
+    "between": "{channel}, dal {start} al {end}",
+    "since": "{channel}, dal {start}",
+    "until": "{channel}, fino al {end}",
+    "removeFailed": "Impossibile rimuovere questo costo",
+    "removing": "Rimozione di {name}",
+    "more": "Altre azioni per {name}",
+    "remove": "Rimuovi",
+    "add": "Aggiungi costo",
+    "addTitle": "Aggiungi costo mensile",
+    "name": "Nome",
+    "amount": "Importo mensile",
+    "channel": "Canale",
+    "paidSince": "Pagato dal",
+    "paidUntil": "Pagato fino al",
+    "enterName": "Inserisci un nome",
+    "enterAmount": "Inserisci l’importo",
+    "endBeforeStart": "La data di fine non può essere precedente alla data di inizio"
+  },
+  "supplierProfile": {
+    "title": "Profilo fornitore",
+    "description": "Dati di contatto visibili agli acquirenti",
+    "contactName": "Nome del referente",
+    "contactEmail": "Email del referente",
+    "phone": "Telefono",
+    "website": "Sito web"
+  },
+  "supplierForm": {
+    "submit": "Aggiungi fornitore",
+    "company": "Azienda fornitrice",
+    "email": "Email",
+    "emailDescription": "Aggiungine una per invitarlo subito."
+  },
+  "addresses": {
+    "title": "Indirizzi",
+    "description": "Dove vengono consegnati gli ordini di acquisto",
+    "pickupTitle": "Indirizzi di ritiro",
+    "pickupDescription": "Dove i corrieri ritirano i tuoi cartoni",
+    "count": "{count, plural, =0 {Nessun indirizzo} one {# indirizzo} other {# indirizzi}}",
+    "noPickupAddresses": "Nessun indirizzo di ritiro",
+    "add": "Aggiungi indirizzo",
+    "editTitle": "Modifica indirizzo",
+    "edit": "Modifica",
+    "remove": "Rimuovi",
+    "more": "Altre azioni per {name}",
+    "removing": "Rimozione di {name}",
+    "removeFailed": "Impossibile rimuovere questo indirizzo",
+    "stockArrivesAt": "La merce arriva presso {location}",
+    "stockArrivesAtShopify": "La merce arriva presso una sede Shopify",
+    "addPhone": "Aggiungi un numero di telefono per usarlo nelle spedizioni",
+    "supplierKeepsPickups": "Ora i ritiri li gestisce il tuo fornitore, rimuovi questo indirizzo quando l’avrà aggiunto",
+    "saveChanges": "Salva modifiche",
+    "saveAddress": "Salva indirizzo",
+    "name": "Nome dell’indirizzo",
+    "namePlaceholder": "Magazzino di Shenzhen",
+    "kind": "Tipo di indirizzo",
+    "shopifyLocation": "Sede Shopify",
+    "shopifyLocationDescription": "Gli ordini di acquisto inviati qui risultano in arrivo in Shopify",
+    "notLinked": "Non collegato"
+  }
+}

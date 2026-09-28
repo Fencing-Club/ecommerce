@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "Store",
+    "purchasing": "Purchasing",
+    "sales": "Sales",
+    "catalog": "Products"
+  },
+  "pages": {
+    "overview": "Overview",
+    "orders": "Orders",
+    "products": "Products",
+    "restock": "Restock",
+    "purchaseOrders": "Purchase orders",
+    "shipments": "Shipments",
+    "partners": "Partners",
+    "customers": "Customers",
+    "inventory": "Inventory",
+    "catalogs": "Catalogs",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "buyerWorkspace": "Buyer workspace",
+    "supplierWorkspace": "Supplier workspace",
+    "forwarderWorkspace": "Forwarder workspace",
+    "workspaces": "Workspaces",
+    "newWorkspace": "New workspace",
+    "signOut": "Sign out",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "emptyDescription": "Updates on your orders and shipments show here"
+  },
+  "search": {
+    "search": "Search",
+    "ctrl": "Ctrl",
+    "toMove": "<keys></keys> to move",
+    "toOpen": "<keys></keys> to open",
+    "toClose": "<keys></keys> to close",
+    "close": "Close",
+    "noResults": "No results for “{query}”",
+    "pages": "Pages",
+    "orders": "Orders",
+    "loadingOrders": "Loading orders",
+    "loadingResults": "Loading results",
+    "recentPurchaseOrders": "Recent purchase orders",
+    "products": "Products",
+    "purchaseOrders": "Purchase orders",
+    "shipments": "Shipments",
+    "partners": "Partners",
+    "supplier": "Supplier",
+    "forwarder": "Forwarder",
+    "failed": "Couldn't search everything. Try again."
+  }
+}

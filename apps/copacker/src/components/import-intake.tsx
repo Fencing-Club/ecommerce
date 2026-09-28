@@ -1,6 +1,7 @@
 "use client"
 
 import { Ellipsis } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { LinkRow } from "@/components/link-row"
@@ -8,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
 import { FormError, SubmitButton } from "./actions"
 import { StatusBadge, type StatusTone } from "./common"
@@ -30,19 +32,27 @@ const importsApi = api.injectEndpoints({
 // The imports route takes one PDF of up to 10 MB and 50 pages.
 const maxBytes = 10 * 1024 * 1024
 
-const statuses: Record<string, { label: string; tone: StatusTone }> = {
-  queued: { label: "Waiting", tone: "info" },
-  running: { label: "Reading", tone: "info" },
-  review: { label: "Ready for review", tone: "warning" },
-  failed: { label: "Failed", tone: "destructive" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
-  saved: { label: "Saved as draft", tone: "success" }
+// Each import status's tone; its label is under orders.intake.statuses.
+const statuses = {
+  queued: "info",
+  running: "info",
+  review: "warning",
+  failed: "destructive",
+  cancelled: "neutral",
+  saved: "success"
+} satisfies Record<string, StatusTone>
+
+function isKnownStatus(status: string): status is keyof typeof statuses {
+  return Object.hasOwn(statuses, status)
 }
 
 // The table's first and last columns line up with the card's header.
-const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
 
 export function ImportIntake() {
+  const t = useTranslations("orders.intake")
+  const errorMessage = useErrorMessage()
+  const locale = useLocale()
   const imports = importsApi.useImportsQuery(undefined, { pollingInterval: 5000, skipPollingIfUnfocused: true })
   const [start, upload] = importsApi.useStartImportMutation()
   const [change, changing] = importsApi.useChangeImportMutation()
@@ -65,7 +75,7 @@ export function ImportIntake() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Purchase order or invoice</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -90,7 +100,7 @@ export function ImportIntake() {
             <FileDropzone
               accept={pdfFiles}
               maxBytes={maxBytes}
-              hint="Up to 10 MB and 50 pages"
+              hint={t("hint")}
               file={file}
               onFileChange={(next) => {
                 setFile(next)
@@ -100,40 +110,39 @@ export function ImportIntake() {
               error={error ?? undefined}
             />
             <SubmitButton type="submit" pending={upload.isLoading} disabled={!file}>
-              Import
+              {t("import")}
             </SubmitButton>
           </form>
         </CardContent>
       </Card>
       <Card className="@container gap-0 overflow-hidden py-0">
         <CardHeader className="border-b p-4">
-          <CardTitle>Imports</CardTitle>
+          <CardTitle>{t("imports")}</CardTitle>
         </CardHeader>
         {listError && (
           <div className="border-b p-4">
             <FormError message={listError} />
           </div>
         )}
-        {imports.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading imports…</p>}
-        {imports.isSuccess && !items.length && <p className="p-4 text-sm text-muted-foreground">No imports yet</p>}
+        {imports.isLoading && <p className="p-4 text-sm text-muted-foreground">{t("loading")}</p>}
+        {imports.isSuccess && !items.length && <p className="p-4 text-sm text-muted-foreground">{t("empty")}</p>}
         {items.length > 0 && (
           <Table framed={false} className={edgeTable}>
             <TableHeader>
               <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead className="hidden @xl:table-cell">Uploaded</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("columns.file")}</TableHead>
+                <TableHead className="hidden @xl:table-cell">{t("columns.uploaded")}</TableHead>
+                <TableHead>{t("columns.status")}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t("columns.actions")}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item) => {
-                const status: { label: string; tone: StatusTone } = statuses[item.status] ?? {
-                  label: item.status,
-                  tone: "neutral"
-                }
+                const status: { label: string; tone: StatusTone } = isKnownStatus(item.status)
+                  ? { label: t(`statuses.${item.status}`), tone: statuses[item.status] }
+                  : { label: item.status, tone: "neutral" }
                 // A review opens the review page; a saved import, its draft purchase order.
                 const href = ["review", "saved"].includes(item.status) ? `/orders/import/${item.id}` : null
                 const cells = (
@@ -149,11 +158,11 @@ export function ImportIntake() {
                         </span>
                       )}
                       <span className="block text-xs text-muted-foreground @xl:hidden">
-                        {formatDate(item.createdAt)}
+                        {formatDate(item.createdAt, locale)}
                       </span>
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground @xl:table-cell">
-                      {formatDate(item.createdAt)}
+                      {formatDate(item.createdAt, locale)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
@@ -168,7 +177,7 @@ export function ImportIntake() {
                             render={<Link href={href} />}
                             className="hidden @md:inline-flex"
                           >
-                            {item.status === "saved" ? "Open draft" : "Review"}
+                            {item.status === "saved" ? t("openDraft") : t("review")}
                           </Button>
                         )}
                         {item.status === "failed" && (
@@ -178,12 +187,18 @@ export function ImportIntake() {
                             disabled={changing.isLoading}
                             onClick={() => update(item.id, "POST")}
                           >
-                            Retry
+                            {t("retry")}
                           </Button>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${item.filename}`} />}
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={t("moreFor", { file: item.filename })}
+                              />
+                            }
                           >
                             <Ellipsis />
                           </DropdownMenuTrigger>
@@ -194,11 +209,11 @@ export function ImportIntake() {
                                   href={`/api/imports/${item.id}/source`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  aria-label="View PDF"
+                                  aria-label={t("viewPdf")}
                                 />
                               }
                             >
-                              View PDF
+                              {t("viewPdf")}
                             </DropdownMenuItem>
                             {!["saved", "cancelled"].includes(item.status) && (
                               <DropdownMenuItem
@@ -206,7 +221,7 @@ export function ImportIntake() {
                                 disabled={changing.isLoading}
                                 onClick={() => update(item.id, "DELETE")}
                               >
-                                Cancel import
+                                {t("cancelImport")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>

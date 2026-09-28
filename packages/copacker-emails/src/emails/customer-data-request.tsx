@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 import { Fragment } from "react"
 import { Section, Text } from "react-email"
-import { Layout } from "../layout"
+import { type EmailCopy, Layout } from "../layout"
 import { Details } from "../parts"
 import { renderEmail } from "../render"
 import { color, font } from "../theme"
@@ -11,35 +11,32 @@ export type CustomerDataRequestProps = {
   appUrl: string
   // The store's Shopify domain, such as club.myshopify.com.
   shop: string
-  // Shopify's ID for the request.
   requestId: number
   // The requested orders Copacker holds, one line each.
-  orders: string[]
-  to: string
+  orders: ReadonlyArray<string>
+  // The language the copy is written in, such as "de". Numbers are written in it too.
+  lang: string
+  // The words, already in the reader's language. The note says Copacker holds no customer contact details.
+  copy: EmailCopy & {
+    note: string
+    labels: { store: string; request: string; ordersHeld: string }
+    // Said instead of how many orders Copacker holds when it holds none.
+    none: string
+    // What the order lines are, before them.
+    ordersIntro: string
+  }
 }
 
-const title = ({ shop }: CustomerDataRequestProps) => `Customer data request for ${shop}`
-
 // To the store's owners, who answer the customer: what Copacker holds about them.
-export default function CustomerDataRequest(props: CustomerDataRequestProps) {
-  const { appUrl, shop, requestId, orders } = props
-  const lead =
-    "Shopify sent Copacker a customer data request. Include what Copacker holds in your reply to the customer."
+export default function CustomerDataRequest({ appUrl, copy, lang, orders, requestId, shop }: CustomerDataRequestProps) {
+  const { labels } = copy
   return (
-    <Layout
-      appUrl={appUrl}
-      eyebrow="Shopify data request"
-      heading={title(props)}
-      lead={lead}
-      note="Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses."
-      preview={lead}
-      reason={`Shopify sent a customer data request for ${shop}, which is connected to Copacker.`}
-    >
+    <Layout appUrl={appUrl} copy={copy} lang={lang}>
       <Details
         rows={[
-          { label: "Store", value: shop },
-          { label: "Request", value: String(requestId) },
-          { label: "Orders Copacker holds", value: orders.length ? orders.length.toLocaleString("en-US") : "None" }
+          { label: labels.store, value: shop },
+          { label: labels.request, value: String(requestId) },
+          { label: labels.ordersHeld, value: orders.length ? orders.length.toLocaleString(lang) : copy.none }
         ]}
       />
       {orders.length ? (
@@ -57,7 +54,7 @@ export default function CustomerDataRequest(props: CustomerDataRequestProps) {
             className="cp-muted"
             style={{ color: color.muted, fontFamily: font, fontSize: 13, lineHeight: "20px", margin: "0 0 8px" }}
           >
-            Only the order details Copacker uses to plan restocks:
+            {copy.ordersIntro}
           </Text>
           {/* One paragraph with a line for each order, so the plain text lists them on consecutive lines too. */}
           <Text
@@ -91,9 +88,23 @@ CustomerDataRequest.PreviewProps = {
     "Order #1001, placed 2026-09-01, status Unfulfilled: 2 × CORD-2",
     "Order #1003, placed 2026-09-04, status Fulfilled: 1 × MASK-1"
   ],
-  to: "owner@club.example"
+  lang: "en",
+  copy: {
+    subject: "Customer data request for club.myshopify.com",
+    eyebrow: "Shopify data request",
+    heading: "Customer data request for club.myshopify.com",
+    lead: "Shopify sent Copacker a customer data request. Include what Copacker holds in your reply to the customer.",
+    preview:
+      "Shopify sent Copacker a customer data request. Include what Copacker holds in your reply to the customer.",
+    labels: { store: "Store", request: "Request", ordersHeld: "Orders Copacker holds" },
+    none: "None",
+    ordersIntro: "Only the order details Copacker uses to plan restocks:",
+    note: "Copacker doesn’t store customers’ names, email addresses, phone numbers, or mailing addresses.",
+    reason: "Shopify sent a customer data request for club.myshopify.com, which is connected to Copacker.",
+    tagline: "Restocking, handled."
+  }
 } satisfies CustomerDataRequestProps
 
 export function customerDataRequestEmail(props: CustomerDataRequestProps) {
-  return renderEmail(title(props), <CustomerDataRequest {...props} />)
+  return renderEmail(props.copy.subject, <CustomerDataRequest {...props} />)
 }

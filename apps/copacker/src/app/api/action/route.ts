@@ -3,10 +3,23 @@ import { addressSchema } from "@repo/aisle"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
-import { organizations, suppliers, contacts, jobs, shipments, documents, events, supplierProfiles } from "@/db/schema"
+import {
+  organizations,
+  suppliers,
+  contacts,
+  jobs,
+  shipments,
+  documents,
+  events,
+  profiles,
+  supplierProfiles
+} from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
+import { locales } from "@/i18n/locales"
 import type { ActionResult } from "@/lib/api"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
+import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import {
@@ -22,7 +35,7 @@ import {
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { deleteAccount, deleteWorkspace } from "@/server/deletion"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { amazonReference, cancelAmazonShipment, fbaPlanName } from "@/server/fba-shipments"
 import {
   createForwarder,
@@ -65,6 +78,7 @@ import {
   resendInvitation,
   transferOwnership
 } from "@/server/team"
+import { requestLocale, serverText } from "@/server/text"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
@@ -77,7 +91,7 @@ const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>(
 ])
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const { action, data } = inputSchema.parse(await request.json())
@@ -155,7 +169,7 @@ export async function POST(request: Request) {
         .from(suppliers)
         .where(and(eq(suppliers.buyerOrgId, s.org.id), eq(suppliers.name, input.name)))
       if (existing && !existing.removedAt) {
-        throw new Error(`${input.name} is already one of your suppliers`)
+        throw new LocalizedError("supplierAlreadyAdded", { name: input.name })
       }
       // Adding a removed supplier again restores it, so its earlier POs stay together. It joins again by invitation.
       const [supplier] = existing
@@ -174,7 +188,7 @@ export async function POST(request: Request) {
           .values({
             key: `invite:${supplier!.id}:${randomUUID()}`,
             kind: "email",
-            payload: { type: "invite", to: input.email, name: s.org.name, invitation }
+            payload: { type: "invite", to: input.email, name: s.org.name, invitation, locale: await requestLocale() }
           })
       }
       return Response.json({ id: supplier!.id })
@@ -208,17 +222,17 @@ export async function POST(request: Request) {
           )
           .returning()
         if (!supplier) {
-          throw new Error("This supplier has already joined or was removed")
+          throw new LocalizedError("supplierJoinedOrRemoved")
         }
         if (!supplier.email) {
-          throw new Error("Enter the supplier's email to invite them")
+          throw new LocalizedError("enterSupplierEmail")
         }
         // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
         // reused key carrying a different invitation.
         await tx.insert(jobs).values({
           key: `invite:${supplier.id}:${randomUUID()}`,
           kind: "email",
-          payload: { type: "invite", to: supplier.email, name: s.org.name, invitation }
+          payload: { type: "invite", to: supplier.email, name: s.org.name, invitation, locale: await requestLocale() }
         })
       })
       return Response.json({ ok: true })
@@ -290,10 +304,8 @@ export async function POST(request: Request) {
         }))
         .parse(data)
       if (!contactKindsFor(s.org.kind).includes(input.kind)) {
-        throw new Error(
-          s.org.kind === "supplier"
-            ? "Supplier workspaces can save pickup addresses only"
-            : "Save delivery addresses here. Forwarders' addresses are on the Partners page"
+        throw new LocalizedError(
+          s.org.kind === "supplier" ? "supplierPickupAddressesOnly" : "saveDeliveryAddressesHere"
         )
       }
       await db()
@@ -305,7 +317,7 @@ export async function POST(request: Request) {
       requireAdmin(s)
       // An empty choice goes back to each viewer's computer's time zone.
       const input = z
-        .object({ timeZone: z.union([z.literal(""), z.string().refine(isTimeZone, "Choose a time zone")]) })
+        .object({ timeZone: z.union([z.literal(""), z.string().refine(isTimeZone, "errors.chooseTimeZone")]) })
         .parse(data)
       await db()
         .update(organizations)
@@ -327,7 +339,7 @@ export async function POST(request: Request) {
     if (action === "workspace.excludedShopifyTags") {
       requireAdmin(s)
       if (s.org.kind !== "buyer") {
-        throw new Error("A buyer workspace is required")
+        throw new LocalizedError("buyerWorkspaceRequired")
       }
       const input = z.object({ tags: z.array(z.string().trim().min(1).max(255)).max(50) }).parse(data)
       // Shopify compares tags without regard to case, so the first spelling of each is kept.
@@ -339,7 +351,7 @@ export async function POST(request: Request) {
     if (action === "supplier.profile") {
       requireAdmin(s)
       if (s.org.kind !== "supplier") {
-        throw new Error("A supplier workspace is required")
+        throw new LocalizedError("supplierWorkspaceRequired")
       }
       // The supplier's own contact details, which their buyers see.
       const parsed = supplierContactSchema.parse(data)
@@ -374,10 +386,8 @@ export async function POST(request: Request) {
         }))
         .parse(data)
       if (!contactKindsFor(s.org.kind).includes(input.kind)) {
-        throw new Error(
-          s.org.kind === "supplier"
-            ? "Supplier workspaces can save pickup addresses only"
-            : "Save delivery addresses here. Forwarders' addresses are on the Partners page"
+        throw new LocalizedError(
+          s.org.kind === "supplier" ? "supplierPickupAddressesOnly" : "saveDeliveryAddressesHere"
         )
       }
       // Only the workspace's own addresses: a partner's addresses change through the partner's actions, which need
@@ -395,7 +405,7 @@ export async function POST(request: Request) {
         )
         .returning({ id: contacts.id })
       if (!updated.length) {
-        return Response.json({ error: "This address was removed. Refresh the page and try again" }, { status: 404 })
+        return errorResponse("addressRemovedRefresh", 404)
       }
       return Response.json({ ok: true })
     }
@@ -426,7 +436,7 @@ export async function POST(request: Request) {
         )
         .returning({ id: contacts.id })
       if (!deleted.length) {
-        return Response.json({ error: "This address was already removed" }, { status: 404 })
+        return errorResponse("addressAlreadyRemoved", 404)
       }
       return Response.json({ ok: true })
     }
@@ -482,7 +492,7 @@ export async function POST(request: Request) {
       await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
         if (!initial) {
-          throw new Error("Shipment not found")
+          throw new LocalizedError("shipmentNotFound")
         }
         await accessibleOrder(s, initial.orderId, tx, true)
         const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
@@ -492,7 +502,7 @@ export async function POST(request: Request) {
           shipment.operation === "sending" ||
           shipment.revision !== revision()
         ) {
-          throw new Error("Reconcile the uncertain Amazon creation before retrying")
+          throw new LocalizedError("reconcileBeforeRetry")
         }
         await tx.update(shipments).set({ status: "queued", issue: null }).where(eq(shipments.id, shipment.id))
         await tx
@@ -514,7 +524,7 @@ export async function POST(request: Request) {
       requireAccess(s, "shipments", "edit")
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
       if (!shipment?.snapshot || !shipment.packing || !["needs_attention", "correction"].includes(shipment.status)) {
-        throw new Error("Shipment is not awaiting reconciliation")
+        throw new LocalizedError("shipmentNotAwaitingReconciliation")
       }
       const { order } = await accessibleOrder(s, shipment.orderId)
       const fba = shipment.amazonNetwork === "fba"
@@ -524,13 +534,13 @@ export async function POST(request: Request) {
         .regex(fba ? /^wf[0-9a-f-]{36}$/ : /^STAR-[A-Z0-9]+$/)
         .parse(data.amazonOrderId)
       if (shipment.amazonOrderId && shipment.amazonOrderId !== amazonOrderId) {
-        throw new Error("This shipment is already linked to a different Amazon order")
+        throw new LocalizedError("shipmentLinkedToOtherAmazonOrder")
       }
       const api = await amazonFor(s.org.id, order.amazonSellerId)
       const reference = (fba ? fbaPlanName : amazonReference)(shipment.id, shipment.revision)
       const found = fba ? (await api.fbaPlan(amazonOrderId)).name : (await api.order(amazonOrderId)).externalReferenceId
       if (found !== reference) {
-        throw new Error("Amazon order does not belong to this shipment revision")
+        throw new LocalizedError("amazonOrderNotForShipment")
       }
       if (order.buyerOrgId !== s.org.id) {
         throw new Error("Account mismatch")
@@ -538,7 +548,7 @@ export async function POST(request: Request) {
       await db().transaction(async (tx) => {
         const [current] = await tx.select().from(shipments).where(eq(shipments.id, shipment.id)).for("update")
         if (current?.revision !== shipment.revision || current?.status !== shipment.status) {
-          throw new Error("Shipment changed while reconciling")
+          throw new LocalizedError("shipmentChangedWhileReconciling")
         }
         await tx
           .update(shipments)
@@ -563,12 +573,12 @@ export async function POST(request: Request) {
       requireAccess(s, "shipments", "edit")
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
       if (!shipment?.amazonOrderId || shipment.status !== "correction") {
-        throw new Error("An existing Amazon shipment must be in correction before replacement")
+        throw new LocalizedError("amazonShipmentNotInCorrection")
       }
       const { order } = await accessibleOrder(s, shipment.orderId)
       // Amazon cancels an AWD order at once and an FBA inbound plan in the background, so a plan may need a moment.
       if (!(await cancelAmazonShipment(await amazonFor(s.org.id, order.amazonSellerId), shipment))) {
-        throw new Error("Amazon is still cancelling this shipment. Try again in a minute")
+        throw new LocalizedError("amazonStillCancelling")
       }
       await db()
         .update(shipments)
@@ -582,7 +592,11 @@ export async function POST(request: Request) {
         )
       await db()
         .insert(events)
-        .values({ orderId: shipment.orderId, actor: s.user.id, message: "Amazon shipment cancelled" })
+        .values({
+          orderId: shipment.orderId,
+          actor: s.user.id,
+          ...eventMessage({ key: "amazonShipmentCancelled", values: null })
+        })
       return Response.json({ ok: true })
     }
     if (action === "shipment.received") {
@@ -612,6 +626,15 @@ export async function POST(request: Request) {
       requireAccess(s, "orders", "edit")
       await deleteDraftOrder(s, id())
       return Response.json({ redirect: "/orders" })
+    }
+    if (action === "profile.locale") {
+      // An empty choice goes back to the computer's language.
+      const input = z.object({ locale: z.union([z.literal(""), z.enum(locales)]) }).parse(data)
+      await db()
+        .update(profiles)
+        .set({ locale: input.locale || null, updatedAt: new Date() })
+        .where(eq(profiles.userId, s.user.id))
+      return Response.json({ ok: true })
     }
     if (action === "profile.update") {
       return Response.json(await saveProfile(s, data))
@@ -644,7 +667,7 @@ export async function POST(request: Request) {
       requireAdmin(s)
       const [job] = await db().select().from(jobs).where(eq(jobs.id, id()))
       if (!job || job.kind === "amazon" || job.status !== "failed") {
-        throw new Error("This job cannot be retried here")
+        throw new LocalizedError("jobCannotBeRetried")
       }
       const orderId = z.uuid().parse(job.payload.orderId)
       await accessibleOrder(s, orderId)
@@ -659,7 +682,7 @@ export async function POST(request: Request) {
       await db().transaction(async (tx) => {
         const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
         if (!initial) {
-          throw new Error("Shipment not found")
+          throw new LocalizedError("shipmentNotFound")
         }
         const { supplier } = await accessibleOrder(s, initial.orderId, tx, true)
         const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
@@ -669,13 +692,13 @@ export async function POST(request: Request) {
           shipment.status !== "waiting_labels" ||
           shipment.revision !== revision()
         ) {
-          throw new Error("Shipment is not ready for label release")
+          throw new LocalizedError("shipmentNotReadyForRelease")
         }
         const docs = await tx
           .select()
           .from(documents)
           .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-        const issues = releaseIssues(shipment, docs, missingLabels)
+        const issues = releaseIssues(shipment, docs, missingLabels, await serverText())
         if (issues.length) {
           throw new Error(issues.map((issue) => issue.message).join("\n"))
         }
@@ -691,23 +714,16 @@ export async function POST(request: Request) {
             payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
           })
           .onConflictDoNothing()
-        await tx
-          .insert(events)
-          .values({ orderId: shipment.orderId, actor: s.user.id, message: "Shipping labels released to supplier" })
+        await tx.insert(events).values({
+          orderId: shipment.orderId,
+          actor: s.user.id,
+          ...eventMessage({ key: "labelsReleased", values: null })
+        })
       })
       return Response.json({ ok: true })
     }
     throw new Error("Unknown action")
   } catch (error) {
-    let message = "Request failed"
-    if (error instanceof z.ZodError) {
-      message = error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n")
-    } else if (error instanceof Error) {
-      message = error.message
-    }
-    return Response.json(
-      { error: message.startsWith("Failed query:") ? "Could not save this change. Refresh and try again" : message },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error) }, { status: failureStatus(error) })
   }
 }

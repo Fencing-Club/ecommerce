@@ -1,6 +1,7 @@
 "use client"
 
 import { Play } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils"
 // The ad, played in a dialog. The film is served from the copacker-media R2 bucket, loads only once it's opened, and has
 // its captions burned in. The button is drawn for a dark stage; `className` restyles it for another.
 export function Film({ className }: { className?: string }) {
+  const t = useTranslations("marketing.film")
   return (
     <Dialog>
       <DialogTrigger
@@ -23,11 +25,11 @@ export function Film({ className }: { className?: string }) {
         }
       >
         <Play className="fill-current" />
-        Watch the video
+        {t("watch")}
         <span className="tabular-nums opacity-60">1:45</span>
       </DialogTrigger>
       <DialogContent className="dark gap-0 overflow-hidden rounded-2xl bg-black p-0 ring-white/15 sm:max-w-5xl">
-        <DialogTitle className="sr-only">Copacker: Restocking, handled</DialogTitle>
+        <DialogTitle className="sr-only">{t("title")}</DialogTitle>
         {/* The captions are part of the picture, so there's no separate track. */}
         {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
         <video

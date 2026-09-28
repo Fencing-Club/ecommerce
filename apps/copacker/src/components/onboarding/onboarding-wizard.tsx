@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { FormProvider, type Path, useForm, useWatch } from "react-hook-form"
@@ -9,24 +10,23 @@ import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/actions"
 import { BrandMark, Stage } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
-import { errorMessage, useActionMutation } from "@/lib/api"
-import { formErrorMap } from "@/lib/form-errors"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { companySchema, personSchema, placeSchema, type WorkspaceKind, workspaceKinds } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
 import {
   AboutFields,
   AddressStepFields,
-  addressNames,
   CompanyFields,
   RoleFields,
-  stepHeading,
+  useStepHeading,
   type WizardStep
 } from "./wizard-steps"
 import { WorkspacePreview } from "./workspace-preview"
 
 const wizardSchema = z.object({
   person: personSchema,
-  kind: z.union([z.enum(workspaceKinds), z.literal("")]).refine((kind) => kind !== "", "Choose one"),
+  kind: z.union([z.enum(workspaceKinds), z.literal("")]).refine((kind) => kind !== "", "onboarding.wizard.chooseRole"),
   company: companySchema,
   address: placeSchema
 })
@@ -58,13 +58,6 @@ export type WizardFinish =
   | { type: "join"; token: string; workspace: string }
   | { type: "profile"; company: string; next: string }
 
-function finishLabel(finish: WizardFinish) {
-  if (finish.type === "workspace") {
-    return "Create workspace"
-  }
-  return finish.type === "join" ? `Join ${finish.workspace}` : "Continue"
-}
-
 // The browser's country, to start an address from, such as US for en-US.
 function browserCountry() {
   try {
@@ -95,8 +88,11 @@ export function OnboardingWizard({
   // The corner across from the logo: who's signed in and a way out.
   account: React.ReactNode
 }) {
+  const t = useTranslations("onboarding")
   const router = useRouter()
   const [run] = useActionMutation()
+  const errorMessage = useErrorMessage()
+  const formErrorMap = useFormErrorMap()
   const form = useForm<WizardValues, unknown, z.output<typeof wizardSchema>>({
     resolver: zodResolver(wizardSchema, { error: formErrorMap }),
     defaultValues: initial,
@@ -112,7 +108,14 @@ export function OnboardingWizard({
   const kind = settled ?? chosen
   const step = steps[index] ?? "about"
   const last = index === steps.length - 1
-  const { title, description } = stepHeading(step, kind)
+  const { title, description } = useStepHeading(step, kind)
+
+  function finishLabel() {
+    if (finish.type === "workspace") {
+      return t("wizard.createWorkspace")
+    }
+    return finish.type === "join" ? t("wizard.join", { workspace: finish.workspace }) : t("wizard.continue")
+  }
 
   // A new step's title takes focus, so a screen reader announces it; the first step's doesn't, on arrival.
   useEffect(() => {
@@ -129,7 +132,7 @@ export function OnboardingWizard({
         form.setValue(name, value)
       }
     }
-    fill("address.name", kind ? addressNames[kind] : "", address.name)
+    fill("address.name", kind ? t(`addressNames.${kind}`) : "", address.name)
     fill("address.address.name", `${person.firstName} ${person.lastName}`.trim().slice(0, 50), address.address.name)
     fill("address.address.phoneNumber", company.phone, address.address.phoneNumber ?? "")
     fill("address.address.countryCode", browserCountry(), address.address.countryCode)
@@ -185,11 +188,7 @@ export function OnboardingWizard({
       return
     }
     if (step === "address" && kind === "supplier" && !form.getValues("address.address.phoneNumber")?.trim()) {
-      form.setError(
-        "address.address.phoneNumber",
-        { message: "Add a pickup phone number. Amazon needs it to schedule pickup" },
-        { shouldFocus: true }
-      )
+      form.setError("address.address.phoneNumber", { message: t("wizard.pickupPhone") }, { shouldFocus: true })
       return
     }
     if (last) {
@@ -227,7 +226,7 @@ export function OnboardingWizard({
               {steps.length > 1 && (
                 <div className="flex flex-col gap-2.5">
                   <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                    Step {index + 1} of {steps.length}
+                    {t("wizard.step", { current: index + 1, total: steps.length })}
                   </span>
                   <div className="flex gap-1.5" aria-hidden>
                     {steps.map((item, position) => (
@@ -246,14 +245,14 @@ export function OnboardingWizard({
                 key={step}
                 className={cn(
                   "flex flex-col gap-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:ease-out",
-                  moved && direction === "forward" && "motion-safe:slide-in-from-right-4",
-                  moved && direction === "back" && "motion-safe:slide-in-from-left-4"
+                  moved && direction === "forward" && "motion-safe:slide-in-from-end-4",
+                  moved && direction === "back" && "motion-safe:slide-in-from-start-4"
                 )}
               >
                 <div className="flex flex-col gap-2">
                   {invitedBy && (
                     <span className="w-fit rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                      Invited by {invitedBy}
+                      {t("wizard.invitedBy", { name: invitedBy })}
                     </span>
                   )}
                   <h1
@@ -274,11 +273,11 @@ export function OnboardingWizard({
               <div className="flex items-center gap-2">
                 {index > 0 && (
                   <Button type="button" variant="ghost" className="h-10" onClick={() => go(index - 1)}>
-                    <ArrowLeft data-icon="inline-start" />
-                    Back
+                    <ArrowLeft data-icon="inline-start" className="rtl:rotate-180" />
+                    {t("wizard.back")}
                   </Button>
                 )}
-                <div className="ml-auto flex items-center gap-2">
+                <div className="ms-auto flex items-center gap-2">
                   {step === "address" && last && (
                     <SubmitButton
                       type="button"
@@ -288,7 +287,7 @@ export function OnboardingWizard({
                       disabled={pending === "finish"}
                       onClick={() => void complete(false, "skip")}
                     >
-                      Skip for now
+                      {t("wizard.skip")}
                     </SubmitButton>
                   )}
                   <SubmitButton
@@ -297,8 +296,8 @@ export function OnboardingWizard({
                     pending={pending === "finish"}
                     disabled={pending === "skip"}
                   >
-                    {last ? finishLabel(finish) : "Continue"}
-                    {!last && <ArrowRight data-icon="inline-end" />}
+                    {last ? finishLabel() : t("wizard.continue")}
+                    {!last && <ArrowRight data-icon="inline-end" className="rtl:rotate-180" />}
                   </SubmitButton>
                 </div>
               </div>

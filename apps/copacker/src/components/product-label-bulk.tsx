@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronDown, Download, Search, Tags } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Field, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { api, errorMessage } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { api } from "@/lib/api"
 import { type ProductLabel, productLabels } from "@/lib/product-label"
 import { FormError } from "./actions"
 
@@ -26,12 +28,6 @@ const labelsApi = api.injectEndpoints({
   })
 })
 
-const labelNames: Record<ProductLabel, string> = {
-  standard: "Standard label",
-  uploaded: "Uploaded label",
-  none: "No label"
-}
-
 // Saves a PDF the browser received, under the name the server gave it.
 function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob)
@@ -45,6 +41,8 @@ function save(blob: Blob, name: string) {
 // Chooses several products at once to set their label type, such as marking uniforms as needing uploaded labels, or to
 // download all their labels as one PDF.
 export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
+  const t = useTranslations("products")
+  const errorMessage = useErrorMessage()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<string[]>([])
@@ -70,11 +68,11 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
     setStatus("")
     try {
       const { updated } = await assign({ productIds: selected, productLabel }).unwrap()
-      setStatus(`${updated} ${updated === 1 ? "product" : "products"} set to ${labelNames[productLabel].toLowerCase()}`)
+      setStatus(t("labels.assigned", { count: updated, label: productLabel }))
       void refetch()
       onChanged()
     } catch (e) {
-      setError(errorMessage(e, "The label type couldn’t be saved. Try again."))
+      setError(errorMessage(e, t("labels.assignFailed")))
     }
   }
 
@@ -93,18 +91,14 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
         throw new Error(
           typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
             ? body.error
-            : "The labels couldn’t be made. Try again."
+            : t("labels.downloadFailed")
         )
       }
-      save(await response.blob(), "Product labels.pdf")
+      save(await response.blob(), t("labels.fileName"))
       const skipped = Number(response.headers.get("x-skipped-labels") ?? 0)
-      setStatus(
-        skipped
-          ? `Downloaded, left out ${skipped} ${skipped === 1 ? "variation" : "variations"} without a label`
-          : "Downloaded"
-      )
+      setStatus(skipped ? t("labels.downloadedSkipped", { count: skipped }) : t("labels.downloaded"))
     } catch (e) {
-      setError(errorMessage(e, "The labels couldn’t be made. Try again."))
+      setError(errorMessage(e, t("labels.downloadFailed")))
     } finally {
       setDownloading(false)
     }
@@ -125,11 +119,11 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
     >
       <SheetTrigger render={<Button variant="outline" size="sm" />}>
         <Tags data-icon="inline-start" />
-        Manage labels
+        {t("labels.manage")}
       </SheetTrigger>
       <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>Manage labels</SheetTitle>
+          <SheetTitle>{t("labels.manage")}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-3 border-b p-4">
           <InputGroup>
@@ -138,8 +132,8 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
             </InputGroupAddon>
             <InputGroupInput
               type="search"
-              aria-label="Search products"
-              placeholder="Search products"
+              aria-label={t("labels.search")}
+              placeholder={t("labels.search")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -159,16 +153,17 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
               }
             />
             <FieldLabel htmlFor="label-products-all" className="font-normal">
-              Select all {shown.length}
-              {query ? " matching" : ""}
+              {query
+                ? t("labels.selectAllMatching", { count: shown.length })
+                : t("labels.selectAll", { count: shown.length })}
             </FieldLabel>
           </Field>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {isLoading && <p className="p-4 text-sm text-muted-foreground">Loading products…</p>}
-          {!isLoading && !shown.length && <p className="p-4 text-sm text-muted-foreground">No products match</p>}
+          {isLoading && <p className="p-4 text-sm text-muted-foreground">{t("labels.loading")}</p>}
+          {!isLoading && !shown.length && <p className="p-4 text-sm text-muted-foreground">{t("labels.noMatch")}</p>}
           {!isLoading && shown.length > 0 && (
-            <ul aria-label="Products" className="divide-y">
+            <ul aria-label={t("labels.products")} className="divide-y">
               {shown.map((choice) => {
                 const id = `label-product-${choice.productId}`
                 return (
@@ -181,11 +176,11 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
                     <label htmlFor={id} className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="text-sm font-medium [overflow-wrap:anywhere]">{choice.title}</span>
                       <span className="text-xs text-muted-foreground">
-                        {choice.variations === 1 ? "1 variation" : `${choice.variations} variations`}
+                        {t("labels.variationCount", { count: choice.variations })}
                       </span>
                     </label>
                     <Badge variant={choice.productLabel === "uploaded" ? "secondary" : "outline"}>
-                      {labelNames[choice.productLabel]}
+                      {t(`labelTypes.${choice.productLabel}`)}
                     </Badge>
                   </li>
                 )
@@ -197,7 +192,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
           <FormError message={error} />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground" aria-live="polite">
-              {status || `${selected.length} selected`}
+              {status || t("labels.selected", { count: selected.length })}
             </p>
             <div className="flex flex-wrap gap-2">
               {editable && (
@@ -205,13 +200,13 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
                   <DropdownMenuTrigger
                     render={<Button type="button" variant="outline" disabled={!selected.length || busy} />}
                   >
-                    Set label type
+                    {t("labels.setType")}
                     <ChevronDown data-icon="inline-end" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     {productLabels.map((productLabel) => (
                       <DropdownMenuItem key={productLabel} onClick={() => void setLabel(productLabel)}>
-                        {labelNames[productLabel]}
+                        {t(`labelTypes.${productLabel}`)}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -219,7 +214,7 @@ export function ProductLabelBulk({ onChanged }: { onChanged: () => void }) {
               )}
               <Button type="button" disabled={!selected.length || busy} onClick={() => void download()}>
                 <Download data-icon="inline-start" />
-                {downloading ? "Making labels…" : "Download labels"}
+                {downloading ? t("labels.making") : t("labels.download")}
               </Button>
             </div>
           </div>

@@ -4,21 +4,22 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "@/server/access"
 import { session, requireAccess, requireBuyer } from "@/server/auth"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
 import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   const s = await session()
   try {
     if (Number(request.headers.get("content-length") ?? 0) > 34 * 1024 * 1024) {
-      throw new Error("File is too large")
+      throw new LocalizedError("fileTooLarge")
     }
     const form = await request.formData(),
       orderId = z.uuid().parse(form.get("orderId"))
@@ -31,12 +32,12 @@ export async function POST(request: Request) {
     const { order } = await accessibleOrder(s, orderId)
     const file = form.get("file")
     if (!(file instanceof File) || file.size > 32 * 1024 * 1024) {
-      throw new Error("Choose a PDF smaller than 32 MB")
+      throw new LocalizedError("choosePdfUnder32")
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
     await validatePdf(bytes)
     if (kind === "product_label" && (await splitPdfPages(bytes)).length !== 1) {
-      throw new Error("Upload one label sheet for this product variation")
+      throw new LocalizedError("uploadOneLabelSheet")
     }
     const shipmentId = form.get("shipmentId") ? z.uuid().parse(form.get("shipmentId")) : null
     const [shipment] = shipmentId
@@ -46,17 +47,17 @@ export async function POST(request: Request) {
           .where(and(eq(shipments.id, shipmentId), eq(shipments.orderId, orderId)))
       : []
     if (kind !== "product_label" && !shipment) {
-      throw new Error("Choose the shipment for this document")
+      throw new LocalizedError("chooseDocumentShipment")
     }
     if (kind === "invoice" && shipment && !["packing", "correction"].includes(shipment.status)) {
-      throw new Error("Request a correction before changing a submitted invoice")
+      throw new LocalizedError("correctionBeforeInvoiceChange")
     }
     if (kind === "shipping_label" && shipment?.status !== "waiting_labels") {
-      throw new Error("This shipment is not waiting for shipping labels")
+      throw new LocalizedError("shipmentNotWaitingForLabels")
     }
     const itemId = kind === "product_label" ? z.uuid().parse(form.get("itemId")) : null
     if (itemId && !order.data.items.some((i) => i.id === itemId)) {
-      throw new Error("Product is not on this purchase order")
+      throw new LocalizedError("productNotOnOrder")
     }
     const uploads: Array<{ data: Uint8Array; cartonId: string | null; name: string }> = []
     if (kind === "shipping_label") {
@@ -69,13 +70,13 @@ export async function POST(request: Request) {
         new Set(assignments.map((a) => a.cartonId)).size !== assignments.length ||
         new Set(assignments.map((a) => a.page)).size !== assignments.length
       ) {
-        throw new Error("Each label page and carton may be assigned once")
+        throw new LocalizedError("labelAssignedOnce")
       }
       const pages = await splitPdfPages(bytes)
       for (const assignment of assignments) {
         const page = pages.find((p) => p.page === assignment.page)
         if (!page || !shipment?.packing?.cartons.some((c) => c.cartonId === assignment.cartonId)) {
-          throw new Error("Label assignment has an unknown carton or page")
+          throw new LocalizedError("labelAssignmentUnknown")
         }
         uploads.push({
           data: page.data,
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
     await db().transaction(async (tx) => {
       const { order: fresh } = await accessibleOrder(s, orderId, tx, true)
       if (fresh.revision !== order.revision) {
-        throw new Error("The purchase order changed during upload. Try again")
+        throw new LocalizedError("orderChangedDuringUpload")
       }
       if (kind === "product_label") {
         const existing = await tx.select().from(shipments).where(eq(shipments.orderId, orderId))
@@ -120,13 +121,13 @@ export async function POST(request: Request) {
               row.packing?.cartons.some((c) => c.items.some((i) => i.itemId === itemId))
           )
         ) {
-          throw new Error("This product label is part of a released shipment. Request a correction before replacing it")
+          throw new LocalizedError("productLabelReleased")
         }
       }
       if (shipmentId) {
         const [freshShipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
         if (freshShipment?.revision !== shipment?.revision || freshShipment?.status !== shipment?.status) {
-          throw new Error("Shipment changed during upload. Try again")
+          throw new LocalizedError("shipmentChangedDuringUpload")
         }
       }
       for (const document of staged) {
@@ -160,12 +161,7 @@ export async function POST(request: Request) {
     return Response.json({ documents: staged.map((d) => ({ id: d.id, name: d.name })) })
   } catch (error) {
     return Response.json(
-      {
-        error:
-          error instanceof Error && !error.message.startsWith("Failed query:")
-            ? error.message
-            : "Document upload failed"
-      },
+      { error: await failureMessage(error, "documentUploadFailed") },
       { status: failureStatus(error) }
     )
   }

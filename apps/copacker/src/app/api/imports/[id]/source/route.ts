@@ -3,6 +3,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
 import { session, requireBuyer, requireMembership, requirePage } from "@/server/auth"
+import { errorTextResponse } from "@/server/errors"
 import { getFile } from "@/server/storage"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,14 +12,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   requirePage(s, "orders", "edit")
   const { id } = await params
   if (!z.uuid().safeParse(id).success) {
-    return new Response("Not found", { status: 404 })
+    return errorTextResponse("notFound", 404)
   }
   const [record] = await db()
     .select()
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   if (!record) {
-    return new Response("Not found", { status: 404 })
+    return errorTextResponse("notFound", 404)
   }
   const bytes = await getFile(record.objectKey)
   await requireMembership(s.user.id, s.org.id)

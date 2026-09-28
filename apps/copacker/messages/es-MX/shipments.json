@@ -1,0 +1,180 @@
+{
+  "list": {
+    "title": "Envíos",
+    "stats": {
+      "packing": "Empacando",
+      "actionNeeded": "Requiere acción",
+      "waitingOnBuyer": "Esperando al comprador",
+      "readyForPickup": "Listo para recolección"
+    },
+    "amazonFailed": {
+      "title": "No se cargaron los envíos de Amazon",
+      "description": "Actualiza la página para intentarlo de nuevo."
+    },
+    "tabsLabel": "Estado del envío",
+    "tabs": {
+      "active": "Activos",
+      "received": "Recibidos",
+      "cancelled": "Cancelados",
+      "all": "Todos"
+    },
+    "empty": {
+      "active": "No hay envíos activos",
+      "received": "No hay envíos recibidos",
+      "cancelled": "No hay envíos cancelados",
+      "all": "No hay envíos"
+    },
+    "columns": {
+      "shipment": "Envío",
+      "supplier": "Proveedor",
+      "customer": "Cliente",
+      "destination": "Destino",
+      "cartons": "Cajas",
+      "readyDate": "Fecha de disponibilidad",
+      "status": "Estado"
+    },
+    "shipmentNumber": "Envío {number}",
+    "opensInSellerCentral": "(se abre en Seller Central)",
+    "none": {
+      "title": "Aún no hay envíos",
+      "buyerDescription": "Crea uno desde una orden de compra enviada",
+      "supplierDescription": "Crea uno desde un pedido",
+      "viewPurchaseOrders": "Ver órdenes de compra",
+      "viewOrders": "Ver pedidos"
+    }
+  },
+  "detail": {
+    "metaTitle": "Envío",
+    "title": "Envío {number}",
+    "cartonCount": "{count, plural, one {# caja} other {# cajas}}",
+    "parents": {
+      "purchaseOrders": "Órdenes de compra",
+      "orders": "Pedidos"
+    },
+    "opensInSellerCentral": "(se abre en Seller Central)",
+    "actions": {
+      "markShipped": "Marcar como enviado",
+      "markReceived": "Marcar como recibido",
+      "retry": "Reintentar envío",
+      "cancelInAmazon": "Cancelar en Amazon"
+    },
+    "needsAttention": "Requiere atención",
+    "changesWaiting": {
+      "title": "Cambios en espera de aprobación",
+      "buyer": "El empaque se habilita cuando respondas a los cambios propuestos en la orden de compra.",
+      "supplier": "El empaque se habilita cuando el cliente responda a los cambios propuestos en el pedido.",
+      "viewPurchaseOrder": "Ver orden de compra",
+      "viewOrder": "Ver pedido"
+    },
+    "invoiceChanges": {
+      "title": "Cambios en la factura",
+      "pricePerUnit": "Precio por unidad",
+      "supplierSku": "SKU del proveedor",
+      "changedTo": "cambió a",
+      "waitingForBuyer": "Esperando la aprobación del comprador"
+    },
+    "labels": {
+      "title": "Etiquetas de envío",
+      "waiting": "Esperando las etiquetas de envío",
+      "fba": "Reserva el transporte a Amazon y luego sube las etiquetas de envío",
+      "agl": "Reserva el transporte AGL en Amazon y luego sube las etiquetas de envío"
+    },
+    "creating": {
+      "title": "Creando el envío de Amazon",
+      "description": "Suele tardar unos minutos"
+    },
+    "packet": {
+      "title": "Paquete de documentos listo",
+      "description": "Imprime las etiquetas a tamaño real",
+      "downloadLabel": "Descargar paquete de documentos del proveedor",
+      "download": "Descargar paquete de documentos",
+      "incompleteTitle": "Paquete de documentos incompleto",
+      "waitingForLabels": "Esperando las etiquetas del comprador"
+    },
+    "cartons": {
+      "title": "Cajas",
+      "carton": "Caja",
+      "product": "Producto",
+      "units": "Unidades",
+      "dimensions": "Dimensiones (cm)",
+      "weight": "Peso (kg)",
+      "amazonLabel": "Etiqueta de Amazon"
+    },
+    "pickup": {
+      "title": "Recolección",
+      "ready": "Listo el {date}"
+    },
+    "documents": {
+      "title": "Documentos",
+      "empty": "Aún no hay documentos"
+    }
+  },
+  "actions": {
+    "approve": {
+      "updateCost": "Actualizar también los costos unitarios en Shopify",
+      "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra",
+      "submit": "Aprobar cambios"
+    },
+    "release": {
+      "submit": "Liberar etiquetas al proveedor",
+      "bookingReference": "Referencia de reserva del transporte de Amazon"
+    },
+    "correction": {
+      "trigger": "Solicitar una corrección",
+      "submit": "Solicitar corrección",
+      "reason": "¿Qué hay que cambiar?",
+      "reasonDescription": "Los documentos de este envío quedarán desactualizados"
+    },
+    "reconcile": {
+      "submit": "Verificar y reanudar",
+      "fbaLabel": "ID del plan de envío a FBA existente",
+      "awdLabel": "ID del pedido de Amazon AWD existente",
+      "awdInvalid": "Ingresa el ID del pedido de Amazon, que empieza con STAR-",
+      "fbaInvalid": "Ingresa el ID del plan de envío, que empieza con wf"
+    }
+  },
+  "forward": {
+    "markShipped": "Marcar como enviado",
+    "title": "Marcar como enviado",
+    "description": "El costo del flete se suma a los costos puestos en destino de la orden de compra.",
+    "freightCost": "Costo del flete",
+    "carrier": "Transportista",
+    "reference": "Número de rastreo o de reserva",
+    "cancel": "Cancelar",
+    "enterCarrier": "Ingresa el transportista",
+    "enterReference": "Ingresa el número de rastreo o de reserva",
+    "enterFreightCost": "Ingresa el costo del flete"
+  },
+  "prep": {
+    "polybag": "Bolsa de polietileno sellada (predeterminado)",
+    "noPrep": "Sin preparación (excepción)",
+    "bubbleWrap": "Envoltura de plástico burbuja",
+    "taping": "Encintado"
+  },
+  "amazonAuthorization": {
+    "sellerId": "Ingresa el token de comerciante del vendedor, como A2CIYIV0E1FHU3",
+    "refreshToken": "Pega el token de actualización completo, que empieza con Atzr|"
+  },
+  "requirements": {
+    "prep": {
+      "polybag": "Sella cada unidad en una bolsa de polietileno transparente.",
+      "noPrep": "Sin preparación por unidad.",
+      "bubbleWrap": "Envuelve cada unidad en plástico de burbujas.",
+      "tape": "Cierra cada unidad con cinta.",
+      "blackShrinkWrap": "Envuelve cada unidad con película termoencogible negra.",
+      "hanger": "Coloca cada prenda en un gancho.",
+      "label": "Etiqueta cada unidad."
+    },
+    "fbaCartons": "Cajas de FBA: se permiten SKU mixtos; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb), salvo que una sola unidad sea más grande.",
+    "awdUsCartons": "Cajas de AWD US: un SKU por caja, máximo 150 unidades, todas las cajas de un mismo SKU empacadas igual; máximo 63.5 cm (25 in) por lado y 22.68 kg (50 lb).",
+    "separateCartons": "Empaca los productos de {networks} en cajas separadas.",
+    "unitLabels": "Etiqueta cada unidad con su código de barras FNSKU, cubriendo cualquier otro código de barras.",
+    "suffocationWarnings": "Las bolsas de polietileno necesitan una advertencia de asfixia cuando la abertura mide 5 in (12.7 cm) o más.",
+    "multiPacks": "Mantén unido cada paquete múltiple, con una sola etiqueta en el paquete.",
+    "packFor": "Empaca para {network}.",
+    "bundle": "{count, plural, one {Agrupa # unidad en un paquete.} other {Agrupa # unidades en un paquete.}}",
+    "fnskuLabel": "Etiqueta con el FNSKU {fnsku}.",
+    "suffocationLabel": "Pon una etiqueta de advertencia de asfixia en cada bolsa de polietileno.",
+    "amazonDestination": "Amazon {networks}"
+  }
+}

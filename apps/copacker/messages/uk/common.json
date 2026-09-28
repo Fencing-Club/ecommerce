@@ -1,0 +1,156 @@
+{
+  "appDescription": "Спільний робочий простір, де покупці й постачальники готують відправлення для Amazon.",
+  "skipToContent": "Перейти до вмісту",
+  "breadcrumb": "Навігаційний ланцюжок",
+  "about": "Докладніше: {label}",
+  "errors": {
+    "generic": "Щось пішло не так. Спробуйте ще раз.",
+    "offline": "Не вдалося з’єднатися з Copacker. Перевірте підключення й спробуйте ще раз."
+  },
+  "actions": {
+    "cancel": "Скасувати"
+  },
+  "status": {
+    "draft": "Чернетка",
+    "active": "Активне",
+    "archived": "В архіві",
+    "submitted": "У постачальника",
+    "closed": "Закрите",
+    "packing": "Пакування",
+    "approval": "Потрібне погодження",
+    "creatingShipment": "Створення відправлення",
+    "waitingLabels": "Потрібні транспортні етикетки",
+    "ready": "Готове до забору",
+    "shipped": "Відправлено",
+    "forwarded": "Відправлено експедитором",
+    "received": "Отримано",
+    "correction": "Запит на виправлення",
+    "needsAttention": "Потребує уваги",
+    "cancelled": "Скасовано",
+    "working": "У роботі",
+    "created": "Створено",
+    "readyToShip": "Готове до відправлення",
+    "inTransit": "У дорозі",
+    "delivered": "Доставлено",
+    "checkedIn": "Зареєстровано на складі",
+    "receiving": "Приймання",
+    "error": "Помилка",
+    "pending": "Очікує",
+    "unshipped": "Не відправлено",
+    "unfulfilled": "Не виконано",
+    "partiallyShipped": "Частково відправлено",
+    "partiallyFulfilled": "Частково виконано",
+    "fulfilled": "Виконано",
+    "unfulfillable": "Неможливо виконати",
+    "inStock": "У наявності",
+    "reorderSoon": "Скоро дозамовити",
+    "reorderNow": "Дозамовте зараз",
+    "outOfStock": "Немає в наявності",
+    "onCopacker": "У Copacker",
+    "invited": "Запрошено",
+    "invitationExpired": "Запрошення прострочене",
+    "notInvited": "Не запрошено"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "ваша локація"
+  },
+  "documents": {
+    "download": "Скачати",
+    "purchaseOrder": "Замовлення на закупівлю",
+    "invoice": "Комерційний рахунок",
+    "packingList": "Пакувальний лист",
+    "checklist": "Контрольний список пакування",
+    "cartonLabel": "Етикетка коробки",
+    "shippingLabel": "Транспортна етикетка",
+    "productLabel": "Етикетка товару"
+  },
+  "format": {
+    "plusAmounts": "Плюс {amounts}",
+    "separator": ", "
+  },
+  "address": {
+    "country": "Країна",
+    "chooseCountry": "Виберіть країну",
+    "contactName": "Контактна особа",
+    "phoneNumber": "Номер телефону",
+    "email": "Електронна пошта",
+    "streetAddress": "Адреса",
+    "addressLine2": "Адреса, рядок 2",
+    "city": "Місто",
+    "stateOrProvince": "Область або регіон",
+    "postalCode": "Поштовий індекс"
+  },
+  "sync": {
+    "actions": "Дії: {label}",
+    "syncing": "Синхронізація…",
+    "syncNow": "Синхронізувати",
+    "reconnect": "Підключити повторно",
+    "synced": "Синхронізовано <time></time>"
+  },
+  "disconnect": {
+    "disconnect": "Відключити",
+    "title": "Відключити {name}?",
+    "shopifyEffect": "Copacker припинить синхронізувати товари, залишки, продажі й вартість із {account}. Замовлення на закупівлю залишаться без змін.",
+    "amazonEffect": "Copacker припинить отримувати продажі й залишки з {account} і не зможе створювати відправлення AWD. Замовлення на закупівлю залишаться без змін.",
+    "failed": "Не вдалося відключити {name}",
+    "cancel": "Скасувати"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {Виберіть PDF} csv {Виберіть CSV} other {Виберіть підтримуваний файл}}",
+    "tooLarge": "{type, select, pdf {Виберіть PDF розміром до {size}} csv {Виберіть CSV розміром до {size}} other {Виберіть файл розміром до {size}}}",
+    "oneFile": "{type, select, pdf {Виберіть один PDF} csv {Виберіть один CSV} other {Виберіть один файл}}",
+    "prompt": "{type, select, pdf {Перетягніть PDF або <browse>виберіть</browse>} csv {Перетягніть CSV або <browse>виберіть</browse>} other {Перетягніть файл або <browse>виберіть</browse>}}",
+    "upTo": "До {size}",
+    "remove": "Видалити {name}",
+    "replaceFile": "Замінити {name}",
+    "replace": "Замінити"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "Офіційний комерційний рахунок",
+      "productLabels": "Етикетки товарів",
+      "shippingLabels": "Транспортні етикетки перевізника"
+    },
+    "chooseVariationError": "Виберіть варіант товару",
+    "enterLabelPage": "Вкажіть сторінку етикетки хоча б для однієї коробки",
+    "failed": "Не вдалося завантажити. Спробуйте ще раз.",
+    "choosePdf": "Виберіть PDF",
+    "variation": "Варіант товару",
+    "chooseVariation": "Виберіть варіант",
+    "productLabelHint": "Один аркуш етикеток на варіант, до 32 МБ",
+    "uploading": "Завантаження",
+    "uploaded": "Завантажено",
+    "upload": "Завантажити",
+    "labelPages": "Сторінка етикетки для кожної коробки",
+    "labelPagesDescription": "Залиште поле порожнім, якщо етикетка коробки в іншому файлі",
+    "carton": "Коробка {carton}",
+    "page": "Сторінка"
+  },
+  "ui": {
+    "close": "Закрити",
+    "toggleSidebar": "Показати або сховати бічну панель",
+    "sidebar": "Бічна панель",
+    "sidebarDescription": "Показує бічну панель на мобільному пристрої."
+  },
+  "pages": {
+    "error": {
+      "title": "Щось пішло не так",
+      "didntLoad": "Не вдалося завантажити сторінку",
+      "dataUnchanged": "Ваші дані не змінилися",
+      "tryAgain": "Спробувати ще раз",
+      "goToOverview": "Перейти до огляду"
+    },
+    "notFound": {
+      "title": "Сторінку не знайдено",
+      "checkAddress": "Перевірте адресу й спробуйте ще раз",
+      "goToCopacker": "Перейти до Copacker",
+      "removed": "Можливо, її видалено або вона в іншому робочому просторі",
+      "goToOverview": "Перейти до огляду"
+    },
+    "forbidden": {
+      "title": "Немає доступу",
+      "askAdmin": "Попросіть доступ в адміністратора"
+    }
+  }
+}

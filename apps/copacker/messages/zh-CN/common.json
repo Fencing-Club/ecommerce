@@ -1,0 +1,156 @@
+{
+  "appDescription": "买家和供应商共同准备 Amazon 货件的共享工作区。",
+  "skipToContent": "跳到主要内容",
+  "breadcrumb": "面包屑导航",
+  "about": "关于{label}",
+  "errors": {
+    "generic": "出了点问题，请重试。",
+    "offline": "无法连接到 Copacker。请检查网络连接后重试。"
+  },
+  "actions": {
+    "cancel": "取消"
+  },
+  "status": {
+    "draft": "草稿",
+    "active": "已上架",
+    "archived": "已归档",
+    "submitted": "供应商处理中",
+    "closed": "已关闭",
+    "packing": "装箱中",
+    "approval": "待审批",
+    "creatingShipment": "正在创建货件",
+    "waitingLabels": "需要运输标签",
+    "ready": "待提货",
+    "shipped": "已发货",
+    "forwarded": "货代已发货",
+    "received": "已收货",
+    "correction": "已申请更正",
+    "needsAttention": "需要处理",
+    "cancelled": "已取消",
+    "working": "处理中",
+    "created": "已创建",
+    "readyToShip": "待发货",
+    "inTransit": "运输中",
+    "delivered": "已送达",
+    "checkedIn": "已签收",
+    "receiving": "接收中",
+    "error": "错误",
+    "pending": "待处理",
+    "unshipped": "未发货",
+    "unfulfilled": "未履约",
+    "partiallyShipped": "部分发货",
+    "partiallyFulfilled": "部分履约",
+    "fulfilled": "已履约",
+    "unfulfillable": "无法履约",
+    "inStock": "有货",
+    "reorderSoon": "即将需要补货",
+    "reorderNow": "立即补货",
+    "outOfStock": "缺货",
+    "onCopacker": "已加入 Copacker",
+    "invited": "已邀请",
+    "invitationExpired": "邀请已过期",
+    "notInvited": "未邀请"
+  },
+  "destinations": {
+    "amazon": "Amazon",
+    "warehouse": "你的收货地点"
+  },
+  "documents": {
+    "download": "下载",
+    "purchaseOrder": "采购订单",
+    "invoice": "商业发票",
+    "packingList": "装箱单",
+    "checklist": "装箱核对清单",
+    "cartonLabel": "箱标",
+    "shippingLabel": "运输标签",
+    "productLabel": "产品标签"
+  },
+  "format": {
+    "plusAmounts": "另加 {amounts}",
+    "separator": "，"
+  },
+  "address": {
+    "country": "国家/地区",
+    "chooseCountry": "选择国家/地区",
+    "contactName": "联系人",
+    "phoneNumber": "电话号码",
+    "email": "邮箱",
+    "streetAddress": "街道地址",
+    "addressLine2": "地址第 2 行",
+    "city": "城市",
+    "stateOrProvince": "州/省",
+    "postalCode": "邮政编码"
+  },
+  "sync": {
+    "actions": "{label}操作",
+    "syncing": "正在同步…",
+    "syncNow": "立即同步",
+    "reconnect": "重新连接",
+    "synced": "同步于 <time></time>"
+  },
+  "disconnect": {
+    "disconnect": "断开连接",
+    "title": "断开与 {name} 的连接？",
+    "shopifyEffect": "Copacker 将停止与 {account} 同步产品、库存量、销售和成本。采购订单保持不变。",
+    "amazonEffect": "Copacker 将停止从 {account} 读取销售和库存量数据，并且无法创建 AWD 货件。采购订单保持不变。",
+    "failed": "无法断开与 {name} 的连接",
+    "cancel": "取消"
+  },
+  "fileDropzone": {
+    "wrongType": "{type, select, pdf {请选择 PDF 文件} csv {请选择 CSV 文件} other {请选择支持的文件}}",
+    "tooLarge": "{type, select, pdf {请选择不超过 {size} 的 PDF 文件} csv {请选择不超过 {size} 的 CSV 文件} other {请选择不超过 {size} 的文件}}",
+    "oneFile": "{type, select, pdf {请只选择一个 PDF 文件} csv {请只选择一个 CSV 文件} other {请只选择一个文件}}",
+    "prompt": "{type, select, pdf {拖放 PDF 文件或<browse>浏览</browse>} csv {拖放 CSV 文件或<browse>浏览</browse>} other {拖放文件或<browse>浏览</browse>}}",
+    "upTo": "最大 {size}",
+    "remove": "移除 {name}",
+    "replaceFile": "替换 {name}",
+    "replace": "替换"
+  },
+  "upload": {
+    "titles": {
+      "invoice": "正式商业发票",
+      "productLabels": "产品标签",
+      "shippingLabels": "承运商运输标签"
+    },
+    "chooseVariationError": "请选择产品变体",
+    "enterLabelPage": "请至少为一个箱输入标签页码",
+    "failed": "上传失败，请重试。",
+    "choosePdf": "请选择 PDF 文件",
+    "variation": "产品变体",
+    "chooseVariation": "选择变体",
+    "productLabelHint": "每个变体一份标签文件，最大 32 MB",
+    "uploading": "正在上传",
+    "uploaded": "已上传",
+    "upload": "上传",
+    "labelPages": "每箱的标签页码",
+    "labelPagesDescription": "如果某箱的标签在其他文件中，请留空",
+    "carton": "第 {carton} 箱",
+    "page": "页码"
+  },
+  "ui": {
+    "close": "关闭",
+    "toggleSidebar": "切换侧边栏",
+    "sidebar": "侧边栏",
+    "sidebarDescription": "显示移动端侧边栏。"
+  },
+  "pages": {
+    "error": {
+      "title": "出了点问题",
+      "didntLoad": "此页面未能加载",
+      "dataUnchanged": "你的数据没有变化",
+      "tryAgain": "重试",
+      "goToOverview": "前往概览"
+    },
+    "notFound": {
+      "title": "找不到页面",
+      "checkAddress": "请检查地址后重试",
+      "goToCopacker": "前往 Copacker",
+      "removed": "它可能已被删除，或位于其他工作区",
+      "goToOverview": "前往概览"
+    },
+    "forbidden": {
+      "title": "无访问权限",
+      "askAdmin": "请向管理员申请访问权限"
+    }
+  }
+}

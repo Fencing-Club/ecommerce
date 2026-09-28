@@ -1,6 +1,7 @@
 "use client"
 
 import { Ellipsis, Mail, UserPlus } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
@@ -31,9 +32,10 @@ import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/f
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
 import { ActionForm, FormError } from "./actions"
 import { FormInput, SelectControl } from "./form-controls"
@@ -41,8 +43,6 @@ import { FormInput, SelectControl } from "./form-controls"
 type Member = { userId: string; email: string; name: string; role: Role; access: Access }
 // `expires` is the day the link stops working, such as "Oct 4".
 type Invitation = { email: string; role: "admin" | "member"; access: Access; expires: string; expired: boolean }
-
-const roleNames: Record<Role, string> = { owner: "Owner", admin: "Admin", member: "Member" }
 
 // The workspace's people and the invitations waiting on someone to join, each with their role. Admins invite from the
 // card's header and change or remove someone from their row's menu; the owner's row and your own have none. The owner
@@ -67,6 +67,7 @@ export function TeamSettings({
   workspace: string
   kind: string
 }) {
+  const t = useTranslations("settings.team")
   const [inviting, setInviting] = useState(false)
   // The email an invitation just went to, so its row can say so.
   const [sent, setSent] = useState("")
@@ -74,18 +75,16 @@ export function TeamSettings({
   return (
     <Card className="gap-0 py-0">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <p className="text-sm text-muted-foreground">
-          {members.length} {members.length === 1 ? "person" : "people"}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("people", { count: members.length })}</p>
         {admin && (
           <Dialog open={inviting} onOpenChange={setInviting}>
             <DialogTrigger render={<Button variant="outline" size="sm" />}>
               <UserPlus data-icon="inline-start" />
-              Invite
+              {t("invite")}
             </DialogTrigger>
             <DialogContent className={accessDialog}>
               <DialogHeader>
-                <DialogTitle>Invite to {workspace}</DialogTitle>
+                <DialogTitle>{t("inviteTo", { workspace })}</DialogTitle>
               </DialogHeader>
               <InviteForm
                 kind={kind}
@@ -132,11 +131,7 @@ const accessDialog = "max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md"
 const levelChoices = ["none", "view", "edit"] as const
 // How many of the levels a page offers, from No access up to the most it allows.
 const optionCounts = { view: 2, edit: 3 }
-const levelOptions = [
-  { value: "none", label: "No access" },
-  { value: "view", label: "View" },
-  { value: "edit", label: "Edit" }
-]
+const choosePage = "settings.team.choosePage"
 // What someone can do, as the access fields hold it: every page's level, "none" for a page they can't open.
 const accessSchema = z
   .object({
@@ -145,7 +140,7 @@ const accessSchema = z
     prices: z.boolean()
   })
   .refine((values) => values.role === "admin" || Object.values(values.access).some((level) => level !== "none"), {
-    message: "Choose at least one page",
+    message: choosePage,
     path: ["access"]
   })
 
@@ -176,9 +171,10 @@ function grant(values: z.output<typeof accessSchema>) {
   }
 }
 
-const inviteSchema = z.intersection(z.object({ email: z.email("Enter an email address").max(254) }), accessSchema)
+const inviteSchema = z.intersection(z.object({ email: z.email("settings.team.enterEmail").max(254) }), accessSchema)
 
 function InviteForm({ kind, onSent }: { kind: string; onSent: (email: string) => void }) {
+  const t = useTranslations("settings.team")
   const { form, submit } = useActionForm({
     schema: inviteSchema,
     action: "team.invite",
@@ -187,11 +183,11 @@ function InviteForm({ kind, onSent }: { kind: string; onSent: (email: string) =>
     onSuccess: (result) => onSent(typeof result.email === "string" ? result.email : "")
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Send invitation" dialog>
+    <ActionForm form={form} onSubmit={submit} label={t("sendInvitation")} dialog>
       <FormInput
         name="email"
         required
-        label="Email"
+        label={t("email")}
         type="email"
         autoComplete="off"
         spellCheck={false}
@@ -202,14 +198,13 @@ function InviteForm({ kind, onSent }: { kind: string; onSent: (email: string) =>
   )
 }
 
-const roleChoices = [
-  { value: "admin", label: "Admin", description: "Everything, including the team and settings" },
-  { value: "member", label: "Member", description: "Only the pages you choose" }
-]
+const roleChoices = ["admin", "member"] as const
 
 // The role, and for a member, whether they see prices and costs, and each page they can open and whether they can
 // change what's on it. Without prices, pages about money close and pages whose changes set prices are view only.
 function AccessFields({ kind }: { kind: string }) {
+  const t = useTranslations("settings.team")
+  const pageNames = useTranslations("navigation.pages")
   const id = useId()
   const { field: role } = useController({ name: "role" })
   const { field: prices } = useController({ name: "prices" })
@@ -222,33 +217,37 @@ function AccessFields({ kind }: { kind: string }) {
   } = useFormContext()
   // "Choose at least one page", when a member has none, until they choose one.
   const pagesError = errors.access?.message
+  let pagesMessage = typeof pagesError === "string" ? pagesError : null
+  if (pagesMessage === choosePage) {
+    pagesMessage = t("choosePage")
+  }
   return (
     <>
       <FieldSet>
         <FieldLegend id={`${id}-role`} variant="label">
-          Role
+          {t("role")}
         </FieldLegend>
         <RadioGroup value={role.value} onValueChange={role.onChange} aria-labelledby={`${id}-role`} className="gap-2">
           {roleChoices.map((choice) => (
             <FieldLabel
-              key={choice.value}
-              htmlFor={`${id}-${choice.value}`}
+              key={choice}
+              htmlFor={`${id}-${choice}`}
               className="w-full cursor-pointer items-start gap-3 rounded-lg border p-3 has-data-checked:border-primary/40 has-data-checked:bg-primary/5 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
             >
               {/* Base UI's radio isn't a labelable element, so it's named by its text. */}
               <RadioGroupItem
-                value={choice.value}
-                id={`${id}-${choice.value}`}
-                aria-labelledby={`${id}-${choice.value}-label`}
-                aria-describedby={`${id}-${choice.value}-description`}
+                value={choice}
+                id={`${id}-${choice}`}
+                aria-labelledby={`${id}-${choice}-label`}
+                aria-describedby={`${id}-${choice}-description`}
                 className="mt-0.5"
               />
               <span className="flex min-w-0 flex-col gap-0.5">
-                <span id={`${id}-${choice.value}-label`} className="font-medium">
-                  {choice.label}
+                <span id={`${id}-${choice}-label`} className="font-medium">
+                  {t(`roles.${choice}`)}
                 </span>
-                <span id={`${id}-${choice.value}-description`} className="font-normal text-muted-foreground">
-                  {choice.description}
+                <span id={`${id}-${choice}-description`} className="font-normal text-muted-foreground">
+                  {t(`roleDescriptions.${choice}`)}
                 </span>
               </span>
             </FieldLabel>
@@ -257,8 +256,8 @@ function AccessFields({ kind }: { kind: string }) {
       </FieldSet>
       {/* A forwarder's pages have no prices, so its members keep the default. */}
       {member && kind !== "forwarder" && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border py-2.5 pr-3 pl-3">
-          <span id={`${id}-prices`}>See prices and costs</span>
+        <div className="flex items-center justify-between gap-3 rounded-lg border py-2.5 pe-3 ps-3">
+          <span id={`${id}-prices`}>{t("seePrices")}</span>
           <Switch
             checked={prices.value === true}
             aria-labelledby={`${id}-prices`}
@@ -279,20 +278,20 @@ function AccessFields({ kind }: { kind: string }) {
         </div>
       )}
       {member && (
-        <FieldSet data-invalid={typeof pagesError === "string"} className="gap-0">
-          <FieldLegend variant="label">Pages</FieldLegend>
+        <FieldSet data-invalid={pagesMessage !== null} className="gap-0">
+          <FieldLegend variant="label">{t("pages")}</FieldLegend>
           <div className="divide-y rounded-lg border">
-            {areasFor(kind).map(({ area, label }) => (
+            {areasFor(kind).map(({ area, labelKey }) => (
               <PageAccess
                 key={area}
                 area={area}
-                label={label}
+                label={pageNames(labelKey)}
                 highest={highestLevel(kind, area, prices.value === true)}
                 onChosen={() => typeof pagesError === "string" && void trigger("access")}
               />
             ))}
           </div>
-          <FieldError className="mt-2">{typeof pagesError === "string" ? pagesError : null}</FieldError>
+          <FieldError className="mt-2">{pagesMessage}</FieldError>
         </FieldSet>
       )}
     </>
@@ -312,15 +311,16 @@ function PageAccess({
   highest: "view" | "edit" | null
   onChosen: () => void
 }) {
+  const t = useTranslations("settings.team")
   const id = useId()
   const {
     field: { ref, value, onChange, onBlur }
   } = useController({ name: `access.${area}` })
-  const options = levelOptions.slice(0, highest ? optionCounts[highest] : 1)
+  const levels = levelChoices.slice(0, highest ? optionCounts[highest] : 1)
   return (
     <div
-      className="flex items-center justify-between gap-3 py-1.5 pr-1.5 pl-3"
-      title={highest ? undefined : "Needs prices and costs"}
+      className="flex items-center justify-between gap-3 py-1.5 pe-1.5 ps-3"
+      title={highest ? undefined : t("needsPrices")}
     >
       <label htmlFor={id} className="min-w-0 truncate">
         {label}
@@ -331,7 +331,7 @@ function PageAccess({
           ref={ref}
           required
           disabled={!highest}
-          options={options}
+          options={levels.map((level) => ({ value: level, label: t(`levels.${level}`) }))}
           value={typeof value === "string" ? value : "none"}
           onValueChange={(next) => {
             onChange(next ?? "none")
@@ -363,12 +363,15 @@ function ChangeAccess({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useTranslations("settings.team")
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={accessDialog}>
         <DialogHeader>
           {/* An invitation's email can be long, so it wraps clear of the close button. */}
-          <DialogTitle className="pr-6 leading-snug [overflow-wrap:anywhere]">Change access for {who}</DialogTitle>
+          <DialogTitle className="pe-6 leading-snug [overflow-wrap:anywhere]">
+            {t("changeAccessFor", { who })}
+          </DialogTitle>
         </DialogHeader>
         <ChangeAccessForm target={target} role={role} access={access} kind={kind} onSaved={() => onOpenChange(false)} />
       </DialogContent>
@@ -389,6 +392,7 @@ function ChangeAccessForm({
   kind: string
   onSaved: () => void
 }) {
+  const t = useTranslations("settings.team")
   const { form, submit } = useActionForm({
     schema: accessSchema,
     action: "team.access",
@@ -397,7 +401,7 @@ function ChangeAccessForm({
     onSuccess: onSaved
   })
   return (
-    <ActionForm form={form} onSubmit={submit} label="Save" dialog>
+    <ActionForm form={form} onSubmit={submit} label={t("save")} dialog>
       <AccessFields kind={kind} />
     </ActionForm>
   )
@@ -405,6 +409,7 @@ function ChangeAccessForm({
 
 // Runs a row's action and refreshes the page, keeping its error for the row to show.
 function useRowAction() {
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [pending, setPending] = useState(false)
@@ -443,6 +448,7 @@ function MemberRow({
   workspace: string
   kind: string
 }) {
+  const t = useTranslations("settings.team")
   const { perform, pending, error } = useRowAction()
   const [open, setOpen] = useState<"access" | "remove" | "transfer" | null>(null)
   const initials = member.name
@@ -461,28 +467,28 @@ function MemberRow({
       <div className="flex min-w-0 flex-1 flex-col">
         <p className="flex min-w-0 items-baseline gap-2 font-medium">
           <span className="truncate">{member.name}</span>
-          {you && <span className="shrink-0 text-xs font-normal text-muted-foreground">You</span>}
+          {you && <span className="shrink-0 text-xs font-normal text-muted-foreground">{t("you")}</span>}
         </p>
         <p className="truncate text-muted-foreground">{member.email}</p>
       </div>
-      <Badge variant={member.role === "member" ? "outline" : "secondary"}>{roleNames[member.role]}</Badge>
+      <Badge variant={member.role === "member" ? "outline" : "secondary"}>{t(`roles.${member.role}`)}</Badge>
       {(manageable || transferable) && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${member.name}`} />}
+            render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: member.name })} />}
           >
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {manageable && <DropdownMenuItem onClick={() => setOpen("access")}>Change access</DropdownMenuItem>}
+            {manageable && <DropdownMenuItem onClick={() => setOpen("access")}>{t("changeAccess")}</DropdownMenuItem>}
             {transferable && (
-              <DropdownMenuItem onClick={() => setOpen("transfer")}>Transfer ownership</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOpen("transfer")}>{t("transferOwnership")}</DropdownMenuItem>
             )}
             {manageable && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onClick={() => setOpen("remove")}>
-                  Remove
+                  {t("remove")}
                 </DropdownMenuItem>
               </>
             )}
@@ -493,14 +499,12 @@ function MemberRow({
         <AlertDialog open={open === "transfer"} onOpenChange={(next) => setOpen(next ? "transfer" : null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Transfer ownership to {member.name}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                They become the owner of {workspace}, and you stay an admin.
-              </AlertDialogDescription>
+              <AlertDialogTitle>{t("transferTitle", { name: member.name })}</AlertDialogTitle>
+              <AlertDialogDescription>{t("transferDescription", { workspace })}</AlertDialogDescription>
             </AlertDialogHeader>
             <FormError message={error} />
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 disabled={pending}
                 aria-busy={pending}
@@ -511,7 +515,7 @@ function MemberRow({
                 }}
               >
                 {pending && <Spinner data-icon="inline-start" />}
-                Transfer ownership
+                {t("transferOwnership")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -531,12 +535,12 @@ function MemberRow({
           <AlertDialog open={open === "remove"} onOpenChange={(next) => setOpen(next ? "remove" : null)}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
-                <AlertDialogDescription>They lose access to {workspace} right away.</AlertDialogDescription>
+                <AlertDialogTitle>{t("removeTitle", { name: member.name })}</AlertDialogTitle>
+                <AlertDialogDescription>{t("removeDescription", { workspace })}</AlertDialogDescription>
               </AlertDialogHeader>
               <FormError message={error} />
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   variant="destructive"
                   disabled={pending}
@@ -548,7 +552,7 @@ function MemberRow({
                   }}
                 >
                   {pending && <Spinner data-icon="inline-start" />}
-                  Remove
+                  {t("remove")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -572,11 +576,12 @@ function InvitationRow({
   sent: boolean
   onSent: (email: string) => void
 }) {
+  const t = useTranslations("settings.team")
   const { perform, pending, error } = useRowAction()
   const [changing, setChanging] = useState(false)
-  let status = invitation.expired ? "Invitation expired" : `Invited, expires ${invitation.expires}`
+  let status = invitation.expired ? t("invitationExpired") : t("invited", { expires: invitation.expires })
   if (sent) {
-    status = `Invitation sent, expires ${invitation.expires}`
+    status = t("invitationSent", { expires: invitation.expires })
   }
 
   return (
@@ -595,21 +600,27 @@ function InvitationRow({
           </p>
         )}
       </div>
-      <Badge variant={invitation.role === "member" ? "outline" : "secondary"}>{roleNames[invitation.role]}</Badge>
+      <Badge variant={invitation.role === "member" ? "outline" : "secondary"}>{t(`roles.${invitation.role}`)}</Badge>
       {admin &&
         (pending ? (
-          <Button variant="ghost" size="icon-sm" disabled aria-busy aria-label={`Updating ${invitation.email}`}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled
+            aria-busy
+            aria-label={t("updating", { email: invitation.email })}
+          >
             <Spinner />
           </Button>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${invitation.email}`} />}
+              render={<Button variant="ghost" size="icon-sm" aria-label={t("more", { name: invitation.email })} />}
             >
               <Ellipsis />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => setChanging(true)}>Change access</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChanging(true)}>{t("changeAccess")}</DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   if (await perform("team.resend", { email: invitation.email })) {
@@ -617,14 +628,14 @@ function InvitationRow({
                   }
                 }}
               >
-                Send again
+                {t("sendAgain")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
                 onClick={() => void perform("team.cancel", { email: invitation.email })}
               >
-                Cancel invitation
+                {t("cancelInvitation")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

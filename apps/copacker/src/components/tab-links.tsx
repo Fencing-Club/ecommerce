@@ -1,3 +1,4 @@
+import { useLocale } from "next-intl"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +13,7 @@ export function TabLinks({
   tabs: ReadonlyArray<{ label: string; href: string; current: boolean; count?: number }>
   className?: string
 }) {
+  const locale = useLocale()
   return (
     <nav
       aria-label={label}
@@ -33,7 +35,7 @@ export function TabLinks({
         >
           {tab.label}
           {tab.count !== undefined && (
-            <span className="text-xs text-muted-foreground tabular-nums">{tab.count.toLocaleString("en-US")}</span>
+            <span className="text-xs text-muted-foreground tabular-nums">{tab.count.toLocaleString(locale)}</span>
           )}
         </Link>
       ))}

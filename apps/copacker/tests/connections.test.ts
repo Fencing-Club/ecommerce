@@ -148,7 +148,7 @@ describe("Amazon self-authorization", () => {
     ).rejects.toThrow("US marketplace")
     await expect(
       connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: "nope" })
-    ).rejects.toThrow("full refresh token")
+    ).rejects.toThrow("shipments.amazonAuthorization.refreshToken")
     expect(await database.select().from(tables.connections)).toHaveLength(0)
   })
 })

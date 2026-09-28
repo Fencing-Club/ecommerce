@@ -1,6 +1,7 @@
 import { money } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
 import { AlertTriangle, ArrowRight, Clock, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
+import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Fragment } from "react"
@@ -19,7 +20,6 @@ import { Upload } from "@/components/upload"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { can } from "@/lib/access"
-import { shortDate } from "@/lib/format"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
@@ -29,13 +29,14 @@ import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { finishedStates, releasedStates, reservedPieces } from "@/server/readiness"
 import { supplierPickupAddresses } from "@/server/supplier-addresses"
 import { orderWorkflow } from "@/server/workflow"
-import { shipmentDestinations } from "../destination"
+import { readyDateFormat, shipmentDestinations } from "../destination"
 
-export const generateMetadata = titleFor("Shipment", "shipments")
+export const generateMetadata = titleFor("shipments.detail.metaTitle", "shipments")
 
 export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requirePage(s, "shipments")
+  const [t, format, locale] = await Promise.all([getTranslations("shipments.detail"), getFormatter(), getLocale()])
   // Someone who can only view shipments sees each step without its buttons; its purchase order is linked for those who
   // can open it.
   const editsShipments = can(s, "shipments", "edit")
@@ -76,8 +77,6 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     shipment.operation === "none" &&
     !awaitingChanges
   const isBuyer = s.org.kind === "buyer"
-  // Each side's words for the purchase order: the supplier's navigation calls them orders.
-  const orderNoun = isBuyer ? "purchase order" : "order"
   // The Amazon shipments are in the buyer's Seller Central, which the supplier can't open, so it reads their IDs.
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
   const amazonIds = amazonLinks.length ? [] : (shipment.amazonShipmentId?.split(", ") ?? [])
@@ -98,13 +97,13 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const enteringFor = isBuyer && !supplier.supplierOrgId ? supplier.name : undefined
   const amazon = order.data.destination === "amazon"
   // A purchase order's shipments are numbered oldest first, as on the shipments list.
-  const title = `Shipment ${workflow.shipments.findIndex((row) => row.id === id) + 1}`
+  const title = t("title", { number: workflow.shipments.findIndex((row) => row.id === id) + 1 })
   const cartonCount = shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
   const destination = await shipmentDestinations([order.data])
   // Where it goes and in how many cartons, then Amazon's shipment IDs. The purchase order leads the title.
   const summary = [
     destination(order.data, shipment.amazonNetwork),
-    cartonCount && `${cartonCount} ${cartonCount === 1 ? "carton" : "cartons"}`,
+    cartonCount && t("cartonCount", { count: cartonCount }),
     ...amazonIds
   ]
     .filter(Boolean)
@@ -116,22 +115,22 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const nextAction: Record<string, React.ReactNode> = {
     ship: (!isBuyer || enteringFor) && (
       <ActionButton action="shipment.ship" data={{ id }}>
-        Mark shipped
+        {t("actions.markShipped")}
       </ActionButton>
     ),
     receive: isBuyer && (
       <ActionButton action="shipment.received" data={{ id }} variant="outline">
-        Mark received
+        {t("actions.markReceived")}
       </ActionButton>
     ),
     retry: isBuyer && (
       <ActionButton action="shipment.retry" data={{ id, revision: shipment.revision }}>
-        Retry shipment
+        {t("actions.retry")}
       </ActionButton>
     ),
     cancellation: isBuyer && (
       <ActionButton action="shipment.cancelAmazon" data={{ id }}>
-        Cancel in Amazon
+        {t("actions.cancelInAmazon")}
       </ActionButton>
     )
   }
@@ -140,7 +139,10 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         parents={[
-          { label: isBuyer ? "Purchase orders" : "Orders", href: seesOrder ? "/orders" : undefined },
+          {
+            label: isBuyer ? t("parents.purchaseOrders") : t("parents.orders"),
+            href: seesOrder ? "/orders" : undefined
+          },
           { label: order.data.reference, href: seesOrder ? `/orders/${order.id}` : undefined }
         ]}
         title={title}
@@ -159,7 +161,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                 >
                   {link.id}
                   <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
-                  <span className="sr-only"> (opens in Seller Central)</span>
+                  <span className="sr-only"> {t("opensInSellerCentral")}</span>
                 </a>
               </Fragment>
             ))}
@@ -173,7 +175,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       {shipment.issue && (
         <Alert variant="destructive">
           <AlertTriangle />
-          <AlertTitle>Needs attention</AlertTitle>
+          <AlertTitle>{t("needsAttention")}</AlertTitle>
           <AlertDescription>{shipment.issue}</AlertDescription>
         </Alert>
       )}
@@ -181,15 +183,12 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       {awaitingChanges && (
         <Alert>
           <Clock />
-          <AlertTitle>Changes waiting for approval</AlertTitle>
-          <AlertDescription>
-            Packing opens once {isBuyer ? "you answer" : "the customer answers"} the proposed changes on the {orderNoun}
-            .
-          </AlertDescription>
+          <AlertTitle>{t("changesWaiting.title")}</AlertTitle>
+          <AlertDescription>{isBuyer ? t("changesWaiting.buyer") : t("changesWaiting.supplier")}</AlertDescription>
           {seesOrder && (
             <AlertAction>
               <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
-                View {orderNoun}
+                {isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")}
               </Button>
             </AlertAction>
           )}
@@ -222,7 +221,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           {shipment.status === "approval" && (
             <Card>
               <CardHeader>
-                <CardTitle>Invoice changes</CardTitle>
+                <CardTitle>{t("invoiceChanges.title")}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-6">
                 <ItemGroup className="gap-2">
@@ -236,15 +235,15 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                         </ItemTitle>
                         {prices && change.unitPrice !== item.unitPrice && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
-                            Price per unit {money(item.unitPrice, snapshot.currency)}
-                            <ArrowRight className="size-3" aria-label="changed to" />
-                            {money(change.unitPrice, snapshot.currency)}
+                            {t("invoiceChanges.pricePerUnit")} {money(item.unitPrice, snapshot.currency, locale)}
+                            <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
+                            {money(change.unitPrice, snapshot.currency, locale)}
                           </ItemDescription>
                         )}
                         {change.supplierSku !== item.supplierSku && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
-                            Supplier SKU {item.supplierSku || "—"}
-                            <ArrowRight className="size-3" aria-label="changed to" />
+                            {t("invoiceChanges.supplierSku")} {item.supplierSku || "—"}
+                            <ArrowRight className="size-3 rtl:rotate-180" aria-label={t("invoiceChanges.changedTo")} />
                             {change.supplierSku || "—"}
                           </ItemDescription>
                         )}
@@ -254,7 +253,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                 </ItemGroup>
                 {/* Approving accepts the invoice's prices. */}
                 {isBuyer && editsShipments && prices && <ApproveInvoice id={id} revision={shipment.revision} />}
-                {!isBuyer && <p className="text-sm text-muted-foreground">Waiting for the buyer’s approval</p>}
+                {!isBuyer && <p className="text-sm text-muted-foreground">{t("invoiceChanges.waitingForBuyer")}</p>}
               </CardContent>
             </Card>
           )}
@@ -262,13 +261,9 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           {shipment.status === "waiting_labels" && (
             <Card>
               <CardHeader>
-                <CardTitle>{isBuyer && editsShipments ? "Shipping labels" : "Waiting for shipping labels"}</CardTitle>
+                <CardTitle>{isBuyer && editsShipments ? t("labels.title") : t("labels.waiting")}</CardTitle>
                 {isBuyer && editsShipments && (
-                  <CardDescription>
-                    {fba
-                      ? "Book transport to Amazon, then upload the shipping labels"
-                      : "Book AGL transport in Amazon, then upload the shipping labels"}
-                  </CardDescription>
+                  <CardDescription>{fba ? t("labels.fba") : t("labels.agl")}</CardDescription>
                 )}
               </CardHeader>
               {isBuyer && editsShipments && (
@@ -281,7 +276,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                     cartons={shipment.packing?.cartons}
                   />
                   {step.issues.length > 0 && (
-                    <ul className="list-disc pl-5 text-sm">
+                    <ul className="list-disc ps-5 text-sm">
                       {step.issues.map((issue, index) => (
                         <li key={index}>{issue.message}</li>
                       ))}
@@ -296,8 +291,8 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           {["queued", "creating"].includes(shipment.status) && (
             <Alert role="note">
               <Loader2 className="animate-spin" />
-              <AlertTitle>Creating the Amazon shipment</AlertTitle>
-              <AlertDescription>Usually a few minutes</AlertDescription>
+              <AlertTitle>{t("creating.title")}</AlertTitle>
+              <AlertDescription>{t("creating.description")}</AlertDescription>
             </Alert>
           )}
 
@@ -305,18 +300,18 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             <Alert role="note" className="border-primary/40">
               {/* The alert colors its icon like its text; this one stays primary. */}
               <PackageCheck className="text-primary!" />
-              <AlertTitle>Supplier packet ready</AlertTitle>
-              <AlertDescription>Print labels at actual size</AlertDescription>
+              <AlertTitle>{t("packet.title")}</AlertTitle>
+              <AlertDescription>{t("packet.description")}</AlertDescription>
               {/* Under the text on a phone, top right from sm up. */}
               <AlertAction className="static col-span-full mt-2 sm:absolute sm:mt-0">
                 <Button
                   size="sm"
                   variant="outline"
                   nativeButton={false}
-                  render={<a href={step.packetUrl} aria-label="Download supplier packet" />}
+                  render={<a href={step.packetUrl} aria-label={t("packet.downloadLabel")} />}
                 >
                   <Download data-icon="inline-start" />
-                  Download packet
+                  {t("packet.download")}
                 </Button>
               </AlertAction>
             </Alert>
@@ -326,16 +321,16 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           {shipment.status === "ready" && !step.packetUrl && (
             <Alert role="note">
               <Clock />
-              <AlertTitle>Supplier packet incomplete</AlertTitle>
+              <AlertTitle>{t("packet.incompleteTitle")}</AlertTitle>
               <AlertDescription>
                 {isBuyer ? (
-                  <ul className="list-disc pl-5">
+                  <ul className="list-disc ps-5">
                     {step.issues.map((issue, index) => (
                       <li key={index}>{issue.message}</li>
                     ))}
                   </ul>
                 ) : (
-                  "Waiting for the buyer’s labels"
+                  t("packet.waitingForLabels")
                 )}
               </AlertDescription>
             </Alert>
@@ -343,21 +338,21 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
 
           <Card className="gap-0 overflow-hidden py-0">
             <CardHeader className="border-b p-4">
-              <CardTitle>Cartons</CardTitle>
+              <CardTitle>{t("cartons.title")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table
                 framed={false}
-                className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+                className="[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4"
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Carton</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Units</TableHead>
-                    <TableHead>Dimensions (cm)</TableHead>
-                    <TableHead className="text-right">Weight (kg)</TableHead>
-                    {amazon && <TableHead>Amazon label</TableHead>}
+                    <TableHead>{t("cartons.carton")}</TableHead>
+                    <TableHead>{t("cartons.product")}</TableHead>
+                    <TableHead className="text-end">{t("cartons.units")}</TableHead>
+                    <TableHead>{t("cartons.dimensions")}</TableHead>
+                    <TableHead className="text-end">{t("cartons.weight")}</TableHead>
+                    {amazon && <TableHead>{t("cartons.amazonLabel")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -367,13 +362,13 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                       <TableCell className="whitespace-normal">
                         {c.items.map((i) => snapshot.items.find((p) => p.id === i.itemId)?.buyerSku).join(", ")}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {c.items.reduce((n, i) => n + i.pieces, 0)}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {c.length} × {c.width} × {c.height}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{c.weight}</TableCell>
+                      <TableCell className="text-end tabular-nums">{c.weight}</TableCell>
                       {amazon && (
                         <TableCell className="font-mono text-xs">
                           {shipment.labels.find((l) => l.cartonId === c.cartonId)?.labelNumber ?? "—"}
@@ -389,8 +384,14 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Pickup</CardTitle>
-                {shipment.packing && <CardDescription>Ready {shortDate(shipment.packing.readyDate)}</CardDescription>}
+                <CardTitle>{t("pickup.title")}</CardTitle>
+                {shipment.packing && (
+                  <CardDescription>
+                    {t("pickup.ready", {
+                      date: format.dateTime(new Date(`${shipment.packing.readyDate}T00:00:00Z`), readyDateFormat)
+                    })}
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 {origin && (
@@ -412,13 +413,13 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Documents</CardTitle>
+                <CardTitle>{t("documents.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {visibleDocs.length ? (
                   <DocumentList documents={visibleDocs} />
                 ) : (
-                  <p className="text-sm text-muted-foreground">No documents yet</p>
+                  <p className="text-sm text-muted-foreground">{t("documents.empty")}</p>
                 )}
               </CardContent>
             </Card>

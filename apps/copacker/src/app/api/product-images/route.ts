@@ -2,9 +2,10 @@ import { randomUUID } from "node:crypto"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import { suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import type { ProductImage } from "@/lib/supplier-product"
 import { requireAccess, session } from "@/server/auth"
-import { failureStatus } from "@/server/errors"
+import { errorResponse, errorTextResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 import { getFile, putFile } from "@/server/storage"
 
@@ -25,25 +26,25 @@ const keyPattern = /^supplier-images\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|g
 // Stores a product photo a supplier uploads. The product keeps it once the product is saved.
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   try {
     const s = await session()
     if (s.org.kind !== "supplier") {
-      return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
+      return errorResponse("supplierWorkspaceRequired", 403)
     }
     requireAccess(s, "products", "edit")
     const file = (await request.formData()).get("file")
     if (!(file instanceof File)) {
-      throw new Error("Choose a photo")
+      throw new LocalizedError("choosePhoto")
     }
     if (file.size > maxBytes) {
-      throw new Error("Photos can be up to 10 MB")
+      throw new LocalizedError("photoTooLarge")
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
     const kind = kinds.find((candidate) => candidate.test(bytes))
     if (!kind) {
-      throw new Error("Upload a JPG, PNG, WebP or GIF photo")
+      throw new LocalizedError("photoType")
     }
     const image: ProductImage = {
       key: `supplier-images/${s.org.id}/${randomUUID()}.${kind.extension}`,
@@ -53,10 +54,7 @@ export async function POST(request: Request) {
     await putFile(image.key, bytes, kind.type)
     return Response.json(image)
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Upload failed" },
-      { status: failureStatus(error) }
-    )
+    return Response.json({ error: await failureMessage(error, "uploadFailed") }, { status: failureStatus(error) })
   }
 }
 
@@ -66,7 +64,7 @@ export async function GET(request: Request) {
   const key = new URL(request.url).searchParams.get("key") ?? ""
   const match = keyPattern.exec(key)
   if (!match) {
-    return new Response("Photo not found", { status: 404 })
+    return errorTextResponse("photoNotFound", 404)
   }
   const owner = match[1]!
   if (owner !== s.org.id) {
@@ -80,7 +78,7 @@ export async function GET(request: Request) {
             )
         : []
     if (!link) {
-      return new Response("Photo not found", { status: 404 })
+      return errorTextResponse("photoNotFound", 404)
     }
   }
   const kind = kinds.find((candidate) => candidate.extension === match[2])!

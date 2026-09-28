@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "Partner",
+    "tabsLabel": "Tipi di partner",
+    "tabs": {
+      "all": "Tutti",
+      "supplier": "Fornitori",
+      "forwarder": "Spedizionieri"
+    },
+    "search": "Cerca partner",
+    "columns": {
+      "name": "Nome",
+      "type": "Tipo",
+      "status": "Stato",
+      "details": "Dettagli",
+      "actions": "Azioni"
+    },
+    "empty": {
+      "noMatch": "Nessun partner corrisponde a “{query}”",
+      "all": "Ancora nessun partner",
+      "supplier": "Ancora nessun fornitore",
+      "forwarder": "Ancora nessuno spedizioniere"
+    },
+    "hints": {
+      "forwarder": "Aggiungi uno spedizioniere per spedire tramite lui gli ordini di acquisto.",
+      "supplier": "Qui compaiono i fornitori di Shopify.",
+      "search": "Controlla l’ortografia o cerca in un’altra scheda."
+    }
+  },
+  "add": {
+    "button": "Aggiungi partner",
+    "supplier": "Fornitore",
+    "forwarder": "Spedizioniere"
+  },
+  "row": {
+    "types": {
+      "supplier": "Fornitore",
+      "forwarder": "Spedizioniere"
+    },
+    "addresses": "{count, plural, one {# indirizzo} other {# indirizzi}}",
+    "noAddresses": "Ancora nessun indirizzo",
+    "leadTime": "Tempo di consegna {days, plural, one {# giorno} other {# giorni}}",
+    "leadTimeAndAddresses": "Tempo di consegna {days, plural, one {# giorno} other {# giorni}}, {count, plural, one {# indirizzo} other {# indirizzi}}",
+    "sending": "Invio in corso…",
+    "invitationSentTo": "Invito inviato a {email}",
+    "invitationSent": "Invito inviato",
+    "moreActions": "Altre azioni per {name}",
+    "menu": {
+      "edit": "Modifica",
+      "addresses": "Indirizzi",
+      "invite": "Invita",
+      "resend": "Invia di nuovo l’invito"
+    },
+    "standing": {
+      "joined": "Su Copacker",
+      "invited": "Invitato",
+      "expired": "Invito scaduto",
+      "notInvited": "Non invitato"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "Aggiungi spedizioniere",
+      "title": "Aggiungi uno spedizioniere",
+      "description": "Ritira dal tuo fornitore e spedisce ad Amazon o al tuo magazzino.",
+      "submit": "Aggiungi spedizioniere",
+      "company": "Azienda",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "Email",
+      "emailDescription": "Aggiungila per invitarlo subito."
+    },
+    "invite": {
+      "title": "Invita {name}",
+      "description": "Gestirà i propri indirizzi di magazzino per i tuoi ordini di acquisto.",
+      "submit": "Invia invito",
+      "email": "Email"
+    },
+    "rename": {
+      "trigger": "Modifica",
+      "triggerLabel": "Modifica {name}",
+      "title": "Modifica spedizioniere",
+      "submit": "Salva",
+      "company": "Azienda"
+    },
+    "remove": {
+      "trigger": "Rimuovi",
+      "title": "Rimuovere {name}?",
+      "description": "I nuovi ordini di acquisto non potranno essere spediti a lui. Quelli già inviati mantengono il loro indirizzo.",
+      "cancel": "Annulla",
+      "confirm": "Rimuovi",
+      "failed": "Impossibile rimuovere {name}"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "Aggiungi fornitore",
+      "title": "Aggiungi un fornitore",
+      "description": "Per un fornitore che non è ancora su Shopify."
+    },
+    "edit": {
+      "title": "Modifica {name}",
+      "name": "Nome",
+      "companyName": "Nome dell’azienda",
+      "companyNameDescription": "Come nel campo Fornitore di Shopify.",
+      "companyNamePlaceholder": "Non su Shopify",
+      "contactName": "Nome del referente",
+      "contactEmail": "Email del referente",
+      "phone": "Telefono",
+      "website": "Sito web",
+      "websiteJoined": "{name} gestisce i propri recapiti nel suo workspace.",
+      "leadTime": "Tempo di consegna (giorni)",
+      "leadTimeDescription": "Dall’ordine di acquisto alla giacenza vendibile. Se vuoto: {days}.",
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saving": "Salvataggio…",
+      "failed": "Impossibile salvare il fornitore. Riprova."
+    },
+    "invite": {
+      "title": "Invita {name}",
+      "description": "Vedrà gli ordini di acquisto che condividi e riceverà un’email quando uno richiede documenti.",
+      "email": "Email del fornitore",
+      "cancel": "Annulla",
+      "submit": "Invia invito",
+      "sending": "Invio in corso…",
+      "failed": "Impossibile invitare {name}. Riprova."
+    }
+  },
+  "address": {
+    "editPickup": "Modifica indirizzo di ritiro",
+    "edit": "Modifica indirizzo",
+    "addPickup": "Aggiungi un indirizzo di ritiro per {name}",
+    "add": "Aggiungi un indirizzo per {name}",
+    "saveChanges": "Salva modifiche",
+    "save": "Salva indirizzo",
+    "name": "Nome dell’indirizzo",
+    "pickupPlaceholder": "Stabilimento",
+    "placeholder": "Magazzino di Yiwu",
+    "sheet": {
+      "supplier": "Indirizzi di ritiro",
+      "forwarder": "Tappe verso Amazon o il tuo magazzino",
+      "joinedSupplier": "Gestisce i propri indirizzi di ritiro su Copacker",
+      "joinedForwarder": "Gestisce i propri indirizzi su Copacker"
+    },
+    "empty": "Ancora nessun indirizzo",
+    "addButton": "Aggiungi indirizzo",
+    "removing": "Rimozione di {name}",
+    "moreActions": "Altre azioni per {name}",
+    "menuEdit": "Modifica",
+    "menuRemove": "Rimuovi",
+    "removeFailed": "Impossibile rimuovere {name}"
+  },
+  "contactKinds": {
+    "delivery": "Indirizzo di consegna",
+    "forwarder": "Spedizioniere",
+    "pickup": "Indirizzo di ritiro"
+  },
+  "contactDetails": {
+    "enterEmail": "Inserisci un indirizzo email"
+  },
+  "phone": {
+    "invalid": "Inserisci un numero di telefono"
+  }
+}

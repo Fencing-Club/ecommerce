@@ -1,6 +1,7 @@
 "use client"
 
 import { CircleAlert } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 // page has it, and the portal error page's empty state in the middle. Trying again fetches the page afresh (`retry`;
 // `reset` would only re-render what already failed).
 export default function ErrorPage({ retry }: { retry: () => void }) {
+  const t = useTranslations("common.pages.error")
   return (
     <div className="flex min-h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center border-b px-4">
@@ -24,15 +26,15 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
               <CircleAlert aria-hidden className="size-5" />
             </EmptyMedia>
             <EmptyTitle>
-              <h1>This page didn’t load</h1>
+              <h1>{t("didntLoad")}</h1>
             </EmptyTitle>
-            <EmptyDescription>Your data hasn’t changed</EmptyDescription>
+            <EmptyDescription>{t("dataUnchanged")}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={retry}>Try again</Button>
+              <Button onClick={retry}>{t("tryAgain")}</Button>
               <Button variant="outline" nativeButton={false} render={<Link href="/overview" />}>
-                Go to Overview
+                {t("goToOverview")}
               </Button>
             </div>
           </EmptyContent>

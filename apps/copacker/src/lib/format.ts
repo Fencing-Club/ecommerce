@@ -1,29 +1,17 @@
-// Number and money formats for summaries and charts. Money is in minor units, as Copacker stores it.
+// Number and money formats for summaries and charts. Money is in minor units, as Copacker stores it. Each takes the
+// language to write in, useLocale() or getLocale(); English is the default for code without one.
 
-const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
-
-export function formatNumber(value: number) {
-  return whole.format(value)
+export function formatNumber(value: number, locale = "en-US") {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
 }
 
-export function compactMoney(minor: number, currency: string) {
+export function compactMoney(minor: number, currency: string, locale = "en-US") {
   const major = minor / 100
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     notation: Math.abs(major) < 10000 ? "standard" : "compact",
     maximumFractionDigits: Math.abs(major) < 10000 ? 0 : 1
-  }).format(major)
-}
-
-// A headline amount in whole units, such as $16,997, shortened only from a million ($1.2M).
-export function wholeMoney(minor: number, currency: string) {
-  const major = minor / 100
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    notation: Math.abs(major) < 1000000 ? "standard" : "compact",
-    maximumFractionDigits: Math.abs(major) < 1000000 ? 0 : 1
   }).format(major)
 }
 
@@ -35,18 +23,9 @@ export function change(current: number, previous: number | null | undefined) {
   return (current - previous) / previous
 }
 
-export function formatChange(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "percent",
-    maximumFractionDigits: Math.abs(value) < 0.1 ? 1 : 0,
-    signDisplay: "exceptZero"
-  }).format(value)
-}
-
-// "2026-09-03" as "Sep 3", read as a UTC day.
 // A calendar day such as "2026-12-01" as "Dec 1, 2026", read in UTC so it stays the same day in every time zone.
-export function dayDate(day: string) {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
+export function dayDate(day: string, locale = "en-US") {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -54,46 +33,7 @@ export function dayDate(day: string) {
   })
 }
 
-export function shortDate(day: string) {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-}
-
-// "2026-09" as "Sep" or, with the year, "Sep 2026".
-export function monthName(month: string, withYear = false) {
-  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", {
-    month: withYear ? "long" : "short",
-    ...(withYear && { year: "numeric" }),
-    timeZone: "UTC"
-  })
-}
-
-// Amounts in one or more currencies, the largest first, as the Overview reports them.
-type MoneyList = readonly { currency: string; minor: number }[]
-
-const exact = (minor: number, currency: string) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(minor / 100)
-
-// The headline amount: the currency most of the money is in. `fallback` is the currency to show zero in.
-export function formatMoney(value: MoneyList, options: { compact?: boolean; fallback?: string } = {}) {
-  const first = value[0] ?? { minor: 0, currency: options.fallback ?? "USD" }
-  return options.compact ? compactMoney(first.minor, first.currency) : exact(first.minor, first.currency)
-}
-
-// Money in more than one currency can't be added up; the others are named under the headline figure.
-export function otherCurrencies(value: MoneyList) {
-  return value.length > 1
-    ? `Plus ${value
-        .slice(1)
-        .map((entry) => exact(entry.minor, entry.currency))
-        .join(" and ")}`
-    : null
-}
-
-export function formatPercent(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value)
-}
-
 // A day as "Sep 27, 2026".
-export function formatDate(date: Date | string) {
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(date))
+export function formatDate(date: Date | string, locale = "en-US") {
+  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" }).format(new Date(date))
 }

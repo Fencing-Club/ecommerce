@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import type { Session } from "./auth"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
@@ -24,7 +25,7 @@ export const restockInputSchema = z.strictObject({
   supplier: z.union([z.literal("all"), z.uuid()]).default("all")
 })
 
-export class RestockInputError extends Error {}
+export class RestockInputError extends LocalizedError {}
 
 type InventoryContext = Awaited<ReturnType<typeof inventoryContext>>
 export type RestockChannelOption = {
@@ -257,10 +258,10 @@ export async function restockReport(s: Session, raw: unknown) {
       (location) => location.id === channel.locationId && location.classification === "merchant"
     )
   ) {
-    throw new RestockInputError("Choose a location included in inventory")
+    throw new RestockInputError("chooseIncludedLocation")
   }
   if (channel.kind === "amazon" && !context.fbaRows && !context.awdRows) {
-    throw new RestockInputError("Sync Amazon on the Products page before restocking Amazon")
+    throw new RestockInputError("syncAmazonBeforeRestock")
   }
   const plan = await channelPlan(inputs, channel, input.leadTimeDays)
   // Restock lists products with a supplier, in Copacker or in Shopify; the Products page warns about the rest.

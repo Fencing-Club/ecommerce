@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "title": "Copacker: el reabastecimiento, resuelto",
+    "description": "Pronostica tu inventario, envía órdenes de compra justo a tiempo para que no te quedes sin existencias y encárgate de las entregas a tu agente de carga, Amazon FBA y AWD, con cada etiqueta y documento listos para ti."
+  },
+  "site": {
+    "free": "Gratis, sin tarjeta de crédito.",
+    "getStarted": "Empieza gratis",
+    "signIn": "Iniciar sesión",
+    "contact": "Contacto",
+    "mainNav": "Principal",
+    "sections": {
+      "forecast": "Pronóstico",
+      "handoffs": "Logística",
+      "agents": "Agentes",
+      "faq": "Preguntas frecuentes"
+    },
+    "footer": {
+      "product": "Producto",
+      "company": "Empresa",
+      "account": "Cuenta",
+      "tagline": "Pronósticos, órdenes de compra y logística, en un solo lugar.",
+      "privacy": "Privacidad",
+      "terms": "Términos"
+    }
+  },
+  "film": {
+    "watch": "Ver el video",
+    "title": "Copacker: el reabastecimiento, resuelto"
+  },
+  "copyButton": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "signup": {
+    "title": "Entérate de lo que viene.",
+    "text": "Nuevas tiendas, nuevas rutas y nuevas herramientas, en un correo breve en cuanto salgan.",
+    "done": "Ya estás en la lista.",
+    "email": "Correo electrónico",
+    "placeholder": "tu@empresa.com",
+    "subscribe": "Suscribirme",
+    "subscribing": "Suscribiendo",
+    "failed": "No pudimos suscribirte. Inténtalo de nuevo en un momento.",
+    "getStartedNow": "O empieza ya, es gratis"
+  },
+  "hero": {
+    "title": "<first>Reabastecimiento,</first> <second>resuelto.</second>",
+    "text": "Copacker pronostica tu inventario, envía órdenes de compra justo a tiempo para que no te quedes sin existencias y se encarga de las entregas a tu agente de carga, Amazon FBA y AWD, con cada etiqueta y documento listos para ti.",
+    "shotCaption": "La página Reabastecimiento de Copacker: dos productos de Shenzhen Metalworks por volver a pedir, con cantidades a pedir, un costo estimado de {cost} y cerca de {lost} en ventas en riesgo antes de que lleguen los pedidos."
+  },
+  "forecast": {
+    "title": "Sabe cuándo volver a pedir.",
+    "text": "Copacker pronostica cada producto a partir de tus ventas en Amazon, Shopify y eBay, y calcula hacia atrás desde el tiempo de entrega de tu proveedor hasta el día en que debes pedir."
+  },
+  "agents": {
+    "title": "Hecho para agentes de IA.",
+    "text": "El servidor MCP de Copacker funciona con cualquier agente, así que el tuyo puede planear, pedir y enviar junto contigo. Los agentes de tus socios también publican sus avances."
+  },
+  "faq": {
+    "title": "Preguntas",
+    "questions": {
+      "cost": {
+        "question": "¿Cuánto cuesta Copacker?",
+        "answer": "Por ahora, nada. No hay planes de pago y para registrarte no te pedimos tarjeta."
+      },
+      "stores": {
+        "question": "¿Con qué tiendas funciona?",
+        "answer": "Amazon, Shopify y eBay. Copacker lee tus ventas y existencias de cada una."
+      },
+      "warehouse": {
+        "question": "¿Puedo enviar a mi propio almacén o a un 3PL?",
+        "answer": "Sí. Una orden de compra puede ir a cualquiera de tus direcciones de entrega en lugar de Amazon. Vincula una dirección a una ubicación de Shopify y lo que pediste aparecerá ahí como ordenado."
+      },
+      "locations": {
+        "question": "¿Reabastecimiento también planea para mis otras ubicaciones?",
+        "answer": "Sí. Planea para cada una de tus ubicaciones de Shopify además de Amazon, y lo que pidas para una ubicación va directo a ella."
+      },
+      "tracking": {
+        "question": "¿Cómo le doy seguimiento a los envíos fuera de Amazon?",
+        "answer": "Tu proveedor marca el envío como enviado, tu agente de carga agrega la paquetería y el número de rastreo, y tú lo marcas como recibido, todo en la orden de compra."
+      },
+      "forwarders": {
+        "question": "¿Funciona con agentes de carga?",
+        "answer": "Sí. Tu agente de carga tiene su propio espacio de trabajo, descarga la factura y las etiquetas, y marca cada envío como enviado con su paquetería, número de rastreo y costo de flete."
+      },
+      "suppliers": {
+        "question": "¿Mis proveedores necesitan una cuenta?",
+        "answer": "No. Pueden usar Copacker gratis, o tú puedes llenar su parte de la orden de compra."
+      },
+      "awd": {
+        "question": "¿Envía a AWD?",
+        "answer": "Sí. Copacker planea envíos a FBA y AWD, incluidos los almacenes de AWD en China y Vietnam."
+      },
+      "documents": {
+        "question": "¿Qué documentos y etiquetas genera?",
+        "answer": "Órdenes de compra, listas de empaque y etiquetas FNSKU, de caja, de envío y de advertencia, junto con la factura comercial de tu proveedor."
+      },
+      "mcp": {
+        "question": "¿Qué es MCP?",
+        "answer": "El Model Context Protocol, un estándar abierto para conectar agentes de IA con aplicaciones. El servidor MCP de Copacker funciona con ChatGPT, Claude, Cursor, VS Code y cualquier otro cliente MCP."
+      },
+      "cli": {
+        "question": "¿Hay una CLI?",
+        "answer": "Sí. La CLI de copacker lee y trabaja con los mismos datos que la app, para tus scripts y agentes de código."
+      }
+    }
+  },
+  "agentsDiagram": {
+    "yours": "Tu agente",
+    "prompt": "Vuelve a pedir todo lo que se agote antes de que llegue y envíalo a AWD.",
+    "partner": "Agente de {name}",
+    "packingList": "Lista de empaque enviada para la orden de compra {number}",
+    "pickup": "Recolección agendada para el {date}",
+    "steps": {
+      "checked": "Revisé el reabastecimiento: {count, plural, one {# producto se agota antes de que llegue} other {# productos se agotan antes de que lleguen}}",
+      "created": "Creé la orden de compra {number} para {supplier}",
+      "sent": "Envié la orden de compra {number} al proveedor",
+      "planned": "Planeé el envío a Amazon AWD"
+    }
+  },
+  "connect": {
+    "title": "Funciona con cualquier agente.",
+    "text": "Agrega el servidor MCP de Copacker a tu agente y trabajará con tu reabastecimiento, tus pedidos y tus envíos igual que tú.",
+    "yourAgent": "Tu agente",
+    "anyClient": "Cualquier cliente MCP",
+    "terminal": "Terminal",
+    "serverUrl": "URL del servidor",
+    "setups": {
+      "claude": "En Claude, abre Personalizar y luego Conectores. Agrega un conector personalizado con esta URL y conéctalo.",
+      "chatgpt": "En ChatGPT en la web, activa el modo de desarrollador en Configuración, Seguridad e inicio de sesión, y luego agrega esta URL en Plugins.",
+      "claudeCode": "Ejecuta esto y luego inicia sesión con {command} en Claude Code.",
+      "codex": "Ejecuta esto e inicia sesión cuando Codex te lo pida. La CLI, la extensión del IDE y la app de escritorio de ChatGPT lo comparten.",
+      "cursor": "Agrega Copacker al archivo MCP de Cursor y luego inicia sesión desde Personalizar.",
+      "vsCode": "Agrega Copacker al archivo MCP de tu espacio de trabajo, inícialo desde el archivo e inicia sesión.",
+      "gemini": "Ejecuta esto y luego inicia sesión con {command}.",
+      "windsurf": "Windsurf ahora es Devin Desktop. Abre su archivo de configuración MCP desde el menú MCPs y agrega Copacker.",
+      "zed": "Agrega Copacker a la configuración de Zed, o agrégalo como servidor remoto en Configuración, IA, Servidores MCP.",
+      "openCode": "Agrega Copacker al archivo de configuración de OpenCode. Inicia sesión la primera vez que se conecta.",
+      "hermes": "Ejecuta esto e inicia sesión cuando Hermes se conecte por primera vez.",
+      "openClaw": "Ejecuta estos comandos para agregar Copacker e iniciar sesión.",
+      "any": "Apunta cualquier otro cliente a esta URL, o haz que ejecute el servidor de la CLI con {command}."
+    },
+    "session": "Una sesión de terminal con la CLI de copacker",
+    "cli": {
+      "title": "Los mismos datos, en tu terminal.",
+      "text": "La CLI de copacker usa los mismos endpoints que la app, así que tus scripts y agentes de código pueden ver y hacer todo lo que tú puedes."
+    }
+  },
+  "planner": {
+    "days": "{count, plural, one {# día} other {# días}}",
+    "inDays": "{count, plural, one {En # día} other {En # días}}",
+    "inStock": "{sku}, {count, number} en existencia",
+    "soldADay": "Ventas por día",
+    "captionLate": "Existencias de {product} en los próximos {horizon} días. Sin volver a pedir, se agota en {out, plural, one {# día} other {# días}}. Si pides hoy, {units, number} unidades llegan después de que se agote, con una pérdida de cerca de {lost} en ventas.",
+    "captionInTime": "Existencias de {product} en los próximos {horizon} días. Sin volver a pedir, se agota en {out, plural, one {# día} other {# días}}. Si pides en {orderBy, plural, one {# día} other {# días}}, {units, number} unidades llegan antes de que se agote.",
+    "unitsInStock": "Unidades en existencia",
+    "holidayRush": "Temporada navideña",
+    "rush": "Temporada",
+    "runsOut": "Se agota",
+    "orderToday": "Pide hoy",
+    "orderBy": "Pide a más tardar",
+    "restock": "Reabastecer",
+    "restockUnits": "+{count, plural, one {# unidad} other {# unidades}}",
+    "leadTimeDays": "Tiempo de entrega de {count} días",
+    "today": "Hoy",
+    "withReorder": "Con el pedido",
+    "withoutReorder": "Sin volver a pedir",
+    "leadTime": "Tiempo de entrega",
+    "landsLate": "Llega después de que se agota",
+    "landsInTime": "Llega antes de que se agote",
+    "order": "Pedido",
+    "units": "{count, plural, one {# unidad} other {# unidades}}",
+    "cartons": "{count, plural, one {# caja} other {# cajas}}",
+    "runsOutWithout": "Se agota sin él",
+    "notThisSeason": "No esta temporada",
+    "todaysPace": "Al ritmo de hoy",
+    "lostSales": "Ventas perdidas",
+    "none": "Ninguna",
+    "whileOut": "Mientras está agotado",
+    "inStockThroughout": "En existencia todo el tiempo"
+  },
+  "shot": {
+    "search": "Buscar",
+    "buyerWorkspace": "Espacio de trabajo de comprador",
+    "restock": "Reabastecimiento",
+    "allSuppliers": "Todos los proveedores",
+    "salesPeriod": "<muted>Periodo de ventas</muted> {count, plural, one {# <muted>día</muted>} other {# <muted>días</muted>}}",
+    "leadTime": "<muted>Tiempo de entrega</muted> {count, plural, one {# <muted>día</muted>} other {# <muted>días</muted>}}",
+    "estimatedCost": "Costo estimado",
+    "lines": "Líneas",
+    "units": "Unidades",
+    "cases": "Cajas master",
+    "volume": "Volumen",
+    "weight": "Peso",
+    "lostSales": "Cerca de {amount} en ventas perdidas antes de que lleguen los pedidos",
+    "products": "{count, plural, one {# producto} other {# productos}}",
+    "supplierSummary": "Tiempo de entrega {days, plural, one {# día} other {# días}}, {lines, plural, one {# línea} other {# líneas}}, {units, plural, one {# unidad} other {# unidades}}",
+    "reorder": "Volver a pedir",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "columns": {
+      "product": "Producto",
+      "status": "Estado",
+      "stockLeft": "Existencias restantes",
+      "sold": "Vendidas",
+      "available": "Disponibles",
+      "order": "Pedir",
+      "cost": "Costo"
+    }
+  },
+  "journey": {
+    "title": "Una orden de compra, de la fábrica a Amazon y a tu almacén",
+    "steps": "Pasos",
+    "purchaseOrder": "Orden de compra {number}",
+    "documentCount": "{count, plural, one {# documento} other {# documentos}}",
+    "saved": "Guardado en la orden de compra: {name}",
+    "chapters": {
+      "order": {
+        "step": "Pedir",
+        "title": "Vuelve a pedir en un clic.",
+        "text": "Copacker redacta la orden de compra y se la envía a tu proveedor."
+      },
+      "pack": {
+        "step": "Empacar",
+        "title": "Etiquetado y empacado a la medida.",
+        "text": "Etiquetas FNSKU y de riesgo de asfixia en cada unidad, etiquetas de caja y de envío en cada caja, y cada caja del tamaño justo."
+      },
+      "pickUp": {
+        "step": "Recolectar",
+        "title": "Amazon y tu agente de carga recolectan.",
+        "text": "Amazon se lleva las cajas con destino a AWD en el extranjero, y tu agente de carga se lleva el resto."
+      },
+      "ship": {
+        "step": "Enviar",
+        "title": "En camino.",
+        "text": "La factura comercial, el conocimiento de embarque y el rastreo quedan en la misma orden de compra."
+      },
+      "customs": {
+        "step": "Aduana",
+        "title": "Por la aduana.",
+        "text": "Tu agente de carga la despacha con el conocimiento de embarque y la factura comercial ya en la orden de compra."
+      },
+      "deliver": {
+        "step": "Entregar",
+        "title": "Entregado en FBA, y a ti.",
+        "text": "Tu agente de carga lleva las cajas de Amazon a FBA, y FedEx entrega el resto en tu almacén."
+      }
+    },
+    "documents": {
+      "purchaseOrder": "Orden de compra",
+      "fnskuLabels": "Etiquetas FNSKU",
+      "chokingHazardLabels": "Etiquetas de riesgo de asfixia",
+      "packingList": "Lista de empaque",
+      "cartonLabels": "Etiquetas de caja",
+      "shippingLabels": "Etiquetas de envío",
+      "commercialInvoice": "Factura comercial",
+      "billOfLading": "Conocimiento de embarque"
+    },
+    "pins": {
+      "unitLabels": "Etiquetas FNSKU y de riesgo de asfixia",
+      "rightSized": "A la medida: {size}",
+      "boxLabels": "Etiquetas de caja y de envío"
+    },
+    "places": {
+      "awdInChina": "AWD en China",
+      "customs": "Aduana",
+      "yourWarehouse": "Tu almacén"
+    },
+    "cards": {
+      "withSupplier": "Con el proveedor",
+      "supplier": "Proveedor",
+      "units": "Unidades",
+      "total": "Total",
+      "submitted": "Enviada",
+      "cartons": "Cajas",
+      "cartonSize": "Tamaño de caja",
+      "weight": "Peso",
+      "shipments": "Envíos",
+      "awdByAmazon": "AWD en China, por Amazon",
+      "unitCount": "{count, plural, one {# unidad} other {# unidades}}",
+      "pickedUp": "Recolectado por {forwarder}",
+      "onTheWater": "En altamar",
+      "inTransit": "En tránsito",
+      "arrives": "Llega",
+      "checkedInAwd": "Recibido en AWD",
+      "released": "Liberado",
+      "cleared": "Despachado",
+      "checkedIn": "Recibido en Amazon FBA",
+      "delivered": "Entregado en tu almacén"
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "Contacta a Copacker",
+      "description": "Preguntas, una demostración para tu equipo o trabajar juntos: escríbele a Copacker."
+    },
+    "title": "Habla con <lit>nosotros.</lit>",
+    "text": "Preguntas sobre Copacker, una demostración para tu equipo o trabajar juntos. Escríbenos y te respondemos.",
+    "waysTitle": "O compruébalo tú mismo.",
+    "tryIt": "Pruébalo",
+    "watchTitle": "Ver el video",
+    "watchText": "Un reabastecimiento del pronóstico al almacén, en menos de dos minutos.",
+    "faqTitle": "Lee las preguntas frecuentes",
+    "faqText": "Tiendas, envíos más allá de Amazon, socios y agentes.",
+    "questions": "Preguntas",
+    "form": {
+      "topic": "¿De qué se trata?",
+      "topics": {
+        "gettingStarted": "Primeros pasos",
+        "walkthrough": "Una demostración",
+        "support": "Soporte",
+        "partnerships": "Alianzas",
+        "press": "Prensa",
+        "other": "Otra cosa"
+      },
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "company": "Empresa",
+      "message": "Mensaje",
+      "send": "Enviar mensaje",
+      "sending": "Enviando",
+      "failed": "No pudimos enviar tu mensaje. Inténtalo de nuevo en un momento.",
+      "sent": "Mensaje enviado.",
+      "writeBack": "Te responderemos a {email}.",
+      "another": "Enviar otro",
+      "enterName": "Ingresa tu nombre",
+      "enterEmail": "Ingresa un correo electrónico válido",
+      "writeMessage": "Escribe tu mensaje",
+      "tooLong": "Máximo 5,000 caracteres"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import { PageLink, useCan } from "@/components/access"
@@ -25,16 +26,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { defaultQuantityRules, type PriceBasis, type PriceBreak, type QuantityRules } from "@/lib/catalog-pricing"
 import { imageUrl, type ProductImage, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { MoneyInput, PricingRulesDialog, rulesSummary } from "./pricing-controls"
+import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
 
 const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
 type Currency = (typeof currencies)[number]
-const basisOptions = [
-  { value: "piece", label: "Unit" },
-  { value: "sellable_pack", label: "Pack" },
-  { value: "case", label: "Case" }
-]
+const bases = ["piece", "sellable_pack", "case"] as const satisfies readonly PriceBasis[]
 
 export type EditorVariant = {
   key: string
@@ -107,21 +104,14 @@ function whole(text: string, fallback: number | null) {
   return text.trim() && Number.isSafeInteger(value) ? value : fallback
 }
 
-function uploadLabel(uploading: number, count: number) {
-  if (uploading) {
-    return `Uploading ${uploading}`
-  }
-  return count ? "Add" : "Add photos"
-}
-
 // The variant grid scrolls sideways inside its card when it's wider than the card. Its first column and the row actions
 // stay in view, on the card's own background so the columns scrolling past pass under them. Each cell draws its own
 // rule, which a sticky cell would otherwise cover. On a narrow card the option columns hide, and the SKU leads.
 const grid = {
   table: "border-separate border-spacing-0 [&_td]:border-b [&_th]:border-b [&_tr:last-child_td]:border-b-0",
-  first: "sticky left-0 z-10 pl-4",
-  firstWhenNarrow: "@max-xl:sticky @max-xl:left-0 @max-xl:z-10 @max-xl:pl-4",
-  last: "sticky right-0 z-10 pr-4",
+  first: "sticky start-0 z-10 ps-4",
+  firstWhenNarrow: "@max-xl:sticky @max-xl:start-0 @max-xl:z-10 @max-xl:ps-4",
+  last: "sticky end-0 z-10 pe-4",
   option: "hidden @xl:table-cell"
 }
 
@@ -131,11 +121,23 @@ function fieldWidth(lengths: number[], least: number, most: number) {
   return `calc(${Math.min(most, Math.max(least, ...lengths)) + 1}ch + 1.5rem)`
 }
 
+function uploadLabel(
+  uploading: number,
+  count: number,
+  t: ReturnType<typeof useTranslations<"supplier.productEditor">>
+) {
+  if (uploading) {
+    return t("uploading", { count: uploading })
+  }
+  return count ? t("add") : t("addPhotos")
+}
+
 // Photos: upload several at once, remove one, or make one the main photo.
 function Media({ images, onChange }: { images: ProductImage[]; onChange: (images: ProductImage[]) => void }) {
   const input = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(0)
   const [error, setError] = useState("")
+  const t = useTranslations("supplier.productEditor")
 
   async function upload(files: FileList) {
     setError("")
@@ -149,7 +151,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
       if (response.ok) {
         added.push(result)
       } else {
-        setError(`${file.name}: ${result.error ?? "Couldn't upload"}`)
+        setError(t("fileError", { file: file.name, error: result.error ?? t("couldNotUpload") }))
       }
       setUploading((count) => count - 1)
     }
@@ -159,7 +161,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Media</CardTitle>
+        <CardTitle>{t("media")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -179,7 +181,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
                     type="button"
                     size="icon-xs"
                     variant="secondary"
-                    aria-label={`Make ${image.name} the main photo`}
+                    aria-label={t("makeMain", { name: image.name })}
                     onClick={() => onChange([image, ...images.filter((other) => other.key !== image.key)])}
                   >
                     <Star />
@@ -189,7 +191,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
                   type="button"
                   size="icon-xs"
                   variant="secondary"
-                  aria-label={`Remove ${image.name}`}
+                  aria-label={t("removePhoto", { name: image.name })}
                   onClick={() => onChange(images.filter((other) => other.key !== image.key))}
                 >
                   <X />
@@ -207,7 +209,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
             )}
           >
             <ImagePlus className="size-5" aria-hidden />
-            {uploadLabel(uploading, images.length)}
+            {uploadLabel(uploading, images.length, t)}
           </button>
         </div>
         <input
@@ -251,6 +253,9 @@ function VariantSheet({
     setShown(variant)
     setDraft(variant)
   }
+  const t = useTranslations("supplier.productEditor")
+  const shared = useTranslations("supplier.shared")
+  const rulesSummary = useRulesSummary()
   const change = (next: Partial<EditorVariant>) => setDraft((current) => (current ? { ...current, ...next } : current))
   const label = draft ? variantLabel(draft.options, optionNames) : null
   const summary = draft ? rulesSummary(draft.priceBreaks, draft.quantityRules, draft.priceBasis) : ""
@@ -258,8 +263,8 @@ function VariantSheet({
     <Sheet open={!!variant} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{label ?? "Variant"}</SheetTitle>
-          <SheetDescription className="truncate">{title || "New product"}</SheetDescription>
+          <SheetTitle>{label ?? t("variant")}</SheetTitle>
+          <SheetDescription className="truncate">{title || t("newProduct")}</SheetDescription>
         </SheetHeader>
         {draft && (
           <FieldGroup className="gap-5 px-4">
@@ -280,7 +285,7 @@ function VariantSheet({
             <Field>
               <FieldLabel htmlFor="variant-sku">
                 <span>
-                  SKU
+                  {t("sku")}
                   <span aria-hidden className="text-destructive">
                     *
                   </span>
@@ -296,16 +301,16 @@ function VariantSheet({
             {prices && (
               <div className="grid grid-cols-2 gap-3">
                 <Field>
-                  <FieldLabel htmlFor="variant-price">Price</FieldLabel>
+                  <FieldLabel htmlFor="variant-price">{t("price")}</FieldLabel>
                   <MoneyInput
-                    label="Price"
+                    label={t("price")}
                     currency={draft.currency}
                     value={draft.priceMinor}
                     onValueChange={(value) => change({ priceMinor: value })}
                   />
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="variant-currency">Currency</FieldLabel>
+                  <FieldLabel htmlFor="variant-currency">{t("currency")}</FieldLabel>
                   <Select
                     items={currencies.map((value) => ({ value, label: value }))}
                     value={draft.currency}
@@ -324,9 +329,9 @@ function VariantSheet({
                   </Select>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="variant-basis">Price per</FieldLabel>
+                  <FieldLabel htmlFor="variant-basis">{t("pricePer")}</FieldLabel>
                   <Select
-                    items={basisOptions}
+                    items={bases.map((value) => ({ value, label: t(`basis.${value}`) }))}
                     value={draft.priceBasis}
                     onValueChange={(value) => value && change({ priceBasis: value as PriceBasis })}
                   >
@@ -334,26 +339,26 @@ function VariantSheet({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {basisOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                      {bases.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`basis.${value}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </Field>
                 <Field>
-                  <FieldLabel>Volume pricing</FieldLabel>
+                  <FieldLabel>{t("volumePricing")}</FieldLabel>
                   <Button type="button" variant="outline" className="justify-start" onClick={() => setRulesOpen(true)}>
                     <SlidersHorizontal data-icon="inline-start" />
-                    <span className="truncate">{summary || "Add rules"}</span>
+                    <span className="truncate">{summary || t("addRules")}</span>
                   </Button>
                 </Field>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="variant-pieces">Units per pack</FieldLabel>
+                <FieldLabel htmlFor="variant-pieces">{t("piecesPerPack")}</FieldLabel>
                 <Input
                   id="variant-pieces"
                   type="number"
@@ -364,13 +369,13 @@ function VariantSheet({
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="variant-packs">Packs per case</FieldLabel>
+                <FieldLabel htmlFor="variant-packs">{t("packsPerCase")}</FieldLabel>
                 <Input
                   id="variant-packs"
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  placeholder="Unknown"
+                  placeholder={t("unknown")}
                   value={draft.sellablePacksPerCase ?? ""}
                   onChange={(event) => change({ sellablePacksPerCase: whole(event.target.value, null) })}
                 />
@@ -382,12 +387,12 @@ function VariantSheet({
                 checked={draft.trackInventory}
                 onCheckedChange={(checked) => change({ trackInventory: checked })}
               />
-              <FieldLabel htmlFor="variant-track">Track inventory</FieldLabel>
+              <FieldLabel htmlFor="variant-track">{t("trackInventory")}</FieldLabel>
             </Field>
             {draft.trackInventory && (
               <>
                 <Field>
-                  <FieldLabel htmlFor="variant-on-hand">On hand</FieldLabel>
+                  <FieldLabel htmlFor="variant-on-hand">{t("onHand")}</FieldLabel>
                   <Input
                     id="variant-on-hand"
                     type="number"
@@ -395,7 +400,7 @@ function VariantSheet({
                     className="w-32"
                     onChange={(event) => change({ onHand: whole(event.target.value, 0) ?? 0 })}
                   />
-                  <FieldDescription>Units in stock.</FieldDescription>
+                  <FieldDescription>{t("piecesInStock")}</FieldDescription>
                 </Field>
                 <Field orientation="horizontal">
                   <Switch
@@ -403,12 +408,12 @@ function VariantSheet({
                     checked={draft.continueSelling}
                     onCheckedChange={(checked) => change({ continueSelling: checked })}
                   />
-                  <FieldLabel htmlFor="variant-continue">Continue selling when out of stock</FieldLabel>
+                  <FieldLabel htmlFor="variant-continue">{t("continueSelling")}</FieldLabel>
                 </Field>
               </>
             )}
             <Field>
-              <FieldLabel htmlFor="variant-notes">Notes</FieldLabel>
+              <FieldLabel htmlFor="variant-notes">{t("notes")}</FieldLabel>
               <Textarea
                 id="variant-notes"
                 value={draft.notes}
@@ -419,10 +424,10 @@ function VariantSheet({
         )}
         <SheetFooter>
           <Button type="button" onClick={() => draft && onSave(draft)} disabled={!draft?.supplierSku.trim()}>
-            Done
+            {shared("done")}
           </Button>
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {shared("cancel")}
           </Button>
         </SheetFooter>
         {draft && prices && (
@@ -463,6 +468,10 @@ export function ProductEditor({
   const [newOption, setNewOption] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  const t = useTranslations("supplier.productEditor")
+  const shared = useTranslations("supplier.shared")
+  const pricing = useTranslations("supplier.pricing")
+  const locale = useLocale()
   const dirty = JSON.stringify(product) !== JSON.stringify(saved)
   const change = (next: Partial<EditorProduct>) => setProduct((current) => ({ ...current, ...next }))
   const setVariant = (key: string, next: Partial<EditorVariant>) =>
@@ -484,12 +493,12 @@ export function ProductEditor({
       supplierSku: variant.supplierSku.trim(),
       notes: notes.trim() || null
     }))
-    let problem = variantsProblem({ optionNames: product.optionNames, variants })
+    let problem = variantsProblem({ optionNames: product.optionNames, variants }, pricing)
     if (variants.some((variant) => !variant.supplierSku)) {
-      problem = "Give every variant a SKU"
+      problem = t("giveSku")
     }
     if (!product.title.trim()) {
-      problem = "Add a title"
+      problem = t("addTitle")
     }
     if (problem) {
       setError(problem)
@@ -517,7 +526,7 @@ export function ProductEditor({
       })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? "Couldn't save the product. Try again.")
+        throw new Error(result.error ?? t("saveFailed"))
       }
       setSaved(product)
       if (product.id) {
@@ -526,7 +535,7 @@ export function ProductEditor({
         router.replace(`/products/${result.id}`)
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't save the product. Try again.")
+      setError(caught instanceof Error ? caught.message : t("saveFailed"))
     } finally {
       setPending(false)
     }
@@ -545,8 +554,8 @@ export function ProductEditor({
   return (
     <>
       <PageHeader
-        parents={[{ label: "Products", href: "/products" }]}
-        title={saved.id ? saved.title : "Add product"}
+        parents={[{ label: t("products"), href: "/products" }]}
+        title={saved.id ? saved.title : t("addProduct")}
         badge={saved.id ? <StatusBadge status={saved.status} /> : undefined}
       />
       <div className="@container flex flex-col gap-4">
@@ -561,7 +570,7 @@ export function ProductEditor({
                   <Field>
                     <FieldLabel htmlFor="product-title">
                       <span>
-                        Title
+                        {t("title")}
                         <span aria-hidden className="text-destructive">
                           *
                         </span>
@@ -572,19 +581,19 @@ export function ProductEditor({
                       required
                       maxLength={500}
                       value={product.title}
-                      placeholder="Maraging epee blade"
+                      placeholder={t("titlePlaceholder")}
                       onChange={(event) => change({ title: event.target.value })}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="product-description">Description</FieldLabel>
+                    <FieldLabel htmlFor="product-description">{t("description")}</FieldLabel>
                     <Textarea
                       id="product-description"
                       rows={5}
                       value={product.description}
                       onChange={(event) => change({ description: event.target.value })}
                     />
-                    <FieldDescription>Customers see this.</FieldDescription>
+                    <FieldDescription>{t("customersSee")}</FieldDescription>
                   </Field>
                 </FieldGroup>
               </CardContent>
@@ -595,18 +604,18 @@ export function ProductEditor({
             <Card className="gap-0 overflow-hidden py-0">
               <div className="flex flex-col gap-3 border-b p-4">
                 <CardHeader className="px-0">
-                  <CardTitle>Variants</CardTitle>
-                  <CardDescription>Options your variants differ by, such as Size or Hand.</CardDescription>
+                  <CardTitle>{t("variants")}</CardTitle>
+                  <CardDescription>{t("variantsDescription")}</CardDescription>
                 </CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
                   {product.optionNames.map((name) => (
-                    <Badge key={name} variant="secondary" className="h-7 gap-1 pr-1 text-sm">
+                    <Badge key={name} variant="secondary" className="h-7 gap-1 pe-1 text-sm">
                       {name}
                       <Button
                         type="button"
                         size="icon-xs"
                         variant="ghost"
-                        aria-label={`Remove option ${name}`}
+                        aria-label={t("removeOption", { name })}
                         onClick={() =>
                           change({
                             optionNames: product.optionNames.filter((other) => other !== name),
@@ -625,8 +634,8 @@ export function ProductEditor({
                     <div className="flex items-center gap-1">
                       <Input
                         value={newOption}
-                        placeholder={product.optionNames.length ? "Another option" : "Add an option, such as Size"}
-                        aria-label="New option name"
+                        placeholder={product.optionNames.length ? t("anotherOption") : t("addOption")}
+                        aria-label={t("newOptionName")}
                         className="h-7 w-52"
                         onChange={(event) => setNewOption(event.target.value)}
                         onKeyDown={(event) => {
@@ -643,7 +652,7 @@ export function ProductEditor({
                         disabled={!newOption.trim()}
                         onClick={addOption}
                       >
-                        Add
+                        {t("add")}
                       </Button>
                     </div>
                   )}
@@ -663,12 +672,12 @@ export function ProductEditor({
                       <TableHead
                         className={cn("bg-muted", product.optionNames.length ? grid.firstWhenNarrow : grid.first)}
                       >
-                        SKU
+                        {t("sku")}
                       </TableHead>
-                      {prices && <TableHead className="w-px">Price</TableHead>}
-                      {tracked && <TableHead className="hidden text-right @lg:table-cell">On hand</TableHead>}
+                      {prices && <TableHead className="w-px">{t("price")}</TableHead>}
+                      {tracked && <TableHead className="hidden text-end @lg:table-cell">{t("onHand")}</TableHead>}
                       <TableHead className={cn(grid.last, "w-px bg-muted")}>
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t("actions")}</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -685,7 +694,11 @@ export function ProductEditor({
                             >
                               <Input
                                 value={variant.options[option] ?? ""}
-                                aria-label={`${option} for ${variant.supplierSku || "new variant"}`}
+                                aria-label={
+                                  variant.supplierSku
+                                    ? t("optionFor", { option, sku: variant.supplierSku })
+                                    : t("optionForNew", { option })
+                                }
                                 aria-invalid={!variant.options[option]?.trim() || undefined}
                                 className="h-8"
                                 style={{
@@ -709,7 +722,7 @@ export function ProductEditor({
                             {/* At most 40% of a narrow card, so the price beside it stays in view. */}
                             <Input
                               value={variant.supplierSku}
-                              aria-label={`SKU for ${name || "new variant"}`}
+                              aria-label={name ? t("skuFor", { name }) : t("skuForNew")}
                               aria-invalid={!variant.supplierSku.trim() || undefined}
                               className="h-8 font-mono text-xs"
                               style={{ minWidth: `min(${skuWidth}, 40cqi)` }}
@@ -722,7 +735,7 @@ export function ProductEditor({
                           {prices && (
                             <TableCell>
                               <MoneyInput
-                                label={`Price for ${name || "new variant"}`}
+                                label={name ? t("priceFor", { name }) : t("priceForNew")}
                                 currency={variant.currency}
                                 value={variant.priceMinor}
                                 onValueChange={(value) => setVariant(variant.key, { priceMinor: value })}
@@ -731,8 +744,8 @@ export function ProductEditor({
                             </TableCell>
                           )}
                           {tracked && (
-                            <TableCell className="hidden text-right tabular-nums @lg:table-cell">
-                              {variant.trackInventory ? variant.onHand.toLocaleString("en-US") : "—"}
+                            <TableCell className="hidden text-end tabular-nums @lg:table-cell">
+                              {variant.trackInventory ? variant.onHand.toLocaleString(locale) : "—"}
                             </TableCell>
                           )}
                           <TableCell className={cn(grid.last, "bg-card")}>
@@ -743,7 +756,7 @@ export function ProductEditor({
                                     type="button"
                                     size="icon-sm"
                                     variant="ghost"
-                                    aria-label={`Actions for ${name || "new variant"}`}
+                                    aria-label={name ? t("actionsFor", { name }) : t("actionsForNew")}
                                   />
                                 }
                               >
@@ -752,7 +765,7 @@ export function ProductEditor({
                               <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem onClick={() => setEditing(variant.key)}>
                                   <Pencil />
-                                  Edit variant
+                                  {t("editVariant")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -763,7 +776,7 @@ export function ProductEditor({
                                   }
                                 >
                                   <Trash2 />
-                                  Remove variant
+                                  {t("removeVariant")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -787,10 +800,10 @@ export function ProductEditor({
                   }}
                 >
                   <Plus data-icon="inline-start" />
-                  Add variant
+                  {t("addVariant")}
                 </Button>
                 {saved.id && product.variants.some((variant) => !variant.id) && (
-                  <p className="text-xs text-muted-foreground">New variants join the catalogs this product is in.</p>
+                  <p className="text-xs text-muted-foreground">{t("newVariantsJoin")}</p>
                 )}
               </div>
             </Card>
@@ -799,38 +812,38 @@ export function ProductEditor({
           <div className="flex flex-col gap-4">
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Status</CardTitle>
+                <CardTitle>{t("status")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Select
                   items={[
-                    { value: "active", label: "Active" },
-                    { value: "archived", label: "Archived" }
+                    { value: "active", label: shared("status.active") },
+                    { value: "archived", label: shared("status.archived") }
                   ]}
                   value={product.status}
                   onValueChange={(value) => value && change({ status: value as EditorProduct["status"] })}
                 >
-                  <SelectTrigger aria-label="Status" className="w-full">
+                  <SelectTrigger aria-label={t("status")} className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="active">{shared("status.active")}</SelectItem>
+                    <SelectItem value="archived">{shared("status.archived")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {product.status === "archived" && (
-                  <p className="mt-2 text-xs text-muted-foreground">Customers can’t order archived products.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{t("archivedNote")}</p>
                 )}
               </CardContent>
             </Card>
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Organization</CardTitle>
+                <CardTitle>{t("organization")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldGroup className="gap-3">
                   <Field>
-                    <FieldLabel htmlFor="product-category">Category</FieldLabel>
+                    <FieldLabel htmlFor="product-category">{t("category")}</FieldLabel>
                     <Input
                       id="product-category"
                       value={product.category}
@@ -838,7 +851,7 @@ export function ProductEditor({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="product-code">Product code</FieldLabel>
+                    <FieldLabel htmlFor="product-code">{t("productCode")}</FieldLabel>
                     <Input
                       id="product-code"
                       value={product.productCode}
@@ -846,7 +859,7 @@ export function ProductEditor({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="product-url">Product page</FieldLabel>
+                    <FieldLabel htmlFor="product-url">{t("productPage")}</FieldLabel>
                     <Input
                       id="product-url"
                       type="url"
@@ -861,7 +874,7 @@ export function ProductEditor({
             {saved.id && (
               <Card size="sm">
                 <CardHeader>
-                  <CardTitle>Catalogs</CardTitle>
+                  <CardTitle>{t("catalogs")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {catalogs.length ? (
@@ -876,7 +889,7 @@ export function ProductEditor({
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Not in any catalog.</p>
+                    <p className="text-sm text-muted-foreground">{t("notInCatalog")}</p>
                   )}
                 </CardContent>
               </Card>

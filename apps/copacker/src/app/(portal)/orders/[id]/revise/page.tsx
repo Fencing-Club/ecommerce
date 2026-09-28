@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm"
+import { getTranslations } from "next-intl/server"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { OrderReviser } from "@/components/supplier/order-reviser"
@@ -8,10 +9,10 @@ import { requirePage, session, titleFor } from "@/server/auth"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 
-export const generateMetadata = titleFor("Edit order", "orders", "edit")
+export const generateMetadata = titleFor("orders.revise.title", "orders", "edit")
 
 export default async function ReviseOrderPage({ params }: { params: Promise<{ id: string }> }) {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders.revise")])
   // A malformed id, such as /orders/abc/revise, finds nothing, like an unknown one.
   const parsed = z.uuid().safeParse((await params).id)
   if (!parsed.success) {
@@ -78,7 +79,7 @@ export default async function ReviseOrderPage({ params }: { params: Promise<{ id
       orderId={id}
       revision={order.revision}
       reference={data.reference}
-      customer={customer?.name ?? "your customer"}
+      customer={customer?.name ?? t("yourCustomer")}
       currency={data.currency}
       items={[...items, ...removed]}
       subtotal={data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)}

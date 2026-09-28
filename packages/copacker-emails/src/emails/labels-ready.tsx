@@ -1,5 +1,5 @@
 /** @jsxRuntime automatic */
-import { Layout } from "../layout"
+import { type EmailCopy, Layout } from "../layout"
 import { Details, day, Steps } from "../parts"
 import { renderEmail } from "../render"
 
@@ -7,12 +7,6 @@ export type LabelsReadyProps = {
   // Copacker's origin, such as https://copacker.example.
   appUrl: string
   shipmentId: string
-  // The purchase order's reference.
-  reference: string
-  // The buyer's workspace name.
-  buyer: string
-  // The shipment's number in its purchase order, oldest first as the app numbers them, when it's known.
-  shipment?: number
   cartons?: number
   // Where the cartons go, such as "Amazon AWD US" or the buyer's warehouse.
   destination?: string
@@ -20,42 +14,36 @@ export type LabelsReadyProps = {
   readyDate?: string
   // Amazon's IDs for the shipment, when it goes to Amazon.
   amazonShipments?: ReadonlyArray<string>
-  to: string
+  // The language the copy is written in, such as "de". Dates and numbers are written in it too.
+  lang: string
+  // The words, already in the reader's language.
+  copy: EmailCopy & {
+    action: string
+    labels: { cartons: string; destination: string; readyForPickup: string; amazonShipment: string }
+    // How to label the cartons and hand them over.
+    steps: ReadonlyArray<string>
+  }
 }
 
-const title = ({ reference, shipment }: LabelsReadyProps) =>
-  shipment ? `Labels ready for ${reference}, shipment ${shipment}` : `Labels ready for ${reference}`
-
 export default function LabelsReady(props: LabelsReadyProps) {
-  const { appUrl, shipmentId, reference, buyer, shipment, cartons, destination, readyDate, amazonShipments } = props
-  const lead = `${buyer} released the shipment, so it’s ready to label and send.`
+  const { appUrl, shipmentId, cartons, destination, readyDate, amazonShipments, lang, copy } = props
+  const { labels } = copy
   return (
     <Layout
-      action={{ label: "Open shipment", href: `${appUrl}/shipments/${shipmentId}` }}
+      action={{ label: copy.action, href: `${appUrl}/shipments/${shipmentId}` }}
       appUrl={appUrl}
-      eyebrow="Ready to ship"
-      heading={
-        shipment ? `Labels are ready for ${reference}, shipment ${shipment}` : `Labels are ready for ${reference}`
-      }
-      lead={lead}
-      preview={lead}
-      reason={`${buyer} released this shipment in Copacker.`}
+      copy={copy}
+      lang={lang}
     >
       <Details
         rows={[
-          ...(cartons ? [{ label: "Cartons", value: cartons.toLocaleString("en-US") }] : []),
-          ...(destination ? [{ label: "Destination", value: destination }] : []),
-          ...(readyDate ? [{ label: "Ready for pickup", value: day(readyDate) }] : []),
-          ...(amazonShipments?.length ? [{ label: "Amazon shipment", value: amazonShipments.join(", ") }] : [])
+          ...(cartons ? [{ label: labels.cartons, value: cartons.toLocaleString(lang) }] : []),
+          ...(destination ? [{ label: labels.destination, value: destination }] : []),
+          ...(readyDate ? [{ label: labels.readyForPickup, value: day(readyDate, lang) }] : []),
+          ...(amazonShipments?.length ? [{ label: labels.amazonShipment, value: amazonShipments.join(", ") }] : [])
         ]}
       />
-      <Steps
-        steps={[
-          "Print the labels at actual size (100%)",
-          "Put each carton’s label on it, covering any other barcode",
-          "Check the packing checklist, then hand the cartons to the carrier"
-        ]}
-      />
+      <Steps steps={copy.steps} />
     </Layout>
   )
 }
@@ -63,16 +51,34 @@ export default function LabelsReady(props: LabelsReadyProps) {
 LabelsReady.PreviewProps = {
   appUrl: "http://localhost:3000",
   shipmentId: "00000000-0000-4000-8000-000000000000",
-  reference: "TEST-UNIC-1",
-  buyer: "Fencing Club",
-  shipment: 1,
   cartons: 6,
   destination: "Amazon AWD US",
   readyDate: "2026-11-20",
   amazonShipments: ["STAR-WBSAXKQKBYMYS"],
-  to: "sales@unic.example"
+  lang: "en",
+  copy: {
+    subject: "Labels ready for TEST-UNIC-1, shipment 1",
+    eyebrow: "Ready to ship",
+    heading: "Labels are ready for TEST-UNIC-1, shipment 1",
+    lead: "Fencing Club released the shipment, so it’s ready to label and send.",
+    preview: "Fencing Club released the shipment, so it’s ready to label and send.",
+    labels: {
+      cartons: "Cartons",
+      destination: "Destination",
+      readyForPickup: "Ready for pickup",
+      amazonShipment: "Amazon shipment"
+    },
+    steps: [
+      "Print the labels at actual size (100%)",
+      "Put each carton’s label on it, covering any other barcode",
+      "Check the packing checklist, then hand the cartons to the carrier"
+    ],
+    action: "Open shipment",
+    reason: "Fencing Club released this shipment in Copacker.",
+    tagline: "Restocking, handled."
+  }
 } satisfies LabelsReadyProps
 
 export function labelsReadyEmail(props: LabelsReadyProps) {
-  return renderEmail(title(props), <LabelsReady {...props} />)
+  return renderEmail(props.copy.subject, <LabelsReady {...props} />)
 }

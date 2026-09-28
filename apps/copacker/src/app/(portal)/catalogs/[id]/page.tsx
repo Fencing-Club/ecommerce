@@ -5,7 +5,7 @@ import { can } from "@/lib/access"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { catalogEditor } from "@/server/catalogs"
 
-export const generateMetadata = titleFor("Catalog", "catalogs")
+export const generateMetadata = titleFor("supplier.pages.catalog", "catalogs")
 
 export default async function CatalogPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()

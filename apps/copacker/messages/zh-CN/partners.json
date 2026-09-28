@@ -1,0 +1,163 @@
+{
+  "page": {
+    "title": "合作伙伴",
+    "tabsLabel": "合作伙伴类型",
+    "tabs": {
+      "all": "全部",
+      "supplier": "供应商",
+      "forwarder": "货代"
+    },
+    "search": "搜索合作伙伴",
+    "columns": {
+      "name": "名称",
+      "type": "类型",
+      "status": "状态",
+      "details": "详情",
+      "actions": "操作"
+    },
+    "empty": {
+      "noMatch": "没有与“{query}”匹配的合作伙伴",
+      "all": "还没有合作伙伴",
+      "supplier": "还没有供应商",
+      "forwarder": "还没有货代"
+    },
+    "hints": {
+      "forwarder": "添加货代，通过其运输采购订单。",
+      "supplier": "来自 Shopify 的供应商会显示在这里。",
+      "search": "检查拼写，或在其他标签页中搜索。"
+    }
+  },
+  "add": {
+    "button": "添加合作伙伴",
+    "supplier": "供应商",
+    "forwarder": "货代"
+  },
+  "row": {
+    "types": {
+      "supplier": "供应商",
+      "forwarder": "货代"
+    },
+    "addresses": "{count, plural, other {# 个地址}}",
+    "noAddresses": "还没有地址",
+    "leadTime": "交货周期 {days, plural, other {# 天}}",
+    "leadTimeAndAddresses": "交货周期 {days, plural, other {# 天}}，{count, plural, other {# 个地址}}",
+    "sending": "正在发送…",
+    "invitationSentTo": "邀请已发送至 {email}",
+    "invitationSent": "邀请已发送",
+    "moreActions": "{name} 的更多操作",
+    "menu": {
+      "edit": "编辑",
+      "addresses": "地址",
+      "invite": "邀请",
+      "resend": "重新发送邀请"
+    },
+    "standing": {
+      "joined": "已加入 Copacker",
+      "invited": "已邀请",
+      "expired": "邀请已过期",
+      "notInvited": "未邀请"
+    }
+  },
+  "forwarder": {
+    "add": {
+      "trigger": "添加货代",
+      "title": "添加货代",
+      "description": "从你的供应商处提货，再转运至 Amazon 或你的仓库。",
+      "submit": "添加货代",
+      "company": "公司",
+      "companyPlaceholder": "Shenzhen Logistics",
+      "email": "邮箱",
+      "emailDescription": "填写邮箱即可立即邀请对方。"
+    },
+    "invite": {
+      "title": "邀请 {name}",
+      "description": "对方将自行维护用于你的采购订单的仓库地址。",
+      "submit": "发送邀请",
+      "email": "邮箱"
+    },
+    "rename": {
+      "trigger": "编辑",
+      "triggerLabel": "编辑 {name}",
+      "title": "编辑货代",
+      "submit": "保存",
+      "company": "公司"
+    },
+    "remove": {
+      "trigger": "移除",
+      "title": "移除 {name}？",
+      "description": "新的采购订单将无法发往该货代。已发送的采购订单保留原地址。",
+      "cancel": "取消",
+      "confirm": "移除",
+      "failed": "无法移除 {name}"
+    }
+  },
+  "supplier": {
+    "add": {
+      "trigger": "添加供应商",
+      "title": "添加供应商",
+      "description": "用于尚未在 Shopify 中的供应商。"
+    },
+    "edit": {
+      "title": "编辑 {name}",
+      "name": "名称",
+      "companyName": "公司名称",
+      "companyNameDescription": "与 Shopify 的“供应商”字段一致。",
+      "companyNamePlaceholder": "不在 Shopify 中",
+      "contactName": "联系人",
+      "contactEmail": "联系人邮箱",
+      "phone": "电话",
+      "website": "网站",
+      "websiteJoined": "{name} 在自己的工作区中维护联系方式。",
+      "leadTime": "交货周期（天）",
+      "leadTimeDescription": "从采购订单到可售库存。留空则为 {days}。",
+      "cancel": "取消",
+      "save": "保存",
+      "saving": "正在保存…",
+      "failed": "无法保存供应商，请重试。"
+    },
+    "invite": {
+      "title": "邀请 {name}",
+      "description": "对方可以查看你共享的采购订单，并在需要提供文件时收到邮件通知。",
+      "email": "供应商邮箱",
+      "cancel": "取消",
+      "submit": "发送邀请",
+      "sending": "正在发送…",
+      "failed": "无法邀请 {name}，请重试。"
+    }
+  },
+  "address": {
+    "editPickup": "编辑提货地址",
+    "edit": "编辑地址",
+    "addPickup": "为 {name} 添加提货地址",
+    "add": "为 {name} 添加地址",
+    "saveChanges": "保存更改",
+    "save": "保存地址",
+    "name": "地址名称",
+    "pickupPlaceholder": "工厂",
+    "placeholder": "义乌仓库",
+    "sheet": {
+      "supplier": "提货地址",
+      "forwarder": "发往 Amazon 或你的仓库途中的中转站",
+      "joinedSupplier": "在 Copacker 上自行维护提货地址",
+      "joinedForwarder": "在 Copacker 上自行维护地址"
+    },
+    "empty": "还没有地址",
+    "addButton": "添加地址",
+    "removing": "正在移除 {name}",
+    "moreActions": "{name} 的更多操作",
+    "menuEdit": "编辑",
+    "menuRemove": "移除",
+    "removeFailed": "无法移除 {name}"
+  },
+  "contactKinds": {
+    "delivery": "收货地址",
+    "forwarder": "货代",
+    "pickup": "提货地址"
+  },
+  "contactDetails": {
+    "enterEmail": "请输入邮箱地址"
+  },
+  "phone": {
+    "invalid": "请输入电话号码"
+  }
+}

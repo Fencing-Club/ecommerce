@@ -1,9 +1,11 @@
 import { AlertTriangle, ChevronRight, Download, FileText, PackageOpen } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Children } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
+import messages from "../../messages/en/common.json"
 import { InfoTip } from "./info-tip"
 
 // Every status reads in one of five tones: neutral when not started, closed or cancelled; info while in progress or
@@ -11,57 +13,59 @@ import { InfoTip } from "./info-tip"
 // or stock ran out.
 export type StatusTone = "neutral" | "info" | "success" | "warning" | "destructive"
 
+type StatusKey = keyof typeof messages.status
+
 // Keyed by the status as the app stores it, or by the words a store reports in lowercase with underscores, such as
-// partially_fulfilled for Shopify's "Partially fulfilled".
-const statuses: Record<string, { label: string; tone: StatusTone }> = {
+// partially_fulfilled for Shopify's "Partially fulfilled". The label is its key under the "common" messages' `status`.
+const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   // Purchase orders
-  draft: { label: "Draft", tone: "neutral" },
+  draft: { label: "draft", tone: "neutral" },
   // Supplier products.
-  active: { label: "Active", tone: "success" },
-  archived: { label: "Archived", tone: "neutral" },
-  submitted: { label: "With supplier", tone: "info" },
-  closed: { label: "Closed", tone: "neutral" },
+  active: { label: "active", tone: "success" },
+  archived: { label: "archived", tone: "neutral" },
+  submitted: { label: "submitted", tone: "info" },
+  closed: { label: "closed", tone: "neutral" },
   // Shipments
-  packing: { label: "Packing", tone: "info" },
-  approval: { label: "Approval needed", tone: "warning" },
-  queued: { label: "Creating shipment", tone: "info" },
-  creating: { label: "Creating shipment", tone: "info" },
-  waiting_labels: { label: "Needs shipping labels", tone: "warning" },
-  ready: { label: "Ready for pickup", tone: "success" },
-  shipped: { label: "Shipped", tone: "info" },
-  forwarded: { label: "Shipped by forwarder", tone: "info" },
-  received: { label: "Received", tone: "success" },
-  correction: { label: "Correction requested", tone: "warning" },
-  needs_attention: { label: "Needs attention", tone: "destructive" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
+  packing: { label: "packing", tone: "info" },
+  approval: { label: "approval", tone: "warning" },
+  queued: { label: "creatingShipment", tone: "info" },
+  creating: { label: "creatingShipment", tone: "info" },
+  waiting_labels: { label: "waitingLabels", tone: "warning" },
+  ready: { label: "ready", tone: "success" },
+  shipped: { label: "shipped", tone: "info" },
+  forwarded: { label: "forwarded", tone: "info" },
+  received: { label: "received", tone: "success" },
+  correction: { label: "correction", tone: "warning" },
+  needs_attention: { label: "needsAttention", tone: "destructive" },
+  cancelled: { label: "cancelled", tone: "neutral" },
   // Amazon inbound shipments, in Seller Central's words (shipped, closed and cancelled read as above)
-  working: { label: "Working", tone: "info" },
-  created: { label: "Created", tone: "info" },
-  ready_to_ship: { label: "Ready to ship", tone: "info" },
-  in_transit: { label: "In transit", tone: "info" },
-  delivered: { label: "Delivered", tone: "info" },
-  checked_in: { label: "Checked in", tone: "info" },
-  receiving: { label: "Receiving", tone: "info" },
-  error: { label: "Error", tone: "destructive" },
+  working: { label: "working", tone: "info" },
+  created: { label: "created", tone: "info" },
+  ready_to_ship: { label: "readyToShip", tone: "info" },
+  in_transit: { label: "inTransit", tone: "info" },
+  delivered: { label: "delivered", tone: "info" },
+  checked_in: { label: "checkedIn", tone: "info" },
+  receiving: { label: "receiving", tone: "info" },
+  error: { label: "error", tone: "destructive" },
   // Sales orders, in Shopify's and Amazon's words
-  pending: { label: "Pending", tone: "info" },
-  unshipped: { label: "Unshipped", tone: "info" },
-  unfulfilled: { label: "Unfulfilled", tone: "info" },
-  partially_shipped: { label: "Partially shipped", tone: "info" },
-  partially_fulfilled: { label: "Partially fulfilled", tone: "info" },
-  fulfilled: { label: "Fulfilled", tone: "success" },
-  canceled: { label: "Cancelled", tone: "neutral" },
-  unfulfillable: { label: "Unfulfillable", tone: "destructive" },
+  pending: { label: "pending", tone: "info" },
+  unshipped: { label: "unshipped", tone: "info" },
+  unfulfilled: { label: "unfulfilled", tone: "info" },
+  partially_shipped: { label: "partiallyShipped", tone: "info" },
+  partially_fulfilled: { label: "partiallyFulfilled", tone: "info" },
+  fulfilled: { label: "fulfilled", tone: "success" },
+  canceled: { label: "cancelled", tone: "neutral" },
+  unfulfillable: { label: "unfulfillable", tone: "destructive" },
   // Stock
-  in_stock: { label: "In stock", tone: "success" },
-  reorder_soon: { label: "Reorder soon", tone: "warning" },
-  reorder_now: { label: "Reorder now", tone: "destructive" },
-  out_of_stock: { label: "Out of stock", tone: "destructive" },
+  in_stock: { label: "inStock", tone: "success" },
+  reorder_soon: { label: "reorderSoon", tone: "warning" },
+  reorder_now: { label: "reorderNow", tone: "destructive" },
+  out_of_stock: { label: "outOfStock", tone: "destructive" },
   // Partners
-  on_copacker: { label: "On Copacker", tone: "success" },
-  invited: { label: "Invited", tone: "info" },
-  invitation_expired: { label: "Invitation expired", tone: "warning" },
-  not_invited: { label: "Not invited", tone: "neutral" }
+  on_copacker: { label: "onCopacker", tone: "success" },
+  invited: { label: "invited", tone: "info" },
+  invitation_expired: { label: "invitationExpired", tone: "warning" },
+  not_invited: { label: "notInvited", tone: "neutral" }
 }
 
 // The tone's color, which tints the badge, colors its dot and, mixed with the text color, its label.
@@ -113,8 +117,9 @@ function words(status: string) {
 }
 
 export function Status({ status }: { status: string }) {
+  const t = useTranslations("common.status")
   const known = statuses[statusKey(status)]
-  return <StatusBadge tone={known?.tone ?? "neutral"}>{known?.label ?? words(status)}</StatusBadge>
+  return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
 }
 
 // The page title with its actions on the right. A record's page passes its parents, which lead the title on the same
@@ -134,12 +139,13 @@ export function PageHeader({
   description?: React.ReactNode
   children?: React.ReactNode
 }) {
+  const t = useTranslations("common")
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {parents?.length ? (
-            <nav aria-label="Breadcrumb">
+            <nav aria-label={t("breadcrumb")}>
               <ol className="flex items-center gap-2 text-sm text-muted-foreground">
                 {parents.map((parent) => (
                   <li key={parent.label} className="flex items-center gap-2">
@@ -150,7 +156,7 @@ export function PageHeader({
                     ) : (
                       parent.label
                     )}
-                    <ChevronRight aria-hidden className="size-4 shrink-0" />
+                    <ChevronRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
                   </li>
                 ))}
               </ol>
@@ -184,12 +190,13 @@ export function StatCard({
   // Anything under the figure, such as a sparkline.
   children?: React.ReactNode
 }) {
+  const t = useTranslations("common")
   return (
     <Card className="gap-3">
       <CardHeader className="gap-1">
         <CardDescription className="flex min-w-0 items-center gap-1.5 font-medium">
           <span className="truncate">{label}</span>
-          {info && <InfoTip label={`About ${label.toLowerCase()}`}>{info}</InfoTip>}
+          {info && <InfoTip label={t("about", { label })}>{info}</InfoTip>}
         </CardDescription>
         {/* Proportional figures: a hero number reads on its own, and Geist's tabular 1 has a slab foot. */}
         <CardTitle className="text-2xl font-semibold tracking-tight">{value}</CardTitle>
@@ -240,11 +247,6 @@ export function EmptyState({
   )
 }
 
-const destinationNames: Record<string, string> = {
-  amazon: "Amazon",
-  warehouse: "your location"
-}
-
 // A short warning next to what it's about, such as a variation without a barcode. The warning color is too light for
 // text, so only the icon uses it, and the icon keeps to the first line when the text wraps.
 export function WarningNote({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -256,18 +258,31 @@ export function WarningNote({ children, className }: { children: React.ReactNode
   )
 }
 
-export function formatDestination(destination: string) {
-  return destinationNames[destination] ?? destination
+type DestinationKey = keyof typeof messages.destinations
+
+function isDestination(destination: string): destination is DestinationKey {
+  return Object.hasOwn(messages.destinations, destination)
 }
 
-const documentKinds: Record<string, string> = {
-  purchase_order: "Purchase order",
-  invoice: "Commercial invoice",
-  packing_list: "Packing list",
-  checklist: "Packing checklist",
-  carton_label: "Carton label",
-  shipping_label: "Shipping label",
-  product_label: "Product label"
+// Where a purchase order goes, such as "your location", or the destination as stored when it isn't one of
+// these. Pass the "common" messages' translator (useTranslations("common") or getTranslations("common")) to name it
+// in the person's language; without one it's in English.
+export function formatDestination(destination: string, t?: (key: `destinations.${DestinationKey}`) => string) {
+  if (!isDestination(destination)) {
+    return destination
+  }
+  return t ? t(`destinations.${destination}`) : messages.destinations[destination]
+}
+
+// Each document kind's name, as its key under the "common" messages' `documents`.
+const documentKinds: Record<string, keyof typeof messages.documents> = {
+  purchase_order: "purchaseOrder",
+  invoice: "invoice",
+  packing_list: "packingList",
+  checklist: "checklist",
+  carton_label: "cartonLabel",
+  shipping_label: "shippingLabel",
+  product_label: "productLabel"
 }
 
 // Documents as flat rows, for a card: each by its type, such as Packing list, with its file name beneath. The whole row
@@ -277,10 +292,12 @@ export function DocumentList({
 }: {
   documents: Array<{ id: string; name: string; kind?: string; cartonId?: string | null }>
 }) {
+  const t = useTranslations("common.documents")
   return (
     <ul className="divide-y">
       {documents.map((d) => {
-        const kind = d.kind ? documentKinds[d.kind] : undefined
+        const kindKey = d.kind ? documentKinds[d.kind] : undefined
+        const kind = kindKey && t(kindKey)
         return (
           <li key={d.id}>
             {/* The row bleeds into the card's padding on hover, so its content lines up with the card's. */}
@@ -291,7 +308,7 @@ export function DocumentList({
               <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium">
-                  <span className="sr-only">Download </span>
+                  <span className="sr-only">{t("download")} </span>
                   {kind ?? d.name}
                   {d.cartonId && ` ${d.cartonId}`}
                 </span>

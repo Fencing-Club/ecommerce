@@ -1,0 +1,61 @@
+{
+  "groups": {
+    "store": "店铺",
+    "purchasing": "采购",
+    "sales": "销售",
+    "catalog": "产品"
+  },
+  "pages": {
+    "overview": "概览",
+    "orders": "订单",
+    "products": "产品",
+    "restock": "补货",
+    "purchaseOrders": "采购订单",
+    "shipments": "货件",
+    "partners": "合作伙伴",
+    "customers": "客户",
+    "inventory": "库存",
+    "catalogs": "目录",
+    "settings": "设置"
+  },
+  "sidebar": {
+    "buyerWorkspace": "买家工作区",
+    "supplierWorkspace": "供应商工作区",
+    "forwarderWorkspace": "货代工作区",
+    "workspaces": "工作区",
+    "newWorkspace": "新建工作区",
+    "signOut": "退出登录",
+    "theme": "主题",
+    "themes": {
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "empty": "暂无通知",
+    "emptyDescription": "订单和货件的动态会显示在这里"
+  },
+  "search": {
+    "search": "搜索",
+    "ctrl": "Ctrl",
+    "toMove": "<keys></keys> 移动",
+    "toOpen": "<keys></keys> 打开",
+    "toClose": "<keys></keys> 关闭",
+    "close": "关闭",
+    "noResults": "没有与“{query}”相关的结果",
+    "pages": "页面",
+    "orders": "订单",
+    "loadingOrders": "正在加载订单",
+    "loadingResults": "正在加载结果",
+    "recentPurchaseOrders": "最近的采购订单",
+    "products": "产品",
+    "purchaseOrders": "采购订单",
+    "shipments": "货件",
+    "partners": "合作伙伴",
+    "supplier": "供应商",
+    "forwarder": "货代",
+    "failed": "未能完成全部搜索，请重试。"
+  }
+}

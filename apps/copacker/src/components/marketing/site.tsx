@@ -1,4 +1,5 @@
 import { ArrowRight, Box } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
@@ -13,12 +14,12 @@ export const paper = "light bg-(--paper) text-foreground [color-scheme:light]"
 export const stage = "dark bg-(--ink) text-foreground [color-scheme:dark]"
 // Copacker's orange, lit from above, as the ad's end card has it.
 export const lit = "bg-[linear-gradient(180deg,#ffb27a_0%,#ff7a2e_45%,#f54a00_100%)] bg-clip-text text-transparent"
-export const free = "Free to use, no credit card needed."
 // Rises into place as the page loads, after its animation delay.
 export const rise =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-[0.35em] motion-safe:duration-1000 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:fill-mode-both"
 
 export function GetStarted({ className }: { className?: string }) {
+  const t = useTranslations("marketing.site")
   return (
     <Button
       size="lg"
@@ -26,19 +27,17 @@ export function GetStarted({ className }: { className?: string }) {
       nativeButton={false}
       render={<Link href="/signup" />}
     >
-      Get started
-      <ArrowRight />
+      {t("getStarted")}
+      <ArrowRight className="rtl:rotate-180" />
     </Button>
   )
 }
 
+// The home page's sections, as the nav bar and the footer link to them.
+const sections = ["forecast", "handoffs", "agents", "faq"] as const
+
 function Nav({ tone }: { tone: "dark" | "light" }) {
-  const sections = [
-    ["/#forecast", "Forecast"],
-    ["/#handoffs", "Handoffs"],
-    ["/#agents", "Agents"],
-    ["/#faq", "FAQ"]
-  ]
+  const t = useTranslations("marketing.site")
   const link =
     "rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
   return (
@@ -47,22 +46,22 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
         <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark />
         </Link>
-        <nav aria-label="Main" className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">
-          {sections.map(([href, label]) => (
-            <a key={href} href={href} className={link}>
-              {label}
+        <nav aria-label={t("mainNav")} className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">
+          {sections.map((section) => (
+            <a key={section} href={`/#${section}`} className={link}>
+              {t(`sections.${section}`)}
             </a>
           ))}
           <Link href="/contact" className={link}>
-            Contact
+            {t("contact")}
           </Link>
         </nav>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ms-auto flex items-center gap-1.5">
           <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
-            Sign in
+            {t("signIn")}
           </Button>
           <Button nativeButton={false} render={<Link href="/signup" />}>
-            Get started
+            {t("getStarted")}
           </Button>
         </div>
       </div>
@@ -71,29 +70,22 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
 }
 
 function Footer() {
+  const t = useTranslations("marketing.site")
   const columns = [
+    { title: t("footer.product"), links: sections.map((section) => [`/#${section}`, t(`sections.${section}`)]) },
     {
-      title: "Product",
+      title: t("footer.company"),
       links: [
-        ["/#forecast", "Forecast"],
-        ["/#handoffs", "Handoffs"],
-        ["/#agents", "Agents"],
-        ["/#faq", "FAQ"]
+        ["/contact", t("contact")],
+        ["/privacy", t("footer.privacy")],
+        ["/terms", t("footer.terms")]
       ]
     },
     {
-      title: "Company",
+      title: t("footer.account"),
       links: [
-        ["/contact", "Contact"],
-        ["/privacy", "Privacy"],
-        ["/terms", "Terms"]
-      ]
-    },
-    {
-      title: "Account",
-      links: [
-        ["/signup", "Get started"],
-        ["/login", "Sign in"]
+        ["/signup", t("getStarted")],
+        ["/login", t("signIn")]
       ]
     }
   ]
@@ -105,7 +97,7 @@ function Footer() {
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>
-          <p className="max-w-xs text-muted-foreground">Forecasting, purchase orders and logistics, in one place.</p>
+          <p className="max-w-xs text-muted-foreground">{t("footer.tagline")}</p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title} className="flex flex-col gap-3 text-sm">

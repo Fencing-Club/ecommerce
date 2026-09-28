@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "title": "Copacker: Restocking, handled",
+    "description": "Forecast your inventory, send purchase orders just in time so you don’t run out, and handle the handoffs to your forwarder, Amazon FBA and AWD, with every label and document made for you."
+  },
+  "site": {
+    "free": "Free to use, no credit card needed.",
+    "getStarted": "Get started",
+    "signIn": "Sign in",
+    "contact": "Contact",
+    "mainNav": "Main",
+    "sections": {
+      "forecast": "Forecast",
+      "handoffs": "Handoffs",
+      "agents": "Agents",
+      "faq": "FAQ"
+    },
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "account": "Account",
+      "tagline": "Forecasting, purchase orders and logistics, in one place.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  },
+  "film": {
+    "watch": "Watch the video",
+    "title": "Copacker: Restocking, handled"
+  },
+  "copyButton": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "signup": {
+    "title": "Hear what ships next.",
+    "text": "New stores, new routes and new tools, in a short email when they land.",
+    "done": "You’re on the list.",
+    "email": "Email",
+    "placeholder": "you@company.com",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing",
+    "failed": "Couldn’t sign you up. Try again in a moment.",
+    "getStartedNow": "Or get started now, it’s free"
+  },
+  "hero": {
+    "title": "<first>Restocking,</first> <second>handled.</second>",
+    "text": "Copacker forecasts your inventory, sends purchase orders just in time so you don’t run out, and handles the handoffs to your forwarder, Amazon FBA and AWD, with every label and document made for you.",
+    "shotCaption": "Copacker’s Restock page: two products from Shenzhen Metalworks to reorder, with order quantities, a {cost} estimated cost, and about {lost} in sales at risk before reorders arrive."
+  },
+  "forecast": {
+    "title": "Know when to reorder.",
+    "text": "Copacker forecasts every product from your Amazon, Shopify and eBay sales, and works back from your supplier’s lead time to the day you need to order."
+  },
+  "agents": {
+    "title": "Built for AI agents.",
+    "text": "Copacker’s MCP server works with any agent, so yours can plan, order and ship right alongside you. Your partners’ agents post their updates too."
+  },
+  "faq": {
+    "title": "Questions",
+    "questions": {
+      "cost": {
+        "question": "What does Copacker cost?",
+        "answer": "Nothing right now. There are no paid plans, and signing up doesn’t ask for a card."
+      },
+      "stores": {
+        "question": "Which stores does it work with?",
+        "answer": "Amazon, Shopify and eBay. Copacker reads your sales and stock from each."
+      },
+      "warehouse": {
+        "question": "Can I ship to my own warehouse or a 3PL?",
+        "answer": "Yes. A purchase order can go to any of your delivery addresses instead of Amazon. Link an address to a Shopify location, and what you’ve ordered shows as on order there."
+      },
+      "locations": {
+        "question": "Does Restock plan for my other locations?",
+        "answer": "Yes. It plans for each of your Shopify locations as well as Amazon, and a reorder for a location goes straight to it."
+      },
+      "tracking": {
+        "question": "How do I track shipments outside Amazon?",
+        "answer": "Your supplier marks the shipment shipped, your forwarder adds the carrier and tracking number, and you mark it received, all on the purchase order."
+      },
+      "forwarders": {
+        "question": "Does it work with freight forwarders?",
+        "answer": "Yes. Your forwarder gets its own workspace, downloads the invoice and labels, and marks each shipment shipped with its carrier, tracking number and freight cost."
+      },
+      "suppliers": {
+        "question": "Do my suppliers need an account?",
+        "answer": "No. They can work in Copacker for free, or you can fill in their side of the order yourself."
+      },
+      "awd": {
+        "question": "Does it ship to AWD?",
+        "answer": "Yes. Copacker plans shipments to FBA and AWD, including AWD warehouses in China and Vietnam."
+      },
+      "documents": {
+        "question": "Which documents and labels does it make?",
+        "answer": "Purchase orders, packing lists, and FNSKU, carton, shipping and warning labels, alongside the commercial invoice from your supplier."
+      },
+      "mcp": {
+        "question": "What’s MCP?",
+        "answer": "The Model Context Protocol, an open standard for connecting AI agents to apps. Copacker’s MCP server works with ChatGPT, Claude, Cursor, VS Code and any other MCP client."
+      },
+      "cli": {
+        "question": "Is there a CLI?",
+        "answer": "Yes. The copacker CLI reads and acts on the same data as the app, for your scripts and coding agents."
+      }
+    }
+  },
+  "agentsDiagram": {
+    "yours": "Your agent",
+    "prompt": "Reorder anything that runs out before it arrives, and send it to AWD.",
+    "partner": "{name}’s agent",
+    "packingList": "Packing list submitted for purchase order {number}",
+    "pickup": "Pickup booked for {date}",
+    "steps": {
+      "checked": "Checked restock: {count, plural, one {# product runs out before it arrives} other {# products run out before they arrive}}",
+      "created": "Created purchase order {number} for {supplier}",
+      "sent": "Sent purchase order {number} to the supplier",
+      "planned": "Planned the Amazon AWD shipment"
+    }
+  },
+  "connect": {
+    "title": "Works with any agent.",
+    "text": "Add Copacker’s MCP server to your agent, and it works with your restock, orders and shipments like you do.",
+    "yourAgent": "Your agent",
+    "anyClient": "Any MCP client",
+    "terminal": "Terminal",
+    "serverUrl": "Server URL",
+    "setups": {
+      "claude": "In Claude, open Customize, then Connectors. Add a custom connector with this URL, then connect.",
+      "chatgpt": "In ChatGPT on the web, turn on developer mode under Settings, Security and login, then add this URL in Plugins.",
+      "claudeCode": "Run this, then sign in with {command} in Claude Code.",
+      "codex": "Run this and sign in when Codex asks. The CLI, the IDE extension and the ChatGPT desktop app share it.",
+      "cursor": "Add Copacker to Cursor’s MCP file, then sign in from Customize.",
+      "vsCode": "Add Copacker to your workspace’s MCP file, then start it from the file and sign in.",
+      "gemini": "Run this, then sign in with {command}.",
+      "windsurf": "Windsurf is now Devin Desktop. Open its MCP config file from the MCPs menu and add Copacker.",
+      "zed": "Add Copacker to Zed’s settings, or add it as a remote server under Settings, AI, MCP Servers.",
+      "openCode": "Add Copacker to OpenCode’s config file. It signs in the first time it connects.",
+      "hermes": "Run this, and sign in when Hermes first connects.",
+      "openClaw": "Run these to add Copacker and sign in.",
+      "any": "Point any other client at this URL, or have it run the CLI’s server with {command}."
+    },
+    "session": "A terminal session with the copacker CLI",
+    "cli": {
+      "title": "The same data, in your terminal.",
+      "text": "The copacker CLI reaches the same endpoints as the app, so your scripts and coding agents can read and act on everything you can."
+    }
+  },
+  "planner": {
+    "days": "{count, plural, one {# day} other {# days}}",
+    "inDays": "{count, plural, one {In # day} other {In # days}}",
+    "inStock": "{sku}, {count, number} in stock",
+    "soldADay": "Sold a day",
+    "captionLate": "Stock of the {product} over the next {horizon} days. Without a reorder it runs out in {out, plural, one {# day} other {# days}}. Ordered today, {units, number} units land after it runs out, losing about {lost} in sales.",
+    "captionInTime": "Stock of the {product} over the next {horizon} days. Without a reorder it runs out in {out, plural, one {# day} other {# days}}. Ordered in {orderBy, plural, one {# day} other {# days}}, {units, number} units land before it runs out.",
+    "unitsInStock": "Units in stock",
+    "holidayRush": "Holiday rush",
+    "rush": "Rush",
+    "runsOut": "Runs out",
+    "orderToday": "Order today",
+    "orderBy": "Order by",
+    "restock": "Restock",
+    "restockUnits": "+{count, plural, one {# unit} other {# units}}",
+    "leadTimeDays": "{count}-day lead time",
+    "today": "Today",
+    "withReorder": "With the reorder",
+    "withoutReorder": "Without a reorder",
+    "leadTime": "Lead time",
+    "landsLate": "It lands after it runs out",
+    "landsInTime": "Lands before it runs out",
+    "order": "Order",
+    "units": "{count, plural, one {# unit} other {# units}}",
+    "cartons": "{count, plural, one {# carton} other {# cartons}}",
+    "runsOutWithout": "Runs out without it",
+    "notThisSeason": "Not this season",
+    "todaysPace": "At today’s pace",
+    "lostSales": "Lost sales",
+    "none": "None",
+    "whileOut": "While it’s out of stock",
+    "inStockThroughout": "In stock the whole way"
+  },
+  "shot": {
+    "search": "Search",
+    "buyerWorkspace": "Buyer workspace",
+    "restock": "Restock",
+    "allSuppliers": "All suppliers",
+    "salesPeriod": "<muted>Sales period</muted> {count, plural, one {# <muted>day</muted>} other {# <muted>days</muted>}}",
+    "leadTime": "<muted>Lead time</muted> {count, plural, one {# <muted>day</muted>} other {# <muted>days</muted>}}",
+    "estimatedCost": "Estimated cost",
+    "lines": "Lines",
+    "units": "Units",
+    "cases": "Cases",
+    "volume": "Volume",
+    "weight": "Weight",
+    "lostSales": "About {amount} in lost sales before reorders arrive",
+    "products": "{count, plural, one {# product} other {# products}}",
+    "supplierSummary": "Lead time {days, plural, one {# day} other {# days}}, {lines, plural, one {# line} other {# lines}}, {units, plural, one {# unit} other {# units}}",
+    "reorder": "Reorder",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "columns": {
+      "product": "Product",
+      "status": "Status",
+      "stockLeft": "Stock left",
+      "sold": "Sold",
+      "available": "Available",
+      "order": "Order",
+      "cost": "Cost"
+    }
+  },
+  "journey": {
+    "title": "One purchase order, from the factory to Amazon and your warehouse",
+    "steps": "Steps",
+    "purchaseOrder": "Purchase order {number}",
+    "documentCount": "{count, plural, one {# document} other {# documents}}",
+    "saved": "Saved to the purchase order: {name}",
+    "chapters": {
+      "order": {
+        "step": "Order",
+        "title": "Reorder in one click.",
+        "text": "Copacker writes the purchase order and sends it to your supplier."
+      },
+      "pack": {
+        "step": "Pack",
+        "title": "Labeled, and packed to fit.",
+        "text": "FNSKU and choking hazard labels go on each unit, carton and shipping labels on each box, and every box is sized to fit."
+      },
+      "pickUp": {
+        "step": "Pick up",
+        "title": "Amazon and your forwarder pick up.",
+        "text": "Amazon takes the cartons bound for AWD overseas, and your forwarder takes the rest."
+      },
+      "ship": {
+        "step": "Ship",
+        "title": "On its way.",
+        "text": "The commercial invoice, the bill of lading and the tracking all land on the same order."
+      },
+      "customs": {
+        "step": "Customs",
+        "title": "Through customs.",
+        "text": "Your forwarder clears it with the bill of lading and commercial invoice already on the order."
+      },
+      "deliver": {
+        "step": "Deliver",
+        "title": "Delivered to FBA, and to you.",
+        "text": "Your forwarder takes Amazon’s cartons to FBA, and FedEx brings the rest to your warehouse."
+      }
+    },
+    "documents": {
+      "purchaseOrder": "Purchase order",
+      "fnskuLabels": "FNSKU labels",
+      "chokingHazardLabels": "Choking hazard labels",
+      "packingList": "Packing list",
+      "cartonLabels": "Carton labels",
+      "shippingLabels": "Shipping labels",
+      "commercialInvoice": "Commercial invoice",
+      "billOfLading": "Bill of lading"
+    },
+    "pins": {
+      "unitLabels": "FNSKU and choking hazard labels",
+      "rightSized": "Right-sized to {size}",
+      "boxLabels": "Carton and shipping labels"
+    },
+    "places": {
+      "awdInChina": "AWD in China",
+      "customs": "Customs",
+      "yourWarehouse": "Your warehouse"
+    },
+    "cards": {
+      "withSupplier": "With supplier",
+      "supplier": "Supplier",
+      "units": "Units",
+      "total": "Total",
+      "submitted": "Submitted",
+      "cartons": "Cartons",
+      "cartonSize": "Carton size",
+      "weight": "Weight",
+      "shipments": "Shipments",
+      "awdByAmazon": "AWD in China, by Amazon",
+      "unitCount": "{count, plural, one {# unit} other {# units}}",
+      "pickedUp": "Picked up by {forwarder}",
+      "onTheWater": "On the water",
+      "inTransit": "In transit",
+      "arrives": "Arrives",
+      "checkedInAwd": "Checked in at AWD",
+      "released": "Released",
+      "cleared": "Cleared",
+      "checkedIn": "Checked in at Amazon FBA",
+      "delivered": "Delivered to your warehouse"
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "Contact Copacker",
+      "description": "Questions, a walkthrough for your team, or working together: send Copacker a note."
+    },
+    "title": "Talk to <lit>us.</lit>",
+    "text": "Questions about Copacker, a walkthrough for your team, or working together. Send a note and we’ll write back.",
+    "waysTitle": "Or see for yourself.",
+    "tryIt": "Try it",
+    "watchTitle": "Watch the video",
+    "watchText": "A restock from forecast to warehouse, in under two minutes.",
+    "faqTitle": "Read the FAQ",
+    "faqText": "Stores, shipping beyond Amazon, partners and agents.",
+    "questions": "Questions",
+    "form": {
+      "topic": "What’s it about?",
+      "topics": {
+        "gettingStarted": "Getting started",
+        "walkthrough": "A walkthrough",
+        "support": "Support",
+        "partnerships": "Partnerships",
+        "press": "Press",
+        "other": "Something else"
+      },
+      "name": "Name",
+      "email": "Email",
+      "company": "Company",
+      "message": "Message",
+      "send": "Send message",
+      "sending": "Sending",
+      "failed": "Couldn’t send your message. Try again in a moment.",
+      "sent": "Message sent.",
+      "writeBack": "We’ll write back to {email}.",
+      "another": "Send another",
+      "enterName": "Enter your name",
+      "enterEmail": "Enter a valid email address",
+      "writeMessage": "Write your message",
+      "tooLong": "Keep it under 5,000 characters"
+    }
+  }
+}

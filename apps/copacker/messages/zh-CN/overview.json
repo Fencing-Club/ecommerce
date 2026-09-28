@@ -1,0 +1,267 @@
+{
+  "title": "概览",
+  "loading": "正在加载概览",
+  "notAvailable": "不可用",
+  "new": "新",
+  "plusCurrencies": "另加 {amounts}",
+  "noStores": {
+    "title": "未连接店铺",
+    "connectDescription": "连接 Shopify 或 Amazon 以查看概览",
+    "askAdmin": "请管理员连接店铺",
+    "connect": "连接店铺"
+  },
+  "period": {
+    "choose": "选择时间段",
+    "presets": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "last7": "最近 7 天",
+      "last30": "最近 30 天",
+      "last90": "最近 90 天",
+      "last365": "最近 365 天",
+      "lastWeek": "上周",
+      "lastMonth": "上月",
+      "lastQuarter": "上季度",
+      "last12Months": "最近 12 个月",
+      "lastYear": "去年",
+      "weekToDate": "本周至今",
+      "monthToDate": "本月至今",
+      "quarterToDate": "本季度至今",
+      "yearToDate": "今年至今"
+    },
+    "comparisons": {
+      "previousPeriod": "上一周期",
+      "previousYear": "去年同期",
+      "none": "不对比"
+    },
+    "last": "最近",
+    "toDate": "本期至今",
+    "custom": "自定义范围",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月",
+    "cancel": "取消",
+    "apply": "应用"
+  },
+  "channel": {
+    "label": "渠道",
+    "all": "所有渠道",
+    "shopifyLocation": "Shopify：{location}"
+  },
+  "kpis": {
+    "label": "销售额，{period}",
+    "about": "关于{label}",
+    "versus": "{comparison, select, previousYear {对比去年同期} other {对比上一周期}}",
+    "noPrices": "暂无价格",
+    "noOrders": "未同步订单",
+    "noUnitCosts": "无单位成本",
+    "uncostedSales": "不含 {amount} 无单位成本的销售额。",
+    "estimatedFees": "部分费用在平台入账前为估算值。",
+    "margin": "<figure>{percent}</figure> 利润率",
+    "sales": "销售额",
+    "salesInfo": "扣除折扣后，不含税费和运费。",
+    "orders": "订单",
+    "averageOrder": "平均订单金额",
+    "units": "售出件数",
+    "grossProfit": "毛利",
+    "stockoutLosses": "缺货损失",
+    "stockoutInfo": "在今天下的补货订单到货前，因缺货预计损失的销售额。",
+    "lostThisPeriod": "本期损失 {amount}"
+  },
+  "sections": {
+    "sales": "销售",
+    "purchasing": "采购",
+    "productsAndCustomers": "产品和客户",
+    "products": "产品",
+    "stock": "库存量"
+  },
+  "salesByChannel": {
+    "title": "各渠道销售额",
+    "aboutLabel": "关于销售额",
+    "about": "扣除折扣后，不含税费和运费。",
+    "aboutLocation": "从 {location} 发货的 Shopify 订单。扣除折扣后，不含税费和运费。",
+    "otherMarketplaces": "{count, plural, other {未计入 # 个北美以外的 Amazon 订单。}}",
+    "orders": "订单",
+    "noOrders": "未同步订单"
+  },
+  "salesChart": {
+    "measure": "指标",
+    "metrics": {
+      "sales": "销售额",
+      "orders": "订单",
+      "units": "件数"
+    },
+    "orders": "{count, plural, other {# 个订单}}",
+    "units": "{count, plural, other {# 件}}",
+    "weekOf": "{date} 当周",
+    "previousSeries": "{source}，{comparison, select, previousYear {去年同期} other {上一周期}}",
+    "caption": "按{step, select, week {周} month {月} other {天}}统计的{metric, select, orders {订单} units {售出件数} other {销售额}}",
+    "stepColumn": "{step, select, week {周起始日} month {月份} other {日期}}",
+    "noData": "无数据"
+  },
+  "setup": {
+    "title": "完成设置",
+    "progress": "已完成 {done}/{total}",
+    "done": "完成"
+  },
+  "attention": {
+    "title": "需要处理",
+    "caughtUp": "全部处理完毕"
+  },
+  "inventory": {
+    "title": "库存",
+    "aboutLabel": "关于库存价值",
+    "about": "零售价值按每件近期售价或其 Shopify 价格计算。成本包含采购订单中的到岸成本。",
+    "products": "产品",
+    "onHand": "现有 {count, number}",
+    "onTheWay": "在途 {count, number}",
+    "atCost": "成本价 {amount}",
+    "noUnitCosts": "无单位成本",
+    "noPrices": "无价格",
+    "noStock": "未同步库存量",
+    "unitsOnHand": "现有件数",
+    "valueAtCost": "成本价值",
+    "retailValue": "零售价值",
+    "potentialProfit": "潜在毛利"
+  },
+  "cover": {
+    "title": "可售天数",
+    "aboutLabel": "关于可售天数",
+    "about": "按近期销售速度，每件商品的库存量可维持多久。",
+    "items": "{count, plural, other {# 个商品}}"
+  },
+  "upcoming": {
+    "title": "即将支出",
+    "aboutLabel": "关于即将支出",
+    "about": "到期的补货，以及按到期日排列的已发送采购订单。",
+    "next60": "未来 60 天",
+    "reorders": "当前应补货",
+    "reordersDetail": "按单位成本估算",
+    "purchaseOrders": "{count, plural, other {# 个采购订单}}",
+    "due": {
+      "overdue": "已逾期",
+      "next30": "30 天内到期",
+      "next60": "31 至 60 天内到期",
+      "later": "之后到期"
+    }
+  },
+  "trending": {
+    "title": "趋势产品",
+    "sellingMore": "销量上升",
+    "sellingLess": "销量下降",
+    "nothingMore": "没有销量上升的产品",
+    "nothingLess": "没有销量下降的产品",
+    "noPreviousOrders": "{period}未同步订单",
+    "noComparison": "无对比周期",
+    "noChanges": "没有产品变化超过几件",
+    "units": "从 {from, number} 到 {count, plural, other {# 件}}",
+    "variantUnits": "{variant}，从 {from, number} 到 {count, plural, other {# 件}}"
+  },
+  "slow": {
+    "title": "滞销库存",
+    "aboutLabel": "关于滞销库存",
+    "about": "可维持超过 3 个月或近期未售出的库存。",
+    "summary": "{items, plural, other {# 个商品}}，{units, plural, other {# 件}}",
+    "summaryAtCost": "{items, plural, other {# 个商品}}，{units, plural, other {# 件}}，成本价 {amount}",
+    "product": "产品",
+    "onHand": "现有",
+    "cover": "可售",
+    "atCost": "成本价",
+    "days": "{count, plural, other {# 天}}",
+    "notSelling": "无销量",
+    "noUnitCost": "无单位成本",
+    "empty": "没有滞销库存"
+  },
+  "bestSellers": {
+    "title": "畅销产品",
+    "restock": "补货",
+    "product": "产品",
+    "sold": "已售",
+    "onHand": "现有",
+    "cover": "可售",
+    "status": "状态",
+    "days": "{count, plural, other {# 天}}",
+    "empty": "暂无销售"
+  },
+  "openOrders": {
+    "title": "未结采购订单",
+    "link": "采购订单",
+    "supplier": "供应商",
+    "orders": "订单",
+    "openValue": "未结金额",
+    "otherSuppliers": "{count, plural, other {其他 # 个供应商}}",
+    "empty": "没有未结采购订单",
+    "open": "未结",
+    "drafts": "草稿",
+    "purchaseOrders": "{count, plural, other {# 个采购订单}}"
+  },
+  "profit": {
+    "title": "毛利",
+    "monthlyCosts": "月度费用",
+    "sales": "销售额",
+    "orderFees": "订单费用",
+    "costOfGoods": "商品成本",
+    "fees": "费用",
+    "groups": {
+      "refunds": "退款和争议",
+      "shipping": "运费和货运",
+      "advertising": "广告",
+      "monthly": "月度费用"
+    },
+    "charges": {
+      "amazonRefunds": "Amazon 退款",
+      "amazonAds": "Amazon 广告",
+      "amazonCharges": "Amazon 账号费用",
+      "amazonMcf": "Amazon 为 Shopify 订单配送",
+      "amazonFreight": "Amazon 入库运费",
+      "shopifyLabels": "Shopify 运输标签",
+      "shopifyBill": "Shopify 账单（套餐和应用）",
+      "shopifyDisputes": "Shopify 争议",
+      "shopifyDuties": "关税和进口税"
+    },
+    "whatsIn": "{line}包含哪些项目",
+    "needsCosts": "需要订单价格和单位成本"
+  },
+  "customers": {
+    "title": "Shopify 客户",
+    "aboutLabel": "关于客户数据",
+    "about": "客户生命周期价值、复购客户和客均订单数均基于最近 12 个月。不计入访客订单和 Amazon 订单。",
+    "reconnect": "在<settings>设置</settings>中重新连接 Shopify 以统计复购客户",
+    "reconnectAskAdmin": "请管理员重新连接 Shopify 以统计复购客户",
+    "syncing": "下次同步 Shopify 订单后可用",
+    "noCustomers": "无客户",
+    "lifetimeValue": "客户生命周期价值",
+    "returning": "回头客",
+    "returningNote": "本期 {customers, number} 位中的 {returning, number} 位",
+    "repeat": "复购客户",
+    "ordersPerCustomer": "客均订单数"
+  },
+  "landedCosts": {
+    "title": "到岸成本",
+    "aboutLabel": "关于到岸成本",
+    "about": "将这些货物运到你手中的运费、关税和其他成本，会计入概览中的单位成本。此采购订单货件的 Amazon 运费会自动添加。仅你的团队可见。",
+    "amazonFreight": "Amazon 入库运费",
+    "shipment": "货件 {reference}",
+    "supplierTotal": "供应商总额",
+    "landedTotal": "到岸总额",
+    "markup": "加价",
+    "markupValue": "产品成本的 {percent}",
+    "empty": "暂无成本",
+    "kinds": {
+      "freight": "运费",
+      "duty": "关税",
+      "other": "其他"
+    },
+    "moreActions": "{kind}成本的更多操作",
+    "remove": "移除",
+    "add": "添加成本",
+    "addTitle": "添加到岸成本",
+    "addDescription": "按你实际支付的汇率，将其他币种的账单换算为 {currency}。",
+    "type": "类型",
+    "amount": "金额",
+    "description": "说明",
+    "descriptionPlaceholder": "货代发票、报关单…",
+    "enterAmount": "请输入金额"
+  }
+}

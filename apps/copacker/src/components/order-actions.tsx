@@ -1,6 +1,7 @@
 "use client"
 
 import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useCan } from "@/components/access"
@@ -24,13 +25,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { errorMessage, useActionMutation } from "@/lib/api"
+import { useErrorMessage } from "@/hooks/use-error-text"
+import { useActionMutation } from "@/lib/api"
 import { FormError } from "./actions"
 
 // Opened from the PO's actions menu.
 type Controlled = { id: string; reference: string; open: boolean; onOpenChange: (open: boolean) => void }
 
 export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
+  const t = useTranslations("orders.actions")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [pending, setPending] = useState(false)
@@ -44,7 +48,7 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
       setOpen(false)
       router.refresh()
     } catch (e) {
-      setError(errorMessage(e, `Couldn’t close ${reference}`))
+      setError(errorMessage(e, t("closeFailed", { reference })))
     } finally {
       setPending(false)
     }
@@ -54,18 +58,15 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Close {reference}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Nothing more will ship on this purchase order, and its remaining units leave On order. Shipments the
-            supplier hasn’t packed are cancelled.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("closeTitle", { reference })}</AlertDialogTitle>
+          <AlertDialogDescription>{t("closeDescription")}</AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction disabled={pending} aria-busy={pending} onClick={close}>
             {pending && <Spinner data-icon="inline-start" />}
-            Close purchase order
+            {t("close")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -75,6 +76,8 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
 
 // Deletes a draft PO the supplier hasn't seen, then returns to the list.
 export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }: Controlled) {
+  const t = useTranslations("orders.actions")
+  const errorMessage = useErrorMessage()
   const router = useRouter()
   const [run] = useActionMutation()
   const [pending, setPending] = useState(false)
@@ -88,7 +91,7 @@ export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }:
       setOpen(false)
       router.push(result.redirect ?? "/orders")
     } catch (e) {
-      setError(errorMessage(e, `Couldn’t delete ${reference}`))
+      setError(errorMessage(e, t("deleteFailed", { reference })))
       setPending(false)
     }
   }
@@ -97,18 +100,15 @@ export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }:
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete {reference}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This draft, its product labels and its landed costs are deleted. Your supplier hasn’t seen it. You can’t
-            undo this.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("deleteTitle", { reference })}</AlertDialogTitle>
+          <AlertDialogDescription>{t("deleteDescription")}</AlertDialogDescription>
         </AlertDialogHeader>
         <FormError message={error} />
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={pending} aria-busy={pending} onClick={remove}>
             {pending && <Spinner data-icon="inline-start" />}
-            Delete draft
+            {t("deleteDraft")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -132,6 +132,7 @@ export function OrderMenu({
   // Whether the PO has product or suffocation warning labels, to download together.
   labels: boolean
 }) {
+  const t = useTranslations("orders.actions")
   const router = useRouter()
   const prices = useCan("prices")
   const [closing, setClosing] = useState(false)
@@ -141,7 +142,7 @@ export function OrderMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="outline" size="icon" aria-label={`More actions for ${reference}`} />}
+          render={<Button variant="outline" size="icon" aria-label={t("moreActionsFor", { reference })} />}
         >
           <Ellipsis />
         </DropdownMenuTrigger>
@@ -149,35 +150,37 @@ export function OrderMenu({
           {draft && (
             <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>
               <Pencil />
-              Edit
+              {t("edit")}
             </DropdownMenuItem>
           )}
-          {/* The PO's document is priced. */}
+          {/* The purchase order's document is priced. */}
           {prices && (
             <DropdownMenuItem
-              render={<a href={`/api/orders/${id}/po`} download aria-label="Download purchase order" />}
+              render={<a href={`/api/orders/${id}/po`} download aria-label={t("downloadPurchaseOrder")} />}
             >
               <Download />
-              Download purchase order
+              {t("downloadPurchaseOrder")}
             </DropdownMenuItem>
           )}
           {labels && (
-            <DropdownMenuItem render={<a href={`/api/orders/${id}/labels`} download aria-label="Download labels" />}>
+            <DropdownMenuItem
+              render={<a href={`/api/orders/${id}/labels`} download aria-label={t("downloadLabels")} />}
+            >
               <Download />
-              Download labels
+              {t("downloadLabels")}
             </DropdownMenuItem>
           )}
           {(closable || draft) && <DropdownMenuSeparator />}
           {closable && (
             <DropdownMenuItem onClick={() => setClosing(true)}>
               <Archive />
-              Close purchase order
+              {t("close")}
             </DropdownMenuItem>
           )}
           {draft && (
             <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
               <Trash2 />
-              Delete draft
+              {t("deleteDraft")}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -206,6 +209,7 @@ export function LineMenu({
   warning: boolean
   editable: boolean
 }) {
+  const t = useTranslations("orders.actions")
   const router = useRouter()
   const labeled = label?.state === "uploaded" || label?.state === "standard"
   return (
@@ -214,7 +218,10 @@ export function LineMenu({
         <Tooltip>
           <TooltipTrigger
             render={
-              <span className="inline-flex p-1.5 text-warning" aria-label={`No label for ${name}: ${label.problem}`} />
+              <span
+                className="inline-flex p-1.5 text-warning"
+                aria-label={t("noLabelFor", { name, problem: label.problem })}
+              />
             }
           >
             <AlertTriangle className="size-4" />
@@ -225,33 +232,33 @@ export function LineMenu({
       {(labeled || warning || editable) && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${name}`} />}
+            render={<Button type="button" variant="ghost" size="icon-sm" aria-label={t("moreFor", { name })} />}
           >
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             {labeled && (
               <DropdownMenuItem
-                render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label="Download label" />}
+                render={<a href={`/api/orders/${orderId}/labels/${itemId}`} download aria-label={t("downloadLabel")} />}
               >
                 <Download />
-                Download label
+                {t("downloadLabel")}
               </DropdownMenuItem>
             )}
             {warning && (
               <DropdownMenuItem
                 render={
-                  <a href={`/api/orders/${orderId}/labels/warning`} download aria-label="Download hazard label" />
+                  <a href={`/api/orders/${orderId}/labels/warning`} download aria-label={t("downloadHazardLabel")} />
                 }
               >
                 <Download />
-                Download hazard label
+                {t("downloadHazardLabel")}
               </DropdownMenuItem>
             )}
             {editable && (
               <DropdownMenuItem onClick={() => router.push(`/orders/${orderId}/edit`)}>
                 <Pencil />
-                Edit
+                {t("edit")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

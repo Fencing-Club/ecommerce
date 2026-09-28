@@ -1,6 +1,7 @@
 import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { ProductBarcodeError, orderLineLabel } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
@@ -9,7 +10,7 @@ const headers = { "Cache-Control": "private, no-store" }
 export async function GET(_request: Request, context: { params: Promise<{ id: string; itemId: string }> }) {
   const params = z.object({ id: z.uuid(), itemId: z.uuid() }).safeParse(await context.params)
   if (!params.success) {
-    return Response.json({ error: "Label not found" }, { status: 404, headers })
+    return errorResponse("labelNotFound", 404, headers)
   }
   const s = await session()
   requirePage(s, "orders")
@@ -28,8 +29,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     // Lets a PO the workspace can't see become Next's not-found response.
     unstable_rethrow(error)
     if (error instanceof ProductBarcodeError) {
-      return Response.json({ error: error.message }, { status: error.status, headers })
+      return Response.json({ error: await failureMessage(error) }, { status: error.status, headers })
     }
-    return Response.json({ error: "The label couldn’t be made. Try again." }, { status: 500, headers })
+    return errorResponse("labelNotMade", 500, headers)
   }
 }

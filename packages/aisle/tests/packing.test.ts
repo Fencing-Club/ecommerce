@@ -10,9 +10,16 @@ import {
   fbaBoxes,
   splitByNetwork,
   commercialChanges,
-  approveChanges
+  approveChanges,
+  money
 } from "../src/index"
-import { destinationName, destinationRequirements, itemRequirements } from "../src/requirements"
+import {
+  destinationName,
+  destinationRequirements,
+  isCartonRule,
+  itemRequirements,
+  requirementText
+} from "../src/requirements"
 const itemId = randomUUID()
 const order = orderInputSchema.parse({
   supplierId: randomUUID(),
@@ -85,11 +92,7 @@ describe("Supplier piece and carton contract", () => {
     expect(validatePacking(order, p).valid).toBe(false)
     // Complete sets still apply everywhere.
     p.cartons[0]!.items[0]!.pieces = 3
-    expect(
-      validatePacking(toWarehouse, p)
-        .issues.map((issue) => issue.message)
-        .join()
-    ).toContain("complete packs")
+    expect(validatePacking(toWarehouse, p).issues.map((issue) => issue.code)).toContain("incompletePacks")
   })
   it("requires a delivery address for the buyer's own location", () => {
     expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)
@@ -109,7 +112,7 @@ describe("Supplier piece and carton contract", () => {
     p.cartons.forEach((c) => {
       c.weight = 22.68
     })
-    expect(validatePacking(order, p).issues.some((i) => i.message.includes("weight"))).toBe(true)
+    expect(validatePacking(order, p).issues.some((i) => i.code === "cartonWeight")).toBe(true)
   })
   it("rejects broken multipacks, duplicate carton IDs, and inconsistent configurations", () => {
     const p = structuredClone(packing)
@@ -119,9 +122,7 @@ describe("Supplier piece and carton contract", () => {
     expect(result.issues).toHaveLength(3)
   })
   it("honors quantities reserved by another partial shipment", () => {
-    expect(validatePacking(order, packing, { [itemId]: 2 }).issues.some((i) => i.message.includes("remaining"))).toBe(
-      true
-    )
+    expect(validatePacking(order, packing, { [itemId]: 2 }).issues.some((i) => i.code === "overQuantity")).toBe(true)
   })
   it("rejects products outside the PO and missing FNSKUs", () => {
     const p = structuredClone(packing)
@@ -222,18 +223,14 @@ describe("FBA shipments", () => {
         ]
       }
     ])
-    expect(validatePacking(fbaOrder, oversize).issues.map((issue) => issue.message)).toEqual([
-      "FBA cartons must not exceed 63.5 cm on any side"
+    expect(validatePacking(fbaOrder, oversize).issues).toEqual([
+      { cartonId: expect.any(String), code: "cartonSize", values: { network: "FBA" } }
     ])
     // AWD keeps its one-SKU cartons, and a carton goes to one network.
     const awd = { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" as const })) }
-    expect(validatePacking(awd, mixed).issues.map((issue) => issue.message)).toContain(
-      "AWD requires one SKU per carton"
-    )
+    expect(validatePacking(awd, mixed).issues.map((issue) => issue.code)).toContain("awdOneSku")
     const both = { ...fbaOrder, items: [awd.items[0]!, fbaOrder.items[1]!] }
-    expect(validatePacking(both, mixed).issues.map((issue) => issue.message)).toContain(
-      "Pack FBA and AWD US products in separate cartons"
-    )
+    expect(validatePacking(both, mixed).issues.map((issue) => issue.code)).toContain("mixedNetworks")
   })
 
   it("plans sellable units per SKU with owners from Amazon's record of each SKU", () => {
@@ -332,12 +329,24 @@ describe("POs to Amazon with lines for several networks", () => {
 
   it("gives each network its own carton rules and each line its network", () => {
     const rules = destinationRequirements(both)
-    expect(rules.filter((rule) => rule.includes("cartons"))).toEqual([
+    expect(rules.filter(isCartonRule)).toEqual([
+      { code: "cartons", network: "fba" },
+      { code: "cartons", network: "awd_us" },
+      { code: "separateCartons", networks: ["fba", "awd_us"] }
+    ])
+    expect(rules.filter(isCartonRule).map(requirementText)).toEqual([
       expect.stringContaining("FBA cartons: mixed SKUs are allowed"),
       expect.stringContaining("AWD US cartons: one SKU per carton"),
       "Pack FBA and AWD US products in separate cartons."
     ])
     expect(destinationName(both)).toBe("Amazon FBA and AWD US")
-    expect(itemRequirements(both.items[0]!, "amazon")[0]).toBe("Pack for AWD US")
+    expect(itemRequirements(both.items[0]!, "amazon")[0]).toEqual({ code: "packFor", network: "awd_us" })
+  })
+})
+
+describe("money", () => {
+  it("writes minor units in English unless given a language", () => {
+    expect(money(123450)).toBe("$1,234.50")
+    expect(money(123450, "EUR", "de")).toBe("1.234,50 €")
   })
 })

@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { type DefaultValues, type FieldValues, useForm } from "react-hook-form"
 import type { z } from "zod"
-import { type ActionResult, errorMessage, useActionMutation } from "@/lib/api"
-import { formErrorMap } from "@/lib/form-errors"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
+import { type ActionResult, useActionMutation } from "@/lib/api"
 
 type Options<Schema extends z.ZodType<FieldValues, FieldValues>> = {
   schema: Schema
@@ -28,6 +28,8 @@ export function useActionForm<Schema extends z.ZodType<FieldValues, FieldValues>
 }: Options<Schema>) {
   const router = useRouter()
   const [run] = useActionMutation()
+  const formErrorMap = useFormErrorMap()
+  const errorMessage = useErrorMessage()
   const form = useForm<z.input<Schema>, unknown, z.output<Schema>>({
     resolver: zodResolver(schema, { error: formErrorMap }),
     defaultValues

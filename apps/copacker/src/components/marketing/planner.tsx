@@ -2,6 +2,7 @@
 
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { Caveat } from "next/font/google"
 import { useEffect, useRef, useState } from "react"
 import { Label } from "@/components/ui/label"
@@ -169,10 +170,14 @@ const anchor = (day: number) => {
   }
   return day === horizon ? "end" : "middle"
 }
-const days = (value: number) => `${Math.round(value)} ${Math.round(value) === 1 ? "day" : "days"}`
-const money = (value: number) => `$${(Math.round(value / 100) * 100).toLocaleString("en-US")}`
 
 export function Planner() {
+  const t = useTranslations("marketing.planner")
+  const format = useFormatter()
+  const days = (value: number) => t("days", { count: Math.round(value) })
+  const inDays = (value: number) => t("inDays", { count: Math.round(value) })
+  const money = (value: number) =>
+    format.number(Math.round(value / 100) * 100, { style: "currency", currency: "USD", maximumFractionDigits: 0 })
   const [inputs, setInputs] = useState<Inputs>({ lead: 60, amazon: 1, shopify: 1, ebay: 1, rush: 1 })
   const shown = useGlide(inputs)
   const figure = useRef<HTMLDivElement>(null)
@@ -231,6 +236,9 @@ export function Planner() {
   const orderX = x(result.orderBy)
   const landX = x(result.lands)
   const outX = x(result.out)
+  // The order pill fits its words: about 0.6 of the type's size a character, with room at each end.
+  const orderLabel = result.late ? t("orderToday") : t("orderBy")
+  const pill = Math.max(116, orderLabel.length * 7.8 + 28)
   const toggle = (key: Store["key"]) =>
     setInputs((current) => {
       const on = stores.filter((store) => current[store.key] === 1)
@@ -254,12 +262,12 @@ export function Planner() {
           <span className="flex flex-col leading-tight">
             <span className="font-semibold">{product.name}</span>
             <span className="text-sm text-muted-foreground">
-              {product.sku}, {product.stock.toLocaleString("en-US")} in stock
+              {t("inStock", { sku: product.sku, count: product.stock })}
             </span>
           </span>
         </span>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-          <span className="mr-1 text-sm text-muted-foreground">Sold a day</span>
+        <div className="flex flex-wrap items-center gap-2 sm:ms-auto">
+          <span className="me-1 text-sm text-muted-foreground">{t("soldADay")}</span>
           {stores.map((store) => (
             <button
               key={store.key}
@@ -275,7 +283,16 @@ export function Planner() {
         </div>
       </div>
       <figure className="relative px-2 pt-3 sm:px-4">
-        <figcaption className="sr-only">{`Stock of the ${product.name} over the next ${horizon} days. Without a reorder it runs out in ${days(final.out)}. ${final.late ? "Ordered today" : `Ordered in ${days(final.orderBy)}`}, ${final.units.toLocaleString("en-US")} units land ${final.late ? `after it runs out, losing about ${money(final.lost)} in sales` : "before it runs out"}.`}</figcaption>
+        <figcaption className="sr-only">
+          {t(final.late ? "captionLate" : "captionInTime", {
+            product: product.name,
+            horizon,
+            out: Math.round(final.out),
+            orderBy: Math.round(final.orderBy),
+            units: final.units,
+            lost: money(final.lost)
+          })}
+        </figcaption>
         <svg viewBox={`0 0 ${chart.width} ${chart.height}`} className="w-full overflow-visible" aria-hidden>
           <defs>
             <linearGradient id="planner-area" x1="0" y1="0" x2="0" y2="1">
@@ -310,7 +327,7 @@ export function Planner() {
                 className="fill-muted-foreground"
                 style={type}
               >
-                {units.toLocaleString("en-US")}
+                {format.number(units)}
               </text>
             </g>
           ))}
@@ -321,7 +338,7 @@ export function Planner() {
             className="fill-muted-foreground font-medium"
             style={type}
           >
-            Units in stock
+            {t("unitsInStock")}
           </text>
           <line
             x1={chart.left}
@@ -348,7 +365,7 @@ export function Planner() {
               className="fill-primary font-medium"
               style={type}
             >
-              {wide ? "Holiday rush" : "Rush"}
+              {wide ? t("holidayRush") : t("rush")}
             </text>
           </g>
           <g clipPath="url(#planner-reveal)">
@@ -384,7 +401,7 @@ export function Planner() {
                   className="fill-destructive font-medium"
                   style={type}
                 >
-                  Runs out
+                  {t("runsOut")}
                 </text>
               </g>
             )}
@@ -404,10 +421,19 @@ export function Planner() {
               strokeWidth={3 * u}
               className="fill-background stroke-primary"
             />
-            <g transform={`translate(${clamp(orderX, 64 * u, chart.right - 64 * u)} ${chart.top - 4 * u})`}>
-              <rect x={-58 * u} y={-30 * u} width={116 * u} height={26 * u} rx={13 * u} className="fill-foreground" />
+            <g
+              transform={`translate(${clamp(orderX, (pill / 2 + 6) * u, chart.right - (pill / 2 + 6) * u)} ${chart.top - 4 * u})`}
+            >
+              <rect
+                x={(-pill / 2) * u}
+                y={-30 * u}
+                width={pill * u}
+                height={26 * u}
+                rx={13 * u}
+                className="fill-foreground"
+              />
               <text y={-12 * u} textAnchor="middle" className="fill-background font-medium" style={type}>
-                {result.late ? "Order today" : "Order by"}
+                {orderLabel}
               </text>
             </g>
             {result.lands <= horizon && (
@@ -420,10 +446,10 @@ export function Planner() {
                   style={{ fontFamily: hand.style.fontFamily, fontSize: noteSize }}
                 >
                   <text x={noteRight} y={noteTop + noteSize * 0.8} style={{ fontWeight: 500 }}>
-                    Restock
+                    {t("restock")}
                   </text>
                   <text x={noteRight} y={noteTop + noteSize * 1.7} className="fill-success" style={{ fontWeight: 700 }}>
-                    +{result.units.toLocaleString("en-US")} units
+                    {t("restockUnits", { count: result.units })}
                   </text>
                 </g>
                 <g
@@ -448,7 +474,7 @@ export function Planner() {
                   className="fill-muted-foreground tabular-nums"
                   style={type}
                 >
-                  {Math.round(shown.lead)}-day lead time
+                  {t("leadTimeDays", { count: Math.round(shown.lead) })}
                 </text>
               </g>
             )}
@@ -462,7 +488,7 @@ export function Planner() {
               className="fill-muted-foreground"
               style={type}
             >
-              {day === 0 ? "Today" : days(day)}
+              {day === 0 ? t("today") : days(day)}
             </text>
           ))}
         </svg>
@@ -472,18 +498,18 @@ export function Planner() {
         >
           <span className="flex items-center gap-2">
             <span className="h-[3px] w-5 rounded-full bg-primary" />
-            With the reorder
+            {t("withReorder")}
           </span>
           <span className="flex items-center gap-2">
             <span className="w-5 border-t-2 border-dashed border-foreground/30" />
-            Without a reorder
+            {t("withoutReorder")}
           </span>
         </div>
       </figure>
       <div className="flex flex-wrap items-center gap-x-10 gap-y-5 border-t px-5 py-5 sm:px-7">
         <div className="flex min-w-64 flex-1 items-center gap-4">
           <span id="planner-lead" className="shrink-0 text-sm font-medium">
-            Lead time
+            {t("leadTime")}
           </span>
           <Slider
             aria-labelledby="planner-lead"
@@ -502,7 +528,7 @@ export function Planner() {
           <span className="w-16 shrink-0 text-sm tabular-nums">{days(inputs.lead)}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Label htmlFor="planner-rush">Holiday rush</Label>
+          <Label htmlFor="planner-rush">{t("holidayRush")}</Label>
           <Switch
             id="planner-rush"
             checked={inputs.rush === 1}
@@ -513,42 +539,46 @@ export function Planner() {
       <dl className="grid grid-cols-2 border-t lg:grid-cols-4">
         {[
           {
-            term: "Order by",
-            value: result.late ? "Today" : `In ${days(result.orderBy)}`,
-            note: result.late ? "It lands after it runs out" : "Lands before it runs out",
+            key: "orderBy",
+            term: t("orderBy"),
+            value: result.late ? t("today") : inDays(result.orderBy),
+            note: result.late ? t("landsLate") : t("landsInTime"),
             tone: result.late ? "text-destructive" : ""
           },
           {
-            term: "Order",
-            value: `${result.units.toLocaleString("en-US")} units`,
-            note: `${Math.round(result.units / product.casePack)} cartons`,
+            key: "order",
+            term: t("order"),
+            value: t("units", { count: result.units }),
+            note: t("cartons", { count: Math.round(result.units / product.casePack) }),
             tone: ""
           },
           {
-            term: "Runs out without it",
-            value: Number.isFinite(result.out) && result.out <= horizon ? `In ${days(result.out)}` : "Not this season",
-            note: "At today’s pace",
+            key: "runsOut",
+            term: t("runsOutWithout"),
+            value: Number.isFinite(result.out) && result.out <= horizon ? inDays(result.out) : t("notThisSeason"),
+            note: t("todaysPace"),
             tone: ""
           },
           {
-            term: "Lost sales",
-            value: result.lost > 50 ? money(result.lost) : "None",
-            note: result.lost > 50 ? "While it’s out of stock" : "In stock the whole way",
+            key: "lost",
+            term: t("lostSales"),
+            value: result.lost > 50 ? money(result.lost) : t("none"),
+            note: result.lost > 50 ? t("whileOut") : t("inStockThroughout"),
             tone: result.lost > 50 ? "text-destructive" : "text-success"
           }
         ].map((stat, i) => (
           <div
-            key={stat.term}
+            key={stat.key}
             className={cn(
               "flex flex-col gap-1 px-5 py-5 sm:px-7",
-              i % 2 === 1 && "border-l",
+              i % 2 === 1 && "border-s",
               i > 1 && "border-t lg:border-t-0",
-              i === 2 && "lg:border-l"
+              i === 2 && "lg:border-s"
             )}
           >
             <dt className="text-sm text-muted-foreground">{stat.term}</dt>
             <dd className={cn("flex items-center gap-2 text-2xl font-semibold tracking-tight tabular-nums", stat.tone)}>
-              {stat.term === "Lost sales" && result.lost <= 50 && <Check className="size-5" />}
+              {stat.key === "lost" && result.lost <= 50 && <Check className="size-5" />}
               {stat.value}
             </dd>
             <dd className="text-sm text-muted-foreground">{stat.note}</dd>

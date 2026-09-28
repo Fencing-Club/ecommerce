@@ -1,0 +1,180 @@
+{
+  "list": {
+    "title": "شپمنٹس",
+    "stats": {
+      "packing": "پیکنگ",
+      "actionNeeded": "کارروائی درکار",
+      "waitingOnBuyer": "خریدار کا انتظار",
+      "readyForPickup": "پک اپ کے لیے تیار"
+    },
+    "amazonFailed": {
+      "title": "Amazon شپمنٹس لوڈ نہیں ہوئیں",
+      "description": "دوبارہ کوشش کے لیے صفحہ ریفریش کریں۔"
+    },
+    "tabsLabel": "شپمنٹ کا اسٹیٹس",
+    "tabs": {
+      "active": "فعال",
+      "received": "موصول",
+      "cancelled": "منسوخ",
+      "all": "تمام"
+    },
+    "empty": {
+      "active": "کوئی فعال شپمنٹ نہیں",
+      "received": "کوئی موصول شدہ شپمنٹ نہیں",
+      "cancelled": "کوئی منسوخ شدہ شپمنٹ نہیں",
+      "all": "کوئی شپمنٹ نہیں"
+    },
+    "columns": {
+      "shipment": "شپمنٹ",
+      "supplier": "سپلائر",
+      "customer": "کسٹمر",
+      "destination": "منزل",
+      "cartons": "کارٹن",
+      "readyDate": "تیاری کی تاریخ",
+      "status": "اسٹیٹس"
+    },
+    "shipmentNumber": "شپمنٹ {number}",
+    "opensInSellerCentral": "(Seller Central میں کھلتا ہے)",
+    "none": {
+      "title": "ابھی کوئی شپمنٹ نہیں",
+      "buyerDescription": "بھیجے گئے خریداری آرڈر سے شروع کریں",
+      "supplierDescription": "کسی آرڈر سے شروع کریں",
+      "viewPurchaseOrders": "خریداری آرڈرز دیکھیں",
+      "viewOrders": "آرڈرز دیکھیں"
+    }
+  },
+  "detail": {
+    "metaTitle": "شپمنٹ",
+    "title": "شپمنٹ {number}",
+    "cartonCount": "{count, plural, one {# کارٹن} other {# کارٹن}}",
+    "parents": {
+      "purchaseOrders": "خریداری آرڈرز",
+      "orders": "آرڈرز"
+    },
+    "opensInSellerCentral": "(Seller Central میں کھلتا ہے)",
+    "actions": {
+      "markShipped": "بھیجا گیا نشان زد کریں",
+      "markReceived": "موصول نشان زد کریں",
+      "retry": "شپمنٹ دوبارہ آزمائیں",
+      "cancelInAmazon": "Amazon میں منسوخ کریں"
+    },
+    "needsAttention": "توجہ درکار",
+    "changesWaiting": {
+      "title": "تبدیلیاں منظوری کی منتظر ہیں",
+      "buyer": "خریداری آرڈر پر تجویز کردہ تبدیلیوں کا جواب دینے کے بعد پیکنگ شروع ہو گی۔",
+      "supplier": "کسٹمر کے آرڈر پر تجویز کردہ تبدیلیوں کا جواب دینے کے بعد پیکنگ شروع ہو گی۔",
+      "viewPurchaseOrder": "خریداری آرڈر دیکھیں",
+      "viewOrder": "آرڈر دیکھیں"
+    },
+    "invoiceChanges": {
+      "title": "انوائس میں تبدیلیاں",
+      "pricePerUnit": "فی یونٹ قیمت",
+      "supplierSku": "سپلائر SKU",
+      "changedTo": "تبدیل ہو کر",
+      "waitingForBuyer": "خریدار کی منظوری کا انتظار"
+    },
+    "labels": {
+      "title": "شپنگ لیبلز",
+      "waiting": "شپنگ لیبلز کا انتظار",
+      "fba": "Amazon تک ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں",
+      "agl": "Amazon میں AGL ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں"
+    },
+    "creating": {
+      "title": "Amazon شپمنٹ بنائی جا رہی ہے",
+      "description": "عموماً چند منٹ لگتے ہیں"
+    },
+    "packet": {
+      "title": "سپلائر پیکٹ تیار ہے",
+      "description": "لیبلز اصل سائز میں پرنٹ کریں",
+      "downloadLabel": "سپلائر پیکٹ ڈاؤن لوڈ کریں",
+      "download": "پیکٹ ڈاؤن لوڈ کریں",
+      "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
+      "waitingForLabels": "خریدار کے لیبلز کا انتظار ہے"
+    },
+    "cartons": {
+      "title": "کارٹن",
+      "carton": "کارٹن",
+      "product": "پروڈکٹ",
+      "units": "یونٹس",
+      "dimensions": "پیمائش (cm)",
+      "weight": "وزن (kg)",
+      "amazonLabel": "Amazon لیبل"
+    },
+    "pickup": {
+      "title": "پک اپ",
+      "ready": "تیار {date}"
+    },
+    "documents": {
+      "title": "دستاویزات",
+      "empty": "ابھی کوئی دستاویز نہیں"
+    }
+  },
+  "actions": {
+    "approve": {
+      "updateCost": "Shopify میں یونٹ لاگت بھی اپ ڈیٹ کریں",
+      "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے",
+      "submit": "تبدیلیاں منظور کریں"
+    },
+    "release": {
+      "submit": "لیبلز سپلائر کو جاری کریں",
+      "bookingReference": "Amazon ٹرانسپورٹ بکنگ ریفرنس"
+    },
+    "correction": {
+      "trigger": "درستگی کی درخواست کریں",
+      "submit": "درستگی کی درخواست کریں",
+      "reason": "کیا تبدیل کرنا ہے؟",
+      "reasonDescription": "اس شپمنٹ کی دستاویزات پرانی ہو جائیں گی"
+    },
+    "reconcile": {
+      "submit": "تصدیق کر کے جاری رکھیں",
+      "fbaLabel": "موجودہ FBA ان باؤنڈ پلان ID",
+      "awdLabel": "موجودہ Amazon AWD آرڈر ID",
+      "awdInvalid": "Amazon آرڈر ID درج کریں، جو STAR- سے شروع ہوتی ہے",
+      "fbaInvalid": "ان باؤنڈ پلان ID درج کریں، جو wf سے شروع ہوتی ہے"
+    }
+  },
+  "forward": {
+    "markShipped": "بھیجا گیا نشان زد کریں",
+    "title": "بھیجا گیا نشان زد کریں",
+    "description": "فریٹ لاگت خریداری آرڈر کی لینڈڈ کاسٹ میں شامل کی جاتی ہے۔",
+    "freightCost": "فریٹ لاگت",
+    "carrier": "کیریئر",
+    "reference": "ٹریکنگ یا بکنگ نمبر",
+    "cancel": "منسوخ کریں",
+    "enterCarrier": "کیریئر درج کریں",
+    "enterReference": "ٹریکنگ یا بکنگ نمبر درج کریں",
+    "enterFreightCost": "فریٹ لاگت درج کریں"
+  },
+  "prep": {
+    "polybag": "سیل بند پولی بیگ (ڈیفالٹ)",
+    "noPrep": "کوئی پریپ نہیں (استثنا)",
+    "bubbleWrap": "ببل ریپ",
+    "taping": "ٹیپنگ"
+  },
+  "amazonAuthorization": {
+    "sellerId": "سیلر کا مرچنٹ ٹوکن درج کریں، جیسے A2CIYIV0E1FHU3",
+    "refreshToken": "مکمل ریفریش ٹوکن پیسٹ کریں، جو Atzr| سے شروع ہوتا ہے"
+  },
+  "requirements": {
+    "prep": {
+      "polybag": "ہر یونٹ کو ایک شفاف پولی بیگ میں سیل کریں۔",
+      "noPrep": "یونٹ کا کوئی پریپ نہیں۔",
+      "bubbleWrap": "ہر یونٹ کو ببل ریپ میں لپیٹیں۔",
+      "tape": "ہر یونٹ کو ٹیپ سے بند کریں۔",
+      "blackShrinkWrap": "ہر یونٹ کو سیاہ شرنک فلم میں لپیٹیں۔",
+      "hanger": "ہر کپڑے کو ہینگر پر لٹکائیں۔",
+      "label": "ہر یونٹ پر لیبل لگائیں۔"
+    },
+    "fbaCartons": "FBA کارٹن: مختلف SKU ایک ساتھ رکھ سکتے ہیں؛ ہر طرف زیادہ سے زیادہ 63.5 cm (25 in) اور 22.68 kg (50 lb)، الا یہ کہ ایک یونٹ اس سے بڑا ہو۔",
+    "awdUsCartons": "AWD US کارٹن: ہر کارٹن میں ایک SKU، زیادہ سے زیادہ 150 یونٹس، ایک SKU کے تمام کارٹن ایک ہی طرح پیک؛ ہر طرف زیادہ سے زیادہ 63.5 cm (25 in) اور 22.68 kg (50 lb)۔",
+    "separateCartons": "{networks} پروڈکٹس الگ الگ کارٹن میں پیک کریں۔",
+    "unitLabels": "ہر یونٹ پر اس کا FNSKU بارکوڈ لگائیں، کسی بھی دوسرے بارکوڈ کو ڈھانپتے ہوئے۔",
+    "suffocationWarnings": "جن پولی بیگز کا منہ 5 in (12.7 cm) یا اس سے چوڑا ہو، ان پر دم گھٹنے کی وارننگ ضروری ہے۔",
+    "multiPacks": "ہر ملٹی پیک کو ایک ساتھ رکھیں، پیک پر ایک ہی لیبل کے ساتھ۔",
+    "packFor": "{network} کے لیے پیک کریں۔",
+    "bundle": "{count, plural, one {# یونٹ کو ایک پیک میں باندھیں۔} other {# یونٹس کو ایک پیک میں باندھیں۔}}",
+    "fnskuLabel": "FNSKU {fnsku} کا لیبل لگائیں۔",
+    "suffocationLabel": "ہر پولی بیگ پر دم گھٹنے کی وارننگ کا لیبل لگائیں۔",
+    "amazonDestination": "Amazon {networks}"
+  }
+}

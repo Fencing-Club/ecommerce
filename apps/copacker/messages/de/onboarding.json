@@ -1,0 +1,123 @@
+{
+  "title": "Los geht’s",
+  "newWorkspaceTitle": "Neuer Workspace",
+  "person": {
+    "enterFirstName": "Geben Sie Ihren Vornamen ein",
+    "enterLastName": "Geben Sie Ihren Nachnamen ein",
+    "choosePosition": "Wählen Sie Ihre Position"
+  },
+  "company": {
+    "enterName": "Geben Sie den Namen Ihres Unternehmens ein",
+    "enterWebsite": "Geben Sie eine Website ein, z. B. example.com"
+  },
+  "place": {
+    "enterName": "Benennen Sie diese Adresse"
+  },
+  "positions": {
+    "owner": "Inhaber",
+    "generalManager": "Geschäftsführung",
+    "operationsManager": "Betriebsleitung",
+    "purchasingManager": "Einkaufsleitung",
+    "buyer": "Einkauf",
+    "salesManager": "Vertriebsleitung",
+    "accountManager": "Kundenbetreuung",
+    "productionManager": "Produktionsleitung",
+    "qualityControl": "Qualitätskontrolle",
+    "logisticsCoordinator": "Logistikkoordination",
+    "warehouseManager": "Lagerleitung",
+    "customerService": "Kundenservice",
+    "finance": "Finanzen",
+    "other": "Sonstiges"
+  },
+  "steps": {
+    "about": "Über Sie",
+    "role": "Was macht Ihr Unternehmen?",
+    "company": "Ihr Unternehmen",
+    "address": {
+      "none": "Adresse",
+      "buyer": {
+        "title": "Lieferadresse",
+        "description": "Wohin Bestellungen geliefert werden"
+      },
+      "supplier": {
+        "title": "Abholadresse",
+        "description": "Wo Transporteure Ihre Kartons abholen"
+      },
+      "forwarder": {
+        "title": "Lageradresse",
+        "description": "Wohin Käufer Waren für Sie senden"
+      }
+    }
+  },
+  "addressNames": {
+    "buyer": "Lager",
+    "supplier": "Fabrik",
+    "forwarder": "Lager"
+  },
+  "fields": {
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "position": "Position",
+    "choose": "Auswählen",
+    "companyName": "Unternehmensname",
+    "website": "Website",
+    "websitePlaceholder": "example.com",
+    "phone": "Telefonnummer",
+    "addressName": "Name der Adresse"
+  },
+  "roles": {
+    "legend": "Was Ihr Unternehmen macht",
+    "buyer": {
+      "title": "Käufer",
+      "description": "Bei Lieferanten einkaufen und auf Amazon oder Shopify verkaufen"
+    },
+    "supplier": {
+      "title": "Lieferant",
+      "description": "Produkte herstellen und Bestellungen ausführen"
+    },
+    "forwarder": {
+      "title": "Spediteur",
+      "description": "Waren annehmen und für Käufer weiterversenden"
+    }
+  },
+  "wizard": {
+    "chooseRole": "Wählen Sie eine Option",
+    "pickupPhone": "Fügen Sie eine Telefonnummer für die Abholung hinzu. Amazon benötigt sie, um die Abholung zu planen",
+    "step": "Schritt {current} von {total}",
+    "invitedBy": "Eingeladen von {name}",
+    "back": "Zurück",
+    "skip": "Vorerst überspringen",
+    "continue": "Weiter",
+    "createWorkspace": "Workspace erstellen",
+    "join": "{workspace} beitreten",
+    "cancel": "Abbrechen",
+    "signOut": "Abmelden"
+  },
+  "preview": {
+    "workspace": "Workspace",
+    "kinds": {
+      "buyer": "Käufer-Workspace",
+      "supplier": "Lieferanten-Workspace",
+      "forwarder": "Spediteur-Workspace"
+    },
+    "groups": {
+      "store": "Shop",
+      "purchasing": "Einkauf",
+      "sales": "Verkauf",
+      "products": "Produkte"
+    },
+    "pages": {
+      "overview": "Übersicht",
+      "orders": "Aufträge",
+      "products": "Produkte",
+      "restock": "Nachschub",
+      "purchaseOrders": "Bestellungen",
+      "shipments": "Sendungen",
+      "customers": "Kunden",
+      "inventory": "Bestand",
+      "catalogs": "Kataloge",
+      "settings": "Einstellungen"
+    },
+    "address": "Adresse"
+  }
+}

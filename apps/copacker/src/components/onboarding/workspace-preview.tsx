@@ -15,77 +15,75 @@ import {
   Users,
   Warehouse
 } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import { useWatch } from "react-hook-form"
-import type { WorkspaceKind } from "@/lib/onboarding"
+import type { Messages } from "@/i18n/messages"
+import { isPosition, positionKeys, type WorkspaceKind } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
 import type { WizardStep } from "./wizard-steps"
 
-const kindNames: Record<WorkspaceKind, string> = {
-  buyer: "Buyer workspace",
-  supplier: "Supplier workspace",
-  forwarder: "Forwarder workspace"
-}
-
-type Page = { label: string; icon: LucideIcon }
+type PageKey = keyof Messages["onboarding"]["preview"]["pages"]
+type GroupKey = keyof Messages["onboarding"]["preview"]["groups"]
+type Page = { label: PageKey; icon: LucideIcon }
 
 // A sketch of each kind's pages in the sidebar, in its groups; Settings sits apart at the bottom. It shows what a kind
 // of workspace is for, so it doesn't follow every change to the live navigation.
-const pages: Record<WorkspaceKind, Array<{ label: string | null; pages: Page[] }>> = {
+const pages: Record<WorkspaceKind, Array<{ label: GroupKey | null; pages: Page[] }>> = {
   buyer: [
     {
-      label: "Store",
+      label: "store",
       pages: [
-        { label: "Overview", icon: LayoutDashboard },
-        { label: "Orders", icon: Receipt },
-        { label: "Products", icon: Box },
-        { label: "Restock", icon: PackagePlus }
+        { label: "overview", icon: LayoutDashboard },
+        { label: "orders", icon: Receipt },
+        { label: "products", icon: Box },
+        { label: "restock", icon: PackagePlus }
       ]
     },
     {
-      label: "Purchasing",
+      label: "purchasing",
       pages: [
-        { label: "Purchase orders", icon: ClipboardList },
-        { label: "Shipments", icon: Truck }
+        { label: "purchaseOrders", icon: ClipboardList },
+        { label: "shipments", icon: Truck }
       ]
     }
   ],
   supplier: [
-    { label: null, pages: [{ label: "Overview", icon: LayoutDashboard }] },
+    { label: null, pages: [{ label: "overview", icon: LayoutDashboard }] },
     {
-      label: "Sales",
+      label: "sales",
       pages: [
-        { label: "Orders", icon: ClipboardList },
-        { label: "Shipments", icon: Truck },
-        { label: "Customers", icon: Users }
+        { label: "orders", icon: ClipboardList },
+        { label: "shipments", icon: Truck },
+        { label: "customers", icon: Users }
       ]
     },
     {
-      label: "Products",
+      label: "products",
       pages: [
-        { label: "Products", icon: Tag },
-        { label: "Inventory", icon: Warehouse },
-        { label: "Catalogs", icon: BookOpen }
+        { label: "products", icon: Tag },
+        { label: "inventory", icon: Warehouse },
+        { label: "catalogs", icon: BookOpen }
       ]
     }
   ],
-  forwarder: [{ label: "Purchasing", pages: [{ label: "Purchase orders", icon: ClipboardList }] }]
+  forwarder: [{ label: "purchasing", pages: [{ label: "purchaseOrders", icon: ClipboardList }] }]
 }
 
-// Country names in English, from the address's two-letter code.
-const regions = new Intl.DisplayNames(["en"], { type: "region" })
+// Settings, apart at the bottom of every kind's sidebar.
+const settingsGroup: { label: GroupKey | null; pages: Page[] } = {
+  label: null,
+  pages: [{ label: "settings", icon: Settings }]
+}
 
-function countryName(code: string) {
+// A country's name in the page's language, from the address's two-letter code.
+function countryName(code: string, locale: string) {
   try {
-    return /^[A-Z]{2}$/i.test(code) ? (regions.of(code.toUpperCase()) ?? "") : ""
+    return /^[A-Z]{2}$/i.test(code)
+      ? (new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? "")
+      : ""
   } catch {
     return ""
   }
-}
-
-const addressTitles: Record<WorkspaceKind, string> = {
-  buyer: "Delivery address",
-  supplier: "Pickup address",
-  forwarder: "Warehouse address"
 }
 
 function initials(name: string) {
@@ -123,6 +121,8 @@ function Spot({ on, className, children }: { on: boolean; className?: string; ch
 // The workspace taking shape as someone gets started: the portal in miniature, with their company, their role's pages,
 // their name and their first address. Decorative; the form beside it says everything it shows.
 export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: WorkspaceKind | "" }) {
+  const t = useTranslations("onboarding")
+  const locale = useLocale()
   const values = useWatch()
   const person = values.person ?? {}
   const name = [text(person.firstName), text(person.lastName)].filter(Boolean).join(" ")
@@ -131,9 +131,11 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
   const address = place.address ?? {}
   const street = text(address.addressLine1)
   const city = [text(address.city), text(address.stateOrRegion), text(address.postalCode)].filter(Boolean).join(", ")
-  const country = countryName(text(address.countryCode))
+  const country = countryName(text(address.countryCode), locale)
+  const typedPosition = text(person.position)
+  const positionLabel = isPosition(typedPosition) ? t(`positions.${positionKeys[typedPosition]}`) : typedPosition
   const groups = kind ? pages[kind] : []
-  const page = groups[0]?.pages[0]?.label ?? "Overview"
+  const page = groups[0]?.pages[0]?.label ?? "overview"
   return (
     <div
       aria-hidden
@@ -148,7 +150,7 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
         <span className="size-5" />
       </div>
       <div className="grid h-[25rem] grid-cols-[10.5rem_minmax(0,1fr)]">
-        <div className="flex min-h-0 flex-col gap-3 border-r bg-sidebar p-2 text-[11px]">
+        <div className="flex min-h-0 flex-col gap-3 border-e bg-sidebar p-2 text-[11px]">
           <Spot on={step === "company" || step === "role"} className="p-1.5">
             <div className="flex items-center gap-2">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background text-[10px] font-medium">
@@ -157,38 +159,38 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
               <span className="flex min-w-0 flex-col gap-1">
                 {company ? <span className="truncate font-medium">{company}</span> : <Placeholder className="w-16" />}
                 <span className="truncate text-[10px] text-muted-foreground">
-                  {kind ? kindNames[kind] : "Workspace"}
+                  {kind ? t(`preview.kinds.${kind}`) : t("preview.workspace")}
                 </span>
               </span>
             </div>
           </Spot>
           <Spot on={step === "role"} className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-1.5">
             {kind
-              ? [...groups, { label: null, pages: [{ label: "Settings", icon: Settings }] }].map(
-                  (group, position, all) => (
-                    <div
-                      key={group.pages[0]?.label}
-                      className={cn("flex flex-col gap-0.5", position === all.length - 1 && "mt-auto")}
-                    >
-                      {group.label && (
-                        <span className="px-1.5 pb-0.5 text-[10px] text-muted-foreground">{group.label}</span>
-                      )}
-                      {group.pages.map((item, index) => (
-                        <span
-                          key={item.label}
-                          className={cn(
-                            "flex items-center gap-2 rounded-md px-1.5 py-[3px] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-1 motion-safe:fill-mode-both",
-                            item.label === page && position === 0 && index === 0 && "bg-sidebar-accent font-medium"
-                          )}
-                          style={{ animationDelay: `${index * 40}ms` }}
-                        >
-                          <item.icon className="size-3 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{item.label}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )
-                )
+              ? [...groups, settingsGroup].map((group, position, all) => (
+                  <div
+                    key={group.pages[0]?.label}
+                    className={cn("flex flex-col gap-0.5", position === all.length - 1 && "mt-auto")}
+                  >
+                    {group.label && (
+                      <span className="px-1.5 pb-0.5 text-[10px] text-muted-foreground">
+                        {t(`preview.groups.${group.label}`)}
+                      </span>
+                    )}
+                    {group.pages.map((item, index) => (
+                      <span
+                        key={item.label}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-1.5 py-[3px] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-start-1 motion-safe:fill-mode-both",
+                          item.label === page && position === 0 && index === 0 && "bg-sidebar-accent font-medium"
+                        )}
+                        style={{ animationDelay: `${index * 40}ms` }}
+                      >
+                        <item.icon className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{t(`preview.pages.${item.label}`)}</span>
+                      </span>
+                    ))}
+                  </div>
+                ))
               : [16, 20, 14, 18].map((width) => (
                   <span key={width} className="flex items-center gap-2 px-1.5 py-1">
                     <span className="size-3 rounded bg-muted-foreground/15" />
@@ -203,8 +205,8 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
               </span>
               <span className="flex min-w-0 flex-col gap-1">
                 {name ? <span className="truncate font-medium">{name}</span> : <Placeholder className="w-16" />}
-                {text(person.position) ? (
-                  <span className="truncate text-[10px] text-muted-foreground">{text(person.position)}</span>
+                {positionLabel ? (
+                  <span className="truncate text-[10px] text-muted-foreground">{positionLabel}</span>
                 ) : (
                   <Placeholder className="w-10" />
                 )}
@@ -213,7 +215,9 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
           </Spot>
         </div>
         <div className="flex min-w-0 flex-col gap-4 p-4">
-          <span className="text-sm font-semibold tracking-tight">{kind ? page : <Placeholder className="w-24" />}</span>
+          <span className="text-sm font-semibold tracking-tight">
+            {kind ? t(`preview.pages.${page}`) : <Placeholder className="w-24" />}
+          </span>
           <div className="grid grid-cols-3 gap-2">
             {[0, 1, 2].map((tile) => (
               <div key={tile} className="flex flex-col gap-2 rounded-lg border p-2.5">
@@ -234,7 +238,9 @@ export function WorkspacePreview({ step, kind }: { step: WizardStep; kind: Works
             <div className="flex items-start gap-2.5 rounded-lg border bg-background p-2.5 text-[11px]">
               <MapPin className="mt-px size-3.5 shrink-0 text-muted-foreground" />
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground">{kind ? addressTitles[kind] : "Address"}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {kind ? t(`steps.address.${kind}.title`) : t("preview.address")}
+                </span>
                 {text(place.name) ? (
                   <span className="truncate font-medium">{text(place.name)}</span>
                 ) : (

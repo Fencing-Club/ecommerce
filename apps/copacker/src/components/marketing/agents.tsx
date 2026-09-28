@@ -1,4 +1,5 @@
 import { Bot, Box, Check } from "lucide-react"
+import { useFormatter, useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { Scaled } from "./scaled"
 import { Ticker } from "./ticker"
@@ -10,10 +11,17 @@ import { Ticker } from "./ticker"
 const stage = { width: 1200, height: 520 }
 const hub = { x: 600, y: 260 }
 const yours = { left: 40, top: 110, width: 400, height: 300 }
-const partners = [
-  { name: "Shenzhen Metalworks’ agent", message: "Packing list submitted for purchase order 1043", top: 70 },
-  { name: "Pacific Link’s agent", message: "Pickup booked for Oct 6", top: 300 }
-].map(({ top, ...partner }) => ({ ...partner, box: { left: 800, top, width: 360, height: 150 } }))
+// A card's box. It grows taller than its height when a language's words need the room.
+const place = ({ height, ...box }: { left: number; top: number; width: number; height: number }) => ({
+  ...box,
+  minHeight: height
+})
+const partners = (
+  [
+    { key: "supplier", name: "Shenzhen Metalworks", top: 70 },
+    { key: "forwarder", name: "Pacific Link", top: 300 }
+  ] as const
+).map(({ top, ...partner }) => ({ ...partner, box: { left: 800, top, width: 360, height: 150 } }))
 
 const links = [
   `M ${yours.left + yours.width} ${hub.y} L ${hub.x - 70} ${hub.y}`,
@@ -22,17 +30,21 @@ const links = [
   )
 ]
 
-const steps = [
-  "Checked restock: 2 products run out before they arrive",
-  "Created purchase order 1043 for Shenzhen Metalworks",
-  "Sent purchase order 1043 to the supplier",
-  "Planned the Amazon AWD shipment"
-]
+// What your agent does, each a key under marketing.agentsDiagram.steps.
+const steps = ["checked", "created", "sent", "planned"] as const
 
 const card =
   "absolute rounded-2xl bg-[oklch(0.21_0.006_285)] p-5 shadow-[0_30px_60px_-24px_rgb(0_0_0/0.9)] ring-1 ring-white/12"
 
 export function Agents() {
+  const t = useTranslations("marketing.agentsDiagram")
+  const format = useFormatter()
+  const messages = {
+    supplier: t("packingList", { number: 1043 }),
+    forwarder: t("pickup", {
+      date: format.dateTime(new Date(Date.UTC(2026, 9, 6)), { month: "short", day: "numeric", timeZone: "UTC" })
+    })
+  }
   return (
     <div className="-mx-6 overflow-x-auto px-6 pb-2 [scrollbar-width:none] md:mx-0 md:overflow-visible md:px-0">
       <div className="min-w-[46rem] md:min-w-0">
@@ -97,15 +109,15 @@ export function Agents() {
               <Box className="size-11" strokeWidth={1.8} />
               <span className="text-[1.05rem] font-semibold tracking-wide">MCP</span>
             </div>
-            <div className={cn(card, "flex flex-col gap-4")} style={yours}>
+            <div className={cn(card, "flex flex-col gap-4")} style={place(yours)}>
               <span className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-[#ff8a3d]/15 text-[#ff8a3d]">
                   <Bot className="size-5" />
                 </span>
-                <span className="text-[1.25rem] font-semibold">Your agent</span>
+                <span className="text-[1.25rem] font-semibold">{t("yours")}</span>
               </span>
-              <p className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-[#ff8a3d]/12 px-4 py-3 text-[1.1rem] ring-1 ring-[#ff8a3d]/30">
-                Reorder anything that runs out before it arrives, and send it to AWD.
+              <p className="ms-auto max-w-[88%] rounded-2xl rounded-ee-md bg-[#ff8a3d]/12 px-4 py-3 text-[1.1rem] ring-1 ring-[#ff8a3d]/30">
+                {t("prompt")}
               </p>
               <Ticker
                 className="min-h-16 items-center"
@@ -116,21 +128,23 @@ export function Agents() {
                       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-background">
                         <Check className="size-4" strokeWidth={3} />
                       </span>
-                      {step}
+                      {t(`steps.${step}`, { number: 1043, count: 2, supplier: "Shenzhen Metalworks" })}
                     </span>
                   )
                 }))}
               />
             </div>
-            {partners.map(({ name, message, box }) => (
-              <div key={name} className={cn(card, "flex flex-col gap-3")} style={box}>
+            {partners.map(({ key, name, box }) => (
+              <div key={key} className={cn(card, "flex flex-col gap-3")} style={place(box)}>
                 <span className="flex items-center gap-3">
                   <span className="flex size-9 items-center justify-center rounded-xl bg-white/[0.06] text-white/80">
                     <Bot className="size-5" />
                   </span>
-                  <span className="text-[1.15rem] font-semibold">{name}</span>
+                  <span className="text-[1.15rem] font-semibold">{t("partner", { name })}</span>
                 </span>
-                <span className="rounded-xl bg-white/[0.05] px-4 py-3 text-[1.05rem] text-white/80">{message}</span>
+                <span className="rounded-xl bg-white/[0.05] px-4 py-3 text-[1.05rem] text-white/80">
+                  {messages[key]}
+                </span>
               </div>
             ))}
           </div>

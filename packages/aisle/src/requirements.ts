@@ -7,8 +7,21 @@ import {
   type PrepCategory
 } from "./index"
 
+// One thing the supplier must do, as a code and the values it names, so the app can say it in each reader's language
+// and documents in English (requirementText).
+export type Requirement =
+  | { code: "prep"; prep: PrepCategory }
+  | { code: "cartons"; network: AmazonNetwork }
+  | { code: "separateCartons"; networks: AmazonNetwork[] }
+  | { code: "unitLabels" | "suffocationWarnings" | "multiPacks" | "suffocationLabel" }
+  | { code: "packFor"; network: AmazonNetwork }
+  | { code: "bundle"; units: number }
+  | { code: "fnskuLabel"; fnsku: string }
+  // A line of the product's own instructions, as the buyer wrote it.
+  | { code: "instruction"; text: string }
+
 // How the supplier prepares each unit, as agreed on the PO line.
-export const prepInstructions: Record<PrepCategory, string> = {
+const prepInstructions: Record<PrepCategory, string> = {
   POLYBAGGING: "Seal each unit in a clear polybag",
   NO_PREP: "No unit preparation",
   BUBBLEWRAPPING: "Bubble-wrap each unit",
@@ -17,6 +30,46 @@ export const prepInstructions: Record<PrepCategory, string> = {
   HANG_GARMENT: "Put each garment on a hanger",
   LABELING: "Label each unit"
 }
+
+const cartonRules: Record<AmazonNetwork, string> = {
+  fba: "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
+  awd_us:
+    "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb)."
+}
+
+const networkList = (networks: AmazonNetwork[]) => networks.map((network) => amazonNetworkNames[network]).join(" and ")
+
+// A requirement in English, as documents print it.
+export function requirementText(requirement: Requirement): string {
+  switch (requirement.code) {
+    case "prep":
+      return prepInstructions[requirement.prep]
+    case "cartons":
+      return cartonRules[requirement.network]
+    case "separateCartons":
+      return `Pack ${networkList(requirement.networks)} products in separate cartons.`
+    case "unitLabels":
+      return "Label every unit with its FNSKU barcode, covering any other barcode."
+    case "suffocationWarnings":
+      return "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider."
+    case "multiPacks":
+      return "Keep each multi-pack together, with one label on the pack."
+    case "packFor":
+      return `Pack for ${amazonNetworkNames[requirement.network]}`
+    case "bundle":
+      return `Bundle ${requirement.units} units into one pack`
+    case "fnskuLabel":
+      return `Label with FNSKU ${requirement.fnsku}`
+    case "suffocationLabel":
+      return "Put a suffocation warning label on each polybag"
+    case "instruction":
+      return requirement.text
+  }
+}
+
+// Whether a requirement is about the cartons rather than the units in them.
+export const isCartonRule = (requirement: Requirement) =>
+  requirement.code === "cartons" || requirement.code === "separateCartons"
 
 // The Amazon networks the given lines go to, in network order, or none for a PO that doesn't go to Amazon.
 export function orderNetworks(order: Pick<OrderInput, "destination" | "items">): AmazonNetwork[] {
@@ -27,28 +80,20 @@ export function orderNetworks(order: Pick<OrderInput, "destination" | "items">):
   return amazonNetworks.filter((network) => used.has(network))
 }
 
-const cartonRules: Record<AmazonNetwork, string> = {
-  fba: "FBA cartons: mixed SKUs are allowed; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb), unless one unit is larger.",
-  awd_us:
-    "AWD US cartons: one SKU per carton, at most 150 units, every carton of a SKU packed the same way; at most 63.5 cm (25 in) on each side and 22.68 kg (50 lb)."
-}
-
 // Rules the cartons and units follow because of where they go: for a PO to Amazon, each network's carton rules and
 // Amazon's unit labeling. Amazon checks them on arrival and charges for, or refuses, what doesn't comply; the buyer's own
 // locations have none of their own.
-export function destinationRequirements(order: Pick<OrderInput, "destination" | "items">): string[] {
+export function destinationRequirements(order: Pick<OrderInput, "destination" | "items">): Requirement[] {
   const networks = orderNetworks(order)
   if (!networks.length) {
     return []
   }
   return [
-    ...networks.map((network) => cartonRules[network]),
-    ...(networks.length > 1
-      ? [`Pack ${networks.map((network) => amazonNetworkNames[network]).join(" and ")} products in separate cartons.`]
-      : []),
-    "Label every unit with its FNSKU barcode, covering any other barcode.",
-    "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider.",
-    "Keep each multi-pack together, with one label on the pack."
+    ...networks.map((network) => ({ code: "cartons" as const, network })),
+    ...(networks.length > 1 ? [{ code: "separateCartons" as const, networks }] : []),
+    { code: "unitLabels" },
+    { code: "suffocationWarnings" },
+    { code: "multiPacks" }
   ]
 }
 
@@ -56,7 +101,7 @@ export function destinationRequirements(order: Pick<OrderInput, "destination" | 
 export function destinationName(order: Pick<OrderInput, "destination" | "items">) {
   const networks = orderNetworks(order)
   if (networks.length) {
-    return `Amazon ${networks.map((network) => amazonNetworkNames[network]).join(" and ")}`
+    return `Amazon ${networkList(networks)}`
   }
   return "Buyer's location"
 }
@@ -73,17 +118,18 @@ export function itemRequirements(
   item: OrderItem,
   destination: OrderInput["destination"],
   shared: OrderItem["prepCategory"] | null = null
-): string[] {
+): Requirement[] {
   const amazon = destination === "amazon"
   return [
-    ...(amazon ? [`Pack for ${amazonNetworkNames[item.amazonNetwork]}`] : []),
-    ...(item.prepCategory === shared ? [] : [prepInstructions[item.prepCategory]]),
-    ...(item.piecesPerSet > 1 ? [`Bundle ${item.piecesPerSet} units into one pack`] : []),
-    ...(amazon && item.fnsku ? [`Label with FNSKU ${item.fnsku}`] : []),
-    ...(item.suffocationWarning ? ["Put a suffocation warning label on each polybag"] : []),
+    ...(amazon ? [{ code: "packFor" as const, network: item.amazonNetwork }] : []),
+    ...(item.prepCategory === shared ? [] : [{ code: "prep" as const, prep: item.prepCategory }]),
+    ...(item.piecesPerSet > 1 ? [{ code: "bundle" as const, units: item.piecesPerSet }] : []),
+    ...(amazon && item.fnsku ? [{ code: "fnskuLabel" as const, fnsku: item.fnsku }] : []),
+    ...(item.suffocationWarning ? [{ code: "suffocationLabel" as const }] : []),
     ...item.instructions
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
+      .map((text) => ({ code: "instruction" as const, text }))
   ]
 }

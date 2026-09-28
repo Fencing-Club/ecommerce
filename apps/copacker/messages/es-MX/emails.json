@@ -1,0 +1,112 @@
+{
+  "tagline": "Reabastecimiento, resuelto.",
+  "pasteLink": "O pega este enlace en tu navegador:",
+  "invitation": {
+    "subject": "{from} te invitó a Copacker",
+    "yourTeam": "Tu equipo",
+    "aBuyer": "Un comprador",
+    "eyebrow": {
+      "supplier": "Invitación de proveedor",
+      "team": "Invitación al equipo",
+      "forwarder": "Invitación de agente de carga"
+    },
+    "joining": {
+      "supplier": "Únete como su proveedor y recibe allí sus órdenes de compra.",
+      "team": "Únete a su espacio de trabajo.",
+      "forwarder": "Únete como su agente de carga y comparte con ellos las direcciones de tus almacenes."
+    },
+    "steps": {
+      "account": "Acepta e inicia sesión o crea tu cuenta",
+      "supplierWorkspace": "Configura tu espacio de trabajo de proveedor",
+      "supplierPack": "Prepara las órdenes de compra de {from} e imprime sus etiquetas en un solo lugar",
+      "teamStart": "Empieza a trabajar en {from}",
+      "forwarderAddresses": "Agrega las direcciones de tus almacenes",
+      "forwarderShipments": "Consulta los envíos que {from} manda a través de ti"
+    },
+    "accept": "Aceptar invitación",
+    "note": "Es para {email} y vence en 7 días. Si no la esperabas, puedes ignorar este correo.",
+    "reason": "{from} invitó a {email} a Copacker."
+  },
+  "purchaseOrder": {
+    "subject": "Orden de compra {reference} de {buyer}",
+    "eyebrow": {
+      "new": "Nueva orden de compra",
+      "revised": "Orden de compra modificada"
+    },
+    "heading": "{reference} de {buyer}",
+    "lead": {
+      "new": "{buyer} te envió una orden de compra de {units, plural, one {# unidad} other {# unidades}} de {products, plural, one {# producto} other {# productos}}.",
+      "revised": "{buyer} modificó esta orden de compra. La versión actualizada reemplaza la que tenías."
+    },
+    "preview": "{units, plural, one {# unidad} other {# unidades}}, {total}",
+    "previewRequiredBy": "{units, plural, one {# unidad} other {# unidades}}, {total}, se necesita para el {date}",
+    "labels": {
+      "revision": "Revisión",
+      "requiredBy": "Se necesita para el",
+      "shipTo": "Enviar a",
+      "paymentTerms": "Condiciones de pago",
+      "total": "Total"
+    },
+    "more": "Y {count, plural, one {# producto más} other {# productos más}} en la orden de compra",
+    "open": "Abrir orden de compra",
+    "note": "El PDF de la orden de compra va adjunto.",
+    "reason": "{buyer} envió esta orden de compra a través de Copacker."
+  },
+  "labelsReady": {
+    "subject": "Etiquetas listas para {reference}",
+    "subjectShipment": "Etiquetas listas para {reference}, envío {shipment}",
+    "eyebrow": "Listo para enviar",
+    "heading": "Las etiquetas de {reference} están listas",
+    "headingShipment": "Las etiquetas de {reference}, envío {shipment}, están listas",
+    "lead": "{buyer} liberó el envío, así que está listo para etiquetar y enviar.",
+    "labels": {
+      "cartons": "Cajas",
+      "destination": "Destino",
+      "readyForPickup": "Listo para recolección",
+      "amazonShipment": "Envío de Amazon"
+    },
+    "steps": {
+      "print": "Imprime las etiquetas a tamaño real (100 %)",
+      "attach": "Pega en cada caja su etiqueta, cubriendo cualquier otro código de barras",
+      "handOver": "Revisa la lista de empaque y entrega las cajas al transportista"
+    },
+    "open": "Abrir envío",
+    "reason": "{buyer} liberó este envío en Copacker."
+  },
+  "customerDataRequest": {
+    "subject": "Solicitud de datos de cliente para {shop}",
+    "eyebrow": "Solicitud de datos de Shopify",
+    "lead": "Shopify envió a Copacker una solicitud de datos de cliente. Incluye lo que tiene Copacker en tu respuesta al cliente.",
+    "noContactDetails": "Copacker no guarda nombres, direcciones de correo electrónico, números de teléfono ni direcciones postales de los clientes.",
+    "labels": {
+      "store": "Tienda",
+      "request": "Solicitud",
+      "ordersHeld": "Pedidos que tiene Copacker"
+    },
+    "none": "Ninguno",
+    "ordersIntro": "Solo los detalles de pedido que Copacker usa para planear los reabastecimientos:",
+    "reason": "Shopify envió una solicitud de datos de cliente para {shop}, que está conectada a Copacker.",
+    "order": "Pedido {number}, realizado el {date}, estado {status}: {items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × artículo sin SKU",
+    "noItems": "sin artículos",
+    "status": {
+      "unfulfilled": "Sin surtir",
+      "partiallyFulfilled": "Surtido parcialmente",
+      "fulfilled": "Surtido",
+      "cancelled": "Cancelado"
+    }
+  },
+  "passwordReset": {
+    "subject": "Restablece tu contraseña de Copacker",
+    "eyebrow": "Tu cuenta",
+    "heading": "Restablece tu contraseña",
+    "lead": "Elige una nueva contraseña para {email}.",
+    "previewMinutes": "Elige una nueva contraseña para {email}. El enlace vence en {count, plural, one {# minuto} other {# minutos}}.",
+    "previewHours": "Elige una nueva contraseña para {email}. El enlace vence en {count, plural, one {# hora} other {# horas}}.",
+    "action": "Elegir una nueva contraseña",
+    "expiresMinutes": "El enlace vence en {count, plural, one {# minuto} other {# minutos}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo; tu contraseña no cambiará.",
+    "expiresHours": "El enlace vence en {count, plural, one {# hora} other {# horas}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo; tu contraseña no cambiará.",
+    "reason": "Alguien pidió restablecer la contraseña de {email} en Copacker."
+  }
+}

@@ -1,5 +1,6 @@
 import { packingSchema, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
 import type { documents, shipments, ShipmentState } from "../db/schema"
+import { type ServerText, serverTextInEnglish } from "./text"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect
@@ -73,17 +74,18 @@ export function packingReadiness(
   raw: unknown,
   docs: Document[],
   reserved: Record<string, number>,
-  orderRevision: number
+  orderRevision: number,
+  t: ServerText = serverTextInEnglish
 ) {
   const issues: ReadinessIssue[] = []
   if (shipment.orderRevision !== orderRevision) {
     issues.push({
       code: "po_changed",
-      message: "The purchase order changed. Review it and save the packing draft before submitting"
+      message: t("readiness.orderChanged")
     })
   }
   if (!["packing", "correction"].includes(shipment.status) || shipment.operation !== "none" || shipment.amazonOrderId) {
-    issues.push({ code: "shipment_locked", message: "Resolve the existing shipment before editing its packing list" })
+    issues.push({ code: "shipment_locked", message: t("readiness.shipmentLocked") })
   }
   const parsed = packingSchema.safeParse(raw)
   if (!parsed.success) {
@@ -110,33 +112,41 @@ export function packingReadiness(
     issues.push({
       code: "missing_invoice",
       field: "invoiceDocumentId",
-      message: "Upload the official commercial invoice for this shipment"
+      message: t("readiness.missingInvoice")
     })
   }
-  issues.push(...validatePacking(order, packing, reserved).issues.map((issue) => ({ ...issue, code: "packing_rule" })))
+  issues.push(
+    ...validatePacking(order, packing, reserved).issues.map((issue) => ({
+      code: "packing_rule",
+      cartonId: issue.cartonId,
+      message:
+        "values" in issue ? t(`readiness.packing.${issue.code}`, issue.values) : t(`readiness.packing.${issue.code}`)
+    }))
+  )
   return { packing, issues }
 }
 
-// Whether a shipment's packet is complete. A shipment to Amazon also needs what amazonIssues checks; one anywhere else
-// has no carton or shipping labels, and its packing list and checklist are made from its packing when the packet is
-// downloaded. Product labels are made from each product when needed, so a line lacks one only when its product can't
-// make one yet, as given in missingLabels (see lineLabels).
+// Whether a shipment's packet is complete, with each issue in t's language. A shipment to Amazon also needs what
+// amazonIssues checks; one anywhere else has no carton or shipping labels, and its packing list and checklist are made
+// from its packing when the packet is downloaded. Product labels are made from each product when needed, so a line
+// lacks one only when its product can't make one yet, as given in missingLabels (see lineLabels).
 export function releaseIssues(
   shipment: Shipment,
   docs: Document[],
-  missingLabels: ReadonlySet<string> = new Set()
+  missingLabels: ReadonlySet<string> = new Set(),
+  t: ServerText = serverTextInEnglish
 ): ReadinessIssue[] {
   if (!shipment.packing || !shipment.snapshot) {
-    return [{ code: "missing_packing", message: "Submit the packing list first" }]
+    return [{ code: "missing_packing", message: t("readiness.missingPacking") }]
   }
-  const issues = shipment.snapshot.destination === "amazon" ? amazonIssues(shipment, shipment.packing, docs) : []
+  const issues = shipment.snapshot.destination === "amazon" ? amazonIssues(shipment, shipment.packing, docs, t) : []
   const shipped = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
   for (const item of shipment.snapshot.items) {
     if (shipped.has(item.id) && missingLabels.has(item.id)) {
       issues.push({
         code: "missing_product_label",
         itemId: item.id,
-        message: `Add a product label for ${item.buyerSku} on the Products page`
+        message: t("readiness.missingProductLabel", { sku: item.buyerSku })
       })
     }
   }
@@ -146,7 +156,7 @@ export function releaseIssues(
 // What the packet of a shipment to Amazon needs besides product labels: Amazon's label and the buyer's shipping label
 // for every carton, and the packing list and checklist made with Amazon's labels, all for the shipment's current
 // revision.
-function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[]) {
+function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[], t: ServerText) {
   const issues: ReadinessIssue[] = []
   const current = docs.filter(
     (doc) =>
@@ -160,13 +170,13 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[]) {
     new Set(shipment.labels.map((label) => label.cartonId)).size !== shipment.labels.length ||
     new Set(shipment.labels.map((label) => label.labelNumber)).size !== shipment.labels.length
   ) {
-    issues.push({ code: "unmatched_cartons", message: "Amazon carton labels are not fully matched" })
+    issues.push({ code: "unmatched_cartons", message: t("readiness.unmatchedCartons") })
   }
   for (const kind of ["packing_list", "checklist"]) {
     if (!current.some((doc) => doc.kind === kind)) {
       issues.push({
         code: `missing_${kind}`,
-        message: `Generate the current ${kind === "packing_list" ? "packing list" : "checklist"} before releasing labels`
+        message: t(kind === "packing_list" ? "readiness.missingPackingList" : "readiness.missingChecklist")
       })
     }
   }
@@ -178,14 +188,14 @@ function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[]) {
       issues.push({
         code: "missing_carton_label",
         cartonId: carton.cartonId,
-        message: `Amazon label is missing for carton ${carton.cartonId}`
+        message: t("readiness.missingCartonLabel", { carton: carton.cartonId })
       })
     }
     if (!current.some((doc) => doc.kind === "shipping_label" && doc.cartonId === carton.cartonId)) {
       issues.push({
         code: "missing_shipping_label",
         cartonId: carton.cartonId,
-        message: `Assign a shipping label to carton ${carton.cartonId}`
+        message: t("readiness.missingShippingLabel", { carton: carton.cartonId })
       })
     }
   }

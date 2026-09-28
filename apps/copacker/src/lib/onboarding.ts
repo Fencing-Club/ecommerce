@@ -1,4 +1,5 @@
 import { addressSchema } from "@repo/aisle"
+import { objectKeys } from "ts-extras"
 import { z } from "zod"
 import { phoneSchema } from "./phone"
 
@@ -7,25 +8,32 @@ import { phoneSchema } from "./phone"
 export const workspaceKinds = ["buyer", "supplier", "forwarder"] as const
 export type WorkspaceKind = (typeof workspaceKinds)[number]
 
-// Roles at buyers, suppliers and freight forwarders.
-export const positions = [
-  "Owner",
-  "General manager",
-  "Operations manager",
-  "Purchasing manager",
-  "Buyer",
-  "Sales manager",
-  "Account manager",
-  "Production manager",
-  "Quality control",
-  "Logistics coordinator",
-  "Warehouse manager",
-  "Customer service",
-  "Finance",
-  "Other"
-]
+// Roles at buyers, suppliers and freight forwarders: the English name a profile saves, and its label's key under
+// onboarding.positions.
+export const positionKeys = {
+  Owner: "owner",
+  "General manager": "generalManager",
+  "Operations manager": "operationsManager",
+  "Purchasing manager": "purchasingManager",
+  Buyer: "buyer",
+  "Sales manager": "salesManager",
+  "Account manager": "accountManager",
+  "Production manager": "productionManager",
+  "Quality control": "qualityControl",
+  "Logistics coordinator": "logisticsCoordinator",
+  "Warehouse manager": "warehouseManager",
+  "Customer service": "customerService",
+  Finance: "finance",
+  Other: "other"
+} as const
+export type Position = keyof typeof positionKeys
+export const positions: string[] = objectKeys(positionKeys)
 
-const websiteError = "Enter a website, such as example.com"
+export function isPosition(value: string): value is Position {
+  return Object.hasOwn(positionKeys, value)
+}
+
+const websiteError = "onboarding.company.enterWebsite"
 
 // A website as typed, or nothing: "example.com" is read as https://example.com. Its host has to be a domain name, so a
 // word such as "fencing" isn't taken for a website, and neither is an email address typed here.
@@ -42,13 +50,13 @@ export const websiteSchema = z
   )
 
 export const personSchema = z.object({
-  firstName: z.string().trim().min(1, "Enter your first name").max(60),
-  lastName: z.string().trim().min(1, "Enter your last name").max(60),
-  position: z.string().trim().min(1, "Choose your position").max(100)
+  firstName: z.string().trim().min(1, "onboarding.person.enterFirstName").max(60),
+  lastName: z.string().trim().min(1, "onboarding.person.enterLastName").max(60),
+  position: z.string().trim().min(1, "onboarding.person.choosePosition").max(100)
 })
 
 export const companySchema = z.object({
-  name: z.string().trim().min(2, "Enter your company’s name").max(120),
+  name: z.string().trim().min(2, "onboarding.company.enterName").max(120),
   website: websiteSchema,
   phone: phoneSchema
 })
@@ -71,7 +79,7 @@ export const blankPlace = {
 
 // A saved address: its name in Copacker's lists, and the address itself.
 export const placeSchema = z.object({
-  name: z.string().trim().min(1, "Name this address").max(100),
+  name: z.string().trim().min(1, "onboarding.place.enterName").max(100),
   address: addressSchema
 })
 

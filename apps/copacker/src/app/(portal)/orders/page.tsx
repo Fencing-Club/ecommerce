@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { FileUp, Plus } from "lucide-react"
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { EmptyState, PageHeader, StatCard, StatGrid } from "@/components/common"
 import { OrderList } from "@/components/order-list"
@@ -14,11 +15,11 @@ import { noAccessTitle, requirePage, session } from "@/server/auth"
 import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 
 export async function generateMetadata(): Promise<Metadata> {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders.index")])
   if (!can(s, "orders")) {
-    return noAccessTitle
+    return noAccessTitle()
   }
-  return { title: s.org.kind === "supplier" ? "Orders" : "Purchase orders" }
+  return { title: s.org.kind === "supplier" ? t("supplierTitle") : t("title") }
 }
 
 export default async function OrdersPage({
@@ -26,13 +27,13 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<{ status?: string; tab?: string }>
 }) {
-  const s = await session()
+  const [s, t] = await Promise.all([session(), getTranslations("orders.index")])
   requirePage(s, "orders")
   if (s.org.kind === "supplier") {
     const [orders, { tab }] = await Promise.all([supplierOrders(s.org.id), searchParams])
     return (
       <>
-        <PageHeader title="Orders" />
+        <PageHeader title={t("supplierTitle")} />
         <SupplierOrderIndex orders={can(s, "prices") ? orders : withoutTotals(orders)} initialTab={tab} />
       </>
     )
@@ -60,23 +61,23 @@ export default async function OrdersPage({
       : []
   const creates = isBuyer && can(s, "orders", "edit")
   let nextStep = {
-    description: "Choose products from your catalog, then send the purchase order to your supplier.",
+    description: t("next.create.description"),
     href: "/orders/new",
-    action: "Create purchase order",
+    action: t("create"),
     allowed: creates
   }
   if (!shopify) {
     nextStep = {
-      description: "Connect Shopify so purchase orders can use your catalog, then invite your supplier.",
+      description: t("next.shopify.description"),
       href: "/settings#integrations",
-      action: "Connect Shopify",
+      action: t("next.shopify.action"),
       allowed: isAdmin(s)
     }
   } else if (!supplierLink) {
     nextStep = {
-      description: "Invite your supplier, then create your first purchase order.",
+      description: t("next.supplier.description"),
       href: "/partners",
-      action: "Invite a supplier",
+      action: t("next.supplier.action"),
       allowed: can(s, "partners", "edit")
     }
   }
@@ -85,16 +86,16 @@ export default async function OrdersPage({
 
   return (
     <>
-      <PageHeader title="Purchase orders">
+      <PageHeader title={t("title")}>
         {creates && (
           <>
             <Button variant="outline" nativeButton={false} render={<Link href="/orders/import" />}>
               <FileUp data-icon="inline-start" />
-              Import
+              {t("import")}
             </Button>
             <Button nativeButton={false} render={<Link href="/orders/new" />}>
               <Plus data-icon="inline-start" />
-              Create purchase order
+              {t("create")}
             </Button>
           </>
         )}
@@ -103,9 +104,12 @@ export default async function OrdersPage({
       {/* Counts only help once there is something to count. */}
       {rows.length > 0 && (
         <StatGrid>
-          <StatCard label="Open orders" value={rows.filter((r) => r.order.status !== "closed").length} />
-          <StatCard label="With suppliers" value={rows.filter((r) => r.order.status === "submitted").length} />
-          <StatCard label="Drafts" value={rows.filter((r) => r.order.status === "draft").length} />
+          <StatCard label={t("stats.open")} value={rows.filter((r) => r.order.status !== "closed").length} />
+          <StatCard
+            label={t("stats.withSuppliers")}
+            value={rows.filter((r) => r.order.status === "submitted").length}
+          />
+          <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
         </StatGrid>
       )}
 
@@ -119,8 +123,10 @@ export default async function OrdersPage({
         />
       ) : (
         <EmptyState
-          title={guided ? "Your next shipment starts here" : "No purchase orders yet"}
-          description={guided ? nextStep.description : emptyDescription(s.org.kind)}
+          title={guided ? t("empty.guidedTitle") : t("empty.title")}
+          description={
+            guided ? nextStep.description : t(s.org.kind === "forwarder" ? "empty.forwarder" : "empty.other")
+          }
         >
           {guided && (
             <Button nativeButton={false} render={<Link href={nextStep.href} />}>
@@ -131,9 +137,4 @@ export default async function OrdersPage({
       )}
     </>
   )
-}
-
-// What an empty list holds once there's something in it: a forwarder's are the ones shipping through it.
-function emptyDescription(kind: string) {
-  return kind === "forwarder" ? "Purchase orders shipping through you appear here." : "Purchase orders appear here."
 }

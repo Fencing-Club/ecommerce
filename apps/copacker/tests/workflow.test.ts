@@ -303,7 +303,7 @@ beforeEach(async () => {
   })
   await database
     .insert(tables.orderRevisions)
-    .values({ orderId, revision: 1, data: orderData, actor: buyer.user.id, reason: "Created" })
+    .values({ orderId, revision: 1, data: orderData, actor: buyer.user.id, reason: "created" })
 })
 // A supplier product row with a product of its own, as imports and the product page make them.
 async function withGroup<T extends { supplierOrgId: string; title: string }>(values: T) {
@@ -2078,7 +2078,7 @@ describe("leg holders shipping the goods on", () => {
     context.actor = buyer
     await receiveShipment(buyer, id)
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
-    expect(events.map((event) => event.message)).toContain("Supplier shipped the goods")
+    expect(events.map((event) => event.messageKey)).toContain("supplierShipped")
   })
 
   it("needs the current commercial invoice to ship", async () => {
@@ -3493,8 +3493,12 @@ describe("PO to a released FBA shipment", () => {
     const queued = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "amazon"))
     expect(queued.map((job) => job.payload.shipmentId).toSorted()).toEqual(rows.map((row) => row.id).toSorted())
     const events = await database.select().from(tables.events).where(eq(tables.events.orderId, orderId))
-    expect(events.map((event) => event.message)).toContain(
-      "Packing submitted; split into FBA and AWD US shipments and queued for Amazon"
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        messageKey: "packingSplit",
+        messageValues: { networks: ["FBA", "AWD US"] },
+        message: null
+      })
     )
     // Every piece is reserved once across the two shipments.
     expect((await orderWorkflow(buyer, orderId)).items.map((item) => item.remainingPieces)).toEqual([0, 0])
@@ -4571,10 +4575,12 @@ describe("supplier lead times", () => {
       website: null
     })
     await expect(updateSupplier(buyerId, { ...edit, contactEmail: "not an email" })).rejects.toThrow(
-      "Enter an email address"
+      "partners.contactDetails.enterEmail"
     )
-    await expect(updateSupplier(buyerId, { ...edit, phoneNumber: "call me" })).rejects.toThrow("Enter a phone number")
-    await expect(updateSupplier(buyerId, { ...edit, website: "supplier" })).rejects.toThrow("Enter a website")
+    await expect(updateSupplier(buyerId, { ...edit, phoneNumber: "call me" })).rejects.toThrow("partners.phone.invalid")
+    await expect(updateSupplier(buyerId, { ...edit, website: "supplier" })).rejects.toThrow(
+      "onboarding.company.enterWebsite"
+    )
     // A website typed without https:// is saved with it; details left out stay as they were.
     await updateSupplier(buyerId, { ...edit, website: "supplier.example", phoneNumber: "+86 188 6161 3263" })
     expect(await saved()).toMatchObject({
@@ -4755,7 +4761,7 @@ describe("profiles", () => {
       { userId: buyer.user.id, firstName: "Tessa", lastName: "Tester", position: "Buyer", company: "Fencing Club" }
     ])
     expect((await ownProfile(buyer.user.id)).complete).toBe(true)
-    await expect(saveProfile(buyer, { ...profile, position: " " })).rejects.toThrow("Choose your position")
+    await expect(saveProfile(buyer, { ...profile, position: " " })).rejects.toThrow("onboarding.person.choosePosition")
   })
 })
 
@@ -4821,7 +4827,9 @@ describe("the workspace website on POs", () => {
   it("lets the buyer's owner set the website with their profile, and prints it on the PO", async () => {
     const profile = { firstName: "Tess", lastName: "Tester", position: "Owner", company: "Buyer" }
     // A website typed without https:// is read as https.
-    await expect(saveProfile(buyer, { ...profile, website: "ftp://buyer.example" })).rejects.toThrow("Enter a website")
+    await expect(saveProfile(buyer, { ...profile, website: "ftp://buyer.example" })).rejects.toThrow(
+      "onboarding.company.enterWebsite"
+    )
     await saveProfile(buyer, { ...profile, website: "buyer.example" })
     const [saved] = await database
       .select()
@@ -4881,7 +4889,7 @@ describe("draft PO edits", () => {
       .select()
       .from(tables.orderRevisions)
       .where(eq(tables.orderRevisions.orderId, created.id))
-    expect(revisions.map((row) => row.reason).toSorted()).toEqual(["Purchase order created", "Purchase order edited"])
+    expect(revisions.map((row) => row.reason).toSorted()).toEqual(["created", "edited"])
     // A stale revision, or a PO that's been sent, can't be edited.
     await expect(updateDraftOrder(buyer, created.id, orderData, 1)).rejects.toThrow("changed")
     await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, created.id))

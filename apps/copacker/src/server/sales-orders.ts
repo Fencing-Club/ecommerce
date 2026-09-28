@@ -12,6 +12,7 @@ import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { syncAmazonFees } from "./amazon-fees"
@@ -30,6 +31,7 @@ import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
 import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
+import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
 
 export const salesSources = ["shopify", "amazon"] as const
 export type SalesSource = (typeof salesSources)[number]
@@ -64,7 +66,7 @@ const refreshDays = 30
 const chunkDays = 14
 const day = 86400000
 
-export class SalesSyncError extends Error {}
+export class SalesSyncError extends LocalizedError {}
 
 // The marketplaces each seller's orders are read from, kept for a few hours: they rarely change, and Amazon allows few
 // requests for them.
@@ -98,7 +100,7 @@ export async function amazonSellerAccount(sellerId: string, amazon: Pick<Amazon,
 // Starts a sync for one source. The worker copies orders in chunks; restock reads the stored copy.
 export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">, source: SalesSource) {
   if (org.kind !== "buyer") {
-    throw new SalesSyncError("A buyer workspace is required")
+    throw new SalesSyncError("buyerWorkspaceRequired")
   }
   return db().transaction(async (tx) => {
     const [account] = await tx
@@ -106,12 +108,12 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
       .from(connections)
       .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
     if (!account) {
-      throw new SalesSyncError(`Connect ${source === "shopify" ? "Shopify" : "Amazon"} in Settings first`)
+      throw new SalesSyncError("connectInSettings", { provider: source })
     }
     if (source === "shopify") {
       const scopes = new Set(account.scopes.split(/[,\s]+/))
       if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
-        throw new SalesSyncError("Reconnect Shopify to grant order history access")
+        throw new SalesSyncError("reconnectShopifyOrders")
       }
     }
     const [current] = await tx
@@ -437,6 +439,7 @@ export async function salesJob(payload: Record<string, unknown>, assertOwned: ()
 
 // Each connected source's sync state and the orders stored for it, without Shopify orders that have an excluded tag.
 export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new Date()) {
+  const t = await serverText()
   // The Overview's "Last 30 days": the 30 days before today in the store's time zone.
   const recentRange = presetRange("last30", zonedDay(now, timeZone))
   const since = zonedStart(recentRange.from, timeZone)
@@ -479,7 +482,7 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
     const orders = stored.find((row) => row.source === source && row.externalAccountId === account.externalId)
     const last30 = recent
       .filter((row) => row.source === source && row.externalAccountId === account.externalId)
-      .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId))
+      .map((row) => summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId, t))
     return [
       {
         source,
@@ -500,13 +503,12 @@ export async function salesSyncStatus(orgId: string, timeZone = "UTC", now = new
 // Demand from one source's stored orders over the last `days` days of the stored period. Throws a SalesSyncError
 // that says what to do when the orders aren't copied yet or don't reach back far enough.
 export async function storedDemand(orgId: string, source: SalesSource, days: number) {
-  const title = source === "shopify" ? "Shopify" : "Amazon"
   const [account] = await db()
     .select({ externalId: connections.externalId })
     .from(connections)
     .where(and(eq(connections.orgId, orgId), eq(connections.provider, source)))
   if (!account) {
-    throw new SalesSyncError(`Connect ${title} in Settings first`)
+    throw new SalesSyncError("connectInSettings", { provider: source })
   }
   const [sync] = await db()
     .select()
@@ -519,13 +521,13 @@ export async function storedDemand(orgId: string, source: SalesSource, days: num
       )
     )
   if (!sync?.coveredFrom || !sync.coveredTo) {
-    throw new SalesSyncError(`Sync ${title} orders on the Orders page first`)
+    throw new SalesSyncError("syncOrdersFirst", { provider: source })
   }
   const to = sync.coveredTo
   const from = new Date(to.getTime() - days * day)
   if (sync.coveredFrom > from) {
     const stored = Math.floor((to.getTime() - sync.coveredFrom.getTime()) / day)
-    throw new SalesSyncError(`${title} orders go back ${stored} days. Choose a sales period of ${stored} days or fewer`)
+    throw new SalesSyncError("ordersGoBack", { provider: source, days: stored })
   }
   const rows = await db()
     .select({ data: salesOrders.data })
@@ -648,10 +650,10 @@ export function orderSales(data: ShopifySale | AmazonSale): { minor: number; cur
   return currency ? { minor: Math.round(total * 100), currency } : null
 }
 
-const shopifyChannels: Record<string, string> = {
-  web: "Online store",
-  pos: "Point of sale",
-  shopify_draft_order: "Draft order"
+const shopifyChannels: Record<string, ServerKey> = {
+  web: "salesChannels.web",
+  pos: "salesChannels.pos",
+  shopify_draft_order: "salesChannels.draftOrder"
 }
 
 // Amazon reports statuses such as PARTIALLY_SHIPPED; shown as words.
@@ -660,12 +662,14 @@ function words(value: string) {
   return text.charAt(0).toLocaleUpperCase() + text.slice(1)
 }
 
-// A stored order as the Orders page lists it. Bundle components count once, as the bundle bought.
+// A stored order as the Orders page lists it, its channel in t's language. Bundle components count once, as the bundle
+// bought.
 export function summarizeSalesOrder(
   source: SalesSource,
   orderedAt: Date,
   data: ShopifySale | AmazonSale,
-  account: string
+  account: string,
+  t: ServerText = serverTextInEnglish
 ): SalesOrderSummary {
   if (source === "shopify" && "lines" in data) {
     const items: SalesOrderSummary["items"] = []
@@ -692,13 +696,15 @@ export function summarizeSalesOrder(
         ? "Fulfilled"
         : "Partially fulfilled"
     }
-    let channel = "Other app"
+    let channel = t("salesChannels.otherApp")
     if (data.sourceName && shopifyChannels[data.sourceName]) {
-      channel = shopifyChannels[data.sourceName]!
+      channel = t(shopifyChannels[data.sourceName]!)
     } else if (data.sourceName?.startsWith("amazon")) {
       // Shopify's Amazon sales channel copies Amazon orders into Shopify, such as "amazon-us".
       const marketplace = data.sourceName.slice("amazon-".length).toUpperCase()
-      channel = marketplace ? `Amazon ${marketplace}, via Shopify` : "Amazon, via Shopify"
+      channel = marketplace
+        ? t("salesChannels.amazonMarketplaceViaShopify", { marketplace })
+        : t("salesChannels.amazonViaShopify")
     }
     return {
       source,
@@ -821,6 +827,7 @@ export async function listSalesOrders(
   filter: { source?: SalesSource; page: number; q?: string },
   { prices = true }: { prices?: boolean } = {}
 ) {
+  const t = await serverText()
   const included = sql`not ${taggedWith(sql`${salesOrders.data}`, await excludedShopifyTags(orgId))}`
   const accounts = await db()
     .select({ provider: connections.provider, externalId: connections.externalId })
@@ -903,7 +910,7 @@ export async function listSalesOrders(
         .groupBy(amazonTransactions.orderId, amazonTransactions.externalAccountId, amazonTransactions.currency)
     : []
   const orders = rows.map((row) => {
-    const order = summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId)
+    const order = summarizeSalesOrder(row.source, row.orderedAt, row.data, row.externalAccountId, t)
     if (row.source !== "amazon") {
       return order
     }

@@ -1,0 +1,112 @@
+{
+  "tagline": "补货，轻松搞定。",
+  "pasteLink": "或将此链接粘贴到浏览器中：",
+  "invitation": {
+    "subject": "{from} 邀请你加入 Copacker",
+    "yourTeam": "你的团队",
+    "aBuyer": "一位买家",
+    "eyebrow": {
+      "supplier": "供应商邀请",
+      "team": "团队邀请",
+      "forwarder": "货代邀请"
+    },
+    "joining": {
+      "supplier": "以供应商身份加入，在这里接收他们的采购订单。",
+      "team": "加入他们的工作区。",
+      "forwarder": "以货代身份加入，并与他们共享你的仓库地址。"
+    },
+    "steps": {
+      "account": "接受邀请，然后登录或创建账号",
+      "supplierWorkspace": "设置你的供应商工作区",
+      "supplierPack": "在一个地方为 {from} 的采购订单装箱并打印标签",
+      "teamStart": "开始在 {from} 中工作",
+      "forwarderAddresses": "添加你的仓库地址",
+      "forwarderShipments": "查看 {from} 通过你发送的货件"
+    },
+    "accept": "接受邀请",
+    "note": "此邀请发给 {email}，7 天后过期。如果你没有预期收到此邀请，可以忽略此邮件。",
+    "reason": "{from} 邀请 {email} 加入 Copacker。"
+  },
+  "purchaseOrder": {
+    "subject": "来自 {buyer} 的采购订单 {reference}",
+    "eyebrow": {
+      "new": "新采购订单",
+      "revised": "已修改的采购订单"
+    },
+    "heading": "来自 {buyer} 的 {reference}",
+    "lead": {
+      "new": "{buyer} 向你发送了一份采购订单，共 {products, plural, other {# 个产品}}、{units, plural, other {# 件}}。",
+      "revised": "{buyer} 修改了此采购订单。更新后的版本将替换你之前收到的版本。"
+    },
+    "preview": "{units, plural, other {# 件}}，{total}",
+    "previewRequiredBy": "{units, plural, other {# 件}}，{total}，需于 {date} 前交付",
+    "labels": {
+      "revision": "修订版本",
+      "requiredBy": "要求交货日期",
+      "shipTo": "收货地址",
+      "paymentTerms": "付款条件",
+      "total": "合计"
+    },
+    "more": "采购订单中还有 {count, plural, other {# 个产品}}",
+    "open": "打开采购订单",
+    "note": "附件为采购订单 PDF。",
+    "reason": "{buyer} 通过 Copacker 发送了此采购订单。"
+  },
+  "labelsReady": {
+    "subject": "{reference} 的标签已就绪",
+    "subjectShipment": "{reference} 货件 {shipment} 的标签已就绪",
+    "eyebrow": "可发货",
+    "heading": "{reference} 的标签已就绪",
+    "headingShipment": "{reference} 货件 {shipment} 的标签已就绪",
+    "lead": "{buyer} 已发放此货件，可以贴标签并发货了。",
+    "labels": {
+      "cartons": "箱数",
+      "destination": "目的地",
+      "readyForPickup": "可提货日期",
+      "amazonShipment": "Amazon 货件"
+    },
+    "steps": {
+      "print": "按实际尺寸（100%）打印标签",
+      "attach": "在每个箱子上贴上对应的标签，并覆盖其他条形码",
+      "handOver": "查看装箱核对清单，然后将箱子交给承运商"
+    },
+    "open": "打开货件",
+    "reason": "{buyer} 在 Copacker 中发放了此货件。"
+  },
+  "customerDataRequest": {
+    "subject": "{shop} 的客户数据请求",
+    "eyebrow": "Shopify 数据请求",
+    "lead": "Shopify 向 Copacker 发送了一项客户数据请求。请在回复客户时附上 Copacker 保存的信息。",
+    "noContactDetails": "Copacker 不存储客户的姓名、邮箱地址、电话号码或邮寄地址。",
+    "labels": {
+      "store": "店铺",
+      "request": "请求",
+      "ordersHeld": "Copacker 保存的订单"
+    },
+    "none": "无",
+    "ordersIntro": "仅包含 Copacker 用于规划补货的订单详情：",
+    "reason": "Shopify 为已连接 Copacker 的 {shop} 发送了一项客户数据请求。",
+    "order": "订单 {number}，下单日期 {date}，状态 {status}：{items}",
+    "item": "{quantity} × {sku}",
+    "itemWithoutSku": "{quantity} × 无 SKU 商品",
+    "noItems": "无商品",
+    "status": {
+      "unfulfilled": "未履约",
+      "partiallyFulfilled": "部分履约",
+      "fulfilled": "已履约",
+      "cancelled": "已取消"
+    }
+  },
+  "passwordReset": {
+    "subject": "重置你的 Copacker 密码",
+    "eyebrow": "你的账号",
+    "heading": "重置密码",
+    "lead": "为 {email} 设置新密码。",
+    "previewMinutes": "为 {email} 设置新密码。链接将在 {count, plural, other {# 分钟}}后失效。",
+    "previewHours": "为 {email} 设置新密码。链接将在 {count, plural, other {# 小时}}后失效。",
+    "action": "设置新密码",
+    "expiresMinutes": "链接将在 {count, plural, other {# 分钟}}后失效。如果你没有申请重置密码，可以忽略此邮件，你的密码不会改变。",
+    "expiresHours": "链接将在 {count, plural, other {# 小时}}后失效。如果你没有申请重置密码，可以忽略此邮件，你的密码不会改变。",
+    "reason": "有人申请在 Copacker 上重置 {email} 的密码。"
+  }
+}

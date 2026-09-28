@@ -3,7 +3,9 @@ import { desc, eq } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { db } from "@/db"
 import { connections, jobs, poImports } from "@/db/schema"
+import { LocalizedError } from "@/i18n/errors"
 import { session, requireBuyer, requirePage } from "@/server/auth"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
@@ -27,30 +29,30 @@ export async function GET() {
 }
 export async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 })
+    return errorResponse("invalidOrigin", 403)
   }
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
   if (Number(request.headers.get("content-length") ?? 0) > 11 * 1024 * 1024) {
-    return Response.json({ error: "Import PDF must be at most 10 MB" }, { status: 413 })
+    return errorResponse("importPdfTooLarge", 413)
   }
   try {
     const data = await request.formData(),
       file = data.get("file")
     if (!(file instanceof File) || file.size > 10 * 1024 * 1024) {
-      throw new Error("Choose a PDF of at most 10 MB")
+      throw new LocalizedError("choosePdfUpTo10")
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
     await validatePdf(bytes)
     if ((await PDFDocument.load(bytes)).getPageCount() > 50) {
-      throw new Error("Import PDFs may contain at most 50 pages")
+      throw new LocalizedError("importPdfTooManyPages")
     }
     const linked = await db().select().from(connections).where(eq(connections.orgId, s.org.id))
     const shop = linked.find((c) => c.provider === "shopify"),
       amazon = linked.find((c) => c.provider === "amazon")
     if (!shop) {
-      throw new Error("Connect Shopify before importing a purchase order")
+      throw new LocalizedError("connectShopifyBeforeImport")
     }
     if (
       !process.env.OPENROUTER_API_KEY ||
@@ -79,9 +81,6 @@ export async function POST(request: Request) {
     })
     return Response.json({ id, status: "queued" }, { status: 202 })
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Import could not be started" },
-      { status: 400 }
-    )
+    return Response.json({ error: await failureMessage(error, "importNotStarted") }, { status: 400 })
   }
 }

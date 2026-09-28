@@ -1,0 +1,180 @@
+{
+  "list": {
+    "title": "शिपमेंट",
+    "stats": {
+      "packing": "पैकिंग जारी",
+      "actionNeeded": "कार्रवाई ज़रूरी",
+      "waitingOnBuyer": "खरीदार का इंतज़ार",
+      "readyForPickup": "पिकअप के लिए तैयार"
+    },
+    "amazonFailed": {
+      "title": "Amazon शिपमेंट लोड नहीं हुए",
+      "description": "फिर से कोशिश करने के लिए पेज रीफ़्रेश करें।"
+    },
+    "tabsLabel": "शिपमेंट की स्थिति",
+    "tabs": {
+      "active": "सक्रिय",
+      "received": "प्राप्त",
+      "cancelled": "रद्द",
+      "all": "सभी"
+    },
+    "empty": {
+      "active": "कोई सक्रिय शिपमेंट नहीं",
+      "received": "कोई प्राप्त शिपमेंट नहीं",
+      "cancelled": "कोई रद्द शिपमेंट नहीं",
+      "all": "कोई शिपमेंट नहीं"
+    },
+    "columns": {
+      "shipment": "शिपमेंट",
+      "supplier": "सप्लायर",
+      "customer": "ग्राहक",
+      "destination": "गंतव्य",
+      "cartons": "कार्टन",
+      "readyDate": "तैयार होने की तारीख",
+      "status": "स्थिति"
+    },
+    "shipmentNumber": "शिपमेंट {number}",
+    "opensInSellerCentral": "(Seller Central में खुलता है)",
+    "none": {
+      "title": "अभी कोई शिपमेंट नहीं",
+      "buyerDescription": "भेजे गए खरीद ऑर्डर से शुरू करें",
+      "supplierDescription": "किसी ऑर्डर से शुरू करें",
+      "viewPurchaseOrders": "खरीद ऑर्डर देखें",
+      "viewOrders": "ऑर्डर देखें"
+    }
+  },
+  "detail": {
+    "metaTitle": "शिपमेंट",
+    "title": "शिपमेंट {number}",
+    "cartonCount": "{count, plural, one {# कार्टन} other {# कार्टन}}",
+    "parents": {
+      "purchaseOrders": "खरीद ऑर्डर",
+      "orders": "ऑर्डर"
+    },
+    "opensInSellerCentral": "(Seller Central में खुलता है)",
+    "actions": {
+      "markShipped": "भेजा गया मार्क करें",
+      "markReceived": "प्राप्त मार्क करें",
+      "retry": "शिपमेंट फिर से आज़माएं",
+      "cancelInAmazon": "Amazon में रद्द करें"
+    },
+    "needsAttention": "ध्यान देना ज़रूरी",
+    "changesWaiting": {
+      "title": "बदलाव मंज़ूरी के इंतज़ार में",
+      "buyer": "खरीद ऑर्डर पर प्रस्तावित बदलावों का जवाब देने के बाद पैकिंग शुरू होगी।",
+      "supplier": "ग्राहक के ऑर्डर पर प्रस्तावित बदलावों का जवाब देने के बाद पैकिंग शुरू होगी।",
+      "viewPurchaseOrder": "खरीद ऑर्डर देखें",
+      "viewOrder": "ऑर्डर देखें"
+    },
+    "invoiceChanges": {
+      "title": "इनवॉइस में बदलाव",
+      "pricePerUnit": "प्रति यूनिट कीमत",
+      "supplierSku": "सप्लायर SKU",
+      "changedTo": "बदलकर",
+      "waitingForBuyer": "खरीदार की मंज़ूरी का इंतज़ार"
+    },
+    "labels": {
+      "title": "शिपिंग लेबल",
+      "waiting": "शिपिंग लेबल का इंतज़ार",
+      "fba": "Amazon तक ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें",
+      "agl": "Amazon में AGL ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें"
+    },
+    "creating": {
+      "title": "Amazon शिपमेंट बनाया जा रहा है",
+      "description": "आमतौर पर कुछ मिनट लगते हैं"
+    },
+    "packet": {
+      "title": "सप्लायर पैकेट तैयार",
+      "description": "लेबल असली साइज़ में प्रिंट करें",
+      "downloadLabel": "सप्लायर पैकेट डाउनलोड करें",
+      "download": "पैकेट डाउनलोड करें",
+      "incompleteTitle": "सप्लायर पैकेट अधूरा है",
+      "waitingForLabels": "खरीदार के लेबल का इंतज़ार है"
+    },
+    "cartons": {
+      "title": "कार्टन",
+      "carton": "कार्टन",
+      "product": "प्रोडक्ट",
+      "units": "यूनिट",
+      "dimensions": "माप (cm)",
+      "weight": "वज़न (kg)",
+      "amazonLabel": "Amazon लेबल"
+    },
+    "pickup": {
+      "title": "पिकअप",
+      "ready": "{date} को तैयार"
+    },
+    "documents": {
+      "title": "दस्तावेज़",
+      "empty": "अभी कोई दस्तावेज़ नहीं"
+    }
+  },
+  "actions": {
+    "approve": {
+      "updateCost": "Shopify यूनिट लागत भी अपडेट करें",
+      "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए",
+      "submit": "बदलाव मंज़ूर करें"
+    },
+    "release": {
+      "submit": "लेबल सप्लायर को जारी करें",
+      "bookingReference": "Amazon ट्रांसपोर्ट बुकिंग रेफ़रेंस"
+    },
+    "correction": {
+      "trigger": "सुधार का अनुरोध करें",
+      "submit": "सुधार का अनुरोध करें",
+      "reason": "क्या बदलना है?",
+      "reasonDescription": "इस शिपमेंट के दस्तावेज़ पुराने हो जाएंगे"
+    },
+    "reconcile": {
+      "submit": "जांचें और फिर शुरू करें",
+      "fbaLabel": "मौजूदा FBA इनबाउंड प्लान ID",
+      "awdLabel": "मौजूदा Amazon AWD ऑर्डर ID",
+      "awdInvalid": "Amazon ऑर्डर ID डालें, जो STAR- से शुरू होती है",
+      "fbaInvalid": "इनबाउंड प्लान ID डालें, जो wf से शुरू होती है"
+    }
+  },
+  "forward": {
+    "markShipped": "भेजा गया मार्क करें",
+    "title": "भेजा गया मार्क करें",
+    "description": "फ़्रेट लागत खरीद ऑर्डर की लैंडेड कॉस्ट में जोड़ दी जाती है।",
+    "freightCost": "फ़्रेट लागत",
+    "carrier": "कैरियर",
+    "reference": "ट्रैकिंग या बुकिंग नंबर",
+    "cancel": "रद्द करें",
+    "enterCarrier": "कैरियर डालें",
+    "enterReference": "ट्रैकिंग या बुकिंग नंबर डालें",
+    "enterFreightCost": "फ़्रेट लागत डालें"
+  },
+  "prep": {
+    "polybag": "सील्ड पॉलीबैग (डिफ़ॉल्ट)",
+    "noPrep": "कोई प्रेप नहीं (अपवाद)",
+    "bubbleWrap": "बबल रैपिंग",
+    "taping": "टेपिंग"
+  },
+  "amazonAuthorization": {
+    "sellerId": "सेलर का मर्चेंट टोकन डालें, जैसे A2CIYIV0E1FHU3",
+    "refreshToken": "पूरा रीफ़्रेश टोकन पेस्ट करें, जो Atzr| से शुरू होता है"
+  },
+  "requirements": {
+    "prep": {
+      "polybag": "हर यूनिट को एक पारदर्शी पॉलीबैग में सील करें।",
+      "noPrep": "यूनिट का कोई प्रेप नहीं।",
+      "bubbleWrap": "हर यूनिट को बबल रैप करें।",
+      "tape": "हर यूनिट को टेप से बंद करें।",
+      "blackShrinkWrap": "हर यूनिट को काली श्रिंक फ़िल्म में लपेटें।",
+      "hanger": "हर कपड़े को हैंगर पर लगाएं।",
+      "label": "हर यूनिट पर लेबल लगाएं।"
+    },
+    "fbaCartons": "FBA कार्टन: मिक्स SKU की अनुमति है; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb), जब तक कोई एक यूनिट इससे बड़ी न हो।",
+    "awdUsCartons": "AWD US कार्टन: हर कार्टन में एक SKU, अधिकतम 150 यूनिट, एक SKU के सभी कार्टन एक ही तरह पैक; हर साइड अधिकतम 63.5 cm (25 in) और 22.68 kg (50 lb)।",
+    "separateCartons": "{networks} प्रोडक्ट अलग-अलग कार्टन में पैक करें।",
+    "unitLabels": "हर यूनिट पर उसका FNSKU बारकोड लगाएं, जिससे कोई भी दूसरा बारकोड ढक जाए।",
+    "suffocationWarnings": "जिन पॉलीबैग का मुंह 5 in (12.7 cm) या उससे चौड़ा हो, उन पर दम घुटने की चेतावनी ज़रूरी है।",
+    "multiPacks": "हर मल्टी-पैक को साथ रखें, पैक पर एक ही लेबल के साथ।",
+    "packFor": "{network} के लिए पैक करें।",
+    "bundle": "{count, plural, one {# यूनिट को एक पैक में बंडल करें।} other {# यूनिट को एक पैक में बंडल करें।}}",
+    "fnskuLabel": "FNSKU {fnsku} का लेबल लगाएं।",
+    "suffocationLabel": "हर पॉलीबैग पर दम घुटने की चेतावनी का लेबल लगाएं।",
+    "amazonDestination": "Amazon {networks}"
+  }
+}
