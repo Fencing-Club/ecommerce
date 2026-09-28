@@ -5,7 +5,6 @@ import { money } from "@repo/aisle"
 import { ChevronLeft, ChevronRight, ExternalLink, Repeat, Search } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-import { StatusBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
@@ -18,6 +17,7 @@ import { formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
 import { DetailRow } from "./inventory-locations"
+import { SalesStatus } from "./sales-status"
 import { SyncedAt, SyncMenu } from "./sync-menu"
 
 type SyncState = {
@@ -57,20 +57,6 @@ const isSource = (value: unknown): value is SalesSource => value === "shopify" |
 
 // Orders that closed without a sale: nothing sold, so there are no sales to show.
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
-
-// Shopify's and Amazon's order statuses on the shared status tones: shipped is done, waiting to ship needs action,
-// cancelled is lost, and anything else (such as Amazon's Pending) is neutral.
-const orderTones = new Map<string, StatusTone>([
-  ["Fulfilled", "success"],
-  ["Shipped", "success"],
-  ["Unfulfilled", "warning"],
-  ["Partially fulfilled", "warning"],
-  ["Unshipped", "warning"],
-  ["Partially shipped", "warning"],
-  ["Cancelled", "destructive"],
-  ["Unfulfillable", "destructive"]
-])
-const orderTone = (status: string) => orderTones.get(status) ?? "neutral"
 
 // Why a source's last sync failed, and what to do about it.
 function failure(errorCode: string | null, title: string) {
@@ -268,7 +254,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
           )}
           <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground @2xl:hidden">
             {order.channel}
-            <StatusBadge tone={orderTone(order.status)}>{order.status}</StatusBadge>
+            <SalesStatus status={order.status} />
           </span>
         </div>
       </TableCell>
@@ -277,7 +263,7 @@ function OrderRow({ order }: { order: SalesOrderSummary }) {
       </TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">{order.channel}</TableCell>
       <TableCell className="hidden align-top @2xl:table-cell">
-        <StatusBadge tone={orderTone(order.status)}>{order.status}</StatusBadge>
+        <SalesStatus status={order.status} />
       </TableCell>
       <TableCell className="hidden text-right align-top tabular-nums @2xl:table-cell">
         {formatNumber(order.units)}

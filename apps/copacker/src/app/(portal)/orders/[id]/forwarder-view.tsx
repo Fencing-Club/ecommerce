@@ -6,13 +6,27 @@ import { ForwardShipment } from "@/components/forward-shipment"
 import { RoutePill } from "@/components/route-pill"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
 import type { forwarderOrders } from "@/server/access"
 import { releasedStates } from "@/server/readiness"
 
+// The products table runs edge to edge in its card, its first and last columns in line with the route above it and
+// with the other cards' content.
+const edgeTable = "[&_td:first-child]:pl-3 [&_td:last-child]:pr-3 [&_th:first-child]:pl-3 [&_th:last-child]:pr-3"
+
+// The shipping documents a forwarder gets, in the order they're made, as the purchase order page lists them.
+const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
+  "invoice",
+  "packing_list",
+  "carton_label",
+  "shipping_label"
+]
+
 // What a freight forwarder sees of a PO whose goods pass through it: the route, what's coming and in how many cartons,
-// and the shipping documents. No prices; the commercial invoice carries what customs needs.
+// and the shipping documents. No prices; the commercial invoice carries what customs needs. The cards are the buyer's
+// purchase order page's, less its costs and history.
 export async function ForwarderView({
   row,
   editable
@@ -27,13 +41,7 @@ export async function ForwarderView({
     db()
       .select()
       .from(documents)
-      .where(
-        and(
-          eq(documents.orderId, order.id),
-          eq(documents.outdated, 0),
-          inArray(documents.kind, ["invoice", "packing_list", "carton_label", "shipping_label"])
-        )
-      )
+      .where(and(eq(documents.orderId, order.id), eq(documents.outdated, 0), inArray(documents.kind, documentOrder)))
   ])
   const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
   const places = addressIds.length
@@ -48,6 +56,24 @@ export async function ForwarderView({
     const shipment = shipmentRows.find((candidate) => candidate.id === doc.shipmentId)
     return !!shipment && releasedStates.includes(shipment.status) && shipment.revision === doc.shipmentRevision
   })
+  // The purchase order's own documents, then each shipment's under its name, as the purchase order page groups them.
+  const documentGroups = [
+    { key: "order", title: null, shipmentId: null },
+    ...shipmentRows.map((shipment, index) => ({
+      key: shipment.id,
+      title: `Shipment ${index + 1}`,
+      shipmentId: shipment.id
+    }))
+  ].flatMap((group) => {
+    const grouped = visible
+      .filter((doc) => doc.shipmentId === group.shipmentId)
+      .toSorted(
+        (a, b) =>
+          documentOrder.indexOf(a.kind) - documentOrder.indexOf(b.kind) ||
+          (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true })
+      )
+    return grouped.length ? [{ ...group, documents: grouped }] : []
+  })
 
   return (
     <>
@@ -59,7 +85,7 @@ export async function ForwarderView({
 
       <div className="flex max-w-4xl flex-col gap-4">
         <Card className="gap-0 overflow-hidden py-0">
-          <div className="flex flex-wrap items-center gap-1.5 p-3">
+          <div className="flex flex-wrap items-center gap-1.5 border-b p-3">
             <RoutePill icon={<Building2 />}>{supplier.name}</RoutePill>
             <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
             {order.data.via && (
@@ -74,18 +100,18 @@ export async function ForwarderView({
               {place(order.data.deliveryId) ?? formatDestination(order.data.destination)}
             </RoutePill>
           </div>
-          <table className="w-full border-t text-sm">
-            <thead className="bg-muted/50 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Products</th>
-                <th className="w-24 px-3 py-2 text-right font-medium">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table framed={false} className={edgeTable}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Products</TableHead>
+                <TableHead className="w-24 text-right">Qty</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {order.data.items.map((item) => (
-                <tr key={item.id} className="border-t align-top">
-                  <td className="px-3 py-2.5">
-                    <p className="font-medium">{item.name}</p>
+                <TableRow key={item.id}>
+                  <TableCell className="py-2.5 align-top whitespace-normal">
+                    <p className="leading-snug font-medium">{item.name}</p>
                     {item.variant && item.variant !== "Default Title" && (
                       <Badge variant="secondary" className="mt-1">
                         {item.variant}
@@ -95,12 +121,12 @@ export async function ForwarderView({
                       {item.buyerSku}
                       {order.data.destination === "amazon" && `, to Amazon ${amazonNetworkNames[item.amazonNetwork]}`}
                     </p>
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{item.pieces}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right align-top tabular-nums">{item.pieces}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </Card>
 
         <Card size="sm" className="gap-0 pb-0">
@@ -116,10 +142,7 @@ export async function ForwarderView({
                       Shipment {index + 1}
                       {shipment.amazonNetwork && ` to Amazon ${amazonNetworkNames[shipment.amazonNetwork]}`}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {shipment.packing?.cartons.length ?? 0} cartons
-                      {shipment.forwarderCarrier && `, ${shipment.forwarderCarrier} ${shipment.forwarderReference}`}
-                    </span>
+                    <ShipmentDetails shipment={shipment} />
                   </span>
                   <Status status={shipment.status} />
                   {editable && shipment.status === "shipped" && (
@@ -129,21 +152,36 @@ export async function ForwarderView({
               ))}
             </ul>
           ) : (
-            <p className="px-3 pb-3 text-muted-foreground">No shipments yet.</p>
+            <p className="px-3 pb-3 text-muted-foreground">No shipments yet</p>
           )}
         </Card>
 
-        {visible.length > 0 && (
+        {documentGroups.length > 0 && (
           <Card size="sm">
             <CardHeader>
               <CardTitle>Documents</CardTitle>
             </CardHeader>
-            <CardContent>
-              <DocumentList documents={visible} />
+            <CardContent className="flex flex-col gap-4">
+              {documentGroups.map((group) => (
+                <div key={group.key} className="flex flex-col gap-2">
+                  {group.title && <h3 className="text-xs font-medium text-muted-foreground">{group.title}</h3>}
+                  <DocumentList documents={group.documents} />
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}
       </div>
     </>
   )
+}
+
+// Under a shipment's name: its cartons once they're packed, and the carrier and tracking number once it's shipped on.
+function ShipmentDetails({ shipment }: { shipment: typeof shipments.$inferSelect }) {
+  const cartons = shipment.packing?.cartons.length
+  const details = [
+    cartons !== undefined && `${cartons} ${cartons === 1 ? "carton" : "cartons"}`,
+    shipment.forwarderCarrier && [shipment.forwarderCarrier, shipment.forwarderReference].filter(Boolean).join(" ")
+  ].filter(Boolean)
+  return details.length ? <span className="text-xs text-muted-foreground">{details.join(", ")}</span> : null
 }

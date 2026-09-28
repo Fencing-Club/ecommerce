@@ -1,36 +1,26 @@
-import { Box, Info } from "lucide-react"
 import type { Metadata } from "next"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import { brandTile, centeredPage, mutedBackground } from "../shell.css"
-import { sx } from "@/styles/sprinkles.css"
+import { BrandMark } from "@/components/auth/stage"
 
-export const metadata: Metadata = { title: "Set up" }
+export const metadata: Metadata = { title: "Setup" }
 
+// Where sign-in sends everyone until WorkOS is configured. It looks like the sign-in pages' form column on its own:
+// Copacker's name at the top, and the title and its one line in the middle, rising in as the page opens.
 export default function Setup() {
   return (
-    <main id="main-content" className={cn(centeredPage, mutedBackground)}>
-      <Card className={sx({ width: "full", maxWidth: "lg" })}>
-        <CardHeader>
-          <div className={brandTile}>
-            <Box className={sx({ size: 5 })} />
-          </div>
-          <CardTitle className={sx({ text: "2xl", fontWeight: "semibold" })}>A better handoff</CardTitle>
-          <CardDescription>
-            One shared workspace for your suppliers, purchase orders, carton details, and Amazon shipment labels.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert role="note">
-            <Info />
-            <AlertDescription>
-              This installation is waiting for its WorkOS configuration. Sign-in stays closed until authentication is
-              connected.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    </main>
+    <div className="flex min-h-svh flex-col bg-background px-6 pt-6 pb-10 sm:px-10">
+      <header>
+        <BrandMark />
+      </header>
+      <main id="main-content" className="flex flex-1 flex-col justify-center py-12">
+        <div className="mx-auto flex w-full max-w-[22.5rem] flex-col gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:ease-out">
+          <h1 className="text-[1.75rem] leading-tight font-semibold tracking-[-0.025em] text-balance">
+            Sign-in isn’t set up yet
+          </h1>
+          <p className="text-sm text-pretty text-muted-foreground">
+            This installation is missing its WorkOS configuration.
+          </p>
+        </div>
+      </main>
+    </div>
   )
 }

@@ -3,7 +3,7 @@
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
 import { defaultFilter } from "cmdk"
-import { ClipboardList, Package, Receipt, Search, Truck, Users } from "lucide-react"
+import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useDeferredValue, useRef, useState } from "react"
@@ -24,6 +24,7 @@ import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
 import { navigationFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { useCan, usePermissions } from "./access"
+import { SalesStatus } from "./sales-status"
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5
@@ -89,9 +90,37 @@ export function SearchCommand({ kind }: { kind: string }) {
           <PopoverPrimitive.Popup
             aria-label="Search"
             initialFocus={input}
-            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] rounded-xl shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           >
             <SearchResults kind={kind} input={input} onSelect={go} />
+            {/* Keyboard hints, in line with the results' icons. Screen readers skip them, as they announce the results as
+                a list, and phones, which have no keyboard, don't show them. */}
+            <div
+              aria-hidden="true"
+              className="flex items-center gap-4 border-t px-4 py-1.5 text-xs text-muted-foreground max-sm:hidden"
+            >
+              <span className="flex items-center gap-1.5">
+                <KbdGroup>
+                  <Kbd>
+                    <ArrowUp />
+                  </Kbd>
+                  <Kbd>
+                    <ArrowDown />
+                  </Kbd>
+                </KbdGroup>
+                to move
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Kbd>
+                  <CornerDownLeft />
+                </Kbd>
+                to open
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Kbd>Esc</Kbd>
+                to close
+              </span>
+            </div>
             {/* A modal popover only keeps focus inside when it has a close button. */}
             <PopoverPrimitive.Close className="sr-only">Close</PopoverPrimitive.Close>
           </PopoverPrimitive.Popup>
@@ -155,7 +184,8 @@ function SearchResults({
     <Command shouldFilter={false} loop value={highlighted} onValueChange={(value) => setPicked({ value, query })}>
       <CommandInput ref={input} value={text} onValueChange={setText} placeholder="Search" />
       <CommandList className="max-h-[min(28rem,calc(100svh-6rem))]">
-        {!loading && <CommandEmpty>No results</CommandEmpty>}
+        {/* Nothing matches only once something is typed; before that, the pages show. */}
+        {!loading && <CommandEmpty className="px-4 break-words">No results for “{query}”</CommandEmpty>}
         {pages.length > 0 && (
           <CommandGroup heading="Pages">
             {pages.map((page) => (
@@ -168,7 +198,7 @@ function SearchResults({
         )}
         {searchingSales && !salesOrders.length && (
           <CommandLoading label="Loading orders">
-            <Placeholder heading="Orders" rows={2} trailing="text" />
+            <Placeholder heading="Orders" rows={2} badge />
           </CommandLoading>
         )}
         {salesOrders.length > 0 && (
@@ -184,7 +214,9 @@ function SearchResults({
                 <Receipt />
                 <span className="shrink-0 font-medium">{order.number}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.channel}</span>
-                <span className="ml-auto shrink-0 text-xs text-muted-foreground">{order.status}</span>
+                <span className="ml-auto flex shrink-0">
+                  <SalesStatus status={order.status} />
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -192,11 +224,7 @@ function SearchResults({
         {/* Until the first load arrives, which groups will match is unknown, except for the newest purchase orders. */}
         {index.isLoading && (
           <CommandLoading label="Loading results">
-            {query ? (
-              <Placeholder rows={3} />
-            ) : (
-              <Placeholder heading="Recent purchase orders" rows={3} trailing="badge" />
-            )}
+            {query ? <Placeholder rows={3} /> : <Placeholder heading="Recent purchase orders" rows={3} badge />}
           </CommandLoading>
         )}
         {products.length > 0 && (
@@ -291,8 +319,8 @@ function SearchResults({
 const placeholderWidths = ["w-2/5", "w-1/2", "w-1/3"]
 
 // Rows shaped like the results they stand in for, under their group's heading when it's known, and as tall as real
-// rows so nothing moves when the results arrive. A purchase order ends in a status badge, a sales order in its status.
-function Placeholder({ heading, rows, trailing }: { heading?: string; rows: number; trailing?: "badge" | "text" }) {
+// rows so nothing moves when the results arrive. Purchase orders and sales orders end in a status badge.
+function Placeholder({ heading, rows, badge }: { heading?: string; rows: number; badge?: boolean }) {
   return (
     <>
       {heading ? (
@@ -306,9 +334,7 @@ function Placeholder({ heading, rows, trailing }: { heading?: string; rows: numb
         <div key={width} className="flex h-8 items-center gap-2 px-2">
           <Skeleton className="size-4 shrink-0 rounded-sm" />
           <Skeleton className={cn("h-3.5", width)} />
-          {trailing && (
-            <Skeleton className={cn("ml-auto", trailing === "badge" ? "h-5 w-20 rounded-full" : "h-3 w-14")} />
-          )}
+          {badge && <Skeleton className="ml-auto h-5 w-20 rounded-full" />}
         </div>
       ))}
     </>
