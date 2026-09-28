@@ -37,7 +37,7 @@ POST `/api/inventory/demand` requires a buyer session and same-origin Origin hea
 }
 ```
 
-Source is shopify or amazon (US). Use an exclusive end at least two minutes before now. Maximum duration is 730 days. Shopify requires read_all_orders for a start older than 60 days; the normal 56-day report needs read_orders and existing product/location access. OAuth now requests read_orders, but existing grants change only after reconnection.
+Source is shopify or amazon (US). Use an exclusive end at least two minutes before now. Maximum duration is 730 days. Shopify requires read_all_orders for a start older than 60 days; a report that starts within the last 60 days needs only read_orders and existing product/location access. OAuth now requests read_orders, but existing grants change only after reconnection.
 
 The response contains source, externalAccountId, window, observedAt, basis, quantityUnit, collectionComplete, attributionComplete, rows and gaps. Shopify also returns excludedFulfilledUnits.
 
