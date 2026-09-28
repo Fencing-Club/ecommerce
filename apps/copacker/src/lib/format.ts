@@ -88,3 +88,8 @@ export function otherCurrencies(value: MoneyList) {
 export function formatPercent(value: number) {
   return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value)
 }
+
+// A day as "Sep 27, 2026".
+export function formatDate(date: Date | string) {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(date))
+}

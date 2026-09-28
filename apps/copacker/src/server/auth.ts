@@ -73,6 +73,11 @@ export function requireBuyer(s: Session) {
     throw new Error("A buyer workspace is required")
   }
 }
+export function requireSupplier(s: Session) {
+  if (s.org.kind !== "supplier") {
+    throw new Error("A supplier workspace is required")
+  }
+}
 export function requireOwner(s: Session) {
   if (s.role !== "owner") {
     throw new Error("Only workspace owners can manage access and connections")

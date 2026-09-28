@@ -251,24 +251,64 @@ export async function purchaseOrderPdf(input: {
   supplier: PoParty
   shipTo?: PoParty
 }) {
-  const { order, revision, buyer, supplier } = input
-  const price = (minor: number) => money(minor, order.currency)
-  const kit = await documentKit("Purchase order", order.reference, buyer)
-  const { at, content, right, bold, regular, muted, draw, label, line, wrap, ensure } = kit
-  kit.facts(
-    [
+  const { order, revision } = input
+  return orderPdf({
+    title: "Purchase order",
+    heading: input.buyer,
+    order,
+    facts: [
       ["PO number", revision > 1 ? `${order.reference} (rev. ${revision})` : order.reference],
       ["Date", longDate(input.issued)],
-      ...(order.dueDate ? [["Required by", longDate(order.dueDate)] as [string, string]] : []),
-      ["Total", price(orderTotal(order))]
+      ...(order.dueDate ? [["Required by", longDate(order.dueDate)] as [string, string]] : [])
     ],
-    { emphasizeLast: true }
-  )
+    parties: [
+      ["Supplier", input.supplier],
+      ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
+    ]
+  })
+}
+
+// A commercial invoice from the supplier for a PO it agreed with the buyer: the supplier heads it, then the invoice's
+// number, dates and total, who it's sold to and where it ships, and the same items, totals and terms as the PO.
+export async function commercialInvoicePdf(input: {
+  order: OrderInput
+  revision: number
+  issued: string
+  supplier: DocumentBuyer
+  buyer: PoParty
+  shipTo?: PoParty
+}) {
+  const { order, revision } = input
+  return orderPdf({
+    title: "Commercial invoice",
+    heading: input.supplier,
+    order,
+    facts: [
+      ["Invoice", revision > 1 ? `${order.reference}-${revision}` : order.reference],
+      ["Date", longDate(input.issued)],
+      ...(order.readyDate ? [["Ready", longDate(order.readyDate)] as [string, string]] : [])
+    ],
+    parties: [
+      ["Sold to", input.buyer],
+      ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
+    ]
+  })
+}
+
+async function orderPdf(input: {
+  title: string
+  heading: DocumentBuyer
+  order: OrderInput
+  facts: Array<[string, string]>
+  parties: Array<[string, PoParty]>
+}) {
+  const { order } = input
+  const price = (minor: number) => money(minor, order.currency)
+  const kit = await documentKit(input.title, order.reference, input.heading)
+  const { at, content, right, bold, regular, muted, draw, label, line, wrap, ensure } = kit
+  kit.facts([...input.facts, ["Total", price(orderTotal(order))]], { emphasizeLast: true })
   kit.section("Parties")
-  kit.parties([
-    ["Supplier", supplier],
-    ["Ship to", input.shipTo ?? { name: destinationName(order), lines: [] }]
-  ])
+  kit.parties(input.parties)
   line(kit.left, right, at.y)
 
   // Items: quantity, what it is and how to prepare it, the supplier's SKU, and prices.

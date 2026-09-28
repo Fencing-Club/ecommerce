@@ -1,38 +1,33 @@
-import { and, asc, eq } from "drizzle-orm"
-import { db } from "@/db"
-import { supplierProducts } from "@/db/schema"
 import { session } from "@/server/auth"
-import { exportSupplierCatalogCsv } from "@/server/supplier-catalog-csv"
+import { sheetCsv, sheetRows, sheetWorkbook } from "@/server/product-sheet"
+import { productList } from "@/server/supplier-products"
 
-export async function GET() {
+// Every product and variant in the product template, as CSV or an Excel workbook, to edit and import again.
+export async function GET(request: Request) {
   const s = await session()
   if (s.org.kind !== "supplier") {
     return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
   }
-  const rows = await db()
-    .select()
-    .from(supplierProducts)
-    .where(and(eq(supplierProducts.supplierOrgId, s.org.id), eq(supplierProducts.active, 1)))
-    .orderBy(asc(supplierProducts.supplierSku))
-  if (rows.length > 5000) {
-    return Response.json(
-      { error: "Catalog exceeds 5,000 active products. Contact support for a bulk export." },
-      { status: 409 }
-    )
+  const format = new URL(request.url).searchParams.get("format") === "csv" ? "csv" : "xlsx"
+  const rows = sheetRows(
+    (await productList(s.org.id)).map((product) => ({ ...product, active: product.status === "active" }))
+  )
+  const day = new Date().toISOString().slice(0, 10)
+  const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }
+  if (format === "csv") {
+    return new Response(sheetCsv(rows), {
+      headers: {
+        ...headers,
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="products-${day}.csv"`
+      }
+    })
   }
-  const csv = exportSupplierCatalogCsv(rows)
-  if (Buffer.byteLength(csv, "utf8") > 2 * 1024 * 1024) {
-    return Response.json(
-      { error: "Catalog exceeds the 2 MB import limit. Contact support for a bulk export." },
-      { status: 409 }
-    )
-  }
-  return new Response(csv, {
+  return new Response(new Uint8Array(await sheetWorkbook(rows, s.org.name)), {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="supplier-catalog.csv"',
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff"
+      ...headers,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="products-${day}.xlsx"`
     }
   })
 }

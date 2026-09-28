@@ -48,6 +48,7 @@ import { Separator } from "@/components/ui/separator"
 import { useActionForm } from "@/hooks/useActionForm"
 import type { CatalogProduct } from "@/lib/api"
 import { bundleQuote, type BundleQuoteStatus } from "@/lib/bundle-quote"
+import { quantityProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { orderLine } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
@@ -97,6 +98,14 @@ type Match = {
   product: { title?: string } | null
   // Pieces the supplier can still sell, or null when there's no limit.
   available: number | null
+  // The supplier's volume pricing and quantity rules for this buyer, in pieces.
+  tiers?: Array<{ minimumPieces: number; unitPriceMinor: number }>
+  rules?: QuantityRules | null
+}
+
+// The supplier's price for this many pieces: its volume price once the quantity reaches a break.
+function quotedPrice(match: Match, pieces: number) {
+  return match.tiers?.findLast((tier) => pieces >= tier.minimumPieces)?.unitPriceMinor ?? match.unitPriceMinor
 }
 
 // A PO's editor, laid out like Shopify's: the route from the supplier to where the goods go, a table of products
@@ -243,18 +252,7 @@ export function OrderBuilder({
           return { sku: "", ...quote, product: null, available }
         })
         setMatches(perLine)
-        perLine.forEach((result, index) => {
-          const line = form.getValues(`items.${index}`)
-          if (!line || result.status !== "matched" || result.unitPriceMinor === null) {
-            return
-          }
-          const prior = lastDefaultedPrice.current[line.id]
-          if (buyerEditedPrices.current.has(line.id) || (line.unitPrice !== 0 && line.unitPrice !== prior)) {
-            return
-          }
-          form.setValue(`items.${index}.unitPrice`, result.unitPriceMinor, { shouldValidate: true })
-          lastDefaultedPrice.current[line.id] = result.unitPriceMinor
-        })
+        perLine.forEach((result, index) => defaultPrice(index, result))
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
@@ -265,6 +263,37 @@ export function OrderBuilder({
     // skuKey contains only the fields relevant to catalog matching; price edits must not refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierId, currency, skuKey, form])
+
+  // Fills in the supplier's price for a line unless the buyer set their own.
+  function defaultPrice(index: number, result: Match) {
+    const line = form.getValues(`items.${index}`)
+    const price = line && result.status === "matched" ? quotedPrice(result, line.pieces) : null
+    if (!line || price === null) {
+      return
+    }
+    const prior = lastDefaultedPrice.current[line.id]
+    if (
+      buyerEditedPrices.current.has(line.id) ||
+      (line.unitPrice !== 0 && line.unitPrice !== prior) ||
+      price === prior
+    ) {
+      return
+    }
+    form.setValue(`items.${index}.unitPrice`, price, { shouldValidate: true })
+    lastDefaultedPrice.current[line.id] = price
+  }
+
+  // A quantity reaching or leaving a volume break moves the line to that break's price.
+  const piecesKey = items.map((item) => item?.pieces ?? 0).join(",")
+  useEffect(() => {
+    matches.forEach((result, index) => {
+      if (result.tiers && result.tiers.length > 1) {
+        defaultPrice(index, result)
+      }
+    })
+    // defaultPrice reads the form; only quantities and quotes should rerun this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [piecesKey, matches])
 
   function add(products: CatalogProduct[]) {
     for (const product of products) {
@@ -403,6 +432,8 @@ export function OrderBuilder({
                       const item = items[index]
                       const note = matches[index] && matchNote(matches[index].status)
                       const available = matches[index]?.available ?? null
+                      const rules = matches[index]?.rules
+                      const ruleProblem = rules && item?.pieces ? quantityProblem(rules, item.pieces, "piece") : null
                       const lineError = form.formState.errors.items?.[index]
                       return (
                         <tr key={line.key} className="border-t align-top">
@@ -453,6 +484,7 @@ export function OrderBuilder({
                                 {available} available
                               </p>
                             )}
+                            {ruleProblem && <p className="mt-1 text-xs text-warning">{ruleProblem}</p>}
                           </td>
                           <td className="px-2 py-2">
                             <CellNumber

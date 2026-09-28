@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
 import type { Session } from "../src/server/auth"
-import { catalogTemplate, parseSupplierCatalogCsv } from "../src/server/supplier-catalog-csv"
+import { type SheetRow, sheetColumns, sheetCsv } from "../src/server/product-sheet"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 const storage = vi.hoisted(() => ({ putFile: vi.fn<() => Promise<void>>(async () => undefined) }))
@@ -17,6 +17,8 @@ vi.mock("../src/server/auth", async (original) => ({
 vi.mock("../src/server/storage", () => ({ putFile: storage.putFile }))
 vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 
+import { POST as saveCatalogRoute } from "../src/app/api/catalogs/route"
+import { POST as assignCatalogRoute } from "../src/app/api/customers/[id]/catalog/route"
 import { GET as exportCatalog } from "../src/app/api/supplier-catalog/export/route"
 import { POST as importCatalog } from "../src/app/api/supplier-catalog/import/route"
 import { POST as matchCatalog } from "../src/app/api/supplier-catalog/match/route"
@@ -53,9 +55,43 @@ function actor(id: string, kind: "buyer" | "supplier"): Session {
   }
 }
 
+const post = (url: string, body: unknown) =>
+  new Request(`${appUrl()}${url}`, {
+    method: "POST",
+    headers: { origin: appUrl(), "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+
+// A product with one variant, as the product page or an import makes it.
+async function insertProduct(
+  supplierOrgId: string,
+  fields: Partial<typeof tables.supplierProducts.$inferInsert> & { supplierSku: string }
+) {
+  const title = fields.title ?? "Foil cord"
+  const [group] = await database.insert(tables.supplierProductGroups).values({ supplierOrgId, title }).returning()
+  const [variant] = await database
+    .insert(tables.supplierProducts)
+    .values({ currency: "USD", ...fields, title, supplierOrgId, groupId: group!.id })
+    .returning()
+  return variant!
+}
+
+// A template row with only the given cells filled in.
+function row(cells: Partial<SheetRow>): SheetRow {
+  return { ...Object.fromEntries(sheetColumns.map((column) => [column.key, ""])), ...cells } as SheetRow
+}
+const cord = row({
+  handle: "foil-cord",
+  title: "Foil cord",
+  sku: "SAME",
+  currency: "USD",
+  price: "1.90",
+  packsPerCase: "160"
+})
+
 function upload(csv: string, mode: "preview" | "commit", preview?: { revisionHash: string; fileHash: string }) {
   const form = new FormData()
-  form.set("file", new File([csv], "catalog.csv", { type: "text/csv" }))
+  form.set("file", new File([csv], "products.csv", { type: "text/csv" }))
   form.set("mode", mode)
   if (preview) {
     form.set("revisionHash", preview.revisionHash)
@@ -70,39 +106,43 @@ function upload(csv: string, mode: "preview" | "commit", preview?: { revisionHas
   )
 }
 
-function match(link: string, sku: string) {
-  return matchCatalog(
-    new Request(`${appUrl()}/api/supplier-catalog/match`, {
-      method: "POST",
-      headers: { origin: appUrl(), "Content-Type": "application/json" },
-      body: JSON.stringify({ supplierId: link, currency: "USD", supplierSkus: [sku] })
-    })
-  )
+async function importFile(csv: string) {
+  const preview = await (await upload(csv, "preview")).json()
+  return (await upload(csv, "commit", preview)).json()
 }
 
-function save(id: string, revision: number, active: boolean) {
-  return saveProduct(
-    new Request(`${appUrl()}/api/supplier-catalog/products`, {
-      method: "POST",
-      headers: { origin: appUrl(), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        revision,
+function match(link: string, sku: string) {
+  return matchCatalog(post("/api/supplier-catalog/match", { supplierId: link, currency: "USD", supplierSkus: [sku] }))
+}
+
+function productPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    title: "Foil cord",
+    status: "active",
+    category: "",
+    productCode: "",
+    url: "",
+    description: "",
+    optionNames: [],
+    images: [],
+    variants: [
+      {
         supplierSku: "SAME",
-        title: "Foil cord",
+        options: {},
         currency: "USD",
         priceMinor: 190,
         priceBasis: "piece",
         piecesPerSellablePack: 1,
         sellablePacksPerCase: 160,
-        notes: null,
-        active,
         trackInventory: false,
         onHand: 0,
-        continueSelling: false
-      })
-    })
-  )
+        continueSelling: false,
+        priceBreaks: [],
+        quantityRules: { increment: 1, minimum: 1, maximum: null }
+      }
+    ],
+    ...overrides
+  }
 }
 
 beforeAll(async () => {
@@ -125,186 +165,264 @@ beforeEach(async () => {
   context.actor = actor(supplierA, "supplier")
 })
 
-describe("supplier catalog API", () => {
-  const csv = `${catalogTemplate}SAME,Foil cord,USD,1.90,piece,1,160,,,,\r\n`
-
-  it("serves an Excel-compatible CSV template with an attachment filename", async () => {
-    const response = await downloadTemplate()
-    expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8")
-    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="supplier-catalog-template.csv"')
-    expect(await response.text()).toBe(catalogTemplate)
+describe("product template", () => {
+  it("serves the blank template as CSV and as an Excel workbook", async () => {
+    const csv = await downloadTemplate(new Request(`${appUrl()}/api/supplier-catalog/template?format=csv`))
+    expect(csv.headers.get("Content-Disposition")).toBe('attachment; filename="product-template.csv"')
+    // The byte order mark tells Excel the file is UTF-8; text() would drop it.
+    expect(new TextDecoder("utf-8", { ignoreBOM: true }).decode(await csv.arrayBuffer())).toBe(sheetCsv([]))
+    const xlsx = await downloadTemplate(new Request(`${appUrl()}/api/supplier-catalog/template`))
+    expect(xlsx.headers.get("Content-Type")).toContain("spreadsheetml")
+    // An .xlsx file is a zip archive.
+    expect(new TextDecoder().decode((await xlsx.arrayBuffer()).slice(0, 2))).toBe("PK")
   })
 
-  it("keeps identical supplier SKUs isolated and buyer lookup scoped to the selected supplier", async () => {
-    const previewA = await upload(csv, "preview")
-    expect(previewA.status).toBe(200)
-    const stateA = await previewA.json()
-    expect((await upload(csv, "commit", stateA)).status).toBe(200)
-
+  it("keeps identical SKUs isolated per supplier and buyer lookups scoped to the chosen supplier", async () => {
+    expect(await importFile(sheetCsv([cord]))).toEqual({ imported: true })
     context.actor = actor(supplierB, "supplier")
-    const secondCsv = `${catalogTemplate}SAME,Foil cord,USD,2.50,piece,1,160,,,,\r\n`
-    const stateB = await (await upload(secondCsv, "preview")).json()
-    expect((await upload(secondCsv, "commit", stateB)).status).toBe(200)
-
+    expect(await importFile(sheetCsv([{ ...cord, price: "2.50" }]))).toEqual({ imported: true })
     context.actor = actor(buyerId, "buyer")
     expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 190 })
     expect((await (await match(linkB, "SAME")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 250 })
     expect((await (await match(linkA, "same")).json())[0]).toMatchObject({ status: "not_in_supplier_catalog" })
   })
 
-  it("rejects buyer uploads and stale previews without changing supplier products", async () => {
-    context.actor = actor(buyerId, "buyer")
-    expect((await upload(csv, "preview")).status).toBe(403)
-    context.actor = actor(supplierA, "supplier")
-    const stale = await (await upload(csv, "preview")).json()
-    await database.insert(tables.supplierProducts).values({
-      supplierOrgId: supplierA,
-      supplierSku: "SAME",
-      title: "Manual edit",
-      currency: "USD",
-      priceMinor: 100
-    })
-    const response = await upload(csv, "commit", stale)
-    expect(response.status).toBe(400)
-    expect(
-      (
-        await database
-          .select()
-          .from(tables.supplierProducts)
-          .where(eq(tables.supplierProducts.supplierOrgId, supplierA))
-      )[0]
-    ).toMatchObject({ title: "Manual edit", priceMinor: 100, revision: 1 })
-  })
-
-  it("treats a repeated file as one import and does not bump the product revision", async () => {
+  it("imports a product's variants under one handle, and a repeated file only once", async () => {
+    const rows = [
+      row({ handle: "blade", title: "Blade", option1Name: "Size", option1Value: "5", sku: "B5", price: "40" }),
+      row({ handle: "blade", title: "Blade", option1Name: "Size", option1Value: "2", sku: "B2", price: "38" })
+    ]
+    const csv = sheetCsv(rows)
     const preview = await (await upload(csv, "preview")).json()
-    expect(await (await upload(csv, "commit", preview)).json()).toMatchObject({ imported: true, created: 1 })
-    expect(await (await upload(csv, "commit", preview)).json()).toMatchObject({ imported: false })
-    expect(await database.select().from(tables.supplierCatalogImports)).toHaveLength(1)
-    expect((await database.select().from(tables.supplierProducts))[0]).toMatchObject({ revision: 1 })
+    expect(preview).toMatchObject({
+      products: 1,
+      createdProducts: 1,
+      variants: { created: 2, updated: 0, unchanged: 0 }
+    })
+    expect(await (await upload(csv, "commit", preview)).json()).toEqual({ imported: true })
+    expect(await (await upload(csv, "commit", preview)).json()).toEqual({ imported: false })
+    expect(await database.select().from(tables.supplierProductGroups)).toHaveLength(1)
+    const variants = await database.select().from(tables.supplierProducts)
+    expect(variants.map((variant) => variant.title).toSorted()).toEqual(["Blade (2)", "Blade (5)"])
   })
 
-  it("keeps manual edits tenant-scoped and rejects stale revisions", async () => {
-    const [created] = await database
-      .insert(tables.supplierProducts)
-      .values({
-        supplierOrgId: supplierA,
-        supplierSku: "SAME",
-        title: "Foil cord",
-        currency: "USD",
-        priceMinor: 190
-      })
-      .returning()
-    context.actor = actor(supplierB, "supplier")
-    expect((await save(created!.id, 1, false)).status).toBe(409)
-    context.actor = actor(supplierA, "supplier")
-    expect((await save(created!.id, 1, false)).status).toBe(200)
-    expect((await save(created!.id, 1, true)).status).toBe(409)
+  it("rejects a stale preview without changing products", async () => {
     context.actor = actor(buyerId, "buyer")
-    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "archived_supplier_product" })
+    expect((await upload(sheetCsv([cord]), "preview")).status).toBe(403)
+    context.actor = actor(supplierA, "supplier")
+    const stale = await (await upload(sheetCsv([cord]), "preview")).json()
+    await insertProduct(supplierA, { supplierSku: "SAME", title: "Manual edit", priceMinor: 100 })
+    expect((await upload(sheetCsv([cord]), "commit", stale)).status).toBe(400)
+    const [variant] = await database.select().from(tables.supplierProducts)
+    expect(variant).toMatchObject({ title: "Manual edit", priceMinor: 100, revision: 1 })
   })
 
-  it("exports only this supplier's active catalog and reimports changed fields without revising unchanged rows", async () => {
-    const [first, second] = await database
-      .insert(tables.supplierProducts)
-      .values([
-        {
-          supplierOrgId: supplierA,
-          supplierSku: "A,1",
-          title: 'Foil "special"\ncord',
-          currency: "USD",
-          priceMinor: 190,
-          notes: "Line one\nLine two"
-        },
-        { supplierOrgId: supplierA, supplierSku: "B", title: "Epee cord", currency: "USD", priceMinor: null },
-        { supplierOrgId: supplierA, supplierSku: "OLD", title: "Archived", currency: "USD", active: 0 },
-        { supplierOrgId: supplierB, supplierSku: "OTHER", title: "Other tenant", currency: "USD" }
-      ])
-      .returning()
-    const response = await exportCatalog()
-    expect(response.headers.get("Content-Disposition")).toBe('attachment; filename="supplier-catalog.csv"')
+  it("exports every product and reimports only what changed", async () => {
+    const first = await insertProduct(supplierA, {
+      supplierSku: "A,1",
+      title: 'Foil "special" cord',
+      priceMinor: 190,
+      notes: "Line one\nLine two",
+      priceBreaks: [{ minimum: 50, priceMinor: 170 }]
+    })
+    const second = await insertProduct(supplierA, { supplierSku: "B", title: "Epee cord", priceMinor: null })
+    await insertProduct(supplierB, { supplierSku: "OTHER", title: "Other tenant" })
+    const response = await exportCatalog(new Request(`${appUrl()}/api/supplier-catalog/export?format=csv`))
     const exported = await response.text()
-    expect(parseSupplierCatalogCsv(exported)).toMatchObject([
-      { supplierSku: "A,1", title: 'Foil "special"\ncord', priceMinor: 190, notes: "Line one\nLine two" },
-      { supplierSku: "B", priceMinor: null }
-    ])
-    const edited = exported.replace("1.90,piece", "2.25,piece")
+    expect(exported).toContain('"Foil ""special"" cord"')
+    expect(exported).toContain("50=1.70")
+    expect(exported).not.toContain("OTHER")
+    const edited = exported.replace(",1.90,", ",2.25,")
     const preview = await (await upload(edited, "preview")).json()
-    expect(preview).toMatchObject({ count: 2, created: 0, updated: 1, unchanged: 1 })
-    expect(await (await upload(edited, "commit", preview)).json()).toMatchObject({
-      imported: true,
-      created: 0,
-      updated: 1,
-      unchanged: 1
-    })
+    expect(preview).toMatchObject({ variants: { created: 0, updated: 1, unchanged: 1 } })
+    await upload(edited, "commit", preview)
     const rows = await database.select().from(tables.supplierProducts)
-    expect(rows.find((row) => row.id === first!.id)).toMatchObject({ priceMinor: 225, revision: 2 })
-    expect(rows.find((row) => row.id === second!.id)).toMatchObject({ priceMinor: null, revision: 1 })
-    expect(rows.find((row) => row.supplierSku === "OLD")).toMatchObject({ active: 0 })
+    expect(rows.find((variant) => variant.id === first.id)).toMatchObject({
+      priceMinor: 225,
+      revision: 2,
+      notes: "Line one\nLine two",
+      priceBreaks: [{ minimum: 50, priceMinor: 170 }]
+    })
+    expect(rows.find((variant) => variant.id === second.id)).toMatchObject({ priceMinor: null, revision: 1 })
   })
 
-  it("denies buyers access to supplier exports and requires the exact previewed file", async () => {
-    context.actor = actor(buyerId, "buyer")
-    expect((await exportCatalog()).status).toBe(403)
-    context.actor = actor(supplierA, "supplier")
-    const preview = await (await upload(csv, "preview")).json()
-    const changed = csv.replace("1.90", "2.00")
-    expect((await upload(changed, "commit", preview)).status).toBe(400)
-    expect(await database.select().from(tables.supplierProducts)).toHaveLength(0)
-  })
-
-  it("sets a tracked product's on hand count and tells buyers what's available", async () => {
-    const [product] = await database
-      .insert(tables.supplierProducts)
-      .values({ supplierOrgId: supplierA, supplierSku: "SAME", title: "Foil cord", currency: "USD", priceMinor: 190 })
-      .returning()
-    const stock = (onHand: number) =>
-      saveStock(
-        new Request(`${appUrl()}/api/supplier-catalog/stock`, {
-          method: "POST",
-          headers: { origin: appUrl(), "Content-Type": "application/json" },
-          body: JSON.stringify({ id: product!.id, onHand })
-        })
-      )
-    // An untracked product is made to order, so it has no count to set.
-    expect((await stock(12)).status).toBe(404)
-    await database
-      .update(tables.supplierProducts)
-      .set({ trackInventory: true })
-      .where(eq(tables.supplierProducts.id, product!.id))
-    context.actor = actor(supplierB, "supplier")
-    expect((await stock(12)).status).toBe(404)
-    context.actor = actor(supplierA, "supplier")
-    expect(await (await stock(12)).json()).toEqual({ revision: 2 })
-    context.actor = actor(buyerId, "buyer")
-    expect((await stock(12)).status).toBe(403)
-    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", available: 12 })
-    await database
-      .update(tables.supplierProducts)
-      .set({ continueSelling: true })
-      .where(eq(tables.supplierProducts.id, product!.id))
-    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ available: null })
-  })
-
-  it("keeps the on hand count when an import leaves it blank", async () => {
-    await database.insert(tables.supplierProducts).values({
-      supplierOrgId: supplierA,
+  it("names the row of a bad cell and keeps an on hand count left blank", async () => {
+    const bad = await upload(sheetCsv([{ ...cord, priceBreaks: "50=2.00" }]), "preview")
+    expect((await bad.json()).error).toBe("Row 2: Each break's price must be lower than the one before")
+    await insertProduct(supplierA, {
       supplierSku: "SAME",
-      title: "Foil cord",
-      currency: "USD",
       priceMinor: 190,
       sellablePacksPerCase: 160,
       trackInventory: true,
       onHand: 30
     })
-    const counted = `${catalogTemplate}SAME,Foil cord,USD,1.90,piece,1,160,,yes,,yes
-
-`
-    const preview = await (await upload(counted, "preview")).json()
-    expect(await (await upload(counted, "commit", preview)).json()).toMatchObject({ updated: 1 })
+    await importFile(sheetCsv([{ ...cord, trackInventory: "yes", continueSelling: "yes" }]))
     expect((await database.select().from(tables.supplierProducts))[0]).toMatchObject({
       onHand: 30,
       continueSelling: true
     })
+  })
+})
+
+describe("products", () => {
+  it("saves a product with variants, keeps edits tenant-scoped and rejects stale revisions", async () => {
+    const created = await (await saveProduct(post("/api/supplier-catalog/products", productPayload()))).json()
+    expect(created).toEqual({ id: expect.any(String), revision: 1 })
+    context.actor = actor(supplierB, "supplier")
+    expect(
+      (await saveProduct(post("/api/supplier-catalog/products", productPayload({ id: created.id, revision: 1 }))))
+        .status
+    ).toBe(409)
+    context.actor = actor(supplierA, "supplier")
+    const archived = productPayload({ id: created.id, revision: 1, status: "archived" })
+    expect((await saveProduct(post("/api/supplier-catalog/products", archived))).status).toBe(200)
+    expect((await saveProduct(post("/api/supplier-catalog/products", archived))).status).toBe(409)
+    context.actor = actor(buyerId, "buyer")
+    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "archived_supplier_product" })
+  })
+
+  it("refuses variants that repeat options or break volume pricing", async () => {
+    const variant = productPayload().variants[0]!
+    const twice = productPayload({ variants: [variant, { ...variant, supplierSku: "OTHER" }] })
+    expect((await (await saveProduct(post("/api/supplier-catalog/products", twice))).json()).error).toBe(
+      "Add an option to tell the variants apart"
+    )
+    const pricey = productPayload({ variants: [{ ...variant, priceBreaks: [{ minimum: 10, priceMinor: 200 }] }] })
+    expect((await (await saveProduct(post("/api/supplier-catalog/products", pricey))).json()).error).toBe(
+      "SAME: Each break's price must be lower than the one before"
+    )
+  })
+
+  it("saves changed on hand counts together and tells buyers what's available", async () => {
+    const product = await insertProduct(supplierA, { supplierSku: "SAME", priceMinor: 190 })
+    const other = await insertProduct(supplierA, { supplierSku: "OTHER", trackInventory: true, onHand: 5 })
+    const stock = (onHand: number) =>
+      saveStock(post("/api/supplier-catalog/stock", { counts: [{ id: product.id, onHand }] }))
+    // An untracked product is made to order, so it has no count to set, and one bad count saves none.
+    expect((await stock(12)).status).toBe(404)
+    const both = {
+      counts: [
+        { id: other.id, onHand: 9 },
+        { id: product.id, onHand: 12 }
+      ]
+    }
+    expect((await saveStock(post("/api/supplier-catalog/stock", both))).status).toBe(404)
+    expect(
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, other.id)))[0]
+    ).toMatchObject({ onHand: 5 })
+    await database
+      .update(tables.supplierProducts)
+      .set({ trackInventory: true })
+      .where(eq(tables.supplierProducts.id, product.id))
+    context.actor = actor(supplierB, "supplier")
+    expect((await stock(12)).status).toBe(404)
+    context.actor = actor(supplierA, "supplier")
+    expect(await (await saveStock(post("/api/supplier-catalog/stock", both))).json()).toEqual({ saved: 2 })
+    expect(
+      (await database.select().from(tables.supplierProducts).where(eq(tables.supplierProducts.id, other.id)))[0]
+    ).toMatchObject({ onHand: 9 })
+    context.actor = actor(buyerId, "buyer")
+    expect((await stock(12)).status).toBe(403)
+    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({ status: "matched", available: 12 })
+  })
+})
+
+describe("catalogs", () => {
+  async function saveCatalog(body: Record<string, unknown>) {
+    return (await saveCatalogRoute(post("/api/catalogs", body))).json()
+  }
+
+  it("prices a customer's products from its active catalog", async () => {
+    const cordVariant = await insertProduct(supplierA, {
+      supplierSku: "SAME",
+      priceMinor: 200,
+      priceBreaks: [{ minimum: 100, priceMinor: 180 }]
+    })
+    const fixed = await insertProduct(supplierA, { supplierSku: "FIXED", title: "Mask", priceMinor: 5000 })
+    await insertProduct(supplierA, { supplierSku: "LEFT", title: "Glove", priceMinor: 900 })
+    const saved = await saveCatalog({
+      title: "Wholesale",
+      status: "active",
+      adjustmentBasisPoints: -1000,
+      includeNewProducts: false,
+      customerIds: [linkA],
+      products: [
+        {
+          productId: cordVariant.id,
+          priceMinor: null,
+          priceBreaks: null,
+          quantityRules: { increment: 10, minimum: 20, maximum: null }
+        },
+        { productId: fixed.id, priceMinor: 4000, priceBreaks: null, quantityRules: null }
+      ]
+    })
+    expect(saved).toEqual({ id: expect.any(String), revision: 1 })
+    context.actor = actor(buyerId, "buyer")
+    // 10% off, with the product's volume pricing adjusted too, and the catalog's own quantity rules.
+    expect((await (await match(linkA, "SAME")).json())[0]).toMatchObject({
+      status: "matched",
+      unitPriceMinor: 180,
+      tiers: [
+        { minimumPieces: 1, unitPriceMinor: 180 },
+        { minimumPieces: 100, unitPriceMinor: 162 }
+      ],
+      rules: { increment: 10, minimum: 20, maximum: null }
+    })
+    expect((await (await match(linkA, "FIXED")).json())[0]).toMatchObject({
+      unitPriceMinor: 4000,
+      tiers: [{ unitPriceMinor: 4000 }]
+    })
+    expect((await (await match(linkA, "LEFT")).json())[0]).toMatchObject({ status: "not_in_supplier_catalog" })
+
+    // A draft catalog doesn't apply, and a customer without one sees every product at its own price.
+    context.actor = actor(supplierA, "supplier")
+    await saveCatalog({
+      id: saved.id,
+      revision: 1,
+      title: "Wholesale",
+      status: "draft",
+      adjustmentBasisPoints: -1000,
+      includeNewProducts: false,
+      customerIds: [linkA],
+      products: []
+    })
+    context.actor = actor(buyerId, "buyer")
+    expect((await (await match(linkA, "LEFT")).json())[0]).toMatchObject({ status: "matched", unitPriceMinor: 900 })
+  })
+
+  it("adds new products to catalogs that take them, and keeps customers to the supplier's own", async () => {
+    const saved = await saveCatalog({
+      title: "Everything",
+      status: "active",
+      adjustmentBasisPoints: 0,
+      includeNewProducts: true,
+      customerIds: [],
+      products: []
+    })
+    await saveProduct(post("/api/supplier-catalog/products", productPayload()))
+    expect(await database.select().from(tables.catalogProducts)).toHaveLength(1)
+    const assign = (customerId: string) =>
+      assignCatalogRoute(post(`/api/customers/${customerId}/catalog`, { catalogId: saved.id }), {
+        params: Promise.resolve({ id: customerId })
+      })
+    expect((await assign(linkB)).status).toBe(400)
+    expect((await assign(linkA)).status).toBe(200)
+    const [link] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, linkA))
+    expect(link!.catalogId).toBe(saved.id)
+  })
+
+  it("rejects a fixed price whose volume pricing doesn't go down", async () => {
+    const variant = await insertProduct(supplierA, { supplierSku: "SAME", priceMinor: 200 })
+    const result = await saveCatalog({
+      title: "Bad",
+      status: "active",
+      adjustmentBasisPoints: 0,
+      includeNewProducts: false,
+      customerIds: [],
+      products: [
+        { productId: variant.id, priceMinor: 150, priceBreaks: [{ minimum: 10, priceMinor: 160 }], quantityRules: null }
+      ]
+    })
+    expect(result.error).toBe("Foil cord: Each break's price must be lower than the one before")
   })
 })

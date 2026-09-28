@@ -1,12 +1,20 @@
 import { createHash } from "node:crypto"
-import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { supplierCatalogImports, supplierProducts } from "@/db/schema"
+import { supplierCatalogImports } from "@/db/schema"
 import { session } from "@/server/auth"
+import { commitImport, previewImport } from "@/server/product-import"
+import { readSheet } from "@/server/product-sheet"
 import { appUrl } from "@/server/security"
 import { putFile } from "@/server/storage"
-import { catalogRevisionHash, parseSupplierCatalogCsv, sameSupplierCatalogFields } from "@/server/supplier-catalog-csv"
 
+const maxBytes = 5 * 1024 * 1024
+const types = {
+  csv: "text/csv",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+}
+
+// Imports a filled-in product template, CSV or Excel: first a preview of what would change, then the import itself,
+// which the preview's hash guards against changes made in between. Each file is imported once.
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== appUrl()) {
     return Response.json({ error: "Invalid request origin" }, { status: 403 })
@@ -17,57 +25,32 @@ export async function POST(request: Request) {
       return Response.json({ error: "A supplier workspace is required" }, { status: 403 })
     }
     const form = await request.formData()
-    const file = form.get("file"),
-      mode = form.get("mode")
+    const file = form.get("file")
+    const mode = form.get("mode")
+    const extension = file instanceof File ? file.name.toLowerCase().split(".").pop() : undefined
     if (
       !(file instanceof File) ||
-      !file.name.toLowerCase().endsWith(".csv") ||
-      file.size > 2 * 1024 * 1024 ||
-      file.size === 0
+      (extension !== "csv" && extension !== "xlsx") ||
+      !file.size ||
+      file.size > maxBytes
     ) {
-      throw new Error("Upload a CSV file smaller than 2 MB")
+      throw new Error("Upload the product template as a CSV or Excel file of up to 5 MB")
     }
     if (mode !== "preview" && mode !== "commit") {
       throw new Error("Choose preview or import")
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
-    const rows = parseSupplierCatalogCsv(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
-    const skus = rows.map((row) => row.supplierSku)
-    const digest = createHash("sha256").update(bytes).digest("hex")
+    const products = await readSheet({ name: file.name, bytes })
+    const fileHash = createHash("sha256").update(bytes).digest("hex")
     if (mode === "preview") {
-      const existing = skus.length
-        ? await db()
-            .select()
-            .from(supplierProducts)
-            .where(and(eq(supplierProducts.supplierOrgId, s.org.id), inArray(supplierProducts.supplierSku, skus)))
-        : []
-      const currentBySku = new Map(existing.map((product) => [product.supplierSku, product]))
-      const created = rows.filter((row) => !currentBySku.has(row.supplierSku)).length
-      const unchanged = rows.filter((row) => {
-        const current = currentBySku.get(row.supplierSku)
-        return current && sameSupplierCatalogFields(current, row)
-      }).length
-      return Response.json({
-        rows,
-        count: rows.length,
-        created,
-        updated: rows.length - created - unchanged,
-        unchanged,
-        revisionHash: catalogRevisionHash(existing),
-        fileHash: digest
-      })
+      return Response.json({ ...(await previewImport(s.org.id, products)), fileHash })
     }
-    const expectedRevisionHash = form.get("revisionHash"),
-      expectedFileHash = form.get("fileHash")
-    if (
-      typeof expectedRevisionHash !== "string" ||
-      !/^[a-f0-9]{64}$/.test(expectedRevisionHash) ||
-      expectedFileHash !== digest
-    ) {
-      throw new Error("Preview this file before importing")
+    const expected = String(form.get("revisionHash") ?? "")
+    if (form.get("fileHash") !== fileHash) {
+      throw new Error("The file changed after the preview. Preview it again before importing")
     }
-    const objectKey = `supplier-catalogs/${s.org.id}/${digest}.csv`
-    await putFile(objectKey, bytes, "text/csv; charset=utf-8")
+    const objectKey = `supplier-catalogs/${s.org.id}/${fileHash}.${extension}`
+    await putFile(objectKey, bytes, types[extension])
     const result = await db().transaction(async (tx) => {
       const [imported] = await tx
         .insert(supplierCatalogImports)
@@ -76,62 +59,18 @@ export async function POST(request: Request) {
           objectKey,
           filename: file.name.slice(0, 255),
           createdBy: s.user.id,
-          rowCount: rows.length
+          rowCount: products.reduce((sum, product) => sum + product.variants.length, 0)
         })
         .onConflictDoNothing()
         .returning({ id: supplierCatalogImports.id })
       if (!imported) {
-        return { imported: false, created: 0, updated: 0 }
+        return { imported: false }
       }
-      const existing = skus.length
-        ? await tx
-            .select({
-              supplierSku: supplierProducts.supplierSku,
-              id: supplierProducts.id,
-              revision: supplierProducts.revision
-            })
-            .from(supplierProducts)
-            .where(and(eq(supplierProducts.supplierOrgId, s.org.id), inArray(supplierProducts.supplierSku, skus)))
-            .for("update")
-        : []
-      if (catalogRevisionHash(existing) !== expectedRevisionHash) {
-        throw new Error("Catalog changed after preview. Preview the file again before importing")
-      }
-      let created = 0,
-        updated = 0,
-        unchanged = 0
-      for (const row of rows) {
-        const [prior] = await tx
-          .select()
-          .from(supplierProducts)
-          .where(
-            sql`${supplierProducts.supplierOrgId} = ${s.org.id} AND ${supplierProducts.supplierSku} = ${row.supplierSku}`
-          )
-          .for("update")
-        const { onHand, ...fields } = row
-        if (!prior) {
-          await tx.insert(supplierProducts).values({ supplierOrgId: s.org.id, ...fields, onHand: onHand ?? 0 })
-          created++
-        } else if (sameSupplierCatalogFields(prior, row)) {
-          unchanged++
-        } else {
-          await tx
-            .update(supplierProducts)
-            .set({
-              ...fields,
-              onHand: onHand ?? prior.onHand,
-              active: 1,
-              revision: prior.revision + 1,
-              updatedAt: new Date()
-            })
-            .where(eq(supplierProducts.id, prior.id))
-          updated++
-        }
-      }
-      return { imported: true, created, updated, unchanged }
+      await commitImport(tx, s.org.id, products, expected)
+      return { imported: true }
     })
     return Response.json(result)
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Catalog import failed" }, { status: 400 })
+    return Response.json({ error: error instanceof Error ? error.message : "Import failed" }, { status: 400 })
   }
 }

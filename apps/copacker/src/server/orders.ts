@@ -14,6 +14,7 @@ import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import {
   orders,
+  orderProposals,
   orderRevisions,
   suppliers,
   shipments,
@@ -22,14 +23,15 @@ import {
   jobs,
   connections,
   contacts,
-  supplierProducts,
   landedCosts,
   poImports,
   type ShipmentState
 } from "@/db/schema"
 import { bundleQuote } from "@/lib/bundle-quote"
+import { quantityProblem } from "@/lib/catalog-pricing"
 import { accessibleOrder } from "./access"
 import { requireBuyer, type Session } from "./auth"
+import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { generatePo } from "./documents"
 import { forwarderAddress } from "./forwarders"
@@ -84,18 +86,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
     }
     return source?.supplierSku?.value ? [source.supplierSku.value.trim()] : []
   })
-  const supplierCatalog =
-    supplier.supplierOrgId && supplierSkus.length
-      ? await db()
-          .select()
-          .from(supplierProducts)
-          .where(
-            and(
-              eq(supplierProducts.supplierOrgId, supplier.supplierOrgId),
-              inArray(supplierProducts.supplierSku, supplierSkus)
-            )
-          )
-      : []
+  const products = await customerProducts(db(), supplier, supplierSkus)
   input.items = input.items.map((item) => {
     const source = catalog.find((v) => v?.id === item.variantId)
     if (!source?.sku) {
@@ -109,7 +100,6 @@ export async function prepareOrder(s: Session, raw: unknown) {
     const piecesPerSet = piecesPerUnit(source)
     const components = source.requiresComponents ? bundleSupplierComponents(source) : undefined
     const supplierSku = source.requiresComponents ? "" : (source.supplierSku?.value ?? "")
-    const products = supplierCatalog.map((product) => ({ ...product, active: product.active === 1 }))
     const matched = matchSupplierCatalog(
       { supplierOrgId: supplier.supplierOrgId, supplierSku, currency: input.currency },
       products
@@ -177,7 +167,13 @@ export async function prepareOrder(s: Session, raw: unknown) {
 }
 // Checks a prepared PO against the workspace inside the saving transaction: the same merchant accounts, one of its
 // suppliers, and one of its addresses.
-async function checkOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnType<typeof prepareOrder>>) {
+// A supplier's own proposed changes skip its stock limit: the supplier chose those quantities.
+export async function checkOrder(
+  tx: Transaction,
+  s: Session,
+  prepared: Awaited<ReturnType<typeof prepareOrder>>,
+  { stock = true } = {}
+) {
   const { input, shopifyDomain, amazonSellerId } = prepared
   requireBuyer(s)
   // Keep the selected accounts stable through the commit, including after slow catalog reads.
@@ -202,7 +198,9 @@ async function checkOrder(tx: Transaction, s: Session, prepared: Awaited<ReturnT
   if (!supplier) {
     throw new Error("Select a supplier in this workspace")
   }
-  await checkSupplierStock(tx, supplier.supplierOrgId, input)
+  if (stock) {
+    await checkSupplierStock(tx, supplier.supplierOrgId, input)
+  }
   if (input.destination === "warehouse") {
     const [delivery] = await tx
       .select({ id: contacts.id })
@@ -306,6 +304,31 @@ async function missingAmazonIdentities(s: Session, id: string) {
   }
   return { sellerId: amazon.externalId, identities, revision: order.revision }
 }
+// Refuses a PO whose lines break the quantity rules the supplier set for this buyer: a minimum, a maximum or an
+// increment. Bundles are left out, since their components are ordered in the bundle's own steps.
+async function checkQuantityRules(
+  tx: Transaction,
+  supplier: { supplierOrgId: string | null; catalogId: string | null },
+  data: OrderInput
+) {
+  const lines = data.items.filter((item) => !item.components?.length && item.supplierSku)
+  const products = await customerProducts(
+    tx,
+    supplier,
+    lines.map((item) => item.supplierSku)
+  )
+  const problems = lines.flatMap((item) => {
+    const { rules } = matchSupplierCatalog(
+      { supplierOrgId: supplier.supplierOrgId, supplierSku: item.supplierSku, currency: data.currency },
+      products
+    )
+    const problem = rules && quantityProblem(rules, item.pieces, "piece")
+    return problem ? [`${item.buyerSku}: ${problem.toLowerCase()}`] : []
+  })
+  if (problems.length) {
+    throw new Error(`Change these quantities to meet the supplier’s rules. ${problems.join(". ")}`)
+  }
+}
 export async function submitOrder(s: Session, id: string, expectedRevision: number) {
   requireBuyer(s)
   const completed = await missingAmazonIdentities(s, id)
@@ -325,6 +348,7 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
       throw new Error("This supplier was removed. Choose another supplier or add them again")
     }
     await checkSupplierStock(tx, supplier.supplierOrgId, order.data, id)
+    await checkQuantityRules(tx, supplier, order.data)
     if (completed) {
       if (order.amazonSellerId && order.amazonSellerId !== completed.sellerId) {
         throw new Error("The connected Amazon account changed. Refresh before submitting")
@@ -378,12 +402,23 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
   }
   return submitted
 }
+// Packing waits while the supplier's changes to the PO are with the buyer, so cartons match the PO it approves.
+async function refusePendingChanges(tx: Transaction, orderId: string) {
+  const [pending] = await tx
+    .select({ id: orderProposals.id })
+    .from(orderProposals)
+    .where(and(eq(orderProposals.orderId, orderId), eq(orderProposals.status, "pending")))
+  if (pending) {
+    throw new Error("Changes to this purchase order are waiting for approval. Pack once they're answered")
+  }
+}
 export async function newShipment(s: Session, orderId: string) {
   return db().transaction(async (tx) => {
     const { order } = await accessibleOrder(s, orderId, tx, true)
     if (order.status !== "submitted") {
       throw new Error("Submit the PO before creating a shipment")
     }
+    await refusePendingChanges(tx, orderId)
     const existing = await tx
       .select()
       .from(shipments)
@@ -417,6 +452,7 @@ export async function submitPacking(s: Session, shipmentId: string, raw: unknown
     if (!shipment || !["packing", "correction"].includes(shipment.status) || shipment.revision !== expectedRevision) {
       throw new Error("This shipment has changed. Refresh before submitting")
     }
+    await refusePendingChanges(tx, order.id)
     if (shipment.amazonOrderId || shipment.operation !== "none") {
       throw new Error("Resolve the existing Amazon shipment before submitting replacement cartons")
     }

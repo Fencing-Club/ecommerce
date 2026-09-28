@@ -14,8 +14,7 @@ export async function GET() {
     .select({
       id: suppliers.id,
       name: suppliers.name,
-      leadTimeDays: suppliers.leadTimeDays,
-      amazonLeadTimeDays: suppliers.amazonLeadTimeDays
+      leadTimeDays: suppliers.leadTimeDays
     })
     .from(suppliers)
     .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))

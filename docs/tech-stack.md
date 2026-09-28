@@ -55,6 +55,7 @@ For building command-line tools.
 
 - ✅ **zod** — schema validation (Standard Schema; powers forms + env parsing).
 - ✅ **@t3-oss/env-core** — type-safe environment variables.
+- ✅ **exceljs** — reading and writing Excel workbooks (Copacker's product template and catalog price lists).
 - ✅ **ts-pattern** — pattern matching / exhaustive unions · **ts-extras** — type-safe stdlib helpers.
 - ✅ **tiny-invariant** — runtime assertions.
 - ✅ **date-fns** — date utilities.

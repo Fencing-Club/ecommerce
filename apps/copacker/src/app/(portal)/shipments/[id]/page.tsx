@@ -1,7 +1,8 @@
 import { amazonNetworkNames, money } from "@repo/aisle"
 import { and, eq } from "drizzle-orm"
-import { AlertTriangle, ArrowRight, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
+import { AlertTriangle, ArrowRight, Clock, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { z } from "zod"
 import { ActionButton } from "@/components/actions"
@@ -22,11 +23,20 @@ import { cn } from "@/lib/utils"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
+import { proposalState } from "@/server/order-proposals"
 import { reservedPieces } from "@/server/readiness"
 import { finishedStates, releasedStates } from "@/server/readiness"
 import { orderWorkflow } from "@/server/workflow"
 import { issueList, packetAction, readyAlert, spinning } from "./page.css"
 import { sx } from "@/styles/sprinkles.css"
+
+// What the shipment waits on: changes the customer hasn't answered, or its next step.
+function shipmentMessage(next: string, enteringFor: string | null, awaitingChanges: boolean) {
+  if (awaitingChanges) {
+    return "Changes to the purchase order are waiting for approval"
+  }
+  return enteringFor ? `Enter ${enteringFor}’s cartons and invoice` : next
+}
 
 export const metadata: Metadata = { title: "Shipment" }
 
@@ -56,8 +66,14 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           .where(and(eq(contacts.orgId, supplier.supplierOrgId), eq(contacts.kind, "pickup")))
       : []
   ])
+  // Packing waits while the supplier's changes to the PO are with the buyer.
+  const { latest } = await proposalState(order.id)
+  const awaitingChanges = latest?.status === "pending"
   const editable =
-    ["packing", "correction"].includes(shipment.status) && !shipment.amazonOrderId && shipment.operation === "none"
+    ["packing", "correction"].includes(shipment.status) &&
+    !shipment.amazonOrderId &&
+    shipment.operation === "none" &&
+    !awaitingChanges
   const isBuyer = s.org.kind === "buyer"
   // The Amazon shipments are in the buyer's Seller Central, which the supplier can't open.
   const amazonLinks = isBuyer ? amazonShipmentLinks(shipment) : []
@@ -111,13 +127,29 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
 
       <ShipmentProgress
         processing={["queued", "creating"].includes(shipment.status)}
-        message={enteringFor && editable ? `Enter ${enteringFor}’s cartons and invoice` : step.next.message}
+        message={shipmentMessage(step.next.message, enteringFor && editable ? enteringFor : null, awaitingChanges)}
       />
       {shipment.issue && (
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>Needs attention</AlertTitle>
           <AlertDescription>{shipment.issue}</AlertDescription>
+        </Alert>
+      )}
+
+      {awaitingChanges && (
+        <Alert>
+          <Clock />
+          <AlertTitle>Changes waiting for approval</AlertTitle>
+          <AlertDescription>
+            Packing opens once {isBuyer ? "you answer" : "the customer answers"} the proposed changes on the purchase
+            order.
+          </AlertDescription>
+          <AlertAction>
+            <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
+              View purchase order
+            </Button>
+          </AlertAction>
         </Alert>
       )}
 

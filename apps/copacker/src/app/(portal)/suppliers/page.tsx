@@ -45,14 +45,8 @@ async function loadSuppliers(orgId: string) {
 
 type SupplierRow = Awaited<ReturnType<typeof loadSuppliers>>[number]
 
-function leadTime(local: number | null, amazon: number | null, fallback: number) {
-  if (local === null && amazon === null) {
-    return `Lead time ${fallback} days (default)`
-  }
-  if (amazon === null) {
-    return `Lead time ${local} days`
-  }
-  return local === null ? `Lead time ${amazon} days to Amazon` : `Lead time ${local} days, ${amazon} to Amazon`
+function leadTime(days: number | null, fallback: number) {
+  return days === null ? `Lead time ${fallback} days (default)` : `Lead time ${days} days`
 }
 
 // One detail, such as the phone number, as an icon and its value.
@@ -121,7 +115,7 @@ function SupplierRow({
             </Detail>
           )}
           <Detail icon={Timer} label="Lead time">
-            {leadTime(row.leadTimeDays, row.amazonLeadTimeDays, defaultLeadTimeDays)}
+            {leadTime(row.leadTimeDays, defaultLeadTimeDays)}
           </Detail>
         </div>
       </ItemContent>
@@ -146,7 +140,6 @@ function SupplierRow({
           shopifySupplierName={row.shopifySupplierName}
           leadTimeDays={row.leadTimeDays}
           defaultLeadTimeDays={defaultLeadTimeDays}
-          amazonLeadTimeDays={row.amazonLeadTimeDays}
           contact={row.contact}
           joined={row.supplierOrgId !== null}
         />

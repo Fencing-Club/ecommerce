@@ -1,0 +1,219 @@
+"use client"
+
+import { useWindowEvent } from "@mantine/hooks"
+import { money } from "@repo/aisle"
+import { Archive, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, ImageIcon, Search } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { type ProductImage, imageUrl } from "@/lib/supplier-product"
+import { cn } from "@/lib/utils"
+
+// A product's main photo, or a placeholder in the same frame so rows line up.
+export function ProductThumb({
+  image,
+  className
+}: {
+  image: Pick<ProductImage, "key" | "name"> | null
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40",
+        className
+      )}
+    >
+      {image ? (
+        // Stored photos come from our own authenticated route, which next/image can't fetch.
+        <img src={imageUrl(image)} alt="" className="size-full object-contain" loading="lazy" />
+      ) : (
+        <ImageIcon className="size-4 text-muted-foreground" aria-hidden />
+      )}
+    </span>
+  )
+}
+
+const statuses = {
+  active: { label: "Active", icon: CircleCheck, className: "text-success" },
+  draft: { label: "Draft", icon: CircleDashed, className: "text-muted-foreground" },
+  archived: { label: "Archived", icon: Archive, className: "text-muted-foreground" }
+} as const
+
+export function StatusBadge({ status }: { status: keyof typeof statuses }) {
+  const { label, icon: Icon, className } = statuses[status]
+  return (
+    <Badge variant="outline">
+      <Icon data-icon="inline-start" className={className} />
+      {label}
+    </Badge>
+  )
+}
+
+// Amounts in each currency, one under another, or a dash for none.
+export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount: number }> }) {
+  if (!amounts.length) {
+    return <span className="text-muted-foreground">—</span>
+  }
+  return (
+    <span className="inline-flex flex-col items-end tabular-nums">
+      {amounts.map((row) => (
+        <span key={row.currency}>{money(row.amount, row.currency)}</span>
+      ))}
+    </span>
+  )
+}
+
+// The tabs and search above an index table, like Shopify's: each tab with its count.
+export function IndexToolbar<T extends string>({
+  tabs,
+  tab,
+  onTabChange,
+  query,
+  onQueryChange,
+  placeholder,
+  children
+}: {
+  tabs: Array<{ value: T; label: string; count?: number }>
+  tab: T
+  onTabChange: (value: T) => void
+  query: string
+  onQueryChange: (value: string) => void
+  placeholder: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2 @3xl:flex-row @3xl:items-center @3xl:justify-between">
+      <Tabs value={tab} onValueChange={(value) => onTabChange(value as T)} className="min-w-0">
+        {/* Scrolls sideways on a phone instead of wrapping, without a scrollbar. */}
+        <TabsList className="max-w-full justify-start overflow-x-auto [scrollbar-width:none]">
+          {tabs.map((option) => (
+            <TabsTrigger key={option.value} value={option.value} className="px-2.5">
+              {option.label}
+              {option.count !== undefined && (
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {option.count.toLocaleString("en-US")}
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <div className="flex items-center gap-2">
+        <InputGroup className="@3xl:w-72">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
+            type="search"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder}
+          />
+        </InputGroup>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function matches(query: string, ...values: Array<string | null | undefined>) {
+  const needle = query.trim().toLowerCase()
+  return !needle || values.some((value) => value?.toLowerCase().includes(needle))
+}
+
+// Pages of a long table, like Shopify's: which rows show, and previous and next.
+export function Pager({
+  page,
+  pages,
+  total,
+  size,
+  onPage
+}: {
+  page: number
+  pages: number
+  total: number
+  size: number
+  onPage: (page: number) => void
+}) {
+  if (pages <= 1) {
+    return null
+  }
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+      <span className="tabular-nums">
+        {(page * size + 1).toLocaleString("en-US")}–{Math.min(total, (page + 1) * size).toLocaleString("en-US")} of{" "}
+        {total.toLocaleString("en-US")}
+      </span>
+      <div className="flex gap-1">
+        <Button
+          size="icon-sm"
+          variant="outline"
+          aria-label="Previous page"
+          disabled={page === 0}
+          onClick={() => onPage(page - 1)}
+        >
+          <ChevronLeft />
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="outline"
+          aria-label="Next page"
+          disabled={page >= pages - 1}
+          onClick={() => onPage(page + 1)}
+        >
+          <ChevronRight />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// Shopify's contextual save bar: while a form has unsaved changes, a bar floats at the bottom with Discard and
+// Save, and leaving the page asks first.
+export function SaveBar({
+  dirty,
+  pending,
+  onDiscard,
+  onSave,
+  error,
+  message = "Unsaved changes",
+  canSave = true
+}: {
+  dirty: boolean
+  pending: boolean
+  onDiscard: () => void
+  onSave: () => void
+  error?: string
+  // What's unsaved, such as "3 unsaved changes".
+  message?: string
+  // False while a change can't be saved yet, such as a count that isn't a number.
+  canSave?: boolean
+}) {
+  useWindowEvent("beforeunload", (event) => {
+    if (dirty) {
+      event.preventDefault()
+    }
+  })
+  if (!dirty && !error) {
+    return null
+  }
+  return (
+    <section
+      aria-label="Unsaved changes"
+      className="sticky bottom-4 z-30 mx-auto flex w-full max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-popover px-4 py-2.5 text-popover-foreground shadow-lg"
+    >
+      <span className={cn("text-sm font-medium", error && "text-destructive")}>{error || message}</span>
+      <div className="ml-auto flex gap-2">
+        <Button size="sm" variant="outline" disabled={pending || !dirty} onClick={onDiscard}>
+          Discard
+        </Button>
+        <Button size="sm" disabled={pending || !dirty || !canSave} onClick={onSave}>
+          {pending ? "Saving" : "Save"}
+        </Button>
+      </div>
+    </section>
+  )
+}

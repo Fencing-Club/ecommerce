@@ -17,7 +17,10 @@ import {
   Sun,
   Truck,
   Users,
-  BookOpen
+  BookOpen,
+  Building2,
+  Tag,
+  Warehouse
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -51,6 +54,7 @@ import {
   SidebarRail,
   useSidebar
 } from "@/components/ui/sidebar"
+import { announceWorkspace } from "@/components/workspace-watch"
 import { useActionMutation } from "@/lib/api"
 import * as styles from "./app-sidebar.css"
 import { sx } from "@/styles/sprinkles.css"
@@ -66,10 +70,14 @@ export type AppSidebarProps = {
   preview?: boolean
 }
 
-// The store's own pages, then purchasing from suppliers, then settings on their own.
+// A buyer's store pages, then purchasing from suppliers. A supplier's sales to its customers, then what it
+// sells. Settings sit on their own at the bottom.
 const groups = [
+  { key: "home", label: null },
   { key: "store", label: "Store" },
   { key: "purchasing", label: "Purchasing" },
+  { key: "sales", label: "Sales" },
+  { key: "catalog", label: "Products" },
   { key: "workspace", label: null }
 ] as const
 
@@ -78,18 +86,27 @@ const navigation = [
   { view: "sales", label: "Orders", icon: Receipt, group: "store", buyerOnly: true },
   { view: "products", label: "Products", icon: Box, group: "store", buyerOnly: true },
   { view: "restock", label: "Restock", icon: PackagePlus, group: "store", buyerOnly: true },
-  { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing" },
-  { view: "shipments", label: "Shipments", icon: Truck, group: "purchasing" },
+  { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing", buyerOnly: true },
+  { view: "shipments", label: "Shipments", icon: Truck, group: "purchasing", buyerOnly: true },
   { view: "suppliers", label: "Suppliers", icon: Users, group: "purchasing", buyerOnly: true },
   { view: "forwarders", label: "Forwarders", icon: Ship, group: "purchasing", buyerOnly: true },
-  { view: "catalog", label: "Catalog", icon: BookOpen, group: "purchasing", supplierOnly: true },
+  { view: "overview", label: "Overview", icon: LayoutDashboard, group: "home", supplierOnly: true },
+  { view: "orders", label: "Orders", icon: ClipboardList, group: "sales", supplierOnly: true },
+  { view: "shipments", label: "Shipments", icon: Truck, group: "sales", supplierOnly: true },
+  { view: "customers", label: "Customers", icon: Building2, group: "sales", supplierOnly: true },
+  { view: "products", label: "Products", icon: Tag, group: "catalog", supplierOnly: true },
+  { view: "inventory", label: "Inventory", icon: Warehouse, group: "catalog", supplierOnly: true },
+  { view: "catalogs", label: "Catalogs", icon: BookOpen, group: "catalog", supplierOnly: true },
   { view: "settings", label: "Settings", icon: Settings, group: "workspace" }
 ] satisfies Array<{ view: string; group: (typeof groups)[number]["key"] } & Record<string, unknown>>
 
 // A forwarder's workspace sees the POs coming through it, and keeps its addresses and profile in Settings.
 function navigationFor(kind: string) {
   if (kind === "forwarder") {
-    return navigation.filter((item) => item.view === "orders" || item.view === "settings")
+    return [
+      { view: "orders", label: "Purchase orders", icon: ClipboardList, group: "purchasing" as const },
+      ...navigation.filter((item) => item.view === "settings")
+    ]
   }
   return navigation.filter(
     (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
@@ -100,11 +117,12 @@ function hrefFor(view: string, preview: boolean) {
   return preview ? `/preview?view=${view}` : `/${view}`
 }
 
-export function CurrentSection({ preview = false, view }: { preview?: boolean; view?: string }) {
+export function CurrentSection({ preview = false, view, kind }: { preview?: boolean; view?: string; kind: string }) {
   const pathname = usePathname()
+  const items = navigationFor(kind)
   const current = preview
-    ? navigation.find((item) => item.view === (view ?? "orders"))
-    : navigation.find((item) => pathname.startsWith(`/${item.view}`))
+    ? items.find((item) => item.view === (view ?? "orders"))
+    : items.find((item) => pathname.startsWith(`/${item.view}`))
   return (
     <span
       className={sx({
@@ -154,7 +172,7 @@ export function AppSidebar({
             return null
           }
           return (
-            <SidebarGroup key={group.key} className={group.label ? undefined : "mt-auto"}>
+            <SidebarGroup key={group.key} className={group.key === "workspace" ? "mt-auto" : undefined}>
               {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -207,6 +225,7 @@ function WorkspaceSwitcher({
 
   async function switchTo(id: string) {
     await run({ action: "workspace.switch", data: { id } }).unwrap()
+    announceWorkspace(id)
     // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
     window.location.assign("/")
   }

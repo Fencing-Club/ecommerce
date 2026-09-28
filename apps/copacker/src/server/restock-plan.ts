@@ -20,7 +20,6 @@ export type RestockSupplier = {
   id: string
   name: string
   leadTimeDays: number | null
-  amazonLeadTimeDays: number | null
 }
 
 // "no_listing": Shopify sets an Amazon stock target, but Amazon has no FBA or AWD inventory for the SKU, so there's
@@ -84,15 +83,9 @@ function sum(values: (number | null | undefined)[]) {
     : values.reduce<number>((total, value) => total + (value ?? 0), 0)
 }
 
-// The lead time a supplier needs for this channel, else the page's default.
-export function supplierLeadTime(supplier: RestockSupplier | null, channel: RestockChannel, fallback: number) {
-  if (!supplier) {
-    return fallback
-  }
-  if (channel.kind === "amazon") {
-    return supplier.amazonLeadTimeDays ?? supplier.leadTimeDays ?? fallback
-  }
-  return supplier.leadTimeDays ?? fallback
+// The lead time a supplier needs, else the page's default. One lead time covers every destination.
+export function supplierLeadTime(supplier: RestockSupplier | null, fallback: number) {
+  return supplier?.leadTimeDays ?? fallback
 }
 
 function status(line: Pick<RestockLine, "blocked" | "purchaseUnits" | "daysRemaining" | "leadTimeDays" | "available">) {
@@ -169,7 +162,7 @@ export function restockPlan(input: {
       const bundle = row?.bundle
       const details = input.productDefaults.get(product.productId)
       const supplier = input.supplierFor(variant.variantId)
-      const leadTimeDays = supplierLeadTime(supplier, channel, input.leadTimeDays)
+      const leadTimeDays = supplierLeadTime(supplier, input.leadTimeDays)
       const pending = (input.onOrder.get(variant.variantId) ?? []).filter((order) =>
         channel.kind === "amazon" ? order.destination === "amazon" : order.locationIds.includes(channel.locationId)
       )

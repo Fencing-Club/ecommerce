@@ -55,7 +55,6 @@ export const supplierUpdateSchema = z.strictObject({
     // Left out keeps the saved name; empty clears it.
     .transform((value) => (value === undefined ? undefined : value || null)),
   leadTimeDays: z.number().int().min(1).max(730).nullable(),
-  amazonLeadTimeDays: z.number().int().min(1).max(730).nullable(),
   // The supplier's contact details, all optional. Left out keeps what's saved; empty clears it.
   ...supplierContactSchema.shape
 })
@@ -87,7 +86,6 @@ export async function updateSupplier(buyerOrgId: string, raw: unknown) {
     .set({
       name: input.name,
       leadTimeDays: input.leadTimeDays,
-      amazonLeadTimeDays: input.amazonLeadTimeDays,
       ...(input.shopifySupplierName !== undefined && { shopifySupplierName: input.shopifySupplierName }),
       ...contact
     })

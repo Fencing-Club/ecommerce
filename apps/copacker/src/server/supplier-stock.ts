@@ -1,6 +1,6 @@
 import type { OrderInput, OrderItem, Packing } from "@repo/aisle"
 import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm"
-import type { Transaction } from "@/db"
+import { db, type Transaction } from "@/db"
 import { orders, shipments, supplierProducts, suppliers } from "@/db/schema"
 
 type Line = Pick<OrderItem, "id" | "supplierSku" | "pieces" | "piecesPerSet" | "components">
@@ -113,6 +113,18 @@ async function openDemand(
     }
   }
   return demand
+}
+
+// Pieces of every product that the supplier's sent POs still owe, by product, for the Inventory page and Overview.
+export async function committedStock(supplierOrgId: string) {
+  return db().transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: supplierProducts.id, supplierSku: supplierProducts.supplierSku })
+      .from(supplierProducts)
+      .where(eq(supplierProducts.supplierOrgId, supplierOrgId))
+    const demand = await openDemand(tx, supplierOrgId, new Map(rows.map((row) => [row.supplierSku, row])))
+    return new Map(rows.map((row) => [row.id, demand.get(row.supplierSku) ?? 0]))
+  })
 }
 
 // What a supplier's POs can still order of each tracked product, by supplier SKU: stock on hand less what open POs

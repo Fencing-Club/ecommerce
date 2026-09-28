@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { Address, OrderInput } from "@repo/aisle"
-import { purchaseOrderPdf, packingListPdf, checklistPdf } from "@repo/aisle/documents"
+import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import {
@@ -229,4 +229,62 @@ export async function generateShipmentDocuments(shipmentId: string) {
     { ...input, kind: "checklist", name: "Packing Checklist.pdf" },
     await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer })
   )
+}
+
+// The supplier's commercial invoice for a PO revision the buyer approved, filed with the shipment being packed so the
+// supplier needn't upload its own. It replaces that shipment's earlier invoices.
+export async function generateInvoice(orderId: string, shipmentId: string, revision: number) {
+  const [order] = await db().select().from(orders).where(eq(orders.id, orderId))
+  const [historical] = await db()
+    .select()
+    .from(orderRevisions)
+    .where(and(eq(orderRevisions.orderId, orderId), eq(orderRevisions.revision, revision)))
+  if (!order || !historical) {
+    throw new Error("Purchase order revision is unavailable")
+  }
+  const parties = await documentParties(order, historical.data)
+  const [link] = await db()
+    .select({ supplierOrgId: suppliers.supplierOrgId })
+    .from(suppliers)
+    .where(eq(suppliers.id, order.supplierId))
+  const [supplierOrg] = link?.supplierOrgId
+    ? await db()
+        .select({ name: organizations.name })
+        .from(organizations)
+        .where(eq(organizations.id, link.supplierOrgId))
+    : []
+  const bytes = await commercialInvoicePdf({
+    order: historical.data,
+    revision,
+    issued: historical.createdAt.toISOString().slice(0, 10),
+    supplier: { ...parties.supplier, name: supplierOrg?.name ?? parties.supplier.name },
+    buyer: { name: parties.buyer.name, lines: parties.buyer.website ? [parties.buyer.website] : [] },
+    shipTo: parties.shipTo
+  })
+  const id = randomUUID()
+  const objectKey = `orders/${orderId}/${id}.pdf`
+  await putFile(objectKey, bytes)
+  await db().transaction(async (tx) => {
+    const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, shipmentId)).for("update")
+    // A shipment that moved on since keeps the invoice it has.
+    if (!shipment || shipment.orderRevision !== revision || !["packing", "correction"].includes(shipment.status)) {
+      return
+    }
+    await tx
+      .update(documents)
+      .set({ outdated: 1 })
+      .where(and(eq(documents.shipmentId, shipmentId), eq(documents.kind, "invoice")))
+    await tx.insert(documents).values({
+      id,
+      orderId,
+      shipmentId,
+      kind: "invoice",
+      objectKey,
+      name: `Commercial invoice ${order.data.reference}.pdf`,
+      bytes: bytes.length,
+      orderRevision: revision,
+      shipmentRevision: shipment.revision,
+      uploadedBy: "system"
+    })
+  })
 }

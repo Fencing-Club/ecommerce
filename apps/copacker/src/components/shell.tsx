@@ -24,7 +24,7 @@ export async function Shell({
         <header className={styles.header}>
           <SidebarTrigger className={styles.trigger} />
           <Separator orientation="vertical" className={styles.separator} />
-          <CurrentSection preview={sidebar.preview} view={view} />
+          <CurrentSection preview={sidebar.preview} view={view} kind={sidebar.kind} />
         </header>
         <div
           id="main-content"

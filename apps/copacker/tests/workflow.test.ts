@@ -132,6 +132,13 @@ import { acceptSupplierInvitation } from "../src/server/invitations"
 import { amazonJob } from "../src/server/job-handlers"
 import { orderLandedCosts } from "../src/server/landed-costs"
 import {
+  approveProposal,
+  declineProposal,
+  proposalChanges,
+  type ProposalInput,
+  proposeChanges
+} from "../src/server/order-proposals"
+import {
   approveInvoice,
   submitPacking,
   correctShipment,
@@ -167,6 +174,7 @@ import {
 import { hash } from "../src/server/security"
 import { shopifyOrderTags, untaggedShopifyOrders } from "../src/server/shopify-tags"
 import { recordStockDays, stockoutDays } from "../src/server/stock-days"
+import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
 import { applyMigrations } from "./migrations"
@@ -284,6 +292,15 @@ beforeEach(async () => {
     .insert(tables.orderRevisions)
     .values({ orderId, revision: 1, data: orderData, actor: buyer.user.id, reason: "Created" })
 })
+// A supplier product row with a product of its own, as imports and the product page make them.
+async function withGroup<T extends { supplierOrgId: string; title: string }>(values: T) {
+  const [group] = await database
+    .insert(tables.supplierProductGroups)
+    .values({ supplierOrgId: values.supplierOrgId, title: values.title })
+    .returning()
+  return { ...values, groupId: group!.id }
+}
+
 async function preparation(pieces = 160) {
   const id = randomUUID(),
     invoiceId = randomUUID()
@@ -408,27 +425,31 @@ describe("supplier catalog snapshots", () => {
     await reviewedImport()
     const [product] = await database
       .insert(tables.supplierProducts)
-      .values({
-        supplierOrgId: supplierId,
-        supplierSku: "B-2",
-        title: "Foil body cord",
-        currency: "USD",
-        priceMinor: 420,
-        priceBasis: "sellable_pack",
-        piecesPerSellablePack: 2,
-        sellablePacksPerCase: 80,
-        notes: "Verify current quote"
-      })
+      .values(
+        await withGroup({
+          supplierOrgId: supplierId,
+          supplierSku: "B-2",
+          title: "Foil body cord",
+          currency: "USD",
+          priceMinor: 420,
+          priceBasis: "sellable_pack",
+          piecesPerSellablePack: 2,
+          sellablePacksPerCase: 80,
+          notes: "Verify current quote"
+        })
+      )
       .returning()
-    await database.insert(tables.supplierProducts).values({
-      supplierOrgId: otherId,
-      supplierSku: "B-2",
-      title: "Wrong supplier",
-      currency: "USD",
-      priceMinor: 999,
-      priceBasis: "piece",
-      piecesPerSellablePack: 1
-    })
+    await database.insert(tables.supplierProducts).values(
+      await withGroup({
+        supplierOrgId: otherId,
+        supplierSku: "B-2",
+        title: "Wrong supplier",
+        currency: "USD",
+        priceMinor: 999,
+        priceBasis: "piece",
+        piecesPerSellablePack: 1
+      })
+    )
     const saved = await createOrder(buyer, orderData)
     const [record] = await database.select().from(tables.orders).where(eq(tables.orders.id, saved.id))
     expect(record?.data.items[0]).toMatchObject({
@@ -460,16 +481,18 @@ describe("supplier stock", () => {
   async function trackedProduct(onHand: number, continueSelling = false) {
     const [product] = await database
       .insert(tables.supplierProducts)
-      .values({
-        supplierOrgId: supplierId,
-        supplierSku: "B-2",
-        title: "Foil body cord",
-        currency: "USD",
-        priceMinor: 105,
-        trackInventory: true,
-        onHand,
-        continueSelling
-      })
+      .values(
+        await withGroup({
+          supplierOrgId: supplierId,
+          supplierSku: "B-2",
+          title: "Foil body cord",
+          currency: "USD",
+          priceMinor: 105,
+          trackInventory: true,
+          onHand,
+          continueSelling
+        })
+      )
       .returning()
     return product!
   }
@@ -486,13 +509,15 @@ describe("supplier stock", () => {
   })
   it("doesn't limit products the supplier doesn't track", async () => {
     await reviewedImport()
-    await database.insert(tables.supplierProducts).values({
-      supplierOrgId: supplierId,
-      supplierSku: "B-2",
-      title: "Foil body cord",
-      currency: "USD",
-      onHand: 0
-    })
+    await database.insert(tables.supplierProducts).values(
+      await withGroup({
+        supplierOrgId: supplierId,
+        supplierSku: "B-2",
+        title: "Foil body cord",
+        currency: "USD",
+        onHand: 0
+      })
+    )
     await expect(createOrder(buyer, orderData)).resolves.toMatchObject({ status: "draft" })
   })
   it("takes accepted invoices' pieces from stock and puts them back on correction", async () => {
@@ -4253,10 +4278,10 @@ describe("stored sales orders", () => {
 
 describe("supplier lead times", () => {
   it("renames suppliers and saves lead times only for the buyer's own current suppliers", async () => {
-    const edit = { id: supplierLinkId, name: "Renamed", leadTimeDays: 45, amazonLeadTimeDays: 60 }
+    const edit = { id: supplierLinkId, name: "Renamed", leadTimeDays: 45 }
     await updateSupplier(buyerId, edit)
     const [link] = await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId))
-    expect(link).toMatchObject({ name: "Renamed", leadTimeDays: 45, amazonLeadTimeDays: 60 })
+    expect(link).toMatchObject({ name: "Renamed", leadTimeDays: 45 })
     await expect(updateSupplier(otherId, { ...edit, leadTimeDays: 1 })).rejects.toThrow("removed")
     await expect(updateSupplier(buyerId, { ...edit, leadTimeDays: 0 })).rejects.toThrow("expected number to be >=1")
     await database.insert(tables.suppliers).values({ buyerOrgId: buyerId, name: "Taken", email: "taken@example.com" })
@@ -4264,7 +4289,7 @@ describe("supplier lead times", () => {
   })
 
   it("keeps a supplier's contact details until the supplier joins, then leaves them to the supplier", async () => {
-    const edit = { id: supplierLinkId, name: "Supplier", leadTimeDays: null, amazonLeadTimeDays: null }
+    const edit = { id: supplierLinkId, name: "Supplier", leadTimeDays: null }
     const contact = { contactName: "Wei Chen", contactEmail: "wei@supplier.example", phoneNumber: "", website: "" }
     const saved = async () =>
       (await database.select().from(tables.suppliers).where(eq(tables.suppliers.id, supplierLinkId)))[0]
@@ -4636,5 +4661,107 @@ describe("freight forwarders", () => {
       saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Warehouse", address })
     ).rejects.toThrow("removed")
     expect(await forwarderAddresses(buyerId)).toEqual([])
+  })
+})
+
+describe("supplier proposals", () => {
+  beforeEach(orderConnections)
+  const [first] = orderData.items
+  const change = (overrides: Partial<ProposalInput> = {}): ProposalInput => ({
+    lines: [{ itemId: first!.id, supplierSku: "B-2", title: first!.name, pieces: 320, unitPrice: 500 }],
+    paymentTerms: "Net 30",
+    readyDate: "2026-12-01",
+    note: "Cord went up",
+    ...overrides
+  })
+  async function packing() {
+    const [shipment] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: orderData })
+      .returning()
+    return shipment!
+  }
+
+  it("publishes approved changes as the PO's next revision with the supplier's commercial invoice", async () => {
+    await reviewedImport()
+    const shipment = await packing()
+    await expect(proposeChanges(supplier, orderId, change(), 1)).resolves.toEqual({ approval: true })
+    const [proposal] = await database.select().from(tables.orderProposals)
+    const { order } = await accessibleOrder(buyer, orderId)
+    expect(proposalChanges(order.data, proposal!.data)).toMatchObject({
+      lines: [{ change: "changed", before: { pieces: 160 }, after: { pieces: 320, unitPrice: 500 } }],
+      paymentTerms: { before: "", after: "Net 30" },
+      total: { after: 160_000 }
+    })
+    await approveProposal(buyer, proposal!.id)
+    const [saved] = await database.select().from(tables.orders).where(eq(tables.orders.id, orderId))
+    expect(saved).toMatchObject({ revision: 2, data: { paymentTerms: "Net 30", readyDate: "2026-12-01" } })
+    expect(saved!.data.items).toMatchObject([{ id: first!.id, pieces: 320, unitPrice: 500 }])
+    const [refreshed] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipment.id))
+    expect(refreshed).toMatchObject({ orderRevision: 2, status: "packing" })
+    const invoices = await database
+      .select()
+      .from(tables.documents)
+      .where(and(eq(tables.documents.shipmentId, shipment.id), eq(tables.documents.kind, "invoice")))
+    expect(invoices).toMatchObject([{ orderRevision: 2, outdated: 0, uploadedBy: "system" }])
+    await expect(approveProposal(buyer, proposal!.id)).rejects.toThrow("already answered")
+  })
+
+  it("keeps the PO when the buyer declines, and sets a ready date alone without approval", async () => {
+    await packing()
+    await proposeChanges(supplier, orderId, change(), 1)
+    const [proposal] = await database.select().from(tables.orderProposals)
+    // Packing waits for the buyer's answer, so the cartons match the PO it approves.
+    await expect(newShipment(supplier, orderId)).rejects.toThrow("waiting for approval")
+    await expect(approveProposal(supplier, proposal!.id)).rejects.toThrow("buyer workspace")
+    await declineProposal(buyer, proposal!.id, "Too expensive")
+    expect((await database.select().from(tables.orderProposals))[0]).toMatchObject({
+      status: "declined",
+      reason: "Too expensive"
+    })
+    await expect(proposeChanges(supplier, orderId, change(), 2)).rejects.toThrow("This purchase order has changed")
+    const unchanged = {
+      lines: orderData.items.map((item) => ({
+        itemId: item.id,
+        supplierSku: item.supplierSku,
+        title: item.name,
+        pieces: item.pieces,
+        unitPrice: item.unitPrice
+      })),
+      paymentTerms: "",
+      note: ""
+    }
+    await expect(proposeChanges(supplier, orderId, { ...unchanged, readyDate: null }, 1)).rejects.toThrow(
+      "Change something"
+    )
+    await expect(proposeChanges(supplier, orderId, { ...unchanged, readyDate: "2026-11-15" }, 1)).resolves.toEqual({
+      approval: false
+    })
+    const [saved] = await database.select().from(tables.orders).where(eq(tables.orders.id, orderId))
+    expect(saved).toMatchObject({ revision: 1, data: { readyDate: "2026-11-15" } })
+  })
+
+  it("can't change a PO once a shipment is packed", async () => {
+    const shipment = await packing()
+    await database.update(tables.shipments).set({ status: "ready" }).where(eq(tables.shipments.id, shipment.id))
+    await expect(proposeChanges(supplier, orderId, change(), 1)).rejects.toThrow("already packed")
+  })
+})
+
+describe("supplier overview", () => {
+  it("counts only the workspace's own orders and customers", async () => {
+    const mine = await supplierOverview({ id: supplierId, timeZone: "UTC" }, { period: "today" })
+    expect(mine.backlog).toMatchObject({ orders: 1 })
+    expect(mine.kpis.orders.value).toBe(1)
+    expect(mine.topCustomers).toMatchObject([{ id: supplierLinkId, orders: 1 }])
+    const elsewhere = randomUUID()
+    await database.insert(tables.organizations).values({ id: elsewhere, name: "Another supplier", kind: "supplier" })
+    const theirs = await supplierOverview({ id: elsewhere, timeZone: "UTC" }, { period: "today" })
+    expect(theirs).toMatchObject({
+      backlog: { orders: 0, pieces: 0 },
+      kpis: { orders: { value: 0 } },
+      topCustomers: []
+    })
+    expect(theirs.recent).toEqual([])
   })
 })
