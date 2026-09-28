@@ -14,8 +14,8 @@ import {
   presetRange
 } from "@/lib/date-range"
 import { addDays, addMonths } from "@/lib/time-zone"
+import { cn } from "@/lib/utils"
 import { DateInput } from "./form-controls"
-import * as styles from "./period-picker.css"
 
 type Selection = { key: PresetKey | "custom"; range: DayRange }
 export type PickerPeriod = Selection & {
@@ -27,6 +27,10 @@ export type PickerPeriod = Selection & {
 }
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+// A preset in the list beside the calendar; the chosen one is shaded.
+const presetClass =
+  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:font-medium"
+const divider = <div aria-hidden className="my-1 h-px bg-border" />
 const monthLabel = (month: string) =>
   new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })
 
@@ -93,7 +97,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
     <button
       key={option.key}
       type="button"
-      className={styles.preset}
+      className={presetClass}
       aria-pressed={draft.key === option.key}
       onClick={() => choosePreset(option.key)}
     >
@@ -103,7 +107,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
   const groupButton = (key: "last" | "toDate", label: string) => (
     <button
       type="button"
-      className={styles.preset}
+      className={presetClass}
       aria-pressed={presetGroups[key].some((option) => option.key === draft.key)}
       onClick={() => setGroup(key)}
     >
@@ -135,19 +139,22 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
       </Popover.Trigger>
       {/* The picker sits at the page's right edge, so the popup opens leftward from it. */}
       <Popover.Portal>
-        <Popover.Positioner className={styles.positioner} side="bottom" align="end" sideOffset={4}>
-          <Popover.Popup className={styles.popup} aria-label="Choose a period">
-            <div className={styles.presets}>
+        <Popover.Positioner className="isolate z-50 outline-none" side="bottom" align="end" sideOffset={4}>
+          <Popover.Popup
+            aria-label="Choose a period"
+            className="grid max-h-(--available-height) max-w-[calc(100vw-1rem)] origin-(--transform-origin) grid-cols-1 overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 sm:grid-cols-[11rem_minmax(0,1fr)]"
+          >
+            <div className="flex flex-col gap-0.5 border-b p-2 sm:border-r sm:border-b-0">
               {group === "main" ? (
                 <>
                   {presetGroups.single.map(presetButton)}
-                  <div className={styles.presetDivider} />
+                  {divider}
                   {groupButton("last", "Last")}
                   {groupButton("toDate", "Period to date")}
-                  <div className={styles.presetDivider} />
+                  {divider}
                   <button
                     type="button"
-                    className={styles.preset}
+                    className={presetClass}
                     aria-pressed={draft.key === "custom"}
                     onClick={() => setDraft({ key: "custom", range: draft.range })}
                   >
@@ -156,7 +163,11 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 </>
               ) : (
                 <>
-                  <button type="button" className={styles.presetHeading} onClick={() => setGroup("main")}>
+                  <button
+                    type="button"
+                    className={cn(presetClass, "justify-start font-medium text-muted-foreground")}
+                    onClick={() => setGroup("main")}
+                  >
                     <ArrowLeft aria-hidden size={16} />
                     {group === "last" ? "Last" : "Period to date"}
                   </button>
@@ -164,8 +175,8 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 </>
               )}
             </div>
-            <div className={styles.panel}>
-              <div className={styles.dates}>
+            <div className="flex flex-col gap-3 p-3">
+              <div className="flex items-center gap-2">
                 <DateInput
                   className="flex-1"
                   aria-label="Start date"
@@ -173,7 +184,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   max={period.today}
                   onChange={(event) => typeDate("from", event.target.value)}
                 />
-                <ArrowRight className={styles.arrow} aria-hidden />
+                <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <DateInput
                   className="flex-1"
                   aria-label="End date"
@@ -182,7 +193,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   onChange={(event) => typeDate("to", event.target.value)}
                 />
               </div>
-              <div className={styles.monthHeader}>
+              <div className="flex items-center justify-between">
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -191,7 +202,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                 >
                   <ChevronLeft />
                 </Button>
-                <span className={styles.monthName} aria-live="polite">
+                <span className="text-sm font-semibold" aria-live="polite">
                   {monthLabel(month)}
                 </span>
                 <Button
@@ -204,9 +215,9 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   <ChevronRight />
                 </Button>
               </div>
-              <div className={styles.calendar} role="grid" aria-label={monthLabel(month)}>
+              <div className="grid grid-cols-7 gap-y-0.5 text-center" role="grid" aria-label={monthLabel(month)}>
                 {weekdays.map((name) => (
-                  <span key={name} className={styles.weekday} aria-hidden>
+                  <span key={name} className="py-1 text-xs text-muted-foreground" aria-hidden>
                     {name}
                   </span>
                 ))}
@@ -214,15 +225,20 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   <span key={`blank-${index}`} />
                 ))}
                 {days.map((day) => {
+                  // The range's first and last days are filled; the days between are shaded and join up.
                   const edge = day === draft.range.from || day === draft.range.to
+                  const between = !edge && day > draft.range.from && day < draft.range.to
                   return (
                     <button
                       key={day}
                       type="button"
-                      className={styles.day}
+                      className={cn(
+                        "h-9 min-w-9 rounded-md text-sm tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:text-muted-foreground/50",
+                        edge && "bg-foreground font-semibold text-background",
+                        between && "rounded-none bg-muted",
+                        !edge && "enabled:hover:bg-accent enabled:hover:text-accent-foreground"
+                      )}
                       disabled={day > period.today}
-                      data-edge={edge}
-                      data-in-range={!edge && day > draft.range.from && day < draft.range.to}
                       aria-pressed={edge}
                       aria-label={new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
                         weekday: "long",
@@ -238,7 +254,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   )
                 })}
               </div>
-              <div className={styles.footer}>
+              <div className="flex justify-end gap-2 border-t pt-3">
                 <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>

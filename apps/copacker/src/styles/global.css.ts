@@ -1,10 +1,9 @@
 import { type GlobalStyleRule, globalLayer, globalStyle as unlayeredGlobalStyle } from "@vanilla-extract/css"
 import { vars } from "./theme.css"
 
-// Cascade order: reset < components < everything unlayered (page styles and sx utilities), so overrides always win,
-// as Tailwind utilities did. This file is imported first by the root layout, which fixes the layer order.
+// The reset sits in a layer, so everything unlayered (page styles and sx utilities) overrides it. This file is imported
+// first by the root layout, which fixes the layer order.
 const reset = globalLayer("reset")
-export const components = globalLayer("components")
 
 const globalStyle = (selector: string, rule: GlobalStyleRule) =>
   unlayeredGlobalStyle(selector, { "@layer": { [reset]: rule } })
