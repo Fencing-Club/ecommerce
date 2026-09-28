@@ -30,8 +30,8 @@ function Emblem() {
 const accent = (chunks: React.ReactNode) => <span className={lit}>{chunks}</span>
 
 // What every page behind sign-in shows while Copacker is down for maintenance, on the dark stage the marketing page
-// opens with. `reload` is set when it stands in for another page, which it reloads into once Copacker is back.
-export function Maintenance({ reload }: { reload: boolean }) {
+// opens with. It reloads into the page it stands in for once Copacker is back.
+export function Maintenance() {
   const t = useTranslations("common.pages.maintenance")
   return (
     <div
@@ -98,7 +98,7 @@ export function Maintenance({ reload }: { reload: boolean }) {
           </Button>
         </div>
       </main>
-      {reload && <ReloadWhenBack />}
+      <ReloadWhenBack />
     </div>
   )
 }

@@ -35,8 +35,7 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
   environment, each with its own setting. **Some** takes no one down: Copacker reads the flag for everyone at once.
 - The page skips sign-in and the database, so it works while Postgres is down. If WorkOS can't be reached, Copacker
   stays up.
-- `/maintenance` is a 404 while Copacker is up; `/maintenance?preview` shows the page without taking anything down.
-  The worker keeps running; stop it in Railway if the work needs it idle.
+- `/maintenance` is a 404 while Copacker is up. The worker keeps running; stop it in Railway if the work needs it idle.
 - The rules are in `apps/copacker/src/server/maintenance.ts`. `next.config.ts` shows the page for requests the proxy
   marks, since a rewrite from the proxy itself leaves the app when the server's hostname is 127.0.0.1.
 
