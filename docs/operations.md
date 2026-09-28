@@ -4,7 +4,7 @@ Node 24+ and pnpm 11 are required. Install at the root with `pnpm install`, then
 
 Copy `apps/copacker/.env.example` to `apps/copacker/.env`, then configure WorkOS, Railway Postgres, and the private Railway bucket. `TOKEN_ENCRYPTION_KEY` is 32 random bytes encoded as base64. WorkOS cookie password is at least 32 random characters. Do not commit environment files.
 
-Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and `pnpm --filter copacker worker` in a second process. The worker consumes durable jobs from Postgres; it does not schedule catalog or inventory syncing. Production uses a second Railway service from the same image with the worker start command. Only the web service uses the HTTP healthcheck.
+Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and `pnpm --filter copacker worker` in a second process. The worker consumes durable jobs from Postgres; it does not schedule catalog or inventory syncing. Production and staging run it as a second Railway service, built from `Dockerfile.worker`, which installs Copacker's packages and skips `next build` (the worker runs its TypeScript through tsx). Only the web service uses the HTTP healthcheck.
 
 ## External setup
 
@@ -43,6 +43,8 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
   one release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to
   undo a migration, write a new one, or restore the backup the promote took.
 - Production Postgres also has Railway's daily (6 days) and weekly (27 days) backups.
+- CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change,
+  and it builds only Copacker.
 - Deploying by hand with `railway up` still works (see [Infrastructure](#infrastructure)); prefer the workflows so the
   health check reports the commit.
 
