@@ -292,7 +292,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
             </Alert>
           )}
 
-          {releasedStates.includes(shipment.status) && (
+          {step.packetUrl && (
             <Alert role="note" className="border-primary/40">
               {/* The alert colors its icon like its text; this one stays primary. */}
               <PackageCheck className="text-primary!" />
@@ -304,12 +304,31 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                   size="sm"
                   variant="outline"
                   nativeButton={false}
-                  render={<a href={`/api/shipments/${id}/packet`} aria-label="Download supplier packet" />}
+                  render={<a href={step.packetUrl} aria-label="Download supplier packet" />}
                 >
                   <Download data-icon="inline-start" />
                   Download packet
                 </Button>
               </AlertAction>
+            </Alert>
+          )}
+
+          {/* A shipment ready for pickup whose packet lacks something, such as a product label the buyer hasn't added. */}
+          {shipment.status === "ready" && !step.packetUrl && (
+            <Alert role="note">
+              <Clock />
+              <AlertTitle>Supplier packet incomplete</AlertTitle>
+              <AlertDescription>
+                {isBuyer ? (
+                  <ul className="list-disc pl-5">
+                    {step.issues.map((issue, index) => (
+                      <li key={index}>{issue.message}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  "Waiting for the buyer’s labels"
+                )}
+              </AlertDescription>
             </Alert>
           )}
 

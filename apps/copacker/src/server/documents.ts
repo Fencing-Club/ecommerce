@@ -187,17 +187,11 @@ export async function generatePo(orderId: string, revision?: number) {
   )
   return { doc, bytes }
 }
-export async function generateShipmentDocuments(shipmentId: string) {
-  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
-  if (!shipment?.packing || !shipment.snapshot) {
+// A packed shipment's packing list and checklist. An Amazon shipment goes to the warehouses Amazon chose, named by their
+// codes, such as HGR6; any other to the PO's ship-to address.
+export async function packingDocuments(shipment: typeof shipments.$inferSelect) {
+  if (!shipment.packing || !shipment.snapshot) {
     throw new Error("Shipment packing is missing")
-  }
-  const input = {
-    orderId: shipment.orderId,
-    shipmentId,
-    orderRevision: shipment.orderRevision,
-    shipmentRevision: shipment.revision,
-    uploadedBy: "system"
   }
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
   // Only the shipment's own lines, so a forwarder stop names the Amazon network its cartons go on to.
@@ -205,27 +199,40 @@ export async function generateShipmentDocuments(shipmentId: string) {
   const items = shipment.snapshot.items.filter((item) => included.has(item.id))
   const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const { buyer } = parties
-  // An Amazon shipment goes to the warehouses Amazon chose, named by their codes, such as HGR6.
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]
   const network = shipment.amazonNetwork === "fba" ? "Amazon FBA" : "Amazon AWD US"
   const shipTo = warehouses.length
     ? { name: network, lines: [`${warehouses.length > 1 ? "Warehouses" : "Warehouse"} ${warehouses.join(", ")}`] }
     : parties.shipTo
-  await storeDocument(
-    { ...input, kind: "packing_list", name: "Packing list.pdf" },
-    await packingListPdf({
+  return {
+    packingList: await packingListPdf({
       order: shipment.snapshot,
       packing: shipment.packing,
       labels: shipment.labels,
       shipmentId: shipment.amazonShipmentId ?? shipment.id,
       buyer,
       shipTo
-    })
-  )
-  await storeDocument(
-    { ...input, kind: "checklist", name: "Packing Checklist.pdf" },
-    await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer, shipTo })
-  )
+    }),
+    checklist: await checklistPdf({ order: shipment.snapshot, packing: shipment.packing, buyer, shipTo })
+  }
+}
+
+// Keeps an Amazon shipment's packing list and checklist with it, once Amazon's labels are in.
+export async function generateShipmentDocuments(shipmentId: string) {
+  const [shipment] = await db().select().from(shipments).where(eq(shipments.id, shipmentId))
+  if (!shipment) {
+    throw new Error("Shipment packing is missing")
+  }
+  const { packingList, checklist } = await packingDocuments(shipment)
+  const input = {
+    orderId: shipment.orderId,
+    shipmentId,
+    orderRevision: shipment.orderRevision,
+    shipmentRevision: shipment.revision,
+    uploadedBy: "system"
+  }
+  await storeDocument({ ...input, kind: "packing_list", name: "Packing list.pdf" }, packingList)
+  await storeDocument({ ...input, kind: "checklist", name: "Packing Checklist.pdf" }, checklist)
 }
 
 // The supplier's commercial invoice for a PO revision the buyer approved, filed with the shipment being packed so the

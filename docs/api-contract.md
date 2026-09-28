@@ -62,6 +62,8 @@ PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never suppl
 
 `GET /api/shipments/:id/packet` returns the released merged supplier PDF: packing list, checklist, one sheet per product variation, one sheet of suffocation warning labels when a shipped line needs them, carton labels, shipping labels. Individual files remain available. Original page dimensions are preserved; print at actual size. The packing list shows supplier carton number, buyer SKU, supplier SKU, pieces/sellable units, cm/kg, and the Amazon label number (an AWD SSCC or an FBA box ID), with the destination warehouse codes as its ship-to. It does not show PDF filenames/page numbers as carton identity.
 
+A shipment to any other destination, such as the buyer's own location, is released as soon as its packing is submitted (or its invoice changes approved), and has no carton or shipping labels. Its packet is the packing list and checklist, made from its packing at download with the PO's delivery address as the ship-to, then the product labels and suffocation warning labels for the lines it carries. The PO and commercial invoice stay separate documents. For any destination, a packet with a shipped line whose product label can't be made yet is incomplete: the route returns 409, the workflow gives no `packetUrl`, and the shipment's `issues` name the missing labels.
+
 ## Shipment state and UI actions
 
 | State | Meaning | Next action |
@@ -70,7 +72,7 @@ PDFs are limited to 32 MB and 1,000 pages. Paths and bucket keys are never suppl
 | approval | Commercial changes await buyer decision | Buyer approves or requests correction |
 | queued / creating | Worker creates the AWD order or FBA inbound plan, confirms it and retrieves labels | Refresh status; no manual repeat create |
 | waiting_labels | Amazon carton labels are available | Buyer books AGL (AWD) or its own carrier or forwarder (FBA), uploads carrier labels, releases packet |
-| ready | Label assignments complete and packet released | Supplier prints; mark collected after pickup |
+| ready | Label assignments complete and packet released; for a shipment not to Amazon, packing submitted | Supplier prints; mark collected after pickup |
 | collected | Collection reported by a participant | Read-only historical shipment |
 | correction | Existing documents outdated | Edit uncreated shipment, or cancel the Amazon shipment before replacement |
 | needs_attention | Provider request failed or write outcome uncertain | Show actionable error; buyer reconciliation |
@@ -122,7 +124,7 @@ Saving does not reserve quantities, queue a job, contact Amazon or send email. I
 
 - `next`: responsible owner (`buyer`, `supplier`, `system`, or null), step, message and applicable command.
 - `editable`, `canSubmit`, `canRelease`, structured `issues`, and the saved provider `issue` when work needs attention.
-- Shipment and PO revisions, ready date, Amazon identifiers, and packetUrl after release.
+- Shipment and PO revisions, ready date, Amazon identifiers, and packetUrl after release while the packet is complete.
 
 Use the server's next step and issues for progress presentation rather than duplicating shipment rules in the UI. `canRelease` means documents are complete; the buyer must still enter a booking reference. Document metadata never includes storage keys. Supplier carton/carrier download links remain unavailable until release. UI integration and browser acceptance are pending with the design workstream.
 

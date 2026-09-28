@@ -5,10 +5,13 @@ import { db } from "@/db"
 import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
 import { session, requireMembership, requirePage } from "@/server/auth"
+import { packingDocuments } from "@/server/documents"
 import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
+// The supplier's packet, to print: the packing list and checklist, the product labels and suffocation warning labels
+// for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels and the buyer's shipping labels.
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
     id = z.uuid().parse((await context.params).id)
@@ -32,17 +35,26 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return new Response("Shipment packet is incomplete. Ask the buyer to review its documents", { status: 409 })
   }
   const itemIds = new Set(shipment.packing?.cartons.flatMap((c) => c.items.map((i) => i.itemId)))
-  const selected = docs.filter(
-    (d) =>
-      d.shipmentId === id &&
-      d.shipmentRevision === shipment.revision &&
-      ["packing_list", "checklist", "carton_label", "shipping_label"].includes(d.kind)
-  )
+  // A shipment to Amazon keeps its packing list and checklist, made with Amazon's carton labels, and its carton and
+  // shipping labels. Any other shipment has neither kind of label, and its packing list and checklist are made from its
+  // packing now.
+  const amazon = shipment.snapshot?.destination === "amazon"
+  const selected = amazon
+    ? docs.filter(
+        (d) =>
+          d.shipmentId === id &&
+          d.shipmentRevision === shipment.revision &&
+          ["packing_list", "checklist", "carton_label", "shipping_label"].includes(d.kind)
+      )
+    : []
   const byKind = (kind: string) =>
     selected
       .filter((d) => d.kind === kind)
       .toSorted((a, b) => (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true }))
   const file = (d: (typeof selected)[number]) => getFile(d.objectKey)
+  const packing = amazon
+    ? await Promise.all([...byKind("packing_list"), ...byKind("checklist")].map(file))
+    : await packingDocuments(shipment).then((made) => [made.packingList, made.checklist])
   const productLabels = await lineLabelFiles(
     order,
     labels.filter((label) => itemIds.has(label.itemId))
@@ -51,7 +63,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     (shipment.snapshot ?? order.data).items.filter((item) => itemIds.has(item.id))
   )
   const result = await combinePdfs([
-    ...(await Promise.all([...byKind("packing_list"), ...byKind("checklist")].map(file))),
+    ...packing,
     ...productLabels.map((label) => label.bytes),
     ...(warnings ? [warnings.bytes] : []),
     ...(await Promise.all([...byKind("carton_label"), ...byKind("shipping_label")].map(file)))

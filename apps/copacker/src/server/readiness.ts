@@ -1,4 +1,4 @@
-import { packingSchema, validatePacking, type OrderInput } from "@repo/aisle"
+import { packingSchema, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
 import type { documents, shipments, ShipmentState } from "../db/schema"
 
 type Shipment = typeof shipments.$inferSelect
@@ -117,8 +117,10 @@ export function packingReadiness(
   return { packing, issues }
 }
 
-// Whether a shipment's packet is complete. Product labels are made from each product when needed, so a line lacks one
-// only when its product can't make one yet, as given in missingLabels (see lineLabels).
+// Whether a shipment's packet is complete. A shipment to Amazon also needs what amazonIssues checks; one anywhere else
+// has no carton or shipping labels, and its packing list and checklist are made from its packing when the packet is
+// downloaded. Product labels are made from each product when needed, so a line lacks one only when its product can't
+// make one yet, as given in missingLabels (see lineLabels).
 export function releaseIssues(
   shipment: Shipment,
   docs: Document[],
@@ -127,11 +129,34 @@ export function releaseIssues(
   if (!shipment.packing || !shipment.snapshot) {
     return [{ code: "missing_packing", message: "Submit the packing list first" }]
   }
+  const issues = shipment.snapshot.destination === "amazon" ? amazonIssues(shipment, shipment.packing, docs) : []
+  const shipped = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  for (const item of shipment.snapshot.items) {
+    if (shipped.has(item.id) && missingLabels.has(item.id)) {
+      issues.push({
+        code: "missing_product_label",
+        itemId: item.id,
+        message: `Add a product label for ${item.buyerSku} on the Products page`
+      })
+    }
+  }
+  return issues
+}
+
+// What the packet of a shipment to Amazon needs besides product labels: Amazon's label and the buyer's shipping label
+// for every carton, and the packing list and checklist made with Amazon's labels, all for the shipment's current
+// revision.
+function amazonIssues(shipment: Shipment, packing: Packing, docs: Document[]) {
   const issues: ReadinessIssue[] = []
-  const active = docs.filter((doc) => doc.orderId === shipment.orderId && !doc.outdated)
-  const current = active.filter((doc) => doc.shipmentId === shipment.id && doc.shipmentRevision === shipment.revision)
+  const current = docs.filter(
+    (doc) =>
+      doc.orderId === shipment.orderId &&
+      !doc.outdated &&
+      doc.shipmentId === shipment.id &&
+      doc.shipmentRevision === shipment.revision
+  )
   if (
-    shipment.labels.length !== shipment.packing.cartons.length ||
+    shipment.labels.length !== packing.cartons.length ||
     new Set(shipment.labels.map((label) => label.cartonId)).size !== shipment.labels.length ||
     new Set(shipment.labels.map((label) => label.labelNumber)).size !== shipment.labels.length
   ) {
@@ -145,8 +170,7 @@ export function releaseIssues(
       })
     }
   }
-  const checkedItems = new Set<string>()
-  for (const carton of shipment.packing.cartons) {
+  for (const carton of packing.cartons) {
     if (
       !shipment.labels.some((label) => label.cartonId === carton.cartonId) ||
       !current.some((doc) => doc.kind === "carton_label" && doc.cartonId === carton.cartonId)
@@ -163,19 +187,6 @@ export function releaseIssues(
         cartonId: carton.cartonId,
         message: `Assign a shipping label to carton ${carton.cartonId}`
       })
-    }
-    for (const item of carton.items) {
-      if (checkedItems.has(item.itemId)) {
-        continue
-      }
-      checkedItems.add(item.itemId)
-      if (missingLabels.has(item.itemId)) {
-        issues.push({
-          code: "missing_product_label",
-          itemId: item.itemId,
-          message: "Add a product label for this shipped item on the Products page"
-        })
-      }
     }
   }
   return issues

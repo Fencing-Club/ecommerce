@@ -138,10 +138,11 @@ export async function orderWorkflow(s: Session, orderId: string) {
                   message: "Resolve the reported problem, then retry the shipment"
                 }
         }
+        // Released shipments report what their packet lacks, such as a product label the buyer hasn't added yet.
         let issues: ReadinessIssue[] = []
         if (editable) {
           issues = packing.issues
-        } else if (shipment.status === "waiting_labels") {
+        } else if (shipment.status === "waiting_labels" || releasedStates.includes(shipment.status)) {
           issues = release
         }
         return {
@@ -161,7 +162,9 @@ export async function orderWorkflow(s: Session, orderId: string) {
           canSubmit: editable && !packing.issues.length,
           canRelease: s.org.kind === "buyer" && shipment.status === "waiting_labels" && !release.length,
           issues,
-          packetUrl: releasedStates.includes(shipment.status) ? `/api/shipments/${shipment.id}/packet` : null
+          // The packet downloads only while it's complete.
+          packetUrl:
+            releasedStates.includes(shipment.status) && !release.length ? `/api/shipments/${shipment.id}/packet` : null
         }
       }),
       documents: docs
