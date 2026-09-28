@@ -188,14 +188,21 @@ function Faq() {
           {t("title")}
         </h2>
         {/* All closed to start, so people open the ones they care about. Closed answers stay in the page, hidden
-            until found, so find in page and search engines still reach them. */}
+            until found, so find in page and search engines still reach them. Each answer is a group, not a region,
+            so eleven of them don't each become a landmark for screen readers. */}
         <Accordion multiple className="border-t border-foreground/10">
           {questions.map((question) => (
             <AccordionItem key={question} value={question} className="border-b border-foreground/10">
               <AccordionTrigger className="gap-6 py-6 text-lg font-medium tracking-[-0.01em] transition-colors hover:text-foreground/70 hover:no-underline **:data-[slot=accordion-trigger-icon]:mt-1 **:data-[slot=accordion-trigger-icon]:size-5">
                 {t(`questions.${question}.question`)}
               </AccordionTrigger>
-              <AccordionContent hiddenUntilFound className={cn("max-w-[60ch] pb-7 text-base text-pretty", quiet)}>
+              <AccordionContent
+                hiddenUntilFound
+                // Base UI's panel is a div, and a labelled group is the role it needs, which no tag has.
+                // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+                role="group"
+                className={cn("max-w-[60ch] pb-7 text-base text-pretty", quiet)}
+              >
                 {t(`questions.${question}.answer`)}
               </AccordionContent>
             </AccordionItem>

@@ -2,7 +2,8 @@
 // band with an orange glow that the landing page's hero uses. `dark` is what each becomes in mail apps that show a dark
 // inbox and let the email choose its colors.
 export const color = {
-  brand: "#f54900",
+  // The deeper orange the site moved to, so white text on it meets contrast (about 5:1).
+  brand: "#c2410c",
   ink: "#0c0a09",
   body: "#44403c",
   muted: "#78716c",
