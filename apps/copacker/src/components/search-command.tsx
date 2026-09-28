@@ -9,11 +9,20 @@ import { useRouter } from "next/navigation"
 import { useDeferredValue, useRef, useState } from "react"
 import { Status } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandLoading
+} from "@/components/ui/command"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { Spinner } from "@/components/ui/spinner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useSalesSearchQuery, useSearchQuery } from "@/lib/api"
 import { navigationFor } from "@/lib/navigation"
+import { cn } from "@/lib/utils"
 
 // The most results of each kind a search lists, best first, and the newest POs shown before anything is typed.
 const shown = 5
@@ -113,7 +122,8 @@ function SearchResults({
   const sales = useSalesSearchQuery(typed, { skip: kind !== "buyer" || typed.length < 2 })
   const data = index.data
   const pages = query ? best(navigationFor(kind), (page) => [page.label], query) : navigationFor(kind)
-  const salesOrders = query && typed === query ? (sales.data?.orders ?? []).slice(0, shown) : []
+  // Only this search's orders: an earlier search's stay out while this one is on its way.
+  const salesOrders = query && typed === query ? (sales.currentData?.orders ?? []).slice(0, shown) : []
   const products = query
     ? best(data?.products ?? [], (product) => [product.title, ...product.keywords], query, shown)
     : []
@@ -152,6 +162,11 @@ function SearchResults({
             ))}
           </CommandGroup>
         )}
+        {searchingSales && !salesOrders.length && (
+          <CommandLoading label="Loading orders">
+            <Placeholder heading="Orders" rows={2} trailing="text" />
+          </CommandLoading>
+        )}
         {salesOrders.length > 0 && (
           <CommandGroup heading="Orders">
             {salesOrders.map((order) => (
@@ -169,6 +184,16 @@ function SearchResults({
               </CommandItem>
             ))}
           </CommandGroup>
+        )}
+        {/* Until the first load arrives, which groups will match is unknown, except for the newest purchase orders. */}
+        {index.isLoading && (
+          <CommandLoading label="Loading results">
+            {query ? (
+              <Placeholder rows={3} />
+            ) : (
+              <Placeholder heading="Recent purchase orders" rows={3} trailing="badge" />
+            )}
+          </CommandLoading>
         )}
         {products.length > 0 && (
           <CommandGroup heading="Products">
@@ -207,7 +232,7 @@ function SearchResults({
                 <ClipboardList />
                 <span className="shrink-0 font-medium">{order.reference}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{order.supplier}</span>
-                <span className="ml-auto shrink-0">
+                <span className="ml-auto flex shrink-0">
                   <Status status={order.status} />
                 </span>
               </CommandItem>
@@ -226,7 +251,7 @@ function SearchResults({
                 <Truck />
                 <span className="shrink-0 font-medium">{shipment.title}</span>
                 <span className="min-w-0 truncate text-muted-foreground">{shipment.reference}</span>
-                <span className="ml-auto shrink-0">
+                <span className="ml-auto flex shrink-0">
                   <Status status={shipment.status} />
                 </span>
               </CommandItem>
@@ -251,16 +276,37 @@ function SearchResults({
             ))}
           </CommandGroup>
         )}
-        {loading && (
-          <output className="flex justify-center py-3 text-muted-foreground">
-            <Spinner />
-            <span className="sr-only">Loading</span>
-          </output>
-        )}
         {(index.isError || sales.isError) && (
           <p className="px-3 py-2 text-sm text-destructive">Couldn&apos;t search everything. Try again.</p>
         )}
       </CommandList>
     </Command>
+  )
+}
+
+const placeholderWidths = ["w-2/5", "w-1/2", "w-1/3"]
+
+// Rows shaped like the results they stand in for, under their group's heading when it's known, and as tall as real
+// rows so nothing moves when the results arrive. A purchase order ends in a status badge, a sales order in its status.
+function Placeholder({ heading, rows, trailing }: { heading?: string; rows: number; trailing?: "badge" | "text" }) {
+  return (
+    <>
+      {heading ? (
+        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{heading}</div>
+      ) : (
+        <div className="flex h-7 items-center px-2">
+          <Skeleton className="h-3 w-24" />
+        </div>
+      )}
+      {placeholderWidths.slice(0, rows).map((width) => (
+        <div key={width} className="flex h-8 items-center gap-2 px-2">
+          <Skeleton className="size-4 shrink-0 rounded-sm" />
+          <Skeleton className={cn("h-3.5", width)} />
+          {trailing && (
+            <Skeleton className={cn("ml-auto", trailing === "badge" ? "h-5 w-20 rounded-full" : "h-3 w-14")} />
+          )}
+        </div>
+      ))}
+    </>
   )
 }

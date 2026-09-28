@@ -89,6 +89,12 @@ function CommandEmpty({ className, ...props }: React.ComponentProps<typeof Comma
   )
 }
 
+// Stands in for results still loading. cmdk announces it as a labelled progress bar and hides its contents from screen
+// readers, so they can be placeholder shapes.
+function CommandLoading({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Loading>) {
+  return <CommandPrimitive.Loading data-slot="command-loading" className={cn("p-1", className)} {...props} />
+}
+
 function CommandGroup({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Group>) {
   return (
     <CommandPrimitive.Group
@@ -147,6 +153,7 @@ export {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandLoading,
   CommandGroup,
   CommandItem,
   CommandShortcut,
