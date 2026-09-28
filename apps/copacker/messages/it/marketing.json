@@ -4,9 +4,7 @@
     "description": "Prevedi il tuo inventario, invia gli ordini di acquisto al momento giusto per non restare mai senza e gestisci i passaggi al tuo spedizioniere, ad Amazon FBA e AWD, con ogni etichetta e documento pronti per te."
   },
   "site": {
-    "free": "Gratis, senza carta di credito.",
-    "getStarted": "Inizia ora",
-    "signIn": "Accedi",
+    "joinWaitlist": "Entra in lista d’attesa",
     "contact": "Contatti",
     "mainNav": "Principale",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "Prodotto",
       "company": "Azienda",
-      "account": "Account",
       "tagline": "Previsioni, ordini di acquisto e logistica, in un unico posto.",
       "privacy": "Privacy",
       "terms": "Termini"
@@ -33,15 +30,14 @@
     "copied": "Copiato"
   },
   "signup": {
-    "title": "Scopri cosa arriva dopo.",
-    "text": "Nuovi negozi, nuove rotte e nuovi strumenti, in una breve email appena escono.",
-    "done": "Sei nella lista.",
+    "title": "Ottieni l’accesso in anteprima.",
+    "text": "Apriamo l’accesso a pochi team alla volta. Lascia la tua email e ti scriveremo quando sarà il tuo turno.",
+    "done": "Sei in lista d’attesa.",
     "email": "Email",
     "placeholder": "tu@azienda.com",
     "subscribe": "Iscriviti",
-    "subscribing": "Iscrizione in corso",
-    "failed": "Iscrizione non riuscita. Riprova tra poco.",
-    "getStartedNow": "Oppure inizia subito, è gratis"
+    "subscribing": "Iscrizione",
+    "failed": "Iscrizione non riuscita. Riprova tra poco."
   },
   "hero": {
     "title": "<first>Riassortimenti,</first> <second>sotto controllo.</second>",
@@ -297,7 +293,8 @@
     "title": "Parla con <lit>noi.</lit>",
     "text": "Domande su Copacker, una demo per il tuo team o una collaborazione. Mandaci un messaggio e ti risponderemo.",
     "waysTitle": "Oppure scoprilo da solo.",
-    "tryIt": "Provalo",
+    "waitlistTitle": "Accesso in anteprima",
+    "waitlistText": "Apriamo l’accesso a pochi team alla volta.",
     "watchTitle": "Guarda il video",
     "watchText": "Un riassortimento dalla previsione al magazzino, in meno di due minuti.",
     "faqTitle": "Leggi le FAQ",

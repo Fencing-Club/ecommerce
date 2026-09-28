@@ -19,7 +19,7 @@ parts live in `apps/copacker/src/components/marketing/`:
 | `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory through customs to Amazon and you, as a 3D diorama (three.js).  |
 | `agents.tsx`, `ticker.tsx`       | The animated diagram of agents working over MCP, and the lines that take turns in its card.         |
 | `connect.tsx`, `setups.ts`       | The agent picker, with each agent's setup to copy (`copy-button.tsx`), and the CLI's session.       |
-| `signup.tsx`                     | The close: the mailing list signup, which posts to `/api/mailing-list`.                             |
+| `signup.tsx`                     | The close: the waitlist (`#waitlist`), which posts to `/api/mailing-list`.                          |
 | `mockups.tsx`, `scaled.tsx`      | The hero's product shot, and the wrapper that scales it to its column like a screenshot.            |
 | `film.tsx`                       | The ad, in a dialog.                                                                                |
 
@@ -58,6 +58,8 @@ parts live in `apps/copacker/src/components/marketing/`:
   the client's own docs as of September 2026. For those sign-ins to work unaided, the server's OAuth needs dynamic
   client registration or client metadata documents, `iss` in its authorization response, loopback redirects on any
   port, and refresh tokens (`offline_access`), or ChatGPT signs people out when the first token expires.
+- Copacker lets teams in a few at a time, so the pages link to neither sign-in nor sign-up: the nav bar's, hero's and
+  contact page's buttons go to the waitlist. `/login` and `/signup` still work for anyone with the link.
 - The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), with the full access key in
   `EMAIL_MAILING_LIST_API_KEY`, in the segment `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone
   signed out, so it checks the address, turns away bots that fill in a hidden field, and slows down more than five

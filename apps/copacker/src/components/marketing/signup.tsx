@@ -1,8 +1,7 @@
 "use client"
 
-import { ArrowRight, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { useTranslations } from "next-intl"
-import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +22,7 @@ function Subscribed() {
   )
 }
 
-// The page's close: a signup for product news, on the orange stage, with the way in for anyone ready now.
+// The page's close: the waitlist, on the orange stage.
 export function Signup() {
   const t = useTranslations("marketing.signup")
   const [state, setState] = useState<"idle" | "sending" | "done" | "failed">("idle")
@@ -102,13 +101,6 @@ export function Signup() {
         >
           {state === "failed" ? problem : ""}
         </p>
-        <Link
-          href="/signup"
-          className="group flex w-fit items-center gap-1.5 rounded-sm text-sm font-medium text-white outline-none hover:text-white/85 focus-visible:ring-3 focus-visible:ring-white/40"
-        >
-          {t("getStartedNow")}
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
-        </Link>
       </div>
     </div>
   )

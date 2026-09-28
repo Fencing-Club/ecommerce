@@ -4,9 +4,7 @@
     "description": "Pronostica tu inventario, envía órdenes de compra justo a tiempo para que no te quedes sin existencias y encárgate de las entregas a tu agente de carga, Amazon FBA y AWD, con cada etiqueta y documento listos para ti."
   },
   "site": {
-    "free": "Gratis, sin tarjeta de crédito.",
-    "getStarted": "Empieza gratis",
-    "signIn": "Iniciar sesión",
+    "joinWaitlist": "Únete a la lista de espera",
     "contact": "Contacto",
     "mainNav": "Principal",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "Producto",
       "company": "Empresa",
-      "account": "Cuenta",
       "tagline": "Pronósticos, órdenes de compra y logística, en un solo lugar.",
       "privacy": "Privacidad",
       "terms": "Términos"
@@ -33,15 +30,14 @@
     "copied": "Copiado"
   },
   "signup": {
-    "title": "Entérate de lo que viene.",
-    "text": "Nuevas tiendas, nuevas rutas y nuevas herramientas, en un correo breve en cuanto salgan.",
-    "done": "Ya estás en la lista.",
+    "title": "Obtén acceso anticipado.",
+    "text": "Damos acceso a pocos equipos a la vez. Deja tu correo y te escribiremos cuando sea tu turno.",
+    "done": "Ya estás en la lista de espera.",
     "email": "Correo electrónico",
     "placeholder": "tu@empresa.com",
-    "subscribe": "Suscribirme",
-    "subscribing": "Suscribiendo",
-    "failed": "No pudimos suscribirte. Inténtalo de nuevo en un momento.",
-    "getStartedNow": "O empieza ya, es gratis"
+    "subscribe": "Unirme",
+    "subscribing": "Uniéndote",
+    "failed": "No pudimos suscribirte. Inténtalo de nuevo en un momento."
   },
   "hero": {
     "title": "<first>Reabastecimiento,</first> <second>resuelto.</second>",
@@ -297,7 +293,8 @@
     "title": "Habla con <lit>nosotros.</lit>",
     "text": "Preguntas sobre Copacker, una demostración para tu equipo o trabajar juntos. Escríbenos y te respondemos.",
     "waysTitle": "O compruébalo tú mismo.",
-    "tryIt": "Pruébalo",
+    "waitlistTitle": "Acceso anticipado",
+    "waitlistText": "Damos acceso a pocos equipos a la vez.",
     "watchTitle": "Ver el video",
     "watchText": "Un reabastecimiento del pronóstico al almacén, en menos de dos minutos.",
     "faqTitle": "Lee las preguntas frecuentes",

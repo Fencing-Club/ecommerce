@@ -4,9 +4,7 @@
     "description": "Prévoyez votre stock, envoyez les bons de commande juste à temps pour éviter les ruptures et gérez les transferts vers votre transitaire, Amazon FBA et AWD, avec chaque étiquette et chaque document préparés pour vous."
   },
   "site": {
-    "free": "Gratuit, sans carte bancaire.",
-    "getStarted": "Commencer",
-    "signIn": "Se connecter",
+    "joinWaitlist": "Rejoindre la liste d’attente",
     "contact": "Contact",
     "mainNav": "Principal",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "Produit",
       "company": "Entreprise",
-      "account": "Compte",
       "tagline": "Prévisions, bons de commande et logistique, au même endroit.",
       "privacy": "Confidentialité",
       "terms": "Conditions"
@@ -33,15 +30,14 @@
     "copied": "Copié"
   },
   "signup": {
-    "title": "Soyez les premiers informés.",
-    "text": "Nouvelles boutiques, nouvelles routes, nouveaux outils : un court e-mail dès leur arrivée.",
-    "done": "C’est noté, vous êtes sur la liste.",
+    "title": "Obtenez un accès anticipé.",
+    "text": "Nous ouvrons l’accès à quelques équipes à la fois. Laissez votre e-mail et nous vous écrirons quand votre tour viendra.",
+    "done": "Vous êtes sur la liste d’attente.",
     "email": "E-mail",
     "placeholder": "vous@entreprise.com",
-    "subscribe": "S’abonner",
-    "subscribing": "Inscription en cours",
-    "failed": "Inscription impossible. Réessayez dans un instant.",
-    "getStartedNow": "Ou commencez dès maintenant, c’est gratuit"
+    "subscribe": "Rejoindre",
+    "subscribing": "Inscription",
+    "failed": "Inscription impossible. Réessayez dans un instant."
   },
   "hero": {
     "title": "<first>Le réassort,</first> <second>sans effort.</second>",
@@ -297,7 +293,8 @@
     "title": "Écrivez-<lit>nous.</lit>",
     "text": "Une question sur Copacker, une démo pour votre équipe ou un partenariat ? Envoyez-nous un message, nous vous répondrons.",
     "waysTitle": "Ou voyez par vous-même.",
-    "tryIt": "Essayer",
+    "waitlistTitle": "Accès anticipé",
+    "waitlistText": "Nous ouvrons l’accès à quelques équipes à la fois.",
     "watchTitle": "Voir la vidéo",
     "watchText": "Un réassort, de la prévision à l’entrepôt, en moins de deux minutes.",
     "faqTitle": "Lire la FAQ",

@@ -4,9 +4,7 @@
     "description": "预测库存，及时发出采购订单，避免断货，并处理与货代、Amazon FBA 和 AWD 之间的交接，每一张标签和每一份单据都为你准备好。"
   },
   "site": {
-    "free": "免费使用，无需信用卡。",
-    "getStarted": "开始使用",
-    "signIn": "登录",
+    "joinWaitlist": "加入候补名单",
     "contact": "联系我们",
     "mainNav": "主导航",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "产品",
       "company": "公司",
-      "account": "账号",
       "tagline": "预测、采购订单与物流，一站搞定。",
       "privacy": "隐私",
       "terms": "条款"
@@ -33,15 +30,14 @@
     "copied": "已复制"
   },
   "signup": {
-    "title": "新功能，第一时间知道。",
-    "text": "新店铺、新线路、新工具，一上线就用一封简短邮件告诉你。",
-    "done": "订阅成功。",
+    "title": "抢先体验。",
+    "text": "我们正分批向团队开放。留下你的邮箱，轮到你时我们会通知你。",
+    "done": "你已加入候补名单。",
     "email": "邮箱",
     "placeholder": "you@company.com",
-    "subscribe": "订阅",
-    "subscribing": "正在订阅",
-    "failed": "订阅失败，请稍后重试。",
-    "getStartedNow": "或者现在就开始，完全免费"
+    "subscribe": "加入",
+    "subscribing": "正在加入",
+    "failed": "订阅失败，请稍后重试。"
   },
   "hero": {
     "title": "<first>补货，</first><second>轻松搞定。</second>",
@@ -297,7 +293,8 @@
     "title": "和<lit>我们</lit>聊聊。",
     "text": "关于 Copacker 的问题、为团队预约演示，或者洽谈合作，留个言，我们会尽快回复。",
     "waysTitle": "或者亲自看看。",
-    "tryIt": "立即试用",
+    "waitlistTitle": "抢先体验",
+    "waitlistText": "我们正分批向团队开放。",
     "watchTitle": "观看视频",
     "watchText": "不到两分钟，看完一次从预测到入仓的完整补货。",
     "faqTitle": "查看常见问题",

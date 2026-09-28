@@ -20,16 +20,17 @@ export const lit = "bg-[linear-gradient(180deg,#ffb27a_0%,#ff7a2e_45%,#f54a00_10
 export const rise =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-[0.35em] motion-safe:duration-1000 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:fill-mode-both"
 
-export function GetStarted({ className }: { className?: string }) {
+// Copacker lets teams in a few at a time, so the way in is the waitlist at the foot of the home page.
+export function JoinWaitlist({ className }: { className?: string }) {
   const t = useTranslations("marketing.site")
   return (
     <Button
       size="lg"
       className={cn("h-11 gap-2 rounded-xl px-5 text-[0.9375rem]", className)}
       nativeButton={false}
-      render={<Link href="/signup" />}
+      render={<Link href="/#waitlist" />}
     >
-      {t("getStarted")}
+      {t("joinWaitlist")}
       <ArrowRight className="rtl:rotate-180" />
     </Button>
   )
@@ -58,12 +59,9 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
             {t("contact")}
           </Link>
         </nav>
-        <div className="ms-auto flex items-center gap-1.5">
-          <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
-            {t("signIn")}
-          </Button>
-          <Button nativeButton={false} render={<Link href="/signup" />}>
-            {t("getStarted")}
+        <div className="ms-auto flex items-center">
+          <Button nativeButton={false} render={<Link href="/#waitlist" />}>
+            {t("joinWaitlist")}
           </Button>
         </div>
       </div>
@@ -82,20 +80,13 @@ function Footer() {
         ["/privacy", t("footer.privacy")],
         ["/terms", t("footer.terms")]
       ]
-    },
-    {
-      title: t("footer.account"),
-      links: [
-        ["/signup", t("getStarted")],
-        ["/login", t("signIn")]
-      ]
     }
   ]
   return (
     <footer className={paper}>
-      {/* The three link groups stay side by side down to a phone, with the brand above them until there's room beside. */}
-      <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-6 gap-y-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-20">
-        <div className="col-span-3 flex flex-col gap-5 md:col-span-1">
+      {/* The two link groups stay side by side down to a phone, with the brand above them until there's room beside. */}
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-20">
+        <div className="col-span-2 flex flex-col gap-5 md:col-span-1">
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>

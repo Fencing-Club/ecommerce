@@ -4,9 +4,7 @@
     "description": "Prognostizieren Sie Ihren Bestand, senden Sie Bestellungen rechtzeitig, damit Ihnen nichts ausgeht, und übergeben Sie an Ihren Spediteur, Amazon FBA und AWD, mit allen Etiketten und Dokumenten fertig für Sie erstellt."
   },
   "site": {
-    "free": "Kostenlos, ohne Kreditkarte.",
-    "getStarted": "Loslegen",
-    "signIn": "Anmelden",
+    "joinWaitlist": "Auf die Warteliste",
     "contact": "Kontakt",
     "mainNav": "Hauptmenü",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "Produkt",
       "company": "Unternehmen",
-      "account": "Konto",
       "tagline": "Prognosen, Bestellungen und Logistik an einem Ort.",
       "privacy": "Datenschutz",
       "terms": "AGB"
@@ -33,15 +30,14 @@
     "copied": "Kopiert"
   },
   "signup": {
-    "title": "Erfahren Sie, was als Nächstes kommt.",
-    "text": "Neue Shops, neue Routen und neue Tools, kurz per E-Mail, sobald sie da sind.",
-    "done": "Sie stehen auf der Liste.",
+    "title": "Früh dabei sein.",
+    "text": "Wir lassen Teams nach und nach herein. Hinterlassen Sie Ihre E-Mail-Adresse, und wir melden uns, sobald Ihr Platz frei ist.",
+    "done": "Sie stehen auf der Warteliste.",
     "email": "E-Mail",
     "placeholder": "sie@firma.de",
-    "subscribe": "Abonnieren",
-    "subscribing": "Wird abonniert",
-    "failed": "Eintragung fehlgeschlagen. Versuchen Sie es gleich noch einmal.",
-    "getStartedNow": "Oder jetzt kostenlos loslegen"
+    "subscribe": "Eintragen",
+    "subscribing": "Wird eingetragen",
+    "failed": "Eintragung fehlgeschlagen. Versuchen Sie es gleich noch einmal."
   },
   "hero": {
     "title": "<first>Nachschub,</first> <second>erledigt.</second>",
@@ -297,7 +293,8 @@
     "title": "Sprechen Sie mit <lit>uns.</lit>",
     "text": "Fragen zu Copacker, eine Demo für Ihr Team oder eine Zusammenarbeit. Schreiben Sie uns, wir melden uns.",
     "waysTitle": "Oder überzeugen Sie sich selbst.",
-    "tryIt": "Ausprobieren",
+    "waitlistTitle": "Früher Zugang",
+    "waitlistText": "Wir lassen Teams nach und nach herein.",
     "watchTitle": "Video ansehen",
     "watchText": "Nachschub von der Prognose bis ins Lager, in unter zwei Minuten.",
     "faqTitle": "FAQ lesen",

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { ContactForm } from "./contact-form"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
-import { GetStarted, lit, rise, Site, stage } from "./site"
+import { JoinWaitlist, lit, rise, Site, stage } from "./site"
 
 // The contact page, in the home page's language: a dark stage with the settled field of points, and the form set across
 // its lower edge the way the hero's product shot is, then other ways in on the paper below.
@@ -39,7 +39,6 @@ function Way({
 
 export function Contact() {
   const t = useTranslations("marketing.contact")
-  const site = useTranslations("marketing.site")
   return (
     <Site>
       <main id="main-content">
@@ -83,8 +82,8 @@ export function Contact() {
             {t("waysTitle")}
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <Way icon={Sparkles} title={t("tryIt")} text={site("free")}>
-              <GetStarted />
+            <Way icon={Sparkles} title={t("waitlistTitle")} text={t("waitlistText")}>
+              <JoinWaitlist />
             </Way>
             <Way icon={FilmIcon} title={t("watchTitle")} text={t("watchText")}>
               <Film className="border-border bg-transparent text-foreground hover:bg-muted" />

@@ -10,12 +10,12 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
-import { GetStarted, lit, quiet, rise, Site, stage } from "./site"
+import { JoinWaitlist, lit, quiet, rise, Site, stage } from "./site"
 import { Tilt } from "./tilt"
 
 // The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
 // the mess a restock makes settles into order, and the diagrams of the handoffs and agents. The product shots are the
-// app's own components with demo data (./mockups). There are no paid plans yet, so it asks only for a sign-up.
+// app's own components with demo data (./mockups). Teams are let in a few at a time, so it asks only for a place on the waitlist.
 
 // A product shot: the app window in a thin glass bezel. The caption is for screen readers.
 function Shot({
@@ -61,7 +61,6 @@ const secondWords = (chunks: React.ReactNode) => (
 // share of its width, as margins and padding in percent are, so the space kept for it below matches at any size.
 function Hero() {
   const t = useTranslations("marketing.hero")
-  const site = useTranslations("marketing.site")
   const format = useFormatter()
   const dollars = (value: number) =>
     format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 0 })
@@ -94,12 +93,9 @@ function Hero() {
             className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}
             style={{ animationDelay: "680ms" }}
           >
-            <GetStarted />
+            <JoinWaitlist />
             <Film />
           </div>
-          <p className={cn("mt-4 text-sm text-white/50", rise)} style={{ animationDelay: "800ms" }}>
-            {site("free")}
-          </p>
         </div>
         <div className={cn("mx-auto max-w-6xl px-6 pt-20 sm:pt-24", rise)} style={{ animationDelay: "900ms" }}>
           <div className="-mb-[27%]">
@@ -210,13 +206,14 @@ function Faq() {
   )
 }
 
-// The close: product news by email on an orange stage, rather than the hero again.
+// The close: the waitlist on an orange stage, rather than the hero again. Every call to join links here.
 function Closing() {
   return (
     <section
+      id="waitlist"
       data-tone="dark"
       aria-labelledby="signup-title"
-      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#c2410c] py-24 text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-32"
+      className="dark relative isolate mx-2 scroll-mt-20 overflow-hidden rounded-[2rem] bg-[#c2410c] py-24 text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-32"
     >
       <div
         aria-hidden

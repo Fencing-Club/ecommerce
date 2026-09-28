@@ -4,9 +4,7 @@
     "description": "Forecast your inventory, send purchase orders just in time so you don’t run out, and handle the handoffs to your forwarder, Amazon FBA and AWD, with every label and document made for you."
   },
   "site": {
-    "free": "Free to use, no credit card needed.",
-    "getStarted": "Get started",
-    "signIn": "Sign in",
+    "joinWaitlist": "Join the waitlist",
     "contact": "Contact",
     "mainNav": "Main",
     "sections": {
@@ -18,7 +16,6 @@
     "footer": {
       "product": "Product",
       "company": "Company",
-      "account": "Account",
       "tagline": "Forecasting, purchase orders and logistics, in one place.",
       "privacy": "Privacy",
       "terms": "Terms"
@@ -33,15 +30,14 @@
     "copied": "Copied"
   },
   "signup": {
-    "title": "Hear what ships next.",
-    "text": "New stores, new routes and new tools, in a short email when they land.",
-    "done": "You’re on the list.",
+    "title": "Get early access.",
+    "text": "We’re letting teams in a few at a time. Leave your email and we’ll write when your spot opens.",
+    "done": "You’re on the waitlist.",
     "email": "Email",
     "placeholder": "you@company.com",
-    "subscribe": "Subscribe",
-    "subscribing": "Subscribing",
-    "failed": "Couldn’t sign you up. Try again in a moment.",
-    "getStartedNow": "Or get started now, it’s free"
+    "subscribe": "Join",
+    "subscribing": "Joining",
+    "failed": "Couldn’t sign you up. Try again in a moment."
   },
   "hero": {
     "title": "<first>Restocking,</first> <second>handled.</second>",
@@ -297,7 +293,8 @@
     "title": "Talk to <lit>us.</lit>",
     "text": "Questions about Copacker, a walkthrough for your team, or working together. Send a note and we’ll write back.",
     "waysTitle": "Or see for yourself.",
-    "tryIt": "Try it",
+    "waitlistTitle": "Get early access",
+    "waitlistText": "We’re letting teams in a few at a time.",
     "watchTitle": "Watch the video",
     "watchText": "A restock from forecast to warehouse, in under two minutes.",
     "faqTitle": "Read the FAQ",
