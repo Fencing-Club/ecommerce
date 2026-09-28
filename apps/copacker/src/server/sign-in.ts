@@ -5,6 +5,7 @@ import {
   BadRequestException,
   GenericServerException,
   NotFoundException,
+  type PasswordReset,
   RateLimitExceededException
 } from "@workos-inc/node"
 import { eq } from "drizzle-orm"
@@ -23,6 +24,7 @@ import {
   signUpSchema
 } from "@/lib/sign-in"
 import { workspaceCookie } from "./auth"
+import { sendEmail } from "./email"
 import { appUrl, decrypt, encrypt, returnPath } from "./security"
 import { workos, workosClientId } from "./workos"
 
@@ -276,15 +278,43 @@ export async function resendCode() {
   return { ok: true }
 }
 
-// Emails a reset link. Whether the email has an account isn't revealed: the reply is the same either way.
+// How long a link lasts, from WorkOS's expiry: "15 minutes" or "1 hour".
+function lasting(expiresAt: string) {
+  const minutes = Math.max(1, Math.round((Date.parse(expiresAt) - Date.now()) / 60000))
+  if (minutes < 60) {
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
+  }
+  const hours = Math.round(minutes / 60)
+  return `${hours} ${hours === 1 ? "hour" : "hours"}`
+}
+
+// Emails a link to Copacker's own reset page. Whether the email has an account isn't revealed: the reply is the same
+// either way. WorkOS sends its own reset email too until it's turned off in its dashboard, so a failure to send this
+// one is logged rather than shown.
 export async function requestPasswordReset(raw: unknown) {
   const input = forgotPasswordSchema.parse(raw)
+  let reset: PasswordReset
   try {
-    await workos().userManagement.createPasswordReset({ email: input.email })
+    reset = await workos().userManagement.createPasswordReset({ email: input.email })
   } catch (error) {
-    if (!(error instanceof NotFoundException)) {
-      throw explain(error)
+    if (error instanceof NotFoundException) {
+      return { ok: true }
     }
+    throw explain(error)
+  }
+  const link = `${appUrl()}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
+  try {
+    await sendEmail({
+      to: reset.email,
+      key: `password-reset:${reset.id}`,
+      subject: "Reset your Copacker password",
+      text: [
+        `Choose a new password for ${reset.email}: ${link}`,
+        `The link expires in ${lasting(reset.expiresAt)}. If you didn’t ask to reset your password, you can ignore this email.`
+      ].join("\n\n")
+    })
+  } catch (error) {
+    console.error("Couldn’t send the password reset email", error)
   }
   return { ok: true }
 }

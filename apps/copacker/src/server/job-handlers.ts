@@ -7,6 +7,7 @@ import { db } from "../db/index"
 import { shipments, orders, orderRevisions } from "../db/schema"
 import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
+import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
 import { saveSupplierSkus } from "./product-fields"
 import { appUrl } from "./security"
@@ -236,19 +237,7 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     text = `Open your shipment to print the labels and Packing Checklist: ${appUrl()}/shipments/${input.shipmentId}`
   }
   await assertOwned()
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.EMAIL_API_KEY}`,
-      "content-type": "application/json",
-      "Idempotency-Key": key
-    },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [input.to], subject, text, attachments }),
-    signal: AbortSignal.timeout(30000)
-  })
-  if (!response.ok) {
-    throw new Error(`Email provider rejected delivery (${response.status})`)
-  }
+  await sendEmail({ to: input.to, subject, text, key, attachments })
 }
 export async function shopifyJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   await assertOwned()

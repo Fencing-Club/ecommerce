@@ -33,6 +33,8 @@ vi.mock("../src/server/workos", () => ({
   workos: () => ({ userManagement: client }),
   workosClientId: () => "client_test"
 }))
+const sendEmail = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<void>>())
+vi.mock("../src/server/email", () => ({ sendEmail }))
 // The workspaces WorkOS organizations belong to, for picking the one a session is for.
 const workspaces = vi.hoisted(() => ({ rows: [] as Array<{ workosId: string | null }> }))
 vi.mock("@/db", () => ({
@@ -246,11 +248,50 @@ describe("creating an account", () => {
 })
 
 describe("resetting a password", () => {
+  const reset = (minutes: number) => ({
+    id: "password_reset_1",
+    userId: "user_1",
+    email: "ann@example.net",
+    passwordResetToken: "reset/token+1",
+    passwordResetUrl: "https://hosted.example/reset-password?token=reset/token+1",
+    expiresAt: new Date(Date.now() + minutes * 60000).toISOString(),
+    createdAt: new Date().toISOString()
+  })
+
+  it("emails a link to Copacker's own reset page, never the hosted one", async () => {
+    client.createPasswordReset.mockResolvedValue(reset(15))
+    sendEmail.mockResolvedValue()
+    await expect(requestPasswordReset({ email: "ann@example.net" })).resolves.toEqual({ ok: true })
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "ann@example.net", key: "password-reset:password_reset_1" })
+    )
+    const [email] = sendEmail.mock.calls[0] as [{ text: string }]
+    expect(email.text).toContain("https://copacker.example/reset-password?token=reset%2Ftoken%2B1")
+    expect(email.text).toContain("expires in 15 minutes")
+    expect(email.text).not.toContain("hosted.example")
+  })
+
+  it("says how long a longer link lasts in hours", async () => {
+    client.createPasswordReset.mockResolvedValue(reset(60))
+    sendEmail.mockResolvedValue()
+    await requestPasswordReset({ email: "ann@example.net" })
+    const [email] = sendEmail.mock.calls[0] as [{ text: string }]
+    expect(email.text).toContain("expires in 1 hour.")
+  })
+
   it("answers the same whether or not the email has an account", async () => {
     client.createPasswordReset.mockRejectedValue(
       new NotFoundException({ code: "entity_not_found", message: "User not found", path: "/", requestID: "request" })
     )
     await expect(requestPasswordReset({ email: "nobody@example.net" })).resolves.toEqual({ ok: true })
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it("still answers when its own email can't be sent, since WorkOS sends one too", async () => {
+    client.createPasswordReset.mockResolvedValue(reset(15))
+    sendEmail.mockRejectedValue(new Error("Email provider rejected delivery (403)"))
+    await expect(requestPasswordReset({ email: "ann@example.net" })).resolves.toEqual({ ok: true })
+    expect(console.error).toHaveBeenCalledWith("Couldn’t send the password reset email", expect.any(Error))
   })
 
   it("saves the new password and signs in with it", async () => {

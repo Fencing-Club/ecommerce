@@ -15,8 +15,9 @@ sign-out work as before. The code is in `src/server/sign-in.ts`, `src/server/onb
   verifier wait in an encrypted cookie (`copacker-oauth`) until WorkOS returns to `/callback`.
 - **Single sign-on.** An email whose company requires SSO is sent to its connection instead of signing in with a
   password.
-- **Password reset.** `/forgot-password` asks WorkOS to email a link, and answers the same whether or not the email has
-  an account. The link opens `/reset-password?token=…`, which saves the new password and signs straight in.
+- **Password reset.** `/forgot-password` creates a WorkOS password reset and emails Copacker's own link,
+  `/reset-password?token=…`, through Resend. It answers the same whether or not the email has an account. The page saves
+  the new password and signs straight in.
 
 A person belongs to one WorkOS organization per workspace, so WorkOS asks which one a session is for
 (`organization_selection_required`). Copacker picks its workspaces itself: the session takes the workspace this
@@ -28,14 +29,16 @@ browser had open, or else the first. `next` survives every step, and only ever p
 Local and production share the WorkOS staging environment. In its dashboard:
 
 - **Redirects:** `<APP_URL>/callback` for each environment, and the sign-out redirect `<APP_URL>`.
-- **Password reset URL:** `https://copacker-production.up.railway.app/reset-password`. Until it's set, reset emails
-  link to AuthKit's hosted page, which still resets the password.
+- **Password reset email:** turn off WorkOS's own reset email once Copacker's sender domain is verified in Resend, so
+  only Copacker's goes out. Until then both are sent, and Copacker's reaches only the Resend account's owner while the
+  sender is `resend.dev`. Set the **Password reset URL** to
+  `https://copacker-production.up.railway.app/reset-password` meanwhile, so WorkOS's email opens Copacker's page too.
 - **Authentication:** email and password, and Google and Microsoft OAuth. Staging uses WorkOS's demo OAuth
   credentials; a production WorkOS environment needs Copacker's own Google and Microsoft apps.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.
 
-WorkOS sends the verification, reset and code emails itself. Copacker's own emails (invitations, purchase orders) go
-through Resend.
+WorkOS sends the verification code emails itself. Copacker's own emails (password resets, invitations, purchase orders)
+go through Resend, from `src/server/email.ts`.
 
 ## Getting started
 
