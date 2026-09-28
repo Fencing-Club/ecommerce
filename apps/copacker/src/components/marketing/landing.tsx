@@ -216,11 +216,11 @@ function Closing() {
     <section
       data-tone="dark"
       aria-labelledby="signup-title"
-      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#f54a00] py-24 text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-32"
+      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#c2410c] py-24 text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-32"
     >
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_80%_at_0%_0%,#ffb27a,transparent_70%),radial-gradient(ellipse_70%_60%_at_100%_100%,#7a1f00,transparent_70%),radial-gradient(ellipse_60%_60%_at_100%_0%,#c2410c,transparent_70%)]"
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_80%_at_0%_0%,#ea580c,transparent_70%),radial-gradient(ellipse_70%_60%_at_100%_100%,#7a1f00,transparent_70%),radial-gradient(ellipse_60%_60%_at_100%_0%,#9a3412,transparent_70%)]"
       />
       <div className="mx-auto max-w-6xl px-6">
         <Signup />

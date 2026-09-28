@@ -15,7 +15,7 @@ function Subscribed() {
   useEffect(() => ref.current?.focus(), [])
   return (
     <output ref={ref} tabIndex={-1} className="flex h-12 items-center gap-3 text-lg font-medium outline-none">
-      <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#f54a00]">
+      <span className="flex size-8 items-center justify-center rounded-full bg-white text-[#c2410c]">
         <Check className="size-5" strokeWidth={3} />
       </span>
       {t("done")}
@@ -56,7 +56,7 @@ export function Signup() {
         >
           {t("title")}
         </h2>
-        <p className="mt-6 max-w-md text-lg text-pretty text-white/80">{t("text")}</p>
+        <p className="mt-6 max-w-md text-lg text-pretty text-white/90">{t("text")}</p>
       </div>
       <div className="flex flex-col gap-4">
         {state === "done" ? (
@@ -104,7 +104,7 @@ export function Signup() {
         </p>
         <Link
           href="/signup"
-          className="group flex w-fit items-center gap-1.5 rounded-sm text-sm font-medium text-white/85 outline-none hover:text-white focus-visible:ring-3 focus-visible:ring-white/40"
+          className="group flex w-fit items-center gap-1.5 rounded-sm text-sm font-medium text-white outline-none hover:text-white/85 focus-visible:ring-3 focus-visible:ring-white/40"
         >
           {t("getStartedNow")}
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
