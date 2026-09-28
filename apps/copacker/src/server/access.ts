@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull, ne } from "drizzle-orm"
 import { notFound } from "next/navigation"
+import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { forwarders, orders, suppliers } from "@/db/schema"
 import type { Session } from "./auth"
@@ -19,6 +20,10 @@ export async function accessibleOrder(
   executor: Transaction | ReturnType<typeof db> = db(),
   lock = false
 ) {
+  // A malformed id, such as /orders/abc, finds nothing, like an unknown one.
+  if (!z.uuid().safeParse(id).success) {
+    notFound()
+  }
   const query = executor
     .select({ order: orders, supplier: suppliers })
     .from(orders)

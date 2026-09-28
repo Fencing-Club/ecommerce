@@ -350,11 +350,6 @@ export function FormSelect({ name, label, description, className, options, place
   )
 }
 
-// FormSelect under its earlier name, until order-builder.tsx, profile-form.tsx and landed-costs.tsx import FormSelect.
-export function FormChoice(props: SelectProps) {
-  return <FormSelect {...props} />
-}
-
 export function FormTextarea({
   name,
   label,

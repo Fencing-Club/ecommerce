@@ -1,14 +1,6 @@
-import { AlertTriangle, Download, FileText, PackageOpen } from "lucide-react"
+import { AlertTriangle, ChevronRight, Download, FileText, PackageOpen } from "lucide-react"
 import Link from "next/link"
-import { Children, Fragment } from "react"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator
-} from "@/components/ui/breadcrumb"
+import { Children } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
@@ -24,6 +16,9 @@ export type StatusTone = "neutral" | "info" | "success" | "warning" | "destructi
 const statuses: Record<string, { label: string; tone: StatusTone }> = {
   // Purchase orders
   draft: { label: "Draft", tone: "neutral" },
+  // Supplier products.
+  active: { label: "Active", tone: "success" },
+  archived: { label: "Archived", tone: "neutral" },
   submitted: { label: "With supplier", tone: "info" },
   closed: { label: "Closed", tone: "neutral" },
   // Shipments
@@ -122,50 +117,49 @@ export function Status({ status }: { status: string }) {
   return <StatusBadge tone={known?.tone ?? "neutral"}>{known?.label ?? words(status)}</StatusBadge>
 }
 
-// The page title with its actions on the right. When the actions don't fit beside the title, they wrap below it.
+// The page title with its actions on the right. A record's page passes its parents, which lead the title on the same
+// line (Customers › Fencing Club), and a status badge after it. When the actions don't fit beside the title, they wrap
+// below it. It must be the page's first element, so the sidebar's collapse button sits beside it.
 export function PageHeader({
   title,
+  parents,
+  badge,
   description,
   children
 }: {
   title: React.ReactNode
-  description?: string
+  parents?: Array<{ label: string; href: string }>
+  badge?: React.ReactNode
+  description?: React.ReactNode
   children?: React.ReactNode
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          {parents?.length ? (
+            <nav aria-label="Breadcrumb">
+              <ol className="flex items-center gap-2 text-sm text-muted-foreground">
+                {parents.map((parent) => (
+                  <li key={parent.href} className="flex items-center gap-2">
+                    <Link href={parent.href} className="rounded-sm hover:text-foreground">
+                      {parent.label}
+                    </Link>
+                    <ChevronRight aria-hidden className="size-4 shrink-0" />
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          ) : null}
+          <h1 className={cn("min-w-0 font-semibold tracking-tight", parents?.length ? "text-xl" : "text-2xl")}>
+            {title}
+          </h1>
+          {badge}
+        </div>
+        {description && <div className="text-sm text-muted-foreground">{description}</div>}
       </div>
       {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
     </div>
-  )
-}
-
-export function PageBreadcrumb({
-  parents,
-  current
-}: {
-  parents: Array<{ label: string; href: string }>
-  current: string
-}) {
-  return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        {parents.map((parent) => (
-          <Fragment key={parent.href}>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={parent.href} />}>{parent.label}</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-          </Fragment>
-        ))}
-        <BreadcrumbItem>
-          <BreadcrumbPage>{current}</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
   )
 }
 

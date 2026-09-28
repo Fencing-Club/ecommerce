@@ -29,7 +29,8 @@ function count(text: string) {
 }
 
 // A variant's on hand count, edited in place like Shopify's inventory list: the change shows beside it, green for more
-// and red for less, until the page's changes are saved or discarded.
+// and red for less, until the page's changes are saved or discarded. The change keeps a place of its own, so the column
+// doesn't widen as a count is typed; on a phone's table that place goes to the product instead.
 function OnHand({
   row,
   value,
@@ -44,18 +45,20 @@ function OnHand({
   const delta = next === null ? 0 : next - row.onHand
   return (
     <div className="flex items-center justify-end gap-2">
-      {delta !== 0 && (
-        <span
-          className={cn(
-            "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
-            delta > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-          )}
-        >
-          {delta > 0 ? "+" : "−"}
-          {Math.abs(delta).toLocaleString("en-US")}
-          <span className="sr-only"> from {row.onHand.toLocaleString("en-US")}</span>
-        </span>
-      )}
+      <span className="flex justify-end @md:min-w-14">
+        {delta !== 0 && (
+          <span
+            className={cn(
+              "rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
+              delta > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+            )}
+          >
+            {delta > 0 ? "+" : "−"}
+            {Math.abs(delta).toLocaleString("en-US")}
+            <span className="sr-only"> from {row.onHand.toLocaleString("en-US")}</span>
+          </span>
+        )}
+      </span>
       <Input
         type="number"
         step={1}
@@ -197,7 +200,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
               <TableHead className="hidden text-center @4xl:table-cell">Tracked</TableHead>
               <TableHead className="hidden text-center @4xl:table-cell">Sell when out</TableHead>
               <TableHead className="hidden text-right @xl:table-cell">Committed</TableHead>
-              <TableHead className="text-right">Available</TableHead>
+              <TableHead className="hidden text-right @md:table-cell">Available</TableHead>
               <TableHead className="text-right">On hand</TableHead>
             </TableRow>
           </TableHeader>
@@ -207,16 +210,29 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
               const available = next === null ? row.available : next - row.committed
               return (
                 <TableRow key={row.id} data-state={next !== row.onHand ? "selected" : undefined}>
-                  <TableCell className="max-w-80">
-                    <Link href={`/products/${row.groupId}`} className="flex items-center gap-3 hover:underline">
-                      <ProductThumb image={row.image} className="size-9" />
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">{row.title}</span>
-                        <span className="block truncate text-xs text-muted-foreground">
+                  {/* Long titles wrap, so the counts keep their place beside an open sidebar. */}
+                  <TableCell className="whitespace-normal">
+                    <div className="flex items-center gap-3">
+                      <ProductThumb image={row.image} className="hidden size-9 @sm:flex" />
+                      <div className="min-w-0">
+                        <Link href={`/products/${row.groupId}`} className="line-clamp-2 font-medium hover:underline">
+                          {row.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
                           {row.variant ?? <span className="@2xl:hidden">{row.supplierSku}</span>}
-                        </span>
-                      </span>
-                    </Link>
+                        </p>
+                        {row.trackInventory && (
+                          <p
+                            className={cn(
+                              "text-xs text-muted-foreground tabular-nums @md:hidden",
+                              available < 0 && "font-medium text-destructive"
+                            )}
+                          >
+                            {available.toLocaleString("en-US")} available
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="hidden font-mono text-xs @2xl:table-cell">{row.supplierSku}</TableCell>
                   <TableCell className="hidden text-center @4xl:table-cell">
@@ -230,7 +246,7 @@ export function InventoryTable({ rows, initialTab }: { rows: InventoryRow[]; ini
                   </TableCell>
                   <TableCell
                     className={cn(
-                      "text-right tabular-nums",
+                      "hidden text-right tabular-nums @md:table-cell",
                       row.trackInventory && available < 0 && "font-medium text-destructive"
                     )}
                   >

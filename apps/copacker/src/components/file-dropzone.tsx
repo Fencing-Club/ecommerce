@@ -13,7 +13,11 @@
 // - name: submits the file with a surrounding native form. `id` goes on the zone's button.
 // - error, invalid: the parent's own problem with the file, such as a failed upload. `error` shows under the zone.
 // - children: shown in the file's row before the remove button, such as upload progress or an Upload button.
+// - current: a file already stored, such as a shipment's uploaded invoice. While no file is chosen, the row shows it
+//   in place of the zone, with Replace to choose another; a file dropped on it counts too. `href` opens the stored one.
+// - ref: the button that chooses the next file, the zone or Replace, such as for a form to focus when it's required.
 
+import { useMergedRef } from "@mantine/hooks"
 import { FileText, UploadCloud, X } from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -56,6 +60,7 @@ export function FileDropzone({
   maxBytes,
   file,
   onFileChange,
+  current,
   label,
   hint,
   disabled = false,
@@ -63,12 +68,14 @@ export function FileDropzone({
   name,
   invalid = false,
   error,
+  ref,
   children
 }: {
   accept: string
   maxBytes: number
   file: File | null
   onFileChange: (file: File | null) => void
+  current?: { name: string; size?: number; href?: string }
   label?: React.ReactNode
   hint?: React.ReactNode
   disabled?: boolean
@@ -76,12 +83,15 @@ export function FileDropzone({
   name?: string
   invalid?: boolean
   error?: string
+  ref?: React.Ref<HTMLButtonElement>
   children?: React.ReactNode
 }) {
   const generatedId = useId()
   const zoneId = id ?? `${generatedId}-zone`
   const input = useRef<HTMLInputElement>(null)
+  // The zone, or Replace beside a stored file: whichever chooses the next file.
   const zone = useRef<HTMLButtonElement>(null)
+  const zoneRef = useMergedRef(zone, ref)
   const row = useRef<HTMLDivElement>(null)
   // Where focus goes once a chosen or removed file renders, since the zone and the row replace each other.
   const refocus = useRef<"zone" | "row" | null>(null)
@@ -178,37 +188,82 @@ export function FileDropzone({
         hidden
         onChange={(event) => choose(event.target.files)}
       />
-      {file ? (
-        // Takes focus when the file is chosen, so keyboard and screen reader users land on it rather than the page.
+      {file || current ? (
+        // Takes focus when the file is chosen, so keyboard and screen reader users land on it rather than the page. One
+        // row for the chosen and the stored file, so focus stays when an uploaded file becomes the stored one.
         <div
           ref={row}
           tabIndex={-1}
           data-invalid={flagged || undefined}
-          className="flex min-h-12 items-center gap-3 rounded-lg border py-2 pr-2 pl-3 text-foreground outline-none data-invalid:border-destructive"
+          data-dragging={dragging || undefined}
+          {...(file
+            ? {}
+            : { onDragEnter: over, onDragOver: over, onDragLeave: () => setDragging(false), onDrop: drop })}
+          className="flex min-h-12 items-center gap-3 rounded-lg border py-2 pr-2 pl-3 text-foreground transition-colors outline-none data-dragging:border-ring data-dragging:bg-muted/50 data-invalid:border-destructive"
         >
           <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium" title={file.name}>
-              {file.name}
-            </span>
-            <span className="text-xs text-muted-foreground">{fileSize(file.size)}</span>
-          </span>
-          {children}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Remove ${file.name}`}
-            disabled={disabled}
-            onClick={remove}
-          >
-            <X />
-          </Button>
+          {file ? (
+            <>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-medium" title={file.name}>
+                  {file.name}
+                </span>
+                <span className="text-xs text-muted-foreground">{fileSize(file.size)}</span>
+              </span>
+              {children}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Remove ${file.name}`}
+                disabled={disabled}
+                onClick={remove}
+              >
+                <X />
+              </Button>
+            </>
+          ) : (
+            current && (
+              <>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  {current.href ? (
+                    <a
+                      href={current.href}
+                      title={current.name}
+                      className="truncate rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                    >
+                      {current.name}
+                    </a>
+                  ) : (
+                    <span className="truncate text-sm font-medium" title={current.name}>
+                      {current.name}
+                    </span>
+                  )}
+                  {current.size !== undefined && (
+                    <span className="text-xs text-muted-foreground">{fileSize(current.size)}</span>
+                  )}
+                </span>
+                <Button
+                  ref={zoneRef}
+                  type="button"
+                  id={zoneId}
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                  aria-label={`Replace ${current.name}`}
+                  aria-describedby={message ? `${zoneId}-error` : undefined}
+                  onClick={() => input.current?.click()}
+                >
+                  Replace
+                </Button>
+              </>
+            )
+          )}
         </div>
       ) : (
         // A button rather than the input itself, so the zone takes focus, clicks and drops alike.
         <button
-          ref={zone}
+          ref={zoneRef}
           type="button"
           id={zoneId}
           disabled={disabled}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { PageBreadcrumb, PageHeader } from "@/components/common"
+import { PageHeader } from "@/components/common"
 import { ImportIntake } from "@/components/import-intake"
 import { requireBuyer, session } from "@/server/auth"
 
@@ -9,8 +9,7 @@ export default async function ImportOrder() {
   requireBuyer(await session())
   return (
     <>
-      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="Import" />
-      <PageHeader title="Import purchase order" />
+      <PageHeader parents={[{ label: "Purchase orders", href: "/orders" }]} title="Import purchase order" />
       <ImportIntake />
     </>
   )

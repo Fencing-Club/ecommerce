@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import { EmptyState, PageHeader } from "@/components/common"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "@/components/overview"
 import { SetupChecklist } from "@/components/overview-sections"
+import { PeriodPicker } from "@/components/period-picker"
 import { SupplierOverview } from "@/components/supplier/overview"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -46,10 +47,13 @@ async function Dashboard({ data: pending }: { data: Promise<Overview> }) {
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
   const s = await session()
   if (s.org.kind === "supplier") {
+    const data = await supplierOverview(s.org, await searchParams)
     return (
       <>
-        <PageHeader title="Overview" />
-        <SupplierOverview data={await supplierOverview(s.org, await searchParams)} />
+        <PageHeader title="Overview">
+          <PeriodPicker period={data.period} />
+        </PageHeader>
+        <SupplierOverview data={data} />
       </>
     )
   }

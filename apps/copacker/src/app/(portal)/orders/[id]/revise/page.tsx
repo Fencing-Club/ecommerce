@@ -1,7 +1,10 @@
+import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
 import { OrderReviser } from "@/components/supplier/order-reviser"
+import { db } from "@/db"
+import { organizations } from "@/db/schema"
 import { session } from "@/server/auth"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
@@ -10,7 +13,12 @@ export const metadata: Metadata = { title: "Edit order" }
 
 export default async function ReviseOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
-  const id = z.uuid().parse((await params).id)
+  // A malformed id, such as /orders/abc/revise, finds nothing, like an unknown one.
+  const parsed = z.uuid().safeParse((await params).id)
+  if (!parsed.success) {
+    notFound()
+  }
+  const id = parsed.data
   if (s.org.kind !== "supplier") {
     redirect(`/orders/${id}`)
   }
@@ -19,7 +27,11 @@ export default async function ReviseOrderPage({ params }: { params: Promise<{ id
     redirect(`/orders/${id}`)
   }
   const { data } = order
-  // A pending proposal is edited from where the supplier left it.
+  const [customer] = await db()
+    .select({ name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.id, order.buyerOrgId))
+  // A pending proposal is edited from where the supplier left it: its lines, terms, ready date and note.
   const proposal = latest?.status === "pending" ? latest.data : null
   const original = (itemId: string | undefined) => data.items.find((item) => item.id === itemId)
   const items = (
@@ -60,15 +72,23 @@ export default async function ReviseOrderPage({ params }: { params: Promise<{ id
           removed: true
         }))
     : []
+  const current = { paymentTerms: data.paymentTerms, readyDate: data.readyDate ?? null }
   return (
     <OrderReviser
       orderId={id}
       revision={order.revision}
       reference={data.reference}
+      customer={customer?.name ?? "your customer"}
       currency={data.currency}
       items={[...items, ...removed]}
       subtotal={data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)}
-      terms={{ paymentTerms: data.paymentTerms, readyDate: data.readyDate ?? null, note: proposal?.note ?? "" }}
+      current={current}
+      terms={
+        proposal
+          ? { paymentTerms: proposal.paymentTerms, readyDate: proposal.readyDate, note: proposal.note }
+          : { ...current, note: "" }
+      }
+      proposalPending={proposal !== null}
       products={products.map((product) => {
         const match = matchSupplierCatalog(
           { supplierOrgId: product.supplierOrgId, supplierSku: product.supplierSku, currency: data.currency },

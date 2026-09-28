@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
-import { ImportReview } from "@/components/import-review"
+import { ImportReview, type ReviewProduct } from "@/components/import-review"
 import { db } from "@/db"
 import { poImports, suppliers } from "@/db/schema"
 import { session, requireBuyer } from "@/server/auth"
@@ -39,15 +39,14 @@ export default async function ReviewImport({ params }: { params: Promise<{ id: s
   const selectedIds = [
     ...new Set(proposal.items.flatMap((item) => (item.selectedVariantId ? [item.selectedVariantId] : [])))
   ]
-  const selectedProducts: Record<string, string> = {}
+  const selectedProducts: Record<string, ReviewProduct> = {}
   try {
     if (selectedIds.length) {
       const shop = await shopifyFor(s.org.id, record.shopifyDomain)
       for (let offset = 0; offset < selectedIds.length; offset += 100) {
         for (const product of await shop.variants(selectedIds.slice(offset, offset + 100))) {
           if (product) {
-            selectedProducts[product.id] =
-              `${product.product.title} / ${product.title} / ${product.sku ?? "No buyer SKU"}`
+            selectedProducts[product.id] = { title: product.product.title, variant: product.title, sku: product.sku }
           }
         }
       }
@@ -58,6 +57,7 @@ export default async function ReviewImport({ params }: { params: Promise<{ id: s
   return (
     <ImportReview
       id={id}
+      filename={record.filename}
       initialRevision={record.revision}
       initialProposal={proposal}
       initialSelectedProducts={selectedProducts}

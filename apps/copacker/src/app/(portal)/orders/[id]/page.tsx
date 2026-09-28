@@ -4,9 +4,8 @@ import { desc, eq, inArray } from "drizzle-orm"
 import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
-import { z } from "zod"
 import { ActionButton } from "@/components/actions"
-import { DocumentList, PageBreadcrumb, Status, WarningNote, formatDestination } from "@/components/common"
+import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { LandedCosts } from "@/components/landed-costs"
 import { LineMenu, OrderMenu } from "@/components/order-actions"
@@ -19,7 +18,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { db } from "@/db"
-import { contacts, events, forwarders, orderRevisions, shipments } from "@/db/schema"
+import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
+import { shortDate } from "@/lib/format"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { session } from "@/server/auth"
@@ -30,21 +30,44 @@ import { forwarderLeg } from "@/server/shipment-legs"
 import { orderWorkflow } from "@/server/workflow"
 import { ForwarderView } from "./forwarder-view"
 
-export const metadata: Metadata = { title: "Purchase order" }
+type Props = { params: Promise<{ id: string }> }
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+// The PO's reference names the tab. Looking the PO up here too gives a malformed or unknown id the not-found page's
+// title.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const [s, { id }] = await Promise.all([session(), params])
+  const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
+  return { title: order.data.reference }
+}
+
+export default async function OrderPage({ params }: Props) {
   const s = await session()
-  const id = z.uuid().parse((await params).id)
+  // A malformed or unknown id is a not-found, from forwarderOrder or accessibleOrder.
+  const { id } = await params
   if (s.org.kind === "forwarder") {
     return <ForwarderView row={await forwarderOrder(s, id)} />
   }
   const { order, supplier } = await accessibleOrder(s, id)
-  const [shipmentRows, history, revisions] = await Promise.all([
+  const [shipmentRows, history, revisions, buyerName] = await Promise.all([
     // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
     db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
     db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
-    db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision))
+    db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision)),
+    // The supplier reads the buyer's note as from the buyer, by its workspace's name.
+    s.org.kind === "supplier"
+      ? db()
+          .select({ name: organizations.name })
+          .from(organizations)
+          .where(eq(organizations.id, order.buyerOrgId))
+          .then((rows) => rows[0]?.name)
+      : undefined
   ])
+  // Suppliers see where the PO stands on their side, in their order list's words: its latest shipment's status until
+  // it's closed. Buyers see the PO's own.
+  const status =
+    s.org.kind === "supplier" && order.status !== "closed"
+      ? (shipmentRows.at(-1)?.status ?? order.status)
+      : order.status
   const [workflow, proposals] = await Promise.all([orderWorkflow(s, id), proposalState(id)])
   // The supplier's latest changes: pending for both sides, or declined for the supplier to see why.
   const proposal =
@@ -146,46 +169,40 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <PageBreadcrumb
+      <PageHeader
         parents={[{ label: s.org.kind === "supplier" ? "Orders" : "Purchase orders", href: "/orders" }]}
-        current={order.data.reference}
-      />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight">{order.data.reference}</h1>
-          <Status status={order.status} />
-        </div>
-        <div className="flex items-center gap-2">
-          {order.status === "draft" && buyer && (
-            <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
-              {supplier.supplierOrgId ? "Submit to supplier" : "Send purchase order"}
-            </ActionButton>
+        title={order.data.reference}
+        badge={<Status status={status} />}
+      >
+        {order.status === "draft" && buyer && (
+          <ActionButton action="order.submit" data={{ id, revision: order.revision }}>
+            {supplier.supplierOrgId ? "Submit to supplier" : "Send purchase order"}
+          </ActionButton>
+        )}
+        {s.org.kind === "supplier" &&
+          order.status === "submitted" &&
+          proposals.changeable &&
+          proposal?.status !== "pending" && (
+            <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
+              Edit order
+            </Button>
           )}
-          {s.org.kind === "supplier" &&
-            order.status === "submitted" &&
-            proposals.changeable &&
-            proposal?.status !== "pending" && (
-              <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
-                Edit order
-              </Button>
-            )}
-          {order.status === "submitted" && (editable || remaining) && proposal?.status !== "pending" && (
-            <ActionButton action="shipment.create" data={{ id }}>
-              {editable ? "Continue packing" : "Prepare next shipment"}
-            </ActionButton>
-          )}
-          <OrderMenu
-            id={id}
-            reference={order.data.reference}
-            draft={order.status === "draft" && buyer}
-            closable={order.status === "submitted" && buyer}
-            labels={
-              labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
-              order.data.items.some((item) => item.suffocationWarning)
-            }
-          />
-        </div>
-      </div>
+        {order.status === "submitted" && (editable || remaining) && proposal?.status !== "pending" && (
+          <ActionButton action="shipment.create" data={{ id }}>
+            {editable ? "Continue packing" : "Prepare next shipment"}
+          </ActionButton>
+        )}
+        <OrderMenu
+          id={id}
+          reference={order.data.reference}
+          draft={order.status === "draft" && buyer}
+          closable={order.status === "submitted" && buyer}
+          labels={
+            labels.some((label) => label.state === "uploaded" || label.state === "standard") ||
+            order.data.items.some((item) => item.suffocationWarning)
+          }
+        />
+      </PageHeader>
 
       {s.org.kind === "buyer" && !supplier.supplierOrgId && (
         <Alert>
@@ -412,11 +429,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <dl className="flex flex-col gap-3">
-                {order.data.dueDate && <Detail label="Required by" value={order.data.dueDate} />}
+                {order.data.dueDate && <Detail label="Required by" value={shortDate(order.data.dueDate)} />}
                 <Detail label="Payment terms" value={order.data.paymentTerms || "None"} />
-                {order.data.readyDate && <Detail label="Ready" value={order.data.readyDate} />}
+                {order.data.readyDate && <Detail label="Ready" value={shortDate(order.data.readyDate)} />}
                 <Detail label="Currency" value={currency} />
-                <Detail label="Note to supplier" value={order.data.notes || "—"} />
+                <Detail label={noteLabel(s.org.kind, buyerName)} value={order.data.notes || "—"} />
               </dl>
             </CardContent>
           </Card>
@@ -453,6 +470,14 @@ function SupplierSku({ item }: { item: OrderItem }) {
     ))
   }
   return item.supplierSku || <WarningNote>Not set</WarningNote>
+}
+
+// The buyer's note, labeled from the viewer's side: to the supplier for the buyer, from the buyer for the supplier.
+function noteLabel(viewer: string, buyerName: string | undefined) {
+  if (viewer !== "supplier") {
+    return "Note to supplier"
+  }
+  return buyerName ? `Note from ${buyerName}` : "Buyer’s note"
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto"
 import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
 import { z } from "zod"
-import { PageBreadcrumb } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
@@ -68,25 +67,24 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
   const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = deliveries.filter((delivery) => delivery.shopifyLocationId === params.locationId)
 
+  // The builder renders the page's header row first, then its form.
   return (
-    <>
-      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current="New purchase order" />
-      <OrderBuilder
-        title="Create purchase order"
-        suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
-        deliveries={deliveries}
-        forwarderAddresses={forwarding.map((row) => ({
-          addressId: row.addressId,
-          forwarderId: row.forwarderId,
-          label: `${row.forwarderName}, ${row.addressName}`,
-          hasPhone: Boolean(row.address.phoneNumber)
-        }))}
-        initialItems={initialItems}
-        needsBarcodeVariantIds={needsBarcode}
-        initialDestination={initialDestination}
-        initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
-        initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
-      />
-    </>
+    <OrderBuilder
+      title="New purchase order"
+      parents={[{ label: "Purchase orders", href: "/orders" }]}
+      suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
+      deliveries={deliveries}
+      forwarderAddresses={forwarding.map((row) => ({
+        addressId: row.addressId,
+        forwarderId: row.forwarderId,
+        label: `${row.forwarderName}, ${row.addressName}`,
+        hasPhone: Boolean(row.address.phoneNumber)
+      }))}
+      initialItems={initialItems}
+      needsBarcodeVariantIds={needsBarcode}
+      initialDestination={initialDestination}
+      initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
+      initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
+    />
   )
 }

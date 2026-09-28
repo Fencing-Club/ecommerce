@@ -1,7 +1,7 @@
 import { amazonNetworkNames } from "@repo/aisle"
 import { and, asc, eq, inArray } from "drizzle-orm"
 import { ArrowRight, Building2, MapPin, Warehouse } from "lucide-react"
-import { DocumentList, PageBreadcrumb, Status, formatDestination } from "@/components/common"
+import { DocumentList, PageHeader, Status, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
 import { RoutePill } from "@/components/route-pill"
 import { Badge } from "@/components/ui/badge"
@@ -44,11 +44,11 @@ export async function ForwarderView({ row }: { row: Awaited<ReturnType<typeof fo
 
   return (
     <>
-      <PageBreadcrumb parents={[{ label: "Purchase orders", href: "/orders" }]} current={order.data.reference} />
-      <div className="flex items-center gap-2">
-        <h1 className="text-xl font-semibold tracking-tight">{order.data.reference}</h1>
-        <Status status={order.status} />
-      </div>
+      <PageHeader
+        parents={[{ label: "Purchase orders", href: "/orders" }]}
+        title={order.data.reference}
+        badge={<Status status={order.status} />}
+      />
 
       <div className="flex max-w-4xl flex-col gap-4">
         <Card className="gap-0 overflow-hidden py-0">

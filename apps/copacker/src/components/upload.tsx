@@ -30,7 +30,10 @@ export function Upload({
   kind,
   label,
   items = [],
-  cartons = []
+  cartons = [],
+  current,
+  error: problem,
+  ref
 }: {
   orderId: string
   shipmentId?: string
@@ -39,6 +42,13 @@ export function Upload({
   label?: string | null
   items?: Array<{ id: string; name: string; variant: string }>
   cartons?: Array<{ cartonId: string }>
+  // The document already uploaded, such as a shipment's invoice, which the next upload replaces. It shows in place of
+  // the dropzone, with Replace.
+  current?: { id: string; name: string; size?: number }
+  // The parent's problem with the document, such as a required invoice that's missing.
+  error?: string
+  // The button that chooses the file, for a form to focus when the document is required.
+  ref?: React.Ref<HTMLButtonElement>
 }) {
   const router = useRouter()
   const [upload] = useUploadDocumentMutation()
@@ -49,6 +59,15 @@ export function Upload({
   const [error, setError] = useState("")
   const id = useId()
   const needsDetails = kind === "shipping_label" || items.length > 0
+  // Once the refreshed page shows the uploaded file as the current document, the row shows that instead.
+  const [currentId, setCurrentId] = useState(current?.id)
+  if (current?.id !== currentId) {
+    setCurrentId(current?.id)
+    if (status === "uploaded") {
+      setFile(null)
+      setStatus("ready")
+    }
+  }
 
   async function send(chosen: File, target: HTMLFormElement) {
     setError("")
@@ -132,8 +151,11 @@ export function Upload({
           maxBytes={maxBytes}
           file={file}
           onFileChange={choose}
+          current={current && { name: current.name, size: current.size, href: `/api/documents/${current.id}` }}
           disabled={status === "uploading"}
-          error={error}
+          // A chosen file answers the parent's problem, such as a missing invoice, while it uploads.
+          error={error || (file ? undefined : problem)}
+          ref={ref}
         >
           {/* Kept in place while empty, so screen readers announce the upload's progress. Not an <output>: the form's
               reset after an upload would replace an output's content. */}

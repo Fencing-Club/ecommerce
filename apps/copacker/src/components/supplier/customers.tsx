@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { EmptyState } from "@/components/common"
+import { LinkRow } from "@/components/link-row"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
@@ -12,18 +13,24 @@ import { Amounts, IndexToolbar, matches } from "./shared"
 type CatalogOption = { id: string; title: string; status: "active" | "draft" | "archived" }
 const none = "none"
 
-// Which catalog a customer sees, saved as soon as it's picked. "All products" is every active product at its own price.
+// What a customer without a catalog can order: every active product at its own price.
+const noCatalogHint = "All products at list prices"
+
+// Which catalog a customer sees, saved as soon as it's picked. "No catalog", as the list's tab calls it, offers every
+// active product at its own price; `hint` says so under the select.
 export function CatalogPicker({
   customerId,
   customer,
   catalogs,
   value,
+  hint = false,
   className
 }: {
   customerId: string
   customer: string
   catalogs: CatalogOption[]
   value: string | null
+  hint?: boolean
   className?: string
 }) {
   const router = useRouter()
@@ -31,7 +38,7 @@ export function CatalogPicker({
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
   const options = [
-    { value: none, label: "All products" },
+    { value: none, label: "No catalog" },
     ...catalogs.map((catalog) => ({
       value: catalog.id,
       label: catalog.status === "active" ? catalog.title : `${catalog.title} (${catalog.status})`
@@ -70,11 +77,19 @@ export function CatalogPicker({
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+              {option.value === none ? (
+                <span className="flex flex-col">
+                  {option.label}
+                  <span className="text-xs text-muted-foreground">{noCatalogHint}</span>
+                </span>
+              ) : (
+                option.label
+              )}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      {hint && current === none && !error && <p className="mt-2 text-xs text-muted-foreground">{noCatalogHint}</p>}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   )
@@ -135,7 +150,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
           </TableHeader>
           <TableBody>
             {shown.map((customer) => (
-              <TableRow key={customer.id}>
+              <LinkRow key={customer.id} href={`/customers/${customer.id}`}>
                 <TableCell>
                   <Link href={`/customers/${customer.id}`} className="font-medium hover:underline">
                     {customer.name}
@@ -159,7 +174,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                 <TableCell className="text-right">
                   <Amounts amounts={customer.spent} />
                 </TableCell>
-              </TableRow>
+              </LinkRow>
             ))}
           </TableBody>
         </Table>

@@ -1,21 +1,23 @@
 "use client"
 
 import { commonPaymentTerms, money } from "@repo/aisle"
-import { ChevronRight, Plus, Search, Undo2, X } from "lucide-react"
+import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
+import { PageHeader, StatusBadge } from "@/components/common"
+import { DateInput, SelectControl } from "@/components/form-controls"
+import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { MoneyInput } from "./pricing-controls"
+import { ChangeBadge, type LineChange } from "./proposal-panel"
 import { matches } from "./shared"
 
 type Line = {
@@ -32,26 +34,48 @@ type Line = {
 }
 export type ReviserProduct = { supplierSku: string; title: string; unitPrice: number | null; minimumPieces: number }
 
-// A supplier's edit of a sent PO, laid out like Shopify's order edit: the products with their quantities and prices,
-// products to add, and the terms, ready date and a note beside them. Sending asks the customer to approve.
+// How a line differs from the purchase order: added, removed, or a new quantity or price.
+function lineChange(line: Line): LineChange | null {
+  if (line.removed) {
+    return "removed"
+  }
+  if (!line.original) {
+    return "added"
+  }
+  return line.pieces !== line.original.pieces || line.unitPrice !== line.original.unitPrice ? "changed" : null
+}
+
+// A supplier's edit of a sent purchase order, laid out like Shopify's order edit: the products with their quantities
+// and prices, products to add, and the terms, ready date and a note beside them. Anything but the ready date goes to
+// the customer for approval, as the server decides too; the ready date alone saves straight away.
 export function OrderReviser({
   orderId,
   revision,
   reference,
+  customer,
   currency,
   items,
   subtotal: before,
+  current,
   terms,
+  proposalPending,
   products
 }: {
   orderId: string
   revision: number
   reference: string
+  // The buyer's name.
+  customer: string
   currency: string
   items: Array<Omit<Line, "key" | "removed"> & { removed?: boolean }>
-  // The products' total on the PO now.
+  // The products' total on the purchase order now.
   subtotal: number
+  // The purchase order's terms now, which the changes are measured against.
+  current: { paymentTerms: string; readyDate: string | null }
+  // Where the edit starts: a pending proposal's terms and note, or the purchase order's own.
   terms: { paymentTerms: string; readyDate: string | null; note: string }
+  // Whether the edit starts from changes the customer hasn't answered yet, which sending replaces.
+  proposalPending: boolean
   products: ReviserProduct[]
 }) {
   const router = useRouter()
@@ -75,21 +99,15 @@ export function OrderReviser({
       matches(query, product.title, product.supplierSku)
   )
   const change = (key: string, next: Partial<Line>) =>
-    setLines((current) => current.map((line) => (line.key === key ? { ...line, ...next } : line)))
-  const commercial =
-    lines.some(
-      (line) =>
-        !line.original ||
-        line.removed ||
-        line.pieces !== line.original.pieces ||
-        line.unitPrice !== line.original.unitPrice
-    ) || paymentTerms !== terms.paymentTerms
-  const termOptions = [...new Set(["", ...(paymentTerms ? [paymentTerms] : []), ...commonPaymentTerms])].map(
-    (value) => ({
-      value: value || "none",
-      label: value || "None"
-    })
+    setLines((rows) => rows.map((line) => (line.key === key ? { ...line, ...next } : line)))
+  // Products, quantities, prices and payment terms need the customer's approval.
+  const commercial = lines.some((line) => lineChange(line) !== null) || paymentTerms !== current.paymentTerms
+  const readyChanged = (readyDate || null) !== current.readyDate
+  const termOptions = [...new Set(["", current.paymentTerms, terms.paymentTerms, ...commonPaymentTerms])].map(
+    (value) => ({ value, label: value || "None" })
   )
+  // The primary button says what happens: changes for approval are sent, a ready date alone is saved.
+  const action = commercial ? { idle: "Send for approval", busy: "Sending" } : { idle: "Save", busy: "Saving" }
 
   async function send() {
     const problem = !kept.length
@@ -97,6 +115,10 @@ export function OrderReviser({
       : kept.find((line) => !line.pieces || line.pieces % line.piecesPerSet !== 0)
     if (problem) {
       setError(typeof problem === "string" ? problem : `Order ${problem.name} in multiples of ${problem.piecesPerSet}`)
+      return
+    }
+    if (!commercial && !readyChanged) {
+      setError("No changes to save")
       return
     }
     setPending(true)
@@ -133,63 +155,79 @@ export function OrderReviser({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Link href={`/orders/${orderId}`} className="text-sm text-muted-foreground hover:text-foreground">
-            {reference}
-          </Link>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <h1 className="text-xl font-semibold tracking-tight">Edit order</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}`} />}>
-            Cancel
-          </Button>
-          <Button disabled={pending} onClick={() => void send()}>
-            {commercial ? "Send for approval" : "Save"}
-          </Button>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        parents={[
+          { label: "Orders", href: "/orders" },
+          { label: reference, href: `/orders/${orderId}` }
+        ]}
+        title="Edit order"
+        badge={proposalPending ? <StatusBadge tone="info">Awaiting approval</StatusBadge> : undefined}
+      >
+        <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}`} />}>
+          Cancel
+        </Button>
+        <Button disabled={pending} onClick={() => void send()}>
+          {pending ? action.busy : action.idle}
+        </Button>
+      </PageHeader>
+
       {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertTitle>{error}</AlertTitle>
+        </Alert>
       )}
+
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="gap-0 py-0">
-          <CardHeader className="border-b py-3">
+        <Card className="@container gap-0 py-0">
+          <CardHeader className="border-b pt-4">
             <CardTitle>Products</CardTitle>
             <CardAction>
-              <Button size="sm" variant="outline" onClick={() => setAdding(true)} disabled={!products.length}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="-my-1"
+                onClick={() => setAdding(true)}
+                disabled={!products.length}
+              >
                 <Plus data-icon="inline-start" />
                 Add products
               </Button>
             </CardAction>
           </CardHeader>
+          {/* The columns' names, as a table's header band, once each line fits on one line. */}
+          <div
+            aria-hidden
+            className="hidden h-10 items-center gap-3 border-b bg-muted px-4 text-sm font-medium @min-[40rem]:flex"
+          >
+            <span className="flex-1">Product</span>
+            <span className="w-24 text-right">Quantity</span>
+            <span className="w-32 text-right">Unit price</span>
+            <span className="w-24 text-right">Total</span>
+            <span className="w-7" />
+          </div>
           <ul className="divide-y">
             {lines.map((line) => {
-              const changed =
-                !line.removed &&
-                line.original &&
-                (line.pieces !== line.original.pieces || line.unitPrice !== line.original.unitPrice)
+              const mark = lineChange(line)
               return (
                 <li
                   key={line.key}
-                  className={cn("flex flex-wrap items-center gap-3 px-4 py-3", line.removed && "bg-muted/30")}
+                  className={cn(
+                    "flex flex-wrap items-center gap-3 px-4 py-3 @min-[40rem]:flex-nowrap",
+                    line.removed && "bg-muted/30"
+                  )}
                 >
                   <div className="min-w-48 flex-1">
-                    <p className={cn("font-medium", line.removed && "text-muted-foreground line-through")}>
-                      {line.name}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className={cn("font-medium", line.removed && "text-muted-foreground line-through")}>
+                        {line.name}
+                      </p>
+                      {mark && <ChangeBadge change={mark} />}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {[line.variant, line.supplierSku].filter(Boolean).join(", ")}
                     </p>
-                    <div className="mt-1 flex gap-1">
-                      {!line.original && <Badge variant="secondary">Added</Badge>}
-                      {changed && <Badge variant="outline">Changed</Badge>}
-                      {line.removed && <Badge variant="destructive">Removed</Badge>}
-                    </div>
                   </div>
                   {!line.removed && (
                     <>
@@ -230,7 +268,7 @@ export function OrderReviser({
                       size="icon-sm"
                       variant="ghost"
                       aria-label={`Remove ${named(line)}`}
-                      onClick={() => setLines((current) => current.filter((other) => other.key !== line.key))}
+                      onClick={() => setLines((rows) => rows.filter((other) => other.key !== line.key))}
                     >
                       <X />
                     </Button>
@@ -274,44 +312,34 @@ export function OrderReviser({
               <FieldGroup className="gap-4">
                 <Field>
                   <FieldLabel htmlFor="revise-terms">Payment terms</FieldLabel>
-                  <Select
-                    items={termOptions}
-                    value={paymentTerms || "none"}
-                    onValueChange={(value) => setPaymentTerms(!value || value === "none" ? "" : value)}
-                  >
-                    <SelectTrigger id="revise-terms" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {termOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SelectControl
+                    id="revise-terms"
+                    options={termOptions}
+                    value={paymentTerms}
+                    onValueChange={(value) => setPaymentTerms(value ?? "")}
+                  />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="revise-ready">Ready date</FieldLabel>
-                  <Input
+                  <DateInput
                     id="revise-ready"
-                    type="date"
                     value={readyDate}
                     onChange={(event) => setReadyDate(event.target.value)}
                   />
-                  <FieldDescription>
-                    When the goods will be ready to ship. It updates without approval.
-                  </FieldDescription>
+                  <FieldDescription>Updates without approval</FieldDescription>
                 </Field>
-                <Field>
-                  <FieldLabel htmlFor="revise-note">Note to customer</FieldLabel>
-                  <Textarea
-                    id="revise-note"
-                    value={note}
-                    placeholder="Why these changes"
-                    onChange={(event) => setNote(event.target.value)}
-                  />
-                </Field>
+                {/* The note goes with changes for approval; a new ready date alone saves without one. */}
+                {commercial && (
+                  <Field>
+                    <FieldLabel htmlFor="revise-note">Note to {customer}</FieldLabel>
+                    <Textarea
+                      id="revise-note"
+                      value={note}
+                      placeholder="Why these changes"
+                      onChange={(event) => setNote(event.target.value)}
+                    />
+                  </Field>
+                )}
               </FieldGroup>
             </CardContent>
           </Card>
@@ -322,7 +350,7 @@ export function OrderReviser({
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add products</DialogTitle>
-            <DialogDescription>At this customer’s prices.</DialogDescription>
+            <DialogDescription>At {customer}’s prices</DialogDescription>
           </DialogHeader>
           <InputGroup>
             <InputGroupAddon>
@@ -343,8 +371,8 @@ export function OrderReviser({
                   type="button"
                   className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                   onClick={() => {
-                    setLines((current) => [
-                      ...current,
+                    setLines((rows) => [
+                      ...rows,
                       {
                         key: product.supplierSku,
                         name: product.title,
@@ -371,11 +399,11 @@ export function OrderReviser({
               </li>
             ))}
             {!available.length && (
-              <li className="px-2 py-6 text-center text-sm text-muted-foreground">No products found.</li>
+              <li className="px-2 py-6 text-center text-sm text-muted-foreground">No products found</li>
             )}
           </ul>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

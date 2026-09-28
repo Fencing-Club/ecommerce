@@ -1,12 +1,20 @@
 "use client"
 
-import { ChevronRight, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
+import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
+import { PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -104,6 +112,23 @@ function uploadLabel(uploading: number, count: number) {
     return `Uploading ${uploading}`
   }
   return count ? "Add" : "Add photos"
+}
+
+// The variant grid scrolls sideways inside its card when it's wider than the card. Its first column and the row actions
+// stay in view, on the card's own background so the columns scrolling past pass under them. Each cell draws its own
+// rule, which a sticky cell would otherwise cover. On a narrow card the option columns hide, and the SKU leads.
+const grid = {
+  table: "border-separate border-spacing-0 [&_td]:border-b [&_th]:border-b [&_tr:last-child_td]:border-b-0",
+  first: "sticky left-0 z-10 pl-4",
+  firstWhenNarrow: "@max-xl:sticky @max-xl:left-0 @max-xl:z-10 @max-xl:pl-4",
+  last: "sticky right-0 z-10 pr-4",
+  option: "hidden @xl:table-cell"
+}
+
+// The width a field needs to show the longest of `lengths` characters whole, kept within `least` and `most`, with its
+// padding.
+function fieldWidth(lengths: number[], least: number, most: number) {
+  return `calc(${Math.min(most, Math.max(least, ...lengths)) + 1}ch + 1.5rem)`
 }
 
 // Photos: upload several at once, remove one, or make one the main photo.
@@ -500,323 +525,366 @@ export function ProductEditor({
 
   const editingVariant = product.variants.find((variant) => variant.key === editing) ?? null
   const tracked = product.variants.some((variant) => variant.trackInventory)
+  const skuWidth = fieldWidth(
+    product.variants.map((variant) => variant.supplierSku.length),
+    10,
+    40
+  )
 
+  // The header row stands alone beside the sidebar's button; the form and its save bar follow it, so the bar stays in
+  // view while any part of the form does.
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex min-w-0 items-center gap-2">
-        <Link href="/products" className="text-sm text-muted-foreground hover:text-foreground">
-          Products
-        </Link>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <h1 className="truncate text-xl font-semibold tracking-tight">{saved.id ? saved.title : "Add product"}</h1>
-        {saved.id && <StatusBadge status={saved.status} />}
-      </div>
-
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardContent>
-              <FieldGroup className="gap-4">
-                <Field>
-                  <FieldLabel htmlFor="product-title">
-                    <span>
-                      Title
-                      <span aria-hidden className="text-destructive">
-                        *
+    <>
+      <PageHeader
+        parents={[{ label: "Products", href: "/products" }]}
+        title={saved.id ? saved.title : "Add product"}
+        badge={saved.id ? <StatusBadge status={saved.status} /> : undefined}
+      />
+      <div className="@container flex flex-col gap-4">
+        <div className="grid items-start gap-4 @4xl:grid-cols-[minmax(0,1fr)_18rem] @6xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <Card>
+              <CardContent>
+                <FieldGroup className="gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="product-title">
+                      <span>
+                        Title
+                        <span aria-hidden className="text-destructive">
+                          *
+                        </span>
                       </span>
-                    </span>
-                  </FieldLabel>
-                  <Input
-                    id="product-title"
-                    required
-                    maxLength={500}
-                    value={product.title}
-                    placeholder="Maraging epee blade"
-                    onChange={(event) => change({ title: event.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="product-description">Description</FieldLabel>
-                  <Textarea
-                    id="product-description"
-                    rows={5}
-                    value={product.description}
-                    onChange={(event) => change({ description: event.target.value })}
-                  />
-                  <FieldDescription>Customers see this, so include add-ons and customizations.</FieldDescription>
-                </Field>
-              </FieldGroup>
-            </CardContent>
-          </Card>
-
-          <Media images={product.images} onChange={(images) => change({ images })} />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Variants</CardTitle>
-              <CardDescription>Options your variants differ by, such as Size or Hand.</CardDescription>
-            </CardHeader>
-            <CardContent className="@container flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {product.optionNames.map((name) => (
-                  <Badge key={name} variant="secondary" className="h-7 gap-1 pr-1 text-sm">
-                    {name}
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label={`Remove option ${name}`}
-                      onClick={() =>
-                        change({
-                          optionNames: product.optionNames.filter((other) => other !== name),
-                          variants: product.variants.map((variant) => {
-                            const { [name]: _removed, ...options } = variant.options
-                            return { ...variant, options }
-                          })
-                        })
-                      }
-                    >
-                      <X />
-                    </Button>
-                  </Badge>
-                ))}
-                {product.optionNames.length < 4 && (
-                  <div className="flex items-center gap-1">
+                    </FieldLabel>
                     <Input
-                      value={newOption}
-                      placeholder={product.optionNames.length ? "Another option" : "Add an option, such as Size"}
-                      aria-label="New option name"
-                      className="h-7 w-52"
-                      onChange={(event) => setNewOption(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault()
-                          addOption()
-                        }
-                      }}
+                      id="product-title"
+                      required
+                      maxLength={500}
+                      value={product.title}
+                      placeholder="Maraging epee blade"
+                      onChange={(event) => change({ title: event.target.value })}
                     />
-                    <Button type="button" size="sm" variant="outline" disabled={!newOption.trim()} onClick={addOption}>
-                      Add
-                    </Button>
-                  </div>
-                )}
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="product-description">Description</FieldLabel>
+                    <Textarea
+                      id="product-description"
+                      rows={5}
+                      value={product.description}
+                      onChange={(event) => change({ description: event.target.value })}
+                    />
+                    <FieldDescription>Customers see this.</FieldDescription>
+                  </Field>
+                </FieldGroup>
+              </CardContent>
+            </Card>
+
+            <Media images={product.images} onChange={(images) => change({ images })} />
+
+            <Card className="gap-0 overflow-hidden py-0">
+              <div className="flex flex-col gap-3 border-b p-4">
+                <CardHeader className="px-0">
+                  <CardTitle>Variants</CardTitle>
+                  <CardDescription>Options your variants differ by, such as Size or Hand.</CardDescription>
+                </CardHeader>
+                <div className="flex flex-wrap items-center gap-2">
+                  {product.optionNames.map((name) => (
+                    <Badge key={name} variant="secondary" className="h-7 gap-1 pr-1 text-sm">
+                      {name}
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        aria-label={`Remove option ${name}`}
+                        onClick={() =>
+                          change({
+                            optionNames: product.optionNames.filter((other) => other !== name),
+                            variants: product.variants.map((variant) => {
+                              const { [name]: _removed, ...options } = variant.options
+                              return { ...variant, options }
+                            })
+                          })
+                        }
+                      >
+                        <X />
+                      </Button>
+                    </Badge>
+                  ))}
+                  {product.optionNames.length < 4 && (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newOption}
+                        placeholder={product.optionNames.length ? "Another option" : "Add an option, such as Size"}
+                        aria-label="New option name"
+                        className="h-7 w-52"
+                        onChange={(event) => setNewOption(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault()
+                            addOption()
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!newOption.trim()}
+                        onClick={addOption}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {product.optionNames.map((name) => (
-                      <TableHead key={name} className="hidden @xl:table-cell">
-                        {name}
+              {/* An editing grid: when it's wider than the card it scrolls sideways, keeping the first column and the
+                row actions in view. */}
+              <div className="@container">
+                <Table framed={false} className={grid.table}>
+                  <TableHeader>
+                    <TableRow>
+                      {product.optionNames.map((name, index) => (
+                        <TableHead key={name} className={cn(grid.option, index === 0 && cn(grid.first, "bg-muted"))}>
+                          {name}
+                        </TableHead>
+                      ))}
+                      <TableHead
+                        className={cn("bg-muted", product.optionNames.length ? grid.firstWhenNarrow : grid.first)}
+                      >
+                        SKU
                       </TableHead>
-                    ))}
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="w-36">Price</TableHead>
-                    {tracked && <TableHead className="hidden w-24 text-right @lg:table-cell">On hand</TableHead>}
-                    <TableHead className="w-20">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {product.variants.map((variant) => {
-                    const name = variantLabel(variant.options, product.optionNames) ?? variant.supplierSku
-                    return (
-                      <TableRow key={variant.key}>
-                        {product.optionNames.map((option) => (
-                          <TableCell key={option} className="hidden @xl:table-cell">
+                      <TableHead className="w-px">Price</TableHead>
+                      {tracked && <TableHead className="hidden text-right @lg:table-cell">On hand</TableHead>}
+                      <TableHead className={cn(grid.last, "w-px bg-muted")}>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {product.variants.map((variant) => {
+                      const label = variantLabel(variant.options, product.optionNames)
+                      const name = label ?? variant.supplierSku
+                      return (
+                        <TableRow key={variant.key} className="hover:bg-transparent">
+                          {product.optionNames.map((option, index) => (
+                            <TableCell
+                              key={option}
+                              className={cn(grid.option, index === 0 && cn(grid.first, "bg-card"))}
+                            >
+                              <Input
+                                value={variant.options[option] ?? ""}
+                                aria-label={`${option} for ${variant.supplierSku || "new variant"}`}
+                                aria-invalid={!variant.options[option]?.trim() || undefined}
+                                className="h-8"
+                                style={{
+                                  minWidth: fieldWidth(
+                                    product.variants.map((other) => other.options[option]?.length ?? 0),
+                                    4,
+                                    30
+                                  )
+                                }}
+                                onChange={(event) =>
+                                  setVariant(variant.key, {
+                                    options: { ...variant.options, [option]: event.target.value }
+                                  })
+                                }
+                              />
+                            </TableCell>
+                          ))}
+                          <TableCell
+                            className={cn("bg-card", product.optionNames.length ? grid.firstWhenNarrow : grid.first)}
+                          >
+                            {/* At most 40% of a narrow card, so the price beside it stays in view. */}
                             <Input
-                              value={variant.options[option] ?? ""}
-                              aria-label={`${option} for ${variant.supplierSku || "new variant"}`}
-                              aria-invalid={!variant.options[option]?.trim() || undefined}
-                              className="h-8 min-w-24"
-                              onChange={(event) =>
-                                setVariant(variant.key, {
-                                  options: { ...variant.options, [option]: event.target.value }
-                                })
-                              }
+                              value={variant.supplierSku}
+                              aria-label={`SKU for ${name || "new variant"}`}
+                              aria-invalid={!variant.supplierSku.trim() || undefined}
+                              className="h-8 font-mono text-xs"
+                              style={{ minWidth: `min(${skuWidth}, 40cqi)` }}
+                              onChange={(event) => setVariant(variant.key, { supplierSku: event.target.value })}
+                            />
+                            {label && (
+                              <p className="mt-1 text-xs whitespace-normal text-muted-foreground @xl:hidden">{label}</p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <MoneyInput
+                              label={`Price for ${name || "new variant"}`}
+                              currency={variant.currency}
+                              value={variant.priceMinor}
+                              onValueChange={(value) => setVariant(variant.key, { priceMinor: value })}
+                              className="h-8 w-32"
                             />
                           </TableCell>
-                        ))}
-                        <TableCell>
-                          <Input
-                            value={variant.supplierSku}
-                            aria-label={`SKU for ${name || "new variant"}`}
-                            aria-invalid={!variant.supplierSku.trim() || undefined}
-                            className="h-8 min-w-28 font-mono text-xs"
-                            onChange={(event) => setVariant(variant.key, { supplierSku: event.target.value })}
-                          />
-                          <p className="mt-1 truncate text-xs text-muted-foreground @xl:hidden">
-                            {variantLabel(variant.options, product.optionNames)}
-                          </p>
-                        </TableCell>
-                        <TableCell>
-                          <MoneyInput
-                            label={`Price for ${name || "new variant"}`}
-                            currency={variant.currency}
-                            value={variant.priceMinor}
-                            onValueChange={(value) => setVariant(variant.key, { priceMinor: value })}
-                            className="h-8 w-32"
-                          />
-                        </TableCell>
-                        {tracked && (
-                          <TableCell className="hidden text-right tabular-nums @lg:table-cell">
-                            {variant.trackInventory ? variant.onHand.toLocaleString("en-US") : "—"}
+                          {tracked && (
+                            <TableCell className="hidden text-right tabular-nums @lg:table-cell">
+                              {variant.trackInventory ? variant.onHand.toLocaleString("en-US") : "—"}
+                            </TableCell>
+                          )}
+                          <TableCell className={cn(grid.last, "bg-card")}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    aria-label={`Actions for ${name || "new variant"}`}
+                                  />
+                                }
+                              >
+                                <Ellipsis />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem onClick={() => setEditing(variant.key)}>
+                                  <Pencil />
+                                  Edit variant
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  disabled={product.variants.length === 1}
+                                  onClick={() =>
+                                    change({ variants: product.variants.filter((other) => other.key !== variant.key) })
+                                  }
+                                >
+                                  <Trash2 />
+                                  Remove variant
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
-                        )}
-                        <TableCell>
-                          <div className="flex justify-end gap-0.5">
-                            <Button
-                              type="button"
-                              size="icon-sm"
-                              variant="ghost"
-                              aria-label={`Edit ${name || "new variant"}`}
-                              onClick={() => setEditing(variant.key)}
-                            >
-                              <Pencil />
-                            </Button>
-                            <Button
-                              type="button"
-                              size="icon-sm"
-                              variant="ghost"
-                              aria-label={`Remove ${name || "new variant"}`}
-                              disabled={product.variants.length === 1}
-                              onClick={() =>
-                                change({ variants: product.variants.filter((other) => other.key !== variant.key) })
-                              }
-                            >
-                              <Trash2 />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                disabled={!product.optionNames.length}
-                onClick={() => {
-                  const variant = newVariant(product.variants.at(-1))
-                  change({ variants: [...product.variants, variant] })
-                  setEditing(variant.key)
-                }}
-              >
-                <Plus data-icon="inline-start" />
-                Add variant
-              </Button>
-              {saved.id && product.variants.some((variant) => !variant.id) && (
-                <p className="text-xs text-muted-foreground">New variants join the catalogs this product is in.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t p-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!product.optionNames.length}
+                  onClick={() => {
+                    const variant = newVariant(product.variants.at(-1))
+                    change({ variants: [...product.variants, variant] })
+                    setEditing(variant.key)
+                  }}
+                >
+                  <Plus data-icon="inline-start" />
+                  Add variant
+                </Button>
+                {saved.id && product.variants.some((variant) => !variant.id) && (
+                  <p className="text-xs text-muted-foreground">New variants join the catalogs this product is in.</p>
+                )}
+              </div>
+            </Card>
+          </div>
 
-        <div className="flex flex-col gap-4">
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select
-                items={[
-                  { value: "active", label: "Active" },
-                  { value: "archived", label: "Archived" }
-                ]}
-                value={product.status}
-                onValueChange={(value) => value && change({ status: value as EditorProduct["status"] })}
-              >
-                <SelectTrigger aria-label="Status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-              {product.status === "archived" && (
-                <p className="mt-2 text-xs text-muted-foreground">Customers can’t order archived products.</p>
-              )}
-            </CardContent>
-          </Card>
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle>Organization</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup className="gap-3">
-                <Field>
-                  <FieldLabel htmlFor="product-category">Category</FieldLabel>
-                  <Input
-                    id="product-category"
-                    value={product.category}
-                    onChange={(event) => change({ category: event.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="product-code">Product code</FieldLabel>
-                  <Input
-                    id="product-code"
-                    value={product.productCode}
-                    onChange={(event) => change({ productCode: event.target.value })}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="product-url">Product page</FieldLabel>
-                  <Input
-                    id="product-url"
-                    type="url"
-                    placeholder="https://"
-                    value={product.url}
-                    onChange={(event) => change({ url: event.target.value })}
-                  />
-                </Field>
-              </FieldGroup>
-            </CardContent>
-          </Card>
-          {saved.id && (
+          <div className="flex flex-col gap-4">
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Catalogs</CardTitle>
+                <CardTitle>Status</CardTitle>
               </CardHeader>
               <CardContent>
-                {catalogs.length ? (
-                  <ul className="flex flex-col gap-2 text-sm">
-                    {catalogs.map((catalog) => (
-                      <li key={catalog.id} className="flex items-center justify-between gap-2">
-                        <Link href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
-                          {catalog.title}
-                        </Link>
-                        {catalog.status !== "active" && <StatusBadge status={catalog.status} />}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Not in any catalog.</p>
+                <Select
+                  items={[
+                    { value: "active", label: "Active" },
+                    { value: "archived", label: "Archived" }
+                  ]}
+                  value={product.status}
+                  onValueChange={(value) => value && change({ status: value as EditorProduct["status"] })}
+                >
+                  <SelectTrigger aria-label="Status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+                {product.status === "archived" && (
+                  <p className="mt-2 text-xs text-muted-foreground">Customers can’t order archived products.</p>
                 )}
               </CardContent>
             </Card>
-          )}
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Organization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FieldGroup className="gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="product-category">Category</FieldLabel>
+                    <Input
+                      id="product-category"
+                      value={product.category}
+                      onChange={(event) => change({ category: event.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="product-code">Product code</FieldLabel>
+                    <Input
+                      id="product-code"
+                      value={product.productCode}
+                      onChange={(event) => change({ productCode: event.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="product-url">Product page</FieldLabel>
+                    <Input
+                      id="product-url"
+                      type="url"
+                      placeholder="https://"
+                      value={product.url}
+                      onChange={(event) => change({ url: event.target.value })}
+                    />
+                  </Field>
+                </FieldGroup>
+              </CardContent>
+            </Card>
+            {saved.id && (
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle>Catalogs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {catalogs.length ? (
+                    <ul className="flex flex-col gap-2 text-sm">
+                      {catalogs.map((catalog) => (
+                        <li key={catalog.id} className="flex items-center justify-between gap-2">
+                          <Link href={`/catalogs/${catalog.id}`} className="truncate hover:underline">
+                            {catalog.title}
+                          </Link>
+                          {catalog.status !== "active" && <StatusBadge status={catalog.status} />}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Not in any catalog.</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-      </div>
 
-      <SaveBar
-        dirty={dirty || !saved.id}
-        pending={pending}
-        error={error}
-        onDiscard={() => {
-          if (!saved.id) {
-            router.push("/products")
-            return
-          }
-          setProduct(saved)
-          setError("")
-        }}
-        onSave={() => void save()}
-      />
+        <SaveBar
+          dirty={dirty || !saved.id}
+          pending={pending}
+          error={error}
+          onDiscard={() => {
+            if (!saved.id) {
+              router.push("/products")
+              return
+            }
+            setProduct(saved)
+            setError("")
+          }}
+          onSave={() => void save()}
+        />
+      </div>
 
       <VariantSheet
         variant={editingVariant}
@@ -828,6 +896,6 @@ export function ProductEditor({
           setEditing(null)
         }}
       />
-    </div>
+    </>
   )
 }

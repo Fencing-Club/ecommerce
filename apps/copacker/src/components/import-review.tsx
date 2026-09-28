@@ -2,22 +2,25 @@
 
 import { money } from "@repo/aisle"
 import type { CatalogVariant } from "@repo/aisle/shopify"
-import { FileText, Plus, Search, Trash2 } from "lucide-react"
+import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { arrayIncludes, objectKeys } from "ts-extras"
 import { api, errorMessage } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { FormError, SubmitButton } from "./actions"
-import { PageBreadcrumb, PageHeader, WarningNote } from "./common"
-import { DateInput, FormLabel, RequiredMark } from "./form-controls"
+import { PageHeader, WarningNote } from "./common"
+import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
+import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Field, FieldDescription, FieldGroup, FieldTitle } from "./ui/field"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { Field, FieldGroup } from "./ui/field"
 import { Input } from "./ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 
 const reviewApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -47,6 +50,18 @@ const reviewApi = api.injectEndpoints({
 
 type Line = ImportProposal["items"][number]
 
+// A catalog product as the review shows it: the product's title, the variant's, and its SKU.
+export type ReviewProduct = { title: string; variant: string; sku: string | null }
+
+function reviewProduct(variant: CatalogVariant): ReviewProduct {
+  return { title: variant.product.title, variant: variant.title, sku: variant.sku }
+}
+
+// Shopify names a product's only variant "Default Title", which says nothing.
+function variantName(product: ReviewProduct) {
+  return product.variant === "Default Title" ? null : product.variant
+}
+
 // The currencies an import can be in, named as the purchase order editor names them.
 const currencyNames: Record<NonNullable<ImportProposal["currency"]>, string> = {
   USD: "US Dollar (USD $)",
@@ -58,12 +73,38 @@ const currencyNames: Record<NonNullable<ImportProposal["currency"]>, string> = {
 }
 const currencies = objectKeys(currencyNames)
 
-// A catalog product, as the review page names the ones already chosen.
-function productName(product: CatalogVariant) {
-  return `${product.product.title} / ${product.title} / ${product.sku ?? "No buyer SKU"}`
+// The table's first and last columns line up with the card's header.
+const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+
+// Focuses the product search when it opens. Defined once, so React calls it only when the search mounts.
+const focusOnMount = (input: HTMLInputElement | null) => input?.focus()
+
+// Enter in a field would save the draft, which creates the purchase order, so only Save draft saves. Buttons still
+// press, and the product search keeps Enter to search.
+function keepEnterFromSubmitting(event: React.KeyboardEvent<HTMLFormElement>) {
+  if (
+    event.key === "Enter" &&
+    !event.nativeEvent.isComposing &&
+    event.target instanceof HTMLInputElement &&
+    event.target.form === event.currentTarget
+  ) {
+    event.preventDefault()
+  }
 }
 
-// The line as the document lists it, such as "SKU AB-1, 10 pairs at 1.20", leaving out what the document doesn't say.
+// A typed amount in minor units, or null while it isn't a whole nonnegative amount with at most two decimals.
+function minorUnits(value: string | null) {
+  if (value === null) {
+    return null
+  }
+  try {
+    return priceInMinorUnits(value)
+  } catch {
+    return null
+  }
+}
+
+// The line as the document lists it, such as "SKU AB-1, 10 pairs at 1.20, page 2", leaving out what it doesn't say.
 function sourceLine(line: Line) {
   const parts: string[] = line.sourceSku ? [`SKU ${line.sourceSku}`] : []
   const unit = line.sourceUnit ?? "units"
@@ -76,7 +117,74 @@ function sourceLine(line: Line) {
   } else if (line.sourceUnitPrice !== null) {
     parts.push(`${line.sourceUnitPrice} each`)
   }
+  if (line.sourcePage !== null) {
+    parts.push(`page ${line.sourcePage}`)
+  }
   return parts.join(", ")
+}
+
+// The products, the charges and their total, or null while a line or charge is incomplete: incomplete input is
+// expected while reviewing, and a zero would be invented. `difference` is how far the total is from the document's.
+function totalsOf(proposal: ImportProposal) {
+  let products = 0
+  for (const item of proposal.items) {
+    const price = minorUnits(item.pricePerPiece)
+    if (item.pieces === null || price === null) {
+      return null
+    }
+    products += item.pieces * price
+  }
+  let adjustments = 0
+  for (const charge of proposal.adjustments) {
+    const negative = charge.amount?.startsWith("-") ?? false
+    const value = minorUnits(negative && charge.amount ? charge.amount.slice(1) : charge.amount)
+    if (value === null) {
+      return null
+    }
+    adjustments += negative ? -value : value
+  }
+  const documentTotal = minorUnits(proposal.documentTotal)
+  const total = products + adjustments
+  return { products, adjustments, total, difference: documentTotal === null ? null : total - documentTotal }
+}
+
+// The product a line is matched to, as the purchase order editor shows it, or a way to find one. A product chosen
+// while Shopify couldn't be reached is still chosen; only its details are missing.
+function LineProduct({
+  product,
+  selected,
+  onFind
+}: {
+  product: ReviewProduct | undefined
+  selected: boolean
+  onFind: () => void
+}) {
+  if (product) {
+    const variant = variantName(product)
+    return (
+      <>
+        <span className="leading-snug font-medium">{product.title}</span>
+        {variant && <Badge variant="secondary">{variant}</Badge>}
+        {product.sku ? (
+          <span className="text-xs text-muted-foreground">{product.sku}</span>
+        ) : (
+          <WarningNote>No SKU in Shopify</WarningNote>
+        )}
+      </>
+    )
+  }
+  if (selected) {
+    return <span className="text-muted-foreground">Product details unavailable</span>
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <WarningNote>No matching product</WarningNote>
+      <Button type="button" variant="outline" size="sm" onClick={onFind}>
+        <Search data-icon="inline-start" />
+        Find product
+      </Button>
+    </div>
+  )
 }
 
 // The importer's notes on the document or on a line.
@@ -97,15 +205,17 @@ function Warnings({ warnings }: { warnings: string[] }) {
 
 export function ImportReview({
   id,
+  filename,
   initialRevision,
   initialProposal,
   initialSelectedProducts,
   suppliers
 }: {
   id: string
+  filename: string
   initialRevision: number
   initialProposal: ImportProposal
-  initialSelectedProducts: Record<string, string>
+  initialSelectedProducts: Record<string, ReviewProduct>
   suppliers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
@@ -122,34 +232,16 @@ export function ImportReview({
   const [readState, reading] = reviewApi.useLazyImportStateQuery()
   const [save, saving] = reviewApi.useSaveImportMutation()
   const busy = reading.isFetching || correcting.isLoading || saving.isLoading
-  let totals: { products: number; adjustments: number; total: number; difference: number | null } | null = null
-  try {
-    const products = proposal.items.reduce((sum, item) => {
-      if (item.pieces === null || item.pricePerPiece === null) {
-        throw new Error("Incomplete")
-      }
-      return sum + item.pieces * priceInMinorUnits(item.pricePerPiece)
-    }, 0)
-    const adjustments = proposal.adjustments.reduce((sum, item) => {
-      if (item.amount === null) {
-        throw new Error("Incomplete")
-      }
-      const negative = item.amount.startsWith("-")
-      return sum + (negative ? -1 : 1) * priceInMinorUnits(negative ? item.amount.slice(1) : item.amount)
-    }, 0)
-    totals = {
-      products,
-      adjustments,
-      total: products + adjustments,
-      difference:
-        proposal.documentTotal === null ? null : products + adjustments - priceInMinorUnits(proposal.documentTotal)
-    }
-  } catch {
-    // Incomplete input is expected while reviewing; never invent a zero amount.
-  }
+  const totals = totalsOf(proposal)
   const currency = proposal.currency
-  // An amount in the document's currency, or a dash until the lines and currency are complete.
-  const amount = (minor: number | undefined) => (minor !== undefined && currency ? money(minor, currency) : "—")
+  // An amount in the document's currency, or as a plain number until the currency is chosen.
+  const format = (minor: number) => (currency ? money(minor, currency) : (minor / 100).toFixed(2))
+  // A total, or a dash until the lines, charges and currency are complete.
+  const summary = (minor: number | undefined) => (minor !== undefined && currency ? money(minor, currency) : "—")
+  // The search results for what's typed, with the next catalog page to look through.
+  const results = catalog.originalArgs?.q === query ? catalog.data : undefined
+  const nextCursor = results?.nextCursor ?? null
+
   function edit(change: (draft: ImportProposal) => void) {
     setProposal((current) => {
       const next = structuredClone(current)
@@ -157,16 +249,114 @@ export function ImportReview({
       return next
     })
   }
+  function editLine(index: number, change: (line: Line) => void) {
+    edit((draft) => {
+      const line = draft.items[index]
+      if (line) {
+        change(line)
+      }
+    })
+  }
+  function runSearch(text = query, cursor?: string) {
+    if (text.trim() && !catalog.isFetching) {
+      void search(cursor ? { id, q: text, cursor } : { id, q: text })
+    }
+  }
+  // Opens the catalog search under a line, already searching for its SKU or description.
+  function openSearch(index: number) {
+    const item = proposal.items[index]
+    const text = item ? (item.sourceSku ?? item.description) : ""
+    setSearchRow(index)
+    setQuery(text)
+    runSearch(text)
+  }
+  function choose(index: number, variant: CatalogVariant) {
+    const product = reviewProduct(variant)
+    setSelectedProducts((current) => ({ ...current, [variant.id]: product }))
+    editLine(index, (line) => {
+      line.selectedVariantId = variant.id
+      line.reason = "Selected during review"
+      // A line added during review has no document text; it takes the product's name.
+      if (!line.description.trim()) {
+        line.description = [product.title, variantName(product)].filter(Boolean).join(" ")
+      }
+    })
+    setSearchRow(null)
+  }
+  function addLine() {
+    const index = proposal.items.length
+    edit((draft) => {
+      draft.items.push({
+        description: "",
+        sourceSku: null,
+        sourcePage: null,
+        sourceQuantity: null,
+        sourceUnit: null,
+        sourceUnitPrice: null,
+        sourceLineTotal: null,
+        selectedVariantId: null,
+        candidateVariantIds: [],
+        pieces: null,
+        piecesPerSet: null,
+        pricePerPiece: null,
+        reason: "Added during review",
+        warnings: []
+      })
+    })
+    setSearchRow(index)
+    setQuery("")
+  }
+  function removeLine(index: number) {
+    setSearchRow(null)
+    edit((draft) => {
+      draft.items.splice(index, 1)
+    })
+  }
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+    if (!supplierId) {
+      setError("Choose a supplier")
+      return
+    }
+    const unnamed = proposal.items.findIndex((item) => !item.description.trim())
+    if (unnamed !== -1) {
+      setError(`Choose a product for line ${unnamed + 1}`)
+      return
+    }
+    try {
+      const current = await readState(id, false).unwrap()
+      if (current.status === "saved" && current.orderId) {
+        router.push(`/orders/${current.orderId}`)
+        router.refresh()
+        return
+      }
+      const corrected = await correct({ id, revision, proposal }).unwrap()
+      setRevision(corrected.revision)
+      const result = await save({
+        id,
+        revision: corrected.revision,
+        supplierId,
+        reference: proposal.reference ?? "",
+        dueDate
+      }).unwrap()
+      router.push(result.redirect)
+      router.refresh()
+    } catch (failure) {
+      setError(errorMessage(failure))
+    }
+  }
+
+  const formId = "import-review"
   return (
     <>
-      <PageBreadcrumb
+      <PageHeader
         parents={[
           { label: "Purchase orders", href: "/orders" },
           { label: "Import", href: "/orders/import" }
         ]}
-        current="Review"
-      />
-      <PageHeader title="Review import">
+        title={filename}
+      >
         <Button
           variant="outline"
           nativeButton={false}
@@ -175,56 +365,26 @@ export function ImportReview({
           <FileText data-icon="inline-start" />
           View PDF
         </Button>
+        <SubmitButton type="submit" form={formId} pending={busy}>
+          Save draft
+        </SubmitButton>
       </PageHeader>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault()
-          setError(null)
-          try {
-            const current = await readState(id, false).unwrap()
-            if (current.status === "saved" && current.orderId) {
-              router.push(`/orders/${current.orderId}`)
-              router.refresh()
-              return
-            }
-            const corrected = await correct({ id, revision, proposal }).unwrap()
-            setRevision(corrected.revision)
-            const result = await save({
-              id,
-              revision: corrected.revision,
-              supplierId,
-              reference: proposal.reference ?? "",
-              dueDate
-            }).unwrap()
-            router.push(result.redirect)
-            router.refresh()
-          } catch (failure) {
-            setError(errorMessage(failure))
-          }
-        }}
-      >
-        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-6">
-          <Card>
+      <FormError message={error ?? undefined} />
+      {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      <form id={formId} className="@container" onSubmit={submit} onKeyDown={keepEnterFromSubmitting}>
+        {/* One column, or the lines beside the details and cost summary once there's room, as in the editor. */}
+        <fieldset
+          disabled={busy}
+          className="grid min-w-0 items-start gap-4 @5xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:grid-rows-[auto_1fr]"
+        >
+          <Card className="@5xl:col-start-2 @5xl:row-start-1">
             <CardHeader>
-              <CardTitle>Purchase order</CardTitle>
+              <CardTitle>Purchase order details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Warnings warnings={proposal.warnings} />
-              <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FormLabel htmlFor="import-reference" label="Reference number" required />
-                  <Input
-                    id="import-reference"
-                    required
-                    value={proposal.reference ?? ""}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      edit((p) => {
-                        p.reference = value
-                      })
-                    }}
-                  />
-                </Field>
+              <FieldGroup className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-1">
                 <SelectField
                   id="import-supplier"
                   label="Supplier"
@@ -234,6 +394,21 @@ export function ImportReview({
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
                 />
+                <Field>
+                  <FormLabel htmlFor="import-reference" label="Reference number" required />
+                  <Input
+                    id="import-reference"
+                    required
+                    maxLength={80}
+                    value={proposal.reference ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      edit((p) => {
+                        p.reference = value
+                      })
+                    }}
+                  />
+                </Field>
                 <Field>
                   <FormLabel htmlFor="import-due-date" label="Required by" required />
                   <DateInput
@@ -262,332 +437,282 @@ export function ImportReview({
               </FieldGroup>
             </CardContent>
           </Card>
-          {proposal.items.map((item, index) => {
-            const line = index + 1
-            const source = sourceLine(item)
-            const product = item.selectedVariantId
-              ? (selectedProducts[item.selectedVariantId] ?? "Details unavailable")
-              : null
-            return (
-              <Card key={index}>
-                <CardHeader>
-                  <CardTitle>Line {line}</CardTitle>
-                  {source && <CardDescription>{source}</CardDescription>}
-                  <CardAction>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`Remove line ${line}`}
-                      disabled={proposal.items.length === 1}
-                      onClick={() => {
-                        setSearchRow(null)
-                        edit((p) => {
-                          p.items.splice(index, 1)
-                        })
-                      }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <Warnings warnings={item.warnings} />
-                  <FieldGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                    <Field className="sm:col-span-2 lg:col-span-5">
-                      <FormLabel htmlFor={`import-description-${index}`} label="Description" required />
-                      <Input
-                        id={`import-description-${index}`}
-                        required
-                        maxLength={1000}
-                        value={item.description}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.description = value
-                          })
-                        }}
-                      />
-                    </Field>
-                    <Field className="sm:col-span-2 lg:col-span-5">
-                      <FieldTitle>
-                        <span>
-                          Product
-                          <RequiredMark />
-                        </span>
-                      </FieldTitle>
-                      <div className="flex items-center gap-3">
-                        <span className={cn("min-w-0 flex-1 truncate text-sm", !product && "text-muted-foreground")}>
-                          {product ?? "—"}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Find product for line ${line}`}
-                          onClick={() => {
-                            setSearchRow(index)
-                            setQuery(item.sourceSku ?? item.description)
-                          }}
-                        >
-                          <Search data-icon="inline-start" />
-                          Find product
-                        </Button>
-                      </div>
-                      {item.reason && <FieldDescription>{item.reason}</FieldDescription>}
-                      {searchRow === index && (
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <InputGroup>
-                              <InputGroupAddon>
-                                <Search />
-                              </InputGroupAddon>
-                              <InputGroupInput
-                                aria-label={`Catalog search for line ${line}`}
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                  // Enter searches rather than saving the whole review.
-                                  if (e.key === "Enter") {
-                                    e.preventDefault()
-                                    if (!catalog.isFetching) {
-                                      search({ id, q: query })
-                                    }
-                                  }
-                                }}
-                              />
-                            </InputGroup>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={catalog.isFetching}
-                              onClick={() => search({ id, q: query })}
-                            >
-                              Search
-                            </Button>
+
+          <Card className="gap-0 overflow-hidden py-0 @5xl:col-start-1 @5xl:row-span-2 @5xl:row-start-1">
+            <CardHeader className="border-b p-4">
+              <CardTitle>Lines</CardTitle>
+            </CardHeader>
+            {/* An editing grid: on a phone it scrolls sideways rather than squeezing the inputs. */}
+            <Table framed={false} className={edgeTable}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="w-24 text-right">Pieces</TableHead>
+                  <TableHead className="w-20 text-right">Per set</TableHead>
+                  <TableHead className="w-28 text-right">Price per piece</TableHead>
+                  <TableHead className="w-28 text-right">Line total</TableHead>
+                  <TableHead className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {proposal.items.map((item, index) => {
+                  const line = index + 1
+                  const product = item.selectedVariantId ? selectedProducts[item.selectedVariantId] : undefined
+                  const source = sourceLine(item)
+                  const price = minorUnits(item.pricePerPiece)
+                  const lineTotal = minorUnits(item.sourceLineTotal)
+                  const computed = item.pieces !== null && price !== null ? item.pieces * price : null
+                  // Saving checks the document's line total against pieces × price; say so before it does.
+                  const warnings =
+                    computed !== null && lineTotal !== null && computed !== lineTotal
+                      ? [
+                          ...item.warnings,
+                          `Pieces × price is ${format(computed)}, but the line total is ${format(lineTotal)}`
+                        ]
+                      : item.warnings
+                  return (
+                    <Fragment key={index}>
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell className="py-2.5 align-top whitespace-normal">
+                          <div className="flex min-w-56 flex-col items-start gap-1">
+                            <LineProduct
+                              product={product}
+                              selected={item.selectedVariantId !== null}
+                              onFind={() => openSearch(index)}
+                            />
+                            {(item.description || source) && (
+                              <p className="mt-1 flex gap-1.5 text-xs text-muted-foreground">
+                                <FileText aria-hidden className="mt-px size-3.5 shrink-0" />
+                                <span className="min-w-0">
+                                  <span className="sr-only">On the document: </span>
+                                  {item.description}
+                                  {source && <span className="block">{source}</span>}
+                                </span>
+                              </p>
+                            )}
+                            {item.reason && <p className="text-xs text-muted-foreground">{item.reason}</p>}
+                            <Warnings warnings={warnings} />
                           </div>
-                          {catalog.isError && <FormError message={errorMessage(catalog.error)} />}
-                          {catalog.originalArgs?.q === query && catalog.data && (
-                            <>
-                              {catalog.data.results.length > 0 && (
-                                <ul className="divide-y overflow-hidden rounded-lg border">
-                                  {catalog.data.results.map((result) => (
-                                    <li key={result.id}>
-                                      <button
-                                        type="button"
-                                        className="w-full px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
-                                        onClick={() => {
-                                          setSelectedProducts((current) => ({
-                                            ...current,
-                                            [result.id]: productName(result)
-                                          }))
-                                          edit((p) => {
-                                            p.items[index]!.selectedVariantId = result.id
-                                            p.items[index]!.reason = "Selected during review"
-                                          })
-                                          setSearchRow(null)
-                                        }}
-                                      >
-                                        {productName(result)}
-                                      </button>
-                                    </li>
-                                  ))}
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <Input
+                            aria-label={`Pieces on line ${line}`}
+                            required
+                            type="number"
+                            min="1"
+                            step="1"
+                            className="text-right tabular-nums"
+                            value={item.pieces ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              editLine(index, (target) => {
+                                target.pieces = value ? Number(value) : null
+                              })
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <Input
+                            aria-label={`Pieces per set on line ${line}`}
+                            required
+                            type="number"
+                            min="1"
+                            step="1"
+                            className="text-right tabular-nums"
+                            value={item.piecesPerSet ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              editLine(index, (target) => {
+                                target.piecesPerSet = value ? Number(value) : null
+                              })
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <Input
+                            aria-label={`Price per piece on line ${line}`}
+                            required
+                            inputMode="decimal"
+                            autoComplete="off"
+                            className="text-right tabular-nums"
+                            value={item.pricePerPiece ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              editLine(index, (target) => {
+                                target.pricePerPiece = value || null
+                              })
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <Input
+                            aria-label={`Line total on line ${line}`}
+                            inputMode="decimal"
+                            autoComplete="off"
+                            className="text-right tabular-nums"
+                            value={item.sourceLineTotal ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              editLine(index, (target) => {
+                                target.sourceLineTotal = value || null
+                              })
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="mt-0.5"
+                                  aria-label={`More for line ${line}`}
+                                />
+                              }
+                            >
+                              <Ellipsis />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => openSearch(index)}>
+                                {item.selectedVariantId ? "Change product" : "Find product"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={proposal.items.length === 1}
+                                onClick={() => removeLine(index)}
+                              >
+                                Remove line
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                      {searchRow === index && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="bg-muted/30 py-3 whitespace-normal">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <InputGroup className="max-w-md">
+                                  <InputGroupAddon>
+                                    <Search />
+                                  </InputGroupAddon>
+                                  <InputGroupInput
+                                    ref={focusOnMount}
+                                    aria-label={`Find a product for line ${line}`}
+                                    placeholder="Product, SKU or supplier SKU"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      // Enter searches rather than saving the whole review.
+                                      if (e.key === "Enter") {
+                                        e.preventDefault()
+                                        runSearch()
+                                      }
+                                    }}
+                                  />
+                                </InputGroup>
+                                <SubmitButton
+                                  type="button"
+                                  variant="outline"
+                                  pending={catalog.isFetching}
+                                  disabled={!query.trim()}
+                                  onClick={() => runSearch()}
+                                >
+                                  Search
+                                </SubmitButton>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="ml-auto"
+                                  aria-label="Close search"
+                                  onClick={() => setSearchRow(null)}
+                                >
+                                  <X />
+                                </Button>
+                              </div>
+                              {catalog.isError && <FormError message={errorMessage(catalog.error)} />}
+                              {results && results.results.length > 0 && (
+                                <ul className="divide-y overflow-hidden rounded-lg border bg-background">
+                                  {results.results.map((result) => {
+                                    const option = reviewProduct(result)
+                                    const details = [
+                                      variantName(option),
+                                      option.sku,
+                                      result.supplierSku && `Supplier SKU ${result.supplierSku.value}`
+                                    ]
+                                      .filter(Boolean)
+                                      .join(", ")
+                                    return (
+                                      <li key={result.id}>
+                                        <button
+                                          type="button"
+                                          className="flex w-full flex-col items-start px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+                                          onClick={() => choose(index, result)}
+                                        >
+                                          <span className="font-medium">{option.title}</span>
+                                          {details && <span className="text-xs text-muted-foreground">{details}</span>}
+                                        </button>
+                                      </li>
+                                    )
+                                  })}
                                 </ul>
                               )}
-                              {catalog.data.complete && catalog.data.results.length === 0 && (
-                                <p className="text-sm text-muted-foreground">No matches</p>
+                              {results && !results.results.length && (
+                                <p className="text-sm text-muted-foreground">
+                                  {results.complete ? "No matches" : "No matches yet"}
+                                </p>
                               )}
-                              {catalog.data.nextCursor && (
+                              {nextCursor && (
                                 <div>
                                   <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
                                     disabled={catalog.isFetching}
-                                    onClick={() => search({ id, q: query, cursor: catalog.data!.nextCursor! })}
+                                    onClick={() => runSearch(query, nextCursor)}
                                   >
                                     Search more
                                   </Button>
                                 </div>
                               )}
-                            </>
-                          )}
-                        </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </Field>
-                    <Field>
-                      <FormLabel htmlFor={`import-pieces-${index}`} label="Pieces" required />
-                      <Input
-                        id={`import-pieces-${index}`}
-                        required
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={item.pieces ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.pieces = value ? Number(value) : null
-                          })
-                        }}
-                      />
-                    </Field>
-                    <Field>
-                      <FormLabel htmlFor={`import-pack-${index}`} label="Pieces per set" required />
-                      <Input
-                        id={`import-pack-${index}`}
-                        required
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={item.piecesPerSet ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.piecesPerSet = value ? Number(value) : null
-                          })
-                        }}
-                      />
-                    </Field>
-                    <Field>
-                      <FormLabel htmlFor={`import-price-${index}`} label="Price per piece" required />
-                      <Input
-                        id={`import-price-${index}`}
-                        required
-                        inputMode="decimal"
-                        value={item.pricePerPiece ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.pricePerPiece = value || null
-                          })
-                        }}
-                      />
-                    </Field>
-                    <Field>
-                      <FormLabel htmlFor={`import-line-total-${index}`} label="Line total" />
-                      <Input
-                        id={`import-line-total-${index}`}
-                        inputMode="decimal"
-                        value={item.sourceLineTotal ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.sourceLineTotal = value || null
-                          })
-                        }}
-                      />
-                    </Field>
-                    <Field>
-                      <FormLabel htmlFor={`import-source-page-${index}`} label="Page" />
-                      <Input
-                        id={`import-source-page-${index}`}
-                        type="number"
-                        min="1"
-                        max="50"
-                        step="1"
-                        value={item.sourcePage ?? ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          edit((p) => {
-                            p.items[index]!.sourcePage = value ? Number(value) : null
-                          })
-                        }}
-                      />
-                    </Field>
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-            )
-          })}
-          <div>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={proposal.items.length >= 150}
-              onClick={() => {
-                setSearchRow(null)
-                edit((p) => {
-                  p.items.push({
-                    description: "",
-                    sourceSku: null,
-                    sourcePage: null,
-                    sourceQuantity: null,
-                    sourceUnit: null,
-                    sourceUnitPrice: null,
-                    sourceLineTotal: null,
-                    selectedVariantId: null,
-                    candidateVariantIds: [],
-                    pieces: null,
-                    piecesPerSet: null,
-                    pricePerPiece: null,
-                    reason: "Added during review",
-                    warnings: []
-                  })
-                })
-              }}
-            >
-              <Plus data-icon="inline-start" />
-              Add line
-            </Button>
-          </div>
-          <Card>
+                    </Fragment>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            <div className="border-t p-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={proposal.items.length >= 150}
+                onClick={addLine}
+              >
+                <Plus data-icon="inline-start" />
+                Add line
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="@5xl:col-start-2 @5xl:row-start-2">
             <CardHeader>
-              <CardTitle>Charges and total</CardTitle>
+              <CardTitle>Cost summary</CardTitle>
               <CardDescription>Discounts as negative amounts</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              {proposal.adjustments.map((charge, index) => (
-                <div key={index} className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
-                  <Field>
-                    <FormLabel htmlFor={`import-charge-description-${index}`} label="Description" required />
-                    <Input
-                      id={`import-charge-description-${index}`}
-                      required
-                      value={charge.description}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        edit((p) => {
-                          p.adjustments[index]!.description = value
-                        })
-                      }}
-                    />
-                  </Field>
-                  <Field>
-                    <FormLabel htmlFor={`import-charge-amount-${index}`} label="Amount" required />
-                    <Input
-                      id={`import-charge-amount-${index}`}
-                      required
-                      inputMode="decimal"
-                      value={charge.amount ?? ""}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        edit((p) => {
-                          p.adjustments[index]!.amount = value || null
-                        })
-                      }}
-                    />
-                  </Field>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Remove charge ${index + 1}`}
-                    onClick={() =>
-                      edit((p) => {
-                        p.adjustments.splice(index, 1)
-                      })
-                    }
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              ))}
-              <div>
+              <CardAction>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
+                  disabled={proposal.adjustments.length >= 50}
                   onClick={() =>
                     edit((p) => {
                       p.adjustments.push({ description: "", amount: null, sourcePage: 1 })
@@ -597,13 +722,87 @@ export function ImportReview({
                   <Plus data-icon="inline-start" />
                   Add charge
                 </Button>
-              </div>
-              <div className="flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-end sm:justify-between">
-                <Field className="sm:max-w-48">
-                  <FormLabel htmlFor="import-grand-total" label="Document total" />
+              </CardAction>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {proposal.adjustments.length > 0 && (
+                <ul className="flex flex-col gap-2">
+                  {proposal.adjustments.map((charge, index) => (
+                    <li key={index} className="grid grid-cols-[minmax(0,1fr)_7rem_auto] items-center gap-2">
+                      <Input
+                        aria-label={`Charge ${index + 1}`}
+                        placeholder="Description"
+                        required
+                        maxLength={255}
+                        value={charge.description}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          edit((p) => {
+                            const target = p.adjustments[index]
+                            if (target) {
+                              target.description = value
+                            }
+                          })
+                        }}
+                      />
+                      <Input
+                        aria-label={`Amount of charge ${index + 1}`}
+                        placeholder="0.00"
+                        required
+                        inputMode="decimal"
+                        autoComplete="off"
+                        className="text-right tabular-nums"
+                        value={charge.amount ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          edit((p) => {
+                            const target = p.adjustments[index]
+                            if (target) {
+                              target.amount = value || null
+                            }
+                          })
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove charge ${index + 1}`}
+                        onClick={() =>
+                          edit((p) => {
+                            p.adjustments.splice(index, 1)
+                          })
+                        }
+                      >
+                        <Trash2 />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <dl
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2",
+                  proposal.adjustments.length > 0 && "border-t pt-4"
+                )}
+              >
+                <dt className="text-muted-foreground">Products</dt>
+                <dd className="text-right tabular-nums">{summary(totals?.products)}</dd>
+                <dt className="text-muted-foreground">Charges</dt>
+                <dd className="text-right tabular-nums">{summary(totals?.adjustments)}</dd>
+                <dt className="font-medium">Total</dt>
+                <dd className="text-right font-medium tabular-nums">{summary(totals?.total)}</dd>
+                <dt>
+                  <label htmlFor="import-document-total" className="text-muted-foreground">
+                    Document total
+                  </label>
+                </dt>
+                <dd>
                   <Input
-                    id="import-grand-total"
+                    id="import-document-total"
                     inputMode="decimal"
+                    autoComplete="off"
+                    className="w-28 text-right tabular-nums"
                     value={proposal.documentTotal ?? ""}
                     onChange={(e) => {
                       const value = e.target.value
@@ -612,30 +811,16 @@ export function ImportReview({
                       })
                     }}
                   />
-                </Field>
-                <dl className="grid grid-cols-[auto_auto] gap-x-8 gap-y-1 text-sm">
-                  <dt className="text-muted-foreground">Products</dt>
-                  <dd className="text-right tabular-nums">{amount(totals?.products)}</dd>
-                  <dt className="text-muted-foreground">Charges</dt>
-                  <dd className="text-right tabular-nums">{amount(totals?.adjustments)}</dd>
-                  <dt className="font-medium">Total</dt>
-                  <dd className="text-right font-medium tabular-nums">{amount(totals?.total)}</dd>
-                </dl>
-              </div>
+                </dd>
+              </dl>
               {currency && totals && totals.difference !== null && totals.difference !== 0 && (
-                <WarningNote className="sm:self-end">
+                <WarningNote>
                   {money(Math.abs(totals.difference), currency)} {totals.difference > 0 ? "over" : "under"} the document
                   total
                 </WarningNote>
               )}
             </CardContent>
           </Card>
-          <FormError message={error ?? undefined} />
-          <div>
-            <SubmitButton type="submit" pending={busy}>
-              Save draft
-            </SubmitButton>
-          </div>
         </fieldset>
       </form>
     </>

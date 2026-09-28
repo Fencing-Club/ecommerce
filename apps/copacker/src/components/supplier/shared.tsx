@@ -2,8 +2,8 @@
 
 import { useWindowEvent } from "@mantine/hooks"
 import { money } from "@repo/aisle"
-import { Archive, ChevronLeft, ChevronRight, CircleCheck, CircleDashed, ImageIcon, Search } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react"
+import { StatusBadge as ToneBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -35,21 +35,23 @@ export function ProductThumb({
   )
 }
 
+// A product's or catalog's status in the app's status tones: active is healthy, draft and archived are idle.
 const statuses = {
-  active: { label: "Active", icon: CircleCheck, className: "text-success" },
-  draft: { label: "Draft", icon: CircleDashed, className: "text-muted-foreground" },
-  archived: { label: "Archived", icon: Archive, className: "text-muted-foreground" }
-} as const
+  active: { label: "Active", tone: "success" },
+  draft: { label: "Draft", tone: "neutral" },
+  archived: { label: "Archived", tone: "neutral" }
+} as const satisfies Record<string, { label: string; tone: StatusTone }>
 
 export function StatusBadge({ status }: { status: keyof typeof statuses }) {
-  const { label, icon: Icon, className } = statuses[status]
-  return (
-    <Badge variant="outline">
-      <Icon data-icon="inline-start" className={className} />
-      {label}
-    </Badge>
-  )
+  const { label, tone } = statuses[status]
+  return <ToneBadge tone={tone}>{label}</ToneBadge>
 }
+
+// A row's link, stretched over the whole row (which needs `relative`) so a click anywhere on it opens the record, as a
+// link: a middle click or Ctrl opens a new tab. Keyboard focus rings the row. Controls in the row sit above it with
+// `relative z-10`.
+export const rowLink =
+  "outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
 
 // Amounts in each currency, one under another, or a dash for none.
 export function Amounts({ amounts }: { amounts: Array<{ currency: string; amount: number }> }) {

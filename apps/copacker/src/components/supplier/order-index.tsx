@@ -4,6 +4,7 @@ import { money } from "@repo/aisle"
 import Link from "next/link"
 import { useState } from "react"
 import { EmptyState, Status } from "@/components/common"
+import { LinkRow } from "@/components/link-row"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
 import type { OrderStage, SupplierOrder } from "@/server/supplier-workspace"
@@ -20,7 +21,8 @@ const tabs: Array<{ value: Tab; label: string; test: (stage: OrderStage) => bool
 ]
 const pageSize = 50
 
-// The orders a supplier's customers sent, like Shopify's order list: tabs by what's next, search, and one row each.
+// The orders a supplier's customers sent, like Shopify's order list: tabs by what's next, search, and a row each that
+// opens the order from anywhere on it.
 export function SupplierOrderIndex({
   orders,
   initialTab = "all",
@@ -41,12 +43,7 @@ export function SupplierOrderIndex({
   const current = Math.min(page, pages - 1)
 
   if (!orders.length) {
-    return (
-      <EmptyState
-        title="No orders yet"
-        description="Purchase orders your customers send you appear here, ready to pack and ship."
-      />
-    )
+    return <EmptyState title="No orders yet" description="Purchase orders your customers send appear here" />
   }
 
   return (
@@ -83,9 +80,9 @@ export function SupplierOrderIndex({
           </TableHeader>
           <TableBody>
             {shown.slice(current * pageSize, (current + 1) * pageSize).map((order) => (
-              <TableRow key={order.id}>
+              <LinkRow key={order.id} href={`/orders/${order.id}`}>
                 <TableCell className="max-w-72">
-                  <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
+                  <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
                     {order.reference}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">
@@ -109,12 +106,12 @@ export function SupplierOrderIndex({
                   {order.pieces.toLocaleString("en-US")}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{money(order.total, order.currency)}</TableCell>
-              </TableRow>
+              </LinkRow>
             ))}
           </TableBody>
         </Table>
       ) : (
-        <EmptyState title="No orders here" description="Try another tab or search." />
+        <EmptyState title="No orders here" description="Try another tab or search" />
       )}
       <Pager page={current} pages={pages} total={shown.length} size={pageSize} onPage={setPage} />
     </div>

@@ -5,19 +5,28 @@ import { type Address, type OrderInput, type PackingDraft, packingSchema } from 
 import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useState } from "react"
-import { FormProvider, useFieldArray, useForm, useFormContext, useFormState, useWatch } from "react-hook-form"
+import {
+  FormProvider,
+  useController,
+  useFieldArray,
+  useForm,
+  useFormContext,
+  useFormState,
+  useWatch
+} from "react-hook-form"
 import { objectKeys } from "ts-extras"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { errorMessage, useActionMutation } from "@/lib/api"
 import { formErrorMap } from "@/lib/form-errors"
 import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { EmptyState } from "./common"
-import { FormInput, FormMoney, FormNumber, FormSelect } from "./form-controls"
+import { FormInput, FormMoney, FormNumber, FormSelect, RequiredMark } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { AddressSummary, type PartnerAddress, PartnerAddressDialog } from "./partner-address"
 import { Upload } from "./upload"
@@ -44,10 +53,12 @@ const checkResult = z.object({
   issues: z.array(z.object({ message: z.string(), field: z.string().optional(), cartonId: z.string().optional() }))
 })
 
-// On a wide card the product and carton rows line up under one row of column names, so each field's own label is
-// only read out. On a narrow card every field keeps its label.
-const invoiceColumns = "@3xl/invoice:grid-cols-[minmax(0,1fr)_6rem_minmax(0,12rem)_minmax(0,10rem)]"
-const invoiceLabel = "@3xl/invoice:[&>[data-slot=field-label]]:sr-only"
+// In the invoice table each field sits under its column's name, so its own label is only read out.
+const cellField = "[&>[data-slot=field-label]]:sr-only"
+// The invoice table's first and last columns line up with the card's header.
+const edgeCells = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+// On a wide card the carton rows line up under one row of column names, so each field's own label is only read out.
+// On a narrow card every field keeps its label.
 const cartonColumns = {
   // With several products, each carton says which it holds.
   products: "@4xl/cartons:grid-cols-[minmax(0,1.3fr)_repeat(4,minmax(0,1fr))_minmax(0,3fr)_minmax(0,1fr)_auto]",
@@ -85,7 +96,7 @@ export function PackingForm({
   availablePieces,
   order,
   initial,
-  invoices,
+  invoice,
   addresses,
   enteringFor,
   addAddressTo
@@ -97,7 +108,8 @@ export function PackingForm({
   availablePieces: Record<string, number>
   order: OrderInput
   initial: PackingDraft | null
-  invoices: Array<{ id: string; name: string }>
+  // The shipment's commercial invoice. There's one at most: each upload replaces the last.
+  invoice?: { id: string; name: string; bytes: number }
   // The supplier's saved pickup addresses.
   addresses: PartnerAddress[]
   // The supplier's name when the buyer fills this in for it, which the copy then speaks to. Unset for the supplier.
@@ -126,7 +138,8 @@ export function PackingForm({
     defaultValues: {
       readyDate: initial?.readyDate ?? "",
       origin: { ...emptyAddress, ...(startAddress?.address ?? initial?.origin) },
-      invoiceDocumentId: initial?.invoiceDocumentId ?? "",
+      // The current invoice, not the draft's: a correction or a new upload outdates the one it chose.
+      invoiceDocumentId: invoice?.id ?? "",
       cartons: (initial?.cartons ?? []).map((carton) => ({
         cartonId: carton.cartonId ?? "",
         length: carton.length || blank,
@@ -154,15 +167,6 @@ export function PackingForm({
       return n + (content?.itemId === itemId ? content.pieces || 0 : 0)
     }, 0)
   const cartonsError = form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message
-
-  // A lone uploaded invoice is the one these cartons ship with.
-  const invoiceId = useWatch({ control: form.control, name: "invoiceDocumentId" })
-  const onlyInvoice = invoices.length === 1 ? invoices[0]?.id : undefined
-  useEffect(() => {
-    if (onlyInvoice && !invoiceId) {
-      form.setValue("invoiceDocumentId", onlyInvoice, { shouldDirty: true, shouldValidate: true })
-    }
-  }, [onlyInvoice, invoiceId, form])
 
   // Drafts save whatever is entered; check and submit only run after the form passes packingSchema.
   async function saveDraft(draft: Values) {
@@ -241,25 +245,7 @@ export function PackingForm({
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
       <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6">
         {/* Outside the packing form element: the upload is a form of its own. */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Commercial invoice</CardTitle>
-            <CardDescription>
-              {enteringFor ? `${enteringFor}’s invoice for these cartons` : "Your invoice for these cartons"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <Upload orderId={orderId} shipmentId={shipmentId} kind="invoice" label={null} />
-            <FormSelect
-              name="invoiceDocumentId"
-              required
-              label="Invoice file"
-              placeholder={invoices.length ? "Choose an invoice" : "Upload an invoice first"}
-              options={invoices.map((d) => ({ value: d.id, label: d.name }))}
-              className="sm:max-w-sm"
-            />
-          </CardContent>
-        </Card>
+        <InvoiceCard orderId={orderId} shipmentId={shipmentId} invoice={invoice} enteringFor={enteringFor} />
 
         {/* The key handler is delegated from the fields and only keeps Enter from submitting; the form adds no action. */}
         {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
@@ -277,65 +263,62 @@ export function PackingForm({
                 {enteringFor ? "Changes update the purchase order" : "Changes go to the buyer for approval"}
               </CardDescription>
             </CardHeader>
-            <div className="@container/invoice">
-              <div
-                aria-hidden
-                className={cn(
-                  "hidden gap-x-4 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground @3xl/invoice:grid",
-                  invoiceColumns
-                )}
-              >
-                <span>Product</span>
-                <span className="text-right">Packed</span>
-                <span>Supplier SKU</span>
-                <span>Price per piece</span>
-              </div>
-              {order.items.map((item, index) => {
-                const available = availablePieces[item.id] ?? 0
-                return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "grid grid-cols-2 items-start gap-x-4 gap-y-3 border-b px-4 py-3 last:border-b-0",
-                      invoiceColumns
-                    )}
-                  >
-                    <div className="col-span-2 min-w-0 @3xl/invoice:col-span-1 @3xl/invoice:pt-1.5">
-                      <p className="font-medium">{productName(item)}</p>
-                      <p className="text-xs text-muted-foreground">{item.buyerSku}</p>
-                    </div>
-                    <p
-                      className={cn(
-                        "col-span-2 tabular-nums @3xl/invoice:col-span-1 @3xl/invoice:pt-1.5 @3xl/invoice:text-right",
-                        packed(item.id) > available && "text-destructive"
-                      )}
-                    >
-                      <span className="text-muted-foreground @3xl/invoice:sr-only">Packed </span>
-                      {packed(item.id)} of {available}
-                    </p>
-                    {item.components?.length ? (
-                      <div className="flex flex-col gap-1 @3xl/invoice:pt-1.5">
-                        <p className="font-medium @3xl/invoice:sr-only">Supplier SKU</p>
-                        {item.components.map((component) => (
-                          <p key={component.variantId}>
-                            {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
-                          </p>
-                        ))}
-                      </div>
-                    ) : (
-                      <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" className={invoiceLabel} />
-                    )}
-                    <FormMoney
-                      name={`changes.${index}.unitPrice`}
-                      required
-                      label="Price per piece"
-                      currency={order.currency}
-                      className={invoiceLabel}
-                    />
-                  </div>
-                )
-              })}
-            </div>
+            {/* An editing grid: on a narrow card it scrolls sideways rather than squeezing its fields. */}
+            <Table framed={false} className={cn("min-w-160", edgeCells)}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="text-right">Packed</TableHead>
+                  <TableHead className="w-52">Supplier SKU</TableHead>
+                  <TableHead className="w-44">
+                    Price per piece
+                    <RequiredMark />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {order.items.map((item, index) => {
+                  const available = availablePieces[item.id] ?? 0
+                  const count = packed(item.id)
+                  return (
+                    // Top-aligned, so a field's error message grows its row downward; text lines up with the fields.
+                    <TableRow key={item.id} className="hover:bg-transparent [&>td]:align-top">
+                      <TableCell className="whitespace-normal">
+                        <p className="font-medium">{productName(item)}</p>
+                        <p className="text-xs text-muted-foreground">{item.buyerSku}</p>
+                      </TableCell>
+                      <TableCell
+                        className={cn("pt-3.5 text-right tabular-nums", count > available && "text-destructive")}
+                      >
+                        {count} of {available}
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {item.components?.length ? (
+                          <div className="flex flex-col gap-1 pt-1.5">
+                            {item.components.map((component) => (
+                              <p key={component.variantId}>
+                                {component.quantity} × {component.supplierSku || component.buyerSku || "—"}
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <FormInput name={`changes.${index}.supplierSku`} label="Supplier SKU" className={cellField} />
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        <FormMoney
+                          name={`changes.${index}.unitPrice`}
+                          required
+                          label="Price per piece"
+                          currency={order.currency}
+                          className={cellField}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </Card>
 
           <PickupCard addresses={addresses} addAddressTo={addAddressTo} pickup={pickup} onPickupChange={setPickup} />
@@ -499,6 +482,57 @@ export function PackingForm({
         </div>
       </fieldset>
     </FormProvider>
+  )
+}
+
+// The commercial invoice the cartons ship with: the one uploaded, with Replace, or a dropzone while there's none. The
+// packing list takes whichever is current, such as one uploaded here once the page refreshes with it.
+function InvoiceCard({
+  orderId,
+  shipmentId,
+  invoice,
+  enteringFor
+}: {
+  orderId: string
+  shipmentId: string
+  invoice?: { id: string; name: string; bytes: number }
+  enteringFor?: string
+}) {
+  const form = useFormContext<Values>()
+  const {
+    field: { ref, value },
+    fieldState
+  } = useController({ control: form.control, name: "invoiceDocumentId" })
+  const invoiceId = invoice?.id ?? ""
+  useEffect(() => {
+    if (value !== invoiceId) {
+      form.setValue("invoiceDocumentId", invoiceId, { shouldDirty: true })
+      if (invoiceId) {
+        form.clearErrors("invoiceDocumentId")
+      }
+    }
+  }, [invoiceId, value, form])
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Commercial invoice</CardTitle>
+        <CardDescription>
+          {enteringFor ? `${enteringFor}’s invoice for these cartons` : "Your invoice for these cartons"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Upload
+          ref={ref}
+          orderId={orderId}
+          shipmentId={shipmentId}
+          kind="invoice"
+          label={null}
+          current={invoice && { id: invoice.id, name: invoice.name, size: invoice.bytes }}
+          error={fieldState.invalid ? "Upload the commercial invoice" : undefined}
+        />
+      </CardContent>
+    </Card>
   )
 }
 

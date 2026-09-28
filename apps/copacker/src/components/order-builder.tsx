@@ -17,15 +17,15 @@ import {
   Ellipsis,
   MapPin,
   Package,
-  Pencil,
   Plus,
   Warehouse,
   X
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,7 +40,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -54,7 +54,7 @@ import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
 import { FormError, SubmitButton } from "./actions"
 import { AddProductsDialog, type StockAt } from "./add-products-dialog"
-import { FormCheckbox, FormChoice, FormInput, FormTextarea } from "./form-controls"
+import { DateInput, FormCheckbox, FormInput, FormLabel, FormSelect, FormTextarea } from "./form-controls"
 
 const destinations = [
   { value: "amazon", label: "Amazon" },
@@ -120,7 +120,8 @@ export function OrderBuilder({
   initialSupplierId,
   needsBarcodeVariantIds = [],
   draft,
-  title
+  title,
+  parents
 }: {
   suppliers: Array<{ id: string; name: string }>
   // The buyer's delivery addresses, for POs sent to its own locations, with the Shopify location stock arrives at.
@@ -137,10 +138,14 @@ export function OrderBuilder({
   needsBarcodeVariantIds?: string[]
   // A draft PO being edited, saved as its next revision.
   draft?: { id: string; revision: number; data: OrderInput }
+  // The page's header: its title and the breadcrumb links before it.
   title: string
+  parents: Array<{ label: string; href: string }>
 }) {
   const needsBarcode = new Set(needsBarcodeVariantIds)
   const router = useRouter()
+  // The header's Save sits outside the form, which the header row must precede, and submits it by this id.
+  const formId = useId()
   const { form, submit } = useActionForm({
     schema: orderInputSchema,
     action: draft ? "order.update" : "order.create",
@@ -328,24 +333,24 @@ export function OrderBuilder({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-          <div className="flex gap-2">
-            {draft && (
-              <Button variant="outline" render={<Link href={`/orders/${draft.id}`} />} nativeButton={false}>
-                Discard
-              </Button>
-            )}
-            <SubmitButton
-              type="submit"
-              pending={form.formState.isSubmitting}
-              disabled={!lineItems.fields.length || (!!draft && !form.formState.isDirty)}
-            >
-              Save
-            </SubmitButton>
-          </div>
-        </div>
+      <PageHeader title={title} parents={parents}>
+        <Button
+          variant="outline"
+          render={<Link href={draft ? `/orders/${draft.id}` : "/orders"} />}
+          nativeButton={false}
+        >
+          Discard
+        </Button>
+        <SubmitButton
+          type="submit"
+          form={formId}
+          pending={form.formState.isSubmitting}
+          disabled={!lineItems.fields.length || (!!draft && !form.formState.isDirty)}
+        >
+          Save
+        </SubmitButton>
+      </PageHeader>
+      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-4">
         <FormError message={form.formState.errors.root?.server?.message} />
 
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -412,122 +417,127 @@ export function OrderBuilder({
               </p>
             )}
 
-            {lineItems.fields.length > 0 && (
-              <div className="overflow-x-auto border-t">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-xs text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium">Products</th>
-                      <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
-                      <th className="w-24 px-2 py-2 text-left font-medium">Qty</th>
-                      <th className="w-32 px-2 py-2 text-left font-medium">Cost</th>
-                      <th className="w-24 px-2 py-2 text-right font-medium">Total</th>
-                      <th className="w-18">
-                        <span className="sr-only">Actions</span>
-                      </th>
+            <div className="overflow-x-auto border-t">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Products</th>
+                    <th className="w-36 px-2 py-2 text-left font-medium">Supplier SKU</th>
+                    <th className="w-24 px-2 py-2 text-left font-medium">Qty</th>
+                    <th className="w-32 px-2 py-2 text-left font-medium">Cost</th>
+                    <th className="w-24 px-2 py-2 text-right font-medium">Total</th>
+                    <th className="w-18">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!lineItems.fields.length && (
+                    <tr className="border-t">
+                      <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
+                        No products
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.fields.map((line, index) => {
-                      const item = items[index]
-                      const note = matches[index] && matchNote(matches[index].status)
-                      const available = matches[index]?.available ?? null
-                      const rules = matches[index]?.rules
-                      const ruleProblem = rules && item?.pieces ? quantityProblem(rules, item.pieces, "piece") : null
-                      const lineError = form.formState.errors.items?.[index]
-                      return (
-                        <tr key={line.key} className="border-t align-top">
-                          <td className="px-3 py-2.5">
-                            <p className="leading-snug font-medium">{line.name}</p>
-                            {line.variant && line.variant !== "Default Title" && (
-                              <Badge variant="secondary" className="mt-1">
-                                {line.variant}
-                              </Badge>
-                            )}
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {line.buyerSku}
-                              {line.piecesPerSet > 1 && `, ${line.piecesPerSet} per unit`}
+                  )}
+                  {lineItems.fields.map((line, index) => {
+                    const item = items[index]
+                    const note = matches[index] && matchNote(matches[index].status)
+                    const available = matches[index]?.available ?? null
+                    const rules = matches[index]?.rules
+                    const ruleProblem = rules && item?.pieces ? quantityProblem(rules, item.pieces, "piece") : null
+                    const lineError = form.formState.errors.items?.[index]
+                    return (
+                      <tr key={line.key} className="border-t align-top">
+                        <td className="px-3 py-2.5">
+                          <p className="leading-snug font-medium">{line.name}</p>
+                          {line.variant && line.variant !== "Default Title" && (
+                            <Badge variant="secondary" className="mt-1">
+                              {line.variant}
+                            </Badge>
+                          )}
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {line.buyerSku}
+                            {line.piecesPerSet > 1 && `, ${line.piecesPerSet} per unit`}
+                          </p>
+                          {needsBarcode.has(line.variantId) && (
+                            <p className="mt-1 flex items-center gap-1 text-xs text-warning">
+                              <AlertTriangle className="size-3.5" />
+                              Needs an uploaded label
                             </p>
-                            {needsBarcode.has(line.variantId) && (
-                              <p className="mt-1 flex items-center gap-1 text-xs text-warning">
-                                <AlertTriangle className="size-3.5" />
-                                Needs an uploaded label
-                              </p>
-                            )}
-                            <FormError message={lineError?.message ?? lineError?.root?.message} />
-                          </td>
-                          <td className="px-2 py-2">
-                            {item?.components?.length ? (
-                              <p className="py-1.5 text-xs text-muted-foreground">
-                                {item.components
-                                  .map((component) => `${component.quantity} × ${component.supplierSku || "?"}`)
-                                  .join(", ")}
-                              </p>
-                            ) : (
-                              <CellInput name={`items.${index}.supplierSku`} label={`Supplier SKU for ${line.name}`} />
-                            )}
-                          </td>
-                          <td className="px-2 py-2">
-                            <CellNumber
-                              name={`items.${index}.pieces`}
-                              label={`Quantity of ${line.name}`}
-                              min={line.piecesPerSet}
-                              step={line.piecesPerSet}
+                          )}
+                          <FormError message={lineError?.message ?? lineError?.root?.message} />
+                        </td>
+                        <td className="px-2 py-2">
+                          {item?.components?.length ? (
+                            <p className="py-1.5 text-xs text-muted-foreground">
+                              {item.components
+                                .map((component) => `${component.quantity} × ${component.supplierSku || "?"}`)
+                                .join(", ")}
+                            </p>
+                          ) : (
+                            <CellInput name={`items.${index}.supplierSku`} label={`Supplier SKU for ${line.name}`} />
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <CellNumber
+                            name={`items.${index}.pieces`}
+                            label={`Quantity of ${line.name}`}
+                            min={line.piecesPerSet}
+                            step={line.piecesPerSet}
+                          />
+                          {available !== null && (
+                            <p
+                              className={cn(
+                                "mt-1 text-xs",
+                                (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
+                              )}
+                            >
+                              {available} available
+                            </p>
+                          )}
+                          {ruleProblem && <p className="mt-1 text-xs text-warning">{ruleProblem}</p>}
+                        </td>
+                        <td className="px-2 py-2">
+                          <CellNumber
+                            name={`items.${index}.unitPrice`}
+                            label={`Cost of ${line.name}`}
+                            prefix="$"
+                            scale={100}
+                            step={0.01}
+                            min={0}
+                            onValueChange={() => buyerEditedPrices.current.add(line.id)}
+                          />
+                          {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
+                        </td>
+                        <td className="px-2 py-3.5 text-right tabular-nums">
+                          {money((item?.unitPrice || 0) * (item?.pieces || 0), currency)}
+                        </td>
+                        <td className="py-2 pr-2">
+                          <div className="flex justify-end">
+                            <LineMenu
+                              index={index}
+                              name={line.name}
+                              orderId={draft?.id}
+                              itemId={line.id}
+                              toAmazon={destination === "amazon"}
                             />
-                            {available !== null && (
-                              <p
-                                className={cn(
-                                  "mt-1 text-xs",
-                                  (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
-                                )}
-                              >
-                                {available} available
-                              </p>
-                            )}
-                            {ruleProblem && <p className="mt-1 text-xs text-warning">{ruleProblem}</p>}
-                          </td>
-                          <td className="px-2 py-2">
-                            <CellNumber
-                              name={`items.${index}.unitPrice`}
-                              label={`Cost of ${line.name}`}
-                              prefix="$"
-                              scale={100}
-                              step={0.01}
-                              min={0}
-                              onValueChange={() => buyerEditedPrices.current.add(line.id)}
-                            />
-                            {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
-                          </td>
-                          <td className="px-2 py-3.5 text-right tabular-nums">
-                            {money((item?.unitPrice || 0) * (item?.pieces || 0), currency)}
-                          </td>
-                          <td className="py-2 pr-2">
-                            <div className="flex justify-end">
-                              <LineMenu
-                                index={index}
-                                name={line.name}
-                                orderId={draft?.id}
-                                itemId={line.id}
-                                toAmazon={destination === "amazon"}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`Remove ${line.name}`}
-                                onClick={() => lineItems.remove(index)}
-                              >
-                                <X />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Remove ${line.name}`}
+                              onClick={() => lineItems.remove(index)}
+                            >
+                              <X />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
             <div className="border-t p-3">
               <AddProductsDialog added={new Set(items.map((item) => item?.variantId))} stockAt={stockAt} onAdd={add} />
               <FormError message={itemsError?.message ?? itemsError?.root?.message} />
@@ -577,11 +587,12 @@ export function OrderBuilder({
               <CardContent>
                 <FieldGroup className="gap-4">
                   <FormInput name="reference" required label="Reference number" placeholder="PO-038" />
+                  <RequiredBy />
                   <FormTextarea name="notes" label="Note to supplier" />
                   <Separator />
                   <p className="font-medium">Purchasing information</p>
-                  <FormChoice name="paymentTerms" label="Payment terms" options={termOptions} />
-                  <FormChoice name="currency" required label="Supplier currency" options={currencies} />
+                  <FormSelect name="paymentTerms" label="Payment terms" options={termOptions} />
+                  <FormSelect name="currency" required label="Supplier currency" options={currencies} />
                 </FieldGroup>
               </CardContent>
             </Card>
@@ -842,14 +853,14 @@ function LineMenu({
           </DialogHeader>
           <FieldGroup className="gap-4">
             {toAmazon && (
-              <FormChoice
+              <FormSelect
                 name={`items.${index}.amazonNetwork`}
                 required
                 label="Amazon warehouse"
                 options={networkOptions}
               />
             )}
-            <FormChoice name={`items.${index}.prepCategory`} required label="Preparation" options={prepOptions} />
+            <FormSelect name={`items.${index}.prepCategory`} required label="Preparation" options={prepOptions} />
             <SkuLabel index={index} toAmazon={toAmazon} />
             <FormCheckbox name={`items.${index}.suffocationWarning`} label="Suffocation warning label" />
             <FormTextarea
@@ -870,8 +881,8 @@ function LineMenu({
 type Adjustment = { description: string; amount: number }
 type AdjustmentRow = { key: string; type: string; amount: string }
 
-// Shopify's "Manage cost summary": each row a kind of cost and its amount, saved together. A discount is entered as a
-// positive amount and taken off.
+// Shopify's cost summary editor, behind an Edit button: each row a kind of cost and its amount, saved together. A
+// discount is entered as a positive amount and taken off.
 function CostSummaryDialog({
   currency,
   adjustments,
@@ -911,13 +922,13 @@ function CostSummaryDialog({
     setRows((current) => current.map((row) => (row.key === key ? { ...row, ...change } : row)))
   return (
     <>
-      <Button type="button" variant="ghost" size="icon-sm" aria-label="Manage cost summary" onClick={start}>
-        <Pencil />
+      <Button type="button" variant="ghost" size="sm" onClick={start}>
+        Edit<span className="sr-only"> cost summary</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Manage cost summary</DialogTitle>
+            <DialogTitle>Edit cost summary</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             {rows.length > 0 && (
@@ -1010,6 +1021,31 @@ function SkuLabel({ index, toAmazon }: { index: number; toAmazon: boolean }) {
         <FieldLabel htmlFor={id}>SKU label</FieldLabel>
         {toAmazon && <FieldDescription>Amazon requires it</FieldDescription>}
       </FieldContent>
+    </Field>
+  )
+}
+
+// When the goods are needed, which the purchase order's page and PDF show. A cleared date input reads "", which the
+// order keeps as no date.
+function RequiredBy() {
+  const id = useId()
+  const {
+    field: { ref, value, onChange, onBlur, name },
+    fieldState
+  } = useController<OrderInput, "dueDate">({ name: "dueDate" })
+  return (
+    <Field data-invalid={fieldState.invalid}>
+      <FormLabel htmlFor={id} label="Required by" />
+      <DateInput
+        id={id}
+        ref={ref}
+        name={name}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value || undefined)}
+        onBlur={onBlur}
+        aria-invalid={fieldState.invalid}
+      />
+      <FieldError errors={[fieldState.error]} />
     </Field>
   )
 }

@@ -6,7 +6,8 @@ import { EmptyState } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { adjustmentLabel } from "@/lib/catalog-pricing"
-import { IndexToolbar, matches, StatusBadge } from "./shared"
+import { cn } from "@/lib/utils"
+import { IndexToolbar, matches, rowLink, StatusBadge } from "./shared"
 
 type CatalogRow = {
   id: string
@@ -31,10 +32,7 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
   const [query, setQuery] = useState("")
   if (!catalogs.length) {
     return (
-      <EmptyState
-        title="Price your products for each customer"
-        description="A catalog sets which products customers can order and at what prices, with discounts and volume pricing."
-      >
+      <EmptyState title="No catalogs yet" description="Set which products each customer can order, and their prices.">
         <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
           Create catalog
         </Button>
@@ -74,9 +72,9 @@ export function CatalogIndex({ catalogs }: { catalogs: CatalogRow[] }) {
           </TableHeader>
           <TableBody>
             {shown.map((catalog) => (
-              <TableRow key={catalog.id}>
-                <TableCell>
-                  <Link href={`/catalogs/${catalog.id}`} className="font-medium hover:underline">
+              <TableRow key={catalog.id} className="relative">
+                <TableCell className="whitespace-normal">
+                  <Link href={`/catalogs/${catalog.id}`} className={cn("font-medium", rowLink)}>
                     {catalog.title}
                   </Link>
                 </TableCell>

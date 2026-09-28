@@ -156,7 +156,7 @@ export const orderInputSchema = z
     // before Amazon AWD: the forwarder and the address the supplier ships to.
     via: z.object({ forwarderId: z.uuid(), addressId: z.uuid() }).optional(),
     currency: z.enum(["USD", "CNY", "EUR", "GBP", "CAD", "AUD"]),
-    // When the goods were needed by. No longer asked for; older POs keep theirs.
+    // When the buyer needs the goods, as the purchase order's "Required by".
     dueDate: z.iso.date().optional(),
     // When the supplier expects the goods ready to ship, which it sets once it has the PO.
     readyDate: z.iso.date().optional(),

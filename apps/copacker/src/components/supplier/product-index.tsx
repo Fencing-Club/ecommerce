@@ -4,14 +4,14 @@ import { money } from "@repo/aisle"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { EmptyState } from "@/components/common"
+import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { type PriceBasis, unitName } from "@/lib/catalog-pricing"
 import type { ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
-import { IndexToolbar, matches, Pager, ProductThumb, StatusBadge } from "./shared"
+import { IndexToolbar, matches, Pager, ProductThumb, rowLink, StatusBadge } from "./shared"
 
 export type ProductRow = {
   id: string
@@ -33,7 +33,17 @@ export type ProductRow = {
 
 const pageSize = 50
 
-// A product's prices, as one price or a range, per its unit when every variant shares one.
+// Beside an open sidebar (about 730px) the table shows each product with its status, stock and price. Wider, it adds the
+// category, then the catalog count. A phone keeps the product and its price, with an archived badge under the title.
+const columns = {
+  status: "hidden @md:table-cell",
+  inventory: "hidden @lg:table-cell",
+  category: "hidden text-muted-foreground @3xl:table-cell",
+  catalogs: "hidden text-right tabular-nums @4xl:table-cell"
+}
+
+// A product's prices, as one price or a range. The column says Price, so a price per piece shows alone; a price per
+// pack or case names its unit when every variant shares it.
 export function priceRange(variants: ProductRow["variants"]) {
   const priced = variants.filter((variant) => variant.priceMinor !== null)
   if (!priced.length) {
@@ -48,11 +58,13 @@ export function priceRange(variants: ProductRow["variants"]) {
   const low = Math.min(...prices)
   const high = Math.max(...prices)
   const bases = new Set(priced.map((variant) => variant.priceBasis))
-  const per = bases.size === 1 ? ` / ${unitName(priced[0]!.priceBasis)}` : ""
+  const basis = priced[0]!.priceBasis
+  const per = bases.size === 1 && basis !== "piece" ? ` / ${unitName(basis)}` : ""
   return `${money(low, currency)}${high === low ? "" : ` – ${money(high, currency)}`}${per}`
 }
 
-// Stock across a product's tracked variants, like Shopify's "120 in stock for 4 variants".
+// Stock across a product's tracked variants, like Shopify's "120 in stock for 4 variants". On a narrow table the
+// variant count folds under the stock.
 function Inventory({ variants }: { variants: ProductRow["variants"] }) {
   const tracked = variants.filter((variant) => variant.trackInventory)
   if (!tracked.length) {
@@ -60,13 +72,12 @@ function Inventory({ variants }: { variants: ProductRow["variants"] }) {
   }
   const onHand = tracked.reduce((sum, variant) => sum + variant.onHand, 0)
   return (
-    <span>
+    <span className="flex flex-col @4xl:flex-row @4xl:gap-1">
       <span className={cn("tabular-nums", onHand <= 0 && "text-destructive")}>
         {onHand.toLocaleString("en-US")} in stock
-      </span>
+      </span>{" "}
       {variants.length > 1 && (
-        <span className="text-muted-foreground">
-          {" "}
+        <span className="text-xs text-muted-foreground @4xl:text-sm">
           for {tracked.length} variant{tracked.length === 1 ? "" : "s"}
         </span>
       )}
@@ -198,10 +209,10 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                 />
               </TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Inventory</TableHead>
-              <TableHead className="hidden @3xl:table-cell">Category</TableHead>
-              <TableHead className="hidden text-right @4xl:table-cell">Catalogs</TableHead>
+              <TableHead className={columns.status}>Status</TableHead>
+              <TableHead className={columns.inventory}>Inventory</TableHead>
+              <TableHead className={columns.category}>Category</TableHead>
+              <TableHead className={columns.catalogs}>Catalogs</TableHead>
               <TableHead className="text-right">Price</TableHead>
             </TableRow>
           </TableHeader>
@@ -209,8 +220,12 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
             {rows.map((product) => {
               const price = priceRange(product.variants)
               return (
-                <TableRow key={product.id} data-state={selected.has(product.id) ? "selected" : undefined}>
-                  <TableCell>
+                <TableRow
+                  key={product.id}
+                  className="relative"
+                  data-state={selected.has(product.id) ? "selected" : undefined}
+                >
+                  <TableCell className="relative z-10">
                     <Checkbox
                       aria-label={`Select ${product.title}`}
                       checked={selected.has(product.id)}
@@ -225,31 +240,36 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                       }}
                     />
                   </TableCell>
-                  <TableCell className="max-w-md">
-                    <Link href={`/products/${product.id}`} className="flex items-center gap-3 hover:underline">
-                      <ProductThumb image={product.images[0] ?? null} />
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">{product.title}</span>
-                        <span className="block truncate text-xs text-muted-foreground">
+                  <TableCell className="whitespace-normal">
+                    <div className="flex items-center gap-3">
+                      <ProductThumb image={product.images[0] ?? null} className="hidden @sm:flex" />
+                      <div className="flex min-w-0 flex-col">
+                        <Link href={`/products/${product.id}`} className={cn("line-clamp-2 font-medium", rowLink)}>
+                          {product.title}
+                        </Link>
+                        <span className="truncate text-xs text-muted-foreground">
                           {product.variants.length > 1
                             ? `${product.variants.length} variants`
                             : product.variants[0]?.supplierSku}
                         </span>
-                      </span>
-                    </Link>
+                        {product.status === "archived" && (
+                          <span className="mt-1 @md:hidden">
+                            <StatusBadge status="archived" />
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={columns.status}>
                     <StatusBadge status={product.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={columns.inventory}>
                     <Inventory variants={product.variants} />
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground @3xl:table-cell">
-                    {product.category ?? "—"}
-                  </TableCell>
-                  <TableCell className="hidden text-right tabular-nums @4xl:table-cell">{product.catalogs}</TableCell>
+                  <TableCell className={columns.category}>{product.category ?? "—"}</TableCell>
+                  <TableCell className={columns.catalogs}>{product.catalogs}</TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {price ?? <span className="text-warning">No price</span>}
+                    {price ?? <WarningNote>No price</WarningNote>}
                   </TableCell>
                 </TableRow>
               )

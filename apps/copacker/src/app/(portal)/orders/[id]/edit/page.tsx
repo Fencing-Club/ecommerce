@@ -1,8 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { z } from "zod"
-import { PageBreadcrumb } from "@/components/common"
 import { OrderBuilder } from "@/components/order-builder"
 import { db } from "@/db"
 import { contacts, suppliers } from "@/db/schema"
@@ -11,13 +9,19 @@ import { requireBuyer, session } from "@/server/auth"
 import { forwarderAddresses } from "@/server/forwarders"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 
-export const metadata: Metadata = { title: "Edit purchase order" }
+type Props = { params: Promise<{ id: string }> }
+
+// Looking the PO up here too gives a malformed or unknown id the not-found page's title.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { order } = await accessibleOrder(await session(), (await params).id)
+  return { title: `Edit ${order.data.reference}` }
+}
 
 // Edits a draft PO. Once sent, a PO changes through its shipments instead, so this goes back to the PO.
-export default async function EditOrder({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditOrder({ params }: Props) {
   const s = await session()
   requireBuyer(s)
-  const id = z.uuid().parse((await params).id)
+  const { id } = await params
   const { order } = await accessibleOrder(s, id)
   if (order.status !== "draft") {
     redirect(`/orders/${id}`)
@@ -35,28 +39,24 @@ export default async function EditOrder({ params }: { params: Promise<{ id: stri
     forwarderAddresses(s.org.id)
   ])
 
+  // The builder renders the page's header row first, then its form.
   return (
-    <>
-      <PageBreadcrumb
-        parents={[
-          { label: "Purchase orders", href: "/orders" },
-          { label: order.data.reference, href: `/orders/${id}` }
-        ]}
-        current="Edit"
-      />
-      <OrderBuilder
-        title={order.data.reference}
-        suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
-        deliveries={deliveries}
-        forwarderAddresses={forwarding.map((row) => ({
-          addressId: row.addressId,
-          forwarderId: row.forwarderId,
-          label: `${row.forwarderName}, ${row.addressName}`,
-          hasPhone: Boolean(row.address.phoneNumber)
-        }))}
-        needsBarcodeVariantIds={needsBarcode}
-        draft={{ id, revision: order.revision, data: order.data }}
-      />
-    </>
+    <OrderBuilder
+      title="Edit"
+      parents={[
+        { label: "Purchase orders", href: "/orders" },
+        { label: order.data.reference, href: `/orders/${id}` }
+      ]}
+      suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
+      deliveries={deliveries}
+      forwarderAddresses={forwarding.map((row) => ({
+        addressId: row.addressId,
+        forwarderId: row.forwarderId,
+        label: `${row.forwarderName}, ${row.addressName}`,
+        hasPhone: Boolean(row.address.phoneNumber)
+      }))}
+      needsBarcodeVariantIds={needsBarcode}
+      draft={{ id, revision: order.revision, data: order.data }}
+    />
   )
 }

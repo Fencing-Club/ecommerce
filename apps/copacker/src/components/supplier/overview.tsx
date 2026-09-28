@@ -1,28 +1,16 @@
 import { money } from "@repo/aisle"
-import {
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  BookOpen,
-  CircleAlert,
-  CircleCheck,
-  CircleDollarSign,
-  CircleSlash,
-  PackageOpen,
-  PackageX,
-  TriangleAlert,
-  Truck
-} from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
 import Link from "next/link"
 import { Status } from "@/components/common"
-import { PeriodPicker } from "@/components/period-picker"
+import { LinkRow } from "@/components/link-row"
+import { Attention, CardLink } from "@/components/overview-sections"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatDate } from "@/lib/format"
+import { formatDate, formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import type { AttentionItem } from "@/server/overview"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 import { OrdersChart } from "./overview-chart"
 import { ProductThumb } from "./shared"
@@ -33,62 +21,65 @@ function plural(count: number, one: string, many = `${one}s`) {
   return `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`
 }
 
-// What needs the supplier, most urgent first. Each links to the list that has it.
+// What needs the supplier, most urgent first, in the buyer Overview's shape. Each links to the list that has it.
 function tasks(counts: Data["attention"]) {
-  return [
-    {
-      show: counts.short,
-      icon: PackageX,
+  const items: AttentionItem[] = []
+  if (counts.short) {
+    items.push({
+      key: "short",
       tone: "critical",
-      title: `${plural(counts.short, "variant")} short of open orders`,
-      description: "Open orders need more than you have on hand.",
+      title: `${plural(counts.short, "variant is", "variants are")} short`,
+      detail: "Open orders need more than you have on hand",
       href: "/inventory?tab=short",
       action: "View inventory"
-    },
-    {
-      show: counts.pack,
-      icon: PackageOpen,
+    })
+  }
+  if (counts.pack) {
+    items.push({
+      key: "pack",
       tone: "warning",
       title: `${plural(counts.pack, "order")} to pack`,
-      description: "Add cartons and the commercial invoice.",
+      detail: "Add cartons and the commercial invoice",
       href: "/orders?tab=pack",
       action: "View orders"
-    },
-    {
-      show: counts.ship,
-      icon: Truck,
+    })
+  }
+  if (counts.ship) {
+    items.push({
+      key: "ship",
       tone: "warning",
       title: `${plural(counts.ship, "order")} ready to ship`,
-      description: "Labels are ready. Print them and mark the goods shipped.",
+      detail: "Print the labels, then mark the goods shipped",
       href: "/orders?tab=ship",
       action: "View orders"
-    },
-    {
-      show: counts.unpriced,
-      icon: CircleDollarSign,
+    })
+  }
+  if (counts.unpriced) {
+    items.push({
+      key: "unpriced",
       tone: "info",
       title: `${plural(counts.unpriced, "product")} without a price`,
-      description: "Customers can’t get a price for these.",
+      detail: "Customers can’t get a price for these",
       href: "/products",
       action: "View products"
-    },
-    {
-      show: counts.uncatalogued,
-      icon: BookOpen,
+    })
+  }
+  if (counts.uncatalogued) {
+    items.push({
+      key: "uncatalogued",
       tone: "info",
       title: `${plural(counts.uncatalogued, "customer")} without a catalog`,
-      description: "They see every active product at its own price.",
+      detail: "They see all products at list prices",
       href: "/customers",
       action: "View customers"
-    }
-  ].filter((task) => task.show > 0)
+    })
+  }
+  return items
 }
 
-const tones: Record<string, string> = {
-  critical: "bg-destructive/10 text-destructive",
-  warning: "bg-warning/15 text-warning",
-  info: "bg-muted text-muted-foreground"
-}
+// A table that runs edge to edge inside its card, as on the buyer Overview: the first and last columns line up with the
+// card's padding.
+const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
 
 function Delta({ change, label }: { change: number | null; label: string | null }) {
   if (change === null || !label) {
@@ -191,39 +182,7 @@ export function SupplierOverview({ data }: { data: Data }) {
 
   return (
     <div className="@container flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <PeriodPicker period={data.period} />
-      </div>
-
-      {todo.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Needs attention</CardTitle>
-            <CardAction>
-              <Badge variant="secondary">{plural(todo.length, "item")}</Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <ItemGroup className="gap-1">
-              {todo.map((task) => (
-                <Item key={task.title} size="sm" className="px-0" render={<Link href={task.href} />}>
-                  <ItemMedia className={cn("size-8 rounded-md", tones[task.tone])}>
-                    <task.icon className="size-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>{task.title}</ItemTitle>
-                    <ItemDescription>{task.description}</ItemDescription>
-                  </ItemContent>
-                  <ItemActions className="hidden text-sm text-muted-foreground @md:flex">
-                    {task.action}
-                    <ArrowRight className="size-4" aria-hidden />
-                  </ItemActions>
-                </Item>
-              ))}
-            </ItemGroup>
-          </CardContent>
-        </Card>
-      )}
+      <Attention items={todo} />
 
       <div className="grid gap-4 @lg:grid-cols-2 @4xl:grid-cols-4">
         <Kpi
@@ -269,9 +228,7 @@ export function SupplierOverview({ data }: { data: Data }) {
               {plural(data.backlog.orders, "order")}, {plural(data.backlog.pieces, "piece")}
             </CardDescription>
             <CardAction>
-              <Button size="sm" variant="ghost" nativeButton={false} render={<Link href="/orders" />}>
-                View all
-              </Button>
+              <CardLink href="/orders">View all</CardLink>
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -309,7 +266,7 @@ export function SupplierOverview({ data }: { data: Data }) {
           </CardHeader>
           <CardContent>
             <BarList
-              empty="No orders in this period."
+              empty="No orders in this period"
               rows={data.topProducts.map((row) => ({
                 key: row.sku,
                 label: row.groupId ? (
@@ -333,7 +290,7 @@ export function SupplierOverview({ data }: { data: Data }) {
           </CardHeader>
           <CardContent>
             <BarList
-              empty="No orders in this period."
+              empty="No orders in this period"
               rows={data.topCustomers.map((row) => ({
                 key: row.id,
                 label: (
@@ -354,12 +311,10 @@ export function SupplierOverview({ data }: { data: Data }) {
             <CardDescription>
               {inventory.tracked
                 ? `${plural(inventory.tracked, "tracked variant")}, ${inventory.value.map((row) => money(row.amount, row.currency)).join(" + ") || money(0, data.currency)} on hand`
-                : "Track inventory on products to see stock here."}
+                : "No tracked variants"}
             </CardDescription>
             <CardAction>
-              <Button size="sm" variant="ghost" nativeButton={false} render={<Link href="/inventory" />}>
-                Inventory
-              </Button>
+              <CardLink href="/inventory">View all</CardLink>
             </CardAction>
           </CardHeader>
           {inventory.tracked > 0 && (
@@ -386,14 +341,17 @@ export function SupplierOverview({ data }: { data: Data }) {
                         <ItemTitle className="w-full truncate">{row.title}</ItemTitle>
                         <ItemDescription className="truncate">{row.variant ?? row.supplierSku}</ItemDescription>
                       </ItemContent>
+                      {/* Short says by how much; low says what's left once open orders are filled. */}
                       <ItemActions className="flex-col items-end gap-0 text-right">
                         <span
                           className={cn("text-sm font-medium tabular-nums", row.available < 0 && "text-destructive")}
                         >
-                          {row.available.toLocaleString("en-US")}
+                          {row.available < 0
+                            ? `${formatNumber(-row.available)} short`
+                            : `${formatNumber(row.available)} available`}
                         </span>
                         <span className="text-xs text-muted-foreground tabular-nums">
-                          {row.committed.toLocaleString("en-US")} committed
+                          {formatNumber(row.committed)} committed, {formatNumber(row.onHand)} on hand
                         </span>
                       </ItemActions>
                     </Item>
@@ -405,52 +363,48 @@ export function SupplierOverview({ data }: { data: Data }) {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="gap-0 py-0">
+        <CardHeader className="border-b pt-4">
           <CardTitle>Recent orders</CardTitle>
           <CardAction>
-            <Button size="sm" variant="ghost" nativeButton={false} render={<Link href="/orders" />}>
-              View all
-            </Button>
+            <CardLink href="/orders">View all</CardLink>
           </CardAction>
         </CardHeader>
-        <CardContent>
-          {data.recent.length ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead className="hidden @lg:table-cell">Customer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden text-right @2xl:table-cell">Pieces</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.recent.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
-                        {order.reference}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">{formatDate(order.sentAt)}</p>
-                    </TableCell>
-                    <TableCell className="hidden @lg:table-cell">{order.customer}</TableCell>
-                    <TableCell>
-                      <Status status={order.status} />
-                    </TableCell>
-                    <TableCell className="hidden text-right tabular-nums @2xl:table-cell">
-                      {order.pieces.toLocaleString("en-US")}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{money(order.total, order.currency)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground">Orders your customers send appear here.</p>
-          )}
-        </CardContent>
+        {data.recent.length ? (
+          <Table framed={false} className={edgeTable}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead className="hidden @lg:table-cell">Customer</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden text-right @2xl:table-cell">Pieces</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.recent.map((order) => (
+                <LinkRow key={order.id} href={`/orders/${order.id}`}>
+                  <TableCell>
+                    <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
+                      {order.reference}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{formatDate(order.sentAt)}</p>
+                  </TableCell>
+                  <TableCell className="hidden @lg:table-cell">{order.customer}</TableCell>
+                  <TableCell>
+                    <Status status={order.status} />
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums @2xl:table-cell">
+                    {formatNumber(order.pieces)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{money(order.total, order.currency)}</TableCell>
+                </LinkRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <CardContent className="py-4 text-sm text-muted-foreground">No orders yet</CardContent>
+        )}
       </Card>
     </div>
   )

@@ -1,13 +1,16 @@
-import { ChevronRight, Globe, Mail, Phone, User } from "lucide-react"
+import { Globe, Mail, Phone, User } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
+import { PageHeader } from "@/components/common"
 import { CatalogPicker } from "@/components/supplier/customers"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Amounts } from "@/components/supplier/shared"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate } from "@/lib/format"
+import { formatPhone, phoneHref } from "@/lib/phone"
+import { cn } from "@/lib/utils"
 import { session } from "@/server/auth"
 import { customerDetail } from "@/server/supplier-workspace"
 
@@ -24,22 +27,22 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     notFound()
   }
   const { customer, contact, catalogs, orders } = detail
+  // The phone reads grouped, as +1 (425) 260-2501, and dials as saved.
   const contactRows = [
     { icon: User, value: contact.name },
     { icon: Mail, value: contact.email, href: contact.email ? `mailto:${contact.email}` : null },
-    { icon: Phone, value: contact.phone, href: contact.phone ? `tel:${contact.phone}` : null },
+    {
+      icon: Phone,
+      value: contact.phone ? formatPhone(contact.phone) : null,
+      href: contact.phone ? phoneHref(contact.phone) : null,
+      numeric: true
+    },
     { icon: Globe, value: contact.website, href: contact.website }
   ].filter((row) => row.value)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex min-w-0 items-center gap-2">
-        <Link href="/customers" className="text-sm text-muted-foreground hover:text-foreground">
-          Customers
-        </Link>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <h1 className="truncate text-xl font-semibold tracking-tight">{customer.name}</h1>
-      </div>
+    <>
+      <PageHeader parents={[{ label: "Customers", href: "/customers" }]} title={customer.name} />
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card size="sm">
@@ -73,6 +76,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 customer={customer.name}
                 catalogs={catalogs}
                 value={customer.catalogId}
+                hint
               />
               {customer.catalog && (
                 <Link
@@ -95,7 +99,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                     <li key={row.value} className="flex items-center gap-2">
                       <row.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                       {row.href ? (
-                        <a href={row.href} className="truncate hover:underline">
+                        <a href={row.href} className={cn("truncate hover:underline", row.numeric && "tabular-nums")}>
                           {row.value}
                         </a>
                       ) : (
@@ -105,12 +109,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No contact details yet.</p>
+                <p className="text-sm text-muted-foreground">No contact details</p>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </>
   )
 }

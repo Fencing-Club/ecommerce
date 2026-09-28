@@ -1,12 +1,15 @@
 "use client"
 
-import { Ellipsis, FileText } from "lucide-react"
+import { Ellipsis } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { LinkRow } from "@/components/link-row"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, errorMessage } from "@/lib/api"
+import { formatDate } from "@/lib/format"
 import { FormError, SubmitButton } from "./actions"
 import { StatusBadge, type StatusTone } from "./common"
 import { FileDropzone } from "./file-dropzone"
@@ -36,6 +39,9 @@ const statuses: Record<string, { label: string; tone: StatusTone }> = {
   saved: { label: "Saved as draft", tone: "success" }
 }
 
+// The table's first and last columns line up with the card's header.
+const edgeTable = "[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+
 export function ImportIntake() {
   const imports = importsApi.useImportsQuery(undefined, { pollingInterval: 5000, skipPollingIfUnfocused: true })
   const [start, upload] = importsApi.useStartImportMutation()
@@ -53,6 +59,8 @@ export function ImportIntake() {
       setChangeError(errorMessage(failure))
     }
   }
+  const items = imports.data?.items ?? []
+  const listError = imports.isError ? errorMessage(imports.error) : changeError
   return (
     <>
       <Card>
@@ -97,87 +105,127 @@ export function ImportIntake() {
           </form>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
+      <Card className="@container gap-0 overflow-hidden py-0">
+        <CardHeader className="border-b p-4">
           <CardTitle>Imports</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {imports.isError && <FormError message={errorMessage(imports.error)} />}
-          <FormError message={changeError ?? undefined} />
-          {imports.isLoading && <p className="text-sm text-muted-foreground">Loading imports…</p>}
-          {imports.data?.items.length === 0 && <p className="text-sm text-muted-foreground">No imports yet</p>}
-          {Boolean(imports.data?.items.length) && (
-            <ul className="divide-y">
-              {imports.data?.items.map((item) => {
+        {listError && (
+          <div className="border-b p-4">
+            <FormError message={listError} />
+          </div>
+        )}
+        {imports.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading imports…</p>}
+        {imports.isSuccess && !items.length && <p className="p-4 text-sm text-muted-foreground">No imports yet</p>}
+        {items.length > 0 && (
+          <Table framed={false} className={edgeTable}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>File</TableHead>
+                <TableHead className="hidden @xl:table-cell">Uploaded</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => {
                 const status: { label: string; tone: StatusTone } = statuses[item.status] ?? {
                   label: item.status,
                   tone: "neutral"
                 }
-                return (
-                  <li key={item.id} className="flex items-center gap-3 py-2.5">
-                    <FileText aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
-                      <span className="max-w-full truncate text-sm font-medium sm:flex-1" title={item.filename}>
-                        {item.filename}
+                // A review opens the review page; a saved import, its draft purchase order.
+                const href = ["review", "saved"].includes(item.status) ? `/orders/import/${item.id}` : null
+                const cells = (
+                  <>
+                    <TableCell className="w-full max-w-0">
+                      {href ? (
+                        <Link href={href} className="block truncate font-medium hover:underline" title={item.filename}>
+                          {item.filename}
+                        </Link>
+                      ) : (
+                        <span className="block truncate font-medium" title={item.filename}>
+                          {item.filename}
+                        </span>
+                      )}
+                      <span className="block text-xs text-muted-foreground @xl:hidden">
+                        {formatDate(item.createdAt)}
                       </span>
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground @xl:table-cell">
+                      {formatDate(item.createdAt)}
+                    </TableCell>
+                    <TableCell>
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-                    </div>
-                    {["review", "saved"].includes(item.status) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        nativeButton={false}
-                        render={<Link href={`/orders/import/${item.id}`} />}
-                      >
-                        {item.status === "saved" ? "Open draft" : "Review"}
-                      </Button>
-                    )}
-                    {item.status === "failed" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={changing.isLoading}
-                        onClick={() => update(item.id, "POST")}
-                      >
-                        Retry
-                      </Button>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${item.filename}`} />}
-                      >
-                        <Ellipsis />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem
-                          render={
-                            <a
-                              href={`/api/imports/${item.id}/source`}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label="View PDF"
-                            />
-                          }
-                        >
-                          View PDF
-                        </DropdownMenuItem>
-                        {!["saved", "cancelled"].includes(item.status) && (
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={changing.isLoading}
-                            onClick={() => update(item.id, "DELETE")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-2">
+                        {href && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            nativeButton={false}
+                            render={<Link href={href} />}
+                            className="hidden @md:inline-flex"
                           >
-                            Cancel import
-                          </DropdownMenuItem>
+                            {item.status === "saved" ? "Open draft" : "Review"}
+                          </Button>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </li>
+                        {item.status === "failed" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={changing.isLoading}
+                            onClick={() => update(item.id, "POST")}
+                          >
+                            Retry
+                          </Button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={<Button variant="ghost" size="icon-sm" aria-label={`More for ${item.filename}`} />}
+                          >
+                            <Ellipsis />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              render={
+                                <a
+                                  href={`/api/imports/${item.id}/source`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  aria-label="View PDF"
+                                />
+                              }
+                            >
+                              View PDF
+                            </DropdownMenuItem>
+                            {!["saved", "cancelled"].includes(item.status) && (
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={changing.isLoading}
+                                onClick={() => update(item.id, "DELETE")}
+                              >
+                                Cancel import
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </>
+                )
+                return href ? (
+                  <LinkRow key={item.id} href={href}>
+                    {cells}
+                  </LinkRow>
+                ) : (
+                  <TableRow key={item.id}>{cells}</TableRow>
                 )
               })}
-            </ul>
-          )}
-        </CardContent>
+            </TableBody>
+          </Table>
+        )}
       </Card>
     </>
   )
