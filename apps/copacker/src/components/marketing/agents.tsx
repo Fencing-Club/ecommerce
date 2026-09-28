@@ -11,7 +11,7 @@ const hub = { x: 600, y: 260 }
 const yours = { left: 40, top: 110, width: 400, height: 300 }
 const partners = [
   { name: "Shenzhen Metalworks’ agent", message: "Packing list submitted for PO 1043", top: 70 },
-  { name: "Pacific Link’s agent", message: "Pickup booked for Dec 2", top: 300 }
+  { name: "Pacific Link’s agent", message: "Pickup booked for Oct 6", top: 300 }
 ].map(({ top, ...partner }) => ({ ...partner, box: { left: 800, top, width: 360, height: 150 } }))
 
 const links = [

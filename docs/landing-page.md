@@ -1,27 +1,38 @@
 # Landing page
 
 Anyone signed out sees the marketing page at `/` (`apps/copacker/src/app/page.tsx`). Signed in, `/` still goes
-straight to their home. The page tells the ad's story on the ad's dark stage, and lives in
-`apps/copacker/src/components/marketing/`:
+straight to their home. The page is set on warm paper, with dark stages set into it for the hero and the agents, and an
+orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
 
-| File                                 | What it is                                                                                     |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `landing.tsx`                        | The page: nav, hero, sections, FAQ, closing and footer.                                        |
-| `dot-field.tsx`                      | The hero's WebGL backdrop: points that settle from scattered to ordered, lit around the pointer. |
-| `statement.tsx`                      | The ad's opening line, lit a word at a time as it scrolls in.                                  |
-| `forecast.tsx`, `forecast-chart.tsx` | The ad's holiday forecast, played by scroll. The model and geometry match the ad's chart.      |
-| `flow.tsx`, `agents.tsx`             | The animated diagrams: an order's handoffs and split, and agents working over MCP.             |
-| `story.tsx`                          | One pinned window that changes screen as the chapters scroll by.                               |
-| `mockups.tsx`, `scaled.tsx`          | The product shots, and the wrapper that scales them to their column like screenshots.          |
-| `film.tsx`                           | The ad, in a dialog.                                                                           |
+| File                             | What it is                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `landing.tsx`                    | The page: nav, hero, forecast, journey, agents, FAQ, close and footer.                              |
+| `bar.tsx`                        | The nav bar, which turns dark over the stages (marked `data-tone="dark"`) and light over the paper. |
+| `dot-field.tsx`                  | The hero's WebGL backdrop: points that settle from scattered to ordered, lit around the pointer.    |
+| `tilt.tsx`                       | Leans the hero's product shot back and straightens it as it scrolls in.                             |
+| `planner.tsx`                    | The forecast to play with: lead time, stores and the holiday rush move the reorder date and size.   |
+| `journey.tsx`, `journey-world.ts` | One purchase order's trip, factory to Amazon, as a 3D diorama that scroll plays (three.js).         |
+| `agents.tsx`                     | The animated diagram of agents working over MCP.                                                    |
+| `mockups.tsx`, `scaled.tsx`      | The hero's product shot, and the wrapper that scales it to its column like a screenshot.            |
+| `film.tsx`                       | The ad, in a dialog.                                                                                |
 
-- The product shots are the app's own components (`Table`, `Status`, `StatCard` and so on) with the ad's demo data, in
-  the light theme: a `.light` element takes back the light colors inside the dark page (`src/styles/theme.css.ts`), and
-  Tailwind's `dark:` variant skips it. When the app's pages change, update the mockups to match them.
-- Every animation respects reduced motion: the diagrams hold still, the forecast shows its final state, and the dots
-  start in order.
-- To see the signed-out page while signed in, open it on `127.0.0.1` rather than `localhost`, where the session cookie
-  lives.
+- The product shot and the journey's cards are the app's own components (`Table`, `Status`, `StatusBadge` and so on)
+  with demo data, in the light theme. Paper sections carry `.light` and the stages `.dark` (`src/styles/theme.css.ts`),
+  and Tailwind's `dark:` variant skips anything inside `.light`. When the app's pages change, update the shot to match.
+- The forecast is a small model, not the app's: sales per store per day, lifted through the rush, with the order placed
+  far enough ahead to land ten days of sales before the shelf runs dry. Amazon checks the shipment in over five days,
+  or up to nine in the rush, while sales go on.
+- The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
+  scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
+  line (FNSKU labels on the units, the box right-sized round them, then the carton and choking hazard labels), Amazon's
+  pickup for AWD overseas, the forwarder's pickup, the voyage, and the drops at FBA and the seller's own warehouse.
+  The chapters, cards and the order's documents in `journey.tsx` are timed to the same points, so change them
+  together. three.js loads only as the section comes near. The cards follow places in the world (`locate`) or hold a
+  spot on screen. On a phone the trip ends at the warehouses rather than the overview of the whole board.
+- Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
+  order, and the journey steps from chapter to chapter instead of moving.
+- To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
+  where the session cookie isn't set.
 - There are no paid plans, so the page asks only for a sign-up, and says it's free.
 
 ## Assets

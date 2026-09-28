@@ -4,24 +4,27 @@ import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
+import { Bar } from "./bar"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
-import { Flow } from "./flow"
-import { Forecast } from "./forecast"
-import { HandoffShot, PurchaseOrderShot, RestockShot, ShipmentsShot } from "./mockups"
+import { Journey } from "./journey"
+import { RestockShot } from "./mockups"
+import { Planner } from "./planner"
 import { Scaled } from "./scaled"
-import { Statement } from "./statement"
-import { Story } from "./story"
+import { Tilt } from "./tilt"
 
-// The marketing page anyone signed out sees at /, told the way the ad tells it: the mess a restock makes settling into
-// order, the stockout seen coming and headed off, the handoffs, the agents, and the app itself. The product shots are
-// the app's own components with demo data (./mockups). There are no paid plans yet, so it asks only for a sign-up.
+// The marketing page anyone signed out sees at /. It's set on warm paper, with dark stages set into it: the hero, where
+// the mess a restock makes settles into order, and the diagrams of the handoffs and agents. The product shots are the
+// app's own components with demo data (./mockups). There are no paid plans yet, so it asks only for a sign-up.
 
 // Copacker's orange, lit from above, as the ad's end card has it.
 const lit = "bg-[linear-gradient(180deg,#ffb27a_0%,#ff7a2e_45%,#f54a00_100%)] bg-clip-text text-transparent"
 const free = "Free to use, no credit card needed."
 const rise =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-[0.35em] motion-safe:duration-1000 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:fill-mode-both"
+// The page's two grounds: the paper, and the ink of the stages set into it.
+const paper = "light bg-(--paper) text-foreground [color-scheme:light]"
+const stage = "dark bg-(--ink) text-foreground [color-scheme:dark]"
 
 function GetStarted({ className }: { className?: string }) {
   return (
@@ -45,17 +48,17 @@ function Nav() {
     ["#faq", "FAQ"]
   ]
   return (
-    <header className="sticky top-0 z-40 bg-background/60 backdrop-blur-xl">
+    <Bar>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-10 px-6">
         <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark />
         </Link>
-        <nav aria-label="Main" className="hidden items-center gap-7 text-sm text-white/60 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">
           {links.map(([href, label]) => (
             <a
               key={href}
               href={href}
-              className="rounded-sm transition-colors outline-none hover:text-white focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {label}
             </a>
@@ -70,11 +73,11 @@ function Nav() {
           </Button>
         </div>
       </div>
-    </header>
+    </Bar>
   )
 }
 
-// A product shot: the app window floating over the stage. The caption is for screen readers.
+// A product shot: the app window in a thin glass bezel. The caption is for screen readers.
 function Shot({
   width,
   height,
@@ -90,59 +93,79 @@ function Shot({
 }) {
   return (
     <figure className={cn("relative", className)}>
-      <div className="overflow-hidden rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.12),0_50px_100px_-30px_rgb(0_0_0/0.85)]">
-        <Scaled width={width} height={height}>
-          {children}
-        </Scaled>
+      <div className="rounded-[1.25rem] bg-white/[0.08] p-1.5 shadow-[0_0_0_1px_rgb(255_255_255/0.12),0_0_0_2px_rgb(0_0_0/0.04),0_50px_120px_-40px_rgb(40_20_5/0.55)]">
+        <div className="overflow-hidden rounded-[0.875rem]">
+          <Scaled width={width} height={height}>
+            {children}
+          </Scaled>
+        </div>
       </div>
       <figcaption className="sr-only">{caption}</figcaption>
     </figure>
   )
 }
 
+// The hero's stage ends partway down the product shot, which carries on over the paper below. The shot's overhang is a
+// share of its width, as margins and padding in percent are, so the space kept for it below matches at any size.
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden">
-      <DotField className="-z-10 [mask-image:linear-gradient(to_bottom,black_45%,transparent_92%)]" />
-      <div className="mx-auto flex max-w-5xl flex-col items-center px-6 pt-28 text-center sm:pt-36">
-        <h1 className="text-[clamp(3.5rem,11vw,8rem)] leading-[0.92] font-semibold tracking-[-0.055em]">
-          <span className={cn("inline-block", rise)} style={{ animationDelay: "150ms" }}>
-            Restocking,
-          </span>{" "}
-          <span className={cn("inline-block", rise, lit)} style={{ animationDelay: "320ms" }}>
-            handled.
-          </span>
-        </h1>
-        <p
-          className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
-          style={{ animationDelay: "520ms" }}
-        >
-          Copacker forecasts what to reorder from your Amazon, Shopify and eBay sales, then sends the purchase order and
-          ships it to Amazon.
-        </p>
-        <div
-          className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}
-          style={{ animationDelay: "680ms" }}
-        >
-          <GetStarted />
-          <Film />
-        </div>
-        <p className={cn("mt-4 text-sm text-white/40", rise)} style={{ animationDelay: "800ms" }}>
-          {free}
-        </p>
-      </div>
+    <section className="relative -mt-16">
       <div
-        className={cn("mx-auto mt-20 max-w-6xl px-6 [perspective:2400px] sm:mt-24", rise)}
-        style={{ animationDelay: "900ms" }}
+        data-tone="dark"
+        className={cn(stage, "relative isolate flow-root rounded-b-[2rem] pt-16 sm:rounded-b-[3rem]")}
       >
-        <Shot
-          width={1280}
-          height={800}
-          className="origin-top [mask-image:linear-gradient(to_bottom,black_60%,transparent)] lg:[transform:rotateX(9deg)]"
-          caption="Copacker’s Restock page: two products from Shenzhen Metalworks to reorder, with order quantities, a $15,090 estimated cost, and about $18,340 in sales at risk before reorders arrive."
-        >
-          <RestockShot />
-        </Shot>
+        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden rounded-b-[inherit]">
+          <DotField className="[mask-image:linear-gradient(to_bottom,black_30%,transparent_72%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_50%_60%_at_50%_100%,rgb(255_122_46/0.32),rgb(255_122_46/0.08)_55%,transparent)]" />
+        </div>
+        <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-28 text-center sm:pt-36">
+          {/* A soft, wide shade behind the words, so they read clearly over the points. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-56 -top-8 -bottom-40 -z-10 bg-[radial-gradient(closest-side,oklch(0.145_0_0/0.65),oklch(0.145_0_0/0.5)_35%,oklch(0.145_0_0/0.25)_65%,oklch(0.145_0_0/0.08)_85%,transparent)]"
+          />
+          <h1 className="text-[clamp(3.5rem,11vw,8rem)] leading-[0.92] font-semibold tracking-[-0.055em]">
+            <span className={cn("inline-block", rise)} style={{ animationDelay: "150ms" }}>
+              Restocking,
+            </span>{" "}
+            <span className={cn("inline-block", rise, lit)} style={{ animationDelay: "320ms" }}>
+              handled.
+            </span>
+          </h1>
+          <p
+            className={cn("mt-8 max-w-2xl text-lg text-pretty text-white/65 sm:text-xl", rise)}
+            style={{ animationDelay: "520ms" }}
+          >
+            Copacker forecasts what to reorder from your Amazon, Shopify and eBay sales, then sends the purchase order
+            and ships it to Amazon.
+          </p>
+          <div
+            className={cn("mt-10 flex flex-wrap items-center justify-center gap-3", rise)}
+            style={{ animationDelay: "680ms" }}
+          >
+            <GetStarted />
+            <Film />
+          </div>
+          <p className={cn("mt-4 text-sm text-white/40", rise)} style={{ animationDelay: "800ms" }}>
+            {free}
+          </p>
+        </div>
+        <div className={cn("mx-auto max-w-6xl px-6 pt-20 sm:pt-24", rise)} style={{ animationDelay: "900ms" }}>
+          <div className="-mb-[27%]">
+            <Tilt>
+              <Shot
+                width={1280}
+                height={800}
+                caption="Copacker’s Restock page: two products from Shenzhen Metalworks to reorder, with order quantities, a $15,090 estimated cost, and about $18,340 in sales at risk before reorders arrive."
+              >
+                <RestockShot />
+              </Shot>
+            </Tilt>
+          </div>
+        </div>
+      </div>
+      <div aria-hidden className="mx-auto max-w-6xl px-6">
+        <div className="pt-[27%]" />
       </div>
     </section>
   )
@@ -168,10 +191,26 @@ function Section({
         >
           {title}
         </h2>
-        <p className="text-lg text-pretty text-white/60">{text}</p>
+        <p className="text-lg text-pretty text-muted-foreground">{text}</p>
       </div>
       <div className="mt-16 sm:mt-20">{children}</div>
     </section>
+  )
+}
+
+// A dark stage set into the paper, lit warm from above over a faint grid.
+function Island({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      data-tone="dark"
+      className={cn(stage, "relative isolate mx-2 overflow-hidden rounded-[2rem] sm:mx-3 sm:rounded-[3rem]", className)}
+    >
+      <div aria-hidden className="absolute inset-0 -z-10">
+        <div className="absolute -top-80 left-1/2 h-[64rem] w-[90rem] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(255_122_46/0.14),transparent)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgb(255_255_255/0.035)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255/0.035)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_75%_55%_at_50%_35%,black,transparent)] bg-[size:4rem_4rem]" />
+      </div>
+      {children}
+    </div>
   )
 }
 
@@ -197,14 +236,14 @@ function Faq() {
         >
           Questions
         </h2>
-        <dl className="border-t border-white/10">
+        <dl className="border-t border-foreground/10">
           {questions.map(([question, answer]) => (
             <div
               key={question}
-              className="grid gap-2 border-b border-white/10 py-7 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-10"
+              className="grid gap-2 border-b border-foreground/10 py-7 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-10"
             >
               <dt className="text-lg font-medium">{question}</dt>
-              <dd className="text-white/60">{answer}</dd>
+              <dd className="text-muted-foreground">{answer}</dd>
             </div>
           ))}
         </dl>
@@ -215,16 +254,22 @@ function Faq() {
 
 function Closing() {
   return (
-    <section className="relative isolate overflow-hidden px-6 py-36 text-center sm:py-48">
-      <DotField settled className="-z-10 [mask-image:radial-gradient(ellipse_60%_70%_at_50%_60%,black,transparent)]" />
+    <section
+      data-tone="dark"
+      className="dark relative isolate mx-2 overflow-hidden rounded-[2rem] bg-[#f54a00] px-6 py-32 text-center text-white [color-scheme:dark] sm:mx-3 sm:rounded-[3rem] sm:py-44"
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,#ffb27a,transparent_70%),radial-gradient(ellipse_70%_60%_at_100%_100%,#7a1f00,transparent_70%),radial-gradient(ellipse_60%_60%_at_0%_100%,#c2410c,transparent_70%)]"
+      />
       <h2 className="text-[clamp(3rem,8vw,6rem)] leading-[0.95] font-semibold tracking-[-0.05em] text-balance">
-        Restocking, <span className={lit}>handled.</span>
+        Restocking, handled.
       </h2>
       <div className="mt-12 flex flex-wrap justify-center gap-3">
-        <GetStarted />
+        <GetStarted className="bg-white text-[#1c1917] hover:bg-white/90" />
         <Film />
       </div>
-      <p className="mt-4 text-sm text-white/40">{free}</p>
+      <p className="mt-4 text-sm text-white/70">{free}</p>
     </section>
   )
 }
@@ -249,24 +294,26 @@ function Footer() {
     }
   ]
   return (
-    <footer className="bg-[oklch(0.12_0.004_285)]">
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-20 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-24">
+    <footer className={paper}>
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-24">
         <div className="flex flex-col gap-5">
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>
-          <p className="max-w-xs text-white/50">Forecasting, purchase orders and Amazon shipments, in one place.</p>
+          <p className="max-w-xs text-muted-foreground">
+            Forecasting, purchase orders and Amazon shipments, in one place.
+          </p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title} className="flex flex-col gap-3 text-sm">
-            <span className="text-white/40">{column.title}</span>
+            <span className="text-muted-foreground">{column.title}</span>
             {column.links.map(([href, label]) =>
               href?.startsWith("#") ? (
-                <a key={href} href={href} className="w-fit text-white/75 hover:text-white">
+                <a key={href} href={href} className="w-fit text-foreground/80 hover:text-foreground">
                   {label}
                 </a>
               ) : (
-                <Link key={href} href={href ?? "/"} className="w-fit text-white/75 hover:text-white">
+                <Link key={href} href={href ?? "/"} className="w-fit text-foreground/80 hover:text-foreground">
                   {label}
                 </Link>
               )
@@ -274,7 +321,7 @@ function Footer() {
           </nav>
         ))}
       </div>
-      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-white/[0.07] px-6 py-6 text-xs text-white/35">
+      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4 border-t border-foreground/10 px-6 py-6 text-xs text-muted-foreground">
         <span>© {new Date().getFullYear()} Copacker</span>
         <span>copacker.ai</span>
       </div>
@@ -284,69 +331,38 @@ function Footer() {
 
 export function Landing() {
   return (
-    <div className="dark relative min-h-svh overflow-x-clip bg-background text-foreground [color-scheme:dark]">
+    <div
+      className={cn(
+        paper,
+        "relative min-h-svh overflow-x-clip [--ink:oklch(0.145_0_0)] [--paper:oklch(0.972_0.008_78)]"
+      )}
+    >
       <Nav />
       <main id="main-content">
         <Hero />
-        <Statement />
-        <Forecast />
         <Section
-          id="handoffs"
-          title="Every handoff, in one place."
-          text="Your supplier, your forwarder and Amazon’s warehouses all work from the same purchase order. Copacker books the inbound shipments, prints the box labels, and splits stock between FBA and AWD, down to warehouses in China and Vietnam."
+          id="forecast"
+          title="Know when to reorder."
+          text="Copacker forecasts every product from your Amazon, Shopify and eBay sales, and works back from your supplier’s lead time to the day you need to order."
         >
-          <Flow />
+          <div className="relative isolate">
+            <div
+              aria-hidden
+              className="absolute -inset-x-24 -inset-y-20 -z-10 bg-[radial-gradient(closest-side,rgb(255_122_46/0.13),transparent)]"
+            />
+            <Planner />
+          </div>
         </Section>
-        <Section
-          id="agents"
-          title="Built for AI agents."
-          text="Copacker connects to your agents over MCP, so they can plan, order and ship right alongside you. Your partners’ agents post their updates too."
-        >
-          <Agents />
-        </Section>
-        <Story
-          chapters={[
-            {
-              title: "Reorder in one click.",
-              text: "Pick what Restock says to order, and Copacker writes the purchase order. Your supplier fills in the packing list right on it.",
-              screen: (
-                <Shot
-                  width={1100}
-                  height={540}
-                  caption="A purchase order in Copacker: PO 1043 with Shenzhen Metalworks, bound for Amazon AWD, with 2,520 steel bottles and 660 mugs totaling $13,650."
-                >
-                  <PurchaseOrderShot />
-                </Shot>
-              )
-            },
-            {
-              title: "Labels and shipments, done for you.",
-              text: "Copacker creates Amazon’s inbound shipments and prints a box label for every carton.",
-              screen: (
-                <Shot
-                  width={1100}
-                  height={520}
-                  caption="Copacker’s Shipments page: Amazon inbound shipments to FBA, AWD in the US and AWD in China, with their cartons and status."
-                >
-                  <ShipmentsShot />
-                </Shot>
-              )
-            },
-            {
-              title: "The whole story on every order.",
-              text: "Comments, updates and documents from every partner, on one timeline.",
-              screen: (
-                <Shot
-                  width={1000}
-                  height={420}
-                  caption="A purchase order’s timeline in Copacker: the supplier’s comment and updates, the forwarder’s shipment, and every document on the order."
-                >
-                  <HandoffShot />
-                </Shot>
-              )
-            }
-          ]}
-        />
+        <Journey />
+        <Island>
+          <Section
+            id="agents"
+            title="Built for AI agents."
+            text="Copacker connects to your agents over MCP, so they can plan, order and ship right alongside you. Your partners’ agents post their updates too."
+          >
+            <Agents />
+          </Section>
+        </Island>
         <Faq />
         <Closing />
       </main>
