@@ -1,10 +1,17 @@
 import { buildAwdRequest } from "@repo/aisle"
 import { downloadAmazonLabels } from "@repo/aisle/amazon"
 import { matchLabels, splitPdfPages, unpackLabels } from "@repo/aisle/labels"
+import {
+  customerDataRequestEmail,
+  invitationEmail,
+  labelsReadyEmail,
+  purchaseOrderEmail,
+  type Email
+} from "@repo/copacker-emails"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index"
-import { shipments, orders, orderRevisions } from "../db/schema"
+import { shipments, orders, orderRevisions, organizations } from "../db/schema"
 import { amazonFor, shopifyFor } from "./connections"
 import { generatePo, generateShipmentDocuments, storeDocument } from "./documents"
 import { sendEmail } from "./email"
@@ -201,43 +208,68 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
     })
     .parse(payload)
   const attachments: Array<{ filename: string; content: string }> = []
-  let subject: string, text: string
+  let email: Email
   if (input.type === "invite" || input.type === "team" || input.type === "forwarder") {
     // The link's page signs the person up or in with this email, then sets up what's still missing.
-    const from = input.name ?? (input.type === "team" ? "Your team" : "A buyer")
-    const joining = {
-      invite: "to join Copacker as their supplier, and get their purchase orders there.",
-      team: "to join their workspace on Copacker.",
-      forwarder: "to join Copacker as their freight forwarder, and share your warehouse addresses with them."
-    }[input.type]
-    subject = `${from} invited you to Copacker`
-    text = [
-      `${from} invited you ${joining}`,
-      `Accept the invitation: ${appUrl()}/invite?token=${input.invitation}&kind=${input.type}`,
-      `It’s for ${input.to} and expires in 7 days.`
-    ].join("\n\n")
+    email = await invitationEmail({
+      appUrl: appUrl(),
+      kind: input.type === "invite" ? "supplier" : input.type,
+      from: input.name ?? (input.type === "team" ? "Your team" : "A buyer"),
+      to: input.to,
+      token: input.invitation!
+    })
   } else if (input.type === "po") {
     const po = await generatePo(input.orderId!, input.revision)
-    subject = `New purchase order: ${po.doc.name.replace(/\.pdf$/, "")}`
-    text = `Your purchase order is attached. Upload your official commercial invoice and enter the carton details and pickup readiness date at ${appUrl()}/orders/${input.orderId}`
+    // The email says what the attached PDF does: that revision's reference and required-by date, and the buyer.
+    const [sent] = await db()
+      .select({ order: orderRevisions.data, buyer: organizations.name })
+      .from(orderRevisions)
+      .innerJoin(orders, eq(orders.id, orderRevisions.orderId))
+      .innerJoin(organizations, eq(organizations.id, orders.buyerOrgId))
+      .where(and(eq(orderRevisions.orderId, input.orderId!), eq(orderRevisions.revision, po.doc.orderRevision)))
+    if (!sent) {
+      throw new Error("Purchase order revision is unavailable")
+    }
+    email = await purchaseOrderEmail({
+      appUrl: appUrl(),
+      orderId: input.orderId!,
+      reference: sent.order.reference,
+      buyer: sent.buyer,
+      dueDate: sent.order.dueDate,
+      to: input.to
+    })
     attachments.push({ filename: po.doc.name, content: Buffer.from(po.bytes).toString("base64") })
   } else if (input.type === "data_request") {
-    subject = `Customer data request for ${input.shop}`
-    const held = input.orders?.length
-      ? `For the orders in the request, Copacker stores only the order details it uses to plan restocks:\n\n${input.orders.join("\n")}`
-      : "Copacker doesn't hold any of the orders in the request."
-    text = [
-      `Shopify sent Copacker a customer data request (request ${input.requestId}) for ${input.shop}.`,
-      "Copacker doesn't store customers' names, email addresses, phone numbers, or mailing addresses.",
-      held,
-      "Include this information in your response to the customer."
-    ].join("\n\n")
+    email = await customerDataRequestEmail({
+      appUrl: appUrl(),
+      shop: input.shop!,
+      requestId: input.requestId!,
+      orders: input.orders ?? [],
+      to: input.to
+    })
   } else {
-    subject = "Your shipment labels are ready"
-    text = `Open your shipment to print the labels and Packing Checklist: ${appUrl()}/shipments/${input.shipmentId}`
+    // A purchase order's shipments are numbered oldest first, as the app numbers them.
+    const [[order], numbered] = await Promise.all([
+      db().select({ data: orders.data }).from(orders).where(eq(orders.id, input.orderId!)),
+      db()
+        .select({ id: shipments.id })
+        .from(shipments)
+        .where(eq(shipments.orderId, input.orderId!))
+        .orderBy(shipments.createdAt)
+    ])
+    if (!order) {
+      throw new Error("Purchase order is missing")
+    }
+    email = await labelsReadyEmail({
+      appUrl: appUrl(),
+      shipmentId: input.shipmentId!,
+      reference: order.data.reference,
+      shipment: numbered.findIndex((row) => row.id === input.shipmentId) + 1 || undefined,
+      to: input.to
+    })
   }
   await assertOwned()
-  await sendEmail({ to: input.to, subject, text, key, attachments })
+  await sendEmail({ to: input.to, ...email, key, attachments })
 }
 export async function shopifyJob(payload: Record<string, unknown>, assertOwned: () => Promise<void>) {
   await assertOwned()

@@ -139,7 +139,7 @@ import { importProposalSchema } from "../src/server/import-proposal"
 import { saveImportedOrder } from "../src/server/import-save"
 import { saveLocationMapping } from "../src/server/inventory-location-settings"
 import { acceptSupplierInvitation } from "../src/server/invitations"
-import { amazonJob } from "../src/server/job-handlers"
+import { amazonJob, emailJob } from "../src/server/job-handlers"
 import { orderLandedCosts } from "../src/server/landed-costs"
 import {
   approveProposal,
@@ -3416,12 +3416,50 @@ describe("fluid packing handoff", () => {
     await submitOrder(buyer, orderId, 1)
     const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
     expect(emailed.map((job) => job.payload)).toEqual([expect.objectContaining({ type: "po", orderId })])
+    // The email names the purchase order, its buyer and required-by date, with the PDF attached.
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("EMAIL_API_KEY", "test")
+    vi.stubEnv("EMAIL_FROM", "copacker@example.com")
+    const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
+    vi.stubGlobal("fetch", send)
+    await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
+    const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { html: string; text: string }
+    expect(sent).toMatchObject({
+      to: ["supplier@example.com"],
+      subject: "Purchase order PO-TEST from Buyer",
+      attachments: [{ filename: "PO-TEST.pdf" }]
+    })
+    for (const version of [sent.html, sent.text]) {
+      expect(version).toContain("Required by Oct 20, 2026. The PDF is attached.")
+      expect(version).toContain(`https://copacker.example/orders/${orderId}`)
+    }
 
     await pg.exec("TRUNCATE jobs, shipments CASCADE")
     await database.update(tables.orders).set({ status: "draft", revision: 1 })
     await database.update(tables.suppliers).set({ supplierOrgId: null }).where(eq(tables.suppliers.id, supplierLinkId))
     await submitOrder(buyer, orderId, 1)
     expect(await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))).toHaveLength(0)
+  })
+  it("emails the supplier which shipment's labels are ready, numbered as the app numbers them", async () => {
+    const [, second] = await database
+      .insert(tables.shipments)
+      .values([
+        { orderId, orderRevision: 1, createdAt: new Date("2026-09-01T00:00:00Z") },
+        { orderId, orderRevision: 1, createdAt: new Date("2026-09-02T00:00:00Z") }
+      ])
+      .returning({ id: tables.shipments.id })
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("EMAIL_API_KEY", "test")
+    vi.stubEnv("EMAIL_FROM", "copacker@example.com")
+    const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
+    vi.stubGlobal("fetch", send)
+    const payload = { type: "ready", to: "supplier@example.com", orderId, shipmentId: second!.id }
+    await emailJob(payload, `ready:${second!.id}:1`, async () => undefined)
+    const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; html: string; text: string }
+    expect(sent.subject).toBe("Labels ready for PO-TEST, shipment 2")
+    for (const version of [sent.html, sent.text]) {
+      expect(version).toContain(`https://copacker.example/shipments/${second!.id}`)
+    }
   })
   it("saves incomplete packing without reserving stock or queueing Amazon work", async () => {
     const prepared = await preparation()

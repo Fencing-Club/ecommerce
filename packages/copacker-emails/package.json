@@ -1,0 +1,31 @@
+{
+  "name": "@repo/copacker-emails",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "email dev --dir src/emails --port 3030",
+    "check:types": "tsc --noEmit",
+    "lint": "oxlint --max-warnings=0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@react-email/render": "^2.1.0",
+    "react": "^19.2.0",
+    "react-email": "^6.9.1"
+  },
+  "devDependencies": {
+    "@react-email/ui": "6.9.5",
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "typescript": "catalog:",
+    "vitest": "^4.1.10"
+  }
+}

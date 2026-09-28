@@ -28,6 +28,7 @@
     "@mantine/hooks": "^9.6.1",
     "@reduxjs/toolkit": "^2.12.0",
     "@repo/aisle": "workspace:*",
+    "@repo/copacker-emails": "workspace:*",
     "@vanilla-extract/css": "^1.21.2",
     "@vanilla-extract/sprinkles": "^1.7.1",
     "@workos-inc/authkit-nextjs": "^4.0.0",

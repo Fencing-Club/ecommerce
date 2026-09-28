@@ -6,6 +6,7 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 
 - `apps/copacker`: Next.js supplier/buyer portal, WorkOS authentication, Drizzle/Postgres, private Railway documents.
 - `packages/aisle`: reusable shipment, catalog, packing validation, and label/document logic adapted from Aisle.
+- `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them.
 - `packages/fc-templates`: Fencing Club email and print templates.
 - `packages/fc-theme` and `packages/fc-theme-base`: Shopify themes.
 - `packages/shopify-emails` and `packages/shopify-content`: the supporting Shopify toolkits.

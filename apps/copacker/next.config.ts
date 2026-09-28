@@ -7,7 +7,7 @@ const withVanillaExtract = createVanillaExtractPlugin({ unstable_turbopack: { mo
 const config: NextConfig = {
   output: "standalone",
   reactCompiler: true,
-  transpilePackages: ["@repo/aisle"],
+  transpilePackages: ["@repo/aisle", "@repo/copacker-emails"],
   serverExternalPackages: ["pg", "pdfjs-dist", "yauzl"],
   // authInterrupts turns on forbidden(), which shows a member the No access page for a page they weren't given.
   experimental: { serverActions: { bodySizeLimit: "34mb" }, authInterrupts: true }

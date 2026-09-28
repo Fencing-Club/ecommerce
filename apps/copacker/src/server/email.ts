@@ -1,8 +1,10 @@
 // Sends one email through Resend. `key` is Resend's idempotency key, so sending the same email again, such as when a
 // job retries, doesn't deliver it twice. `replyTo`, when there is one, is where replies go instead of the sender.
+// `html`, when there is one, is what mail apps show, and `text` what they show when they show only text.
 export async function sendEmail(email: {
   to: string
   subject: string
+  html?: string
   text: string
   key: string
   replyTo?: string
@@ -22,6 +24,7 @@ export async function sendEmail(email: {
       from: process.env.EMAIL_FROM,
       to: [email.to],
       subject: email.subject,
+      html: email.html,
       text: email.text,
       ...(email.replyTo ? { reply_to: email.replyTo } : {}),
       attachments: email.attachments ?? []

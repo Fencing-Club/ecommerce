@@ -331,10 +331,12 @@ describe("Shopify privacy webhooks", () => {
     vi.stubGlobal("fetch", send)
     await emailJob(emails[0]!.payload, emails[0]!.key, owned)
     vi.unstubAllGlobals()
-    const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; text: string }
+    const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { subject: string; html: string; text: string }
     expect(sent.subject).toBe(`Customer data request for ${shop}`)
-    expect(sent.text).toContain("Order #1001, placed 2026-09-01")
-    expect(sent.text).not.toContain("#1002")
+    for (const version of [sent.html, sent.text]) {
+      expect(version).toContain("Order #1001, placed 2026-09-01")
+      expect(version).not.toContain("#1002")
+    }
   })
 
   it("removes an erased customer's ID from their stored orders, keeping only IDs from the request", async () => {
