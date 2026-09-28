@@ -1,90 +1,82 @@
-import { Box } from "lucide-react"
+import type { ReactNode } from "react"
 import { AbsoluteFill, Html5Audio, Sequence, staticFile, useCurrentFrame } from "remotion"
 import { ramp } from "./motion"
-import { Captions, heard, Stage } from "./stage"
-import { accent, app, font } from "./theme"
-import { cues, fps, type Section, sections } from "./timeline"
+import { Agents } from "./scenes/agents"
+import { Amazon } from "./scenes/amazon"
+import { End } from "./scenes/end"
+import { Forecast } from "./scenes/forecast"
+import { Handoffs } from "./scenes/handoffs"
+import { Hook } from "./scenes/hook"
+import { Outcome } from "./scenes/outcome"
+import { Recap } from "./scenes/recap"
+import { Reorder } from "./scenes/reorder"
+import { Reveal } from "./scenes/reveal"
+import { Captions, Clock, heard } from "./stage"
+import { cues, fps, type Section, sectionAt, sections } from "./timeline"
 
-// Each section's headline.
-const headlines: Record<Section, string> = {
-  hook: "Restocking a best-seller shouldn’t take 43 emails, 12 spreadsheets, and a stockout.",
-  reveal: "Copacker",
-  forecast: "Know exactly when to restock.",
-  reorder: "Reorder in one click.",
-  amazon: "Amazon shipments, automated.",
-  handoffs: "Every handoff, in one place.",
-  agents: "Built for AI agents.",
-  recap: "Forecast. Reorder. Ship. Automate.",
-  end: "Restocking, handled."
+// Each section's scene, given the seconds since the section started.
+const scenes: Record<Section, (props: { t: number }) => ReactNode> = {
+  hook: Hook,
+  reveal: Reveal,
+  forecast: Forecast,
+  reorder: Reorder,
+  amazon: Amazon,
+  handoffs: Handoffs,
+  agents: Agents,
+  recap: Recap,
+  outcome: Outcome,
+  end: End
 }
 
-const sectionAt = (t: number) =>
-  (Object.keys(sections) as Section[]).find((name) => t >= sections[name].from && t < sections[name].to) ?? "end"
-
-// A section's slate until its scene is built: the headline, set on the stage.
-const Slate = ({ t, section }: { t: number; section: Section }) => {
-  const local = t - sections[section].from
-  const shown = ramp(local, 0, 0.5)
-  return (
-    <Stage t={t}>
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", padding: 160 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 28, opacity: shown }}>
-          {section === "reveal" || section === "end" ? (
-            <div
-              style={{
-                display: "grid",
-                placeItems: "center",
-                width: 120,
-                height: 120,
-                borderRadius: 38,
-                background: app.primary
-              }}
-            >
-              <Box size={60} color={app.primaryForeground} strokeWidth={2} />
-            </div>
-          ) : null}
-          <div
-            style={{
-              fontFamily: font.sans,
-              fontSize: 96,
-              fontWeight: 600,
-              letterSpacing: "-0.04em",
-              lineHeight: 1.05,
-              textAlign: "center",
-              backgroundImage: section === "end" ? accent : undefined,
-              backgroundClip: section === "end" ? "text" : undefined,
-              color: section === "end" ? "transparent" : undefined,
-              transform: `translateY(${24 * (1 - shown)}px)`
-            }}
-          >
-            {headlines[section]}
-          </div>
-        </div>
-      </AbsoluteFill>
-    </Stage>
+// The score dips under the voice, and only a little under the last line, so the ending stays full. A cutdown ducks
+// only under the lines it keeps.
+export const musicVolume = (t: number, lines?: readonly string[]) => {
+  const under = Math.max(
+    0,
+    ...heard
+      .filter(({ id }) => !lines || lines.includes(id))
+      .map(({ id, at, end }) => (id === "end" ? 0.4 : 1) * Math.min(ramp(t, at - 0.2, at), 1 - ramp(t, end, end + 0.3)))
   )
-}
-
-// The score dips under the voice.
-const musicVolume = (t: number) => {
-  const under = Math.max(...heard.map(({ at, end }) => Math.min(ramp(t, at - 0.2, at), 1 - ramp(t, end, end + 0.3))))
   return 0.85 - 0.55 * under
 }
 
-// The ad: each section's scene, the voiceover on its cues with captions, the score and the sound effects.
+// The picture at a moment of the ad, in seconds: that section's scene, and the captions, only for `lines` if given.
+export const Frame = ({ time, lines }: { time: number; lines?: readonly string[] }) => {
+  const section = sectionAt(time)
+  const Scene = scenes[section]
+  return (
+    <Clock value={time}>
+      <AbsoluteFill>
+        <Scene t={time - sections[section].from} />
+        <Captions t={time} lines={lines} />
+      </AbsoluteFill>
+    </Clock>
+  )
+}
+
+// The voiceover alone, each take on its cue. `pnpm --filter video audio` renders it into one track,
+// public/audio/voiceover.wav, for the ad to play. A take started partway through playback gets skipped ahead whenever
+// the preview falls behind, cutting off its first words; one track playing from the start never does.
+export const Voiceover = () => (
+  <AbsoluteFill>
+    {cues.map(({ id, at }) => (
+      <Sequence key={id} from={Math.round(at * fps)} layout="none">
+        <Html5Audio src={staticFile(`voiceover/${id}.mp3`)} />
+      </Sequence>
+    ))}
+  </AbsoluteFill>
+)
+
+// The ad: the picture, the voiceover, the score and the sound effects, each one track from start to end. Playback waits
+// for any of them that's still loading.
 export const Ad = () => {
   const t = useCurrentFrame() / fps
   return (
     <AbsoluteFill>
-      <Slate t={t} section={sectionAt(t)} />
-      <Captions t={t} />
-      <Html5Audio src={staticFile("audio/score.wav")} volume={(frame) => musicVolume(frame / fps)} />
-      <Html5Audio src={staticFile("audio/sfx.wav")} volume={0.7} />
-      {cues.map(({ id, at }) => (
-        <Sequence key={id} from={Math.round(at * fps)} layout="none">
-          <Html5Audio src={staticFile(`voiceover/${id}.mp3`)} />
-        </Sequence>
-      ))}
+      <Frame time={t} />
+      <Html5Audio src={staticFile("audio/voiceover.wav")} pauseWhenBuffering />
+      <Html5Audio src={staticFile("audio/score.wav")} volume={(frame) => musicVolume(frame / fps)} pauseWhenBuffering />
+      <Html5Audio src={staticFile("audio/sfx.wav")} volume={0.7} pauseWhenBuffering />
     </AbsoluteFill>
   )
 }

@@ -1,8 +1,9 @@
 // The ad's temporary score, synthesized so it needs no license: a warm tech-house track at 120 BPM. The hook builds on A
 // minor into a drop at 0:10, the features ride a C, G, A minor, F groove that eases off under the handoffs and builds
-// through the agents, a second drop carries the recap at 1:20, and a final chord lands on the logo at 1:24. Written to
+// through the agents, and a second drop carries the recap and the outcome from 1:30. The logo lands on a hit at 1:38,
+// the groove carries on under the last line, and a final chord lands after it and rings out. Written to
 // public/audio/score.wav.
-import { sections, seconds } from "../src/timeline.ts"
+import { moments, sections, seconds } from "../src/timeline.ts"
 import {
   echo,
   envelope,
@@ -59,7 +60,12 @@ const openHat = (() => {
 })()
 const snare = (() => {
   const band = filter("bandpass", 0.8)
-  return oneShot(0.3, (t) => band(noise(random), 1800) * Math.exp(-t / 0.13) * 1.8 + Math.sin(2 * Math.PI * 190 * t) * Math.exp(-t / 0.05) * 0.5)
+  return oneShot(
+    0.3,
+    (t) =>
+      band(noise(random), 1800) * Math.exp(-t / 0.13) * 1.8 +
+      Math.sin(2 * Math.PI * 190 * t) * Math.exp(-t / 0.05) * 0.5
+  )
 })()
 const crash = (() => {
   const cut = filter("highpass")
@@ -93,7 +99,15 @@ const chords = {
 const progression = [chords.C, chords.G, chords.Am, chords.F]
 
 // A supersaw: seven detuned saws per note, spread across the stereo field, through a lowpass that can sweep.
-const pad = (bus: Stereo, at: number, notes: readonly number[], length: number, cutoff: (t: number) => number, gain: number, release = 0.18) => {
+const pad = (
+  bus: Stereo,
+  at: number,
+  notes: readonly number[],
+  length: number,
+  cutoff: (t: number) => number,
+  gain: number,
+  release = 0.18
+) => {
   const tail = length + release * 4
   const n = Math.round(tail * rate)
   const left = new Float32Array(n)
@@ -238,6 +252,10 @@ const groove = (from: number, to: number, settings: (b: number) => Groove) => {
 // The hook, 0:00 to 0:09.5: an A minor pad opening up over a thin kick, ticking hats, claps, then a snare roll and a
 // riser. It all stops dead half a beat before the drop.
 const hookEnd = sections.hook.to - beat
+// A hit on the very first frame, so the ad opens with a punch.
+hitKick(0)
+place(fx, impact, 0, 0.35)
+place(sends, crash, 0, 0.15)
 pad(pads, 0, [57, 60, 64, 69], hookEnd - 0.05, (t) => 300 * 10 ** Math.min(t / hookEnd, 1), 0.55, 0.02)
 place(bass, sub(33, hookEnd), 0, 0.22)
 for (let t = 2; t < hookEnd; t += beat) {
@@ -253,8 +271,11 @@ roll(8, hookEnd)
 place(fx, riser(3.5), 6, 0.5)
 place(sends, riser(3.5), 6, 0.2)
 
-// The drop at 0:10, and the groove through the reveal and the first three features, with fills into each section.
-hitImpact(sections.reveal.from)
+// The drop at 0:10, and the groove through the reveal and the first three features, with fills into each section. The
+// grooves run between sections, which start and end on a bar.
+const { reveal, forecast, reorder, amazon, handoffs, agents: build, recap, outcome, end } = sections
+const barAt = (time: number) => Math.round(time / bar)
+hitImpact(reveal.from)
 const full = (cutoff: number, arp: number): Groove => ({
   claps: true,
   openHats: true,
@@ -262,37 +283,48 @@ const full = (cutoff: number, arp: number): Groove => ({
   arp,
   cutoff: () => cutoff
 })
-groove(5, 15, (b) => full(3200, b >= 9 ? 0.12 : 0))
-groove(15, 20, () => full(3600, 0.16))
-groove(20, 28, () => full(4200, 0.14))
-for (const section of [sections.reorder.from, sections.amazon.from, sections.handoffs.from]) {
+groove(barAt(reveal.from), barAt(reorder.from), (b) => full(3200, b >= barAt(forecast.from) ? 0.12 : 0))
+groove(barAt(reorder.from), barAt(amazon.from), () => full(3600, 0.16))
+groove(barAt(amazon.from), barAt(handoffs.from), () => full(4200, 0.14))
+for (const section of [reorder.from, amazon.from, handoffs.from]) {
   roll(section - 1, section)
   place(fx, riser(1), section - 1, 0.3)
   hitCrash(section)
 }
 
-// The handoffs ease off: half-time kick, no claps, a darker pad, then the full kick comes back to lead into the build.
-groove(28, 33, () => ({ claps: false, openHats: false, closedHats: 0.1, arp: 0.14, half: true, cutoff: () => 2400 }))
-groove(33, 35, () => full(2800, 0.14))
+// The handoffs ease off: half-time kick, no claps, a darker pad, then the full kick comes back for the last two bars to
+// lead into the build.
+groove(barAt(handoffs.from), barAt(handoffs.to) - 2, () => ({
+  claps: false,
+  openHats: false,
+  closedHats: 0.1,
+  arp: 0.14,
+  half: true,
+  cutoff: () => 2400
+}))
+groove(barAt(handoffs.to) - 2, barAt(handoffs.to), () => full(2800, 0.14))
 
 // The agents build: the pads open up bar by bar, a snare roll and a riser, then a beat of silence before the second
 // drop.
-const build = sections.agents
 hitCrash(build.from)
-groove(35, 40, () => ({
+groove(barAt(build.from), barAt(build.to), () => ({
   ...full(0, 0.18),
   cutoff: (t) => 2400 + 3600 * Math.min((t - build.from) / (build.to - build.from), 1)
 }))
 roll(build.to - 2, build.to - beat / 2)
 place(fx, riser(3.5), build.to - 4, 0.5)
 
-// The recap's drop at 1:20, then the logo's chord at 1:24, left to ring out.
-hitImpact(sections.recap.from)
-groove(40, 42, () => full(5200, 0.18))
-hitImpact(sections.end.from)
-hitKick(sections.end.from)
-pad(pads, sections.end.from, [48, 55, 60, 64, 67, 71, 76], 3.5, () => 3800, 0.9, 0.9)
-place(bass, sub(36, 4), sections.end.from, 0.4)
+// The recap's drop and the outcome ride the brightest groove. The logo lands on a hit and the groove carries on,
+// lighter, under the last line; then the final chord lands after it and rings out to the end.
+hitImpact(recap.from)
+groove(barAt(recap.from), barAt(outcome.to), () => full(5200, 0.18))
+hitImpact(end.from)
+const finale = end.from + moments.end.final
+groove(barAt(end.from), barAt(finale), () => ({ ...full(4600, 0.12), claps: false }))
+hitImpact(finale)
+hitKick(finale)
+pad(pads, finale, [48, 55, 60, 64, 67, 71, 76], end.to - finale - 1.2, () => 3800, 0.9, 1.1)
+place(bass, sub(36, end.to - finale - 0.6), finale, 0.4)
 
 // Pumping: everything but the drums ducks under each kick.
 const pump = new Float32Array(drums.left.length).fill(1)
@@ -320,17 +352,17 @@ const silence = (from: number, to: number) => {
     song.right[i] = 0
   }
 }
-silence(hookEnd, sections.reveal.from)
+silence(hookEnd, reveal.from)
 silence(build.to - beat / 2, build.to)
-for (let i = Math.round((seconds - 2) * rate); i < song.left.length; i++) {
-  const fade = (song.left.length - i) / (2 * rate)
+for (let i = Math.round((seconds - 0.8) * rate); i < song.left.length; i++) {
+  const fade = (song.left.length - i) / (0.8 * rate)
   song.left[i] *= fade
   song.right[i] *= fade
 }
 
 master(song)
 // Again after mastering, whose filter would otherwise ring on into the gaps.
-silence(hookEnd, sections.reveal.from)
+silence(hookEnd, reveal.from)
 silence(build.to - beat / 2, build.to)
 await writeWav("public/audio/score.wav", song)
 process.stdout.write("public/audio/score.wav\n")

@@ -195,6 +195,102 @@
         }
       ]
     },
+    "stockout": {
+      "start": 0,
+      "end": 5.92,
+      "words": [
+        {
+          "text": "It",
+          "start": 0,
+          "end": 0.08
+        },
+        {
+          "text": "even",
+          "start": 0.128,
+          "end": 0.32
+        },
+        {
+          "text": "predicts",
+          "start": 0.391,
+          "end": 0.96
+        },
+        {
+          "text": "what",
+          "start": 0.992,
+          "end": 1.12
+        },
+        {
+          "text": "a",
+          "start": 1.16,
+          "end": 1.2
+        },
+        {
+          "text": "stockout",
+          "start": 1.267,
+          "end": 1.76
+        },
+        {
+          "text": "would",
+          "start": 1.787,
+          "end": 1.92
+        },
+        {
+          "text": "cost",
+          "start": 2.016,
+          "end": 2.4
+        },
+        {
+          "text": "you,",
+          "start": 2.44,
+          "end": 3.04
+        },
+        {
+          "text": "and",
+          "start": 3.08,
+          "end": 3.2
+        },
+        {
+          "text": "when",
+          "start": 3.264,
+          "end": 3.52
+        },
+        {
+          "text": "to",
+          "start": 3.573,
+          "end": 3.68
+        },
+        {
+          "text": "order",
+          "start": 3.76,
+          "end": 4.16
+        },
+        {
+          "text": "to",
+          "start": 4.24,
+          "end": 4.4
+        },
+        {
+          "text": "beat",
+          "start": 4.48,
+          "end": 4.8
+        },
+        {
+          "text": "your",
+          "start": 4.848,
+          "end": 5.04
+        },
+        {
+          "text": "busy",
+          "start": 5.12,
+          "end": 5.44
+        },
+        {
+          "text": "season.",
+          "start": 5.497,
+          "end": 5.92
+        }
+      ]
+    },
     "order": {
       "start": 0,
       "end": 4.24,
@@ -385,7 +481,7 @@
     },
     "split": {
       "start": 0,
-      "end": 6.24,
+      "end": 10,
       "words": [
         {
           "text": "It",
@@ -393,79 +489,99 @@
           "end": 0.08
         },
         {
-          "text": "even",
-          "start": 0.144,
-          "end": 0.4
-        },
-        {
           "text": "splits",
-          "start": 0.48,
-          "end": 0.96
+          "start": 0.137,
+          "end": 0.48
         },
         {
           "text": "your",
-          "start": 0.992,
-          "end": 1.12
+          "start": 0.512,
+          "end": 0.64
         },
         {
           "text": "inventory",
-          "start": 1.184,
-          "end": 1.76
+          "start": 0.704,
+          "end": 1.28
         },
         {
           "text": "between",
-          "start": 1.81,
-          "end": 2.16
+          "start": 1.33,
+          "end": 1.68
         },
         {
           "text": "F.B.A.",
-          "start": 2.32,
-          "end": 2.88
+          "start": 1.8,
+          "end": 2.32
         },
         {
           "text": "and",
-          "start": 2.96,
-          "end": 3.2
+          "start": 2.38,
+          "end": 2.56
         },
         {
           "text": "A.W.D.,",
-          "start": 3.32,
-          "end": 4.56
+          "start": 2.68,
+          "end": 3.84
         },
         {
-          "text": "so",
-          "start": 4.613,
-          "end": 4.72
+          "text": "including",
+          "start": 3.888,
+          "end": 4.32
         },
         {
-          "text": "you",
-          "start": 4.74,
-          "end": 4.8
+          "text": "A.W.D.",
+          "start": 4.44,
+          "end": 5.12
         },
         {
-          "text": "pay",
-          "start": 4.86,
-          "end": 5.04
+          "text": "warehouses",
+          "start": 5.185,
+          "end": 5.84
         },
         {
-          "text": "less",
-          "start": 5.12,
-          "end": 5.44
+          "text": "in",
+          "start": 5.92,
+          "end": 6.08
         },
         {
-          "text": "to",
-          "start": 5.493,
-          "end": 5.6
+          "text": "China",
+          "start": 6.147,
+          "end": 6.48
         },
         {
-          "text": "store",
-          "start": 5.653,
-          "end": 5.92
+          "text": "and",
+          "start": 6.54,
+          "end": 6.72
         },
         {
-          "text": "it.",
-          "start": 5.973,
-          "end": 6.24
+          "text": "Vietnam,",
+          "start": 6.8,
+          "end": 7.68
+        },
+        {
+          "text": "where",
+          "start": 7.72,
+          "end": 7.92
+        },
+        {
+          "text": "storage",
+          "start": 7.97,
+          "end": 8.32
+        },
+        {
+          "text": "costs",
+          "start": 8.413,
+          "end": 8.88
+        },
+        {
+          "text": "even",
+          "start": 8.96,
+          "end": 9.28
+        },
+        {
+          "text": "less.",
+          "start": 9.36,
+          "end": 10
         }
       ]
     },

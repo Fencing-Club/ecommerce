@@ -187,9 +187,6 @@ importers:
       '@remotion/google-fonts':
         specifier: 4.0.526
         version: 4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@remotion/noise':
-        specifier: 4.0.526
-        version: 4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       lucide-react:
         specifier: 1.31.0
         version: 1.31.0(react@19.2.7)
@@ -2671,9 +2668,6 @@ packages:
     peerDependencies:
       react: 19.2.7
       react-dom: 19.2.7
-
-  '@remotion/noise@4.0.526':
-    resolution: {integrity: sha512-Z4JNq1qaNjGc45si9IjKUqPFey15hlitewjHSc7fvEXiTuCJllRqhjHLlTe5N1NZScml3tUGuB2DdA33jOaFCg==}
 
   '@remotion/player@4.0.526':
     resolution: {integrity: sha512-evzxsYzsI8rDxdNQFbkWLoXqzOssrgQuxAUHzyqTB29arBq8gD/Ic1YQMMypYVecdpeJGs+OsoEj31zxKlrsDw==}
@@ -5983,9 +5977,6 @@ packages:
     resolution: {integrity: sha1-lSGIwcvVRgcOLdIND0HArgUwywQ=}
     engines: {node: '>=14'}
 
-  simplex-noise@4.0.1:
-    resolution: {integrity: sha512-zl/+bdSqW7HJOQ0oDbxrNYaF4F5ik0i7M6YOYmEoIJNtg16NpvWaTTM1Y7oV/7T0jFljawLgYPS81Uu2rsfo1A==}
-
   sisteransi@1.0.5:
     resolution: {integrity: sha1-E01oEpd1ZDfMBcoBNw06elcQde0=}
 
@@ -8287,14 +8278,6 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
       remotion: 4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       zod: 4.5.4
-
-  '@remotion/noise@4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      remotion: 4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      simplex-noise: 4.0.1
-    transitivePeerDependencies:
-      - react
-      - react-dom
 
   '@remotion/player@4.0.526(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
@@ -11691,8 +11674,6 @@ snapshots:
   signal-exit@3.0.7: {}
 
   signal-exit@4.1.0: {}
-
-  simplex-noise@4.0.1: {}
 
   sisteransi@1.0.5: {}
 

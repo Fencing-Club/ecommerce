@@ -1,20 +1,35 @@
-import type { ReactNode } from "react"
+import { createContext, type ReactNode, useContext } from "react"
 import { AbsoluteFill } from "remotion"
 import { font, stage } from "./theme"
 import { cues } from "./timeline"
 import { voiceover } from "./voiceover"
 import takes from "./voiceover-takes.json"
 
-type StageProps = { t: number; children: ReactNode; glow?: { x: number; y: number } }
+// The ad's own time, in seconds, for the motion that carries on across cuts: the stage's drift and grain, and the
+// windows' float.
+export const Clock = createContext(0)
+
+// Film grain: one tile of noise, drawn once, tiled over the frame and jumped to a new spot 24 times a second. Noise
+// drawn fresh over the whole frame every time was too slow for the preview to keep up.
+const grain = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="256" height="256" filter="url(#n)" opacity="0.5"/></svg>'
+)}")`
+
+type StageProps = { children: ReactNode; glow?: { x: number; y: number; strength?: number } }
 
 // The dark stage every scene plays on: two slow orange glows, a faint grid that fades out toward the edges, and grain.
-export const Stage = ({ t, children, glow = { x: 68, y: 58 } }: StageProps) => {
-  const drift = Math.sin(t * 0.4) * 4
+export const Stage = ({ children, glow = { x: 68, y: 58 } }: StageProps) => {
+  const clock = useContext(Clock)
+  const drift = Math.sin(clock * 0.4) * 4
+  const strength = glow.strength ?? 1
+  const step = Math.floor(clock * 24)
   return (
-    <AbsoluteFill style={{ background: stage.background, fontFamily: font.sans, color: stage.text, overflow: "hidden" }}>
+    <AbsoluteFill
+      style={{ background: stage.background, fontFamily: font.sans, color: stage.text, overflow: "hidden" }}
+    >
       <AbsoluteFill
         style={{
-          background: `radial-gradient(1100px 760px at ${glow.x + drift}% ${glow.y}%, ${stage.glow}, transparent 62%), radial-gradient(900px 600px at ${22 - drift}% 18%, rgba(255, 138, 60, 0.1), transparent 60%)`
+          background: `radial-gradient(1100px 760px at ${glow.x + drift}% ${glow.y}%, rgba(245, 74, 0, ${0.32 * strength}), transparent 62%), radial-gradient(900px 600px at ${22 - drift}% 18%, rgba(255, 138, 60, ${0.1 * strength}), transparent 60%)`
         }}
       />
       <AbsoluteFill
@@ -25,15 +40,14 @@ export const Stage = ({ t, children, glow = { x: 68, y: 58 } }: StageProps) => {
         }}
       />
       {children}
-      <AbsoluteFill style={{ mixBlendMode: "overlay", opacity: 0.35 }}>
-        <svg width="100%" height="100%">
-          <filter id="grain">
-            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} seed={Math.floor(t * 24) % 97} />
-            <feColorMatrix type="saturate" values="0" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#grain)" opacity={0.5} />
-        </svg>
-      </AbsoluteFill>
+      <AbsoluteFill
+        style={{
+          mixBlendMode: "overlay",
+          opacity: 0.35,
+          backgroundImage: grain,
+          backgroundPosition: `${(step * 73) % 256}px ${(step * 151) % 256}px`
+        }}
+      />
     </AbsoluteFill>
   )
 }
@@ -41,9 +55,12 @@ export const Stage = ({ t, children, glow = { x: 68, y: 58 } }: StageProps) => {
 // When each line is heard, from its cue to the end of its take.
 export const heard = cues.map(({ id, at }) => ({ id, at, end: at + takes.lines[id].end }))
 
-// The voiceover burned in for muted viewers, each word lighting up as it's spoken. The end card shows its own words.
-export const Captions = ({ t }: { t: number }) => {
-  const line = heard.find(({ id, at, end }) => id !== "end" && t >= at && t < end + 0.35)
+// The voiceover burned in for muted viewers, each word lighting up as it's spoken. The end card shows its own words,
+// and a cutdown captions only the lines it keeps.
+export const Captions = ({ t, lines }: { t: number; lines?: readonly string[] }) => {
+  const line = heard.find(
+    ({ id, at, end }) => id !== "end" && (!lines || lines.includes(id)) && t >= at && t < end + 0.25
+  )
   if (!line) {
     return null
   }
@@ -51,7 +68,17 @@ export const Captions = ({ t }: { t: number }) => {
   const timings = takes.lines[line.id].words
   const spoken = t - line.at
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 52, display: "flex", justifyContent: "center" }}>
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 34,
+        display: "flex",
+        justifyContent: "center",
+        zIndex: 5
+      }}
+    >
       <div
         style={{
           maxWidth: 1440,
