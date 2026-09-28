@@ -81,7 +81,14 @@ function Footer() {
         ["/#faq", "FAQ"]
       ]
     },
-    { title: "Company", links: [["/contact", "Contact"]] },
+    {
+      title: "Company",
+      links: [
+        ["/contact", "Contact"],
+        ["/privacy", "Privacy"],
+        ["/terms", "Terms"]
+      ]
+    },
     {
       title: "Account",
       links: [
@@ -92,8 +99,9 @@ function Footer() {
   ]
   return (
     <footer className={paper}>
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-20">
-        <div className="flex flex-col gap-5">
+      {/* The three link groups stay side by side down to a phone, with the brand above them until there's room beside. */}
+      <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-6 gap-y-12 px-6 pt-24 pb-12 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-20">
+        <div className="col-span-3 flex flex-col gap-5 md:col-span-1">
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Box className="size-5" />
           </span>

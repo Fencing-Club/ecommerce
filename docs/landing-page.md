@@ -2,12 +2,14 @@
 
 Anyone signed out sees the marketing page at `/` (`apps/copacker/src/app/page.tsx`). Signed in, `/` still goes
 straight to their home. The page is set on warm paper, with dark stages set into it for the hero and the agents, and an
-orange one for the close. The contact page at `/contact` (`apps/copacker/src/app/contact/page.tsx`) shares its frame.
-Both live in `apps/copacker/src/components/marketing/`:
+orange one for the close. The contact page at `/contact` (`apps/copacker/src/app/contact/page.tsx`) shares its frame,
+and so do the privacy policy and terms at `/privacy` and `/terms`, whose text is in their own `page.tsx`. The pages'
+parts live in `apps/copacker/src/components/marketing/`:
 
 | File                             | What it is                                                                                          |
 | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `site.tsx`                       | The frame both pages share: the paper and stage grounds, the nav bar and the footer.                |
+| `site.tsx`                       | The frame the pages share: the paper and stage grounds, the nav bar and the footer.                 |
+| `legal.tsx`                      | The privacy policy's and terms' document: title and date, anchored sections, contents alongside.    |
 | `landing.tsx`                    | The home page: hero, forecast, journey, agents, FAQ and the close.                                  |
 | `contact.tsx`, `contact-form.tsx` | The contact page, and its form, which posts to `/api/contact`.                                      |
 | `bar.tsx`                        | The nav bar, which turns dark over the stages (marked `data-tone="dark"`) and light over the paper. |
@@ -53,6 +55,15 @@ Both live in `apps/copacker/src/components/marketing/`:
 - The mailing list adds each signup as a Resend contact (`src/server/mailing-list.ts`), in the segment
   `MAILING_LIST_SEGMENT_ID` names if it's set. The endpoint takes anyone signed out, so it checks the address, turns
   away bots that fill in a hidden field, and slows down more than five signups from one address in ten minutes.
+- The privacy policy and terms are written from what the code does: the stores Copacker reads (and that it keeps no
+  customer's name, email address, phone number or address), the providers that run it, its cookies and its AI import.
+  Amazon's, Amazon Ads' and eBay's developer programs read the policy's marketplace data section. When a data flow
+  changes, such as a new provider, store, cookie or AI feature, change the text and its date with it. The terms leave out
+  the company's legal name, address and governing law until they're settled.
+- `/robots.txt` and `/sitemap.xml` come from `src/app/robots.ts` and `src/app/sitemap.ts`, at `APP_URL`. The sitemap
+  lists the marketing pages; add a new one there. Robots.txt closes the API, the portal's pages (the sidebar's `areas`
+  in `src/lib/access.ts`, and Settings) and the sign-in steps whose links carry tokens. `tests/robots.test.ts` fails if
+  a page under `(portal)` isn't closed.
 
 ## Assets
 

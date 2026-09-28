@@ -15,6 +15,7 @@ Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` befor
 
    Use a sending-only API key. The Resend onboarding sender is suitable only for tests to the account owner's email; verify an owned domain before inviting external suppliers. Domain verification is deferred at the user's request. The 2026-09-25 test to the authorized Gmail recipient was marked Delivered in Resend. Local configuration and both Railway services have the key; the worker references the web service's email variables. No key is committed or included in logs.
 5. S3: use private Railway bucket credentials. Objects are accessed only through server-authorized routes.
+6. Privacy policy and terms: developer programs and app listings (Amazon SP-API, Amazon Ads API, eBay, Shopify) ask for the privacy policy at `<APP_URL>/privacy`, and some for the terms at `<APP_URL>/terms` ([Landing page](landing-page.md)). Mailing list broadcasts must carry Resend's unsubscribe link, which the policy promises in every email.
 
 ## Recovery
 
