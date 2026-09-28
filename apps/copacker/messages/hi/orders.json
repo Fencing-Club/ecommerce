@@ -261,6 +261,7 @@
       "supplierReportedCollected": "सप्लायर ने बताया कि शिपमेंट पिकअप हो गया",
       "amazonShipmentCancelled": "Amazon शिपमेंट रद्द किया गया",
       "labelsReleased": "शिपिंग लेबल सप्लायर को जारी किए गए",
+      "labelsReleasedToShare": "शिपिंग लेबल जारी किए गए; पैकेट सप्लायर के साथ शेयर करें",
       "readyDateCleared": "सप्लायर ने तैयार होने की तारीख हटा दी",
       "readyDateSet": "सप्लायर ने तैयार होने की तारीख {date} सेट की",
       "changesProposed": "सप्लायर ने बदलाव सुझाए",

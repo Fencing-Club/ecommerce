@@ -261,6 +261,7 @@
       "supplierReportedCollected": "Il fornitore ha segnalato il ritiro della spedizione",
       "amazonShipmentCancelled": "Spedizione Amazon annullata",
       "labelsReleased": "Etichette di spedizione rese disponibili al fornitore",
+      "labelsReleasedToShare": "Etichette di spedizione rese disponibili; condividi il pacchetto con il fornitore",
       "readyDateCleared": "Il fornitore ha rimosso la data di disponibilità",
       "readyDateSet": "Il fornitore ha impostato la data di disponibilità al {date}",
       "changesProposed": "Il fornitore ha proposto modifiche",

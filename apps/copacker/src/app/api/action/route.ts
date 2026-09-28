@@ -724,7 +724,7 @@ export async function POST(request: Request) {
         await tx.insert(events).values({
           orderId: shipment.orderId,
           actor: s.user.id,
-          ...eventMessage({ key: "labelsReleased", values: null })
+          ...eventMessage({ key: supplier.supplierOrgId ? "labelsReleased" : "labelsReleasedToShare", values: null })
         })
       })
       return Response.json({ ok: true })

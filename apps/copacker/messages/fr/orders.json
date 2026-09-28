@@ -261,6 +261,7 @@
       "supplierReportedCollected": "Le fournisseur a signalé l’enlèvement de l’expédition",
       "amazonShipmentCancelled": "Expédition Amazon annulée",
       "labelsReleased": "Étiquettes d’expédition transmises au fournisseur",
+      "labelsReleasedToShare": "Étiquettes d’expédition prêtes ; partagez le dossier avec le fournisseur",
       "readyDateCleared": "Le fournisseur a effacé la date de disponibilité",
       "readyDateSet": "Le fournisseur a fixé la date de disponibilité au {date}",
       "changesProposed": "Le fournisseur a proposé des modifications",

@@ -2774,6 +2774,13 @@ describe("document upload and packet release", () => {
         .where(eq(tables.suppliers.id, supplierLinkId))
       expect((await release(await releasable())).status).toBe(200)
     }
+    // The timeline says who passes the packet on.
+    const released = await database.select().from(tables.events).orderBy(tables.events.createdAt)
+    expect(released.map((event) => event.messageKey)).toEqual([
+      "labelsReleased",
+      "labelsReleasedToShare",
+      "labelsReleasedToShare"
+    ])
     const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
     expect(emailed.map((job) => job.payload)).toEqual([
       { type: "ready", to: "supplier@example.com", orderId, shipmentId: joined }

@@ -261,6 +261,7 @@
       "supplierReportedCollected": "Supplier reported shipment collected",
       "amazonShipmentCancelled": "Amazon shipment cancelled",
       "labelsReleased": "Shipping labels released to supplier",
+      "labelsReleasedToShare": "Shipping labels released; share the packet with the supplier",
       "readyDateCleared": "Supplier cleared the ready date",
       "readyDateSet": "Supplier set the ready date to {date}",
       "changesProposed": "Supplier proposed changes",

@@ -261,6 +261,7 @@
       "supplierReportedCollected": "供应商报告货件已提货",
       "amazonShipmentCancelled": "Amazon 货件已取消",
       "labelsReleased": "已向供应商发放运输标签",
+      "labelsReleasedToShare": "运输标签已发放；请与供应商共享资料包",
       "readyDateCleared": "供应商清除了就绪日期",
       "readyDateSet": "供应商将就绪日期设为 {date}",
       "changesProposed": "供应商提出了修改",

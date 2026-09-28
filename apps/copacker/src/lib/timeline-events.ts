@@ -20,6 +20,7 @@ export const timelineEventSchema = z.discriminatedUnion("key", [
       "supplierReportedCollected",
       "amazonShipmentCancelled",
       "labelsReleased",
+      "labelsReleasedToShare",
       "readyDateCleared",
       "changesProposed",
       "changesWithdrawn",

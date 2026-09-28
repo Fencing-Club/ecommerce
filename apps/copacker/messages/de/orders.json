@@ -261,6 +261,7 @@
       "supplierReportedCollected": "Lieferant hat die Abholung der Sendung gemeldet",
       "amazonShipmentCancelled": "Amazon-Sendung storniert",
       "labelsReleased": "Versandetiketten für den Lieferanten freigegeben",
+      "labelsReleasedToShare": "Versandetiketten freigegeben; teilen Sie die Unterlagen mit dem Lieferanten",
       "readyDateCleared": "Lieferant hat das Bereitstellungsdatum entfernt",
       "readyDateSet": "Lieferant hat das Bereitstellungsdatum auf {date} gesetzt",
       "changesProposed": "Lieferant hat Änderungen vorgeschlagen",

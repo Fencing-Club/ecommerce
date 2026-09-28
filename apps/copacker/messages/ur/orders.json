@@ -261,6 +261,7 @@
       "supplierReportedCollected": "سپلائر نے بتایا کہ شپمنٹ اٹھا لی گئی",
       "amazonShipmentCancelled": "Amazon شپمنٹ منسوخ کر دی گئی",
       "labelsReleased": "شپنگ لیبلز سپلائر کو جاری کیے گئے",
+      "labelsReleasedToShare": "شپنگ لیبلز جاری کر دیے گئے؛ پیکٹ سپلائر کے ساتھ شیئر کریں",
       "readyDateCleared": "سپلائر نے تیاری کی تاریخ ہٹا دی",
       "readyDateSet": "سپلائر نے تیاری کی تاریخ {date} مقرر کی",
       "changesProposed": "سپلائر نے تبدیلیاں تجویز کیں",

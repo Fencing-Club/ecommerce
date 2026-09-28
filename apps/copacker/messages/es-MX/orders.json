@@ -261,6 +261,7 @@
       "supplierReportedCollected": "El proveedor reportó el envío como recolectado",
       "amazonShipmentCancelled": "Envío de Amazon cancelado",
       "labelsReleased": "Etiquetas de envío liberadas al proveedor",
+      "labelsReleasedToShare": "Etiquetas de envío liberadas; comparte el paquete de documentos con el proveedor",
       "readyDateCleared": "El proveedor borró la fecha de disponibilidad",
       "readyDateSet": "El proveedor fijó la fecha de disponibilidad para el {date}",
       "changesProposed": "El proveedor propuso cambios",
