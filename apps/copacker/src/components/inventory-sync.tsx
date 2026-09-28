@@ -155,7 +155,7 @@ export function InventorySync({ providers, search = "" }: { providers: string[];
       <Card>
         <EmptyState title="No store connected" description="Connect Shopify or Amazon to see your products">
           <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-            Open Settings
+            Open settings
           </Button>
         </EmptyState>
       </Card>
@@ -204,7 +204,7 @@ function SyncProblem({ source, statuses }: { source: Source; statuses: Status[] 
       <AlertDescription>{problem.message}</AlertDescription>
       <AlertAction>
         <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings#integrations" />}>
-          Open Settings
+          Open settings
         </Button>
       </AlertAction>
     </Alert>

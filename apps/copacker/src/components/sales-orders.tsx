@@ -475,7 +475,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
-              Go to Settings
+              Go to settings
             </Button>
           </EmptyContent>
         </Empty>
