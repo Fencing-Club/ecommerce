@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type { Address, OrderInput } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
+import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/db"
 import {
@@ -82,14 +83,6 @@ function contactLine(...parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(", ")
 }
 
-// Where a PO with a stop on the way ends up.
-const finalDestinations: Record<string, string> = {
-  amazon: "Amazon AWD, USA",
-  awd_us: "Amazon AWD, USA",
-  awd_china: "Amazon AWD, China",
-  fba: "Amazon FBA"
-}
-
 // Who a PO or shipment document is from and to: the buyer with its business details, the supplier with its contact
 // details, and the delivery or forwarder address it ships to.
 async function documentParties(order: { buyerOrgId: string; supplierId: string }, data: OrderInput) {
@@ -152,7 +145,8 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
       ? {
           name: forwarder ? `${forwarder.name}, ${delivery.name}` : delivery.name,
           lines: [
-            ...(data.via ? [`Then to ${finalDestinations[destination] ?? destination}`] : []),
+            // Where the forwarder sends the goods on: the Amazon networks of the lines, such as "Amazon FBA".
+            ...(data.via ? [`Then to ${destinationName(data)}`] : []),
             ...addressLines(delivery.address),
             contactLine(delivery.address.name, delivery.address.email, delivery.address.phoneNumber)
           ].filter(Boolean)
@@ -206,7 +200,10 @@ export async function generateShipmentDocuments(shipmentId: string) {
     uploadedBy: "system"
   }
   const [order] = await db().select().from(orders).where(eq(orders.id, shipment.orderId))
-  const parties = await documentParties(order!, shipment.snapshot)
+  // Only the shipment's own lines, so a forwarder stop names the Amazon network its cartons go on to.
+  const included = new Set(shipment.packing.cartons.flatMap((carton) => carton.items.map((item) => item.itemId)))
+  const items = shipment.snapshot.items.filter((item) => included.has(item.id))
+  const parties = await documentParties(order!, { ...shipment.snapshot, items })
   const { buyer } = parties
   // An Amazon shipment goes to the warehouses Amazon chose, named by their codes, such as HGR6.
   const warehouses = [...new Set(shipment.labels.map((label) => label.destinationCode).filter(Boolean))]

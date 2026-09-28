@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema, packingSchema, buildAwdRequest, orderTotal, type Packing } from "@repo/aisle"
 import { ProviderError } from "@repo/aisle/amazon"
+import { packingListPdf, purchaseOrderPdf } from "@repo/aisle/documents"
 import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument, StandardFonts } from "pdf-lib"
@@ -76,6 +77,15 @@ vi.mock("../src/server/storage", async (original) => ({
   putFile: storage.putFile,
   getFile: storage.getFile
 }))
+// Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
+vi.mock("@repo/aisle/documents", async (original) => {
+  const documents = await original<typeof import("@repo/aisle/documents")>()
+  return {
+    ...documents,
+    purchaseOrderPdf: vi.fn<typeof documents.purchaseOrderPdf>(documents.purchaseOrderPdf),
+    packingListPdf: vi.fn<typeof documents.packingListPdf>(documents.packingListPdf)
+  }
+})
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 vi.mock("../src/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
@@ -4685,6 +4695,44 @@ describe("freight forwarders", () => {
       saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Warehouse", address })
     ).rejects.toThrow("removed")
     expect(await forwarderAddresses(buyerId)).toEqual([])
+  })
+
+  it("names the Amazon network the goods go on to after a forwarder stop", async () => {
+    const forwarder = await createForwarder({ id: buyerId, name: "Buyer" }, { name: "Yiwu Logistics", email: "" })
+    await saveForwarderAddress(buyerId, { forwarderId: forwarder.id, name: "Yiwu warehouse", address })
+    const [saved] = await forwarderAddresses(buyerId)
+    const via = { forwarderId: forwarder.id, addressId: saved!.addressId }
+    const [cord, glove] = fbaOrder.items
+    const awd = { ...cord!, amazonNetwork: "awd_us" as const }
+    // The ship-to the purchase order prints for these lines.
+    async function poShipTo(items: typeof fbaOrder.items) {
+      const data = { ...fbaOrder, via, items }
+      await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
+      await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
+      await generatePo(orderId)
+      return vi.mocked(purchaseOrderPdf).mock.lastCall![0].shipTo
+    }
+    expect(await poShipTo(fbaOrder.items)).toEqual({
+      name: "Yiwu Logistics, Yiwu warehouse",
+      lines: ["Then to Amazon FBA", "1000 Siji Road", "Yiwu, Zhejiang 322000", "CN", "Lisa Yao"]
+    })
+    expect((await poShipTo([awd]))?.lines[0]).toBe("Then to Amazon AWD US")
+    expect((await poShipTo([awd, glove!]))?.lines[0]).toBe("Then to Amazon FBA and AWD US")
+
+    // A shipment names only its own cartons' network. Without an Amazon warehouse, its packing list ships to the
+    // forwarder.
+    const { id, packing } = await preparation()
+    await database
+      .update(tables.shipments)
+      .set({
+        status: "queued",
+        amazonNetwork: "fba",
+        snapshot: { ...fbaOrder, via, items: [awd, glove!] },
+        packing: { ...packing, cartons: [{ ...packing.cartons[0]!, items: [{ itemId: gloveId, pieces: 10 }] }] }
+      })
+      .where(eq(tables.shipments.id, id))
+    await generateShipmentDocuments(id)
+    expect(vi.mocked(packingListPdf).mock.lastCall![0].shipTo?.lines[0]).toBe("Then to Amazon FBA")
   })
 })
 
