@@ -26,7 +26,7 @@ const chapters: Chapter[] = [
     at: 0.1,
     step: "Pack",
     title: "Labeled, and packed to fit.",
-    text: "FNSKU, carton and choking hazard labels print from the order, and every carton is sized to what it holds."
+    text: "FNSKU and choking hazard labels go on each unit, carton and shipping labels on each box, and every box is sized to fit."
   },
   {
     at: 0.34,
@@ -54,11 +54,11 @@ const stills = [0.09, 0.3, 0.47, 0.73, 1]
 // The order's documents, each saved to it at the point on the trip where it's made.
 const documents = [
   { at: 0.06, name: "Purchase order", file: "PO-1043.pdf" },
-  { at: 0.14, name: "FNSKU labels", file: "PO-1043-fnsku-labels.pdf" },
+  { at: 0.138, name: "FNSKU labels", file: "PO-1043-fnsku-labels.pdf" },
+  { at: 0.146, name: "Choking hazard labels", file: "PO-1043-choking-hazard.pdf" },
   { at: 0.212, name: "Packing list", file: "PO-1043-packing-list.pdf" },
   { at: 0.232, name: "Carton labels", file: "PO-1043-carton-labels.pdf" },
-  { at: 0.237, name: "Choking hazard labels", file: "PO-1043-choking-hazard.pdf" },
-  { at: 0.36, name: "Shipping labels", file: "AWD-shipment-labels.pdf" },
+  { at: 0.237, name: "Shipping labels", file: "PO-1043-shipping-labels.pdf" },
   { at: 0.5, name: "Commercial invoice", file: "PO-1043-invoice.pdf" }
 ]
 
@@ -107,7 +107,7 @@ const notes: Note[] = [
       <Card>
         <div className="flex items-center gap-2">
           <FileText className="size-4 text-muted-foreground" />
-          <span className="font-semibold">PO 1043</span>
+          <span className="font-semibold">Purchase order 1043</span>
           <span className="ml-auto">
             <StatusBadge tone="info">With supplier</StatusBadge>
           </span>
@@ -122,9 +122,9 @@ const notes: Note[] = [
       </Card>
     )
   },
-  { place: "stickers", kind: "pin", shown: [[0.12, 0.19]], content: "FNSKU labels" },
+  { place: "stickers", kind: "pin", shown: [[0.12, 0.19]], content: "FNSKU and choking hazard labels" },
   { place: "fit", kind: "pin", shown: [[0.19, 0.225]], content: "Right-sized to 40 × 28 × 29 cm" },
-  { place: "labels", kind: "pin", shown: [[0.232, 0.265]], content: "Carton label and choking hazard label" },
+  { place: "labels", kind: "pin", shown: [[0.232, 0.265]], content: "Carton and shipping labels" },
   {
     place: "packing",
     kind: "card",
@@ -501,7 +501,7 @@ export function Journey() {
             className="light mt-8 hidden rounded-2xl bg-background/80 p-2 text-sm shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_20px_40px_-24px_rgb(60_30_10/0.3)] backdrop-blur lg:block"
           >
             <div className="flex items-center justify-between px-2 pt-1 pb-2">
-              <span className="font-semibold">PO 1043</span>
+              <span className="font-semibold">Purchase order 1043</span>
               <span className="text-xs text-muted-foreground tabular-nums">
                 {saved} {saved === 1 ? "document" : "documents"}
               </span>
@@ -536,7 +536,7 @@ export function Journey() {
             {latest && (
               <>
                 <Check className="size-4 text-success" />
-                Saved to PO 1043: {latest.name}
+                Saved to the purchase order: {latest.name}
               </>
             )}
           </p>

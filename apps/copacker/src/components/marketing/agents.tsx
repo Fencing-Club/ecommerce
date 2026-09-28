@@ -10,7 +10,7 @@ const stage = { width: 1200, height: 520 }
 const hub = { x: 600, y: 260 }
 const yours = { left: 40, top: 110, width: 400, height: 300 }
 const partners = [
-  { name: "Shenzhen Metalworks’ agent", message: "Packing list submitted for PO 1043", top: 70 },
+  { name: "Shenzhen Metalworks’ agent", message: "Packing list submitted for purchase order 1043", top: 70 },
   { name: "Pacific Link’s agent", message: "Pickup booked for Oct 6", top: 300 }
 ].map(({ top, ...partner }) => ({ ...partner, box: { left: 800, top, width: 360, height: 150 } }))
 
@@ -23,8 +23,8 @@ const links = [
 
 const steps = [
   "Checked restock: 2 products run out before they arrive",
-  "Created PO 1043 for Shenzhen Metalworks",
-  "Sent PO 1043 to the supplier",
+  "Created purchase order 1043 for Shenzhen Metalworks",
+  "Sent purchase order 1043 to the supplier",
   "Planned the Amazon AWD shipment"
 ]
 

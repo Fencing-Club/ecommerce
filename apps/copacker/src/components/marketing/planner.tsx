@@ -293,6 +293,15 @@ export function Planner() {
               </text>
             </g>
           ))}
+          <text
+            x={chart.width - 6}
+            y={chart.top - 24 * u}
+            textAnchor="end"
+            className="fill-muted-foreground font-medium"
+            style={type}
+          >
+            Units in stock
+          </text>
           <line
             x1={chart.left}
             x2={chart.right}
@@ -388,7 +397,7 @@ export function Planner() {
                   className="fill-foreground font-medium tabular-nums"
                   style={type}
                 >
-                  +{result.units.toLocaleString("en-US")}
+                  +{result.units.toLocaleString("en-US")} units
                 </text>
                 <g strokeWidth={u} className="stroke-foreground/35">
                   <line x1={orderX} x2={landX} y1={chart.bottom + 26 * u} y2={chart.bottom + 26 * u} />
@@ -420,6 +429,19 @@ export function Planner() {
             </text>
           ))}
         </svg>
+        <div
+          aria-hidden
+          className="flex flex-wrap items-center gap-x-6 gap-y-1 px-3 pt-1 pb-4 text-sm text-muted-foreground sm:px-5"
+        >
+          <span className="flex items-center gap-2">
+            <span className="h-[3px] w-5 rounded-full bg-primary" />
+            With the reorder
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-5 border-t-2 border-dashed border-foreground/30" />
+            Without a reorder
+          </span>
+        </div>
       </figure>
       <div className="flex flex-wrap items-center gap-x-10 gap-y-5 border-t px-5 py-5 sm:px-7">
         <div className="flex min-w-64 flex-1 items-center gap-4">

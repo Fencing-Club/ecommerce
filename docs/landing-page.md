@@ -24,11 +24,12 @@ orange one for the close. It lives in `apps/copacker/src/components/marketing/`:
   or up to nine in the rush, while sales go on.
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
-  line (FNSKU labels on the units, the box right-sized round them, then the carton and choking hazard labels), Amazon's
-  pickup for AWD overseas, the forwarder's pickup, the voyage, and the drops at FBA and the seller's own warehouse.
-  The chapters, cards and the order's documents in `journey.tsx` are timed to the same points, so change them
-  together. three.js loads only as the section comes near. The cards follow places in the world (`locate`) or hold a
-  spot on screen. On a phone the trip ends at the warehouses rather than the overview of the whole board.
+  line (FNSKU and choking hazard labels on the units, the box right-sized round them, then the carton and shipping
+  labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage, and the drops at FBA and
+  the seller's own warehouse. The chapters, cards and the order's documents in `journey.tsx` are timed to the same
+  points, so change them together. three.js loads only as the section comes near. The cards follow places in the world
+  (`locate`) or hold a spot on screen. On a phone the trip ends at the warehouses rather than the overview of the whole
+  board.
 - Every animation respects reduced motion: the diagrams hold still, the forecast changes at once, the dots start in
   order, and the journey steps from chapter to chapter instead of moving.
 - To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,

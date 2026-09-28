@@ -129,8 +129,9 @@ function drawn(width: number, height: number, draw: (context: CanvasRenderingCon
 const beat = {
   order: [0.02, 0.08],
   lit: [0.07, 0.1],
-  // The packing line: units out of the door, FNSKU labels on, a box formed and right-sized round them, then sealed,
-  // labeled and stacked, and the rest of the order after it.
+  // The packing line: units out of the door with their FNSKU and choking hazard labels on, a box formed and
+  // right-sized round them, then sealed, given its carton and shipping labels, and stacked, and the rest of the order
+  // after it.
   units: [0.105, 0.17],
   box: [0.17, 0.185],
   fit: [0.19, 0.21],
@@ -510,6 +511,25 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       context.fillRect(10, 94, 172, 10)
     })
   )
+  // A shipping label: sender and address lines, a big barcode, and the shipment's number in bold.
+  const shippingLabel = keep(
+    drawn(192, 288, (context) => {
+      context.fillStyle = "#ffffff"
+      context.fillRect(0, 0, 192, 288)
+      context.strokeStyle = palette.ink
+      context.lineWidth = 4
+      context.strokeRect(6, 6, 180, 276)
+      context.fillStyle = palette.ink
+      context.fillRect(18, 20, 90, 9)
+      context.fillRect(18, 36, 70, 9)
+      context.fillRect(126, 18, 50, 34)
+      context.fillRect(18, 66, 150, 12)
+      context.fillRect(18, 86, 120, 12)
+      barcode(context, 18, 116, 156, 96)
+      context.fillRect(18, 226, 156, 18)
+      context.fillRect(18, 254, 96, 10)
+    })
+  )
   const unitLabel = keep(
     drawn(96, 80, (context) => {
       context.fillStyle = "#ffffff"
@@ -529,13 +549,19 @@ export function createWorld(canvas: HTMLCanvasElement): World {
   const capGeometry = keep(new THREE.CylinderGeometry(0.07, 0.07, 0.08, 14).translate(0, 0.48, 0))
   const bottles = new THREE.InstancedMesh(bottleGeometry, matte.steel, units.length)
   const caps = new THREE.InstancedMesh(capGeometry, matte.orange, units.length)
+  // Each unit's FNSKU label, and its choking hazard label beneath.
   const stickers = new THREE.InstancedMesh(
-    keep(new THREE.PlaneGeometry(0.13, 0.11)),
+    keep(new THREE.PlaneGeometry(0.13, 0.1)),
     labelMaterial(unitLabel),
     units.length
   )
-  for (const mesh of [bottles, caps, stickers]) {
-    mesh.castShadow = mesh !== stickers
+  const warnings = new THREE.InstancedMesh(
+    keep(new THREE.PlaneGeometry(0.13, 0.087)),
+    labelMaterial(hazardLabel),
+    units.length
+  )
+  for (const mesh of [bottles, caps, stickers, warnings]) {
+    mesh.castShadow = mesh === bottles || mesh === caps
     mesh.receiveShadow = true
     mesh.frustumCulled = false
     scene.add(mesh)
@@ -595,12 +621,12 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     labelMaterial(cartonLabel),
     count
   )
-  const hazardLabels = new THREE.InstancedMesh(
-    keep(new THREE.PlaneGeometry(0.24, 0.16)),
-    labelMaterial(hazardLabel),
+  const shippingLabels = new THREE.InstancedMesh(
+    keep(new THREE.PlaneGeometry(0.24, 0.36)),
+    labelMaterial(shippingLabel),
     count
   )
-  for (const mesh of [cartons, tapes, cartonLabels, hazardLabels]) {
+  for (const mesh of [cartons, tapes, cartonLabels, shippingLabels]) {
     mesh.castShadow = mesh === cartons || mesh === tapes
     mesh.receiveShadow = true
     mesh.frustumCulled = false
@@ -812,8 +838,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       context.fillStyle = palette.orange
       context.fillRect(0, 0, 384, 96)
       context.fillStyle = "#ffffff"
-      context.font = `600 46px ${font}`
-      context.fillText("PO 1043", 30, 64)
+      context.font = `600 34px ${font}`
+      context.fillText("Purchase order 1043", 28, 60)
       context.fillStyle = "#e9e3da"
       for (let i = 0; i < 5; i++) {
         context.fillRect(30, 140 + i * 56, i % 2 ? 230 : 320, 20)
@@ -955,8 +981,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     // The belt runs while the line works.
     beltTexture.offset.x = -time * 0.35
 
-    // Six units come out of the door, get their FNSKU labels under the first gantry, and stop at the next, where a
-    // stock box forms round them and shrinks to fit before its lid closes.
+    // Six units come out of the door, get their FNSKU and choking hazard labels under the first gantry, and stop at
+    // the next, where a stock box forms round them and shrinks to fit before its lid closes.
     const out = during(p, beat.units)
     const groupX = lerp(line.from + 0.3, stations.fit, easeOut(out))
     const packing = p >= beat.units[0] && p < beat.seal[1]
@@ -965,6 +991,7 @@ export function createWorld(canvas: HTMLCanvasElement): World {
         bottles.setMatrixAt(i, hidden)
         caps.setMatrixAt(i, hidden)
         stickers.setMatrixAt(i, hidden)
+        warnings.setMatrixAt(i, hidden)
         continue
       }
       const x = groupX + unit.dx
@@ -973,12 +1000,16 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       bottles.setMatrixAt(i, matrix)
       caps.setMatrixAt(i, matrix)
       const labeled = pop(span(x, stations.stickers - 0.05, stations.stickers + 0.2))
-      compose(local, x, line.top + 0.24, line.z + unit.dz + 0.101, 0, Math.max(0.0001, labeled * appear))
+      compose(local, x, line.top + 0.3, line.z + unit.dz + 0.101, 0, Math.max(0.0001, labeled * appear))
       stickers.setMatrixAt(i, local)
+      const warned = pop(span(x, stations.stickers + 0.08, stations.stickers + 0.33))
+      compose(local, x, line.top + 0.17, line.z + unit.dz + 0.101, 0, Math.max(0.0001, warned * appear))
+      warnings.setMatrixAt(i, local)
     }
     bottles.instanceMatrix.needsUpdate = true
     caps.instanceMatrix.needsUpdate = true
     stickers.instanceMatrix.needsUpdate = true
+    warnings.instanceMatrix.needsUpdate = true
     stickerLamp.emissiveIntensity = 2 * hop(span(groupX, stations.stickers - 0.5, stations.stickers + 0.5))
 
     const forming = during(p, beat.box)
@@ -997,8 +1028,8 @@ export function createWorld(canvas: HTMLCanvasElement): World {
     }
     fitLamp.emissiveIntensity = 2 * hop(during(p, beat.fit))
 
-    // The sealed box, now the order's first carton, gets its carton label and choking hazard label at the end of the
-    // line, and goes onto the nearest pallet. The rest of the order follows it off the line.
+    // The sealed box, now the order's first carton, gets its carton label and shipping label at the end of the line,
+    // and goes onto the nearest pallet. The rest of the order follows it off the line.
     const amazonArrive = amazonIn.at(amazonIn.length * ease(during(p, beat.amazonIn)))
     const amazonLeave = amazonOut.at(amazonOut.length * ease(during(p, beat.amazonDrive)))
     const amazonAt = p < beat.amazonDrive[0] ? amazonArrive : amazonLeave
@@ -1012,17 +1043,17 @@ export function createWorld(canvas: HTMLCanvasElement): World {
       const pallet = palletAt(spot.pallet, p, amazonArrive.x)
       compose(carrier, pallet.x, pallet.y, pallet.z, 0, pallet.scale)
       let labelShown = 1
-      let hazardShown = 1
+      let shippingShown = 1
       if (i === 0) {
         if (p < beat.seal[1] || pallet.scale <= 0.001) {
           cartons.setMatrixAt(i, hidden)
           tapes.setMatrixAt(i, hidden)
           cartonLabels.setMatrixAt(i, hidden)
-          hazardLabels.setMatrixAt(i, hidden)
+          shippingLabels.setMatrixAt(i, hidden)
           continue
         }
         labelShown = pop(span(p, beat.labels[0], beat.labels[0] + 0.006))
-        hazardShown = pop(span(p, beat.labels[0] + 0.004, beat.labels[1]))
+        shippingShown = pop(span(p, beat.labels[0] + 0.004, beat.labels[1]))
         const stack = during(p, beat.stack)
         if (stack <= 0) {
           const along = lerp(stations.fit, stations.labels, ease(during(p, beat.toLabeler)))
@@ -1049,7 +1080,7 @@ export function createWorld(canvas: HTMLCanvasElement): World {
           cartons.setMatrixAt(i, hidden)
           tapes.setMatrixAt(i, hidden)
           cartonLabels.setMatrixAt(i, hidden)
-          hazardLabels.setMatrixAt(i, hidden)
+          shippingLabels.setMatrixAt(i, hidden)
           continue
         }
         if (fly < 1) {
@@ -1071,21 +1102,21 @@ export function createWorld(canvas: HTMLCanvasElement): World {
         i,
         local.multiplyMatrices(
           matrix,
-          compose(local, -0.17, carton.h * 0.52, carton.d / 2 + 0.004, 0, Math.max(0.0001, labelShown))
+          compose(local, -0.19, carton.h * 0.55, carton.d / 2 + 0.004, 0, Math.max(0.0001, labelShown))
         )
       )
-      hazardLabels.setMatrixAt(
+      shippingLabels.setMatrixAt(
         i,
         local.multiplyMatrices(
           matrix,
-          compose(local, 0.2, carton.h * 0.52, carton.d / 2 + 0.004, 0, Math.max(0.0001, hazardShown))
+          compose(local, 0.2, carton.h * 0.5, carton.d / 2 + 0.004, 0, Math.max(0.0001, shippingShown))
         )
       )
     }
     cartons.instanceMatrix.needsUpdate = true
     tapes.instanceMatrix.needsUpdate = true
     cartonLabels.instanceMatrix.needsUpdate = true
-    hazardLabels.instanceMatrix.needsUpdate = true
+    shippingLabels.instanceMatrix.needsUpdate = true
     for (const [i, pallet] of pallets.entries()) {
       const spot = palletAt(i, p, amazonArrive.x)
       pallet.mesh.position.set(spot.x, spot.y, spot.z)
