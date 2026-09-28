@@ -28,9 +28,10 @@ export function csvFile(name: string, rows: string[][]): UploadFile {
   return { name, mimeType: "text/csv", buffer: Buffer.from(`${text}\r\n`) }
 }
 
-// Runs the action that starts a download and returns the file's suggested name and bytes.
+// Runs the action that starts a download and returns the file's suggested name and bytes. A deployed site reads stored
+// files from its bucket, which can take longer than a click's usual wait.
 export async function download(page: Page, start: () => Promise<unknown>) {
-  const [file] = await Promise.all([page.waitForEvent("download"), start()])
+  const [file] = await Promise.all([page.waitForEvent("download", { timeout: 45_000 }), start()])
   return { name: file.suggestedFilename(), bytes: await bytesOf(file) }
 }
 
