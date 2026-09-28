@@ -223,7 +223,7 @@
       "pack": {
         "step": "Empacar",
         "title": "Etiquetado y empacado a la medida.",
-        "text": "Etiquetas FNSKU y de riesgo de asfixia en cada unidad, etiquetas de caja y de envío en cada caja, y cada caja del tamaño justo."
+        "text": "Etiquetas FNSKU y de advertencia de asfixia en cada unidad, etiquetas de caja y de envío en cada caja, y cada caja del tamaño justo."
       },
       "pickUp": {
         "step": "Recolectar",
@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Orden de compra",
       "fnskuLabels": "Etiquetas FNSKU",
-      "chokingHazardLabels": "Etiquetas de riesgo de asfixia",
+      "suffocationWarningLabels": "Etiquetas de advertencia de asfixia",
       "packingList": "Lista de empaque",
       "cartonLabels": "Etiquetas de caja",
       "shippingLabels": "Etiquetas de envío",
@@ -257,7 +257,7 @@
       "billOfLading": "Conocimiento de embarque"
     },
     "pins": {
-      "unitLabels": "Etiquetas FNSKU y de riesgo de asfixia",
+      "unitLabels": "Etiquetas FNSKU y de advertencia de asfixia",
       "rightSized": "A la medida: {size}",
       "boxLabels": "Etiquetas de caja y de envío"
     },

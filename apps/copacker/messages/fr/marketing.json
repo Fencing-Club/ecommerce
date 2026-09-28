@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Bon de commande",
       "fnskuLabels": "Étiquettes FNSKU",
-      "chokingHazardLabels": "Étiquettes risque d’étouffement",
+      "suffocationWarningLabels": "Étiquettes d’avertissement de risque d’étouffement",
       "packingList": "Liste de colisage",
       "cartonLabels": "Étiquettes carton",
       "shippingLabels": "Étiquettes d’expédition",
@@ -257,7 +257,7 @@
       "billOfLading": "Connaissement"
     },
     "pins": {
-      "unitLabels": "Étiquettes FNSKU et risque d’étouffement",
+      "unitLabels": "Étiquettes FNSKU et d’avertissement de risque d’étouffement",
       "rightSized": "Taillé sur mesure : {size}",
       "boxLabels": "Étiquettes carton et d’expédition"
     },

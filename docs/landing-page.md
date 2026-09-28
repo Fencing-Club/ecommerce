@@ -31,7 +31,7 @@ parts live in `apps/copacker/src/components/marketing/`:
   two while sales go on.
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
-  line (FNSKU and choking hazard labels on the units, the box right-sized round them, then the carton and shipping
+  line (FNSKU and suffocation warning labels on the units, the box right-sized round them, then the carton and shipping
   labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage (the bill of lading lands
   once the container is aboard), customs (the seller's container goes in, the barrier lifts on release, and FedEx loads
   its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own warehouse. The chapters,

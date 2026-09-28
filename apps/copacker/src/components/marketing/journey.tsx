@@ -37,7 +37,7 @@ const stills = [0.09, 0.3, 0.47, 0.69, 0.815, 1]
 const documents = [
   { at: 0.06, key: "purchaseOrder", file: "PO-1043.pdf" },
   { at: 0.138, key: "fnskuLabels", file: "PO-1043-fnsku-labels.pdf" },
-  { at: 0.146, key: "chokingHazardLabels", file: "PO-1043-choking-hazard.pdf" },
+  { at: 0.146, key: "suffocationWarningLabels", file: "PO-1043-suffocation-warnings.pdf" },
   { at: 0.212, key: "packingList", file: "PO-1043-packing-list.pdf" },
   { at: 0.232, key: "cartonLabels", file: "PO-1043-carton-labels.pdf" },
   { at: 0.237, key: "shippingLabels", file: "PO-1043-shipping-labels.pdf" },

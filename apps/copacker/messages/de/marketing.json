@@ -223,7 +223,7 @@
       "pack": {
         "step": "Packen",
         "title": "Etikettiert und passgenau verpackt.",
-        "text": "FNSKU- und Erstickungsgefahr-Etiketten auf jede Einheit, Karton- und Versandetiketten auf jeden Karton, und jeder Karton hat die passende Größe."
+        "text": "FNSKU- und Erstickungswarnetiketten auf jede Einheit, Karton- und Versandetiketten auf jeden Karton, und jeder Karton hat die passende Größe."
       },
       "pickUp": {
         "step": "Abholen",
@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Bestellung",
       "fnskuLabels": "FNSKU-Etiketten",
-      "chokingHazardLabels": "Erstickungsgefahr-Etiketten",
+      "suffocationWarningLabels": "Erstickungswarnetiketten",
       "packingList": "Packliste",
       "cartonLabels": "Kartonetiketten",
       "shippingLabels": "Versandetiketten",
@@ -257,7 +257,7 @@
       "billOfLading": "Konnossement"
     },
     "pins": {
-      "unitLabels": "FNSKU- und Erstickungsgefahr-Etiketten",
+      "unitLabels": "FNSKU- und Erstickungswarnetiketten",
       "rightSized": "Passgenau auf {size}",
       "boxLabels": "Karton- und Versandetiketten"
     },

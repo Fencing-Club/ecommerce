@@ -223,7 +223,7 @@
       "pack": {
         "step": "Imballaggio",
         "title": "Etichettato e imballato su misura.",
-        "text": "Etichette FNSKU e di pericolo soffocamento su ogni unità, etichette per cartoni e di spedizione su ogni scatola, e ogni scatola della misura giusta."
+        "text": "Etichette FNSKU e di avvertenza soffocamento su ogni unità, etichette per cartoni e di spedizione su ogni scatola, e ogni scatola della misura giusta."
       },
       "pickUp": {
         "step": "Ritiro",
@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Ordine di acquisto",
       "fnskuLabels": "Etichette FNSKU",
-      "chokingHazardLabels": "Etichette pericolo soffocamento",
+      "suffocationWarningLabels": "Etichette di avvertenza soffocamento",
       "packingList": "Packing list",
       "cartonLabels": "Etichette cartoni",
       "shippingLabels": "Etichette di spedizione",
@@ -257,7 +257,7 @@
       "billOfLading": "Polizza di carico"
     },
     "pins": {
-      "unitLabels": "Etichette FNSKU e pericolo soffocamento",
+      "unitLabels": "Etichette FNSKU e di avvertenza soffocamento",
       "rightSized": "Su misura: {size}",
       "boxLabels": "Etichette cartoni e di spedizione"
     },

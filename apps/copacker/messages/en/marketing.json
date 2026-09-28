@@ -223,7 +223,7 @@
       "pack": {
         "step": "Pack",
         "title": "Labeled, and packed to fit.",
-        "text": "FNSKU and choking hazard labels go on each unit, carton and shipping labels on each box, and every box is sized to fit."
+        "text": "FNSKU and suffocation warning labels go on each unit, carton and shipping labels on each box, and every box is sized to fit."
       },
       "pickUp": {
         "step": "Pick up",
@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Purchase order",
       "fnskuLabels": "FNSKU labels",
-      "chokingHazardLabels": "Choking hazard labels",
+      "suffocationWarningLabels": "Suffocation warning labels",
       "packingList": "Packing list",
       "cartonLabels": "Carton labels",
       "shippingLabels": "Shipping labels",
@@ -257,7 +257,7 @@
       "billOfLading": "Bill of lading"
     },
     "pins": {
-      "unitLabels": "FNSKU and choking hazard labels",
+      "unitLabels": "FNSKU and suffocation warning labels",
       "rightSized": "Right-sized to {size}",
       "boxLabels": "Carton and shipping labels"
     },

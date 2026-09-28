@@ -130,7 +130,7 @@ function drawn(width: number, height: number, draw: (context: CanvasRenderingCon
 const beat = {
   order: [0.02, 0.08],
   lit: [0.07, 0.1],
-  // The packing line: units out of the door with their FNSKU and choking hazard labels on, a box formed and
+  // The packing line: units out of the door with their FNSKU and suffocation warning labels on, a box formed and
   // right-sized round them, then sealed, given its carton and shipping labels, and stacked, and the rest of the order
   // after it.
   units: [0.105, 0.17],
@@ -657,7 +657,7 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
   const capGeometry = keep(new THREE.CylinderGeometry(0.07, 0.07, 0.08, 14).translate(0, 0.48, 0))
   const bottles = new THREE.InstancedMesh(bottleGeometry, matte.steel, units.length)
   const caps = new THREE.InstancedMesh(capGeometry, matte.orange, units.length)
-  // Each unit's FNSKU label, and its choking hazard label beneath.
+  // Each unit's FNSKU label, and its suffocation warning label beneath.
   const stickers = new THREE.InstancedMesh(
     keep(new THREE.PlaneGeometry(0.13, 0.1)),
     labelMaterial(unitLabel),
@@ -1169,8 +1169,8 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
     // The belt runs while the line works.
     beltTexture.offset.x = -time * 0.35
 
-    // Six units come out of the door, get their FNSKU and choking hazard labels under the first gantry, and stop at
-    // the next, where a stock box forms round them and shrinks to fit before its lid closes.
+    // Six units come out of the door, get their FNSKU and suffocation warning labels under the first gantry, and stop
+    // at the next, where a stock box forms round them and shrinks to fit before its lid closes.
     const out = during(p, beat.units)
     const groupX = lerp(line.from + 0.3, stations.fit, easeOut(out))
     const packing = p >= beat.units[0] && p < beat.seal[1]

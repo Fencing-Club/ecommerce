@@ -223,7 +223,7 @@
       "pack": {
         "step": "پیک",
         "title": "لیبل لگے، ناپ کے مطابق پیک۔",
-        "text": "ہر یونٹ پر FNSKU اور دم گھٹنے کے خطرے کے لیبلز، ہر ڈبے پر کارٹن اور شپنگ لیبلز، اور ہر ڈبا صحیح سائز کا۔"
+        "text": "ہر یونٹ پر FNSKU اور دم گھٹنے کی وارننگ کے لیبلز، ہر ڈبے پر کارٹن اور شپنگ لیبلز، اور ہر ڈبا صحیح سائز کا۔"
       },
       "pickUp": {
         "step": "پک اپ",
@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "خریداری آرڈر",
       "fnskuLabels": "FNSKU لیبلز",
-      "chokingHazardLabels": "دم گھٹنے کے خطرے کے لیبلز",
+      "suffocationWarningLabels": "دم گھٹنے کی وارننگ کے لیبلز",
       "packingList": "پیکنگ لسٹ",
       "cartonLabels": "کارٹن لیبلز",
       "shippingLabels": "شپنگ لیبلز",
@@ -257,7 +257,7 @@
       "billOfLading": "بل آف لیڈنگ"
     },
     "pins": {
-      "unitLabels": "FNSKU اور دم گھٹنے کے خطرے کے لیبلز",
+      "unitLabels": "FNSKU اور دم گھٹنے کی وارننگ کے لیبلز",
       "rightSized": "{size} کے مطابق سائز",
       "boxLabels": "کارٹن اور شپنگ لیبلز"
     },

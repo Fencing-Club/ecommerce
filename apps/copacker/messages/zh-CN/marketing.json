@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "采购订单",
       "fnskuLabels": "FNSKU 标签",
-      "chokingHazardLabels": "窒息警告标签",
+      "suffocationWarningLabels": "窒息警告标签",
       "packingList": "装箱单",
       "cartonLabels": "箱标",
       "shippingLabels": "运输标签",

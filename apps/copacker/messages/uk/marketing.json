@@ -249,7 +249,7 @@
     "documents": {
       "purchaseOrder": "Замовлення на закупівлю",
       "fnskuLabels": "Етикетки FNSKU",
-      "chokingHazardLabels": "Етикетки про ризик задушення",
+      "suffocationWarningLabels": "Етикетки з попередженням про ризик задушення",
       "packingList": "Пакувальний лист",
       "cartonLabels": "Етикетки коробок",
       "shippingLabels": "Транспортні етикетки",
@@ -257,7 +257,7 @@
       "billOfLading": "Коносамент"
     },
     "pins": {
-      "unitLabels": "Етикетки FNSKU та про ризик задушення",
+      "unitLabels": "Етикетки FNSKU та з попередженням про ризик задушення",
       "rightSized": "Точно за розміром: {size}",
       "boxLabels": "Етикетки коробки й транспортні етикетки"
     },
