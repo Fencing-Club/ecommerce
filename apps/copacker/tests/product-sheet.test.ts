@@ -80,6 +80,17 @@ describe("product template", () => {
     }
   })
 
+  it("counts in units, and still reads earlier templates that said pieces", async () => {
+    const rows = sheetRows([{ ...product, variants: [{ ...product.variants[0]!, piecesPerSellablePack: 2 }] }])
+    const csv = sheetCsv(rows)
+    expect(csv).toContain("Units per pack")
+    expect(rows[0]!.priceBasis).toBe("unit")
+    const earlier = csv.replace("Units per pack", "Pieces per pack").replace(",unit,", ",piece,")
+    expect(earlier).toContain(",piece,")
+    const [read] = await readSheet({ name: "products.csv", bytes: bytes(earlier) })
+    expect(read!.variants[0]).toMatchObject({ priceBasis: "piece", piecesPerSellablePack: 2 })
+  })
+
   it("keeps Excel from reading codes as numbers or text as formulas", () => {
     const csv = sheetCsv(sheetRows([product]))
     expect(csv.startsWith("﻿Handle,Title,")).toBe(true)

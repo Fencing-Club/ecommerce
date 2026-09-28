@@ -51,7 +51,7 @@ describe("PO instructions", () => {
     expect(shared).toBe("POLYBAGGING")
     expect(itemRequirements(po.items[1]!, po.destination, shared)).toEqual([
       "Pack for FBA",
-      "Pack 2 pieces together as one unit",
+      "Bundle 2 units into one pack",
       "Label with FNSKU X004ABC123",
       "Fold the cuff.",
       "No tissue paper."

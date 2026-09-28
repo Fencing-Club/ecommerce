@@ -89,7 +89,7 @@ describe("catalog pricing", () => {
     expect(unitPriceAt(product, 500)).toBe(800)
     const rules = { increment: 6, minimum: 12, maximum: 120 }
     expect(quantityProblem(rules, 6, "case")).toBe("Minimum 12 cases")
-    expect(quantityProblem(rules, 126, "piece")).toBe("Maximum 120 pieces")
+    expect(quantityProblem(rules, 126, "piece")).toBe("Maximum 120 units")
     expect(quantityProblem(rules, 20, "piece")).toBe("Order in multiples of 6")
     expect(quantityProblem(rules, 18, "piece")).toBeNull()
   })

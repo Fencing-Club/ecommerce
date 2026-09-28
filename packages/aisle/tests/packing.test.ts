@@ -89,7 +89,7 @@ describe("Supplier piece and carton contract", () => {
       validatePacking(toWarehouse, p)
         .issues.map((issue) => issue.message)
         .join()
-    ).toContain("complete sets")
+    ).toContain("complete packs")
   })
   it("requires a delivery address for the buyer's own location", () => {
     expect(orderInputSchema.safeParse({ ...order, destination: "warehouse" }).success).toBe(false)

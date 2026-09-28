@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { describe, expect, it } from "vitest"
-import { checklistPdf, drawableText, purchaseOrderPdf, type PoParty } from "../src/documents"
+import { checklistPdf, drawableText, packingListPdf, purchaseOrderPdf, type PoParty } from "../src/documents"
 import { orderInputSchema, packingSchema, type OrderInput } from "../src/index"
 import { readLabelPdfPages } from "../src/label-pdf-reader"
 
@@ -128,6 +128,28 @@ describe("packing checklist PDF", () => {
 
   it("names the kind of destination without a ship-to", async () => {
     expect(await checklistText(order(1))).toContain("Buyer's location")
+  })
+
+  it("counts the packing list's contents in units, and in packs only when a line is a multi-pack", async () => {
+    const listText = async (shipment: OrderInput) => {
+      const bytes = await packingListPdf({
+        order: shipment,
+        packing: packing(shipment),
+        labels: [],
+        shipmentId: "SHIP-1",
+        buyer: parties.buyer
+      })
+      return (await pdfText(bytes)).replace(/\s+/g, " ")
+    }
+    // The first sample line sells singly; the fourth is a pack of 2. Column headings are drawn letter-spaced.
+    const single = await listText(order(1))
+    expect(single).toContain("1, 4 units")
+    expect(single).toContain("U N I T S")
+    expect(single).not.toMatch(/P I E C E S|P A C K S/)
+    const multi = await listText(order(4))
+    expect(multi).toContain("1, 16 units")
+    expect(multi).toContain("U N I T S P A C K S")
+    expect(multi).not.toContain("P I E C E S")
   })
 
   it("keeps the Amazon network as an Amazon shipment's destination", async () => {

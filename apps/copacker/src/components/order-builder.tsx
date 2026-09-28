@@ -540,7 +540,7 @@ export function OrderBuilder({
                 <div className="flex justify-between gap-3">
                   <span>
                     {lineItems.fields.length} {lineItems.fields.length === 1 ? "variant" : "variants"} ({units}{" "}
-                    {units === 1 ? "item" : "items"})
+                    {units === 1 ? "unit" : "units"})
                   </span>
                   <span className="tabular-nums">{money(subtotal, currency)}</span>
                 </div>

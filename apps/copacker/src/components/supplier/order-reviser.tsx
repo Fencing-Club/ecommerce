@@ -394,7 +394,7 @@ export function OrderReviser({
                     <span className="block text-xs text-muted-foreground">{product.supplierSku}</span>
                   </span>
                   <span className="shrink-0 text-sm tabular-nums">
-                    {product.unitPrice === null ? "No price" : `${money(product.unitPrice, currency)} / piece`}
+                    {product.unitPrice === null ? "No price" : `${money(product.unitPrice, currency)} / unit`}
                   </span>
                 </button>
               </li>

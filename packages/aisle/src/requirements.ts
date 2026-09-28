@@ -48,7 +48,7 @@ export function destinationRequirements(order: Pick<OrderInput, "destination" | 
       : []),
     "Label every unit with its FNSKU barcode, covering any other barcode.",
     "Polybags need a suffocation warning when the opening is 5 in (12.7 cm) or wider.",
-    "Keep multi-packs together as one unit with a single label."
+    "Keep each multi-pack together, with one label on the pack."
   ]
 }
 
@@ -78,7 +78,7 @@ export function itemRequirements(
   return [
     ...(amazon ? [`Pack for ${amazonNetworkNames[item.amazonNetwork]}`] : []),
     ...(item.prepCategory === shared ? [] : [prepInstructions[item.prepCategory]]),
-    ...(item.piecesPerSet > 1 ? [`Pack ${item.piecesPerSet} pieces together as one unit`] : []),
+    ...(item.piecesPerSet > 1 ? [`Bundle ${item.piecesPerSet} units into one pack`] : []),
     ...(amazon && item.fnsku ? [`Label with FNSKU ${item.fnsku}`] : []),
     ...(item.suffocationWarning ? ["Put a suffocation warning label on each polybag"] : []),
     ...item.instructions

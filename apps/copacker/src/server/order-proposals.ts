@@ -184,7 +184,7 @@ export async function proposeChanges(s: Session, orderId: string, raw: unknown, 
       const item = order.data.items.find((candidate) => candidate.id === line.itemId)
       if (item && line.pieces % item.piecesPerSet !== 0) {
         throw new Error(
-          `${item.buyerSku} is a set of ${item.piecesPerSet}. Order a multiple of ${item.piecesPerSet} pieces`
+          `${item.buyerSku} is a pack of ${item.piecesPerSet}. Order a multiple of ${item.piecesPerSet} units`
         )
       }
     }

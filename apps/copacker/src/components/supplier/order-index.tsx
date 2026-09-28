@@ -77,7 +77,7 @@ export function SupplierOrderIndex({
               <TableHead className="hidden @2xl:table-cell">Date</TableHead>
               {showCustomer && <TableHead>Customer</TableHead>}
               <TableHead>Status</TableHead>
-              <TableHead className="hidden text-right @3xl:table-cell">Pieces</TableHead>
+              <TableHead className="hidden text-right @3xl:table-cell">Units</TableHead>
               {prices && <TableHead className="text-right">Total</TableHead>}
             </TableRow>
           </TableHeader>

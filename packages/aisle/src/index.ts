@@ -116,7 +116,7 @@ export const itemSchema = z
     // On a PO to Amazon, the network this line's cartons go to, which decides how they're packed.
     amazonNetwork: z.enum(amazonNetworks).default("fba")
   })
-  .refine((i) => i.pieces % i.piecesPerSet === 0, "Pieces must be divisible by pieces per set")
+  .refine((i) => i.pieces % i.piecesPerSet === 0, "Units must be divisible by units per pack")
 export type OrderItem = z.infer<typeof itemSchema>
 // Payment terms a PO can have, as Shopify offers them. None is an empty string.
 export const commonPaymentTerms = [
@@ -333,7 +333,7 @@ export function validatePacking(order: OrderInput, packing: Packing, reserved: R
       totals[item.id] = (totals[item.id] ?? 0) + content.pieces
       const units = content.pieces / item.piecesPerSet
       if (!Number.isInteger(units)) {
-        add(`${item.buyerSku}: pieces must form complete sets of ${item.piecesPerSet}`)
+        add(`${item.buyerSku}: units must form complete packs of ${item.piecesPerSet}`)
       }
       if (awd && units > 150) {
         add(`${item.buyerSku}: maximum 150 sellable units per AWD carton`)

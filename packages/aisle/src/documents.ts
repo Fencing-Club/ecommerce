@@ -485,7 +485,7 @@ export async function packingListPdf(input: {
     ["Purchase order", order.reference],
     ["Shipment", input.shipmentId.length > 16 ? input.shipmentId.slice(0, 8).toUpperCase() : input.shipmentId],
     ["Ready by", longDate(packing.readyDate)],
-    ["Cartons", `${packing.cartons.length}, ${pieces.toLocaleString("en-US")} pieces`]
+    ["Cartons", `${packing.cartons.length}, ${pieces.toLocaleString("en-US")} units`]
   ])
   kit.section("Parties")
   kit.parties([
@@ -494,7 +494,13 @@ export async function packingListPdf(input: {
   ])
   line(kit.left, right, at.y)
 
-  const columns = { item: content, sku: right - 190, pieces: right - 70, units: right }
+  // A shipment with a multi-pack line also counts each line's packs, which Amazon counts as its units.
+  const packs = packing.cartons.some((carton) =>
+    carton.items.some((contents) => (order.items.find((item) => item.id === contents.itemId)?.piecesPerSet ?? 1) > 1)
+  )
+  const columns = packs
+    ? { item: content, sku: right - 190, units: right - 70, packs: right }
+    : { item: content, sku: right - 120, units: right, packs: right }
   const itemWidth = columns.sku - 12 - columns.item
   for (const carton of packing.cartons) {
     const labelNumber = labels.find((row) => row.cartonId === carton.cartonId)?.labelNumber
@@ -515,8 +521,8 @@ export async function packingListPdf(input: {
     kit.tableHeader([
       { label: "Item", x: columns.item },
       { label: "Supplier SKU", x: columns.sku },
-      { label: "Pieces", x: columns.pieces, align: "right" },
-      { label: "Units", x: columns.units, align: "right" }
+      { label: "Units", x: columns.units, align: "right" },
+      ...(packs ? [{ label: "Packs", x: columns.packs, align: "right" as const }] : [])
     ])
     for (const contents of carton.items) {
       const item = order.items.find((row) => row.id === contents.itemId)
@@ -531,8 +537,10 @@ export async function packingListPdf(input: {
         size: 9.5,
         color: item.supplierSku ? undefined : muted
       })
-      draw(contents.pieces.toLocaleString("en-US"), columns.pieces, { size: 10, align: "right" })
-      draw((contents.pieces / item.piecesPerSet).toLocaleString("en-US"), columns.units, { size: 10, align: "right" })
+      draw(contents.pieces.toLocaleString("en-US"), columns.units, { size: 10, align: "right" })
+      if (packs) {
+        draw((contents.pieces / item.piecesPerSet).toLocaleString("en-US"), columns.packs, { size: 10, align: "right" })
+      }
       at.y = rowTop
       for (const row of title) {
         draw(row, columns.item, { size: 10, font: bold })

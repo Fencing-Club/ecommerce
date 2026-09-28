@@ -236,7 +236,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                         </ItemTitle>
                         {prices && change.unitPrice !== item.unitPrice && (
                           <ItemDescription className="flex flex-wrap items-center gap-1">
-                            Price per piece {money(item.unitPrice, snapshot.currency)}
+                            Price per unit {money(item.unitPrice, snapshot.currency)}
                             <ArrowRight className="size-3" aria-label="changed to" />
                             {money(change.unitPrice, snapshot.currency)}
                           </ItemDescription>
@@ -354,7 +354,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
                   <TableRow>
                     <TableHead>Carton</TableHead>
                     <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Pieces</TableHead>
+                    <TableHead className="text-right">Units</TableHead>
                     <TableHead>Dimensions (cm)</TableHead>
                     <TableHead className="text-right">Weight (kg)</TableHead>
                     {amazon && <TableHead>Amazon label</TableHead>}

@@ -447,9 +447,9 @@ export function ImportReview({
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead className="w-24 text-right">Pieces</TableHead>
-                  <TableHead className="w-20 text-right">Per set</TableHead>
-                  <TableHead className="w-28 text-right">Price per piece</TableHead>
+                  <TableHead className="w-24 text-right">Units</TableHead>
+                  <TableHead className="w-20 text-right">Per pack</TableHead>
+                  <TableHead className="w-28 text-right">Price per unit</TableHead>
                   <TableHead className="w-28 text-right">Line total</TableHead>
                   <TableHead className="w-12">
                     <span className="sr-only">Actions</span>
@@ -469,7 +469,7 @@ export function ImportReview({
                     computed !== null && lineTotal !== null && computed !== lineTotal
                       ? [
                           ...item.warnings,
-                          `Pieces × price is ${format(computed)}, but the line total is ${format(lineTotal)}`
+                          `Units × price is ${format(computed)}, but the line total is ${format(lineTotal)}`
                         ]
                       : item.warnings
                   return (
@@ -498,7 +498,7 @@ export function ImportReview({
                         </TableCell>
                         <TableCell className="align-top">
                           <Input
-                            aria-label={`Pieces on line ${line}`}
+                            aria-label={`Units on line ${line}`}
                             required
                             type="number"
                             inputMode="numeric"
@@ -516,7 +516,7 @@ export function ImportReview({
                         </TableCell>
                         <TableCell className="align-top">
                           <Input
-                            aria-label={`Pieces per set on line ${line}`}
+                            aria-label={`Units per pack on line ${line}`}
                             required
                             type="number"
                             inputMode="numeric"
@@ -534,7 +534,7 @@ export function ImportReview({
                         </TableCell>
                         <TableCell className="align-top">
                           <Input
-                            aria-label={`Price per piece on line ${line}`}
+                            aria-label={`Price per unit on line ${line}`}
                             required
                             inputMode="decimal"
                             autoComplete="off"

@@ -162,7 +162,7 @@ const ShipmentPage = ({ t }: { t: number }) => {
           columns={[
             { label: "Supplier carton", width: 1.2 },
             { label: "Product", width: 1.9 },
-            { label: "Pieces", width: 0.8, align: "right" },
+            { label: "Units", width: 0.8, align: "right" },
             { label: "Dimensions (cm)", width: 1.5, align: "right" },
             { label: "Weight (kg)", width: 1.1, align: "right" },
             { label: "Amazon label number", width: 2.4 }

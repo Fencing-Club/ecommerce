@@ -12,8 +12,8 @@ import { variantLabel } from "@/lib/supplier-product"
 // Copacker's product template, for CSV and Excel alike: one row per variant, like Shopify's product CSV. Rows with the
 // same handle are one product, whose details come from its first row. Import matches variants by SKU.
 const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
-const bases: Record<string, PriceBasis> = { piece: "piece", pack: "sellable_pack", case: "case" }
-const basisNames: Record<PriceBasis, string> = { piece: "piece", sellable_pack: "pack", case: "case" }
+const bases: Record<string, PriceBasis> = { unit: "piece", pack: "sellable_pack", case: "case" }
+const basisNames: Record<PriceBasis, string> = { piece: "unit", sellable_pack: "pack", case: "case" }
 const yesNo = ["yes", "no"]
 
 export const sheetColumns = [
@@ -31,16 +31,18 @@ export const sheetColumns = [
   { key: "sku", header: "SKU", width: 18, note: "Unique for each variant. Required." },
   { key: "currency", header: "Currency", width: 10, list: [...currencies], note: currencies.join(", ") },
   { key: "price", header: "Price", width: 11, note: "Per price unit, such as 12.50. Blank for none yet." },
-  { key: "priceBasis", header: "Price per", width: 10, list: ["piece", "pack", "case"], note: "piece, pack or case." },
+  { key: "priceBasis", header: "Price per", width: 10, list: ["unit", "pack", "case"], note: "unit, pack or case." },
   {
     key: "piecesPerPack",
-    header: "Pieces per pack",
+    header: "Units per pack",
+    // What earlier templates called the column. They still import.
+    formerly: "Pieces per pack",
     width: 15,
-    note: "Pieces in each sellable pack. 1 if sold singly."
+    note: "Units in each sellable pack. 1 if sold singly."
   },
   { key: "packsPerCase", header: "Packs per case", width: 14, note: "Sellable packs in each case. Blank if unknown." },
   { key: "trackInventory", header: "Track inventory", width: 15, list: yesNo, note: "yes or no." },
-  { key: "onHand", header: "On hand", width: 10, note: "Pieces in stock. Blank keeps the current count." },
+  { key: "onHand", header: "On hand", width: 10, note: "Units in stock. Blank keeps the current count." },
   {
     key: "continueSelling",
     header: "Continue selling",
@@ -63,7 +65,14 @@ export const sheetColumns = [
     note: "Quantity=price pairs, lowest quantity first, such as 50=11.00; 100=10.00"
   },
   { key: "notes", header: "Variant notes", width: 30, note: "Anything else about this variant." }
-] as const satisfies ReadonlyArray<{ key: string; header: string; width: number; note: string; list?: string[] }>
+] as const satisfies ReadonlyArray<{
+  key: string
+  header: string
+  formerly?: string
+  width: number
+  note: string
+  list?: string[]
+}>
 export type SheetColumn = (typeof sheetColumns)[number]["key"]
 export type SheetRow = Record<SheetColumn, string>
 
@@ -398,8 +407,10 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
   const header = (table.shift() ?? []).map((cell) => cell.trim().toLowerCase())
   const positions = new Map<SheetColumn, number>()
   for (const column of sheetColumns) {
-    const index = header.indexOf(column.header.toLowerCase())
-    if (index >= 0) {
+    const index = [column.header, "formerly" in column ? column.formerly : null]
+      .map((name) => (name ? header.indexOf(name.toLowerCase()) : -1))
+      .find((found) => found >= 0)
+    if (index !== undefined) {
       positions.set(column.key, index)
     }
   }
@@ -471,7 +482,9 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
       }
       options[name] = value
     }
-    const priceBasis = bases[choice(get("priceBasis"), Object.keys(bases), line, "Price per", "piece")]!
+    // Earlier templates priced a unit "per piece".
+    const basis = get("priceBasis").toLowerCase() === "piece" ? "unit" : get("priceBasis")
+    const priceBasis = bases[choice(basis, Object.keys(bases), line, "Price per", "unit")]!
     const increment = get("increment") ? count(get("increment"), line, "Quantity increment") : 1
     const quantityRules = {
       increment,
@@ -497,7 +510,7 @@ export async function readSheet(file: { name: string; bytes: Uint8Array }): Prom
     if (problem) {
       throw new Error(`Row ${line}: ${problem}`)
     }
-    const piecesPerSellablePack = get("piecesPerPack") ? count(get("piecesPerPack"), line, "Pieces per pack") : 1
+    const piecesPerSellablePack = get("piecesPerPack") ? count(get("piecesPerPack"), line, "Units per pack") : 1
     const sellablePacksPerCase = get("packsPerCase") ? count(get("packsPerCase"), line, "Packs per case") : null
     if (sellablePacksPerCase !== null && !Number.isSafeInteger(piecesPerSellablePack * sellablePacksPerCase)) {
       throw new Error(`Row ${line}: the pack quantity is too large`)

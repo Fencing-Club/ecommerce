@@ -200,13 +200,13 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
           comparison={comparison}
         />
         <Kpi
-          label="Pieces ordered"
+          label="Units ordered"
           value={data.kpis.pieces.value.toLocaleString("en-US")}
           change={data.kpis.pieces.change}
           comparison={comparison}
         />
         <Kpi
-          label="Pieces shipped"
+          label="Units shipped"
           value={data.kpis.shipped.value.toLocaleString("en-US")}
           change={data.kpis.shipped.change}
           comparison={comparison}
@@ -227,7 +227,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
           <CardHeader>
             <CardTitle>Open orders</CardTitle>
             <CardDescription>
-              {plural(data.backlog.orders, "order")}, {plural(data.backlog.pieces, "piece")}
+              {plural(data.backlog.orders, "order")}, {plural(data.backlog.pieces, "unit")}
             </CardDescription>
             <CardAction>
               <CardLink href="/orders">View all</CardLink>
@@ -254,7 +254,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
                         style={{ width: `${row.pieces ? Math.max(2, (row.pieces / pipelineMax) * 100) : 0}%` }}
                       />
                     </span>
-                    <span className="text-xs text-muted-foreground">{plural(row.pieces, "piece")}</span>
+                    <span className="text-xs text-muted-foreground">{plural(row.pieces, "unit")}</span>
                   </PageLink>
                 </li>
               ))}
@@ -267,7 +267,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
         <Card>
           <CardHeader>
             <CardTitle>Top products</CardTitle>
-            <CardDescription>Pieces ordered, {data.period.label.toLowerCase()}</CardDescription>
+            <CardDescription>Units ordered, {data.period.label.toLowerCase()}</CardDescription>
           </CardHeader>
           <CardContent>
             <BarList
@@ -382,7 +382,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
                 <TableHead>Order</TableHead>
                 <TableHead className="hidden @lg:table-cell">Customer</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="hidden text-right @2xl:table-cell">Pieces</TableHead>
+                <TableHead className="hidden text-right @2xl:table-cell">Units</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>

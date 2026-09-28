@@ -448,7 +448,7 @@ export default async function OrderPage({ params }: Props) {
                 <div className="flex justify-between gap-3">
                   <span>
                     {order.data.items.length} {order.data.items.length === 1 ? "variant" : "variants"} ({units}{" "}
-                    {units === 1 ? "item" : "items"})
+                    {units === 1 ? "unit" : "units"})
                   </span>
                   <span className="tabular-nums">{money(subtotal, currency)}</span>
                 </div>

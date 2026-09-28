@@ -133,7 +133,7 @@ export async function prepareOrder(s: Session, raw: unknown) {
       }
     })
     if (item.pieces % piecesPerSet !== 0) {
-      throw new Error(`${source.sku} is a bundle of ${piecesPerSet}. Order a multiple of ${piecesPerSet} pieces`)
+      throw new Error(`${source.sku} is a bundle of ${piecesPerSet}. Order a multiple of ${piecesPerSet} units`)
     }
     return {
       ...item,

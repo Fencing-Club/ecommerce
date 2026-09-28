@@ -31,7 +31,7 @@ import { SaveBar, StatusBadge } from "./shared"
 const currencies = ["USD", "CNY", "EUR", "GBP", "CAD", "AUD"] as const
 type Currency = (typeof currencies)[number]
 const basisOptions = [
-  { value: "piece", label: "Piece" },
+  { value: "piece", label: "Unit" },
   { value: "sellable_pack", label: "Pack" },
   { value: "case", label: "Case" }
 ]
@@ -353,7 +353,7 @@ function VariantSheet({
             )}
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="variant-pieces">Pieces per pack</FieldLabel>
+                <FieldLabel htmlFor="variant-pieces">Units per pack</FieldLabel>
                 <Input
                   id="variant-pieces"
                   type="number"
@@ -395,7 +395,7 @@ function VariantSheet({
                     className="w-32"
                     onChange={(event) => change({ onHand: whole(event.target.value, 0) ?? 0 })}
                   />
-                  <FieldDescription>Pieces in stock.</FieldDescription>
+                  <FieldDescription>Units in stock.</FieldDescription>
                 </Field>
                 <Field orientation="horizontal">
                   <Switch

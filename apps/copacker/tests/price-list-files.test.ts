@@ -15,9 +15,9 @@ const list: PriceList = {
       variant: "Size 5",
       sku: "EPB-5",
       currency: "USD",
-      unit: "piece",
+      unit: "unit",
       priceMinor: 7850,
-      breaks: [{ label: "10 pieces+", price: "$70.00" }],
+      breaks: [{ label: "10 units+", price: "$70.00" }],
       minimum: 1,
       increment: 1,
       maximum: null

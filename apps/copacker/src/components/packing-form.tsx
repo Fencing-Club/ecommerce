@@ -276,7 +276,7 @@ export function PackingForm({
                   <TableHead className="w-52">Supplier SKU</TableHead>
                   {prices && (
                     <TableHead className="w-44">
-                      Price per piece
+                      Price per unit
                       <RequiredMark />
                     </TableHead>
                   )}
@@ -316,7 +316,7 @@ export function PackingForm({
                           <FormMoney
                             name={`changes.${index}.unitPrice`}
                             required
-                            label="Price per piece"
+                            label="Price per unit"
                             currency={order.currency}
                             className={cellField}
                           />
@@ -349,7 +349,7 @@ export function PackingForm({
                     <span key={field.key}>{field.label}</span>
                   ))}
                   {multipleProducts && <span>Product</span>}
-                  <span>Pieces</span>
+                  <span>Units</span>
                   <span />
                 </div>
                 {cartons.fields.map((carton, index) => {
@@ -394,7 +394,7 @@ export function PackingForm({
                       <FormNumber
                         name={`cartons.${index}.items.0.pieces`}
                         required
-                        label="Pieces"
+                        label="Units"
                         min={1}
                         step={1}
                         className={cartonLabel}
@@ -456,7 +456,7 @@ export function PackingForm({
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div className="flex flex-col px-1">
               <p className="font-medium tabular-nums">
-                {plural(cartons.fields.length, "carton")}, {plural(pieces, "piece")}
+                {plural(cartons.fields.length, "carton")}, {plural(pieces, "unit")}
               </p>
               {notice && <output className="text-xs text-muted-foreground">{notice}</output>}
             </div>

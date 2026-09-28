@@ -158,16 +158,14 @@ const PackingPage = ({ t }: { t: number }) => (
       <Badge tone="success">Uploaded</Badge>
     </Card>
     <Card style={{ paddingBottom: 8 }}>
-      <CardTitle
-        aside={<span style={{ fontSize: 15, color: app.muted }}>160 cartons, {count(orderUnits)} pieces</span>}
-      >
+      <CardTitle aside={<span style={{ fontSize: 15, color: app.muted }}>160 cartons, {count(orderUnits)} units</span>}>
         Cartons
       </CardTitle>
       <Table
         columns={[
           { label: "Cartons", width: 1.2 },
           { label: "Product", width: 2 },
-          { label: "Pieces", width: 1, align: "right" },
+          { label: "Units", width: 1, align: "right" },
           { label: "Dimensions (cm)", width: 1.6, align: "right" },
           { label: "Weight (kg)", width: 1.1, align: "right" }
         ]}

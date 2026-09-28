@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 // Volume pricing and quantity rules, as Shopify's catalogs have them. Quantities are in the product's price basis:
-// pieces, sellable packs or cases. A break's price applies from its minimum up; below the first break, the product's
+// units, sellable packs or cases. A break's price applies from its minimum up; below the first break, the product's
 // own price does.
 export type PriceBreak = { minimum: number; priceMinor: number }
 export type QuantityRules = { increment: number; minimum: number; maximum: number | null }
@@ -17,7 +17,7 @@ export const quantityRulesSchema = z.object({ increment: quantity, minimum: quan
 export const priceBases = ["piece", "sellable_pack", "case"] as const
 export type PriceBasis = (typeof priceBases)[number]
 const basisUnits: Record<PriceBasis, [string, string]> = {
-  piece: ["piece", "pieces"],
+  piece: ["unit", "units"],
   sellable_pack: ["pack", "packs"],
   case: ["case", "cases"]
 }

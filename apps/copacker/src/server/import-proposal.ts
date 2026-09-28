@@ -59,7 +59,7 @@ export function validateProposal(raw: unknown, knownVariants: ReadonlySet<string
       throw new Error("Import referenced an unverified catalog product")
     }
     if (item.pieces !== null && item.piecesPerSet !== null && item.pieces % item.piecesPerSet !== 0) {
-      item.warnings.push("Quantity does not form complete sellable sets. Review the pack conversion.")
+      item.warnings.push("Quantity does not form complete packs. Review the pack conversion.")
     }
   }
   return proposal
