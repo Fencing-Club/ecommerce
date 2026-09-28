@@ -129,14 +129,17 @@ test("checks the restock settings and saves them", async ({ page }) => {
   const save = restock.getByRole("button", { name: "Save" })
   const before = { sales: await sales.inputValue(), lead: await lead.inputValue() }
 
-  // Empty, or outside 1 to 730 days, isn't saved.
+  // Empty, or outside 1 to 730 days, isn't saved, and each says what's wrong.
   await sales.fill("")
   await lead.fill("731")
   await save.click()
-  await expect(restock.getByText("Enter the days")).toHaveCount(2)
+  await expect(restock.getByText("Enter the days")).toBeVisible()
+  await expect(restock.getByText("Enter 730 or less")).toBeVisible()
   await sales.fill("0")
   await lead.fill("30")
-  await expect(restock.getByText("Enter the days")).toHaveCount(1)
+  await expect(restock.getByText("Enter 1 or more")).toBeVisible()
+  await expect(restock.getByText("Enter the days")).toBeHidden()
+  await expect(restock.getByText("Enter 730 or less")).toBeHidden()
 
   // Saved and restored at once: Restock and the Overview read these, and their specs may be running.
   await sales.fill("45")
