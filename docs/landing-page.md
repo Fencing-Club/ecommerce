@@ -49,10 +49,6 @@ parts live in `apps/copacker/src/components/marketing/`:
 - The pages load none of the app's providers (AuthKit, the data cache, tooltips, the theme) and only the messages
   their client components use (`ClientMessages` in `landing.tsx` and `contact.tsx`), so a visitor's HTML and
   JavaScript carry none of the app. The app's layouts bring those themselves (`AppProviders`).
-- A signed-out visitor's marketing pages go out with `Cache-Control: private, no-cache` instead of Next.js's
-  no-store (`src/server/back-forward-cache.ts`, called from the proxy), so going back to one restores it at once from
-  the browser's back/forward cache. They're still rendered per request, in the visitor's language. A new marketing
-  page goes on its list.
 - Work the first view doesn't need waits until the page has loaded and is idle (`use-page-idle.ts`): the hero's WebGL
   dots, and the fonts of the forecast's handwritten note and of the agents' code. The hero's words start faint rather
   than hidden (`lift` in `site.tsx`), so they're the first thing painted. The contact form's schema uses Zod Mini.
