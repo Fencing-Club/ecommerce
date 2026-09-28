@@ -2733,6 +2733,60 @@ describe("document upload and packet release", () => {
     expect(withdrawn.status).toBe(409)
     expect(await withdrawn.text()).toContain("packet changed")
   })
+  it("emails the labels only to a supplier that has joined", async () => {
+    // A shipment waiting for labels, with every document its packet needs.
+    const releasable = async () => {
+      const prepared = await preparation()
+      await database
+        .update(tables.shipments)
+        .set({
+          status: "waiting_labels",
+          packing: prepared.packing,
+          labels: [
+            { cartonId: "A6", labelNumber: "201952611540373988", destinationCode: "IUSP", amazonShipmentId: "STAR-1" }
+          ]
+        })
+        .where(eq(tables.shipments.id, prepared.id))
+      for (const kind of ["packing_list", "checklist", "carton_label", "shipping_label"] as const) {
+        await database.insert(tables.documents).values({
+          orderId,
+          shipmentId: prepared.id,
+          kind,
+          cartonId: kind.endsWith("_label") ? "A6" : null,
+          objectKey: `test/${randomUUID()}`,
+          name: `${kind}.pdf`,
+          bytes: 10,
+          orderRevision: 1,
+          shipmentRevision: 1,
+          uploadedBy: "amazon"
+        })
+      }
+      return prepared.id
+    }
+    const joined = await releasable()
+    expect((await release(joined)).status).toBe(200)
+    // A supplier that hasn't joined can't open the shipment the email links to, and may have no email address at all.
+    // Its shipment is released all the same, and the buyer shares the packet.
+    for (const email of ["supplier@example.com", null]) {
+      await database
+        .update(tables.suppliers)
+        .set({ supplierOrgId: null, email })
+        .where(eq(tables.suppliers.id, supplierLinkId))
+      expect((await release(await releasable())).status).toBe(200)
+    }
+    const emailed = await database.select().from(tables.jobs).where(eq(tables.jobs.kind, "email"))
+    expect(emailed.map((job) => job.payload)).toEqual([
+      { type: "ready", to: "supplier@example.com", orderId, shipmentId: joined }
+    ])
+    // The worker sends what the release queued.
+    vi.stubEnv("APP_URL", "https://copacker.example")
+    vi.stubEnv("EMAIL_API_KEY", "test")
+    vi.stubEnv("EMAIL_FROM", "copacker@example.com")
+    const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
+    vi.stubGlobal("fetch", send)
+    await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
+    expect(JSON.parse(String(send.mock.calls[0]![1]!.body))).toMatchObject({ to: ["supplier@example.com"] })
+  })
 })
 
 // A page of Amazon's AWD carton labels, with its fields in the order the labels API gives them.

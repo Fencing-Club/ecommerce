@@ -120,7 +120,7 @@ kept with that partner and change through the partner's commands.
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
-| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to the supplier |
+| shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
 | shipment.ship | id | Shipments: Edit. The supplier, or the buyer for a supplier not on Copacker, marks released goods shipped; the invoice must be current |
 | shipment.forward | id, freight `{amountMinor, currency}`, carrier, reference | The forwarder (Orders: Edit), or the buyer for a forwarder not on Copacker (Shipments: Edit, prices). Freight is recorded as a landed cost |
 | shipment.received | id | Buyer, Shipments: Edit. Goods arrived where the PO sent them |

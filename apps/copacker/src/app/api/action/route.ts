@@ -708,14 +708,19 @@ export async function POST(request: Request) {
           .update(shipments)
           .set({ status: "ready", bookingReference: z.string().trim().min(1).max(100).parse(data.bookingReference) })
           .where(eq(shipments.id, id()))
-        await tx
-          .insert(jobs)
-          .values({
-            key: `ready:${shipment.id}:${shipment.revision}`,
-            kind: "email",
-            payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
-          })
-          .onConflictDoNothing()
+        // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the
+        // shipment in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the
+        // purchase order's documents.
+        if (supplier.supplierOrgId && supplier.email) {
+          await tx
+            .insert(jobs)
+            .values({
+              key: `ready:${shipment.id}:${shipment.revision}`,
+              kind: "email",
+              payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
+            })
+            .onConflictDoNothing()
+        }
         await tx.insert(events).values({
           orderId: shipment.orderId,
           actor: s.user.id,
