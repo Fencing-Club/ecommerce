@@ -68,7 +68,9 @@ parts live in `apps/copacker/src/components/marketing/`:
   signed out, so it checks the address, turns away bots that fill in a hidden field, and slows down more than five
   signups from one address in ten minutes. Someone new to the list, or back after unsubscribing, gets one welcome
   email (`waitlist-welcome` in `packages/copacker-emails`), in the language the page was shown in, with replies going
-  to `CONTACT_EMAIL`. It carries a signed unsubscribe link to `/unsubscribe`, which asks before unsubscribing since
+  to `CONTACT_EMAIL`. That language, such as `de` or `es-MX`, is saved as the contact's `locale` property so later
+  emails to the list can be sent in it; Resend refuses contacts with a property it doesn't have, so the property
+  (a string, falling back to `en`) must exist in the Resend account. It carries a signed unsubscribe link to `/unsubscribe`, which asks before unsubscribing since
   mail scanners open links, and a one-click `List-Unsubscribe` header that posts to `/api/mailing-list/unsubscribe`.
   The signature is keyed on `TOKEN_ENCRYPTION_KEY`, so the links need no storage.
 - The privacy policy and terms are written from what the code does: the stores Copacker reads (and that it keeps no

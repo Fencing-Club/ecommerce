@@ -25,8 +25,9 @@ function contacts(path: string, init: RequestInit = {}) {
 }
 
 // Puts the address on the list. `joined` is true when it wasn't on it, or had unsubscribed: the times it gets the
-// welcome email. Someone signing up twice gets it once.
-export async function joinMailingList(email: string): Promise<{ joined: boolean }> {
+// welcome email. Someone signing up twice gets it once. Joining records the language they signed up in as the
+// contact's `locale` property, which must exist in Resend, so later emails to the list can be written in it.
+export async function joinMailingList(email: string, locale: string): Promise<{ joined: boolean }> {
   const address = encodeURIComponent(email)
   const segment = process.env.MAILING_LIST_SEGMENT_ID
   const found = await contacts(`/${address}`)
@@ -36,7 +37,7 @@ export async function joinMailingList(email: string): Promise<{ joined: boolean 
     if (back) {
       const resubscribed = await contacts(`/${address}`, {
         method: "PATCH",
-        body: JSON.stringify({ unsubscribed: false })
+        body: JSON.stringify({ unsubscribed: false, properties: { locale } })
       })
       if (!resubscribed.ok) {
         throw new Error(`Mailing list rejected the signup (${resubscribed.status})`)
@@ -53,7 +54,12 @@ export async function joinMailingList(email: string): Promise<{ joined: boolean 
   }
   const created = await contacts("", {
     method: "POST",
-    body: JSON.stringify({ email, unsubscribed: false, ...(segment ? { segments: [{ id: segment }] } : {}) })
+    body: JSON.stringify({
+      email,
+      unsubscribed: false,
+      properties: { locale },
+      ...(segment ? { segments: [{ id: segment }] } : {})
+    })
   })
   if (created.ok) {
     return { joined: true }

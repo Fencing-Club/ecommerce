@@ -50,15 +50,16 @@ const signup = (body: unknown, address = "203.0.113.1", language = "en-US") =>
   )
 
 describe("joinMailingList", () => {
-  it("adds a new address as a Resend contact in the list's segment", async () => {
+  it("adds a new address as a Resend contact in the list's segment, with the language it signed up in", async () => {
     resend({
       "GET /contacts/ana@example.com": missing,
       "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 })
     })
-    await expect(joinMailingList("ana@example.com")).resolves.toEqual({ joined: true })
+    await expect(joinMailingList("ana@example.com", "es-MX")).resolves.toEqual({ joined: true })
     expect(JSON.parse(String(calls("POST /contacts")[0]?.[1]?.body))).toEqual({
       email: "ana@example.com",
       unsubscribed: false,
+      properties: { locale: "es-MX" },
       segments: [{ id: "segment-1" }]
     })
   })
@@ -69,10 +70,11 @@ describe("joinMailingList", () => {
       "GET /contacts/ana@example.com": missing,
       "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 })
     })
-    await joinMailingList("ana@example.com")
+    await joinMailingList("ana@example.com", "en")
     expect(JSON.parse(String(calls("POST /contacts")[0]?.[1]?.body))).toEqual({
       email: "ana@example.com",
-      unsubscribed: false
+      unsubscribed: false,
+      properties: { locale: "en" }
     })
   })
 
@@ -81,19 +83,23 @@ describe("joinMailingList", () => {
       "GET /contacts/ana@example.com": () => Response.json({ id: "contact-1", unsubscribed: false }),
       "POST /contacts/ana@example.com/segments/segment-1": () => Response.json({ id: "segment-1" })
     })
-    await expect(joinMailingList("ana@example.com")).resolves.toEqual({ joined: false })
+    await expect(joinMailingList("ana@example.com", "en")).resolves.toEqual({ joined: false })
     expect(calls("POST /contacts")).toHaveLength(0)
+    expect(calls("PATCH /contacts/ana@example.com")).toHaveLength(0)
     expect(calls("POST /contacts/ana@example.com/segments/segment-1")).toHaveLength(1)
   })
 
-  it("subscribes an address that had unsubscribed, and counts it as joining again", async () => {
+  it("subscribes an address that had unsubscribed, in the language it came back in, as joining again", async () => {
     resend({
       "GET /contacts/ana@example.com": () => Response.json({ id: "contact-1", unsubscribed: true }),
       "PATCH /contacts/ana@example.com": () => Response.json({ object: "contact", id: "contact-1" }),
       "POST /contacts/ana@example.com/segments/segment-1": () => Response.json({ id: "segment-1" })
     })
-    await expect(joinMailingList("ana@example.com")).resolves.toEqual({ joined: true })
-    expect(JSON.parse(String(calls("PATCH /contacts/ana@example.com")[0]?.[1]?.body))).toEqual({ unsubscribed: false })
+    await expect(joinMailingList("ana@example.com", "fr")).resolves.toEqual({ joined: true })
+    expect(JSON.parse(String(calls("PATCH /contacts/ana@example.com")[0]?.[1]?.body))).toEqual({
+      unsubscribed: false,
+      properties: { locale: "fr" }
+    })
   })
 
   it("uses the mailing list's own key over the one the app sends email with", async () => {
@@ -102,7 +108,7 @@ describe("joinMailingList", () => {
       "GET /contacts/ana@example.com": missing,
       "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 })
     })
-    await joinMailingList("ana@example.com")
+    await joinMailingList("ana@example.com", "en")
     expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer re_full")
   })
 
@@ -112,17 +118,17 @@ describe("joinMailingList", () => {
       "POST /contacts": () =>
         Response.json({ name: "validation_error", message: "Contact already exists." }, { status: 422 })
     })
-    await expect(joinMailingList("ana@example.com")).resolves.toEqual({ joined: false })
+    await expect(joinMailingList("ana@example.com", "en")).resolves.toEqual({ joined: false })
   })
 
   it("fails when Resend refuses the signup", async () => {
     resend({ "GET /contacts/ana@example.com": () => Response.json({ message: "Too many" }, { status: 429 }) })
-    await expect(joinMailingList("ana@example.com")).rejects.toThrow("(429)")
+    await expect(joinMailingList("ana@example.com", "en")).rejects.toThrow("(429)")
   })
 })
 
 describe("POST /api/mailing-list", () => {
-  it("signs up a valid address, lowercased, and welcomes it in the page's language", async () => {
+  it("signs up a valid address, lowercased, in the page's language, and welcomes it in that language", async () => {
     resend({
       "GET /contacts/ana@example.com": missing,
       "POST /contacts": () => Response.json({ object: "contact", id: "contact-1" }, { status: 201 }),
@@ -130,6 +136,7 @@ describe("POST /api/mailing-list", () => {
     })
     const response = await signup({ email: " Ana@Example.com " }, "203.0.113.2", "de-DE,de;q=0.9")
     expect(response.status).toBe(200)
+    expect(JSON.parse(String(calls("POST /contacts")[0]?.[1]?.body)).properties).toEqual({ locale: "de" })
     const [sent] = calls("POST /emails")
     const email = JSON.parse(String(sent?.[1]?.body))
     expect(email.to).toEqual(["ana@example.com"])

@@ -13,8 +13,8 @@ const signup = z.object({
 // A few signups per address in a short while is plenty; more is someone filling the list with other people's email.
 const limited = rateLimit({ period: 10 * 60 * 1000, allowed: 5 })
 
-// The marketing page's waitlist signup. Anyone signed out can use it. Someone new to the list gets a welcome email, in
-// the language the page was shown in; if that email fails, they're still on the list.
+// The marketing page's waitlist signup. Anyone signed out can use it. The list keeps the language the page was shown
+// in, and someone new to it gets a welcome email in that language; if that email fails, they're still on the list.
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null)
   if (typeof body === "object" && body && "website" in body && body.website) {
@@ -27,18 +27,17 @@ export async function POST(request: Request) {
   if (limited(clientAddress(request))) {
     return errorResponse("tooManySignups", 429)
   }
+  const locale = negotiateLocale(request.headers.get("accept-language"))
   let joined = false
   try {
-    ;({ joined } = await joinMailingList(parsed.data.email))
+    ;({ joined } = await joinMailingList(parsed.data.email, locale))
   } catch {
     return errorResponse("signupFailed", 502)
   }
   if (joined) {
-    await sendWelcome(parsed.data.email, negotiateLocale(request.headers.get("accept-language"))).catch(
-      (error: unknown) => {
-        console.error(JSON.stringify({ event: "waitlist_welcome_failed", error: String(error) }))
-      }
-    )
+    await sendWelcome(parsed.data.email, locale).catch((error: unknown) => {
+      console.error(JSON.stringify({ event: "waitlist_welcome_failed", error: String(error) }))
+    })
   }
   return Response.json({ ok: true })
 }
