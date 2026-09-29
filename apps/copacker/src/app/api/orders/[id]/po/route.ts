@@ -2,12 +2,13 @@ import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
-import { generatePo } from "@/server/documents"
+import { filedPo } from "@/server/documents"
 import { errorResponse } from "@/server/errors"
 
 const headers = { "Cache-Control": "private, no-store" }
 
-// The PO document, to download and share with a supplier that hasn't joined Copacker.
+// The PO document, to download and share with a supplier that hasn't joined Copacker. Downloading serves the filed PDF
+// rather than a fresh one, so it stays the document the purchase order's page links to.
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
@@ -19,7 +20,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   try {
     // Only a workspace that can see the PO gets its document.
     await accessibleOrder(s, id.data)
-    const po = await generatePo(id.data)
+    const po = await filedPo(id.data)
     return new Response(Buffer.from(po.bytes), {
       headers: {
         ...headers,
