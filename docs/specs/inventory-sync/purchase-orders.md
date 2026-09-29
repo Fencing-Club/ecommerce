@@ -138,7 +138,8 @@ FBA and AWD count their own stock, so Copacker never adds it. It reads Amazon's 
     gives `QuantityShipped` and `QuantityReceived` per seller SKU.
   - `GET /fba/inbound/v0/shipments` gives `ShipmentStatus`: WORKING, READY_TO_SHIP, SHIPPED, IN_TRANSIT, DELIVERED,
     CHECKED_IN, RECEIVING, CLOSED, CANCELLED, DELETED or ERROR.
-  - Check whether inbound 2024-03-20 now returns received quantities too; if so, use it.
+  - Inbound 2024-03-20 doesn't: its `listShipmentItems` has no received quantity (checked against Amazon's API model
+    on 2026-09-28), so receipts come from v0.
 - **AWD:** `GET /awd/2024-05-09/inboundShipments/{id}?skuQuantities=SHOW` gives expected and received quantities per
   SKU, and `shipmentStatus` (CREATED, SHIPPED, IN_TRANSIT, RECEIVING, DELIVERED, CLOSED or CANCELLED).
 - **Units:** Amazon counts sellable units. Copacker converts them to units per the line's pack size.

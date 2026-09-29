@@ -6,7 +6,6 @@
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)
 - [Supplier workspace: products, catalogs and order changes](supplier-workspace.md)
-- [Inventory sync spec (planned): master counts, receiving, two-way sync, marketplace orders](specs/inventory-sync/README.md)
 - [App header: search and notifications](app-header.md)
 - [Sign-in and getting started](auth.md)
 - [Roles and page access](permissions.md)
@@ -21,3 +20,8 @@
 - [Localization](localization.md)
 - [Preferred stack](tech-stack.md)
 - [Video: the Copacker ad in Remotion](video.md)
+
+Specs (proposed work, not yet built):
+
+- [Inventory sync](specs/inventory-sync/README.md)
+- [Purchase order flow](specs/purchase-order-flow/README.md)
