@@ -3,9 +3,10 @@ on:
   push:
     branches: [codex/copacker]
   pull_request:
+# A newer push replaces a pull request's run. Pushes to the branch each run in full, side by side: only their staging
+# deploys take turns (deploy-staging's own group), so a push doesn't wait for the one before to finish on staging.
 concurrency:
-  group: ci-${{ github.ref }}
-  # A newer push replaces a pull request's run, but never cuts off a deploy halfway.
+  group: ${{ github.event_name == 'pull_request' && format('ci-{0}', github.ref) || format('ci-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
@@ -169,23 +170,38 @@ jobs:
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Pushes run side by side, so a newer one may have deployed already; staging then keeps the newer commit.
+      - id: tip
+        run: |
+          tip=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" --jq .sha)
+          if [ "$tip" = "$GITHUB_SHA" ]; then echo "latest=true" >> "$GITHUB_OUTPUT"; else echo "Skipped: $tip is newer"; fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - if: steps.tip.outputs.latest == 'true'
+        uses: actions/checkout@v4
+      - if: steps.tip.outputs.latest == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: npm install --global @railway/cli
+      - if: steps.tip.outputs.latest == 'true'
+        run: npm install --global @railway/cli
       # The web service's pre-deploy step on staging migrates and then runs the E2E seed (pnpm db:seed:e2e).
-      - run: bash .github/scripts/deploy.sh "$GITHUB_SHA" "${{ vars.STAGING_URL }}"
+      - if: steps.tip.outputs.latest == 'true'
+        run: bash .github/scripts/deploy.sh "$GITHUB_SHA" "${{ vars.STAGING_URL }}"
       # Then the whole Playwright suite runs against what was just deployed.
-      - run: npm install --global pnpm@11.9.0
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter copacker exec playwright install --with-deps chromium
-      - run: pnpm --filter copacker test:e2e
+      - if: steps.tip.outputs.latest == 'true'
+        run: npm install --global pnpm@11.9.0
+      - if: steps.tip.outputs.latest == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.tip.outputs.latest == 'true'
+        run: pnpm --filter copacker exec playwright install --with-deps chromium
+      - if: steps.tip.outputs.latest == 'true'
+        run: pnpm --filter copacker test:e2e
         env:
           E2E_BASE_URL: ${{ vars.STAGING_URL }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && steps.tip.outputs.latest == 'true'
         with:
           name: playwright-report-staging
           path: |
