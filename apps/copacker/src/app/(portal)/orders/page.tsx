@@ -13,6 +13,7 @@ import { connections, suppliers } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { forwarderOrders, visibleOrders } from "@/server/access"
 import { noAccessTitle, requirePage, session } from "@/server/auth"
+import { storeTimeZone } from "@/server/store-time-zone"
 import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -123,7 +124,7 @@ export default async function OrdersPage({
           status={(await searchParams).status}
           showValue={showValue}
           drafts={isBuyer}
-          timeZone={s.org.timeZone ?? undefined}
+          timeZone={await storeTimeZone(s.org)}
         />
       ) : (
         <EmptyState

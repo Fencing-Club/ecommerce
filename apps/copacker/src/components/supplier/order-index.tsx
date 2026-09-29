@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { PageLink, useCan } from "@/components/access"
@@ -42,6 +42,7 @@ export function SupplierOrderIndex({
   const t = useTranslations("supplier.orderIndex")
   const shared = useTranslations("supplier.shared")
   const locale = useLocale()
+  const timeZone = useTimeZone()
   const money = useMoney()
   const test = tabs.find((option) => option.value === tab)!.test
   const shown = orders.filter(
@@ -100,7 +101,7 @@ export function SupplierOrderIndex({
                   </p>
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground tabular-nums @2xl:table-cell">
-                  {formatDate(order.sentAt, locale)}
+                  {formatDate(order.sentAt, locale, timeZone)}
                 </TableCell>
                 {showCustomer && (
                   <TableCell>

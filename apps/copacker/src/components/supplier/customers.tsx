@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -125,6 +125,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
   const t = useTranslations("supplier.customers")
   const shared = useTranslations("supplier.shared")
   const locale = useLocale()
+  const timeZone = useTimeZone()
   if (!customers.length) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
   }
@@ -169,7 +170,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                   <p className="text-xs text-muted-foreground">
                     {customer.open
                       ? t("openCount", { count: customer.open })
-                      : t("since", { date: formatDate(customer.createdAt, locale) })}
+                      : t("since", { date: formatDate(customer.createdAt, locale, timeZone) })}
                   </p>
                 </TableCell>
                 <TableCell className="w-56">
@@ -184,7 +185,7 @@ export function CustomerIndex({ customers, catalogs }: { customers: Customer[]; 
                   {customer.orders.toLocaleString(locale)}
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground @3xl:table-cell">
-                  {customer.lastOrderAt ? formatDate(customer.lastOrderAt, locale) : "—"}
+                  {customer.lastOrderAt ? formatDate(customer.lastOrderAt, locale, timeZone) : "—"}
                 </TableCell>
                 {prices && (
                   <TableCell className="text-end">

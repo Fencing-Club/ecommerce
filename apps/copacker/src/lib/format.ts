@@ -33,7 +33,10 @@ export function dayDate(day: string, locale = "en-US") {
   })
 }
 
-// A day as "Sep 27, 2026".
-export function formatDate(date: Date | string, locale = "en-US") {
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" }).format(new Date(date))
+// A day as "Sep 27, 2026", in the given time zone. Pages pass next-intl's (useTimeZone() or getTimeZone()), the
+// computer's as the browser reported it, so the server and the browser write the same day either side of midnight UTC.
+export function formatDate(date: Date | string, locale = "en-US", timeZone?: string) {
+  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric", timeZone }).format(
+    new Date(date)
+  )
 }

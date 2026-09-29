@@ -1,7 +1,7 @@
 "use client"
 
 import { Ellipsis } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { LinkRow } from "@/components/link-row"
@@ -53,6 +53,7 @@ export function ImportIntake() {
   const t = useTranslations("orders.intake")
   const errorMessage = useErrorMessage()
   const locale = useLocale()
+  const timeZone = useTimeZone()
   const imports = importsApi.useImportsQuery(undefined, { pollingInterval: 5000, skipPollingIfUnfocused: true })
   const [start, upload] = importsApi.useStartImportMutation()
   const [change, changing] = importsApi.useChangeImportMutation()
@@ -160,11 +161,11 @@ export function ImportIntake() {
                         </span>
                       )}
                       <span className="block text-xs text-muted-foreground @xl:hidden">
-                        {formatDate(item.createdAt, locale)}
+                        {formatDate(item.createdAt, locale, timeZone)}
                       </span>
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground @xl:table-cell">
-                      {formatDate(item.createdAt, locale)}
+                      {formatDate(item.createdAt, locale, timeZone)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge tone={status.tone}>{status.label}</StatusBadge>

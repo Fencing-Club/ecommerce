@@ -32,6 +32,7 @@ import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-
 import { lineLabels } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
 import { forwarderLeg } from "@/server/shipment-legs"
+import { storeTimeZone } from "@/server/store-time-zone"
 import { orderWorkflow } from "@/server/workflow"
 import { ForwarderView } from "./forwarder-view"
 
@@ -470,7 +471,7 @@ export default async function OrderPage({ params }: Props) {
             orderId={id}
             viewer={s.user.name ?? s.user.email}
             viewerOrg={s.org.name}
-            timeZone={s.org.timeZone ?? undefined}
+            timeZone={await storeTimeZone(s.org)}
             entries={timeline}
             prices={prices}
           />

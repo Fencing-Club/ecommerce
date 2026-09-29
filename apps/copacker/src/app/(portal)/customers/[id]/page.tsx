@@ -1,5 +1,5 @@
 import { Globe, Mail, Phone, User } from "lucide-react"
-import { getLocale, getTranslations } from "next-intl/server"
+import { getLocale, getTimeZone, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { z } from "zod"
@@ -32,10 +32,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     notFound()
   }
   const { customer, contact, catalogs, orders } = detail
-  const [t, pages, locale] = await Promise.all([
+  const [t, pages, locale, timeZone] = await Promise.all([
     getTranslations("supplier.customerPage"),
     getTranslations("supplier.pages"),
-    getLocale()
+    getLocale(),
+    getTimeZone()
   ])
   // The phone reads grouped, as +1 (425) 260-2501, and dials as saved.
   const contactRows = [
@@ -58,7 +59,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <StatGrid>
             {prices && <AmountsStat label={t("spent")} amounts={customer.spent} />}
             <StatCard label={t("orders")} value={customer.orders.toLocaleString(locale)} />
-            <StatCard label={t("since")} value={formatDate(customer.createdAt, locale)} />
+            <StatCard label={t("since")} value={formatDate(customer.createdAt, locale, timeZone)} />
           </StatGrid>
           {/* The customer's orders, for someone who can open them. */}
           {can(s, "orders") && (

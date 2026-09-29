@@ -1,5 +1,5 @@
 import { CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
@@ -186,6 +186,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
   // What needs doing on the pages the person can open.
   const t = useTranslations("supplier.overview")
   const locale = useLocale()
+  const timeZone = useTimeZone()
   const taskText = useTranslations("supplier.overview.tasks")
   const money = useMoney()
   const todo = tasks(data.attention, taskText).filter((item) => canOpen(permissions, item.href))
@@ -419,7 +420,7 @@ export function SupplierOverview({ data, permissions }: { data: Data; permission
                     <PageLink href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
                       {order.reference}
                     </PageLink>
-                    <p className="text-xs text-muted-foreground">{formatDate(order.sentAt, locale)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(order.sentAt, locale, timeZone)}</p>
                   </TableCell>
                   <TableCell className="hidden @lg:table-cell">{order.customer}</TableCell>
                   <TableCell>
