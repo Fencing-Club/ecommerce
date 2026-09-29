@@ -121,7 +121,7 @@ export const ArchiveFails = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("checkbox", { name: "Select Canvas tote bag" }))
     await userEvent.click(canvas.getByRole("button", { name: "Archive" }))
-    await expect(await canvas.findByText("Couldn't save. Try again.")).toBeVisible()
+    await expect(await canvas.findByText("Couldn’t save. Try again.")).toBeVisible()
     // The choice stays, to try again.
     await expect(canvas.getByText("1 selected")).toBeVisible()
     await expect(getRouter().refresh).not.toHaveBeenCalled()

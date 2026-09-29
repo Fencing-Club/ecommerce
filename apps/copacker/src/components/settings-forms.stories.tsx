@@ -197,7 +197,7 @@ export const AddSupplier = meta.story({
     const dialog = await screen.findByRole("dialog")
     await expect(within(dialog).getByRole("textbox", { name: "Supplier company" })).toHaveAttribute(
       "placeholder",
-      "Ok Fencing"
+      "Northwind Textiles"
     )
     await expect(dialog).toHaveTextContent("Add one to invite them now.")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Supplier company" }), "Northwind Textiles")

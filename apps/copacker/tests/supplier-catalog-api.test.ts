@@ -249,7 +249,7 @@ describe("product template", () => {
 
   it("names the row of a bad cell and keeps an on hand count left blank", async () => {
     const bad = await upload(sheetCsv([{ ...cord, priceBreaks: "50=2.00" }]), "preview")
-    expect((await bad.json()).error).toBe("Row 2: Each break's price must be lower than the one before")
+    expect((await bad.json()).error).toBe("Row 2: Each break’s price must be lower than the one before")
     await insertProduct(supplierA, {
       supplierSku: "SAME",
       priceMinor: 190,
@@ -290,7 +290,7 @@ describe("products", () => {
     )
     const pricey = productPayload({ variants: [{ ...variant, priceBreaks: [{ minimum: 10, priceMinor: 200 }] }] })
     expect((await (await saveProduct(post("/api/supplier-catalog/products", pricey))).json()).error).toBe(
-      "SAME: Each break's price must be lower than the one before"
+      "SAME: Each break’s price must be lower than the one before"
     )
   })
 
@@ -424,6 +424,6 @@ describe("catalogs", () => {
         { productId: variant.id, priceMinor: 150, priceBreaks: [{ minimum: 10, priceMinor: 160 }], quantityRules: null }
       ]
     })
-    expect(result.error).toBe("Foil cord: Each break's price must be lower than the one before")
+    expect(result.error).toBe("Foil cord: Each break’s price must be lower than the one before")
   })
 })

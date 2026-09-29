@@ -157,7 +157,7 @@ export const RemoveFails = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Portland warehouse" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn't remove this address")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t remove this address")
     await expect(canvas.getByRole("button", { name: "More for Portland warehouse" })).toBeEnabled()
   }
 })

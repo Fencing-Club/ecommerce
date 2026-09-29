@@ -42,7 +42,7 @@ export const Every = meta.story({
     const tone = (text: string) => canvas.getByText(text).closest("[data-tone]")?.getAttribute("data-tone")
     await expect(tone("Shipped")).toBe("success")
     await expect(tone("Unshipped")).toBe("warning")
-    await expect(tone("Cancelled")).toBe("destructive")
+    await expect(tone("Canceled")).toBe("destructive")
     await expect(tone("On hold")).toBe("neutral")
   }
 })

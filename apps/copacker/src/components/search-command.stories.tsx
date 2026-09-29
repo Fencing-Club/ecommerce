@@ -211,7 +211,7 @@ export const Failed = meta.story({
   },
   play: async ({ canvas }) => {
     const panel = await openSearch(canvas)
-    await expect(await within(panel).findByText("Couldn't search everything. Try again.")).toBeInTheDocument()
+    await expect(await within(panel).findByText("Couldn’t search everything. Try again.")).toBeInTheDocument()
     await expect(within(panel).getByRole("group", { name: "Pages" })).toBeInTheDocument()
   }
 })

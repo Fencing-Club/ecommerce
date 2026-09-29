@@ -259,7 +259,7 @@
       "shipmentReceived": "Shipment received",
       "supplierShipped": "Supplier shipped the goods",
       "supplierReportedCollected": "Supplier reported shipment collected",
-      "amazonShipmentCancelled": "Amazon shipment cancelled",
+      "amazonShipmentCancelled": "Amazon shipment canceled",
       "labelsReleased": "Shipping labels released to supplier",
       "labelsReleasedToShare": "Shipping labels released; share the packet with the supplier",
       "readyDateCleared": "Supplier cleared the ready date",
@@ -285,7 +285,7 @@
     "edit": "Edit",
     "close": "Close purchase order",
     "closeTitle": "Close {reference}?",
-    "closeDescription": "Nothing more will ship on this purchase order, and its remaining units leave On order. Shipments the supplier hasn’t packed are cancelled.",
+    "closeDescription": "Nothing more will ship on this purchase order, and its remaining units leave On order. Shipments the supplier hasn’t packed are canceled.",
     "closeFailed": "Couldn’t close {reference}",
     "deleteDraft": "Delete draft",
     "deleteTitle": "Delete {reference}?",
@@ -333,7 +333,7 @@
       "running": "Reading",
       "review": "Ready for review",
       "failed": "Failed",
-      "cancelled": "Cancelled",
+      "cancelled": "Canceled",
       "saved": "Saved as draft"
     },
     "openDraft": "Open draft",
@@ -344,12 +344,12 @@
     "cancelImport": "Cancel import"
   },
   "currencies": {
-    "USD": "US Dollar (USD $)",
-    "CNY": "Chinese Yuan (CNY ¥)",
+    "USD": "US dollar (USD $)",
+    "CNY": "Chinese yuan (CNY ¥)",
     "EUR": "Euro (EUR €)",
-    "GBP": "British Pound (GBP £)",
-    "CAD": "Canadian Dollar (CAD $)",
-    "AUD": "Australian Dollar (AUD $)"
+    "GBP": "British pound (GBP £)",
+    "CAD": "Canadian dollar (CAD $)",
+    "AUD": "Australian dollar (AUD $)"
   },
   "packing": {
     "dimensions": {

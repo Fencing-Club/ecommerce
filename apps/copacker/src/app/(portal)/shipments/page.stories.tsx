@@ -318,7 +318,7 @@ export const Cancelled = meta.story({
       "href",
       "/shipments/c0ffee00-1234-4abc-9def-000000000014"
     )
-    await expect(canvas.getAllByText("Cancelled").length).toBeGreaterThan(1)
+    await expect(canvas.getAllByText("Canceled").length).toBeGreaterThan(1)
   }
 })
 
@@ -326,7 +326,7 @@ export const EmptyTab = meta.story({
   ...buyer,
   args: { view: "cancelled", list: shipmentList.filter((shipment) => shipment.status !== "cancelled") },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("No cancelled shipments")).toBeVisible()
+    await expect(canvas.getByText("No canceled shipments")).toBeVisible()
   }
 })
 

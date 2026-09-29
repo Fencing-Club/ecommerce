@@ -8,7 +8,7 @@
     "shipped": "Shipped",
     "unshipped": "Unshipped",
     "partiallyShipped": "Partially shipped",
-    "cancelled": "Cancelled",
+    "cancelled": "Canceled",
     "unfulfillable": "Unfulfillable",
     "unknown": "Unknown"
   },

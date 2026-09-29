@@ -599,7 +599,7 @@ describe("reviewed import save", () => {
       }
       await expect(
         saveImportedOrder(buyer, imported.id, { ...imported.input, via: { forwarderId, addressId } })
-      ).rejects.toThrow("forwarders' addresses")
+      ).rejects.toThrow("forwarders’ addresses")
       expect(await database.select().from(tables.orders)).toHaveLength(1)
       expect((await database.select().from(tables.poImports))[0]).toMatchObject({ status: "review", orderId: null })
       expect(await database.select().from(tables.jobs)).toHaveLength(0)
@@ -1021,7 +1021,7 @@ describe("Postgres workflow and authorization", () => {
     await expect(saveLocationMapping(supplier, input)).rejects.toThrow("buyer workspace")
     await expect(saveLocationMapping(actor("buyer", otherId), input)).rejects.toThrow("Connect Shopify")
     await expect(saveLocationMapping(buyer, { ...input, locationId: "gid://shopify/Location/999" })).rejects.toThrow(
-      "isn't in this store"
+      "isn’t in this store"
     )
     await expect(saveLocationMapping(buyer, { ...input, snapshotId: randomUUID() })).rejects.toThrow(
       "Inventory changed"
@@ -1169,7 +1169,7 @@ describe("Postgres workflow and authorization", () => {
       revision: 4
     })
     await expect(saveProductDefaults(buyer, { ...input, productId: "gid://shopify/Product/99" })).rejects.toThrow(
-      "isn't in your synced"
+      "isn’t in your synced"
     )
     await expect(saveProductDefaults(supplier, input)).rejects.toThrow("buyer workspace")
     await expect(saveProductDefaults(actor("buyer", otherId), input)).rejects.toThrow("Connect Shopify")
@@ -2076,7 +2076,7 @@ describe("leg holders shipping the goods on", () => {
     expect(await (await post("shipment.ship", { id })).json()).toEqual({
       error: "The supplier marks this shipment shipped"
     })
-    await expect(receiveShipment(buyer, id)).rejects.toThrow("hasn't shipped")
+    await expect(receiveShipment(buyer, id)).rejects.toThrow("hasn’t shipped")
     context.actor = supplier
     expect((await post("shipment.ship", { id })).status).toBe(200)
     expect((await post("shipment.ship", { id })).status).toBe(400)
@@ -2112,12 +2112,12 @@ describe("leg holders shipping the goods on", () => {
       step: "forward",
       action: "shipment.forward"
     })
-    await expect(receiveShipment(buyer, id)).rejects.toThrow("forwarder hasn't shipped")
+    await expect(receiveShipment(buyer, id)).rejects.toThrow("forwarder hasn’t shipped")
     const forward = { id, freight: { amountMinor: 12500, currency: "USD" }, carrier: "DHL", reference: "1234567890" }
     // Until the forwarder joins, the buyer records its leg; once it has, only the forwarder does.
     context.actor = forwarderActor
     expect(await (await post("shipment.forward", forward)).json()).toEqual({
-      error: "This shipment isn't yours to ship"
+      error: "This shipment isn’t yours to ship"
     })
     await database
       .update(tables.forwarders)
@@ -2130,7 +2130,7 @@ describe("leg holders shipping the goods on", () => {
     context.actor = forwarderActor
     expect(
       await (await post("shipment.forward", { ...forward, freight: { amountMinor: 900, currency: "CNY" } })).json()
-    ).toEqual({ error: "Enter the freight in USD, the purchase order's currency" })
+    ).toEqual({ error: "Enter the freight in USD, the purchase order’s currency" })
     expect((await post("shipment.forward", forward)).status).toBe(200)
     const [shipped] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, id))
     expect(shipped).toMatchObject({ status: "forwarded", forwarderCarrier: "DHL", forwarderReference: "1234567890" })
@@ -2184,7 +2184,7 @@ describe("receiving and closing POs", () => {
     await expect(closeOrder(buyer, orderId)).rejects.toThrow("still in progress")
     await expect(receiveShipment(supplier, ready)).rejects.toThrow("buyer workspace")
     await receiveShipment(buyer, ready)
-    await expect(receiveShipment(buyer, ready)).rejects.toThrow("hasn't shipped")
+    await expect(receiveShipment(buyer, ready)).rejects.toThrow("hasn’t shipped")
     await closeOrder(buyer, orderId)
     const rows = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
     expect(Object.fromEntries(rows.map((row) => [row.id, row.status]))).toMatchObject({
@@ -2560,7 +2560,7 @@ describe("document upload and packet release", () => {
       downloadDocument(new Request("http://localhost"), {
         params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
       })
-    ).rejects.toThrow("You don't have access to this workspace")
+    ).rejects.toThrow("You don’t have access to this workspace")
   })
   it("returns an import source only while the buyer still belongs to its workspace", async () => {
     const imported = await reviewedImport()
@@ -2575,7 +2575,7 @@ describe("document upload and packet release", () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, buyer.user.id))
       return new Uint8Array([1, 2, 3])
     })
-    await expect(request()).rejects.toThrow("You don't have access to this workspace")
+    await expect(request()).rejects.toThrow("You don’t have access to this workspace")
   })
   it("withholds a document replaced while private storage is being read", async () => {
     const prepared = await preparation()
@@ -2728,7 +2728,7 @@ describe("document upload and packet release", () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
       return bytes
     })
-    await expect(packet()).rejects.toThrow("You don't have access to this workspace")
+    await expect(packet()).rejects.toThrow("You don’t have access to this workspace")
     storage.getFile.mockImplementation(async () => {
       await database
         .update(tables.shipments)
@@ -3495,7 +3495,7 @@ describe("PO to a released FBA shipment", () => {
     const shipmentId = await packed(cartons)
     const [waiting] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, shipmentId))
     expect(waiting).toMatchObject({ status: "needs_attention", amazonOrderId: null, operation: "none" })
-    expect(waiting!.issue).toContain("Add a phone number to Yiwu Logistics's Yiwu warehouse address")
+    expect(waiting!.issue).toContain("Add a phone number to Yiwu Logistics’s Yiwu warehouse address")
     await saveForwarderAddress(buyerId, {
       forwarderId: forwarder.id,
       id: saved!.addressId,
@@ -3955,7 +3955,7 @@ describe("fluid packing handoff", () => {
     const prepared = await preparation()
     await expect(
       savePacking(supplier, prepared.id, { cartons: [{ items: [{ itemId: randomUUID(), pieces: 10 }] }] }, 1, 1)
-    ).rejects.toThrow("isn't on this purchase order")
+    ).rejects.toThrow("isn’t on this purchase order")
     const workflow = await orderWorkflow(supplier, orderId)
     expect(workflow.documents).toHaveLength(1)
     expect(workflow.documents[0]).not.toHaveProperty("objectKey")

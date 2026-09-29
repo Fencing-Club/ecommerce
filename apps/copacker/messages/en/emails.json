@@ -94,7 +94,7 @@
       "unfulfilled": "Unfulfilled",
       "partiallyFulfilled": "Partially fulfilled",
       "fulfilled": "Fulfilled",
-      "cancelled": "Cancelled"
+      "cancelled": "Canceled"
     }
   },
   "passwordReset": {

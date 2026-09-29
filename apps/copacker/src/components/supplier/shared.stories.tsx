@@ -46,9 +46,9 @@ export const SaveBarCantSave = meta.story({
 })
 
 export const SaveBarError = meta.story({
-  args: { dirty: false, error: "Couldn't save. Try again." },
+  args: { dirty: false, error: "Couldn’t save. Try again." },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Couldn't save. Try again.")).toBeVisible()
+    await expect(canvas.getByText("Couldn’t save. Try again.")).toBeVisible()
     // Nothing is unsaved, so there's nothing to discard or save again.
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
   }

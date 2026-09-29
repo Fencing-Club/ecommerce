@@ -44,7 +44,7 @@ export const Imports = meta.story({
       await expect(canvas.getByText(file)).toHaveAttribute("dir", "ltr")
       await expect(canvas.getByText(file)).toHaveAttribute("title", file)
     }
-    for (const status of ["Waiting", "Reading", "Ready for review", "Failed", "Cancelled", "Saved as draft"]) {
+    for (const status of ["Waiting", "Reading", "Ready for review", "Failed", "Canceled", "Saved as draft"]) {
       await expect(canvas.getByText(status)).toBeVisible()
     }
     // A review opens its review page, and a saved import its draft.

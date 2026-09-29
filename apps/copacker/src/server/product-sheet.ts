@@ -28,12 +28,12 @@ export const sheetColumns = [
   { key: "description", header: "Description", width: 40, note: "What customers should know, such as add-ons." },
   ...[1, 2, 3, 4].flatMap((n) => [
     { key: `option${n}Name`, header: `Option ${n} name`, width: 16, note: `Such as Size. Leave blank for none.` },
-    { key: `option${n}Value`, header: `Option ${n} value`, width: 16, note: `This variant's value, such as Large.` }
+    { key: `option${n}Value`, header: `Option ${n} value`, width: 16, note: `This variant’s value, such as Large.` }
   ]),
-  { key: "sku", header: "SKU", width: 18, note: "Unique for each variant. Required." },
+  { key: "sku", header: "SKU", width: 18, note: "Unique to each variant. Required." },
   { key: "currency", header: "Currency", width: 10, list: [...currencies], note: currencies.join(", ") },
-  { key: "price", header: "Price", width: 11, note: "Per price unit, such as 12.50. Blank for none yet." },
-  { key: "priceBasis", header: "Price per", width: 10, list: ["unit", "pack", "case"], note: "unit, pack or case." },
+  { key: "price", header: "Price", width: 11, note: "Per price unit, such as 12.50. Leave blank for none yet." },
+  { key: "priceBasis", header: "Price per", width: 10, list: ["unit", "pack", "case"], note: "unit, pack, or case." },
   {
     key: "piecesPerPack",
     header: "Units per pack",
@@ -42,23 +42,28 @@ export const sheetColumns = [
     width: 15,
     note: "Units in each sellable pack. 1 if sold singly."
   },
-  { key: "packsPerCase", header: "Packs per case", width: 14, note: "Sellable packs in each case. Blank if unknown." },
+  {
+    key: "packsPerCase",
+    header: "Packs per case",
+    width: 14,
+    note: "Sellable packs in each case. Leave blank if unknown."
+  },
   { key: "trackInventory", header: "Track inventory", width: 15, list: yesNo, note: "yes or no." },
-  { key: "onHand", header: "On hand", width: 10, note: "Units in stock. Blank keeps the current count." },
+  { key: "onHand", header: "On hand", width: 10, note: "Units in stock. Leave blank to keep the current count." },
   {
     key: "continueSelling",
     header: "Continue selling",
     width: 16,
     list: yesNo,
-    note: "yes lets customers order past what's on hand."
+    note: "yes lets customers order past what’s on hand."
   },
-  { key: "minimum", header: "Minimum quantity", width: 17, note: "In price units. Blank for 1." },
-  { key: "maximum", header: "Maximum quantity", width: 17, note: "In price units. Blank for no maximum." },
+  { key: "minimum", header: "Minimum quantity", width: 17, note: "In price units. Leave blank for 1." },
+  { key: "maximum", header: "Maximum quantity", width: 17, note: "In price units. Leave blank for no maximum." },
   {
     key: "increment",
     header: "Quantity increment",
     width: 18,
-    note: "Customers order in multiples of it. Blank for 1."
+    note: "Customers order in multiples of it. Leave blank for 1."
   },
   {
     key: "priceBreaks",

@@ -79,7 +79,7 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
   let orderId = shipment.amazonOrderId
   if (!orderId) {
     if (shipment.operation === "sending") {
-      throw new Error("Amazon create outcome is unknown. Reconcile the existing order before retrying")
+      throw new Error("Amazon create outcome is unknown. Reconcile the existing order before retrying.")
     }
     await api.eligibility(request.packagesToInbound)
     await assertOwned()
@@ -97,7 +97,7 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
       )
       .returning({ id: shipments.id })
     if (dispatch.length !== 1) {
-      throw new Error("Amazon creation is already in progress. Reconcile before retrying")
+      throw new Error("Amazon creation is already in progress. Reconcile before retrying.")
     }
     const result = await createOnce(shipmentId, () => api.create(request))
     orderId = result.orderId

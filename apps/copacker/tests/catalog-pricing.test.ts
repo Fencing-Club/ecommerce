@@ -26,10 +26,10 @@ describe("catalog pricing", () => {
       "The minimum must be a multiple of the increment"
     )
     expect(pricingProblem(1000, [], { increment: 1, minimum: 10, maximum: 5 })).toBe(
-      "The maximum can't be less than the minimum"
+      "The maximum can’t be less than the minimum"
     )
     expect(pricingProblem(1000, [{ minimum: 10, priceMinor: 900 }], { increment: 1, minimum: 10, maximum: null })).toBe(
-      "Each break's quantity must be more than the minimum"
+      "Each break’s quantity must be more than the minimum"
     )
     expect(
       pricingProblem(
@@ -45,7 +45,7 @@ describe("catalog pricing", () => {
       pricingProblem(1000, [{ minimum: 15, priceMinor: 900 }], { increment: 10, minimum: 10, maximum: null })
     ).toBe("Break quantities must be multiples of the increment")
     expect(pricingProblem(1000, [{ minimum: 10, priceMinor: 1000 }], defaultQuantityRules)).toBe(
-      "Each break's price must be lower than the one before"
+      "Each break’s price must be lower than the one before"
     )
     expect(pricingProblem(null, [{ minimum: 10, priceMinor: 900 }], defaultQuantityRules)).toBe(
       "Add a price before volume pricing"

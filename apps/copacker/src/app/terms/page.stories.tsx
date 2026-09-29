@@ -30,7 +30,7 @@ async function TermsPage() {
                 shared with them.
               </p>
               <p>
-                We keep improving Copacker, so we may add, change or remove features. Some may be early versions that
+                We keep improving Copacker, so we may add, change, or remove features. Some may be early versions that
                 are still being finished.
               </p>
             </>
@@ -67,26 +67,26 @@ async function TermsPage() {
                 </li>
                 <li>
                   <strong>What you enter.</strong> Keep products, quantities, prices, dimensions, weights, addresses and
-                  lead times accurate. Copacker’s plans, labels and documents are only as right as the information
+                  lead times accurate. Copacker’s plans, labels, and documents are only as right as the information
                   they’re made from.
                 </li>
                 <li>
                   <strong>Labels and documents.</strong> Check every label and document before you use it: purchase
-                  orders, packing lists, product, carton and shipping labels, commercial invoices, and anything you give
-                  a carrier, forwarder or customs, such as a bill of lading or a customs declaration.
+                  orders, packing lists, product, carton, and shipping labels, commercial invoices, and anything you
+                  give a carrier, forwarder, or customs, such as a bill of lading or a customs declaration.
                 </li>
                 <li>
                   <strong>Your shipments.</strong> You’re responsible for what you ship and how it’s packed and labeled,
-                  and for customs, duties, taxes and the rules that apply to your products.
+                  and for customs, duties, taxes, and the rules that apply to your products.
                 </li>
                 <li>
-                  <strong>Forecasts.</strong> Forecasts, reorder dates, quantities and costs are estimates from your
+                  <strong>Forecasts.</strong> Forecasts, reorder dates, quantities, and costs are estimates from your
                   data, not guarantees. The decisions you make with them are yours.
                 </li>
               </ul>
               <p>
                 If you’re a supplier or a forwarder, the same goes for what you enter and upload, such as prices, stock,
-                commercial invoices and tracking numbers.
+                commercial invoices, and tracking numbers.
               </p>
             </>
           )
@@ -99,11 +99,11 @@ async function TermsPage() {
               <p>Don’t use Copacker to:</p>
               <ul>
                 <li>Break the law, or infringe or violate anyone’s rights.</li>
-                <li>Break the terms or policies of Amazon, Shopify, eBay, a carrier or another service.</li>
+                <li>Break the terms or policies of Amazon, Shopify, eBay, a carrier, or another service.</li>
                 <li>Send spam, or invite people who don’t expect to hear from you.</li>
                 <li>Upload malware, or content you don’t have the right to share.</li>
                 <li>
-                  Get into accounts, workspaces or data that aren’t yours, or test or get around Copacker’s security.
+                  Get into accounts, workspaces, or data that aren’t yours, or test or get around Copacker’s security.
                 </li>
                 <li>Overload Copacker, or copy or scrape it by automated means other than the tools we provide.</li>
                 <li>Resell or rent Copacker to others without our permission.</li>
@@ -118,7 +118,7 @@ async function TermsPage() {
             <>
               <p>
                 You own the data you put into Copacker or connect to it. We claim no rights to it beyond the permission
-                you give us here: to host, copy, process, send and display it only to provide, secure and support
+                you give us here: to host, copy, process, send, and display it only to provide, secure, and support
                 Copacker for you, as the <Link href="/privacy">privacy policy</Link> describes.
               </p>
               <p>
@@ -139,7 +139,7 @@ async function TermsPage() {
                 forwarders and AI providers. Their own terms govern your use of them. We aren’t responsible for them,
                 including their availability or changes to them that affect Copacker.
               </p>
-              <p>Copacker isn’t affiliated with, endorsed by or sponsored by Amazon, Shopify or eBay.</p>
+              <p>Copacker isn’t affiliated with, endorsed by, or sponsored by Amazon, Shopify, or eBay.</p>
               <p>
                 Amazon and all related marks are trademarks of Amazon.com, Inc. or its affiliates. Shopify is a
                 trademark of Shopify Inc., and eBay is a trademark of eBay Inc. Other names are trademarks of their
@@ -189,7 +189,7 @@ async function TermsPage() {
           content: (
             <p>
               We work to keep Copacker available and reliable, but we can’t promise it will always be available or free
-              of errors. It may be interrupted for maintenance, updates or reasons outside our control, including
+              of errors. It may be interrupted for maintenance, updates, or reasons outside our control, including
               problems at the services it relies on. If we decide to stop offering Copacker, we’ll tell you in advance.
             </p>
           )
@@ -207,7 +207,7 @@ async function TermsPage() {
               </p>
               <p>
                 The parts of these terms that by their nature should last after your access ends do, including Your
-                data, Disclaimers and Limitation of liability.
+                data, Disclaimers, and Limitation of liability.
               </p>
             </>
           )

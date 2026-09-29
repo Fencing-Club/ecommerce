@@ -47,7 +47,7 @@ export const Orders = meta.story({
     await expect(within(table).getByText("Bundle", { exact: false })).toBeInTheDocument()
     // An Amazon order that hasn't been priced says so; a cancelled one has no sales.
     await expect(within(table).getAllByTitle("Amazon hasn’t priced this order yet")).toHaveLength(1)
-    await expect(within(table).getAllByText("Cancelled").length).toBeGreaterThan(0)
+    await expect(within(table).getAllByText("Canceled").length).toBeGreaterThan(0)
     await expect(canvas.getByText("1–5 of 5")).toBeVisible()
 
     const sources = canvas.getByRole("list", { name: "Sources" })

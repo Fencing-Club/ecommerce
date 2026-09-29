@@ -5,7 +5,7 @@
   "about": "About: {label}",
   "errors": {
     "generic": "Something went wrong. Try again.",
-    "offline": "Couldn't reach Copacker. Check your connection and try again."
+    "offline": "Couldn’t reach Copacker. Check your connection and try again."
   },
   "actions": {
     "cancel": "Cancel"
@@ -26,7 +26,7 @@
     "received": "Received",
     "correction": "Correction requested",
     "needsAttention": "Needs attention",
-    "cancelled": "Cancelled",
+    "cancelled": "Canceled",
     "working": "Working",
     "created": "Created",
     "readyToShip": "Ready to ship",

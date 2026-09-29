@@ -366,7 +366,7 @@ describe("attentionItems", () => {
       "drafts"
     ])
     expect(items[0]?.title).toBe("2 items run out before a reorder arrives")
-    expect(items.find((item) => item.key === "sync-shopify")?.title).toBe("Shopify orders haven't synced in 5 days")
+    expect(items.find((item) => item.key === "sync-shopify")?.title).toBe("Shopify orders haven’t synced in 5 days")
     expect(items.find((item) => item.key === "prices-shopify")?.detail).toBe("12 orders in this period have no price")
     expect(items.find((item) => item.key === "drafts")?.title).toBe("1 purchase order is still a draft")
   })

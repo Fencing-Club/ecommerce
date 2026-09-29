@@ -35,7 +35,7 @@ test("the buyer's and supplier's shipment lists show a shipment by status", asyn
   await openTab(page, "Received")
   await expect(page).toHaveURL(/\?view=received$/)
   await expect(row).toHaveCount(0)
-  await openTab(page, "Cancelled")
+  await openTab(page, "Canceled")
   await expect(page).toHaveURL(/\?view=cancelled$/)
   await expect(row).toHaveCount(0)
   await openTab(page, "All")

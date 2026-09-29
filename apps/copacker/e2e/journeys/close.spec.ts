@@ -97,7 +97,7 @@ test("a buyer sends a purchase order, records landed costs and closes it", async
     await page.getByRole("button", { name: "More actions for E2E-CLOSE" }).click()
     await expect(page.getByRole("menuitem", { name: "Delete draft" })).toHaveCount(0)
     await page.getByRole("menuitem", { name: "Close purchase order" }).click()
-    await expect(dialog).toContainText("Shipments the supplier hasn’t packed are cancelled.")
+    await expect(dialog).toContainText("Shipments the supplier hasn’t packed are canceled.")
     await dialog.getByRole("button", { name: "Cancel" }).click()
     await expect(dialog).toBeHidden()
     await expect(titleStatus(page)).toHaveText("With supplier")
@@ -108,7 +108,7 @@ test("a buyer sends a purchase order, records landed costs and closes it", async
     await expect(dialog).toBeHidden()
     await expect(titleStatus(page)).toHaveText("Closed")
     // The shipment nobody packed is cancelled with it, and nothing more can start.
-    await expect(page.getByRole("link", { name: /^Shipment 1/ })).toContainText("Cancelled")
+    await expect(page.getByRole("link", { name: /^Shipment 1/ })).toContainText("Canceled")
     await expect(page.getByRole("button", { name: /Continue packing|Prepare next shipment/ })).toHaveCount(0)
     await expect(page.getByRole("region", { name: "Timeline" }).getByText("Purchase order closed")).toBeVisible()
   })

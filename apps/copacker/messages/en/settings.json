@@ -169,7 +169,7 @@
     "between": "{channel}, {start} to {end}",
     "since": "{channel}, since {start}",
     "until": "{channel}, until {end}",
-    "removeFailed": "Couldn't remove this cost",
+    "removeFailed": "Couldn’t remove this cost",
     "removing": "Removing {name}",
     "more": "More for {name}",
     "remove": "Remove",
@@ -182,7 +182,7 @@
     "paidUntil": "Paid until",
     "enterName": "Enter a name",
     "enterAmount": "Enter the amount",
-    "endBeforeStart": "The end date can't be before the start date"
+    "endBeforeStart": "The end date can’t be before the start date"
   },
   "supplierProfile": {
     "title": "Supplier profile",
@@ -211,7 +211,7 @@
     "remove": "Remove",
     "more": "More for {name}",
     "removing": "Removing {name}",
-    "removeFailed": "Couldn't remove this address",
+    "removeFailed": "Couldn’t remove this address",
     "stockArrivesAt": "Stock arrives at {location}",
     "stockArrivesAtShopify": "Stock arrives at a Shopify location",
     "addPhone": "Add a phone number to use it on shipments",

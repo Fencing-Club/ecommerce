@@ -144,7 +144,7 @@ export const AddValidation = meta.story({
     await userEvent.type(within(dialog).getByLabelText("Paid since"), "2026-06-01")
     await userEvent.type(within(dialog).getByLabelText("Paid until"), "2026-01-31")
     await userEvent.click(within(dialog).getByRole("button", { name: "Add cost" }))
-    await expect(await within(dialog).findByText("The end date can't be before the start date")).toBeInTheDocument()
+    await expect(await within(dialog).findByText("The end date can’t be before the start date")).toBeInTheDocument()
     await expect(within(dialog).getByText("Enter the amount")).toBeInTheDocument()
     await expect(sent).toHaveLength(0)
   }
@@ -184,7 +184,7 @@ export const RemoveFails = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Warehouse rent" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn't remove this cost")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t remove this cost")
     await expect(canvas.getByRole("button", { name: "More for Warehouse rent" })).toBeEnabled()
   }
 })

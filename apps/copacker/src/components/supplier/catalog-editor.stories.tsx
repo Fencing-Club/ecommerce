@@ -199,7 +199,7 @@ export const VolumePricing = meta.story({
     await userEvent.type(dialog.getByRole("spinbutton", { name: "Break 1 quantity" }), "50")
     await userEvent.type(dialog.getByRole("textbox", { name: "Break 1 price" }), "4.10")
     // A break has to lower the price.
-    await expect(dialog.getByRole("alert")).toHaveTextContent("Each break's price must be lower than the one before")
+    await expect(dialog.getByRole("alert")).toHaveTextContent("Each break’s price must be lower than the one before")
     await expect(dialog.getByRole("button", { name: "Done" })).toBeDisabled()
     await userEvent.clear(dialog.getByRole("textbox", { name: "Break 1 price" }))
     await userEvent.type(dialog.getByRole("textbox", { name: "Break 1 price" }), "3.90")
@@ -376,7 +376,7 @@ export const DeleteFails = meta.story({
     await userEvent.click(
       within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete catalog" })
     )
-    await expect(await screen.findByText("Couldn't delete the catalog. Try again.")).toBeVisible()
+    await expect(await screen.findByText("Couldn’t delete the catalog. Try again.")).toBeVisible()
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(getRouter().push).not.toHaveBeenCalled()
   }

@@ -18,7 +18,7 @@ async function PrivacyPage() {
     <Legal
       title={t("privacy.title")}
       updated="2026-09-28"
-      lead="This policy explains what Copacker collects, how we use it, who helps us run the service, and the choices you have. It covers copacker.ai, the Copacker app and the emails we send."
+      lead="This policy explains what Copacker collects, how we use it, who helps us run the service, and the choices you have. It covers copacker.ai, the Copacker app, and the emails we send."
       sections={[
         {
           id: "summary",
@@ -29,10 +29,10 @@ async function PrivacyPage() {
                 We use your information to run Copacker for you. We don’t sell it, and we don’t use it for advertising.
               </li>
               <li>
-                We use data from Amazon, Shopify, eBay and the other services you connect only to provide Copacker to
+                We use data from Amazon, Shopify, eBay, and the other services you connect only to provide Copacker to
                 you.
               </li>
-              <li>We don’t keep your customers’ names, email addresses, phone numbers or addresses.</li>
+              <li>We don’t keep your customers’ names, email addresses, phone numbers, or addresses.</li>
               <li>
                 We share information only with the providers that run Copacker, the people you work with in it, and when
                 the law requires it.
@@ -48,16 +48,16 @@ async function PrivacyPage() {
             <>
               <h3 id="collect-account">Your account</h3>
               <p>
-                Your name, email address, position and company. If you sign in with Google or Microsoft, they share your
-                name and email address with us. Your password goes to WorkOS, our sign-in provider; Copacker never
+                Your name, email address, position, and company. If you sign in with Google or Microsoft, they share
+                your name and email address with us. Your password goes to WorkOS, our sign-in provider; Copacker never
                 stores it.
               </p>
               <h3 id="collect-workspace">Your workspace</h3>
               <p>
                 What you and your team add to Copacker: your company’s details and addresses; your suppliers and
-                forwarders, with their contact names, email addresses, phone numbers and addresses; products, prices,
-                catalogs and stock; purchase orders, shipments, costs and comments; and the files you upload, such as
-                commercial invoices, labels, product photos and price lists.
+                forwarders, with their contact names, email addresses, phone numbers, and addresses; products, prices,
+                catalogs, and stock; purchase orders, shipments, costs, and comments; and the files you upload, such as
+                commercial invoices, labels, product photos, and price lists.
               </p>
               <h3 id="collect-services">Services you connect</h3>
               <p>When you connect a store or marketplace, you let Copacker read the data it needs from it:</p>
@@ -71,7 +71,7 @@ async function PrivacyPage() {
                   spend and sales by product.
                 </li>
                 <li>
-                  <strong>Shopify</strong>: your store, products, locations, inventory, orders and Shopify Payments
+                  <strong>Shopify</strong>: your store, products, locations, inventory, orders, and Shopify Payments
                   transactions.
                 </li>
                 <li>
@@ -80,14 +80,14 @@ async function PrivacyPage() {
               </ul>
               <p>
                 From your orders, we keep what planning needs: order numbers and dates, products, quantities, prices,
-                fees and fulfillment status. For Shopify orders, we also keep the customer’s ID number, so repeat
-                customers can be counted. We don’t keep your customers’ names, email addresses, phone numbers or
+                fees, and fulfillment status. For Shopify orders, we also keep the customer’s ID number, so repeat
+                customers can be counted. We don’t keep your customers’ names, email addresses, phone numbers, or
                 addresses.
               </p>
               <p>We also keep the credentials each service gives us when you connect it, encrypted.</p>
               <h3 id="collect-messages">Messages and the waitlist</h3>
               <p>
-                The contact form sends us your name, email address, company and message. The waitlist keeps your email
+                The contact form sends us your name, email address, company, and message. The waitlist keeps your email
                 address and the language you read the site in.
               </p>
               <h3 id="collect-usage">When you use Copacker</h3>
@@ -107,7 +107,7 @@ async function PrivacyPage() {
               <ul>
                 <li>
                   To run Copacker: sign you in, forecast your stock, plan restocks, prepare purchase orders, shipments,
-                  labels and documents, and show your sales and costs.
+                  labels, and documents, and show your sales and costs.
                 </li>
                 <li>
                   To make the changes you ask for in the services you connect, such as creating an Amazon inbound
@@ -117,7 +117,7 @@ async function PrivacyPage() {
                   To send the emails Copacker needs: sign-in codes, password resets, invitations, purchase orders and
                   notices when labels are ready.
                 </li>
-                <li>To keep Copacker secure, prevent abuse and fix problems.</li>
+                <li>To keep Copacker secure, prevent abuse, and fix problems.</li>
                 <li>To answer your messages, and to email you about the waitlist if you joined it.</li>
                 <li>To meet our legal obligations.</li>
               </ul>
@@ -189,7 +189,7 @@ async function PrivacyPage() {
                     "WorkOS",
                     "Sign-in and accounts: passwords, sign-in with Google or Microsoft, single sign-on, checks that protect sign-in, and the waitlist."
                   ],
-                  ["Railway", "Hosting: runs Copacker, and stores its database, documents and logs."],
+                  ["Railway", "Hosting: runs Copacker, and stores its database, documents, and logs."],
                   ["Cloudflare", "Carries and protects traffic to copacker.ai, and serves the site’s video."],
                   ["Amazon Web Services", "Delivers notifications from Amazon and Shopify to Copacker."],
                   ["Resend", "Sends Copacker’s emails."],
@@ -222,8 +222,8 @@ async function PrivacyPage() {
                 </li>
               </ul>
               <p>
-                We may also disclose information when the law requires it, or to protect Copacker, our users or others
-                from harm or fraud. If Copacker is merged, acquired or sold, your information may transfer with it, and
+                We may also disclose information when the law requires it, or to protect Copacker, our users, or others
+                from harm or fraud. If Copacker is merged, acquired, or sold, your information may transfer with it, and
                 this policy will still apply to it.
               </p>
             </>
@@ -239,7 +239,7 @@ async function PrivacyPage() {
                 <li>A session cookie that keeps you signed in.</li>
                 <li>One that remembers the workspace you have open.</li>
                 <li>Short-lived ones that hold a sign-in or an invitation in progress, for up to 10 minutes.</li>
-                <li>One with your computer’s time zone, and one that remembers whether the app’s sidebar is open.</li>
+                <li>One with your device’s time zone, and one that remembers whether the app’s sidebar is open.</li>
               </ul>
               <p>
                 Your choice of light or dark theme stays in your browser’s local storage. We don’t use analytics or
@@ -302,14 +302,14 @@ async function PrivacyPage() {
           content: (
             <>
               <p>
-                Depending on where you live, you may have the right to access, correct or delete your information, to
+                Depending on where you live, you may have the right to access, correct, or delete your information, to
                 get a copy of it, to object to or restrict how we use it, and to withdraw consent you gave. To use these
                 rights, write to us through the {contact}. We’ll confirm it’s you before we act, and we won’t treat you
                 differently for asking.
               </p>
               <p>You can also:</p>
               <ul>
-                <li>Change your name, position and company in Settings.</li>
+                <li>Change your name, position, and company in Settings.</li>
                 <li>Disconnect a store or marketplace in Settings.</li>
                 <li>Leave the waitlist at any time, from any of its emails or through the contact page.</li>
               </ul>

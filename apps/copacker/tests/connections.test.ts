@@ -139,7 +139,7 @@ describe("Amazon self-authorization", () => {
     fetchMock.mockResolvedValueOnce(new Response("", { status: 400 }))
     await expect(
       connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: token })
-    ).rejects.toThrow("didn't accept this token")
+    ).rejects.toThrow("didn’t accept this token")
     fetchMock
       .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
       .mockResolvedValueOnce(participations("A1F83G8C2ARO7P"))

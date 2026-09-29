@@ -108,7 +108,7 @@ test("builds out a product with photos, options, variants and volume pricing", a
   await rules.getByRole("spinbutton", { name: "Break 1 quantity" }).fill("50")
   // A break must cost less than the price before it.
   await rules.getByRole("textbox", { name: "Break 1 price" }).fill("13.00")
-  await expect(rules.getByRole("alert")).toHaveText("Each break's price must be lower than the one before")
+  await expect(rules.getByRole("alert")).toHaveText("Each break’s price must be lower than the one before")
   await expect(rules.getByRole("button", { name: "Done" })).toBeDisabled()
   await rules.getByRole("textbox", { name: "Break 1 price" }).fill("11.00")
   await expect(rules.getByRole("alert")).toBeHidden()

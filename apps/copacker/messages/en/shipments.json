@@ -15,13 +15,13 @@
     "tabs": {
       "active": "Active",
       "received": "Received",
-      "cancelled": "Cancelled",
+      "cancelled": "Canceled",
       "all": "All"
     },
     "empty": {
       "active": "No active shipments",
       "received": "No received shipments",
-      "cancelled": "No cancelled shipments",
+      "cancelled": "No canceled shipments",
       "all": "No shipments"
     },
     "columns": {

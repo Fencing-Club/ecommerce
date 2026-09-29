@@ -120,7 +120,7 @@ export const DeclineFails = meta.story({
     const dialog = within(await screen.findByRole("dialog"))
     await userEvent.click(dialog.getByRole("button", { name: "Decline changes" }))
     // The error shows in the dialog, which stays open to try again.
-    await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn't save. Try again.")
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("Couldn’t save. Try again.")
     await expect(canvas.queryByRole("alert")).toBeNull()
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())

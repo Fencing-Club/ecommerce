@@ -155,7 +155,7 @@ test("editing a draft opens the builder with its values", async ({ page }) => {
   await expect(page.getByRole("combobox", { name: "Destination" })).toContainText("Your location")
   await expect(page.getByRole("combobox", { name: "Delivery address" })).toContainText("E2E Buyer address")
   await expect(page.getByRole("combobox", { name: "Payment terms" })).toContainText("Net 30")
-  await expect(page.getByRole("combobox", { name: "Supplier currency" })).toContainText("US Dollar (USD $)")
+  await expect(page.getByRole("combobox", { name: "Supplier currency" })).toContainText("US dollar (USD $)")
   await expect(page.getByRole("textbox", { name: "Reference number" })).toHaveValue("E2E-DRAFT")
   await expect(page.getByRole("textbox", { name: "Required by" })).toHaveValue("2027-01-15")
   const skus = page.getByRole("textbox", { name: "Supplier SKU for Pro-grip glove" })

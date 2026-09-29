@@ -597,7 +597,7 @@ export const Approval = meta.story({
   ...buyer,
   args: {
     shipment: approval,
-    step: step("approval", "Review the supplier's proposed prices and supplier SKUs")
+    step: step("approval", "Review the supplier’s proposed prices and supplier SKUs")
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Invoice changes")).toBeVisible()
@@ -620,7 +620,7 @@ export const ApprovalSupplier = meta.story({
   args: {
     kind: "supplier",
     shipment: approval,
-    step: step("approval", "Review the supplier's proposed prices and supplier SKUs")
+    step: step("approval", "Review the supplier’s proposed prices and supplier SKUs")
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Waiting for the buyer’s approval")).toBeVisible()
@@ -635,7 +635,7 @@ export const ApprovalWithoutPrices = meta.story({
   args: {
     permissions: packer,
     shipment: approval,
-    step: step("approval", "Review the supplier's proposed prices and supplier SKUs")
+    step: step("approval", "Review the supplier’s proposed prices and supplier SKUs")
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/Price per unit/)).toBeNull()

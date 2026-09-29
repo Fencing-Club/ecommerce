@@ -41,7 +41,7 @@ export async function priceListWorkbook(list: PriceList) {
     "SKU",
     "Currency",
     "Price",
-    "Per",
+    "Price per",
     "Volume pricing",
     "Minimum",
     "Increment",
@@ -152,7 +152,7 @@ export async function priceListPdf(list: PriceList) {
     const variant = row.variant ? wrap(row.variant, regular, 8.5, 210) : []
     const rules = [
       row.minimum > 1 ? `Min ${row.minimum}` : "",
-      row.increment > 1 ? `Steps of ${row.increment}` : "",
+      row.increment > 1 ? `In multiples of ${row.increment}` : "",
       row.maximum ? `Max ${row.maximum}` : ""
     ].filter(Boolean)
     const tiers = [

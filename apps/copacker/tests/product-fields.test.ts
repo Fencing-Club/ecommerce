@@ -253,7 +253,7 @@ describe("editing variation details", () => {
     const unknown = await save({ variantId: variant(99), supplierSku: "AB-1" })
     expect(unknown.status).toBe(404)
     expect(await unknown.json()).toEqual({
-      error: "This product isn't in your synced Shopify inventory. Sync Shopify and try again."
+      error: "This product isn’t in your synced Shopify inventory. Sync Shopify and try again."
     })
     expect(await (await save({ variantId: variant(1), supplierSku: "x".repeat(256) })).json()).toEqual({
       error: "Enter a supplier SKU on one line, up to 255 characters"

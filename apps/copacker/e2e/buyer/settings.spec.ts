@@ -199,7 +199,7 @@ test("adds a monthly cost and removes it", async ({ page }) => {
   await dialog.getByLabel("Paid since").fill("2026-03-01")
   await dialog.getByLabel("Paid until").fill("2026-02-01")
   await dialog.getByRole("button", { name: "Add cost" }).click()
-  await expect(dialog.getByText("The end date can't be before the start date")).toBeVisible()
+  await expect(dialog.getByText("The end date can’t be before the start date")).toBeVisible()
   await dialog.getByLabel("Paid until").fill("2026-12-31")
   await dialog.getByRole("button", { name: "Add cost" }).click()
   await expect(dialog).toBeHidden()

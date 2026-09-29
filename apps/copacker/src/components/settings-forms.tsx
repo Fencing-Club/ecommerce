@@ -95,7 +95,7 @@ export function SupplierForm({ onSuccess }: { onSuccess?: () => void }) {
   })
   return (
     <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
-      <FormInput name="name" required label={t("company")} placeholder="Ok Fencing" autoComplete="off" />
+      <FormInput name="name" required label={t("company")} placeholder="Northwind Textiles" autoComplete="off" />
       <FormInput
         name="email"
         label={t("email")}
