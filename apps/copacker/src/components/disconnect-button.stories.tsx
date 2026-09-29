@@ -19,7 +19,7 @@ export const Shopify = meta.story({
     const dialog = await screen.findByRole("alertdialog", { name: "Disconnect Shopify?" })
     await expect(
       within(dialog).getByText(
-        "Copacker stops syncing products, stock, sales and costs with harbor-goods.myshopify.com. Purchase orders stay as they are."
+        "Copacker stops syncing products, stock, sales, and costs with harbor-goods.myshopify.com. Purchase orders stay as they are."
       )
     ).toBeInTheDocument()
     await userEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }))

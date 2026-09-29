@@ -56,8 +56,8 @@ describe("import proposals", () => {
   })
   it("does not round a per-piece conversion silently", () => {
     expect(priceInMinorUnits("4.08")).toBe(408)
-    expect(() => priceInMinorUnits("2.005")).toThrow("at most two decimal places")
-    expect(() => priceInMinorUnits("-1")).toThrow("at most two decimal places")
+    expect(() => priceInMinorUnits("2.005")).toThrow("up to 2 decimal places")
+    expect(() => priceInMinorUnits("-1")).toThrow("up to 2 decimal places")
   })
   it("flags incomplete packs for human correction", () => {
     const p = proposal()

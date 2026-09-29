@@ -232,7 +232,7 @@ export const Toggle = meta.story({
   play: async ({ canvas, canvasElement }) => {
     const sidebar = sidebarOf(canvasElement)
     const trigger = triggerOf(canvasElement)
-    await expect(trigger).toHaveAccessibleName("Toggle Sidebar")
+    await expect(trigger).toHaveAccessibleName("Toggle sidebar")
 
     // The trigger collapses it to icons and remembers that in a cookie.
     await userEvent.click(trigger)
@@ -253,8 +253,8 @@ export const Toggle = meta.story({
     await expect(document.cookie).toContain("sidebar_state=true")
 
     // So does the rail along its edge.
-    await userEvent.click(canvas.getByTitle("Toggle Sidebar"))
-    await expect(canvas.getByTitle("Toggle Sidebar")).toHaveAttribute("data-slot", "sidebar-rail")
+    await userEvent.click(canvas.getByTitle("Toggle sidebar"))
+    await expect(canvas.getByTitle("Toggle sidebar")).toHaveAttribute("data-slot", "sidebar-rail")
     await expect(sidebar).toHaveAttribute("data-state", "collapsed")
   }
 })

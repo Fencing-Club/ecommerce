@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(opens in Seller Central)",
     "none": {
       "title": "No shipments yet",
-      "buyerDescription": "Start one from a sent purchase order",
-      "supplierDescription": "Start one from an order",
+      "buyerDescription": "Start one from a sent purchase order.",
+      "supplierDescription": "Start one from an order.",
       "viewPurchaseOrders": "View purchase orders",
       "viewOrders": "View orders"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "Shipping labels",
       "waiting": "Waiting for shipping labels",
-      "fba": "Book transport to Amazon, then upload the shipping labels",
-      "agl": "Book AGL transport in Amazon, then upload the shipping labels"
+      "fba": "Book transport to Amazon, then upload the shipping labels.",
+      "agl": "Book AGL transport in Amazon, then upload the shipping labels."
     },
     "creating": {
       "title": "Creating the Amazon shipment",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "Supplier packet ready",
-      "description": "Print labels at actual size",
+      "description": "Print labels at actual size.",
       "downloadLabel": "Download supplier packet",
       "download": "Download packet",
       "incompleteTitle": "Supplier packet incomplete",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Also update Shopify unit costs",
-      "updateCostDescription": "Shopify costs must be in the purchase order’s currency",
+      "updateCostDescription": "Shopify costs must be in the purchase order’s currency.",
       "submit": "Approve changes"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "Request a correction",
       "submit": "Request correction",
       "reason": "What needs to change?",
-      "reasonDescription": "This shipment’s documents become outdated"
+      "reasonDescription": "This shipment’s documents become outdated."
     },
     "reconcile": {
       "submit": "Verify and resume",
@@ -152,7 +152,7 @@
     "taping": "Taping"
   },
   "amazonAuthorization": {
-    "sellerId": "Enter the seller's merchant token, such as A2CIYIV0E1FHU3",
+    "sellerId": "Enter the seller’s merchant token, such as A2CIYIV0E1FHU3",
     "refreshToken": "Paste the full refresh token, which starts with Atzr|"
   },
   "requirements": {

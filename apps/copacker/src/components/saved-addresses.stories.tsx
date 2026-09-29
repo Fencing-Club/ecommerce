@@ -43,7 +43,7 @@ export const Buyer = meta.story({
     // Only kinds other than delivery are named, and a buyer's old pickup address asks to be removed.
     await expect(canvas.getByText("Freight forwarder")).toBeVisible()
     await expect(canvas.getByText("Pickup address")).toBeVisible()
-    await expect(canvas.getByText("Your supplier keeps pickups now, remove this once they’ve added it")).toBeVisible()
+    await expect(canvas.getByText("Your supplier keeps pickups now. Remove this once they’ve added it.")).toBeVisible()
     await expect(canvas.queryByText("Delivery address")).toBeNull()
   }
 })
@@ -55,7 +55,7 @@ export const Add = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Add address" }))
     const dialog = await screen.findByRole("dialog", { name: "Add address" })
     await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
-    await expect((await within(dialog).findAllByText("This field is required")).length).toBeGreaterThan(3)
+    await expect((await within(dialog).findAllByText("Fill in this field")).length).toBeGreaterThan(3)
     await expect(sent).toHaveLength(0)
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Portland warehouse")
     // A delivery address can be linked to a Shopify location.

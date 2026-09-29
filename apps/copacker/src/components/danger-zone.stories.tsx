@@ -26,7 +26,7 @@ export const OwnerDeletesWorkspace = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Delete workspace" }))
     const dialog = await screen.findByRole("alertdialog", { name: "Delete Harbor Goods?" })
     await expect(
-      within(dialog).getByText("Its purchase orders, products, connections and team are deleted for everyone.")
+      within(dialog).getByText("Its purchase orders, products, connections, and team are deleted for everyone.")
     ).toBeInTheDocument()
     const confirm = within(dialog).getByRole("button", { name: "Delete workspace" })
     const field = within(dialog).getByLabelText("Workspace name")
@@ -83,7 +83,7 @@ export const SupplierWorkspace = meta.story({
     const dialog = await screen.findByRole("alertdialog", { name: "Delete Lotus Manufacturing?" })
     await expect(
       within(dialog).getByText(
-        "Its products, catalogs and team are deleted for everyone. Buyers keep their purchase orders."
+        "Its products, catalogs, and team are deleted for everyone. Buyers keep their purchase orders."
       )
     ).toBeInTheDocument()
   }

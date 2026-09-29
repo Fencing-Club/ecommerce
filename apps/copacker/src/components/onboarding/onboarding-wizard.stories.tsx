@@ -117,7 +117,7 @@ export const NewBuyer = meta.story({
 
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
     // Street, city, state and postal code are still empty.
-    await expect(await canvas.findAllByText("This field is required")).toHaveLength(4)
+    await expect(await canvas.findAllByText("Fill in this field")).toHaveLength(4)
     await expect(canvas.getByLabelText(/Street address/)).toHaveFocus()
     await expect(actions.sent).toHaveLength(0)
     await fillStreet(canvas)
@@ -186,7 +186,9 @@ export const Supplier = meta.story({
     await userEvent.clear(canvas.getByLabelText(/Phone number/))
     await fillStreet(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
-    await expect(await canvas.findByText("Add a pickup phone number. Amazon needs it to schedule pickup")).toBeVisible()
+    await expect(
+      await canvas.findByText("Add a pickup phone number. Amazon needs it to schedule pickup.")
+    ).toBeVisible()
     await expect(canvas.getByLabelText(/Phone number/)).toHaveFocus()
     await expect(actions.sent).toHaveLength(0)
     await userEvent.type(canvas.getByLabelText(/Phone number/), "+1 425 260 2501")

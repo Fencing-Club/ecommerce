@@ -15,7 +15,7 @@
       "unsaved": "Unsaved changes",
       "discard": "Discard",
       "save": "Save",
-      "saving": "Saving"
+      "saving": "Saving…"
     },
     "couldNotSave": "Couldn't save. Try again.",
     "tryAnother": "Try another tab or search.",
@@ -53,7 +53,7 @@
     "optionValues": "Give {sku} a value for every option",
     "sameOptions": "Two variants have the same options",
     "variantProblem": "{sku}: {problem}",
-    "packRange": "{sku}: pack quantity exceeds the supported range",
+    "packRange": "{sku}: enter smaller pack and case quantities",
     "sameSku": "Two variants have the same SKU"
   },
   "catalogIndex": {
@@ -110,7 +110,7 @@
     "status": "Status",
     "customers": "Customers",
     "addCustomers": "Add customers",
-    "noCustomersFound": "No customers found.",
+    "noCustomersFound": "No customers found",
     "movesFrom": "Moves from {catalog}",
     "customersAppear": "Customers appear once a buyer adds you as their supplier.",
     "inactiveNote": "Customers see every active product at its own price until the catalog is active.",
@@ -135,7 +135,7 @@
     "noProductsYet": "No products yet",
     "addProductsFirst": "Add products before building a catalog.",
     "deleteTitle": "Delete {title}?",
-    "deleteDescription": "Its customers will see every active product at its own price. This can’t be undone."
+    "deleteDescription": "Its customers will see every active product at its own price. You can’t undo this."
   },
   "customers": {
     "noCatalog": "No catalog",
@@ -166,7 +166,7 @@
       "closed": "Closed"
     },
     "emptyTitle": "No orders yet",
-    "emptyDescription": "Purchase orders your customers send appear here",
+    "emptyDescription": "Purchase orders your customers send appear here.",
     "search": "Search orders",
     "columns": {
       "order": "Order",
@@ -178,7 +178,7 @@
     },
     "firstAndMore": "{first} and {count, number} more",
     "noneHere": "No orders here",
-    "noneHereDescription": "Try another tab or search"
+    "noneHereDescription": "Try another tab or search."
   },
   "pages": {
     "catalogs": "Catalogs",
@@ -232,7 +232,7 @@
     "inStock": "{count, number} in stock",
     "forVariants": "for {count, plural, one {# variant} other {# variants}}",
     "emptyTitle": "Add your first product",
-    "emptyDescription": "Customers order from your products. Add them one at a time or import a spreadsheet.",
+    "emptyDescription": "Add products one at a time or import a spreadsheet.",
     "addProduct": "Add product",
     "search": "Search products",
     "setActive": "Set as active",
@@ -252,9 +252,9 @@
     "importProducts": "Import products",
     "exportCsv": "Export to CSV",
     "downloadTemplate": "Download template",
-    "importFailed": "Import failed. Try again.",
-    "alreadyImported": "This file was already imported.",
-    "description": "Use the product template: one row per variant. Matching SKUs are updated and new ones added. Products left out of the file don’t change.",
+    "importFailed": "Couldn't import. Try again.",
+    "alreadyImported": "You already imported this file.",
+    "description": "One row per variant, matched by SKU. Products left out of the file don’t change.",
     "excelTemplate": "Excel template",
     "csvTemplate": "CSV template",
     "yourProducts": "Your products in Excel",
@@ -293,15 +293,15 @@
     "readyDate": "Ready date",
     "total": "Total",
     "decline": "Decline",
-    "approving": "Approving",
+    "approving": "Approving…",
     "approve": "Approve changes",
-    "withdrawing": "Withdrawing",
+    "withdrawing": "Withdrawing…",
     "withdraw": "Withdraw",
     "edit": "Edit",
     "declineTitle": "Decline the changes?",
     "declineDescription": "The purchase order stays as it is. {supplier} sees your reason.",
     "reasonLabel": "Reason",
-    "declining": "Declining",
+    "declining": "Declining…",
     "declineChanges": "Decline changes"
   },
   "orderReviser": {
@@ -310,9 +310,9 @@
     "noChanges": "No changes to save",
     "sendFailed": "Couldn't send the changes. Try again.",
     "sendForApproval": "Send for approval",
-    "sending": "Sending",
+    "sending": "Sending…",
     "save": "Save",
-    "saving": "Saving",
+    "saving": "Saving…",
     "orders": "Orders",
     "editOrder": "Edit order",
     "awaitingApproval": "Awaiting approval",
@@ -468,7 +468,7 @@
     "unknown": "Unknown",
     "trackInventory": "Track inventory",
     "onHand": "On hand",
-    "piecesInStock": "Units in stock.",
+    "piecesInStock": "Units in stock",
     "continueSelling": "Continue selling when out of stock",
     "notes": "Notes",
     "giveSku": "Give every variant a SKU",
@@ -506,6 +506,6 @@
     "productCode": "Product code",
     "productPage": "Product page",
     "catalogs": "Catalogs",
-    "notInCatalog": "Not in any catalog."
+    "notInCatalog": "Not in any catalog"
   }
 }

@@ -1,8 +1,8 @@
 {
-  "required": "This field is required",
+  "required": "Fill in this field",
   "number": "Enter a number",
   "minLength": "Enter at least {minimum} characters",
-  "addOne": "Add at least one",
+  "addOne": "Add at least 1",
   "minItems": "Add at least {minimum}",
   "atLeast": "Enter {minimum} or more",
   "greaterThan": "Enter a number greater than {minimum}",

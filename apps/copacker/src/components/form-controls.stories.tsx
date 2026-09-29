@@ -58,9 +58,9 @@ export const Required = meta.story({
     await expect(canvas.getByText("Notes").parentElement).toHaveTextContent(/^Notes$/)
     await userEvent.click(canvas.getByRole("button", { name: "Save line" }))
     await waitFor(() => expect(canvas.getByLabelText(/Reference/)).toHaveAttribute("aria-invalid", "true"))
-    await expect(canvas.getAllByText("This field is required")).toHaveLength(2)
+    await expect(canvas.getAllByText("Fill in this field")).toHaveLength(2)
     await expect(canvas.getAllByText("Enter a number")).toHaveLength(2)
-    await expect(canvas.getByLabelText(/Reference/)).toHaveAccessibleDescription("This field is required")
+    await expect(canvas.getByLabelText(/Reference/)).toHaveAccessibleDescription("Fill in this field")
     await expect(args.onSubmit).not.toHaveBeenCalled()
   }
 })

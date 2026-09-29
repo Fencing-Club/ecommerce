@@ -96,7 +96,7 @@ export const RemoveFails = meta.story({
   play: async () => {
     await userEvent.click(await screen.findByRole("button", { name: "More actions for Factory" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
-    await expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t remove Factory")
+    await expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t remove Factory. Try again.")
     // The menu comes back to try again.
     await expect(await screen.findByRole("button", { name: "More actions for Factory" })).toBeEnabled()
   }
@@ -118,7 +118,7 @@ export const AddPickup = meta.story({
     await expect(
       await within(dialog).findByText("Add a pickup phone number. Amazon needs it to schedule pickup")
     ).toBeInTheDocument()
-    await expect(within(dialog).getAllByText("This field is required").length).toBeGreaterThan(3)
+    await expect(within(dialog).getAllByText("Fill in this field").length).toBeGreaterThan(3)
     await expect(sent).toHaveLength(0)
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Address name" }), "Warehouse 2")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Contact name" }), "Mei Chen")

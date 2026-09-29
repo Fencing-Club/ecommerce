@@ -188,7 +188,7 @@ export const Problems = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: /1 SKU is used by more than one variation/ }))
     await expect(await canvas.findByText("Canvas tote bag, Natural")).toBeVisible()
     await expect(canvas.getByText("Tote bag sample")).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: /1 Amazon SKU doesn't match a Shopify product/ }))
+    await userEvent.click(canvas.getByRole("button", { name: /1 Amazon SKU doesn’t match a Shopify product/ }))
     await expect(await canvas.findByText("amzn.gr.TOTE-NAT-used")).toBeVisible()
     await expect(canvas.getByRole("columnheader", { name: "AWD available" })).toBeVisible()
   }
@@ -242,7 +242,7 @@ export const LoadFailed = meta.story({
     )
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Products couldn’t be loaded.")).toBeVisible()
+    await expect(await canvas.findByText("Couldn’t load products.")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Try again" }))
     await expect(await canvas.findByRole("button", { name: "Canvas tote bag" })).toBeVisible()
   }

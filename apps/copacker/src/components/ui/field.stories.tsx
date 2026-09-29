@@ -70,7 +70,7 @@ export const Invalid = meta.story({
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("textbox", { name: "SKU" })).toHaveAttribute("aria-invalid", "true")
-    await expect(canvas.getByRole("alert")).toHaveTextContent("This field is required")
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Fill in this field")
   }
 })
 

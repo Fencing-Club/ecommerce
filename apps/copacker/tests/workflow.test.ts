@@ -703,7 +703,7 @@ describe("reviewed import save", () => {
     },
     {
       name: "fractional-cent conversion",
-      error: "at most two decimal places",
+      error: "up to 2 decimal places",
       edit: (p: Awaited<ReturnType<typeof reviewedImport>>["proposal"]) => {
         p.items[0]!.pricePerPiece = "4.085"
       }
@@ -1021,7 +1021,7 @@ describe("Postgres workflow and authorization", () => {
     await expect(saveLocationMapping(supplier, input)).rejects.toThrow("buyer workspace")
     await expect(saveLocationMapping(actor("buyer", otherId), input)).rejects.toThrow("Connect Shopify")
     await expect(saveLocationMapping(buyer, { ...input, locationId: "gid://shopify/Location/999" })).rejects.toThrow(
-      "not present"
+      "isn't in this store"
     )
     await expect(saveLocationMapping(buyer, { ...input, snapshotId: randomUUID() })).rejects.toThrow(
       "Inventory changed"
@@ -2476,7 +2476,7 @@ describe("document upload and packet release", () => {
     })
     const result = await uploadPdf("invoice", prepared.id)
     expect(result.status).toBe(400)
-    expect(await result.json()).toMatchObject({ error: "Shipment changed during upload. Try again" })
+    expect(await result.json()).toMatchObject({ error: "Shipment changed during upload. Try again." })
     const docs = await database.select().from(tables.documents)
     expect(docs).toHaveLength(1)
     expect(docs[0]).toMatchObject({ id: prepared.packing.invoiceDocumentId, outdated: 0 })
@@ -2492,7 +2492,7 @@ describe("document upload and packet release", () => {
     })
     const result = await uploadPdf("shipping_label", prepared.id, 1, [{ cartonId: "A6", page: 1 }])
     expect(result.status).toBe(400)
-    expect(await result.json()).toMatchObject({ error: "Shipment changed during upload. Try again" })
+    expect(await result.json()).toMatchObject({ error: "Shipment changed during upload. Try again." })
     expect((await database.select().from(tables.documents)).some((doc) => doc.kind === "shipping_label")).toBe(false)
   })
   it("rejects product labels when the PO changes during upload", async () => {
@@ -2501,7 +2501,7 @@ describe("document upload and packet release", () => {
     })
     const result = await uploadPdf("product_label")
     expect(result.status).toBe(400)
-    expect(await result.json()).toMatchObject({ error: "The purchase order changed during upload. Try again" })
+    expect(await result.json()).toMatchObject({ error: "The purchase order changed during upload. Try again." })
     expect(await database.select().from(tables.documents)).toHaveLength(0)
   })
   it("preserves an existing product label when a shipment is released during its replacement", async () => {
@@ -2560,7 +2560,7 @@ describe("document upload and packet release", () => {
       downloadDocument(new Request("http://localhost"), {
         params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
       })
-    ).rejects.toThrow("Workspace access denied")
+    ).rejects.toThrow("You don't have access to this workspace")
   })
   it("returns an import source only while the buyer still belongs to its workspace", async () => {
     const imported = await reviewedImport()
@@ -2575,7 +2575,7 @@ describe("document upload and packet release", () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, buyer.user.id))
       return new Uint8Array([1, 2, 3])
     })
-    await expect(request()).rejects.toThrow("Workspace access denied")
+    await expect(request()).rejects.toThrow("You don't have access to this workspace")
   })
   it("withholds a document replaced while private storage is being read", async () => {
     const prepared = await preparation()
@@ -2728,7 +2728,7 @@ describe("document upload and packet release", () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
       return bytes
     })
-    await expect(packet()).rejects.toThrow("Workspace access denied")
+    await expect(packet()).rejects.toThrow("You don't have access to this workspace")
     storage.getFile.mockImplementation(async () => {
       await database
         .update(tables.shipments)
@@ -3955,7 +3955,7 @@ describe("fluid packing handoff", () => {
     const prepared = await preparation()
     await expect(
       savePacking(supplier, prepared.id, { cartons: [{ items: [{ itemId: randomUUID(), pieces: 10 }] }] }, 1, 1)
-    ).rejects.toThrow("not on this purchase order")
+    ).rejects.toThrow("isn't on this purchase order")
     const workflow = await orderWorkflow(supplier, orderId)
     expect(workflow.documents).toHaveLength(1)
     expect(workflow.documents[0]).not.toHaveProperty("objectKey")
@@ -4236,7 +4236,7 @@ describe("tenant sales demand reads", () => {
   it("rejects Amazon history outside retention instead of reporting zero sales", async () => {
     await expect(
       readSalesDemand(buyer, { source: "amazon", window: { from: "2020-01-01T00:00:00Z", to: "2020-01-02T00:00:00Z" } })
-    ).rejects.toThrow("last two years")
+    ).rejects.toThrow("last 2 years")
     expect(provider.api.request).not.toHaveBeenCalled()
   })
   it("does not publish results if the seller changes during the provider read", async () => {
@@ -5393,7 +5393,7 @@ describe("supplier pickup addresses", () => {
     expect(await saved()).toMatchObject([{ id: row!.id, kind: "pickup", name: "Factory" }])
     context.actor = supplier
     expect(await (await save({ supplierId: unicId, name: "Dock", address })).json()).toEqual({
-      error: "A buyer workspace is required"
+      error: "Switch to a buyer workspace"
     })
     expect(await saved()).toMatchObject([{ id: row!.id, orgId: buyerId, name: "Factory", address }])
 

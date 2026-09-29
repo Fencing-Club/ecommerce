@@ -484,7 +484,7 @@ const meta = preview.meta({
     shipment: shipmentRow({ status: "ready", packing: packingFor(warehouse.data) }),
     order: warehouse,
     supplier: { id: supplierRecordId, name: "Lotus Manufacturing", supplierOrgId: "org_supplier" },
-    step: step("ship", "Print the packet, pack the cartons and mark them shipped", { packetUrl: packet }),
+    step: step("ship", "Print the packet, pack the cartons, and mark them shipped", { packetUrl: packet }),
     number: 2,
     reserved: {},
     docs: [invoice, packingList, cartonLabel],
@@ -683,7 +683,7 @@ export const WaitingForLabels = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Shipping labels")).toBeVisible()
-    await expect(canvas.getByText("Book AGL transport in Amazon, then upload the shipping labels")).toBeVisible()
+    await expect(canvas.getByText("Book AGL transport in Amazon, then upload the shipping labels.")).toBeVisible()
     await expect(canvas.getByText("Upload the shipping label for carton C2")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Release labels to supplier" })).toBeNull()
     // The buyer's Amazon shipment opens in Seller Central.
@@ -702,7 +702,7 @@ export const Release = meta.story({
     step: step("release", "Enter the booking reference and release the supplier packet", { canRelease: true })
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Book transport to Amazon, then upload the shipping labels")).toBeVisible()
+    await expect(canvas.getByText("Book transport to Amazon, then upload the shipping labels.")).toBeVisible()
     await userEvent.type(canvas.getByRole("textbox", { name: "Amazon transport booking reference" }), "AGL-778812")
     await userEvent.click(canvas.getByRole("button", { name: "Release labels to supplier" }))
     await waitFor(() =>
@@ -766,7 +766,7 @@ export const ReadySupplier = meta.story({
 export const ReadyIncomplete = meta.story({
   ...buyer,
   args: {
-    step: step("ship", "Print the packet, pack the cartons and mark them shipped", {
+    step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
       issues: [{ message: "Add a product label for Linen apron / Charcoal" }]
     })
   },
@@ -784,7 +784,7 @@ export const ReadyIncompleteSupplier = meta.story({
   ...supplier,
   args: {
     kind: "supplier",
-    step: step("ship", "Print the packet, pack the cartons and mark them shipped", {
+    step: step("ship", "Print the packet, pack the cartons, and mark them shipped", {
       issues: [{ message: "Add a product label for Linen apron / Charcoal" }]
     })
   },
@@ -811,13 +811,13 @@ export const ShippedToForwarder = meta.story({
   ...buyer,
   args: {
     shipment: shipmentRow({ status: "shipped", packing: packingFor(warehouse.data) }),
-    step: step("forward", "The forwarder ships the goods on with its freight cost, carrier and tracking", {
+    step: step("forward", "The forwarder ships the goods on and adds the freight cost, carrier, and tracking", {
       packetUrl: packet
     })
   },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByText("The forwarder ships the goods on with its freight cost, carrier and tracking")
+      canvas.getByText("The forwarder ships the goods on and adds the freight cost, carrier, and tracking")
     ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark received" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Request a correction" })).toBeNull()

@@ -78,10 +78,10 @@ export const Required = meta.story({
     // Opening the menu isn't leaving the field, so no error shows while it's open.
     await userEvent.click(supplier)
     await screen.findByRole("option", { name: "Lotus Manufacturing" })
-    await expect(canvas.queryByText("This field is required")).toBeNull()
+    await expect(canvas.queryByText("Fill in this field")).toBeNull()
     // Closing it without a choice is.
     await userEvent.keyboard("{Escape}")
-    await expect(await canvas.findByText("This field is required")).toBeVisible()
+    await expect(await canvas.findByText("Fill in this field")).toBeVisible()
     await expect(supplier).toHaveAttribute("aria-invalid", "true")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await expect(args.onSubmit).not.toHaveBeenCalled()

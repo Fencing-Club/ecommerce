@@ -83,7 +83,7 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await expect(page.getByRole("link", { name: "Offline invoice.pdf" })).toBeVisible()
 
     await page.getByRole("button", { name: "Check packing" }).click()
-    await expect(page.getByText("Ready to submit, changes update the purchase order")).toBeVisible()
+    await expect(page.getByText("Ready to submit; changes update the purchase order")).toBeVisible()
   })
 
   await test.step("submit the packing list", async () => {

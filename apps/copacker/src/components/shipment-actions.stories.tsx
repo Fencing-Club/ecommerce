@@ -17,7 +17,7 @@ const meta = preview.meta({
 
 export const Approve = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Shopify costs must be in the purchase order’s currency")).toBeVisible()
+    await expect(canvas.getByText("Shopify costs must be in the purchase order’s currency.")).toBeVisible()
     await userEvent.click(canvas.getByRole("checkbox", { name: "Also update Shopify unit costs" }))
     await userEvent.click(canvas.getByRole("button", { name: "Approve changes" }))
     await waitFor(() =>
@@ -57,7 +57,7 @@ export const Release = meta.story({
     const field = canvas.getByRole("textbox", { name: "Amazon transport booking reference" })
     await userEvent.type(field, "   ")
     await userEvent.click(submit)
-    await expect(await canvas.findByText("This field is required")).toBeVisible()
+    await expect(await canvas.findByText("Fill in this field")).toBeVisible()
     await expect(sent).toHaveLength(0)
     await userEvent.clear(field)
     await userEvent.type(field, " AGL-778812 ")
@@ -78,7 +78,7 @@ export const Correction = meta.story({
     await expect(canvas.queryByRole("textbox")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Request a correction" }))
     const reason = await canvas.findByRole("textbox", { name: "What needs to change?" })
-    await expect(canvas.getByText("This shipment’s documents become outdated")).toBeVisible()
+    await expect(canvas.getByText("This shipment’s documents become outdated.")).toBeVisible()
     await userEvent.type(reason, "ab")
     await userEvent.click(canvas.getByRole("button", { name: "Request correction" }))
     await expect(await canvas.findByText("Enter at least 3 characters")).toBeVisible()

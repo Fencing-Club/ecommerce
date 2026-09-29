@@ -161,7 +161,7 @@ export const LoadFails = meta.story({
     msw.use(http.get("/api/inventory/locations", () => new HttpResponse(null, { status: 500 })))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Locations couldn't be loaded")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t load locations")
   }
 })
 

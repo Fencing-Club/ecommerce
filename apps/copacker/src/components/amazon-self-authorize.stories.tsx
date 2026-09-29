@@ -43,7 +43,7 @@ export const Validation = meta.story({
     await userEvent.type(within(dialog).getByLabelText(/^Refresh token/), "IwEBI-not-a-token")
     await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
     await expect(
-      await within(dialog).findByText("Enter the seller's merchant token, such as A2CIYIV0E1FHU3")
+      await within(dialog).findByText("Enter the seller’s merchant token, such as A2CIYIV0E1FHU3")
     ).toBeInTheDocument()
     await expect(within(dialog).getByText("Paste the full refresh token, which starts with Atzr|")).toBeInTheDocument()
     await expect(sent).toHaveLength(0)

@@ -13,7 +13,7 @@ export const Default = meta.story({
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByText("Copacker")).toBeVisible()
     await expect(canvas.getByText("handled.")).toHaveClass("bg-clip-text")
-    await expect(canvas.getByText(/Forecast demand, send purchase orders and ship to Amazon/)).toBeVisible()
+    await expect(canvas.getByText(/Forecast demand, send purchase orders, and ship to Amazon/)).toBeVisible()
     // The cards are a picture of the product; the headline says it for screen readers.
     const cards = canvasElement.querySelector("aside > div[aria-hidden]:last-child")
     await expect(cards).not.toBeNull()

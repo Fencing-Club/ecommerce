@@ -226,7 +226,7 @@
   "customers": {
     "title": "Shopify customers",
     "aboutLabel": "About customer figures",
-    "about": "Lifetime value, repeat customers and orders per customer cover the last 12 months. Guest and Amazon orders aren’t counted.",
+    "about": "Lifetime value, repeat customers, and orders per customer cover the last 12 months. Guest and Amazon orders aren’t counted.",
     "reconnect": "Reconnect Shopify in <settings>Settings</settings> to count repeat customers",
     "reconnectAskAdmin": "Ask an admin to reconnect Shopify to count repeat customers",
     "syncing": "Available after the next Shopify order sync",
@@ -240,7 +240,7 @@
   "landedCosts": {
     "title": "Landed costs",
     "aboutLabel": "About landed costs",
-    "about": "Freight, duty and other costs of getting these goods to you, added to unit costs on the Overview. Amazon’s freight for this purchase order’s shipments is added automatically. Only your team sees them.",
+    "about": "Freight, duty, and other costs of getting these goods to you, added to unit costs on the Overview. Amazon’s freight for this purchase order’s shipments is added automatically. Only your team sees them.",
     "amazonFreight": "Amazon inbound freight",
     "shipment": "Shipment {reference}",
     "supplierTotal": "Supplier total",

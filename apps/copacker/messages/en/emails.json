@@ -105,8 +105,8 @@
     "previewMinutes": "Choose a new password for {email}. The link expires in {count, plural, one {# minute} other {# minutes}}.",
     "previewHours": "Choose a new password for {email}. The link expires in {count, plural, one {# hour} other {# hours}}.",
     "action": "Choose a new password",
-    "expiresMinutes": "The link expires in {count, plural, one {# minute} other {# minutes}}. If you didn’t ask to reset your password, you can ignore this email; your password stays the same.",
-    "expiresHours": "The link expires in {count, plural, one {# hour} other {# hours}}. If you didn’t ask to reset your password, you can ignore this email; your password stays the same.",
+    "expiresMinutes": "The link expires in {count, plural, one {# minute} other {# minutes}}. If you didn’t ask to reset your password, you can ignore this email. Your password stays the same.",
+    "expiresHours": "The link expires in {count, plural, one {# hour} other {# hours}}. If you didn’t ask to reset your password, you can ignore this email. Your password stays the same.",
     "reason": "Someone asked to reset the password for {email} on Copacker."
   },
   "waitlistWelcome": {
@@ -116,8 +116,8 @@
     "lead": "We’re letting teams in a few at a time, and we’ll write to you when your spot opens.",
     "preview": "We’ll write to you when your spot opens.",
     "step1": "When your spot opens, we’ll email you a link to set up your workspace.",
-    "step2": "Connect Amazon, Shopify and eBay, and Copacker forecasts every product’s stock.",
-    "step3": "Reorder in one click, and follow each purchase order to FBA, AWD or your own warehouse.",
+    "step2": "Connect Amazon, Shopify, and eBay. Copacker forecasts every product’s stock.",
+    "step3": "Reorder in one click, and follow each purchase order to FBA, AWD, or your own warehouse.",
     "action": "See how it works",
     "note": "Questions before then? Reply to this email.",
     "reason": "You joined the Copacker waitlist as {email}.",

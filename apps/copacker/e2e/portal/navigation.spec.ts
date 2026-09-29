@@ -161,7 +161,7 @@ test.describe("buyer portal", () => {
     test.skip(!isMobile, "The sidebar stays open on a wide screen")
     await page.goto("/overview")
     await expect(sidebar(page)).toHaveCount(0)
-    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    await page.getByRole("button", { name: "Toggle sidebar" }).click()
     const sheet = page.getByRole("dialog", { name: "Sidebar" })
     await expect(sheet.getByText("Buyer workspace")).toBeVisible()
     await sheet.getByRole("link", { name: "Purchase orders" }).click()

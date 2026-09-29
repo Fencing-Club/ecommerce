@@ -318,7 +318,7 @@ export const NewDiscard = meta.story({
 export const NotInCatalogs = meta.story({
   args: { catalogs: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Not in any catalog.")).toBeVisible()
+    await expect(canvas.getByText("Not in any catalog")).toBeVisible()
   }
 })
 

@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "Needs access to location names",
       "signInExpired": "Sign-in expired",
-      "unavailable": "Unavailable, try again in a few minutes",
+      "unavailable": "Unavailable. Try again in a few minutes.",
       "failed": "Last sync failed"
     },
     "didntSync": "{source} inventory didn’t sync",
@@ -28,14 +28,14 @@
   },
   "locations": {
     "title": "Inventory locations",
-    "description": "Stock at the ticked locations counts as yours in Restock.",
+    "description": "Stock at the selected locations counts as yours in Restock.",
     "notes": {
       "amazonFulfillment": "Amazon FBA stock, read from Amazon directly",
       "shopifyCollective": "A partner’s stock through Shopify Collective",
       "fulfillmentService": "Run by an app, such as a third-party warehouse"
     },
     "loading": "Loading locations",
-    "loadFailed": "Locations couldn't be loaded",
+    "loadFailed": "Couldn’t load locations",
     "syncFirst": "Sync Shopify on <link>Products</link> first",
     "none": "None",
     "edit": "Edit",
@@ -56,7 +56,7 @@
     "noMatch": "No products match",
     "noProducts": "No products",
     "loading": "Loading products",
-    "loadFailed": "Products couldn’t be loaded.",
+    "loadFailed": "Couldn’t load products.",
     "tryAgain": "Try again",
     "product": "Product",
     "variations": "Variations",
@@ -98,7 +98,7 @@
     "duplicateSkus": "{count, plural, one {# SKU is used by more than one variation} other {# SKUs are used by more than one variation}}",
     "duplicateSkusHint": "Give each variation its own SKU in Shopify",
     "productVariant": "{product}, {variant}",
-    "amazonOnly": "{count, plural, one {# Amazon SKU doesn't match a Shopify product} other {# Amazon SKUs don't match a Shopify product}}",
+    "amazonOnly": "{count, plural, one {# Amazon SKU doesn’t match a Shopify product} other {# Amazon SKUs don’t match a Shopify product}}",
     "amazonOnlyHint": "Not in the totals",
     "amazonSku": "Amazon SKU",
     "fbaAvailable": "FBA available",

@@ -45,7 +45,7 @@ export const AddValidation = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Add supplier" }))
     const dialog = await screen.findByRole("dialog")
     await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
-    await expect(await within(dialog).findByText("This field is required")).toBeInTheDocument()
+    await expect(await within(dialog).findByText("Fill in this field")).toBeInTheDocument()
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Email" }), "sales@")
     await userEvent.click(within(dialog).getByRole("button", { name: "Add supplier" }))
     await expect(await within(dialog).findByText("Enter an email address")).toBeInTheDocument()

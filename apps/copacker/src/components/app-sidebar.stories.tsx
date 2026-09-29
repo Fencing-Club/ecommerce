@@ -206,7 +206,7 @@ export const Collapsed = meta.story({
     await waitFor(() => expect(document.querySelector("[data-slot=tooltip-content]")).toHaveTextContent("Shipments"))
     // The rail along its edge expands it, as the page's button does.
     const rail = canvas
-      .getAllByRole("button", { name: "Toggle Sidebar" })
+      .getAllByRole("button", { name: "Toggle sidebar" })
       .find((button) => button.dataset.sidebar === "rail")
     if (!rail) {
       throw new Error("The sidebar has no rail")
@@ -221,7 +221,7 @@ export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
-    await userEvent.click(canvas.getByRole("button", { name: "Toggle Sidebar" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
     const sheet = await screen.findByRole("dialog")
     const shipments = within(sheet).getByRole("link", { name: "Shipments" })
     await expect(shipments).toHaveAttribute("href", "/shipments")

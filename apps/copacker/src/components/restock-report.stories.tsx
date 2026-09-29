@@ -281,7 +281,7 @@ export const Failed = meta.story({
     msw.use(http.post("/api/restock/plan", () => new HttpResponse(null, { status: 500 })))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Restock couldn’t be calculated. Try again.", undefined, loaded)).toBeVisible()
+    await expect(await canvas.findByText("Couldn’t calculate restock. Try again.", undefined, loaded)).toBeVisible()
   }
 })
 

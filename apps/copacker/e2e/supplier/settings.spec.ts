@@ -79,7 +79,7 @@ test("adds, edits and removes a pickup address", async ({ page }) => {
 
   // Required fields say so.
   await dialog.getByRole("button", { name: "Save address" }).click()
-  await expect(dialog.getByText("This field is required").first()).toBeVisible()
+  await expect(dialog.getByText("Fill in this field").first()).toBeVisible()
 
   await dialog.getByRole("textbox", { name: "Address name" }).fill(name)
   await dialog.getByRole("textbox", { name: "Contact name" }).fill("Robin Packer")

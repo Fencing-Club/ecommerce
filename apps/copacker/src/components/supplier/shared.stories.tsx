@@ -32,7 +32,7 @@ export const SaveBarWithMessage = meta.story({
 export const SaveBarSaving = meta.story({
   args: { pending: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Saving" })).toBeDisabled()
+    await expect(canvas.getByRole("button", { name: "Saving…" })).toBeDisabled()
     await expect(canvas.getByRole("button", { name: "Discard" })).toBeDisabled()
   }
 })

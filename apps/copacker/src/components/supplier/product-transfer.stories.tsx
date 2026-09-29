@@ -156,7 +156,7 @@ export const AlreadyImported = meta.story({
     await userEvent.upload(dialog.getByLabelText("Product file"), spreadsheet)
     await userEvent.click(dialog.getByRole("button", { name: "Preview" }))
     await userEvent.click(await dialog.findByRole("button", { name: "Import 8 variants" }))
-    await expect(await dialog.findByRole("alert")).toHaveTextContent("This file was already imported.")
+    await expect(await dialog.findByRole("alert")).toHaveTextContent("You already imported this file.")
     await expect(getRouter().refresh).not.toHaveBeenCalled()
   }
 })

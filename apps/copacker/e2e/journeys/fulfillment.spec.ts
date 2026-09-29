@@ -112,7 +112,7 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
   await test.step("the supplier uploads its invoice and submits the packing list", async () => {
     await uploadInvoice(supplier, "FUL invoice.pdf")
     await supplier.getByRole("button", { name: "Check packing" }).click()
-    await expect(supplier.getByText("Ready to submit, changes go to the buyer for approval")).toBeVisible()
+    await expect(supplier.getByText("Ready to submit; changes go to the buyer for approval")).toBeVisible()
     await supplier.getByRole("button", { name: "Submit packing list" }).click()
     await expect(titleStatus(supplier)).toHaveText("Approval needed")
     await expect(supplier.getByText("Waiting for the buyer’s approval")).toBeVisible()

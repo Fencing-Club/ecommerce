@@ -143,7 +143,7 @@ export const NoMatchingCustomer = meta.story({
     const input = canvas.getByRole("combobox", { name: "Add customers" })
     await userEvent.click(input)
     await userEvent.type(input, "fencing")
-    await expect(await screen.findByText("No customers found.")).toBeInTheDocument()
+    await expect(await screen.findByText("No customers found")).toBeInTheDocument()
   }
 })
 
@@ -348,7 +348,7 @@ export const Delete = meta.story({
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete catalog" }))
     const dialog = within(await screen.findByRole("alertdialog", { name: "Delete Wholesale 2026?" }))
     await expect(
-      dialog.getByText("Its customers will see every active product at its own price. This can’t be undone.")
+      dialog.getByText("Its customers will see every active product at its own price. You can’t undo this.")
     ).toBeInTheDocument()
     await userEvent.click(dialog.getByRole("button", { name: "Delete catalog" }))
     await waitFor(() => expect(deleted).toHaveBeenCalledWith(catalogIds.wholesale))

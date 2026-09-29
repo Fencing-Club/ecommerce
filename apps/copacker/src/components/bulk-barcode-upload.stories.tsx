@@ -141,7 +141,7 @@ export const UploadFailed = meta.story({
     const sheet = await openSheet()
     await userEvent.upload(fileInput(sheet), pdf("TOTE-NAT.pdf"))
     await userEvent.click(await sheet.findByRole("button", { name: "Upload file" }))
-    await expect(await sheet.findByText("The barcode couldn't be uploaded. Try again.")).toBeInTheDocument()
+    await expect(await sheet.findByText("Couldn’t upload the barcode. Try again.")).toBeInTheDocument()
     await expect(sheet.getByText("0 of 1 saved")).toBeInTheDocument()
     await expect(sheet.queryByRole("textbox")).toBeNull()
     await expect(args.onChanged).not.toHaveBeenCalled()

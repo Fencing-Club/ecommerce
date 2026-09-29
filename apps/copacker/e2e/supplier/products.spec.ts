@@ -19,9 +19,7 @@ test("a new supplier sees the first product prompt", async ({ page }) => {
   const prompt = page.getByText("Add your first product", { exact: true })
   await expect(prompt.or(page.getByRole("searchbox", { name: "Search products" }))).toBeVisible()
   test.skip(!(await prompt.isVisible()), "Only a freshly seeded supplier has no products")
-  await expect(
-    page.getByText("Customers order from your products. Add them one at a time or import a spreadsheet.")
-  ).toBeVisible()
+  await expect(page.getByText("Add products one at a time or import a spreadsheet.")).toBeVisible()
   for (const button of await page.getByRole("button", { name: "Add product" }).all()) {
     await expect(button).toHaveAttribute("href", "/products/new")
   }
@@ -77,7 +75,7 @@ test("builds out a product with photos, options, variants and volume pricing", a
   const second = page.waitForEvent("filechooser")
   await page.getByRole("button", { name: "Add", exact: true }).first().click()
   await (await second).setFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("not a photo") })
-  await expect(page.getByText("notes.txt: Upload a JPG, PNG, WebP or GIF photo")).toBeVisible()
+  await expect(page.getByText("notes.txt: Upload a JPG, PNG, WebP, or GIF photo")).toBeVisible()
   await expect(photo).toBeVisible()
 
   // An option makes the product's variants: the first becomes Left.
@@ -139,7 +137,7 @@ test("builds out a product with photos, options, variants and volume pricing", a
   await expect(page.getByRole("img", { name: "glove-front.png" })).toBeVisible()
   await expect(page.getByRole("textbox", { name: "Description" })).toHaveValue("Tacky palm, sold by the pack.")
   await expect(page.getByRole("textbox", { name: "SKU for Right" })).toHaveValue(right)
-  await expect(page.getByText("Not in any catalog.")).toBeVisible()
+  await expect(page.getByText("Not in any catalog")).toBeVisible()
 
   // The saved variant keeps what its panel set.
   await page.getByRole("button", { name: "Actions for Left" }).click()

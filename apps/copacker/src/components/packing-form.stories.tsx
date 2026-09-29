@@ -137,7 +137,7 @@ export const Submit = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Check packing" }))
-    await expect(await canvas.findByText("Ready to submit, changes go to the buyer for approval")).toBeVisible()
+    await expect(await canvas.findByText("Ready to submit; changes go to the buyer for approval")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Submit packing list" }))
     await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
     // It submits the revision the save just made.
@@ -204,7 +204,7 @@ export const ForSupplier = meta.story({
     await expect(canvas.getByText("Lotus Manufacturing’s invoice for these cartons")).toBeVisible()
     await expect(canvas.getByText("Changes update the purchase order")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Check packing" }))
-    await expect(await canvas.findByText("Ready to submit, changes update the purchase order")).toBeVisible()
+    await expect(await canvas.findByText("Ready to submit; changes update the purchase order")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Add address" }))
     const dialog = await shownDialog("Add a pickup address for Lotus Manufacturing")
     await expect(dialog.getAllByRole("textbox").length).toBeGreaterThan(3)

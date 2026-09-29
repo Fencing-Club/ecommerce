@@ -132,7 +132,7 @@ export const Validation = meta.story({
     await expect(address).toHaveTextContent("Choose address")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
 
-    await expect(await canvas.findByText("This field is required")).toBeVisible()
+    await expect(await canvas.findByText("Fill in this field")).toBeVisible()
     await expect(canvas.getByRole("textbox", { name: "Reference number" })).toHaveAttribute("aria-invalid", "true")
     await expect(canvas.getByRole("combobox", { name: "Supplier" })).toHaveAttribute("aria-invalid", "true")
     await expect(address).toHaveAttribute("aria-invalid", "true")
@@ -209,7 +209,7 @@ export const CatalogLookupFails = meta.story({
     msw.use(http.post("/api/supplier-catalog/match", () => HttpResponse.json({}, { status: 500 })))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Supplier catalog lookup failed")).toBeVisible()
+    await expect(await canvas.findByText("Couldn’t load the supplier catalog")).toBeVisible()
     // The line keeps its price.
     await expect(canvas.getByRole("spinbutton", { name: "Cost of Canvas tote bag" })).toHaveValue(4.25)
   }

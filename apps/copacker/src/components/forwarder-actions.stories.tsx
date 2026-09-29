@@ -122,13 +122,13 @@ export const InviteValidation = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
     await screen.findByRole("dialog")
     await userEvent.click(screen.getByRole("button", { name: "Send invitation" }))
-    await expect(await screen.findByText("This field is required")).toBeInTheDocument()
+    await expect(await screen.findByText("Fill in this field")).toBeInTheDocument()
     // Closing drops what was typed and the error.
     await userEvent.type(screen.getByRole("textbox", { name: "Email" }), "not-an-email")
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
     await userEvent.click(canvas.getByRole("button", { name: "Invite" }))
     await expect(await screen.findByRole("textbox", { name: "Email" })).toHaveValue("")
-    await expect(screen.queryByText("This field is required")).toBeNull()
+    await expect(screen.queryByText("Fill in this field")).toBeNull()
     await expect(sent).toHaveLength(0)
   }
 })
@@ -155,7 +155,7 @@ export const Rename = meta.story({
     await expect(company).toHaveValue("Bayline Freight")
     await userEvent.clear(company)
     await userEvent.click(screen.getByRole("button", { name: "Save" }))
-    await expect(await screen.findByText("This field is required")).toBeInTheDocument()
+    await expect(await screen.findByText("Fill in this field")).toBeInTheDocument()
     await userEvent.type(company, "Bayline Freight Shenzhen")
     await userEvent.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() =>
@@ -196,7 +196,7 @@ export const RemoveFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Remove" }))
     await screen.findByRole("alertdialog")
     await userEvent.click(screen.getByRole("button", { name: "Remove" }))
-    await expect(await screen.findByText("Couldn’t remove Bayline Freight")).toBeInTheDocument()
+    await expect(await screen.findByText("Couldn’t remove Bayline Freight. Try again.")).toBeInTheDocument()
     await expect(screen.getByRole("alertdialog")).toBeInTheDocument()
   }
 })

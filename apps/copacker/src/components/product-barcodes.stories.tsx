@@ -131,7 +131,7 @@ export const DownloadFailed = meta.story({
   },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Download label for Natural" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("The label couldn't be loaded. Try again.")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn’t load the label. Try again.")
   }
 })
 

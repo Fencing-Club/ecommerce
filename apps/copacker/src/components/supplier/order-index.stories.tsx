@@ -71,7 +71,7 @@ export const Search = meta.story({
     await userEvent.clear(search)
     await userEvent.type(search, "PO-9")
     await expect(canvas.getByText("No orders here")).toBeVisible()
-    await expect(canvas.getByText("Try another tab or search")).toBeVisible()
+    await expect(canvas.getByText("Try another tab or search.")).toBeVisible()
   }
 })
 
@@ -120,6 +120,6 @@ export const Empty = meta.story({
   args: { orders: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("No orders yet")).toBeVisible()
-    await expect(canvas.getByText("Purchase orders your customers send appear here")).toBeVisible()
+    await expect(canvas.getByText("Purchase orders your customers send appear here.")).toBeVisible()
   }
 })

@@ -59,7 +59,7 @@ export const Empty = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
     // Each required field says so; the optional ones don't.
-    await waitFor(() => expect(canvas.getAllByText("This field is required")).toHaveLength(5))
+    await waitFor(() => expect(canvas.getAllByText("Fill in this field")).toHaveLength(5))
     await expect(canvas.getByText("Choose a country", { selector: "[role=alert]" })).toBeVisible()
     await expect(canvas.getByLabelText(/Contact name/)).toHaveAttribute("aria-invalid", "true")
     await expect(canvas.getByLabelText(/Phone number/)).not.toHaveAttribute("aria-invalid", "true")

@@ -357,7 +357,7 @@ export const Empty = meta.story({
   args: { list: [], amazonShipments: null },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("No shipments yet")).toBeVisible()
-    await expect(canvas.getByText("Start one from a sent purchase order")).toBeVisible()
+    await expect(canvas.getByText("Start one from a sent purchase order.")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "View purchase orders" })).toHaveAttribute("href", "/orders")
   }
 })
@@ -394,7 +394,7 @@ export const SupplierEmpty = meta.story({
   ...supplier,
   args: { kind: "supplier", list: [], customers: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Start one from an order")).toBeVisible()
+    await expect(canvas.getByText("Start one from an order.")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "View orders" })).toHaveAttribute("href", "/orders")
   }
 })

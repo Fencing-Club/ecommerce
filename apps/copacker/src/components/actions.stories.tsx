@@ -125,7 +125,7 @@ export const Form = meta.story({
     await userEvent.clear(input)
     await expect(save).toBeEnabled()
     await userEvent.click(save)
-    await expect(await canvas.findByText("This field is required")).toBeVisible()
+    await expect(await canvas.findByText("Fill in this field")).toBeVisible()
     await expect(input).toHaveAttribute("aria-invalid", "true")
     await expect(posted).toEqual([])
     await userEvent.type(input, "Lotus Manufacturing Co.")

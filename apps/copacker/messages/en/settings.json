@@ -8,8 +8,8 @@
       "detail": "{workspace} and everything in it, for everyone",
       "confirm": "Delete {workspace}?",
       "field": "Workspace name",
-      "buyer": "Its purchase orders, products, connections and team are deleted for everyone.",
-      "supplier": "Its products, catalogs and team are deleted for everyone. Buyers keep their purchase orders.",
+      "buyer": "Its purchase orders, products, connections, and team are deleted for everyone.",
+      "supplier": "Its products, catalogs, and team are deleted for everyone. Buyers keep their purchase orders.",
       "forwarder": "Its addresses and team are deleted for everyone. Buyers keep their purchase orders."
     },
     "account": {
@@ -116,7 +116,7 @@
     },
     "amazonSelfAuthorize": {
       "title": "Connect Amazon",
-      "description": "In Amazon’s Solution Provider Portal, open the menu next to Copacker’s app, choose Authorize and copy the refresh token. Your merchant token is in Seller Central under Settings, Account Info.",
+      "description": "In Amazon’s Solution Provider Portal, open the menu next to Copacker’s app, choose Authorize, and copy the refresh token. Your merchant token is in Seller Central under Settings, Account Info.",
       "connect": "Connect",
       "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
@@ -215,7 +215,7 @@
     "stockArrivesAt": "Stock arrives at {location}",
     "stockArrivesAtShopify": "Stock arrives at a Shopify location",
     "addPhone": "Add a phone number to use it on shipments",
-    "supplierKeepsPickups": "Your supplier keeps pickups now, remove this once they’ve added it",
+    "supplierKeepsPickups": "Your supplier keeps pickups now. Remove this once they’ve added it.",
     "saveChanges": "Save changes",
     "saveAddress": "Save address",
     "name": "Address name",

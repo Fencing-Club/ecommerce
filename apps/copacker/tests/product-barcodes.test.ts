@@ -413,7 +413,7 @@ describe("deleting draft POs", () => {
       "Only draft purchase orders can be deleted"
     )
     await expect(deleteDraftOrder(actor(supplierOrgId, "supplier"), sent.id)).rejects.toThrow(
-      "A buyer workspace is required"
+      "Switch to a buyer workspace"
     )
   })
 })

@@ -131,7 +131,7 @@
     "blocked": "{count, number} can’t be calculated",
     "enough": "{count, plural, one {# has} other {# have}} enough stock",
     "howLabel": "How quantities are worked out",
-    "how": "Enough to last each supplier’s lead time at the last {days} days’ rate, after stock, incoming stock and open purchase orders, rounded up to the minimum order and whole cases.{prices, select, yes { Costs are Shopify’s unit costs, without freight, duties or fees.} other {}}"
+    "how": "Enough to last each supplier’s lead time at the last {days} days’ rate, after stock, incoming stock, and open purchase orders, rounded up to the minimum order and whole cases.{prices, select, yes { Costs are Shopify’s unit costs, without freight, duties, or fees.} other {}}"
   },
   "needsSupplier": "<link>Set a supplier</link> for {count, plural, one {# more product} other {# more products}} to reorder",
   "daysUnit": "days",
@@ -144,5 +144,5 @@
   "leadTimeLabel": "Lead time",
   "leadTimeHint": "For suppliers without their own lead time",
   "calculating": "Calculating…",
-  "failed": "Restock couldn’t be calculated. Try again."
+  "failed": "Couldn’t calculate restock. Try again."
 }

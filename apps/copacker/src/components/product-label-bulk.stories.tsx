@@ -131,7 +131,7 @@ export const SetTypeFailed = meta.story({
     await userEvent.click(await sheet.findByRole("checkbox", { name: "Canvas tote bag 2 variations" }))
     await userEvent.click(sheet.getByRole("button", { name: /Set label type/ }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "No label" }))
-    await expect(await sheet.findByText("The label type couldn’t be saved. Try again.")).toBeInTheDocument()
+    await expect(await sheet.findByText("Couldn’t save the label type. Try again.")).toBeInTheDocument()
     await expect(args.onChanged).not.toHaveBeenCalled()
   }
 })

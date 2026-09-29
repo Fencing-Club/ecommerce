@@ -92,7 +92,7 @@
   "disconnect": {
     "disconnect": "Disconnect",
     "title": "Disconnect {name}?",
-    "shopifyEffect": "Copacker stops syncing products, stock, sales and costs with {account}. Purchase orders stay as they are.",
+    "shopifyEffect": "Copacker stops syncing products, stock, sales, and costs with {account}. Purchase orders stay as they are.",
     "amazonEffect": "Copacker stops reading sales and stock from {account} and can’t create FBA or AWD shipments. Purchase orders stay as they are.",
     "ebayEffect": "Copacker stops reading sales from {account}. Purchase orders stay as they are.",
     "failed": "Couldn’t disconnect {name}",
@@ -131,7 +131,7 @@
   },
   "ui": {
     "close": "Close",
-    "toggleSidebar": "Toggle Sidebar",
+    "toggleSidebar": "Toggle sidebar",
     "sidebar": "Sidebar",
     "sidebarDescription": "Displays the mobile sidebar.",
     "clear": "Clear",

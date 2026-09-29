@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "Choose one",
-    "pickupPhone": "Add a pickup phone number. Amazon needs it to schedule pickup",
+    "pickupPhone": "Add a pickup phone number. Amazon needs it to schedule pickup.",
     "step": "Step {current} of {total}",
     "invitedBy": "Invited by {name}",
     "back": "Back",

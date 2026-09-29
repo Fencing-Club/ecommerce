@@ -88,7 +88,7 @@
       "description": "New purchase orders can’t ship to them. Purchase orders already sent keep their address.",
       "cancel": "Cancel",
       "confirm": "Remove",
-      "failed": "Couldn’t remove {name}"
+      "failed": "Couldn’t remove {name}. Try again."
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "More actions for {name}",
     "menuEdit": "Edit",
     "menuRemove": "Remove",
-    "removeFailed": "Couldn’t remove {name}"
+    "removeFailed": "Couldn’t remove {name}. Try again."
   },
   "contactKinds": {
     "delivery": "Delivery address",

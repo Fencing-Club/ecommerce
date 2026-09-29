@@ -164,7 +164,7 @@ export const AddressBuyer = meta.story({
     await expect(canvas.getByText("Phone number").textContent).toBe("Phone number")
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByText("Name this address")).toBeVisible()
-    await expect(canvas.getAllByText("This field is required").length).toBeGreaterThanOrEqual(5)
+    await expect(canvas.getAllByText("Fill in this field").length).toBeGreaterThanOrEqual(5)
   }
 })
 

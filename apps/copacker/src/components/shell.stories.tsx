@@ -69,7 +69,7 @@ export const Buyer = meta.story({
     await expect(within(main).getByText("No shipments yet")).toBeVisible()
     const sidebar = () => document.querySelector("[data-slot=sidebar][data-state]")
     await expect(sidebar()).toHaveAttribute("data-state", "expanded")
-    await userEvent.click(within(main).getByRole("button", { name: "Toggle Sidebar" }))
+    await userEvent.click(within(main).getByRole("button", { name: "Toggle sidebar" }))
     await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "collapsed"))
   }
 })
@@ -126,7 +126,7 @@ export const Phone = meta.story({
   play: async () => {
     const main = byId("main-content")
     const title = within(main).getByRole("heading", { name: "Shipments" }).getBoundingClientRect()
-    const toggle = within(main).getByRole("button", { name: "Toggle Sidebar" })
+    const toggle = within(main).getByRole("button", { name: "Toggle sidebar" })
     const button = toggle.getBoundingClientRect()
     const create = within(main).getByRole("button", { name: "Create purchase order" }).getBoundingClientRect()
     const edge = main.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(main).paddingInlineStart)

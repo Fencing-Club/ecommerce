@@ -131,7 +131,7 @@ test("imports a CSV, won't import the same file twice, and exports the products"
   const again = await preview(page, file)
   await expect(again.locator("dl")).toContainText("Updated variants1")
   await again.getByRole("button", { name: "Import 1 variant" }).click()
-  await expect(again.getByRole("alert")).toHaveText("This file was already imported.")
+  await expect(again.getByRole("alert")).toHaveText("You already imported this file.")
   await again.getByRole("button", { name: "Cancel" }).click()
 
   await page.getByRole("button", { name: "More actions" }).click()
