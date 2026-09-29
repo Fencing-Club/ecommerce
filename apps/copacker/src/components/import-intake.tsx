@@ -182,12 +182,14 @@ export function ImportIntake() {
                             {item.status === "saved" ? t("openDraft") : t("review")}
                           </Button>
                         )}
+                        {/* On a narrow card, Retry is only in the row's menu, so the file's name keeps its room. */}
                         {item.status === "failed" && (
                           <Button
                             variant="outline"
                             size="sm"
                             disabled={changing.isLoading}
                             onClick={() => update(item.id, "POST")}
+                            className="hidden @md:inline-flex"
                           >
                             {t("retry")}
                           </Button>
@@ -217,6 +219,11 @@ export function ImportIntake() {
                             >
                               {t("viewPdf")}
                             </DropdownMenuItem>
+                            {item.status === "failed" && (
+                              <DropdownMenuItem disabled={changing.isLoading} onClick={() => update(item.id, "POST")}>
+                                {t("retry")}
+                              </DropdownMenuItem>
+                            )}
                             {!["saved", "cancelled"].includes(item.status) && (
                               <DropdownMenuItem
                                 variant="destructive"

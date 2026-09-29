@@ -3,6 +3,7 @@ import { delay, http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { importId, importList } from "@/stories/fixtures/purchase-orders"
+import urdu from "../../messages/ur/orders.json"
 import { ImportIntake } from "./import-intake"
 
 const listed = fn()
@@ -79,6 +80,22 @@ export const RetryAndCancel = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "More for northwind-invoice.pdf" }))
     await screen.findByRole("menuitem", { name: "View PDF" })
     await expect(screen.queryByRole("menuitem", { name: "Cancel import" })).toBeNull()
+  }
+})
+
+// On a phone, Retry is in the row's menu, so file names keep room to be read, even with Urdu's longer labels.
+export const Phone = meta.story({
+  globals: { locale: "ur", viewport: { value: "iphone12", isRotated: false } },
+  play: async ({ canvas }) => {
+    const name = await canvas.findByText("blurry-scan.pdf")
+    await expect(name.parentElement!.clientWidth).toBeGreaterThan(100)
+    // The date under the name stays in its cell.
+    const cell = name.closest("td")!
+    await expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth)
+    await expect(canvas.queryByRole("button", { name: urdu.intake.retry })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: /^blurry-scan\.pdf/ }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: urdu.intake.retry }))
+    await waitFor(() => expect(changed).toHaveBeenCalledWith(importList[3]!.id, "POST"))
   }
 })
 
