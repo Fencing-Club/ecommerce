@@ -539,9 +539,12 @@ export function Planner() {
           <span className="w-16 shrink-0 text-sm tabular-nums">{days(inputs.lead)}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Label htmlFor="planner-rush">{t("holidayRush")}</Label>
+          <Label id="planner-rush-label" htmlFor="planner-rush">
+            {t("holidayRush")}
+          </Label>
           <Switch
             id="planner-rush"
+            aria-labelledby="planner-rush-label"
             checked={inputs.rush === 1}
             onCheckedChange={(checked) => setInputs((current) => ({ ...current, rush: checked ? 1 : 0 }))}
           />

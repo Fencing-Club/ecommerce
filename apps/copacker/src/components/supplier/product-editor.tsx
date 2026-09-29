@@ -385,10 +385,13 @@ function VariantSheet({
             <Field orientation="horizontal">
               <Switch
                 id="variant-track"
+                aria-labelledby="variant-track-label"
                 checked={draft.trackInventory}
                 onCheckedChange={(checked) => change({ trackInventory: checked })}
               />
-              <FieldLabel htmlFor="variant-track">{t("trackInventory")}</FieldLabel>
+              <FieldLabel id="variant-track-label" htmlFor="variant-track">
+                {t("trackInventory")}
+              </FieldLabel>
             </Field>
             {draft.trackInventory && (
               <>
@@ -406,10 +409,13 @@ function VariantSheet({
                 <Field orientation="horizontal">
                   <Switch
                     id="variant-continue"
+                    aria-labelledby="variant-continue-label"
                     checked={draft.continueSelling}
                     onCheckedChange={(checked) => change({ continueSelling: checked })}
                   />
-                  <FieldLabel htmlFor="variant-continue">{t("continueSelling")}</FieldLabel>
+                  <FieldLabel id="variant-continue-label" htmlFor="variant-continue">
+                    {t("continueSelling")}
+                  </FieldLabel>
                 </Field>
               </>
             )}

@@ -709,11 +709,14 @@ export function CatalogEditor({
               <div className="flex items-center gap-2 text-sm">
                 <Switch
                   id="catalog-include-new"
+                  aria-labelledby="catalog-include-new-label"
                   disabled={readOnly}
                   checked={settings.includeNewProducts}
                   onCheckedChange={(checked) => change({ includeNewProducts: checked })}
                 />
-                <label htmlFor="catalog-include-new">{t("includeNew")}</label>
+                <label id="catalog-include-new-label" htmlFor="catalog-include-new">
+                  {t("includeNew")}
+                </label>
               </div>
             </CardHeader>
             <IndexToolbar
