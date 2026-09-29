@@ -23,5 +23,6 @@
 
 Specs (proposed work, not yet built):
 
+- [App redesign: information architecture and design spec](specs/app-redesign/README.md)
 - [Inventory sync](specs/inventory-sync/README.md)
 - [Purchase order flow](specs/purchase-order-flow/README.md)
