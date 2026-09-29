@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "Liefert es an AWD?",
-        "answer": "Ja. Copacker plant Sendungen an FBA und AWD, einschließlich AWD-Lagern in China und Vietnam."
+        "answer": "Ja. Copacker plant Sendungen an FBA und AWD sowie an die GWD-Lager von Amazon in China."
       },
       "documents": {
         "question": "Welche Dokumente und Etiketten erstellt es?",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "Abholen",
         "title": "Amazon und Ihr Spediteur holen ab.",
-        "text": "Amazon übernimmt die Kartons für AWD in Übersee, Ihr Spediteur den Rest."
+        "text": "Amazon übernimmt die Kartons für sein Lager in China, Ihr Spediteur den Rest."
       },
       "ship": {
         "step": "Versenden",
@@ -258,7 +258,7 @@
       "boxLabels": "Karton- und Versandetiketten"
     },
     "places": {
-      "awdInChina": "AWD in China",
+      "gwdInChina": "Amazon GWD in China",
       "customs": "Zoll",
       "yourWarehouse": "Ihr Lager"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "Kartongröße",
       "weight": "Gewicht",
       "shipments": "Sendungen",
-      "awdByAmazon": "AWD in China, durch Amazon",
+      "gwdInChina": "Amazon GWD in China",
       "unitCount": "{count, plural, one {# Einheit} other {# Einheiten}}",
       "pickedUp": "Abgeholt von {forwarder}",
       "onTheWater": "Auf See",
       "inTransit": "Unterwegs",
       "arrives": "Ankunft",
-      "checkedInAwd": "Bei AWD eingegangen",
+      "checkedInGwd": "Bei GWD eingegangen",
       "released": "Freigegeben",
       "cleared": "Verzollt",
       "checkedIn": "Bei Amazon FBA eingegangen",

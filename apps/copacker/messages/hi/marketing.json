@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "क्या यह AWD को शिप करता है?",
-        "answer": "हां। Copacker FBA और AWD के लिए शिपमेंट प्लान करता है, चीन और वियतनाम के AWD वेयरहाउस समेत।"
+        "answer": "हां। Copacker FBA और AWD के लिए शिपमेंट प्लान करता है, और चीन में Amazon के GWD वेयरहाउस के लिए भी।"
       },
       "documents": {
         "question": "यह कौन से दस्तावेज़ और लेबल बनाता है?",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "पिकअप",
         "title": "Amazon और आपका फ़ॉरवर्डर माल उठाते हैं।",
-        "text": "विदेश में AWD जाने वाले कार्टन Amazon ले जाता है, और बाकी आपका फ़ॉरवर्डर।"
+        "text": "चीन में अपने वेयरहाउस जाने वाले कार्टन Amazon ले जाता है, और बाकी आपका फ़ॉरवर्डर।"
       },
       "ship": {
         "step": "शिप",
@@ -258,7 +258,7 @@
       "boxLabels": "कार्टन और शिपिंग लेबल"
     },
     "places": {
-      "awdInChina": "चीन में AWD",
+      "gwdInChina": "चीन में Amazon GWD",
       "customs": "कस्टम्स",
       "yourWarehouse": "आपका वेयरहाउस"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "कार्टन साइज़",
       "weight": "वज़न",
       "shipments": "शिपमेंट",
-      "awdByAmazon": "चीन में AWD, Amazon द्वारा",
+      "gwdInChina": "चीन में Amazon GWD",
       "unitCount": "{count, plural, one {# यूनिट} other {# यूनिट}}",
       "pickedUp": "{forwarder} ने पिकअप किया",
       "onTheWater": "समुद्र में",
       "inTransit": "रास्ते में",
       "arrives": "पहुंचेगा",
-      "checkedInAwd": "AWD पर चेक इन हुआ",
+      "checkedInGwd": "GWD पर चेक इन हुआ",
       "released": "रिलीज़",
       "cleared": "क्लियर हुआ",
       "checkedIn": "Amazon FBA पर चेक इन हुआ",

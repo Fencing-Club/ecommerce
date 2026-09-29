@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "¿Envía a AWD?",
-        "answer": "Sí. Copacker planea envíos a FBA y AWD, incluidos los almacenes de AWD en China y Vietnam."
+        "answer": "Sí. Copacker planea envíos a FBA y AWD, así como a los almacenes GWD de Amazon en China."
       },
       "documents": {
         "question": "¿Qué documentos y etiquetas genera?",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "Recolectar",
         "title": "Amazon y tu agente de carga recolectan.",
-        "text": "Amazon se lleva las cajas con destino a AWD en el extranjero, y tu agente de carga se lleva el resto."
+        "text": "Amazon se lleva las cajas con destino a su almacén en China, y tu agente de carga se lleva el resto."
       },
       "ship": {
         "step": "Enviar",
@@ -258,7 +258,7 @@
       "boxLabels": "Etiquetas de caja y de envío"
     },
     "places": {
-      "awdInChina": "AWD en China",
+      "gwdInChina": "Amazon GWD en China",
       "customs": "Aduana",
       "yourWarehouse": "Tu almacén"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "Tamaño de caja",
       "weight": "Peso",
       "shipments": "Envíos",
-      "awdByAmazon": "AWD en China, por Amazon",
+      "gwdInChina": "Amazon GWD en China",
       "unitCount": "{count, plural, one {# unidad} other {# unidades}}",
       "pickedUp": "Recolectado por {forwarder}",
       "onTheWater": "En altamar",
       "inTransit": "En tránsito",
       "arrives": "Llega",
-      "checkedInAwd": "Recibido en AWD",
+      "checkedInGwd": "Recibido en GWD",
       "released": "Liberado",
       "cleared": "Despachado",
       "checkedIn": "Recibido en Amazon FBA",

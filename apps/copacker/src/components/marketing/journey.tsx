@@ -158,7 +158,7 @@ const notes: Note[] = [
         <span className="font-semibold">{t("cards.shipments")}</span>
         <Rows
           rows={[
-            [t("cards.awdByAmazon"), t("cards.unitCount", { count: 1440 })],
+            [t("cards.gwdInChina"), t("cards.unitCount", { count: 1440 })],
             ["Amazon FBA", t("cards.unitCount", { count: 1260 })],
             [t("places.yourWarehouse"), t("cards.unitCount", { count: 480 })]
           ]}
@@ -172,7 +172,7 @@ const notes: Note[] = [
     shown: [[0.475, 0.52]],
     content: (t, format) => (
       <Card>
-        <span className="font-semibold">{t("cards.checkedInAwd")}</span>
+        <span className="font-semibold">{t("cards.checkedInGwd")}</span>
         <Arrived units={format.number(1440)} />
       </Card>
     )
@@ -275,7 +275,7 @@ const notes: Note[] = [
   {
     place: "factory",
     kind: "pin",
-    // Not while the purchase order's card, which names the supplier, or AWD's card is up: on a phone they'd cover it.
+    // Not while the purchase order's card, which names the supplier, or GWD's card is up: on a phone they'd cover it.
     shown: [
       [0, 0.015],
       [0.3, 0.475],
@@ -290,7 +290,7 @@ const notes: Note[] = [
       [0.44, 0.475],
       [0.96, 1]
     ],
-    content: (t) => t("places.awdInChina")
+    content: (t) => t("places.gwdInChina")
   },
   {
     place: "customs",

@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "Чи можна відправляти до AWD?",
-        "answer": "Так. Copacker планує відправлення до FBA та AWD, зокрема до складів AWD у Китаї та В’єтнамі."
+        "answer": "Так. Copacker планує відправлення до FBA та AWD, а також до складів Amazon GWD у Китаї."
       },
       "documents": {
         "question": "Які документи й етикетки він створює?",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "Забір",
         "title": "Amazon і експедитор забирають вантаж.",
-        "text": "Amazon забирає коробки для AWD за кордоном, а експедитор решту."
+        "text": "Amazon забирає коробки для свого складу в Китаї, а експедитор решту."
       },
       "ship": {
         "step": "Доставка",
@@ -258,7 +258,7 @@
       "boxLabels": "Етикетки коробки й транспортні етикетки"
     },
     "places": {
-      "awdInChina": "AWD у Китаї",
+      "gwdInChina": "Amazon GWD у Китаї",
       "customs": "Митниця",
       "yourWarehouse": "Ваш склад"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "Розмір коробки",
       "weight": "Вага",
       "shipments": "Відправлення",
-      "awdByAmazon": "AWD у Китаї, силами Amazon",
+      "gwdInChina": "Amazon GWD у Китаї",
       "unitCount": "{count, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
       "pickedUp": "Забрав {forwarder}",
       "onTheWater": "У морі",
       "inTransit": "У дорозі",
       "arrives": "Прибуття",
-      "checkedInAwd": "Прийнято в AWD",
+      "checkedInGwd": "Прийнято в GWD",
       "released": "Випущено",
       "cleared": "Розмитнено",
       "checkedIn": "Прийнято в Amazon FBA",

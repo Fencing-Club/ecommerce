@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "Does it ship to AWD?",
-        "answer": "Yes. Copacker plans shipments to FBA and AWD, including AWD warehouses in China and Vietnam."
+        "answer": "Yes. Copacker plans shipments to FBA and AWD, and to Amazon’s GWD warehouses in China."
       },
       "documents": {
         "question": "Which documents and labels does it make?",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "Pick up",
         "title": "Amazon and your forwarder pick up.",
-        "text": "Amazon takes the cartons bound for AWD overseas, and your forwarder takes the rest."
+        "text": "Amazon takes the cartons bound for its warehouse in China, and your forwarder takes the rest."
       },
       "ship": {
         "step": "Ship",
@@ -258,7 +258,7 @@
       "boxLabels": "Carton and shipping labels"
     },
     "places": {
-      "awdInChina": "AWD in China",
+      "gwdInChina": "Amazon GWD in China",
       "customs": "Customs",
       "yourWarehouse": "Your warehouse"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "Carton size",
       "weight": "Weight",
       "shipments": "Shipments",
-      "awdByAmazon": "AWD in China, by Amazon",
+      "gwdInChina": "Amazon GWD in China",
       "unitCount": "{count, plural, one {# unit} other {# units}}",
       "pickedUp": "Picked up by {forwarder}",
       "onTheWater": "On the water",
       "inTransit": "In transit",
       "arrives": "Arrives",
-      "checkedInAwd": "Checked in at AWD",
+      "checkedInGwd": "Checked in at GWD",
       "released": "Released",
       "cleared": "Cleared",
       "checkedIn": "Checked in at Amazon FBA",

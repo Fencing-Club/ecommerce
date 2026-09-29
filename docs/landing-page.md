@@ -32,14 +32,14 @@ parts live in `apps/copacker/src/components/marketing/`:
 - The journey's world is built from rounded blocks in `journey-world.ts`, and `frame(progress, time)` poses the whole
   scene for a point on the trip, so it scrubs both ways. Its `beat` table sets when each thing happens: the packing
   line (FNSKU and suffocation warning labels on the units, the box right-sized round them, then the carton and
-  shipping labels on the box), Amazon's pickup for AWD overseas, the forwarder's pickup, the voyage (the bill of
-  lading lands once the container is aboard), customs (the seller's container goes in, the barrier lifts on release,
-  and FedEx loads its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own warehouse
-  (the copy just says a carrier). The chapters, cards and the order's documents in `journey.tsx` are timed to the same
-  points, so change them together. three.js loads only as the section comes near. The cards follow places in the world
-  (`locate`) or hold a spot on screen, and slide to stay clear of the screen's edges, the header and the words. The
-  last shot fits the whole board to any screen's shape; on a phone the trip ends at the warehouses instead. The sea's
-  color, glints and foam are drawn per point in a shader patched onto its material (`onBeforeCompile`).
+  shipping labels on the box), Amazon's pickup for its GWD warehouse in China, the forwarder's pickup, the voyage (the
+  bill of lading lands once the container is aboard), customs (the seller's container goes in, the barrier lifts on
+  release, and FedEx loads its cartons at the dock), then the forwarder's drop at FBA and FedEx's at the seller's own
+  warehouse (the copy just says a carrier). The chapters, cards and the order's documents in `journey.tsx` are timed
+  to the same points, so change them together. three.js loads only as the section comes near. The cards follow places
+  in the world (`locate`) or hold a spot on screen, and slide to stay clear of the screen's edges, the header and the
+  words. The last shot fits the whole board to any screen's shape; on a phone the trip ends at the warehouses instead.
+  The sea's color, glints and foam are drawn per point in a shader patched onto its material (`onBeforeCompile`).
 - The journey asks phones and tablets (a coarse pointer) for less of the GPU: a 1.5x pixel ratio and a 1024 px shadow
   map, and one more try without anti-aliasing if the first context fails. When a browser still can't draw the world,
   or drops its context, the section shows a still per chapter from `public/marketing/journey/` (`wide-<n>.jpg` at

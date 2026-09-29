@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "کیا یہ AWD کو بھیجتا ہے؟",
-        "answer": "جی ہاں۔ Copacker، FBA اور AWD کو شپمنٹس پلان کرتا ہے، بشمول چین اور ویتنام میں AWD گوداموں کے۔"
+        "answer": "جی ہاں۔ Copacker، FBA اور AWD کو شپمنٹس پلان کرتا ہے، اور چین میں Amazon کے GWD گوداموں کو بھی۔"
       },
       "documents": {
         "question": "یہ کون سی دستاویزات اور لیبلز بناتا ہے؟",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "پک اپ",
         "title": "Amazon اور فریٹ فارورڈر پک اپ کرتے ہیں۔",
-        "text": "بیرونِ ملک AWD جانے والے کارٹن Amazon لے جاتا ہے، اور باقی آپ کا فریٹ فارورڈر۔"
+        "text": "چین میں اپنے گودام جانے والے کارٹن Amazon لے جاتا ہے، اور باقی آپ کا فریٹ فارورڈر۔"
       },
       "ship": {
         "step": "شپ",
@@ -258,7 +258,7 @@
       "boxLabels": "کارٹن اور شپنگ لیبلز"
     },
     "places": {
-      "awdInChina": "چین میں AWD",
+      "gwdInChina": "چین میں Amazon GWD",
       "customs": "کسٹمز",
       "yourWarehouse": "آپ کا گودام"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "کارٹن کا سائز",
       "weight": "وزن",
       "shipments": "شپمنٹس",
-      "awdByAmazon": "چین میں AWD، بذریعہ Amazon",
+      "gwdInChina": "چین میں Amazon GWD",
       "unitCount": "{count, plural, one {# یونٹ} other {# یونٹس}}",
       "pickedUp": "{forwarder} نے پک اپ کیا",
       "onTheWater": "سمندر میں",
       "inTransit": "راستے میں",
       "arrives": "آمد",
-      "checkedInAwd": "AWD پر چیک اِن",
+      "checkedInGwd": "GWD پر چیک اِن",
       "released": "ریلیز",
       "cleared": "کلیئر ہوا",
       "checkedIn": "Amazon FBA پر چیک اِن",

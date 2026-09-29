@@ -85,7 +85,7 @@
       },
       "awd": {
         "question": "支持发货到 AWD 吗？",
-        "answer": "支持。Copacker 可以规划发往 FBA 和 AWD 的货件，包括中国和越南的 AWD 仓库。"
+        "answer": "支持。Copacker 可以规划发往 FBA、AWD 以及 Amazon 在中国的 GWD 仓库的货件。"
       },
       "documents": {
         "question": "能生成哪些单据和标签？",
@@ -224,7 +224,7 @@
       "pickUp": {
         "step": "提货",
         "title": "Amazon 和货代上门提货。",
-        "text": "发往海外 AWD 的箱子由 Amazon 提走，其余交给你的货代。"
+        "text": "Amazon 提走发往其中国仓库的箱子，其余交给你的货代。"
       },
       "ship": {
         "step": "运输",
@@ -258,7 +258,7 @@
       "boxLabels": "箱标和运输标签"
     },
     "places": {
-      "awdInChina": "中国 AWD",
+      "gwdInChina": "Amazon 中国 GWD",
       "customs": "海关",
       "yourWarehouse": "你的仓库"
     },
@@ -272,13 +272,13 @@
       "cartonSize": "箱子尺寸",
       "weight": "重量",
       "shipments": "货件",
-      "awdByAmazon": "中国 AWD，由 Amazon 承运",
+      "gwdInChina": "Amazon 中国 GWD",
       "unitCount": "{count, plural, other {# 件}}",
       "pickedUp": "已由 {forwarder} 提货",
       "onTheWater": "海运中",
       "inTransit": "运输中",
       "arrives": "预计到达",
-      "checkedInAwd": "已在 AWD 签收",
+      "checkedInGwd": "已在 GWD 签收",
       "released": "已放行",
       "cleared": "清关日期",
       "checkedIn": "已在 Amazon FBA 签收",

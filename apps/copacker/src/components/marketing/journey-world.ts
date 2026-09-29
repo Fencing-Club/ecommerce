@@ -143,7 +143,7 @@ const beat = {
   toEnd: [0.24, 0.25],
   stack: [0.25, 0.265],
   rest: [0.265, 0.335],
-  // The split: Amazon picks up the AWD share, the forwarder the rest.
+  // The split: Amazon picks up the GWD share, the forwarder the rest.
   forwarderLoad: [0.35, 0.39],
   amazonIn: [0.34, 0.38],
   amazonLoad: [0.38, 0.42],
@@ -795,7 +795,7 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
     group.add(at(far, x, y, -depth / 2 - 0.012))
   }
 
-  // Amazon's truck, which picks up the cartons bound for AWD overseas.
+  // Amazon's truck, which picks up the cartons bound for its GWD warehouse in China.
   const amazonMark = keep(
     drawn(512, 160, (context) => {
       context.fillStyle = palette.navy
@@ -1302,7 +1302,8 @@ export function createWorld(canvas: HTMLCanvasElement, words: { purchaseOrder: s
       pallet.mesh.visible = spot.scale > 0.001
     }
 
-    // Amazon's truck drives in from the edge of the board, takes the first two pallets, and turns up to AWD in China.
+    // Amazon's truck drives in from the edge of the board, takes the first two pallets, and turns up to Amazon's GWD
+    // warehouse in China.
     amazonTruck.position.set(amazonAt.x, 0.05, amazonAt.z)
     amazonTruck.rotation.y = amazonAt.heading
     amazonTruck.scale.setScalar(Math.max(0.0001, span(amazonAt.x, -26.4, -24.6)))
