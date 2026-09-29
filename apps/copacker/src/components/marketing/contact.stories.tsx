@@ -36,7 +36,8 @@ export const WatchTheVideo = meta.story({
     const ways = within(canvas.getByRole("region", { name: "Or see for yourself." }))
     const button = ways.getByRole("button", { name: /Watch the video/ })
     await userEvent.click(button)
-    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 5000 })
+    // The dialog loads on first use, which Storybook compiles then: slow on a busy machine.
+    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 15000 })
     await waitFor(() => expect(dialog).toBeVisible())
     await pressEscapeIn(dialog)
     await waitFor(() => expect(button).toHaveFocus())

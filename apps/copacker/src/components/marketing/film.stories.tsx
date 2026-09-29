@@ -29,7 +29,8 @@ export const Default = meta.story({
 
     // The dialog loads on the first click if the page hasn't gone idle yet, and opens.
     await userEvent.click(button)
-    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 5000 })
+    // The dialog loads on first use, which Storybook compiles then: slow on a busy machine.
+    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 15000 })
     await expect(button).toHaveAttribute("aria-expanded", "true")
     await expect(dialog.querySelector("video")).toHaveAttribute("autoplay")
 
@@ -63,7 +64,8 @@ export const OnPaper = meta.story({
     await expect(button).toHaveClass("text-foreground")
     await expect(button).not.toHaveClass("text-white")
     await userEvent.click(button)
-    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 5000 })
+    // The dialog loads on first use, which Storybook compiles then: slow on a busy machine.
+    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 15000 })
     await waitFor(() => expect(dialog).toBeVisible())
   }
 })

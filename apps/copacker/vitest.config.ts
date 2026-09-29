@@ -31,6 +31,9 @@ export default defineConfig({
           sequence: { groupOrder: 1 },
           // A story that waits on an animation or a mocked response can miss its moment on a busy machine.
           retry: 2,
+          // The longest stories, such as getting started typed through or the landing's journey, take 30 seconds on a
+          // machine running the whole suite.
+          testTimeout: 60000,
           browser: {
             enabled: true,
             headless: true,

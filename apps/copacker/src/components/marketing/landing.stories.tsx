@@ -92,7 +92,8 @@ export const Waitlist = meta.story({
 export const Film = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(within(canvas.getByRole("main")).getByRole("button", { name: /Watch the video/ }))
-    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 5000 })
+    // The dialog loads on first use, which Storybook compiles then: slow on a busy machine.
+    const dialog = await screen.findByRole("dialog", { name: "Copacker: Restocking, handled" }, { timeout: 15000 })
     await waitFor(() => expect(dialog).toBeVisible())
     await pressEscapeIn(dialog)
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())

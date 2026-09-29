@@ -4,6 +4,7 @@ import addonMsw from "msw-storybook-addon"
 import { setupWorker } from "msw/browser"
 import { NextIntlClientProvider } from "next-intl"
 import { useEffect } from "react"
+import { configure } from "storybook/test"
 import { INITIAL_VIEWPORTS } from "storybook/viewport"
 import { AccessProvider } from "@/components/access"
 import { Providers } from "@/components/providers"
@@ -16,6 +17,10 @@ import { handlers } from "./mocks/handlers"
 // The app's stylesheet, as AppProviders brings it: the reset first, then Tailwind's layers.
 import "@/styles/global.css"
 import "@/app/globals.css"
+
+// findBy and waitFor give a mocked response and its render 5 seconds, not 1: under a full test run, a busy machine
+// can take longer than a second, and a story then fails although nothing is wrong.
+configure({ asyncUtilTimeout: 5000 })
 
 const themes = ["light", "dark"] as const
 type Theme = (typeof themes)[number]
