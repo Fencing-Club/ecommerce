@@ -1,5 +1,5 @@
 {
-  "required": "Dieses Feld ist erforderlich",
+  "required": "Füllen Sie dieses Feld aus",
   "number": "Geben Sie eine Zahl ein",
   "minLength": "Geben Sie mindestens {minimum} Zeichen ein",
   "addOne": "Fügen Sie mindestens einen Eintrag hinzu",

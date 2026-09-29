@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(öffnet in Seller Central)",
     "none": {
       "title": "Noch keine Sendungen",
-      "buyerDescription": "Starten Sie eine aus einer gesendeten Bestellung",
-      "supplierDescription": "Starten Sie eine aus einem Auftrag",
+      "buyerDescription": "Starten Sie eine aus einer gesendeten Bestellung.",
+      "supplierDescription": "Starten Sie eine aus einem Auftrag.",
       "viewPurchaseOrders": "Bestellungen ansehen",
       "viewOrders": "Aufträge ansehen"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "Versandetiketten",
       "waiting": "Wartet auf Versandetiketten",
-      "fba": "Buchen Sie den Transport zu Amazon und laden Sie dann die Versandetiketten hoch",
-      "agl": "Buchen Sie den AGL-Transport in Amazon und laden Sie dann die Versandetiketten hoch"
+      "fba": "Buchen Sie den Transport zu Amazon und laden Sie dann die Versandetiketten hoch.",
+      "agl": "Buchen Sie den AGL-Transport in Amazon und laden Sie dann die Versandetiketten hoch."
     },
     "creating": {
       "title": "Amazon-Sendung wird erstellt",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "Lieferantenunterlagen bereit",
-      "description": "Etiketten in Originalgröße drucken",
+      "description": "Drucken Sie Etiketten in Originalgröße.",
       "downloadLabel": "Lieferantenunterlagen herunterladen",
       "download": "Unterlagen herunterladen",
       "incompleteTitle": "Lieferantenunterlagen unvollständig",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Auch Stückkosten in Shopify aktualisieren",
-      "updateCostDescription": "Shopify-Kosten müssen in der Währung der Bestellung sein",
+      "updateCostDescription": "Shopify-Kosten müssen in der Währung der Bestellung sein.",
       "submit": "Änderungen genehmigen"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "Korrektur anfordern",
       "submit": "Korrektur anfordern",
       "reason": "Was muss sich ändern?",
-      "reasonDescription": "Die Dokumente dieser Sendung werden dadurch veraltet"
+      "reasonDescription": "Die Dokumente dieser Sendung werden dadurch veraltet."
     },
     "reconcile": {
       "submit": "Prüfen und fortsetzen",

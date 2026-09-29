@@ -37,8 +37,8 @@
     "opensInSellerCentral": "（在 Seller Central 中打开）",
     "none": {
       "title": "还没有货件",
-      "buyerDescription": "从已发送的采购订单创建货件",
-      "supplierDescription": "从订单创建货件",
+      "buyerDescription": "从已发送的采购订单创建货件。",
+      "supplierDescription": "从订单创建货件。",
       "viewPurchaseOrders": "查看采购订单",
       "viewOrders": "查看订单"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "运输标签",
       "waiting": "等待运输标签",
-      "fba": "预订发往 Amazon 的运输，然后上传运输标签",
-      "agl": "在 Amazon 中预订 AGL 运输，然后上传运输标签"
+      "fba": "预订发往 Amazon 的运输，然后上传运输标签。",
+      "agl": "在 Amazon 中预订 AGL 运输，然后上传运输标签。"
     },
     "creating": {
       "title": "正在创建 Amazon 货件",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "供应商资料包已就绪",
-      "description": "按实际尺寸打印标签",
+      "description": "按实际尺寸打印标签。",
       "downloadLabel": "下载供应商资料包",
       "download": "下载资料包",
       "incompleteTitle": "供应商资料包不完整",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "同时更新 Shopify 单位成本",
-      "updateCostDescription": "Shopify 成本须使用采购订单的币种",
+      "updateCostDescription": "Shopify 成本须使用采购订单的币种。",
       "submit": "批准修改"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "申请更正",
       "submit": "申请更正",
       "reason": "需要更改什么？",
-      "reasonDescription": "此货件的文件将失效"
+      "reasonDescription": "此货件的文件将失效。"
     },
     "reconcile": {
       "submit": "验证并继续",

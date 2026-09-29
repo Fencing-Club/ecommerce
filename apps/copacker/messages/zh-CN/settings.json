@@ -215,7 +215,7 @@
     "stockArrivesAt": "库存送达 {location}",
     "stockArrivesAtShopify": "库存送达 Shopify 地点",
     "addPhone": "添加电话号码后才能用于货件",
-    "supplierKeepsPickups": "提货地址现由你的供应商管理，待对方添加后请移除此地址",
+    "supplierKeepsPickups": "提货地址现由你的供应商管理。待对方添加后，请移除此地址。",
     "saveChanges": "保存更改",
     "saveAddress": "保存地址",
     "name": "地址名称",

@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "请选择一项",
-    "pickupPhone": "请添加提货电话号码，Amazon 需要它来安排提货",
+    "pickupPhone": "请添加提货电话号码。Amazon 需要它来安排提货。",
     "step": "第 {current} 步，共 {total} 步",
     "invitedBy": "邀请人：{name}",
     "back": "返回",

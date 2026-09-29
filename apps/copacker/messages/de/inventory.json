@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "Benötigt Zugriff auf Standortnamen",
       "signInExpired": "Anmeldung abgelaufen",
-      "unavailable": "Nicht verfügbar, versuchen Sie es in ein paar Minuten erneut",
+      "unavailable": "Nicht verfügbar. Versuchen Sie es in ein paar Minuten erneut.",
       "failed": "Letzte Synchronisierung fehlgeschlagen"
     },
     "didntSync": "{source}-Bestand wurde nicht synchronisiert",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "Bestandsstandorte",
-    "description": "Lagerbestand an den markierten Standorten zählt im Nachschub als Ihrer.",
+    "description": "Lagerbestand an den ausgewählten Standorten zählt im Nachschub als Ihrer.",
     "notes": {
       "amazonFulfillment": "Amazon-FBA-Lagerbestand, direkt von Amazon gelesen",
       "shopifyCollective": "Lagerbestand eines Partners über Shopify Collective",

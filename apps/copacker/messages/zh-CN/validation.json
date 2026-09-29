@@ -1,5 +1,5 @@
 {
-  "required": "此字段为必填项",
+  "required": "请填写此字段",
   "number": "请输入数字",
   "minLength": "请至少输入 {minimum} 个字符",
   "addOne": "请至少添加一项",

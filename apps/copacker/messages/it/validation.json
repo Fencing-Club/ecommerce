@@ -1,5 +1,5 @@
 {
-  "required": "Questo campo è obbligatorio",
+  "required": "Compila questo campo",
   "number": "Inserisci un numero",
   "minLength": "Inserisci almeno {minimum} caratteri",
   "addOne": "Aggiungine almeno uno",

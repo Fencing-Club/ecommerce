@@ -1,8 +1,8 @@
 {
-  "required": "Este campo es obligatorio",
+  "required": "Completa este campo",
   "number": "Ingresa un número",
   "minLength": "Ingresa al menos {minimum} caracteres",
-  "addOne": "Agrega al menos uno",
+  "addOne": "Agrega al menos 1",
   "minItems": "Agrega al menos {minimum}",
   "atLeast": "Ingresa {minimum} o más",
   "greaterThan": "Ingresa un número mayor que {minimum}",

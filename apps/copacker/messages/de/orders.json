@@ -143,7 +143,7 @@
       "location": "Am Standort",
       "destination": "Am Ziel"
     },
-    "catalogLookupFailed": "Abruf des Lieferantenkatalogs fehlgeschlagen",
+    "catalogLookupFailed": "Der Lieferantenkatalog konnte nicht geladen werden",
     "discard": "Verwerfen",
     "save": "Speichern",
     "supplier": "Lieferant",
@@ -380,7 +380,7 @@
     "removeCarton": "Karton {name} entfernen",
     "addCarton": "Karton hinzufügen",
     "noCartons": "Noch keine Kartons",
-    "noCartonsDescription": "Fügen Sie einen Karton hinzu und duplizieren Sie dann identische",
+    "noCartonsDescription": "Fügen Sie einen Karton hinzu und duplizieren Sie dann identische.",
     "cartonsAndUnits": "{cartons, plural, one {# Karton} other {# Kartons}}, {units, plural, one {# Einheit} other {# Einheiten}}",
     "saveDraft": "Entwurf speichern",
     "check": "Packliste prüfen",

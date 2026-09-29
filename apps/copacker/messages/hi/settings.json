@@ -215,7 +215,7 @@
     "stockArrivesAt": "स्टॉक {location} पर पहुंचता है",
     "stockArrivesAtShopify": "स्टॉक एक Shopify लोकेशन पर पहुंचता है",
     "addPhone": "शिपमेंट में इस्तेमाल करने के लिए फ़ोन नंबर जोड़ें",
-    "supplierKeepsPickups": "अब पिकअप पते आपका सप्लायर रखता है, उनके जोड़ने के बाद इसे हटा दें",
+    "supplierKeepsPickups": "अब पिकअप पते आपका सप्लायर रखता है। उनके जोड़ने के बाद इसे हटा दें।",
     "saveChanges": "बदलाव सेव करें",
     "saveAddress": "पता सेव करें",
     "name": "पते का नाम",

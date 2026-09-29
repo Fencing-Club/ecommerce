@@ -88,7 +88,7 @@
       "description": "新的采购订单将无法发往该货代。已发送的采购订单保留原地址。",
       "cancel": "取消",
       "confirm": "移除",
-      "failed": "无法移除 {name}"
+      "failed": "无法移除 {name}。请重试。"
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "{name} 的更多操作",
     "menuEdit": "编辑",
     "menuRemove": "移除",
-    "removeFailed": "无法移除 {name}"
+    "removeFailed": "无法移除 {name}。请重试。"
   },
   "contactKinds": {
     "delivery": "收货地址",

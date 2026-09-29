@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "需要访问地点名称的权限",
       "signInExpired": "登录已过期",
-      "unavailable": "暂不可用，请几分钟后重试",
+      "unavailable": "暂不可用。请几分钟后重试。",
       "failed": "上次同步失败"
     },
     "didntSync": "{source} 库存未能同步",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "库存地点",
-    "description": "已勾选地点的库存量在补货中计为你的库存。",
+    "description": "已选择地点的库存量在补货中计为你的库存。",
     "notes": {
       "amazonFulfillment": "Amazon FBA 库存量，直接从 Amazon 读取",
       "shopifyCollective": "通过 Shopify Collective 共享的合作伙伴库存量",

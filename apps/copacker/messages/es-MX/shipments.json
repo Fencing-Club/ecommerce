@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(se abre en Seller Central)",
     "none": {
       "title": "Aún no hay envíos",
-      "buyerDescription": "Crea uno desde una orden de compra enviada",
-      "supplierDescription": "Crea uno desde un pedido",
+      "buyerDescription": "Crea uno desde una orden de compra enviada.",
+      "supplierDescription": "Crea uno desde un pedido.",
       "viewPurchaseOrders": "Ver órdenes de compra",
       "viewOrders": "Ver pedidos"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "Etiquetas de envío",
       "waiting": "Esperando las etiquetas de envío",
-      "fba": "Reserva el transporte a Amazon y luego sube las etiquetas de envío",
-      "agl": "Reserva el transporte AGL en Amazon y luego sube las etiquetas de envío"
+      "fba": "Reserva el transporte a Amazon y luego sube las etiquetas de envío.",
+      "agl": "Reserva el transporte AGL en Amazon y luego sube las etiquetas de envío."
     },
     "creating": {
       "title": "Creando el envío de Amazon",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "Paquete de documentos listo",
-      "description": "Imprime las etiquetas a tamaño real",
+      "description": "Imprime las etiquetas a tamaño real.",
       "downloadLabel": "Descargar paquete de documentos del proveedor",
       "download": "Descargar paquete de documentos",
       "incompleteTitle": "Paquete de documentos incompleto",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Actualizar también los costos unitarios en Shopify",
-      "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra",
+      "updateCostDescription": "Los costos de Shopify deben estar en la moneda de la orden de compra.",
       "submit": "Aprobar cambios"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "Solicitar una corrección",
       "submit": "Solicitar corrección",
       "reason": "¿Qué hay que cambiar?",
-      "reasonDescription": "Los documentos de este envío quedarán desactualizados"
+      "reasonDescription": "Los documentos de este envío quedarán desactualizados."
     },
     "reconcile": {
       "submit": "Verificar y reanudar",

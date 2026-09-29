@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "लोकेशन के नाम देखने की अनुमति चाहिए",
       "signInExpired": "साइन इन की अवधि खत्म हो गई",
-      "unavailable": "उपलब्ध नहीं है, कुछ मिनट बाद फिर से कोशिश करें",
+      "unavailable": "उपलब्ध नहीं है। कुछ मिनट बाद फिर से कोशिश करें।",
       "failed": "पिछला सिंक विफल रहा"
     },
     "didntSync": "{source} इन्वेंटरी सिंक नहीं हुई",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "इन्वेंटरी लोकेशन",
-    "description": "टिक की गई लोकेशन का स्टॉक रीस्टॉक में आपका गिना जाता है।",
+    "description": "चुनी गई लोकेशन का स्टॉक रीस्टॉक में आपका गिना जाता है।",
     "notes": {
       "amazonFulfillment": "Amazon FBA स्टॉक, सीधे Amazon से लिया जाता है",
       "shopifyCollective": "Shopify Collective के ज़रिए किसी पार्टनर का स्टॉक",

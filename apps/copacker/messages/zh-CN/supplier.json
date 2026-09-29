@@ -15,7 +15,7 @@
       "unsaved": "有未保存的更改",
       "discard": "放弃",
       "save": "保存",
-      "saving": "正在保存"
+      "saving": "正在保存…"
     },
     "couldNotSave": "保存失败，请重试。",
     "tryAnother": "换个标签页或搜索词试试。",
@@ -110,7 +110,7 @@
     "status": "状态",
     "customers": "客户",
     "addCustomers": "添加客户",
-    "noCustomersFound": "未找到客户。",
+    "noCustomersFound": "未找到客户",
     "movesFrom": "从 {catalog} 移入",
     "customersAppear": "买家将你添加为供应商后，客户会显示在这里。",
     "inactiveNote": "目录上架前，客户会看到所有已上架产品及其原价。",
@@ -166,7 +166,7 @@
       "closed": "已关闭"
     },
     "emptyTitle": "还没有订单",
-    "emptyDescription": "客户发来的采购订单会显示在这里",
+    "emptyDescription": "客户发来的采购订单会显示在这里。",
     "search": "搜索订单",
     "columns": {
       "order": "订单",
@@ -178,7 +178,7 @@
     },
     "firstAndMore": "{first} 等另外 {count, number} 个",
     "noneHere": "这里没有订单",
-    "noneHereDescription": "换个标签页或搜索词试试"
+    "noneHereDescription": "换个标签页或搜索词试试。"
   },
   "pages": {
     "catalogs": "目录",
@@ -232,7 +232,7 @@
     "inStock": "库存 {count, number}",
     "forVariants": "共 {count, plural, other {# 个变体}}",
     "emptyTitle": "添加你的第一个产品",
-    "emptyDescription": "客户从你的产品中下单。可以逐个添加，也可以导入表格。",
+    "emptyDescription": "可以逐个添加产品，也可以导入表格。",
     "addProduct": "添加产品",
     "search": "搜索产品",
     "setActive": "设为上架",
@@ -253,8 +253,8 @@
     "exportCsv": "导出为 CSV",
     "downloadTemplate": "下载模板",
     "importFailed": "导入失败，请重试。",
-    "alreadyImported": "此文件已导入过。",
-    "description": "请使用产品模板：每个变体一行。SKU 相同的会更新，新的会添加。文件中未包含的产品保持不变。",
+    "alreadyImported": "你已导入过此文件。",
+    "description": "每个变体一行，按 SKU 匹配。文件中未包含的产品保持不变。",
     "excelTemplate": "Excel 模板",
     "csvTemplate": "CSV 模板",
     "yourProducts": "你的产品（Excel）",
@@ -293,15 +293,15 @@
     "readyDate": "就绪日期",
     "total": "总额",
     "decline": "拒绝",
-    "approving": "正在批准",
+    "approving": "正在批准…",
     "approve": "批准修改",
-    "withdrawing": "正在撤回",
+    "withdrawing": "正在撤回…",
     "withdraw": "撤回",
     "edit": "编辑",
     "declineTitle": "拒绝这些修改？",
     "declineDescription": "采购订单保持不变。{supplier} 会看到你的原因。",
     "reasonLabel": "原因",
-    "declining": "正在拒绝",
+    "declining": "正在拒绝…",
     "declineChanges": "拒绝修改"
   },
   "orderReviser": {
@@ -310,9 +310,9 @@
     "noChanges": "没有需要保存的更改",
     "sendFailed": "修改发送失败，请重试。",
     "sendForApproval": "提交审批",
-    "sending": "正在发送",
+    "sending": "正在发送…",
     "save": "保存",
-    "saving": "正在保存",
+    "saving": "正在保存…",
     "orders": "订单",
     "editOrder": "编辑订单",
     "awaitingApproval": "等待审批",
@@ -468,7 +468,7 @@
     "unknown": "未知",
     "trackInventory": "跟踪库存",
     "onHand": "现有库存",
-    "piecesInStock": "库存件数。",
+    "piecesInStock": "库存件数",
     "continueSelling": "缺货时继续销售",
     "notes": "备注",
     "giveSku": "请为每个变体填写 SKU",
@@ -506,6 +506,6 @@
     "productCode": "产品编码",
     "productPage": "产品页面",
     "catalogs": "目录",
-    "notInCatalog": "未加入任何目录。"
+    "notInCatalog": "未加入任何目录"
   }
 }

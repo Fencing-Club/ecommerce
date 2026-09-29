@@ -88,7 +88,7 @@
       "description": "I nuovi ordini di acquisto non potranno essere spediti a lui. Quelli già inviati mantengono il loro indirizzo.",
       "cancel": "Annulla",
       "confirm": "Rimuovi",
-      "failed": "Impossibile rimuovere {name}"
+      "failed": "Impossibile rimuovere {name}. Riprova."
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "Altre azioni per {name}",
     "menuEdit": "Modifica",
     "menuRemove": "Rimuovi",
-    "removeFailed": "Impossibile rimuovere {name}"
+    "removeFailed": "Impossibile rimuovere {name}. Riprova."
   },
   "contactKinds": {
     "delivery": "Indirizzo di consegna",

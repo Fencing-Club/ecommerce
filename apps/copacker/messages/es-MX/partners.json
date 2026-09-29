@@ -88,7 +88,7 @@
       "description": "Las nuevas órdenes de compra no podrán enviarse a este agente. Las órdenes de compra ya enviadas conservan su dirección.",
       "cancel": "Cancelar",
       "confirm": "Quitar",
-      "failed": "No se pudo quitar a {name}"
+      "failed": "No se pudo quitar a {name}. Inténtalo de nuevo."
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "Más acciones para {name}",
     "menuEdit": "Editar",
     "menuRemove": "Quitar",
-    "removeFailed": "No se pudo quitar {name}"
+    "removeFailed": "No se pudo quitar {name}. Inténtalo de nuevo."
   },
   "contactKinds": {
     "delivery": "Dirección de entrega",

@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(Seller Central में खुलता है)",
     "none": {
       "title": "अभी कोई शिपमेंट नहीं",
-      "buyerDescription": "भेजे गए खरीद ऑर्डर से शुरू करें",
-      "supplierDescription": "किसी ऑर्डर से शुरू करें",
+      "buyerDescription": "भेजे गए खरीद ऑर्डर से शुरू करें।",
+      "supplierDescription": "किसी ऑर्डर से शुरू करें।",
       "viewPurchaseOrders": "खरीद ऑर्डर देखें",
       "viewOrders": "ऑर्डर देखें"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "शिपिंग लेबल",
       "waiting": "शिपिंग लेबल का इंतज़ार",
-      "fba": "Amazon तक ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें",
-      "agl": "Amazon में AGL ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें"
+      "fba": "Amazon तक ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें।",
+      "agl": "Amazon में AGL ट्रांसपोर्ट बुक करें, फिर शिपिंग लेबल अपलोड करें।"
     },
     "creating": {
       "title": "Amazon शिपमेंट बनाया जा रहा है",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "सप्लायर पैकेट तैयार",
-      "description": "लेबल असली साइज़ में प्रिंट करें",
+      "description": "लेबल असली साइज़ में प्रिंट करें।",
       "downloadLabel": "सप्लायर पैकेट डाउनलोड करें",
       "download": "पैकेट डाउनलोड करें",
       "incompleteTitle": "सप्लायर पैकेट अधूरा है",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Shopify यूनिट लागत भी अपडेट करें",
-      "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए",
+      "updateCostDescription": "Shopify लागत खरीद ऑर्डर की मुद्रा में होनी चाहिए।",
       "submit": "बदलाव मंज़ूर करें"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "सुधार का अनुरोध करें",
       "submit": "सुधार का अनुरोध करें",
       "reason": "क्या बदलना है?",
-      "reasonDescription": "इस शिपमेंट के दस्तावेज़ पुराने हो जाएंगे"
+      "reasonDescription": "इस शिपमेंट के दस्तावेज़ पुराने हो जाएंगे।"
     },
     "reconcile": {
       "submit": "जांचें और फिर शुरू करें",

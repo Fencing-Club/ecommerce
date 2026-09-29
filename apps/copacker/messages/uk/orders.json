@@ -143,7 +143,7 @@
       "location": "У локації",
       "destination": "У пункті призначення"
     },
-    "catalogLookupFailed": "Не вдалося знайти каталог постачальника",
+    "catalogLookupFailed": "Не вдалося завантажити каталог постачальника",
     "discard": "Відкинути",
     "save": "Зберегти",
     "supplier": "Постачальник",
@@ -380,7 +380,7 @@
     "removeCarton": "Видалити коробку {name}",
     "addCarton": "Додати коробку",
     "noCartons": "Коробок ще немає",
-    "noCartonsDescription": "Додайте коробку, а потім дублюйте однакові",
+    "noCartonsDescription": "Додайте коробку, а потім дублюйте однакові.",
     "cartonsAndUnits": "{cartons, plural, one {# коробка} few {# коробки} many {# коробок} other {# коробки}}, {units, plural, one {# одиниця} few {# одиниці} many {# одиниць} other {# одиниці}}",
     "saveDraft": "Зберегти чернетку",
     "check": "Перевірити пакування",

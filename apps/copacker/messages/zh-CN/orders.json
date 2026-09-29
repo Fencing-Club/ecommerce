@@ -143,7 +143,7 @@
       "location": "地点库存量",
       "destination": "目的地库存量"
     },
-    "catalogLookupFailed": "供应商目录查询失败",
+    "catalogLookupFailed": "无法加载供应商目录",
     "discard": "放弃",
     "save": "保存",
     "supplier": "供应商",
@@ -380,7 +380,7 @@
     "removeCarton": "移除箱子 {name}",
     "addCarton": "添加箱子",
     "noCartons": "还没有箱子",
-    "noCartonsDescription": "添加一个箱子，然后复制相同的箱子",
+    "noCartonsDescription": "添加一个箱子，然后复制相同的箱子。",
     "cartonsAndUnits": "{cartons, plural, other {# 箱}}，{units, plural, other {# 件}}",
     "saveDraft": "保存草稿",
     "check": "检查装箱",

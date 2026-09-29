@@ -215,7 +215,7 @@
     "stockArrivesAt": "Las existencias llegan a {location}",
     "stockArrivesAtShopify": "Las existencias llegan a una ubicación de Shopify",
     "addPhone": "Agrega un teléfono para usarla en envíos",
-    "supplierKeepsPickups": "Ahora tu proveedor administra las recolecciones; quita esta dirección cuando la haya agregado",
+    "supplierKeepsPickups": "Ahora tu proveedor administra las recolecciones. Quita esta dirección cuando la haya agregado.",
     "saveChanges": "Guardar cambios",
     "saveAddress": "Guardar dirección",
     "name": "Nombre de la dirección",

@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(Seller Central میں کھلتا ہے)",
     "none": {
       "title": "ابھی کوئی شپمنٹ نہیں",
-      "buyerDescription": "بھیجے گئے خریداری آرڈر سے شروع کریں",
-      "supplierDescription": "کسی آرڈر سے شروع کریں",
+      "buyerDescription": "بھیجے گئے خریداری آرڈر سے شروع کریں۔",
+      "supplierDescription": "کسی آرڈر سے شروع کریں۔",
       "viewPurchaseOrders": "خریداری آرڈرز دیکھیں",
       "viewOrders": "آرڈرز دیکھیں"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "شپنگ لیبلز",
       "waiting": "شپنگ لیبلز کا انتظار",
-      "fba": "Amazon تک ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں",
-      "agl": "Amazon میں AGL ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں"
+      "fba": "Amazon تک ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں۔",
+      "agl": "Amazon میں AGL ٹرانسپورٹ بک کریں، پھر شپنگ لیبلز اپ لوڈ کریں۔"
     },
     "creating": {
       "title": "Amazon شپمنٹ بنائی جا رہی ہے",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "سپلائر پیکٹ تیار ہے",
-      "description": "لیبلز اصل سائز میں پرنٹ کریں",
+      "description": "لیبلز اصل سائز میں پرنٹ کریں۔",
       "downloadLabel": "سپلائر پیکٹ ڈاؤن لوڈ کریں",
       "download": "پیکٹ ڈاؤن لوڈ کریں",
       "incompleteTitle": "سپلائر پیکٹ نامکمل ہے",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Shopify میں یونٹ لاگت بھی اپ ڈیٹ کریں",
-      "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے",
+      "updateCostDescription": "Shopify میں لاگت خریداری آرڈر کی کرنسی میں ہونی چاہیے۔",
       "submit": "تبدیلیاں منظور کریں"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "درستگی کی درخواست کریں",
       "submit": "درستگی کی درخواست کریں",
       "reason": "کیا تبدیل کرنا ہے؟",
-      "reasonDescription": "اس شپمنٹ کی دستاویزات پرانی ہو جائیں گی"
+      "reasonDescription": "اس شپمنٹ کی دستاویزات پرانی ہو جائیں گی۔"
     },
     "reconcile": {
       "submit": "تصدیق کر کے جاری رکھیں",

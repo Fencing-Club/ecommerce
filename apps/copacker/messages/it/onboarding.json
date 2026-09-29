@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "Scegline uno",
-    "pickupPhone": "Aggiungi un numero di telefono per il ritiro. Amazon ne ha bisogno per programmarlo",
+    "pickupPhone": "Aggiungi un numero di telefono per il ritiro. Amazon ne ha bisogno per programmarlo.",
     "step": "Passaggio {current} di {total}",
     "invitedBy": "Invitato da {name}",
     "back": "Indietro",

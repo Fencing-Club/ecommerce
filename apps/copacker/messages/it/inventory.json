@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "Serve l’accesso ai nomi delle sedi",
       "signInExpired": "Accesso scaduto",
-      "unavailable": "Non disponibile, riprova tra qualche minuto",
+      "unavailable": "Non disponibile. Riprova tra qualche minuto.",
       "failed": "Ultima sincronizzazione non riuscita"
     },
     "didntSync": "Sincronizzazione dell’inventario {source} non riuscita",

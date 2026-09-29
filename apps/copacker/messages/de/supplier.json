@@ -15,7 +15,7 @@
       "unsaved": "Nicht gespeicherte Änderungen",
       "discard": "Verwerfen",
       "save": "Speichern",
-      "saving": "Wird gespeichert"
+      "saving": "Wird gespeichert…"
     },
     "couldNotSave": "Speichern fehlgeschlagen. Versuchen Sie es erneut.",
     "tryAnother": "Versuchen Sie einen anderen Tab oder eine andere Suche.",
@@ -53,7 +53,7 @@
     "optionValues": "Geben Sie {sku} für jede Option einen Wert",
     "sameOptions": "Zwei Varianten haben dieselben Optionen",
     "variantProblem": "{sku}: {problem}",
-    "packRange": "{sku}: Packungsmenge außerhalb des unterstützten Bereichs",
+    "packRange": "{sku}: Geben Sie kleinere Packungs- und Umkartonmengen ein",
     "sameSku": "Zwei Varianten haben dieselbe SKU"
   },
   "catalogIndex": {
@@ -110,7 +110,7 @@
     "status": "Status",
     "customers": "Kunden",
     "addCustomers": "Kunden hinzufügen",
-    "noCustomersFound": "Keine Kunden gefunden.",
+    "noCustomersFound": "Keine Kunden gefunden",
     "movesFrom": "Wechselt von {catalog}",
     "customersAppear": "Kunden erscheinen, sobald ein Käufer Sie als Lieferanten hinzufügt.",
     "inactiveNote": "Bis der Katalog aktiv ist, sehen Kunden jedes aktive Produkt zu seinem eigenen Preis.",
@@ -166,7 +166,7 @@
       "closed": "Abgeschlossen"
     },
     "emptyTitle": "Noch keine Aufträge",
-    "emptyDescription": "Bestellungen Ihrer Kunden erscheinen hier",
+    "emptyDescription": "Bestellungen Ihrer Kunden erscheinen hier.",
     "search": "Aufträge durchsuchen",
     "columns": {
       "order": "Auftrag",
@@ -178,7 +178,7 @@
     },
     "firstAndMore": "{first} und {count, number} weitere",
     "noneHere": "Keine Aufträge vorhanden",
-    "noneHereDescription": "Versuchen Sie einen anderen Tab oder eine andere Suche"
+    "noneHereDescription": "Versuchen Sie einen anderen Tab oder eine andere Suche."
   },
   "pages": {
     "catalogs": "Kataloge",
@@ -232,7 +232,7 @@
     "inStock": "{count, number} auf Lager",
     "forVariants": "für {count, plural, one {# Variante} other {# Varianten}}",
     "emptyTitle": "Erstes Produkt hinzufügen",
-    "emptyDescription": "Kunden bestellen aus Ihren Produkten. Fügen Sie sie einzeln hinzu oder importieren Sie eine Tabelle.",
+    "emptyDescription": "Fügen Sie Produkte einzeln hinzu oder importieren Sie eine Tabelle.",
     "addProduct": "Produkt hinzufügen",
     "search": "Produkte durchsuchen",
     "setActive": "Als aktiv festlegen",
@@ -252,9 +252,9 @@
     "importProducts": "Produkte importieren",
     "exportCsv": "Als CSV exportieren",
     "downloadTemplate": "Vorlage herunterladen",
-    "importFailed": "Import fehlgeschlagen. Versuchen Sie es erneut.",
-    "alreadyImported": "Diese Datei wurde bereits importiert.",
-    "description": "Verwenden Sie die Produktvorlage: eine Zeile pro Variante. Passende SKUs werden aktualisiert, neue hinzugefügt. Produkte, die nicht in der Datei stehen, bleiben unverändert.",
+    "importFailed": "Importieren nicht möglich. Versuchen Sie es erneut.",
+    "alreadyImported": "Sie haben diese Datei bereits importiert.",
+    "description": "Eine Zeile pro Variante, zugeordnet über die SKU. Produkte, die nicht in der Datei stehen, bleiben unverändert.",
     "excelTemplate": "Excel-Vorlage",
     "csvTemplate": "CSV-Vorlage",
     "yourProducts": "Ihre Produkte in Excel",
@@ -293,15 +293,15 @@
     "readyDate": "Bereitstellungsdatum",
     "total": "Gesamt",
     "decline": "Ablehnen",
-    "approving": "Wird genehmigt",
+    "approving": "Wird genehmigt…",
     "approve": "Änderungen genehmigen",
-    "withdrawing": "Wird zurückgezogen",
+    "withdrawing": "Wird zurückgezogen…",
     "withdraw": "Zurückziehen",
     "edit": "Bearbeiten",
     "declineTitle": "Änderungen ablehnen?",
     "declineDescription": "Die Bestellung bleibt unverändert. {supplier} sieht Ihren Grund.",
     "reasonLabel": "Grund",
-    "declining": "Wird abgelehnt",
+    "declining": "Wird abgelehnt…",
     "declineChanges": "Änderungen ablehnen"
   },
   "orderReviser": {
@@ -310,9 +310,9 @@
     "noChanges": "Keine Änderungen zum Speichern",
     "sendFailed": "Änderungen konnten nicht gesendet werden. Versuchen Sie es erneut.",
     "sendForApproval": "Zur Genehmigung senden",
-    "sending": "Wird gesendet",
+    "sending": "Wird gesendet…",
     "save": "Speichern",
-    "saving": "Wird gespeichert",
+    "saving": "Wird gespeichert…",
     "orders": "Aufträge",
     "editOrder": "Auftrag bearbeiten",
     "awaitingApproval": "Wartet auf Genehmigung",
@@ -468,7 +468,7 @@
     "unknown": "Unbekannt",
     "trackInventory": "Bestand verfolgen",
     "onHand": "Vorrätig",
-    "piecesInStock": "Einheiten auf Lager.",
+    "piecesInStock": "Einheiten auf Lager",
     "continueSelling": "Weiterverkaufen, wenn nicht auf Lager",
     "notes": "Notizen",
     "giveSku": "Geben Sie jeder Variante eine SKU",
@@ -506,6 +506,6 @@
     "productCode": "Produktcode",
     "productPage": "Produktseite",
     "catalogs": "Kataloge",
-    "notInCatalog": "In keinem Katalog."
+    "notInCatalog": "In keinem Katalog"
   }
 }

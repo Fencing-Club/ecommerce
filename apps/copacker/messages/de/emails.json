@@ -105,8 +105,8 @@
     "previewMinutes": "Wählen Sie ein neues Passwort für {email}. Der Link läuft in {count, plural, one {# Minute} other {# Minuten}} ab.",
     "previewHours": "Wählen Sie ein neues Passwort für {email}. Der Link läuft in {count, plural, one {# Stunde} other {# Stunden}} ab.",
     "action": "Neues Passwort wählen",
-    "expiresMinutes": "Der Link läuft in {count, plural, one {# Minute} other {# Minuten}} ab. Wenn Sie das Zurücksetzen Ihres Passworts nicht angefordert haben, können Sie diese E-Mail ignorieren; Ihr Passwort bleibt unverändert.",
-    "expiresHours": "Der Link läuft in {count, plural, one {# Stunde} other {# Stunden}} ab. Wenn Sie das Zurücksetzen Ihres Passworts nicht angefordert haben, können Sie diese E-Mail ignorieren; Ihr Passwort bleibt unverändert.",
+    "expiresMinutes": "Der Link läuft in {count, plural, one {# Minute} other {# Minuten}} ab. Wenn Sie das Zurücksetzen Ihres Passworts nicht angefordert haben, können Sie diese E-Mail ignorieren. Ihr Passwort bleibt unverändert.",
+    "expiresHours": "Der Link läuft in {count, plural, one {# Stunde} other {# Stunden}} ab. Wenn Sie das Zurücksetzen Ihres Passworts nicht angefordert haben, können Sie diese E-Mail ignorieren. Ihr Passwort bleibt unverändert.",
     "reason": "Jemand hat angefordert, das Passwort für {email} bei Copacker zurückzusetzen."
   },
   "waitlistWelcome": {
@@ -116,7 +116,7 @@
     "lead": "Wir lassen immer nur ein paar Teams gleichzeitig herein und schreiben Ihnen, sobald Ihr Platz frei ist.",
     "preview": "Wir schreiben Ihnen, sobald Ihr Platz frei ist.",
     "step1": "Sobald Ihr Platz frei ist, schicken wir Ihnen einen Link, um Ihren Workspace einzurichten.",
-    "step2": "Verbinden Sie Amazon, Shopify und eBay, und Copacker prognostiziert den Bestand jedes Produkts.",
+    "step2": "Verbinden Sie Amazon, Shopify und eBay. Copacker prognostiziert den Bestand jedes Produkts.",
     "step3": "Bestellen Sie mit einem Klick nach und verfolgen Sie jede Bestellung bis zu FBA, AWD oder Ihrem eigenen Lager.",
     "action": "So funktioniert es",
     "note": "Fragen bis dahin? Antworten Sie einfach auf diese E-Mail.",

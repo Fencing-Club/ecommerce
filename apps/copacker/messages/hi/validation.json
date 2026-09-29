@@ -1,8 +1,8 @@
 {
-  "required": "यह फ़ील्ड ज़रूरी है",
+  "required": "यह फ़ील्ड भरें",
   "number": "कोई संख्या डालें",
   "minLength": "कम से कम {minimum} अक्षर डालें",
-  "addOne": "कम से कम एक जोड़ें",
+  "addOne": "कम से कम 1 जोड़ें",
   "minItems": "कम से कम {minimum} जोड़ें",
   "atLeast": "{minimum} या उससे ज़्यादा डालें",
   "greaterThan": "{minimum} से बड़ी संख्या डालें",

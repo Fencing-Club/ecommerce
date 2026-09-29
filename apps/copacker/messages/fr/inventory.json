@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "Accès aux noms d’emplacements requis",
       "signInExpired": "Connexion expirée",
-      "unavailable": "Indisponible, réessayez dans quelques minutes",
+      "unavailable": "Indisponible. Réessayez dans quelques minutes.",
       "failed": "Échec de la dernière synchronisation"
     },
     "didntSync": "Le stock {source} n’a pas été synchronisé",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "Emplacements de stock",
-    "description": "Le stock des emplacements cochés compte comme le vôtre dans Réassort.",
+    "description": "Le stock des emplacements sélectionnés compte comme le vôtre dans Réassort.",
     "notes": {
       "amazonFulfillment": "Stock Amazon FBA, lu directement depuis Amazon",
       "shopifyCollective": "Le stock d’un partenaire via Shopify Collective",

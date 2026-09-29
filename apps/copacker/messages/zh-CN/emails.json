@@ -105,8 +105,8 @@
     "previewMinutes": "为 {email} 设置新密码。链接将在 {count, plural, other {# 分钟}}后失效。",
     "previewHours": "为 {email} 设置新密码。链接将在 {count, plural, other {# 小时}}后失效。",
     "action": "设置新密码",
-    "expiresMinutes": "链接将在 {count, plural, other {# 分钟}}后失效。如果你没有申请重置密码，可以忽略此邮件，你的密码不会改变。",
-    "expiresHours": "链接将在 {count, plural, other {# 小时}}后失效。如果你没有申请重置密码，可以忽略此邮件，你的密码不会改变。",
+    "expiresMinutes": "链接将在 {count, plural, other {# 分钟}}后失效。如果你没有申请重置密码，可以忽略此邮件。你的密码不会改变。",
+    "expiresHours": "链接将在 {count, plural, other {# 小时}}后失效。如果你没有申请重置密码，可以忽略此邮件。你的密码不会改变。",
     "reason": "有人申请在 Copacker 上重置 {email} 的密码。"
   },
   "waitlistWelcome": {
@@ -116,7 +116,7 @@
     "lead": "我们每次只开放给少数团队，轮到你时会发邮件通知你。",
     "preview": "轮到你时，我们会发邮件通知你。",
     "step1": "轮到你时，我们会发送一个链接，让你设置自己的工作区。",
-    "step2": "连接 Amazon、Shopify 和 eBay，Copacker 就会预测每件产品的库存。",
+    "step2": "连接 Amazon、Shopify 和 eBay。Copacker 会预测每件产品的库存。",
     "step3": "一键补货，并跟踪每张采购订单，直到送达 FBA、AWD 或你自己的仓库。",
     "action": "了解如何运作",
     "note": "在此之前有问题？直接回复这封邮件。",

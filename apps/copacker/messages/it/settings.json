@@ -215,7 +215,7 @@
     "stockArrivesAt": "La merce arriva presso {location}",
     "stockArrivesAtShopify": "La merce arriva presso una sede Shopify",
     "addPhone": "Aggiungi un numero di telefono per usarlo nelle spedizioni",
-    "supplierKeepsPickups": "Ora i ritiri li gestisce il tuo fornitore, rimuovi questo indirizzo quando l’avrà aggiunto",
+    "supplierKeepsPickups": "Ora i ritiri li gestisce il tuo fornitore. Rimuovi questo indirizzo quando l’avrà aggiunto.",
     "saveChanges": "Salva modifiche",
     "saveAddress": "Salva indirizzo",
     "name": "Nome dell’indirizzo",

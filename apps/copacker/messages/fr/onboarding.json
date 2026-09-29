@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "Choisissez une option",
-    "pickupPhone": "Ajoutez un numéro de téléphone pour l’enlèvement. Amazon en a besoin pour planifier l’enlèvement",
+    "pickupPhone": "Ajoutez un numéro de téléphone pour l’enlèvement. Amazon en a besoin pour planifier l’enlèvement.",
     "step": "Étape {current} sur {total}",
     "invitedBy": "Invité par {name}",
     "back": "Retour",

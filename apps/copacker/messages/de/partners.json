@@ -88,7 +88,7 @@
       "description": "Neue Bestellungen können nicht mehr an ihn gehen. Bereits gesendete Bestellungen behalten ihre Adresse.",
       "cancel": "Abbrechen",
       "confirm": "Entfernen",
-      "failed": "{name} konnte nicht entfernt werden"
+      "failed": "{name} konnte nicht entfernt werden. Versuchen Sie es erneut."
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "Weitere Aktionen für {name}",
     "menuEdit": "Bearbeiten",
     "menuRemove": "Entfernen",
-    "removeFailed": "{name} konnte nicht entfernt werden"
+    "removeFailed": "{name} konnte nicht entfernt werden. Versuchen Sie es erneut."
   },
   "contactKinds": {
     "delivery": "Lieferadresse",

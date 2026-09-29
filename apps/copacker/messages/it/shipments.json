@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(si apre in Seller Central)",
     "none": {
       "title": "Ancora nessuna spedizione",
-      "buyerDescription": "Creane una da un ordine di acquisto inviato",
-      "supplierDescription": "Creane una da un ordine",
+      "buyerDescription": "Creane una da un ordine di acquisto inviato.",
+      "supplierDescription": "Creane una da un ordine.",
       "viewPurchaseOrders": "Vedi ordini di acquisto",
       "viewOrders": "Vedi ordini"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "Etichette di spedizione",
       "waiting": "In attesa delle etichette di spedizione",
-      "fba": "Prenota il trasporto verso Amazon, poi carica le etichette di spedizione",
-      "agl": "Prenota il trasporto AGL su Amazon, poi carica le etichette di spedizione"
+      "fba": "Prenota il trasporto verso Amazon, poi carica le etichette di spedizione.",
+      "agl": "Prenota il trasporto AGL su Amazon, poi carica le etichette di spedizione."
     },
     "creating": {
       "title": "Creazione della spedizione Amazon",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "Pacchetto fornitore pronto",
-      "description": "Stampa le etichette a dimensione reale",
+      "description": "Stampa le etichette a dimensione reale.",
       "downloadLabel": "Scarica il pacchetto fornitore",
       "download": "Scarica pacchetto",
       "incompleteTitle": "Pacchetto fornitore incompleto",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Aggiorna anche i costi unitari su Shopify",
-      "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto",
+      "updateCostDescription": "I costi su Shopify devono essere nella valuta dell’ordine di acquisto.",
       "submit": "Approva modifiche"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "Richiedi una correzione",
       "submit": "Richiedi correzione",
       "reason": "Cosa deve cambiare?",
-      "reasonDescription": "I documenti di questa spedizione non saranno più validi"
+      "reasonDescription": "I documenti di questa spedizione non saranno più validi."
     },
     "reconcile": {
       "submit": "Verifica e riprendi",

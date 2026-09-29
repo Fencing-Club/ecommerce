@@ -88,7 +88,7 @@
       "description": "Les nouveaux bons de commande ne pourront plus lui être expédiés. Les bons de commande déjà envoyés conservent leur adresse.",
       "cancel": "Annuler",
       "confirm": "Retirer",
-      "failed": "Impossible de retirer {name}"
+      "failed": "Impossible de retirer {name}. Réessayez."
     }
   },
   "supplier": {
@@ -147,7 +147,7 @@
     "moreActions": "Plus d’actions pour {name}",
     "menuEdit": "Modifier",
     "menuRemove": "Retirer",
-    "removeFailed": "Impossible de retirer {name}"
+    "removeFailed": "Impossible de retirer {name}. Réessayez."
   },
   "contactKinds": {
     "delivery": "Adresse de livraison",

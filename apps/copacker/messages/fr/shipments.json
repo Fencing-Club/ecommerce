@@ -37,8 +37,8 @@
     "opensInSellerCentral": "(s’ouvre dans Seller Central)",
     "none": {
       "title": "Aucune expédition pour l’instant",
-      "buyerDescription": "Créez-en une à partir d’un bon de commande envoyé",
-      "supplierDescription": "Créez-en une à partir d’une commande",
+      "buyerDescription": "Créez-en une à partir d’un bon de commande envoyé.",
+      "supplierDescription": "Créez-en une à partir d’une commande.",
       "viewPurchaseOrders": "Voir les bons de commande",
       "viewOrders": "Voir les commandes"
     }
@@ -76,8 +76,8 @@
     "labels": {
       "title": "Étiquettes d’expédition",
       "waiting": "En attente des étiquettes d’expédition",
-      "fba": "Réservez le transport vers Amazon, puis importez les étiquettes d’expédition",
-      "agl": "Réservez le transport AGL dans Amazon, puis importez les étiquettes d’expédition"
+      "fba": "Réservez le transport vers Amazon, puis importez les étiquettes d’expédition.",
+      "agl": "Réservez le transport AGL dans Amazon, puis importez les étiquettes d’expédition."
     },
     "creating": {
       "title": "Création de l’expédition Amazon",
@@ -85,7 +85,7 @@
     },
     "packet": {
       "title": "Dossier fournisseur prêt",
-      "description": "Imprimez les étiquettes en taille réelle",
+      "description": "Imprimez les étiquettes en taille réelle.",
       "downloadLabel": "Télécharger le dossier fournisseur",
       "download": "Télécharger le dossier",
       "incompleteTitle": "Dossier fournisseur incomplet",
@@ -112,7 +112,7 @@
   "actions": {
     "approve": {
       "updateCost": "Mettre aussi à jour les coûts unitaires Shopify",
-      "updateCostDescription": "Les coûts Shopify doivent être dans la devise du bon de commande",
+      "updateCostDescription": "Les coûts Shopify doivent être dans la devise du bon de commande.",
       "submit": "Approuver les modifications"
     },
     "release": {
@@ -123,7 +123,7 @@
       "trigger": "Demander une correction",
       "submit": "Demander la correction",
       "reason": "Que faut-il modifier ?",
-      "reasonDescription": "Les documents de cette expédition deviennent obsolètes"
+      "reasonDescription": "Les documents de cette expédition deviennent obsolètes."
     },
     "reconcile": {
       "submit": "Vérifier et reprendre",

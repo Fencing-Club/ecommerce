@@ -15,7 +15,7 @@
       "unsaved": "Modifications non enregistrées",
       "discard": "Abandonner",
       "save": "Enregistrer",
-      "saving": "Enregistrement"
+      "saving": "Enregistrement…"
     },
     "couldNotSave": "Impossible d’enregistrer. Réessayez.",
     "tryAnother": "Essayez un autre onglet ou une autre recherche.",
@@ -110,7 +110,7 @@
     "status": "Statut",
     "customers": "Clients",
     "addCustomers": "Ajouter des clients",
-    "noCustomersFound": "Aucun client trouvé.",
+    "noCustomersFound": "Aucun client trouvé",
     "movesFrom": "Quitte {catalog}",
     "customersAppear": "Les clients apparaissent dès qu’un acheteur vous ajoute comme fournisseur.",
     "inactiveNote": "Tant que le catalogue n’est pas actif, les clients voient tous les produits actifs à leur propre prix.",
@@ -166,7 +166,7 @@
       "closed": "Clôturées"
     },
     "emptyTitle": "Aucune commande",
-    "emptyDescription": "Les bons de commande envoyés par vos clients apparaissent ici",
+    "emptyDescription": "Les bons de commande envoyés par vos clients apparaissent ici.",
     "search": "Rechercher des commandes",
     "columns": {
       "order": "Commande",
@@ -178,7 +178,7 @@
     },
     "firstAndMore": "{first} et {count, number} autres",
     "noneHere": "Aucune commande ici",
-    "noneHereDescription": "Essayez un autre onglet ou une autre recherche"
+    "noneHereDescription": "Essayez un autre onglet ou une autre recherche."
   },
   "pages": {
     "catalogs": "Catalogues",
@@ -232,7 +232,7 @@
     "inStock": "{count, number} en stock",
     "forVariants": "pour {count, plural, one {# variante} many {# variantes} other {# variantes}}",
     "emptyTitle": "Ajoutez votre premier produit",
-    "emptyDescription": "Vos clients commandent parmi vos produits. Ajoutez-les un par un ou importez un tableur.",
+    "emptyDescription": "Ajoutez des produits un par un ou importez un tableur.",
     "addProduct": "Ajouter un produit",
     "search": "Rechercher des produits",
     "setActive": "Rendre actif",
@@ -252,9 +252,9 @@
     "importProducts": "Importer des produits",
     "exportCsv": "Exporter en CSV",
     "downloadTemplate": "Télécharger le modèle",
-    "importFailed": "Échec de l’import. Réessayez.",
-    "alreadyImported": "Ce fichier a déjà été importé.",
-    "description": "Utilisez le modèle de produits : une ligne par variante. Les SKU existants sont mis à jour et les nouveaux ajoutés. Les produits absents du fichier ne changent pas.",
+    "importFailed": "Impossible d’importer. Réessayez.",
+    "alreadyImported": "Vous avez déjà importé ce fichier.",
+    "description": "Une ligne par variante, associée par SKU. Les produits absents du fichier ne changent pas.",
     "excelTemplate": "Modèle Excel",
     "csvTemplate": "Modèle CSV",
     "yourProducts": "Vos produits dans Excel",
@@ -293,15 +293,15 @@
     "readyDate": "Date de disponibilité",
     "total": "Total",
     "decline": "Refuser",
-    "approving": "Approbation",
+    "approving": "Approbation…",
     "approve": "Approuver les modifications",
-    "withdrawing": "Retrait",
+    "withdrawing": "Retrait…",
     "withdraw": "Retirer",
     "edit": "Modifier",
     "declineTitle": "Refuser les modifications ?",
     "declineDescription": "Le bon de commande reste inchangé. {supplier} verra votre motif.",
     "reasonLabel": "Motif",
-    "declining": "Refus",
+    "declining": "Refus…",
     "declineChanges": "Refuser les modifications"
   },
   "orderReviser": {
@@ -310,9 +310,9 @@
     "noChanges": "Aucune modification à enregistrer",
     "sendFailed": "Impossible d’envoyer les modifications. Réessayez.",
     "sendForApproval": "Envoyer pour approbation",
-    "sending": "Envoi",
+    "sending": "Envoi…",
     "save": "Enregistrer",
-    "saving": "Enregistrement",
+    "saving": "Enregistrement…",
     "orders": "Commandes",
     "editOrder": "Modifier la commande",
     "awaitingApproval": "En attente d’approbation",
@@ -468,7 +468,7 @@
     "unknown": "Inconnu",
     "trackInventory": "Suivre le stock",
     "onHand": "En stock",
-    "piecesInStock": "Unités en stock.",
+    "piecesInStock": "Unités en stock",
     "continueSelling": "Continuer à vendre en cas de rupture",
     "notes": "Notes",
     "giveSku": "Attribuez un SKU à chaque variante",
@@ -506,6 +506,6 @@
     "productCode": "Code produit",
     "productPage": "Page produit",
     "catalogs": "Catalogues",
-    "notInCatalog": "Dans aucun catalogue."
+    "notInCatalog": "Dans aucun catalogue"
   }
 }

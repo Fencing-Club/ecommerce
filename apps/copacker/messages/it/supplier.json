@@ -15,7 +15,7 @@
       "unsaved": "Modifiche non salvate",
       "discard": "Scarta",
       "save": "Salva",
-      "saving": "Salvataggio"
+      "saving": "Salvataggio…"
     },
     "couldNotSave": "Impossibile salvare. Riprova.",
     "tryAnother": "Prova un’altra scheda o ricerca.",
@@ -53,7 +53,7 @@
     "optionValues": "Assegna a {sku} un valore per ogni opzione",
     "sameOptions": "Due varianti hanno le stesse opzioni",
     "variantProblem": "{sku}: {problem}",
-    "packRange": "{sku}: la quantità per confezione supera l’intervallo supportato",
+    "packRange": "{sku}: inserisci quantità per confezione e per imballo più piccole",
     "sameSku": "Due varianti hanno lo stesso SKU"
   },
   "catalogIndex": {
@@ -110,7 +110,7 @@
     "status": "Stato",
     "customers": "Clienti",
     "addCustomers": "Aggiungi clienti",
-    "noCustomersFound": "Nessun cliente trovato.",
+    "noCustomersFound": "Nessun cliente trovato",
     "movesFrom": "Spostato da {catalog}",
     "customersAppear": "I clienti compaiono quando un acquirente ti aggiunge come fornitore.",
     "inactiveNote": "Finché il catalogo non è attivo, i clienti vedono tutti i prodotti attivi al loro prezzo.",
@@ -166,7 +166,7 @@
       "closed": "Chiusi"
     },
     "emptyTitle": "Ancora nessun ordine",
-    "emptyDescription": "Qui compaiono gli ordini di acquisto inviati dai tuoi clienti",
+    "emptyDescription": "Qui compaiono gli ordini di acquisto inviati dai tuoi clienti.",
     "search": "Cerca ordini",
     "columns": {
       "order": "Ordine",
@@ -178,7 +178,7 @@
     },
     "firstAndMore": "{first} e altri {count, number}",
     "noneHere": "Nessun ordine qui",
-    "noneHereDescription": "Prova un’altra scheda o ricerca"
+    "noneHereDescription": "Prova un’altra scheda o ricerca."
   },
   "pages": {
     "catalogs": "Cataloghi",
@@ -232,7 +232,7 @@
     "inStock": "{count, number} in giacenza",
     "forVariants": "per {count, plural, one {# variante} other {# varianti}}",
     "emptyTitle": "Aggiungi il tuo primo prodotto",
-    "emptyDescription": "I clienti ordinano dai tuoi prodotti. Aggiungili uno alla volta o importa un foglio di calcolo.",
+    "emptyDescription": "Aggiungi i prodotti uno alla volta o importa un foglio di calcolo.",
     "addProduct": "Aggiungi prodotto",
     "search": "Cerca prodotti",
     "setActive": "Imposta come attivo",
@@ -252,9 +252,9 @@
     "importProducts": "Importa prodotti",
     "exportCsv": "Esporta in CSV",
     "downloadTemplate": "Scarica modello",
-    "importFailed": "Importazione non riuscita. Riprova.",
-    "alreadyImported": "Questo file è già stato importato.",
-    "description": "Usa il modello prodotti: una riga per variante. Gli SKU corrispondenti vengono aggiornati e quelli nuovi aggiunti. I prodotti non presenti nel file restano invariati.",
+    "importFailed": "Impossibile importare. Riprova.",
+    "alreadyImported": "Hai già importato questo file.",
+    "description": "Una riga per variante, abbinata tramite SKU. I prodotti non presenti nel file restano invariati.",
     "excelTemplate": "Modello Excel",
     "csvTemplate": "Modello CSV",
     "yourProducts": "I tuoi prodotti in Excel",
@@ -293,15 +293,15 @@
     "readyDate": "Data di disponibilità",
     "total": "Totale",
     "decline": "Rifiuta",
-    "approving": "Approvazione",
+    "approving": "Approvazione…",
     "approve": "Approva modifiche",
-    "withdrawing": "Ritiro",
+    "withdrawing": "Ritiro…",
     "withdraw": "Ritira",
     "edit": "Modifica",
     "declineTitle": "Rifiutare le modifiche?",
     "declineDescription": "L’ordine di acquisto resta invariato. {supplier} vedrà il tuo motivo.",
     "reasonLabel": "Motivo",
-    "declining": "Rifiuto",
+    "declining": "Rifiuto…",
     "declineChanges": "Rifiuta modifiche"
   },
   "orderReviser": {
@@ -310,9 +310,9 @@
     "noChanges": "Nessuna modifica da salvare",
     "sendFailed": "Impossibile inviare le modifiche. Riprova.",
     "sendForApproval": "Invia per approvazione",
-    "sending": "Invio",
+    "sending": "Invio…",
     "save": "Salva",
-    "saving": "Salvataggio",
+    "saving": "Salvataggio…",
     "orders": "Ordini",
     "editOrder": "Modifica ordine",
     "awaitingApproval": "In attesa di approvazione",
@@ -468,7 +468,7 @@
     "unknown": "Sconosciuto",
     "trackInventory": "Monitora inventario",
     "onHand": "In giacenza",
-    "piecesInStock": "Unità in giacenza.",
+    "piecesInStock": "Unità in giacenza",
     "continueSelling": "Continua a vendere quando esaurito",
     "notes": "Note",
     "giveSku": "Assegna uno SKU a ogni variante",
@@ -506,6 +506,6 @@
     "productCode": "Codice prodotto",
     "productPage": "Pagina prodotto",
     "catalogs": "Cataloghi",
-    "notInCatalog": "Non è in nessun catalogo."
+    "notInCatalog": "Non è in nessun catalogo"
   }
 }

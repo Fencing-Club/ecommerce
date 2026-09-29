@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "Wählen Sie eine Option",
-    "pickupPhone": "Fügen Sie eine Telefonnummer für die Abholung hinzu. Amazon benötigt sie, um die Abholung zu planen",
+    "pickupPhone": "Fügen Sie eine Telefonnummer für die Abholung hinzu. Amazon benötigt sie, um die Abholung zu planen.",
     "step": "Schritt {current} von {total}",
     "invitedBy": "Eingeladen von {name}",
     "back": "Zurück",

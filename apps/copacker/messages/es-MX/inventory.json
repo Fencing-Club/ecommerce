@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "Necesita acceso a los nombres de ubicaciones",
       "signInExpired": "La sesión venció",
-      "unavailable": "No disponible, inténtalo en unos minutos",
+      "unavailable": "No disponible. Inténtalo de nuevo en unos minutos.",
       "failed": "Falló la última sincronización"
     },
     "didntSync": "El inventario de {source} no se sincronizó",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "Ubicaciones de inventario",
-    "description": "Las existencias en las ubicaciones marcadas cuentan como tuyas en Reabastecimiento.",
+    "description": "Las existencias en las ubicaciones seleccionadas cuentan como tuyas en Reabastecimiento.",
     "notes": {
       "amazonFulfillment": "Existencias de Amazon FBA, leídas directamente de Amazon",
       "shopifyCollective": "Existencias de un socio a través de Shopify Collective",

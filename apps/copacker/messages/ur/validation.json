@@ -1,8 +1,8 @@
 {
-  "required": "یہ فیلڈ لازمی ہے",
+  "required": "یہ فیلڈ پُر کریں",
   "number": "نمبر درج کریں",
   "minLength": "کم از کم {minimum} حروف درج کریں",
-  "addOne": "کم از کم ایک شامل کریں",
+  "addOne": "کم از کم 1 شامل کریں",
   "minItems": "کم از کم {minimum} شامل کریں",
   "atLeast": "{minimum} یا اس سے زیادہ درج کریں",
   "greaterThan": "{minimum} سے بڑا نمبر درج کریں",

@@ -13,7 +13,7 @@
     "failures": {
       "shopifyPermissions": "لوکیشن کے ناموں تک رسائی درکار ہے",
       "signInExpired": "سائن ان کی میعاد ختم ہو گئی",
-      "unavailable": "دستیاب نہیں، چند منٹ بعد دوبارہ کوشش کریں",
+      "unavailable": "دستیاب نہیں۔ چند منٹ بعد دوبارہ کوشش کریں۔",
       "failed": "پچھلا سنک ناکام رہا"
     },
     "didntSync": "{source} انوینٹری سنک نہیں ہوئی",
@@ -28,7 +28,7 @@
   },
   "locations": {
     "title": "انوینٹری لوکیشنز",
-    "description": "نشان زد لوکیشنز کا اسٹاک ری اسٹاک میں آپ کا شمار ہوتا ہے۔",
+    "description": "منتخب لوکیشنز کا اسٹاک ری اسٹاک میں آپ کا شمار ہوتا ہے۔",
     "notes": {
       "amazonFulfillment": "Amazon FBA اسٹاک، براہ راست Amazon سے لیا جاتا ہے",
       "shopifyCollective": "Shopify Collective کے ذریعے کسی پارٹنر کا اسٹاک",

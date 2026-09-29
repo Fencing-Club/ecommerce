@@ -105,8 +105,8 @@
     "previewMinutes": "Elige una nueva contraseña para {email}. El enlace vence en {count, plural, one {# minuto} other {# minutos}}.",
     "previewHours": "Elige una nueva contraseña para {email}. El enlace vence en {count, plural, one {# hora} other {# horas}}.",
     "action": "Elegir una nueva contraseña",
-    "expiresMinutes": "El enlace vence en {count, plural, one {# minuto} other {# minutos}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo; tu contraseña no cambiará.",
-    "expiresHours": "El enlace vence en {count, plural, one {# hora} other {# horas}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo; tu contraseña no cambiará.",
+    "expiresMinutes": "El enlace vence en {count, plural, one {# minuto} other {# minutos}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo. Tu contraseña no cambiará.",
+    "expiresHours": "El enlace vence en {count, plural, one {# hora} other {# horas}}. Si no pediste restablecer tu contraseña, puedes ignorar este correo. Tu contraseña no cambiará.",
     "reason": "Alguien pidió restablecer la contraseña de {email} en Copacker."
   },
   "waitlistWelcome": {
@@ -116,7 +116,7 @@
     "lead": "Estamos dando acceso a pocos equipos a la vez, y te escribiremos cuando tengas tu lugar.",
     "preview": "Te escribiremos cuando tengas tu lugar.",
     "step1": "Cuando tengas tu lugar, te enviaremos un enlace para configurar tu espacio de trabajo.",
-    "step2": "Conecta Amazon, Shopify y eBay, y Copacker pronostica el inventario de cada producto.",
+    "step2": "Conecta Amazon, Shopify y eBay. Copacker pronostica el inventario de cada producto.",
     "step3": "Reabastece con un clic y sigue cada orden de compra hasta FBA, AWD o tu propio almacén.",
     "action": "Mira cómo funciona",
     "note": "¿Tienes preguntas antes? Responde a este correo.",

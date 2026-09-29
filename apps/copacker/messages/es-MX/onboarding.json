@@ -82,7 +82,7 @@
   },
   "wizard": {
     "chooseRole": "Elige una opción",
-    "pickupPhone": "Agrega un teléfono para la recolección. Amazon lo necesita para programarla",
+    "pickupPhone": "Agrega un teléfono para la recolección. Amazon lo necesita para programarla.",
     "step": "Paso {current} de {total}",
     "invitedBy": "Invitación de {name}",
     "back": "Atrás",
