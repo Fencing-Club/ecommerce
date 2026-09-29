@@ -16,7 +16,8 @@
     "fluent-agent": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://chat.fluentui.dev/mcp/server"]
+      // --prefer-offline starts from the npx cache, since the repo's package feed can stall.
+      "args": ["-y", "--prefer-offline", "mcp-remote@0.14.3", "https://chat.fluentui.dev/mcp/server"]
     },
     // "shadcn": {
     //   "command": "npx",
