@@ -44,7 +44,9 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
 
   await test.step("the buyer submits the purchase order", async () => {
     await openOrder(page, "E2E-FULFILL")
-    await expect(page.getByRole("main").getByText("E2E Forwarder address", { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole("main").getByText("E2E Forwarder, E2E Forwarder address", { exact: true })
+    ).toBeVisible()
     await page.getByRole("button", { name: "Submit to supplier" }).click()
     await expect(titleStatus(page)).toHaveText("With supplier")
   })

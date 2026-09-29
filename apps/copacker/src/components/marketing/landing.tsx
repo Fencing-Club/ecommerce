@@ -36,7 +36,9 @@ function Shot({
   return (
     <figure className={cn("relative", className)}>
       <div className="rounded-[1.25rem] bg-white/[0.08] p-1.5 shadow-[0_0_0_1px_rgb(255_255_255/0.12),0_0_0_2px_rgb(0_0_0/0.04),0_50px_120px_-40px_rgb(40_20_5/0.55)]">
-        <div className="overflow-hidden rounded-[0.875rem]">
+        {/* A picture of the app: the caption describes it, so its controls stay out of reach of keyboards and screen
+            readers. */}
+        <div aria-hidden inert className="overflow-hidden rounded-[0.875rem]">
           <Scaled width={width} height={height}>
             {children}
           </Scaled>
