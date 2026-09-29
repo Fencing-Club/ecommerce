@@ -160,7 +160,7 @@ test("says which row of a file is wrong", async ({ page }) => {
   const badPrice = [rows[0]!, rows[1]!.map((cell, index) => (headers[index] === "Price" ? "7.255" : cell))]
   let dialog = await preview(page, csvFile("bad-price.csv", [headers, ...badPrice]))
   await expect(dialog.getByRole("alert")).toHaveText(
-    "Row 3: Price must be an amount with at most two decimals, such as 12.50"
+    "Row 3: Price must be an amount with up to 2 decimals, such as 12.50"
   )
   await expect(dialog.getByRole("button", { name: "Preview" })).toBeVisible()
 

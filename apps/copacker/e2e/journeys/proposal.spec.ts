@@ -81,7 +81,7 @@ test("a supplier proposes changes to a purchase order and the buyer answers them
     await dialog.getByRole("button", { name: "Decline changes" }).click()
     await expect(panel).toBeHidden()
     await expect(page.getByRole("row", { name: /grip-left/ })).toContainText("100")
-    await expect(page.getByRole("region", { name: "Timeline" })).toContainText(`Supplier's changes declined: ${reason}`)
+    await expect(page.getByRole("region", { name: "Timeline" })).toContainText(`Supplier’s changes declined: ${reason}`)
   })
 
   await test.step("the supplier sees why and sends new changes", async () => {
