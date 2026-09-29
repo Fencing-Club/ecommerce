@@ -202,9 +202,7 @@ export function FileDropzone({
           {file ? (
             <>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-medium" title={file.name}>
-                  {fileName(file.name)}
-                </span>
+                <span className="truncate text-sm font-medium">{fileName(file.name, { title: file.name })}</span>
                 <span className="text-xs text-muted-foreground">{fileSize(file.size, locale)}</span>
               </span>
               {children}
@@ -226,14 +224,13 @@ export function FileDropzone({
                   {current.href ? (
                     <a
                       href={current.href}
-                      title={current.name}
                       className="truncate rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      {fileName(current.name)}
+                      {fileName(current.name, { title: current.name })}
                     </a>
                   ) : (
-                    <span className="truncate text-sm font-medium" title={current.name}>
-                      {fileName(current.name)}
+                    <span className="truncate text-sm font-medium">
+                      {fileName(current.name, { title: current.name })}
                     </span>
                   )}
                   {current.size !== undefined && (

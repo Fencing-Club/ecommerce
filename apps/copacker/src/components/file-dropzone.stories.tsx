@@ -62,8 +62,9 @@ export const ChooseAndRemove = meta.story({
     await userEvent.upload(fileInput(canvasElement), file)
     await expect(args.onFileChange).toHaveBeenCalledWith(file)
     await expect(await canvas.findByText("lotus-invoice-8812.pdf")).toBeVisible()
-    // The name reads left to right in every language.
+    // The name reads left to right in every language, and so does its tooltip, which is on the same element.
     await expect(canvas.getByText("lotus-invoice-8812.pdf")).toHaveAttribute("dir", "ltr")
+    await expect(canvas.getByText("lotus-invoice-8812.pdf")).toHaveAttribute("title", "lotus-invoice-8812.pdf")
     await expect(canvas.getByText("240 kB")).toBeVisible()
     // The row takes focus once the file shows.
     await waitFor(() => expect(canvas.getByText("lotus-invoice-8812.pdf").closest("[tabindex='-1']")).toHaveFocus())
@@ -153,6 +154,7 @@ export const StoredFile = meta.story({
       "/api/documents/doc-invoice"
     )
     await expect(canvas.getByText("lotus-invoice-8790.pdf")).toHaveAttribute("dir", "ltr")
+    await expect(canvas.getByText("lotus-invoice-8790.pdf")).toHaveAttribute("title", "lotus-invoice-8790.pdf")
     await expect(canvas.getByText("180 kB")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Replace lotus-invoice-8790.pdf" })).toBeEnabled()
     await expect(canvas.queryByRole("button", { name: /Drop a PDF/ })).toBeNull()
@@ -167,6 +169,7 @@ export const StoredWithoutLink = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("carton-labels.pdf")).toBeVisible()
     await expect(canvas.getByText("carton-labels.pdf")).toHaveAttribute("dir", "ltr")
+    await expect(canvas.getByText("carton-labels.pdf")).toHaveAttribute("title", "carton-labels.pdf")
     await expect(canvas.queryByRole("link")).toBeNull()
   }
 })

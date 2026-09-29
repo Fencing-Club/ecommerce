@@ -226,10 +226,16 @@ export function formatDestination(destination: string, t?: (key: `destinations.$
 }
 
 // A file name, which runs left to right in every language: in Urdu, 1043.pdf would read pdf.1043. It's inline, so the
-// name keeps its line's alignment beside its icon or label. It's also the `file` tag of a message that names a file,
-// such as "Uploaded, <file>{name}</file>": t.rich("uploadedSource", { name, file: fileName }).
-export function fileName(name: React.ReactNode) {
-  return <span dir="ltr">{name}</span>
+// name keeps its line's alignment beside its icon or label. A line that truncates the name passes it as `title`, to show
+// it whole on hover. The title goes on this span rather than the line, since browsers set a tooltip in the direction of
+// the element that has it. fileName is also the `file` tag of a message that names a file, such as
+// "Uploaded, <file>{name}</file>": t.rich("uploadedSource", { name, file: fileName }).
+export function fileName(name: React.ReactNode, { title }: { title?: string } = {}) {
+  return (
+    <span dir="ltr" title={title}>
+      {name}
+    </span>
+  )
 }
 
 // Each document kind's name, as its key under the "common" messages' `documents`.

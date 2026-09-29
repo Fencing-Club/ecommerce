@@ -66,7 +66,9 @@ needs room past the line too.
 - Product names, store names, SKUs, addresses and other data people typed stay as they are.
 - File names read left to right in every language; in Urdu, 1043.pdf would otherwise read pdf.1043. Show one with
   `fileName()` from `@/components/common`, an inline `<span dir="ltr">` that keeps its line's alignment. In a message,
-  tag the name, `"Uploaded, <file>{name}</file>"`, and pass `file: fileName` to `t.rich`.
+  tag the name, `"Uploaded, <file>{name}</file>"`, and pass `file: fileName` to `t.rich`. A tooltip takes the
+  direction of the element with the `title`, so a line that truncates a name shows it whole with
+  `fileName(name, { title: name })` rather than a `title` on the line.
 
 ## Adding a language
 

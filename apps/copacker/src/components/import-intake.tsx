@@ -151,12 +151,12 @@ export function ImportIntake() {
                   <>
                     <TableCell className="w-full max-w-0">
                       {href ? (
-                        <Link href={href} className="block truncate font-medium hover:underline" title={item.filename}>
-                          {fileName(item.filename)}
+                        <Link href={href} className="block truncate font-medium hover:underline">
+                          {fileName(item.filename, { title: item.filename })}
                         </Link>
                       ) : (
-                        <span className="block truncate font-medium" title={item.filename}>
-                          {fileName(item.filename)}
+                        <span className="block truncate font-medium">
+                          {fileName(item.filename, { title: item.filename })}
                         </span>
                       )}
                       <span className="block text-xs text-muted-foreground @xl:hidden">
