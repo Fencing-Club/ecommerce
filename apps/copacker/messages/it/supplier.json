@@ -135,7 +135,7 @@
     "noProductsYet": "Ancora nessun prodotto",
     "addProductsFirst": "Aggiungi dei prodotti prima di creare un catalogo.",
     "deleteTitle": "Eliminare {title}?",
-    "deleteDescription": "I suoi clienti vedranno tutti i prodotti attivi al loro prezzo. L’operazione è irreversibile."
+    "deleteDescription": "I suoi clienti vedranno tutti i prodotti attivi al loro prezzo. L’operazione non può essere annullata."
   },
   "customers": {
     "noCatalog": "Nessun catalogo",
