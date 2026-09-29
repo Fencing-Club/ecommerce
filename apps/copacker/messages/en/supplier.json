@@ -450,7 +450,7 @@
     "uploading": "Uploading {count, number}",
     "add": "Add",
     "addPhotos": "Add photos",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "Couldn't upload",
     "media": "Media",
     "makeMain": "Make {name} the main photo",

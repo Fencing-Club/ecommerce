@@ -450,7 +450,7 @@
     "uploading": "{count, number} अपलोड हो रहे हैं",
     "add": "जोड़ें",
     "addPhotos": "फ़ोटो जोड़ें",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "अपलोड नहीं हो सका",
     "media": "मीडिया",
     "makeMain": "{name} को मुख्य फ़ोटो बनाएं",

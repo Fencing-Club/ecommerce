@@ -450,7 +450,7 @@
     "uploading": "{count, number} werden hochgeladen",
     "add": "Hinzufügen",
     "addPhotos": "Fotos hinzufügen",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "Hochladen fehlgeschlagen",
     "media": "Medien",
     "makeMain": "{name} als Hauptfoto festlegen",

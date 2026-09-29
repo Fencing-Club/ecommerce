@@ -19,7 +19,7 @@ import {
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget } from "@/server/product-barcodes"
-import { WarningNote } from "./common"
+import { fileName, WarningNote } from "./common"
 import { pdfFiles } from "./file-dropzone"
 import { useUploadBarcodeMutation } from "./product-barcodes"
 
@@ -48,7 +48,7 @@ function Retry({ result, onRetry }: { result: Extract<Result, { status: "failed"
     >
       <Field>
         <FieldLabel htmlFor={id} className="text-xs font-normal text-muted-foreground">
-          {t("skuFor", { file: result.file.name })}
+          {t.rich("skuFor", { name: result.file.name, file: fileName })}
         </FieldLabel>
         <Input id={id} value={sku} onChange={(event) => setSku(event.target.value)} autoComplete="off" />
       </Field>
@@ -70,7 +70,7 @@ function ResultRow({ result, onRetry }: { result: Result; onRetry: (sku: string)
   }
   return (
     <li className="flex flex-col gap-1 px-3 py-2.5">
-      <span className="text-sm font-medium [overflow-wrap:anywhere]">{result.file.name}</span>
+      <span className="text-sm font-medium [overflow-wrap:anywhere]">{fileName(result.file.name)}</span>
       {result.status === "waiting" && <span className="text-xs text-muted-foreground">{t("waiting")}</span>}
       {result.status === "uploading" && <span className="text-xs text-muted-foreground">{t("uploading")}</span>}
       {result.status === "saved" && (

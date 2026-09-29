@@ -26,6 +26,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { type Accept, ErrorCode, type FileRejection, useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { fileName } from "./common"
 
 // A size as people read it in the language, such as 240 KB or 1.2 MB.
 function fileSize(bytes: number, locale: string) {
@@ -202,7 +203,7 @@ export function FileDropzone({
             <>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium" title={file.name}>
-                  {file.name}
+                  {fileName(file.name)}
                 </span>
                 <span className="text-xs text-muted-foreground">{fileSize(file.size, locale)}</span>
               </span>
@@ -228,11 +229,11 @@ export function FileDropzone({
                       title={current.name}
                       className="truncate rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      {current.name}
+                      {fileName(current.name)}
                     </a>
                   ) : (
                     <span className="truncate text-sm font-medium" title={current.name}>
-                      {current.name}
+                      {fileName(current.name)}
                     </span>
                   )}
                   {current.size !== undefined && (

@@ -67,7 +67,11 @@ export const Standard = meta.story({
     await expect(within(list).getByText("Standard, FNSKU X00TOTE001")).toBeVisible()
     // Without an FNSKU, the standard label shows the SKU.
     await expect(within(list).getByText("Standard, SKU barcode")).toBeVisible()
-    await expect(within(list).getByText("Uploaded, APRON-CHR.pdf")).toBeVisible()
+    // The uploaded file's name reads left to right in every language.
+    const uploaded = within(list).getByText("APRON-CHR.pdf")
+    await expect(uploaded).toBeVisible()
+    await expect(uploaded).toHaveAttribute("dir", "ltr")
+    await expect(uploaded.parentElement).toHaveTextContent("Uploaded, APRON-CHR.pdf")
     await expect(canvas.getByRole("button", { name: "Upload label for Natural" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Replace label for Striped" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Remove uploaded label for Striped" })).toBeVisible()

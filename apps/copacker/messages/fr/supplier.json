@@ -450,7 +450,7 @@
     "uploading": "Import de {count, number}",
     "add": "Ajouter",
     "addPhotos": "Ajouter des photos",
-    "fileError": "{file} : {error}",
+    "fileError": "<file>{name}</file> : {error}",
     "couldNotUpload": "Échec de l’import",
     "media": "Médias",
     "makeMain": "Définir {name} comme photo principale",

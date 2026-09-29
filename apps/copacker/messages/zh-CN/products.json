@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "标签",
-    "uploadedSource": "已上传：{name}",
+    "uploadedSource": "已上传：<file>{name}</file>",
     "labelMissing": "缺少标签",
     "amazonOnly": "仅限 Amazon",
     "amazonOnlyFnsku": "仅限 Amazon，FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}，{variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "无法上传条形码，请重试。",
-    "skuFor": "{file} 的 SKU",
+    "skuFor": "<file>{name}</file> 的 SKU",
     "save": "保存"
   },
   "withoutSupplier": {

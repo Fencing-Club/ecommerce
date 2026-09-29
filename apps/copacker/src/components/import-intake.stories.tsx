@@ -38,6 +38,10 @@ export const Imports = meta.story({
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("lotus-po-118.pdf")).toBeVisible()
     await expect(canvas.getAllByRole("row")).toHaveLength(importList.length + 1)
+    // File names read left to right in every language, with a link or without.
+    for (const file of ["lotus-po-118.pdf", "scan-0921.pdf"]) {
+      await expect(canvas.getByText(file)).toHaveAttribute("dir", "ltr")
+    }
     for (const status of ["Waiting", "Reading", "Ready for review", "Failed", "Cancelled", "Saved as draft"]) {
       await expect(canvas.getByText(status)).toBeVisible()
     }

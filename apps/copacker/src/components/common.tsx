@@ -225,6 +225,13 @@ export function formatDestination(destination: string, t?: (key: `destinations.$
   return t ? t(`destinations.${destination}`) : messages.destinations[destination]
 }
 
+// A file name, which runs left to right in every language: in Urdu, 1043.pdf would read pdf.1043. It's inline, so the
+// name keeps its line's alignment beside its icon or label. It's also the `file` tag of a message that names a file,
+// such as "Uploaded, <file>{name}</file>": t.rich("uploadedSource", { name, file: fileName }).
+export function fileName(name: React.ReactNode) {
+  return <span dir="ltr">{name}</span>
+}
+
 // Each document kind's name, as its key under the "common" messages' `documents`.
 const documentKinds: Record<string, keyof typeof messages.documents> = {
   purchase_order: "purchaseOrder",
@@ -260,10 +267,10 @@ export function DocumentList({
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium">
                   <span className="sr-only">{t("download")} </span>
-                  {kind ?? d.name}
+                  {kind ?? fileName(d.name)}
                   {d.cartonId && ` ${d.cartonId}`}
                 </span>
-                {kind && <span className="truncate text-xs text-muted-foreground">{d.name}</span>}
+                {kind && <span className="truncate text-xs text-muted-foreground">{fileName(d.name)}</span>}
               </span>
               <span
                 aria-hidden

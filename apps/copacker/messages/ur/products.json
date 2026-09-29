@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "لیبلز",
-    "uploadedSource": "اپ لوڈ شدہ، {name}",
+    "uploadedSource": "اپ لوڈ شدہ، <file>{name}</file>",
     "labelMissing": "لیبل موجود نہیں",
     "amazonOnly": "صرف Amazon",
     "amazonOnlyFnsku": "صرف Amazon، FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}، {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "بارکوڈ اپ لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
-    "skuFor": "{file} کا SKU",
+    "skuFor": "<file>{name}</file> کا SKU",
     "save": "محفوظ کریں"
   },
   "withoutSupplier": {

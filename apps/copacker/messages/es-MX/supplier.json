@@ -450,7 +450,7 @@
     "uploading": "Subiendo {count, number}",
     "add": "Agregar",
     "addPhotos": "Agregar fotos",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "No se pudo subir",
     "media": "Multimedia",
     "makeMain": "Hacer de {name} la foto principal",

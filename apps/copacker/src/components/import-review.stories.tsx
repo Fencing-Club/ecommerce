@@ -76,7 +76,10 @@ async function fillDetails(canvas: Canvas) {
 // What the reader found: a matched line, one it couldn't match, the document's notes, and totals that add up.
 export const Review = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("heading", { name: "lotus-po-118.pdf" })).toBeVisible()
+    const title = canvas.getByRole("heading", { name: "lotus-po-118.pdf" })
+    await expect(title).toBeVisible()
+    // The file name reads left to right in every language.
+    await expect(within(title).getByText("lotus-po-118.pdf")).toHaveAttribute("dir", "ltr")
     await expect(canvas.getByRole("link", { name: "Import" })).toHaveAttribute("href", "/orders/import")
     await expect(canvas.getByRole("button", { name: "View PDF" })).toHaveAttribute(
       "href",

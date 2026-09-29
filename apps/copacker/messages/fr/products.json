@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Étiquettes",
-    "uploadedSource": "Importée, {name}",
+    "uploadedSource": "Importée, <file>{name}</file>",
     "labelMissing": "Étiquette manquante",
     "amazonOnly": "Amazon uniquement",
     "amazonOnlyFnsku": "Amazon uniquement, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "Impossible d’importer le code-barres. Réessayez.",
-    "skuFor": "SKU pour {file}",
+    "skuFor": "SKU pour <file>{name}</file>",
     "save": "Enregistrer"
   },
   "withoutSupplier": {

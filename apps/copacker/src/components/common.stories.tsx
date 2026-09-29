@@ -1,6 +1,6 @@
 import { Plus, Repeat } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { expect, within } from "storybook/test"
+import { expect, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -193,5 +193,36 @@ export const Documents = meta.story({
       "href",
       "/api/documents/doc-other"
     )
+  }
+})
+
+// Where a text's last character ends on screen, rather than its element's box.
+function textRight(element: HTMLElement) {
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  return range.getBoundingClientRect().right
+}
+
+// File names read left to right in Urdu too: a purchase order's 1043.pdf, and an upload that goes by its name.
+export const DocumentsInUrdu = meta.story({
+  globals: { locale: "ur" },
+  render: () => (
+    <div className="max-w-md">
+      <DocumentList
+        documents={[
+          { id: "doc-po", name: "1043.pdf", kind: "purchase_order" },
+          { id: "doc-upload", name: "2291 invoice.pdf" }
+        ]}
+      />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(document.documentElement).toHaveAttribute("dir", "rtl"))
+    for (const file of ["1043.pdf", "2291 invoice.pdf"]) {
+      const name = canvas.getByText(file)
+      await expect(name).toHaveAttribute("dir", "ltr")
+      // Its line still starts on the right, beside the icon.
+      await expect(textRight(name)).toBeCloseTo(name.parentElement!.getBoundingClientRect().right, 0)
+    }
   }
 })

@@ -450,7 +450,7 @@
     "uploading": "Завантаження: {count, number}",
     "add": "Додати",
     "addPhotos": "Додати фото",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "Не вдалося завантажити",
     "media": "Медіа",
     "makeMain": "Зробити {name} головним фото",

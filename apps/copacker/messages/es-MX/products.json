@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Etiquetas",
-    "uploadedSource": "Subida, {name}",
+    "uploadedSource": "Subida, <file>{name}</file>",
     "labelMissing": "Falta la etiqueta",
     "amazonOnly": "Solo Amazon",
     "amazonOnlyFnsku": "Solo Amazon, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "No se pudo subir el código de barras. Inténtalo de nuevo.",
-    "skuFor": "SKU de {file}",
+    "skuFor": "SKU de <file>{name}</file>",
     "save": "Guardar"
   },
   "withoutSupplier": {

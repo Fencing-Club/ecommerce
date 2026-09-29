@@ -12,7 +12,7 @@ import { api } from "@/lib/api"
 import type { ProductLabel } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
 import type { BarcodeTarget, ProductBarcode } from "@/server/product-barcodes"
-import { WarningNote } from "./common"
+import { fileName, WarningNote } from "./common"
 
 const barcodesApi = api.injectEndpoints({
   overrideExisting: true,
@@ -58,7 +58,7 @@ async function fetchLabel(variantId: string, fallback: { error: string; name: st
 function LabelSource({ variation, productLabel }: { variation: BarcodeVariation; productLabel: ProductLabel }) {
   const t = useTranslations("products.barcodes")
   if (variation.barcode) {
-    return <>{t("uploadedSource", { name: variation.barcode.name })}</>
+    return <>{t.rich("uploadedSource", { name: variation.barcode.name, file: fileName })}</>
   }
   if (productLabel === "uploaded") {
     return <WarningNote>{t("labelMissing")}</WarningNote>

@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Етикетки",
-    "uploadedSource": "Завантажено, {name}",
+    "uploadedSource": "Завантажено, <file>{name}</file>",
     "labelMissing": "Немає етикетки",
     "amazonOnly": "Лише Amazon",
     "amazonOnlyFnsku": "Лише Amazon, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "Не вдалося завантажити штрихкод. Спробуйте ще раз.",
-    "skuFor": "SKU для {file}",
+    "skuFor": "SKU для <file>{name}</file>",
     "save": "Зберегти"
   },
   "withoutSupplier": {

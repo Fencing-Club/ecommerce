@@ -450,7 +450,7 @@
     "uploading": "正在上传 {count, number} 个",
     "add": "添加",
     "addPhotos": "添加图片",
-    "fileError": "{file}：{error}",
+    "fileError": "<file>{name}</file>：{error}",
     "couldNotUpload": "上传失败",
     "media": "媒体",
     "makeMain": "将 {name} 设为主图",

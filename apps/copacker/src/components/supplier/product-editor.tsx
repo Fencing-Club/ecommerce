@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import { PageLink, useCan } from "@/components/access"
-import { PageHeader } from "@/components/common"
+import { fileName, PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -136,11 +136,12 @@ function uploadLabel(
 function Media({ images, onChange }: { images: ProductImage[]; onChange: (images: ProductImage[]) => void }) {
   const input = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(0)
-  const [error, setError] = useState("")
+  // The last photo that didn't upload, and why.
+  const [failed, setFailed] = useState<{ name: string; error: string } | null>(null)
   const t = useTranslations("supplier.productEditor")
 
   async function upload(files: FileList) {
-    setError("")
+    setFailed(null)
     setUploading(files.length)
     const added: ProductImage[] = []
     for (const file of files) {
@@ -151,7 +152,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
       if (response.ok) {
         added.push(result)
       } else {
-        setError(t("fileError", { file: file.name, error: result.error ?? t("couldNotUpload") }))
+        setFailed({ name: file.name, error: result.error ?? t("couldNotUpload") })
       }
       setUploading((count) => count - 1)
     }
@@ -225,7 +226,7 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
             event.target.value = ""
           }}
         />
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {failed && <p className="text-sm text-destructive">{t.rich("fileError", { ...failed, file: fileName })}</p>}
       </CardContent>
     </Card>
   )

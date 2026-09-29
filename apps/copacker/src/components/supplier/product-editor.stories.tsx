@@ -145,7 +145,11 @@ export const Photos = meta.story({
     await waitFor(() => expect(images()).toEqual(["tote-back.png", "strap.png"]))
     await expect(uploaded).toHaveBeenCalledWith("strap.png")
     await expect(uploaded).toHaveBeenCalledWith("bad-scan.png")
-    await expect(canvas.getByText("bad-scan.png: Photos must be under 10 MB")).toBeVisible()
+    // The refused photo's name reads left to right in every language.
+    const refused = canvas.getByText("bad-scan.png")
+    await expect(refused).toBeVisible()
+    await expect(refused).toHaveAttribute("dir", "ltr")
+    await expect(refused.parentElement).toHaveTextContent("bad-scan.png: Photos must be under 10 MB")
     await userEvent.click(saveBar().getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(saved.mock.calls[0]![0].images).toEqual([

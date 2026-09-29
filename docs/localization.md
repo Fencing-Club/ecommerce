@@ -64,6 +64,9 @@ needs room past the line too.
   (`src/server/requirements.ts`) and `server.readiness.packing`; the package's `requirementText` is the English its PDFs
   print, since documents stay in English.
 - Product names, store names, SKUs, addresses and other data people typed stay as they are.
+- File names read left to right in every language; in Urdu, 1043.pdf would otherwise read pdf.1043. Show one with
+  `fileName()` from `@/components/common`, an inline `<span dir="ltr">` that keeps its line's alignment. In a message,
+  tag the name, `"Uploaded, <file>{name}</file>"`, and pass `file: fileName` to `t.rich`.
 
 ## Adding a language
 

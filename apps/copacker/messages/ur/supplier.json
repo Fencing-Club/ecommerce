@@ -450,7 +450,7 @@
     "uploading": "{count, number} اپ لوڈ ہو رہی ہیں",
     "add": "شامل کریں",
     "addPhotos": "تصاویر شامل کریں",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "اپ لوڈ نہیں ہو سکا",
     "media": "میڈیا",
     "makeMain": "{name} کو مرکزی تصویر بنائیں",

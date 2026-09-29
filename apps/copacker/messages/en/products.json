@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Labels",
-    "uploadedSource": "Uploaded, {name}",
+    "uploadedSource": "Uploaded, <file>{name}</file>",
     "labelMissing": "Label missing",
     "amazonOnly": "Amazon only",
     "amazonOnlyFnsku": "Amazon only, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "The barcode couldn't be uploaded. Try again.",
-    "skuFor": "SKU for {file}",
+    "skuFor": "SKU for <file>{name}</file>",
     "save": "Save"
   },
   "withoutSupplier": {

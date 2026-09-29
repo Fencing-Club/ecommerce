@@ -82,6 +82,12 @@ export const UploadMany = meta.story({
 
     // A file whose SKU matched nothing can be saved to another SKU.
     const sku = within(results).getByRole("textbox", { name: "SKU for TOTE-XL.pdf" })
+    // Its name reads left to right in every language, in its row and in the SKU's label.
+    const names = within(results).getAllByText("TOTE-XL.pdf")
+    await expect(names).toHaveLength(2)
+    for (const name of names) {
+      await expect(name).toHaveAttribute("dir", "ltr")
+    }
     await expect(within(results).getByRole("button", { name: "Save" })).toBeDisabled()
     await userEvent.type(sku, "TOTE-BLK")
     await userEvent.click(within(results).getByRole("button", { name: "Save" }))

@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Etiketten",
-    "uploadedSource": "Hochgeladen, {name}",
+    "uploadedSource": "Hochgeladen, <file>{name}</file>",
     "labelMissing": "Etikett fehlt",
     "amazonOnly": "Nur Amazon",
     "amazonOnlyFnsku": "Nur Amazon, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "Der Barcode konnte nicht hochgeladen werden. Versuchen Sie es erneut.",
-    "skuFor": "SKU für {file}",
+    "skuFor": "SKU für <file>{name}</file>",
     "save": "Speichern"
   },
   "withoutSupplier": {

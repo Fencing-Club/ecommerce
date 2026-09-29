@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "लेबल",
-    "uploadedSource": "अपलोड किया गया, {name}",
+    "uploadedSource": "अपलोड किया गया, <file>{name}</file>",
     "labelMissing": "लेबल नहीं है",
     "amazonOnly": "सिर्फ़ Amazon",
     "amazonOnlyFnsku": "सिर्फ़ Amazon, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "बारकोड अपलोड नहीं हो सका। फिर से कोशिश करें।",
-    "skuFor": "{file} का SKU",
+    "skuFor": "<file>{name}</file> का SKU",
     "save": "सेव करें"
   },
   "withoutSupplier": {

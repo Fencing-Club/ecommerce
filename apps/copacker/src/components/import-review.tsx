@@ -13,7 +13,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
 import { FormError, SubmitButton } from "./actions"
-import { PageHeader, WarningNote } from "./common"
+import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { Badge } from "./ui/badge"
@@ -396,7 +396,7 @@ export function ImportReview({
           { label: t("index.title"), href: "/orders" },
           { label: t("index.import"), href: "/orders/import" }
         ]}
-        title={filename}
+        title={fileName(filename)}
       >
         <Button
           variant="outline"

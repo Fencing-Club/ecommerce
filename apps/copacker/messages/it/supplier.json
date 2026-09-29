@@ -450,7 +450,7 @@
     "uploading": "Caricamento di {count, number}",
     "add": "Aggiungi",
     "addPhotos": "Aggiungi foto",
-    "fileError": "{file}: {error}",
+    "fileError": "<file>{name}</file>: {error}",
     "couldNotUpload": "Impossibile caricare",
     "media": "Contenuti multimediali",
     "makeMain": "Rendi {name} la foto principale",

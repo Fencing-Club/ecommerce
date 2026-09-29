@@ -68,7 +68,7 @@
   },
   "barcodes": {
     "list": "Etichette",
-    "uploadedSource": "Caricata, {name}",
+    "uploadedSource": "Caricata, <file>{name}</file>",
     "labelMissing": "Etichetta mancante",
     "amazonOnly": "Solo Amazon",
     "amazonOnlyFnsku": "Solo Amazon, FNSKU {fnsku}",
@@ -133,7 +133,7 @@
     "productVariant": "{product}, {variant}",
     "nameSku": "{name} ({sku})",
     "uploadFailed": "Impossibile caricare il codice a barre. Riprova.",
-    "skuFor": "SKU per {file}",
+    "skuFor": "SKU per <file>{name}</file>",
     "save": "Salva"
   },
   "withoutSupplier": {

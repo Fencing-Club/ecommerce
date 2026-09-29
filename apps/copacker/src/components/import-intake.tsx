@@ -13,7 +13,7 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
 import { FormError, SubmitButton } from "./actions"
-import { StatusBadge, type StatusTone } from "./common"
+import { fileName, StatusBadge, type StatusTone } from "./common"
 import { FileDropzone, pdfFiles } from "./file-dropzone"
 
 type ImportSummary = { id: string; filename: string; status: string; revision: number; createdAt: string }
@@ -152,11 +152,11 @@ export function ImportIntake() {
                     <TableCell className="w-full max-w-0">
                       {href ? (
                         <Link href={href} className="block truncate font-medium hover:underline" title={item.filename}>
-                          {item.filename}
+                          {fileName(item.filename)}
                         </Link>
                       ) : (
                         <span className="block truncate font-medium" title={item.filename}>
-                          {item.filename}
+                          {fileName(item.filename)}
                         </span>
                       )}
                       <span className="block text-xs text-muted-foreground @xl:hidden">
