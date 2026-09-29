@@ -9,13 +9,13 @@ documents, labels, catalog and product exports).
 
 | When | Against | What |
 | --- | --- | --- |
-| Every pull request and push (`e2e` job in CI) | A production build started in the job, a fresh Postgres and an S3 mock | Everything |
+| Every pull request and push (`e2e` job in CI, split in two) | A production build started in each half, a fresh Postgres and an S3 mock | Everything |
 | After each staging deploy (`deploy-staging`) | Staging | Everything |
 | After promoting to production | Production | Only specs tagged `@smoke`: signed out and read-only |
 
-Staging's deploy only runs once `verify` and `e2e` pass. The local and CI runs have no worker and no Shopify, Amazon,
-Resend or OpenRouter credentials, so queued jobs never run and anything that calls a store live is tested up to that
-call. On staging a worker runs; specs that only make sense locally skip themselves with `test.skip(deployed, …)`.
+Staging's deploy only runs once `verify`, `stories` and `e2e` pass. The local and CI runs have no worker and no Shopify,
+Amazon, Resend or OpenRouter credentials, so queued jobs never run and anything that calls a store live is tested up to
+that call. On staging a worker runs; specs that only make sense locally skip themselves with `test.skip(deployed, …)`.
 
 ## Test data
 

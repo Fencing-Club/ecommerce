@@ -44,9 +44,13 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
-      # Storybook's play functions run in Chromium through Vitest.
-      - run: pnpm --filter copacker exec playwright install --with-deps chromium-headless-shell
-      - run: pnpm verify
+      # pnpm verify, less Copacker's stories, which the stories job runs side by side.
+      - run: pnpm check:format
+      - run: pnpm check:lint
+      - run: pnpm check:types
+      - run: pnpm check:unused
+      - run: pnpm turbo run test:coverage --filter=!copacker
+      - run: pnpm --filter copacker exec vitest run --project unit --coverage
       # Only Copacker is deployed; the Docker build on Railway builds it again, so this is the pull request's check.
       - run: pnpm turbo run build --filter=copacker
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
@@ -56,10 +60,39 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_migrate
 
+  # Every story renders in Chromium and runs its play function. Run one after another they took 20 minutes, so they're
+  # split across four machines.
+  stories:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm install --global pnpm@11.9.0
+      - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter copacker exec playwright install --with-deps chromium-headless-shell
+      - run: pnpm --filter copacker exec vitest run --project 'storybook*' --shard=${{ matrix.shard }}/4
+
   # The Playwright suite (apps/copacker/e2e) against a production build, with the E2E seed in a fresh Postgres and an
   # S3 mock for uploads. It signs in through the WorkOS environment staging uses. See docs/e2e.md.
   e2e:
     runs-on: ubuntu-latest
+    # Split in two, each with its own build, database and S3 mock.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     services:
       postgres:
         image: postgres:18
@@ -111,11 +144,11 @@ jobs:
       - run: pnpm --filter copacker db:migrate
       - run: pnpm --filter copacker db:seed:e2e
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
-      - run: pnpm --filter copacker test:e2e
+      - run: pnpm --filter copacker test:e2e --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             apps/copacker/e2e/.report
             apps/copacker/e2e/.results
@@ -124,7 +157,7 @@ jobs:
           include-hidden-files: true
 
   deploy-staging:
-    needs: [verify, e2e]
+    needs: [verify, stories, e2e]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:

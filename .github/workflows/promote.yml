@@ -50,3 +50,5 @@ jobs:
             apps/copacker/e2e/.report
             apps/copacker/e2e/.results
           retention-days: 14
+          # The report folders start with a dot, which upload-artifact skips unless told otherwise.
+          include-hidden-files: true
