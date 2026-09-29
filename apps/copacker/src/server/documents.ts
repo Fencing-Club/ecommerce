@@ -175,7 +175,8 @@ async function documentParties(order: { buyerOrgId: string; supplierId: string }
   }
 }
 
-export async function generatePo(orderId: string, revision?: number) {
+// A purchase order revision and who its PDF names.
+async function poRevision(orderId: string, revision?: number) {
   const [order] = await db().select().from(orders).where(eq(orders.id, orderId))
   if (!order) {
     throw new Error("Purchase order is unavailable")
@@ -188,7 +189,34 @@ export async function generatePo(orderId: string, revision?: number) {
   if (!historical) {
     throw new Error("Purchase order revision is unavailable")
   }
-  const parties = await documentParties(order, historical.data)
+  return { order, targetRevision, historical, parties: await documentParties(order, historical.data) }
+}
+
+// The revision's PDF as it's already filed, such as the one made when the PO was sent, or else a new one. The email
+// attaches this, so sending it doesn't replace the document the PO's page links to while someone opens it.
+export async function filedPo(orderId: string, revision?: number) {
+  const { targetRevision, historical, parties } = await poRevision(orderId, revision)
+  const [doc] = await db()
+    .select()
+    .from(documents)
+    .where(
+      and(
+        eq(documents.orderId, orderId),
+        eq(documents.kind, "purchase_order"),
+        isNull(documents.shipmentId),
+        eq(documents.orderRevision, targetRevision),
+        eq(documents.outdated, 0)
+      )
+    )
+  if (!doc) {
+    return generatePo(orderId, revision)
+  }
+  const bytes = await getFile(doc.objectKey)
+  return { doc, bytes, shipTo: parties.shipTo?.name ?? destinationName(historical.data) }
+}
+
+export async function generatePo(orderId: string, revision?: number) {
+  const { order, targetRevision, historical, parties } = await poRevision(orderId, revision)
   const bytes = await purchaseOrderPdf({
     order: historical.data,
     revision: targetRevision,

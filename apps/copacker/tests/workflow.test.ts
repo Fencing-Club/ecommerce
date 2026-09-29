@@ -3790,7 +3790,17 @@ describe("fluid packing handoff", () => {
     vi.stubEnv("EMAIL_FROM", "copacker@example.com")
     const send = vi.fn<typeof fetch>(async () => Response.json({ id: "sent" }))
     vi.stubGlobal("fetch", send)
+    const currentPo = () =>
+      database
+        .select({ id: tables.documents.id })
+        .from(tables.documents)
+        .where(and(eq(tables.documents.kind, "purchase_order"), eq(tables.documents.outdated, 0)))
+    const filed = await currentPo()
+    expect(filed).toHaveLength(1)
+    storage.getFile.mockResolvedValue(new TextEncoder().encode("%PDF-"))
     await emailJob(emailed[0]!.payload, emailed[0]!.key, async () => undefined)
+    // The email attaches the PDF filed when the PO was sent, so the link on the PO's page keeps working.
+    expect(await currentPo()).toEqual(filed)
     const sent = JSON.parse(String(send.mock.calls[0]![1]!.body)) as { html: string; text: string }
     expect(sent).toMatchObject({
       to: ["supplier@example.com"],

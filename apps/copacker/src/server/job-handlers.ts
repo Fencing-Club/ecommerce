@@ -16,7 +16,7 @@ import { shipments, orders, orderRevisions, organizations, memberships, profiles
 import { defaultLocale, isLocale, type Locale } from "../i18n/locales"
 import { translatorFor } from "../i18n/translator"
 import { amazonFor, shopifyFor } from "./connections"
-import { generatePo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
+import { filedPo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
 import { amazonPacking, amazonReference, createOnce, fbaShipmentJob } from "./fba-shipments"
 import { saveSupplierSkus } from "./product-fields"
@@ -274,7 +274,7 @@ export async function emailJob(payload: Record<string, unknown>, key: string, as
       }
     })
   } else if (input.type === "po") {
-    const po = await generatePo(input.orderId!, input.revision)
+    const po = await filedPo(input.orderId!, input.revision)
     // The email says what the attached PDF does: that revision's lines, total, dates and ship-to, and the buyer.
     const [sent] = await db()
       .select({ order: orderRevisions.data, buyer: organizations.name })
