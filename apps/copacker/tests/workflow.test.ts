@@ -130,6 +130,7 @@ import { GET as readLocations, PATCH as patchLocation } from "../src/app/api/inv
 import { POST as refreshInventory } from "../src/app/api/inventory/refresh/route"
 import { GET as readInventory } from "../src/app/api/inventory/route"
 import { GET as downloadOrderLabels } from "../src/app/api/orders/[id]/labels/route"
+import { GET as downloadPo } from "../src/app/api/orders/[id]/po/route"
 import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
@@ -2521,6 +2522,16 @@ describe("document upload and packet release", () => {
     const current = await database.select().from(tables.documents).where(eq(tables.documents.kind, "product_label"))
     expect(current).toHaveLength(1)
     expect(current[0]).toMatchObject({ id: original!.id, outdated: 0 })
+  })
+  it("downloads the filed purchase order rather than filing another", async () => {
+    const filed = await generatePo(orderId)
+    storage.getFile.mockResolvedValue(new Uint8Array([4, 5, 6]))
+    const result = await downloadPo(new Request("http://localhost"), { params: Promise.resolve({ id: orderId }) })
+    expect(result.status).toBe(200)
+    expect(new Uint8Array(await result.arrayBuffer())).toEqual(new Uint8Array([4, 5, 6]))
+    expect(storage.getFile).toHaveBeenCalledWith(filed.doc.objectKey)
+    // The download leaves the purchase order's page linking to the same document.
+    expect(await database.select().from(tables.documents)).toEqual([filed.doc])
   })
   it("downloads an unchanged authorized document without caching", async () => {
     const prepared = await preparation()
