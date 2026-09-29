@@ -32,7 +32,7 @@ const session: Line[] = [
   { command: "copacker shipment list" },
   {
     output: `FBA17K3Q2XD5    Amazon FBA     45 cartons   Ready for pickup
-STAR-2HVN7KQ9   AWD US         75 cartons   Packing`
+STAR-2HVN7KQ9   Amazon AWD US  75 cartons   Packing`
   }
 ]
 
