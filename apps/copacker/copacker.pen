@@ -427,7 +427,7 @@
                   "fill": "$rd-fg-muted",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Search purchase orders, products, partners",
+                  "content": "Search purchase orders, products, and partners",
                   "fontFamily": "$rd-font",
                   "fontSize": 14,
                   "fontWeight": "normal"
@@ -450,7 +450,7 @@
                       "id": "OE14W",
                       "name": "Kbd Text",
                       "fill": "$rd-fg-muted",
-                      "content": "Ctrl K",
+                      "content": "Ctrl+K",
                       "fontFamily": "$rd-font",
                       "fontSize": 11,
                       "fontWeight": "500"
@@ -924,7 +924,7 @@
                       "id": "e60FF8",
                       "name": "Eyebrow",
                       "fill": "$rd-primary",
-                      "content": "Your move",
+                      "content": "Your next step",
                       "fontFamily": "$rd-font",
                       "fontSize": 12,
                       "fontWeight": "600"
@@ -2957,7 +2957,7 @@
                                           "id": "z8DTs",
                                           "name": "Amazon shipment failed t",
                                           "fill": "$rd-fg",
-                                          "content": "Amazon shipment failed to create",
+                                          "content": "Couldn’t create Amazon shipment",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -2979,7 +2979,7 @@
                                       "id": "sSssj",
                                       "name": "Amazon returned an error",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Amazon returned an error 2 hours ago",
+                                      "content": "Amazon rejected it 2 hours ago",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -2998,7 +2998,7 @@
                                   ],
                                   "descendants": {
                                     "dvUAb": {
-                                      "content": "Retry"
+                                      "content": "Try again"
                                     }
                                   }
                                 }
@@ -3085,7 +3085,7 @@
                                       "id": "JnUFl",
                                       "name": "Lotus Manufacturing is w",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Lotus Manufacturing is waiting since yesterday",
+                                      "content": "Lotus Manufacturing has been waiting since yesterday",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -3391,7 +3391,7 @@
                                           "id": "LvZNg",
                                           "name": "Restock, Amazon",
                                           "fill": "$rd-fg-muted",
-                                          "content": "Restock, Amazon",
+                                          "content": "Restock for Amazon",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "normal"
@@ -4631,10 +4631,10 @@
                                     },
                                     {
                                       "type": "text",
-                                      "id": "Rocuy",
-                                      "name": "Received, 30 days",
+                                      "id": "CMb7E",
+                                      "name": "Received (30 days)",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Received, 30 days",
+                                      "content": "Received (30 days)",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -5912,7 +5912,7 @@
                               "id": "pYdDH",
                               "name": "Search reference, suppli",
                               "fill": "$rd-fg-muted",
-                              "content": "Search reference, supplier or Amazon ID",
+                              "content": "Search reference, supplier, or Amazon ID",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -7752,13 +7752,13 @@
                           "icon": "file-check"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Approve the invoice for shipment 1"
                         },
                         "lqMjW": {
-                          "content": "Lotus Manufacturing submitted it yesterday at 4:12 PM for 240 units in 12 cartons. Once you approve, Copacker creates the Amazon shipment and Bayline Freight books pickup for Oct 2.",
+                          "content": "Lotus Manufacturing submitted it yesterday at 4:12 PM for 240 units in 12 cartons. After you approve, Copacker creates the Amazon shipment and Bayline Freight books pickup for Oct 2.",
                           "enabled": false
                         },
                         "hJT3o/aLwLC": {
@@ -9405,7 +9405,8 @@
                                                   "content": "Mixed SKUs are allowed in a carton",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             },
@@ -9449,7 +9450,8 @@
                                                   "content": "Up to 63.5 cm on each side and 22.68 kg, unless one unit is larger",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -9516,7 +9518,8 @@
                                                   "content": "2 labels: the FNSKU barcode, covering any other barcode, and a suffocation warning on the polybag",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -9580,10 +9583,11 @@
                                                   "fill": "$rd-fg",
                                                   "textGrowth": "fixed-width",
                                                   "width": "fill_container",
-                                                  "content": "Amazon’s carton label, printed once Harbor Goods releases labels",
+                                                  "content": "Amazon’s carton label, printed after Harbor Goods releases labels",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -9887,7 +9891,8 @@
                                                   "content": "At most 150 units per carton, and every carton of a SKU packed the same way",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             },
@@ -9931,7 +9936,8 @@
                                                   "content": "Up to 63.5 cm on each side and 22.68 kg",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -9998,7 +10004,8 @@
                                                   "content": "FNSKU barcode, covering any other barcode",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -10065,7 +10072,8 @@
                                                   "content": "2 labels: Amazon’s SSCC carton label and the carrier’s shipping label",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
-                                                  "fontSize": 13
+                                                  "fontSize": 13,
+                                                  "fontWeight": "normal"
                                                 }
                                               ]
                                             }
@@ -11002,7 +11010,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Consolidates and ships on",
+                                          "content": "Consolidates and ships onward",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -11839,13 +11847,13 @@
                           "icon": "git-pull-request"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Review 4 proposed changes"
                         },
                         "lqMjW": {
-                          "content": "Mei Chen changed 2 lines, removed 1 and added 1 on Sep 24. Packing starts once you approve, or once they answer if you decline.",
+                          "content": "Mei Chen changed 2 lines, removed 1, and added 1 on Sep 24. Packing starts after you approve, or after they answer if you decline.",
                           "enabled": false
                         },
                         "Wkb7J": {
@@ -13601,7 +13609,7 @@
                                       "fill": "$rd-fg",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Also update Shopify unit costs to the new prices for 2 variations",
+                                      "content": "Also update Shopify unit costs to the new prices for 2 variants",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -14382,7 +14390,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Consolidates and ships on",
+                                          "content": "Consolidates and ships onward",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -15300,7 +15308,7 @@
                           "icon": "file-check"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Approve the invoice"
@@ -16296,7 +16304,7 @@
                                       "id": "mSyWb",
                                       "name": "+86 769 8512 3340",
                                       "fill": "$rd-fg",
-                                      "content": "+86 769 8512 3340",
+                                      "content": "+86-769-8512-3340",
                                       "textAlign": "right",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
@@ -19467,7 +19475,7 @@
                                       "id": "CNFhK",
                                       "name": "Discounts, tooling or sa",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Discounts, tooling or sample charges",
+                                      "content": "Discounts, tooling, or sample charges",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -20697,7 +20705,7 @@
                           "type": "frame",
                           "id": "xDl3o",
                           "name": "Search Field",
-                          "width": 300,
+                          "width": 334,
                           "height": 34,
                           "cornerRadius": 8,
                           "stroke": "$rd-border",
@@ -20724,7 +20732,7 @@
                               "id": "O4IKS",
                               "name": "Search PO, shipment or A",
                               "fill": "$rd-fg-muted",
-                              "content": "Search PO, shipment or Amazon ID",
+                              "content": "Search purchase order, shipment, or Amazon ID",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -21149,7 +21157,7 @@
                                   "id": "NKPz7",
                                   "name": "Next move",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Next move",
+                                  "content": "Waiting on",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "500"
@@ -21663,7 +21671,7 @@
                                   "id": "B9MFKM",
                                   "name": "Amazon returned an error",
                                   "fill": "$rd-danger",
-                                  "content": "Amazon returned an error",
+                                  "content": "Rejected by Amazon",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -23790,7 +23798,7 @@
                               "id": "ZRJZK",
                               "name": "Search order number, SKU or ",
                               "fill": "$rd-fg-muted",
-                              "content": "Search order number, SKU or product",
+                              "content": "Search order number, SKU, or product",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -26300,7 +26308,7 @@
                           "fill": "$rd-fg-muted",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "Showing 1 to 10 of 412 orders",
+                          "content": "Showing 1–10 of 412 orders",
                           "fontFamily": "$rd-font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -27335,7 +27343,7 @@
                               "id": "h2C3dr",
                               "name": "Search title, variation or S",
                               "fill": "$rd-fg-muted",
-                              "content": "Search title, variation or SKU",
+                              "content": "Search title, variant, or SKU",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -27822,7 +27830,7 @@
                                           "id": "nt7W7",
                                           "name": "3 variations, 2 selected",
                                           "fill": "$rd-fg-muted",
-                                          "content": "3 variations, 2 selected",
+                                          "content": "3 variants, 2 selected",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -29861,7 +29869,7 @@
                                           "id": "wjruA",
                                           "name": "2 variations",
                                           "fill": "$rd-fg-muted",
-                                          "content": "2 variations",
+                                          "content": "2 variants",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -30111,7 +30119,7 @@
                                           "id": "B9O0N",
                                           "name": "3 variations",
                                           "fill": "$rd-fg-muted",
-                                          "content": "3 variations",
+                                          "content": "3 variants",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -30361,7 +30369,7 @@
                                           "id": "hHSQA",
                                           "name": "2 variations",
                                           "fill": "$rd-fg-muted",
-                                          "content": "2 variations",
+                                          "content": "2 variants",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -30611,7 +30619,7 @@
                                           "id": "m19NOo",
                                           "name": "4 variations",
                                           "fill": "$rd-fg-muted",
-                                          "content": "4 variations",
+                                          "content": "4 variants",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -30861,7 +30869,7 @@
                                           "id": "iQy6z",
                                           "name": "3 variations",
                                           "fill": "$rd-fg-muted",
-                                          "content": "3 variations",
+                                          "content": "3 variants",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -31108,7 +31116,7 @@
                                           "id": "EvGvg",
                                           "name": "1 variation",
                                           "fill": "$rd-fg-muted",
-                                          "content": "1 variation",
+                                          "content": "1 variant",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -31262,7 +31270,7 @@
                           "fill": "$rd-fg-muted",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "Showing 1 to 7 of 48 products",
+                          "content": "Showing 1–7 of 48 products",
                           "fontFamily": "$rd-font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -31313,7 +31321,7 @@
                           "fill": "$rd-fg"
                         },
                         "usCzB": {
-                          "content": "2 variations selected"
+                          "content": "2 variants selected"
                         },
                         "Hl0UA": {
                           "enabled": false
@@ -31869,7 +31877,7 @@
                                   "id": "f7B2S",
                                   "name": "3 variations",
                                   "fill": "$rd-fg",
-                                  "content": "3 variations",
+                                  "content": "3 variants",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 13,
                                   "fontWeight": "500"
@@ -32426,7 +32434,7 @@
                                               "id": "i0dNR",
                                               "name": "By variation",
                                               "fill": "$rd-fg-muted",
-                                              "content": "By variation",
+                                              "content": "By variant",
                                               "fontFamily": "$rd-font",
                                               "fontSize": 13,
                                               "fontWeight": "500"
@@ -32477,7 +32485,7 @@
                                               "id": "OcIgp",
                                               "name": "Variation",
                                               "fill": "$rd-fg-muted",
-                                              "content": "Variation",
+                                              "content": "Variant",
                                               "fontFamily": "$rd-font",
                                               "fontSize": 12,
                                               "fontWeight": "500"
@@ -35003,7 +35011,7 @@
                                           "id": "Y989g",
                                           "name": "3.6x",
                                           "fill": "$rd-fg",
-                                          "content": "3.6x",
+                                          "content": "3.6×",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "500"
@@ -36032,7 +36040,7 @@
                                   "id": "iFd6u",
                                   "name": "110 ft³",
                                   "fill": "$rd-fg",
-                                  "content": "110 ft³",
+                                  "content": "3.1 m³",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 18,
                                   "fontWeight": "600"
@@ -36070,7 +36078,7 @@
                                   "id": "U61fxG",
                                   "name": "920 lb",
                                   "fill": "$rd-fg",
-                                  "content": "920 lb",
+                                  "content": "417 kg",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 18,
                                   "fontWeight": "600"
@@ -39425,7 +39433,7 @@
                               "id": "m34f9s",
                               "name": "Search name, contact or emai",
                               "fill": "$rd-fg-muted",
-                              "content": "Search name, contact or email",
+                              "content": "Search name, contact, or email",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -39462,7 +39470,7 @@
                               "id": "TBELv",
                               "name": "Standing",
                               "fill": "$rd-fg",
-                              "content": "Standing",
+                              "content": "Copacker status",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "500"
@@ -39651,7 +39659,7 @@
                                   "id": "hJfUn",
                                   "name": "Standing",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Standing",
+                                  "content": "Copacker status",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "500"
@@ -39662,7 +39670,7 @@
                               "type": "frame",
                               "id": "sSNzR",
                               "name": "Col Lead time",
-                              "width": 80,
+                              "width": 100,
                               "justifyContent": "end",
                               "children": [
                                 {
@@ -39689,7 +39697,7 @@
                                   "id": "TNYyX",
                                   "name": "Open POs",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Open POs",
+                                  "content": "Open orders",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "500"
@@ -39862,7 +39870,7 @@
                               "type": "frame",
                               "id": "luYRn",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -40091,7 +40099,7 @@
                               "type": "frame",
                               "id": "cGSx0",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -40320,7 +40328,7 @@
                               "type": "frame",
                               "id": "ZZWOu",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -40554,7 +40562,7 @@
                               "type": "frame",
                               "id": "ciUOw",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -40562,9 +40570,9 @@
                                 {
                                   "type": "text",
                                   "id": "SRei7",
-                                  "name": "—",
+                                  "name": "Not applicable",
                                   "fill": "$rd-fg-muted",
-                                  "content": "—",
+                                  "content": "Not applicable",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -40783,7 +40791,7 @@
                               "type": "frame",
                               "id": "RUtuj",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -40791,9 +40799,9 @@
                                 {
                                   "type": "text",
                                   "id": "FWPUb",
-                                  "name": "—",
+                                  "name": "Not applicable",
                                   "fill": "$rd-fg-muted",
-                                  "content": "—",
+                                  "content": "Not applicable",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -41012,7 +41020,7 @@
                               "type": "frame",
                               "id": "Afn0N",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -41241,7 +41249,7 @@
                               "type": "frame",
                               "id": "A4yZZn",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -41470,7 +41478,7 @@
                               "type": "frame",
                               "id": "PDrQ1",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -41478,9 +41486,9 @@
                                 {
                                   "type": "text",
                                   "id": "T5ZBWf",
-                                  "name": "—",
+                                  "name": "Not applicable",
                                   "fill": "$rd-fg-muted",
-                                  "content": "—",
+                                  "content": "Not applicable",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -41695,7 +41703,7 @@
                               "type": "frame",
                               "id": "THe53",
                               "name": "Cell Lead time",
-                              "width": 80,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -43631,7 +43639,7 @@
                                               "id": "WrEvq",
                                               "name": "+86 574 8765 2210",
                                               "fill": "$rd-fg",
-                                              "content": "+86 574 8765 2210",
+                                              "content": "+86-574-8765-2210",
                                               "fontFamily": "$rd-font",
                                               "fontSize": 13,
                                               "fontWeight": "normal"
@@ -43900,7 +43908,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "9 variations supplied by Lotus Manufacturing",
+                                          "content": "9 variants supplied by Lotus Manufacturing",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "normal"
@@ -45675,7 +45683,7 @@
                                   "id": "oU5Cw",
                                   "name": "vs $17,816",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs $17,816",
+                                  "content": "Previously $17,816",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -45768,7 +45776,7 @@
                                   "id": "k9FTBv",
                                   "name": "vs 349",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 349",
+                                  "content": "Previously 349",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -45861,7 +45869,7 @@
                                   "id": "rpMtz",
                                   "name": "vs $51.05",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs $51.05",
+                                  "content": "Previously $51.05",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -45950,7 +45958,7 @@
                                   "id": "pZrEI",
                                   "name": "vs 671",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 671",
+                                  "content": "Previously 671",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -46186,7 +46194,7 @@
                                       "fill": "$rd-fg-muted",
                                       "textGrowth": "fixed-width",
                                       "width": 44,
-                                      "content": "$1k",
+                                      "content": "$1K",
                                       "textAlign": "right",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 11,
@@ -46201,7 +46209,7 @@
                                       "fill": "$rd-fg-muted",
                                       "textGrowth": "fixed-width",
                                       "width": 44,
-                                      "content": "$1.5k",
+                                      "content": "$1.5K",
                                       "textAlign": "right",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 11,
@@ -49526,7 +49534,7 @@
                                   "id": "FjV5m",
                                   "name": "vs 61 days",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 61 days",
+                                  "content": "Previously 61 days",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -49662,7 +49670,7 @@
                                   "id": "P9CJDr",
                                   "name": "vs 32 days",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 32 days",
+                                  "content": "Previously 32 days",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -49798,7 +49806,7 @@
                                   "id": "scgqY",
                                   "name": "vs 6 days",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 6 days",
+                                  "content": "Previously 6 days",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -49930,7 +49938,7 @@
                                   "id": "QBsOV",
                                   "name": "vs 21 days",
                                   "fill": "$rd-fg-muted",
-                                  "content": "vs 21 days",
+                                  "content": "Previously 21 days",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -52483,7 +52491,7 @@
                                       "id": "yoAYa",
                                       "name": "until shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "until shipped on",
+                                      "content": "until shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -53684,7 +53692,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -54340,7 +54348,7 @@
                                           "id": "cvbiS",
                                           "name": "Answer declined changes",
                                           "fill": "$rd-fg",
-                                          "content": "Answer declined changes",
+                                          "content": "Respond to declined changes",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -54381,7 +54389,7 @@
                                   ],
                                   "descendants": {
                                     "dvUAb": {
-                                      "content": "Answer"
+                                      "content": "Respond"
                                     }
                                   }
                                 }
@@ -56826,7 +56834,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -57393,7 +57401,7 @@
                               "id": "U84iDE",
                               "name": "Search placeholder",
                               "fill": "$rd-fg-muted",
-                              "content": "Search reference, customer or SKU",
+                              "content": "Search reference, customer, or SKU",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -58898,7 +58906,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -59621,13 +59629,13 @@
                           "icon": "package"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Pack 420 units in up to 3 shipments"
                         },
                         "lqMjW": {
-                          "content": "After you submit a packing list, Harbor Goods approves your invoice and Bayline Freight collects the cartons.",
+                          "content": "After you submit a packing list, Harbor Goods reviews your invoice, and Bayline Freight collects the cartons when it’s approved.",
                           "enabled": false
                         },
                         "J5P7CH": {
@@ -61063,7 +61071,7 @@
                                                   "fill": "$rd-fg",
                                                   "textGrowth": "fixed-width",
                                                   "width": "fill_container",
-                                                  "content": "Amazon’s carton label, printed once Harbor Goods releases labels",
+                                                  "content": "Amazon’s carton label, printed after Harbor Goods releases labels",
                                                   "lineHeight": 1.4,
                                                   "fontFamily": "$rd-font",
                                                   "fontSize": 13,
@@ -62268,7 +62276,7 @@
                                       "id": "La1tP",
                                       "name": "+1 510 555 0142",
                                       "fill": "$rd-fg",
-                                      "content": "+1 510 555 0142",
+                                      "content": "+1-510-555-0142",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -62421,7 +62429,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -63298,14 +63306,14 @@
                                   "alignItems": "center",
                                   "children": [
                                     {
-                                      "type": "text",
-                                      "id": "hIdGd",
-                                      "name": "Problem Mark",
-                                      "fill": "$rd-danger",
-                                      "content": "!",
-                                      "fontFamily": "$rd-font",
-                                      "fontSize": 13,
-                                      "fontWeight": "700"
+                                      "type": "icon",
+                                      "id": "Utq9q",
+                                      "name": "Problem Icon",
+                                      "width": 14,
+                                      "height": 14,
+                                      "icon": "priority_high",
+                                      "library": "Material Symbols Rounded",
+                                      "fill": "$rd-danger"
                                     }
                                   ]
                                 },
@@ -65603,7 +65611,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -66480,14 +66488,14 @@
                                   "alignItems": "center",
                                   "children": [
                                     {
-                                      "type": "text",
-                                      "id": "d4gCSz",
-                                      "name": "Problem Mark",
-                                      "fill": "$rd-danger",
-                                      "content": "!",
-                                      "fontFamily": "$rd-font",
-                                      "fontSize": 13,
-                                      "fontWeight": "700"
+                                      "type": "icon",
+                                      "id": "ISMX8",
+                                      "name": "Problem Icon",
+                                      "width": 14,
+                                      "height": 14,
+                                      "icon": "priority_high",
+                                      "library": "Material Symbols Rounded",
+                                      "fill": "$rd-danger"
                                     }
                                   ]
                                 },
@@ -68833,7 +68841,7 @@
                           "fill": "$rd-fg",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "Harbor Goods approves your invoice.",
+                          "content": "Harbor Goods reviews your invoice.",
                           "lineHeight": 1.4,
                           "fontFamily": "$rd-font",
                           "fontSize": 14,
@@ -68897,7 +68905,7 @@
                           "fill": "$rd-fg",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "You print labels once Harbor Goods releases them.",
+                          "content": "You print labels after Harbor Goods releases them.",
                           "lineHeight": 1.4,
                           "fontFamily": "$rd-font",
                           "fontSize": 14,
@@ -68933,7 +68941,7 @@
                       "name": "Button Submit",
                       "descendants": {
                         "aLwLC": {
-                          "content": "Submit"
+                          "content": "Submit list"
                         }
                       }
                     }
@@ -68970,7 +68978,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -71479,7 +71487,7 @@
                                       "fill": "$rd-fg",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Linen apron: SKU, quantity and price",
+                                      "content": "Linen apron: SKU, quantity, and price",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -71603,7 +71611,7 @@
                           "content": "6 changes to send"
                         },
                         "Hl0UA": {
-                          "content": "You can pack this order again once Harbor Goods approves or declines.",
+                          "content": "You can pack this order again after Harbor Goods approves or declines.",
                           "enabled": false
                         },
                         "L6knSl/aLwLC": {
@@ -71644,7 +71652,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -73420,7 +73428,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -75872,7 +75880,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -76425,7 +76433,7 @@
                               "id": "sGd2G",
                               "name": "Search placeholder",
                               "fill": "$rd-fg-muted",
-                              "content": "Search title, SKU or category",
+                              "content": "Search title, SKU, or category",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -76980,7 +76988,7 @@
                                   "id": "Pb8ll",
                                   "name": "Price",
                                   "fill": "$rd-fg",
-                                  "content": "$8.50 – $11.00",
+                                  "content": "$8.50–$11.00",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -77222,7 +77230,7 @@
                                   "id": "X27Kx",
                                   "name": "Price",
                                   "fill": "$rd-fg",
-                                  "content": "$14.00 – $16.50",
+                                  "content": "$14.00–$16.50",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -77441,7 +77449,7 @@
                                   "id": "Ks9QI",
                                   "name": "Price",
                                   "fill": "$rd-fg",
-                                  "content": "$18.00 – $22.00",
+                                  "content": "$18.00–$22.00",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -77660,7 +77668,7 @@
                                   "id": "YLjPS",
                                   "name": "Price",
                                   "fill": "$rd-fg",
-                                  "content": "$5.25 – $6.00",
+                                  "content": "$5.25–$6.00",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -78342,7 +78350,7 @@
                                   "id": "rWm1R",
                                   "name": "Price",
                                   "fill": "$rd-fg",
-                                  "content": "$24.00 – $28.00",
+                                  "content": "$24.00–$28.00",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "normal"
@@ -78785,7 +78793,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -83464,7 +83472,7 @@
                                                       "id": "AzdMZ",
                                                       "name": "Price",
                                                       "fill": "$rd-fg",
-                                                      "content": "$7.65 – $9.90",
+                                                      "content": "$7.65–$9.90",
                                                       "fontFamily": "$rd-font",
                                                       "fontSize": 14,
                                                       "fontWeight": "normal"
@@ -83581,7 +83589,7 @@
                                                       "id": "GSH1y",
                                                       "name": "Price",
                                                       "fill": "$rd-fg",
-                                                      "content": "$7.95 – $10.25",
+                                                      "content": "$7.95–$10.25",
                                                       "fontFamily": "$rd-font",
                                                       "fontSize": 14,
                                                       "fontWeight": "normal"
@@ -83684,7 +83692,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -84388,7 +84396,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Check what changes",
+                                          "content": "Preview changes",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -86283,7 +86291,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -86764,7 +86772,7 @@
                                   "id": "cFJXD",
                                   "name": "Placeholder",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Search product, variant or SKU",
+                                  "content": "Search product, variant, or SKU",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -86875,7 +86883,7 @@
                                   "id": "uexFC",
                                   "name": "Sell when out",
                                   "fill": "$rd-fg",
-                                  "content": "Sell when out",
+                                  "content": "Sell when out of stock",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 13,
                                   "fontWeight": "500"
@@ -87072,7 +87080,7 @@
                                   "type": "frame",
                                   "id": "nasUV",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -87081,7 +87089,7 @@
                                       "id": "K7Ma9W",
                                       "name": "Sell when out",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Sell when out",
+                                      "content": "Sell when out of stock",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "500"
@@ -87295,7 +87303,7 @@
                                   "type": "frame",
                                   "id": "VXFN3",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -87483,7 +87491,7 @@
                                   "type": "frame",
                                   "id": "YhEsr",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -87671,7 +87679,7 @@
                                   "type": "frame",
                                   "id": "r4hes",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -87890,7 +87898,7 @@
                                   "type": "frame",
                                   "id": "gk6qk",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -88080,7 +88088,7 @@
                                   "type": "frame",
                                   "id": "JXQ39",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -88270,7 +88278,7 @@
                                   "type": "frame",
                                   "id": "Al5WM",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -88491,7 +88499,7 @@
                                   "type": "frame",
                                   "id": "JZeZj",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -88675,7 +88683,7 @@
                                   "type": "frame",
                                   "id": "lZcbq",
                                   "name": "Cell Sell when out",
-                                  "width": 120,
+                                  "width": 150,
                                   "justifyContent": "end",
                                   "alignItems": "center",
                                   "children": [
@@ -88789,7 +88797,7 @@
                               "content": "3 unsaved changes"
                             },
                             "Hl0UA": {
-                              "content": "On hand for Canvas tote bag, Linen apron and Market basket",
+                              "content": "On hand for Canvas tote bag, Linen apron, and Market basket",
                               "enabled": false
                             },
                             "L6knSl/aLwLC": {
@@ -88832,7 +88840,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -90380,7 +90388,7 @@
                   "fill": "$rd-kind-supplier"
                 },
                 "jKIPu": {
-                  "content": "Search orders, products, customers"
+                  "content": "Search orders, products, and customers"
                 },
                 "CyBar": {
                   "content": "6"
@@ -93814,7 +93822,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -94242,7 +94250,7 @@
                                           "id": "dyrdO",
                                           "name": "Ship on to Amazon FBA ONT8",
                                           "fill": "$rd-fg",
-                                          "content": "Ship on to Amazon FBA ONT8",
+                                          "content": "Ship onward to Amazon FBA ONT8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -94348,7 +94356,7 @@
                                           "id": "HMkDa",
                                           "name": "Ship on to Amazon FBA ONT8",
                                           "fill": "$rd-fg",
-                                          "content": "Ship on to Amazon FBA ONT8",
+                                          "content": "Ship onward to Amazon FBA ONT8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -95589,7 +95597,7 @@
                                       "id": "I3Gzy",
                                       "name": "Shipped on, 30 days",
                                       "fill": "$rd-fg-muted",
-                                      "content": "Shipped on, 30 days",
+                                      "content": "Shipped onward (30 days)",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -96667,7 +96675,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -96998,7 +97006,7 @@
                           "name": "View Shipped on",
                           "descendants": {
                             "e2XCz": {
-                              "content": "Shipped on",
+                              "content": "Shipped onward",
                               "fill": "$rd-fg-muted"
                             },
                             "kE220": {
@@ -97070,7 +97078,7 @@
                               "id": "At8Iu",
                               "name": "Search shipment, client or t",
                               "fill": "$rd-fg-muted",
-                              "content": "Search shipment, client or tracking number",
+                              "content": "Search shipment, client, or tracking number",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -97426,7 +97434,7 @@
                               "type": "frame",
                               "id": "TDisQ",
                               "name": "Col Weight",
-                              "width": 80,
+                              "width": 72,
                               "justifyContent": "end",
                               "children": [
                                 {
@@ -97445,7 +97453,7 @@
                               "type": "frame",
                               "id": "y8aKL",
                               "name": "Col Date",
-                              "width": 72,
+                              "width": 100,
                               "children": [
                                 {
                                   "type": "text",
@@ -97649,7 +97657,7 @@
                               "type": "frame",
                               "id": "hsP4q",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -97670,7 +97678,7 @@
                               "type": "frame",
                               "id": "uLeZn",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -97894,7 +97902,7 @@
                               "type": "frame",
                               "id": "sHYyh",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -97915,7 +97923,7 @@
                               "type": "frame",
                               "id": "m6zwsn",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -98139,7 +98147,7 @@
                               "type": "frame",
                               "id": "xQfi0",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -98160,7 +98168,7 @@
                               "type": "frame",
                               "id": "cG4J7",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -98384,7 +98392,7 @@
                               "type": "frame",
                               "id": "VIuVb",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -98405,7 +98413,7 @@
                               "type": "frame",
                               "id": "PHRl5",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -98629,7 +98637,7 @@
                               "type": "frame",
                               "id": "y0C57",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -98650,7 +98658,7 @@
                               "type": "frame",
                               "id": "N3qE2",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -98874,7 +98882,7 @@
                               "type": "frame",
                               "id": "slGiB",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -98895,7 +98903,7 @@
                               "type": "frame",
                               "id": "yVMP2",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -99119,7 +99127,7 @@
                               "type": "frame",
                               "id": "nvtdQ",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -99140,7 +99148,7 @@
                               "type": "frame",
                               "id": "q2DRoq",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -99159,7 +99167,7 @@
                                   "id": "jFAcr",
                                   "name": "Shipped on",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Shipped on",
+                                  "content": "Shipped onward",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -99185,7 +99193,7 @@
                                       "fill": "$rd-info"
                                     },
                                     "y2KOW": {
-                                      "content": "Shipped on",
+                                      "content": "Shipped onward",
                                       "fill": "$rd-info"
                                     }
                                   }
@@ -99364,7 +99372,7 @@
                               "type": "frame",
                               "id": "IDsxq",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -99385,7 +99393,7 @@
                               "type": "frame",
                               "id": "iJcsM",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -99404,7 +99412,7 @@
                                   "id": "MLGs6",
                                   "name": "Shipped on",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Shipped on",
+                                  "content": "Shipped onward",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -99430,7 +99438,7 @@
                                       "fill": "$rd-info"
                                     },
                                     "y2KOW": {
-                                      "content": "Shipped on",
+                                      "content": "Shipped onward",
                                       "fill": "$rd-info"
                                     }
                                   }
@@ -99605,7 +99613,7 @@
                               "type": "frame",
                               "id": "CNb2B",
                               "name": "Cell Weight",
-                              "width": 80,
+                              "width": 72,
                               "layout": "vertical",
                               "gap": 2,
                               "alignItems": "end",
@@ -99626,7 +99634,7 @@
                               "type": "frame",
                               "id": "X6FBY",
                               "name": "Cell Date",
-                              "width": 72,
+                              "width": 100,
                               "layout": "vertical",
                               "gap": 2,
                               "children": [
@@ -99645,7 +99653,7 @@
                                   "id": "g8oCD",
                                   "name": "Shipped on",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Shipped on",
+                                  "content": "Shipped onward",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -99696,7 +99704,7 @@
                           "fill": "$rd-fg-muted",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "Showing 1 to 9 of 24 shipments",
+                          "content": "Showing 1–9 of 24 shipments",
                           "fontFamily": "$rd-font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -99840,7 +99848,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -100410,7 +100418,7 @@
                               "fill": "$rd-fg-disabled"
                             },
                             "Xpzfl": {
-                              "content": "Shipped on",
+                              "content": "Shipped onward",
                               "fontWeight": "500",
                               "fill": "$rd-fg-muted"
                             },
@@ -100456,7 +100464,7 @@
                           "icon": "truck"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Ship 12 cartons on to Amazon FBA ONT8"
@@ -101651,7 +101659,7 @@
                                           "id": "mpNtY",
                                           "name": "+86 579 8551 2040",
                                           "fill": "$rd-fg",
-                                          "content": "+86 579 8551 2040",
+                                          "content": "+86-579-8551-2040",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "500"
@@ -101786,7 +101794,7 @@
                                           "id": "Q3GOQ1",
                                           "name": "Not shipped on yet",
                                           "fill": "$rd-fg",
-                                          "content": "Not shipped on yet",
+                                          "content": "Not shipped onward yet",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -101846,7 +101854,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -102416,7 +102424,7 @@
                               "fill": "$rd-fg-disabled"
                             },
                             "Xpzfl": {
-                              "content": "Shipped on",
+                              "content": "Shipped onward",
                               "fontWeight": "500",
                               "fill": "$rd-fg-muted"
                             },
@@ -102462,7 +102470,7 @@
                           "icon": "truck"
                         },
                         "e60FF8": {
-                          "content": "Your move"
+                          "content": "Your next step"
                         },
                         "R3R2w": {
                           "content": "Ship 12 cartons on to Amazon FBA ONT8"
@@ -103657,7 +103665,7 @@
                                           "id": "kPRZC",
                                           "name": "+86 579 8551 2040",
                                           "fill": "$rd-fg",
-                                          "content": "+86 579 8551 2040",
+                                          "content": "+86-579-8551-2040",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "500"
@@ -103792,7 +103800,7 @@
                                           "id": "fGLEJ",
                                           "name": "Not shipped on yet",
                                           "fill": "$rd-fg",
-                                          "content": "Not shipped on yet",
+                                          "content": "Not shipped onward yet",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 14,
                                           "fontWeight": "500"
@@ -104212,7 +104220,7 @@
                               "id": "ACtfB",
                               "name": "Shipped on",
                               "fill": "$rd-fg",
-                              "content": "Shipped on",
+                              "content": "Shipped onward",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "500"
@@ -104341,7 +104349,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -104690,7 +104698,7 @@
                               "id": "L1sitU",
                               "name": "Search reference, client or ",
                               "fill": "$rd-fg-muted",
-                              "content": "Search reference, client or supplier",
+                              "content": "Search reference, client, or supplier",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -105170,7 +105178,7 @@
                                       "id": "K1B3N",
                                       "name": "1 of 2 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "1 of 2 shipped on",
+                                      "content": "1 of 2 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -105393,7 +105401,7 @@
                                       "id": "jQ31k",
                                       "name": "0 of 1 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "0 of 1 shipped on",
+                                      "content": "0 of 1 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -105605,7 +105613,7 @@
                                       "id": "GPWob",
                                       "name": "1 of 2 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "1 of 2 shipped on",
+                                      "content": "1 of 2 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -105828,7 +105836,7 @@
                                       "id": "aZHW6",
                                       "name": "0 of 2 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "0 of 2 shipped on",
+                                      "content": "0 of 2 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -106040,7 +106048,7 @@
                                       "id": "s6PlW",
                                       "name": "0 of 1 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "0 of 1 shipped on",
+                                      "content": "0 of 1 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -106252,7 +106260,7 @@
                                       "id": "L5AqU",
                                       "name": "0 of 1 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "0 of 1 shipped on",
+                                      "content": "0 of 1 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -106460,7 +106468,7 @@
                                       "id": "x6eG5P",
                                       "name": "0 of 3 shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "0 of 3 shipped on",
+                                      "content": "0 of 3 shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -106582,7 +106590,7 @@
                   "fill": "$rd-kind-forwarder"
                 },
                 "jKIPu": {
-                  "content": "Search shipments, purchase orders, clients"
+                  "content": "Search shipments, purchase orders, and clients"
                 },
                 "vxoKC": {
                   "enabled": false
@@ -107064,7 +107072,7 @@
                                   "id": "MZbb3",
                                   "name": "Last shipped on",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Last shipped on",
+                                  "content": "Last shipped onward",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "500"
@@ -107169,7 +107177,7 @@
                                           "id": "h8mDl",
                                           "name": "Ships on to Oakland warehous",
                                           "fill": "$rd-fg-muted",
-                                          "content": "Ships on to Oakland warehouse and Amazon FBA ONT8",
+                                          "content": "Ships onward to Oakland warehouse and Amazon FBA ONT8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -107352,7 +107360,7 @@
                                           "id": "nqS53",
                                           "name": "Ships on to Amazon FBA ONT8",
                                           "fill": "$rd-fg-muted",
-                                          "content": "Ships on to Amazon FBA ONT8",
+                                          "content": "Ships onward to Amazon FBA ONT8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -107535,7 +107543,7 @@
                                           "id": "ElevG",
                                           "name": "Ships on to Reno warehouse a",
                                           "fill": "$rd-fg-muted",
-                                          "content": "Ships on to Reno warehouse and Amazon FBA LGB8",
+                                          "content": "Ships onward to Reno warehouse and Amazon FBA LGB8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -107714,7 +107722,7 @@
                                           "id": "pyiiY",
                                           "name": "Ships on to Amazon FBA ONT8",
                                           "fill": "$rd-fg-muted",
-                                          "content": "Ships on to Amazon FBA ONT8",
+                                          "content": "Ships onward to Amazon FBA ONT8",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 12,
                                           "fontWeight": "normal"
@@ -108594,7 +108602,7 @@
                                   "id": "ODEnX",
                                   "name": "Retry failed Amazon shipment",
                                   "fill": "$rd-fg",
-                                  "content": "Retry failed Amazon shipment",
+                                  "content": "Create Amazon shipment again",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "500"
@@ -108604,7 +108612,7 @@
                                   "id": "z2cENL",
                                   "name": "Amazon returned an error 2 h",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Amazon returned an error 2 hours ago: a carton is over 22.68 kg",
+                                  "content": "Amazon rejected it 2 hours ago: a carton is over 22.68 kg",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -108724,7 +108732,7 @@
                                   ],
                                   "descendants": {
                                     "dvUAb": {
-                                      "content": "Retry"
+                                      "content": "Try again"
                                     }
                                   }
                                 }
@@ -109498,7 +109506,7 @@
                                   "id": "R57Zp",
                                   "name": "Bayline Freight needs them t",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Bayline Freight needs them to ship on to Oakland warehouse",
+                                  "content": "Bayline Freight needs them to ship onward to Oakland warehouse",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -109718,7 +109726,7 @@
                                   "id": "wqehy",
                                   "name": "Amazon, 60-day sales",
                                   "fill": "$rd-fg-muted",
-                                  "content": "Amazon, 60-day sales",
+                                  "content": "60 days of Amazon sales",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -110937,7 +110945,7 @@
                               "icon": "check-check"
                             },
                             "dvUAb": {
-                              "content": "Mark all read"
+                              "content": "Mark all as read"
                             }
                           }
                         }
@@ -111173,7 +111181,7 @@
                                       "id": "hXkHm",
                                       "name": "Mark read",
                                       "fill": "$rd-primary",
-                                      "content": "Mark read",
+                                      "content": "Mark as read",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "500"
@@ -111315,7 +111323,7 @@
                                       "fill": "$rd-fg",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "@Ava can you release the carton labels? Bayline Freight is waiting to ship on.",
+                                      "content": "@Ava can you release the carton labels? Bayline Freight is waiting to ship onward.",
                                       "lineHeight": 1.45,
                                       "fontFamily": "$rd-font",
                                       "fontSize": 14,
@@ -111375,7 +111383,7 @@
                                       "id": "ShZj6",
                                       "name": "Mark read",
                                       "fill": "$rd-primary",
-                                      "content": "Mark read",
+                                      "content": "Mark as read",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "500"
@@ -111477,7 +111485,7 @@
                                       "id": "iaRCR",
                                       "name": "shipped on",
                                       "fill": "$rd-fg-muted",
-                                      "content": "shipped on",
+                                      "content": "shipped onward",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 14,
                                       "fontWeight": "normal"
@@ -111575,7 +111583,7 @@
                                       "id": "m5Iz3",
                                       "name": "Mark read",
                                       "fill": "$rd-primary",
-                                      "content": "Mark read",
+                                      "content": "Mark as read",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 12,
                                       "fontWeight": "500"
@@ -112807,7 +112815,7 @@
                               "id": "YeZwr",
                               "name": "Search reference, suppli",
                               "fill": "$rd-fg-muted",
-                              "content": "Search reference, supplier or Amazon ID",
+                              "content": "Search reference, supplier, or Amazon ID",
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
                               "fontWeight": "normal"
@@ -118925,7 +118933,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Every page, the team and workspace settings",
+                                          "content": "Every page, the team, and workspace settings",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "normal"
@@ -120413,7 +120421,7 @@
                                       "fill": "$rd-fg-muted",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Totals, costs, sales and profit",
+                                      "content": "Totals, costs, sales, and profit",
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -121032,7 +121040,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Products, inventory, orders and payouts",
+                                          "content": "Products, inventory, orders, and payouts",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "normal"
@@ -121259,7 +121267,7 @@
                                           "fill": "$rd-fg-muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "Orders, fees, inventory and inbound shipments",
+                                          "content": "Orders, fees, inventory, and inbound shipments",
                                           "fontFamily": "$rd-font",
                                           "fontSize": 13,
                                           "fontWeight": "normal"
@@ -124071,7 +124079,7 @@
                                   "fill": "$rd-fg-muted",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Stops syncing products, stock and sales. You can reconnect anytime.",
+                                  "content": "Stops syncing products, stock, and sales. You can reconnect anytime.",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -124928,7 +124936,7 @@
                                               "fill": "$rd-fg",
                                               "textGrowth": "fixed-width",
                                               "width": "fill_container",
-                                              "content": "+86 579 8555 1234",
+                                              "content": "+86-579-8555-1234",
                                               "fontFamily": "$rd-font",
                                               "fontSize": 14,
                                               "fontWeight": "normal"
@@ -139120,7 +139128,7 @@
                               "fill": "$rd-fg",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Amazon shipment failed to create",
+                              "content": "Couldn’t create Amazon shipment",
                               "fontFamily": "$rd-font",
                               "fontSize": 14,
                               "fontWeight": "500"
@@ -140044,7 +140052,7 @@
                                   "fill": "$rd-fg",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Received, 30 days",
+                                  "content": "Received (30 days)",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "500"
@@ -140951,7 +140959,7 @@
                               "fill": "$rd-fg",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Answer declined changes",
+                              "content": "Respond to declined changes",
                               "fontFamily": "$rd-font",
                               "fontSize": 14,
                               "fontWeight": "500"
@@ -142071,7 +142079,7 @@
                               "fill": "$rd-fg",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Ship on to Amazon FBA ONT8",
+                              "content": "Ship onward to Amazon FBA ONT8",
                               "fontFamily": "$rd-font",
                               "fontSize": 14,
                               "fontWeight": "500"
@@ -142156,7 +142164,7 @@
                               "fill": "$rd-fg",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Ship on to Amazon FBA ONT8",
+                              "content": "Ship onward to Amazon FBA ONT8",
                               "fontFamily": "$rd-font",
                               "fontSize": 14,
                               "fontWeight": "500"
@@ -142696,7 +142704,7 @@
                                   "fill": "$rd-fg",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Shipped on, 30 days",
+                                  "content": "Shipped onward (30 days)",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 14,
                                   "fontWeight": "500"
@@ -143297,7 +143305,7 @@
                       "icon": "file-check"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Approve the invoice for shipment 1"
@@ -144281,13 +144289,13 @@
                       "icon": "git-pull-request"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Review the changes Lotus Manufacturing proposed"
                     },
                     "lqMjW": {
-                      "content": "Mei Chen changed 2 lines, removed 1 and added 1 on Sep 24. Packing starts once you approve.",
+                      "content": "Mei Chen changed 2 lines, removed 1, and added 1 on Sep 24. Packing starts after you approve.",
                       "enabled": false
                     },
                     "J5P7CH": {
@@ -145437,7 +145445,7 @@
                               "fill": "$rd-fg",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Also update Shopify unit costs to the new prices for 2 variations",
+                              "content": "Also update Shopify unit costs to the new prices for 2 variants",
                               "lineHeight": 1.4,
                               "fontFamily": "$rd-font",
                               "fontSize": 13,
@@ -145988,7 +145996,7 @@
                       "icon": "file-check"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Approve the invoice"
@@ -146805,13 +146813,13 @@
                       "icon": "package"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Pack 420 units in up to 3 shipments"
                     },
                     "lqMjW": {
-                      "content": "After you submit a packing list, Harbor Goods approves your invoice and Bayline Freight collects the cartons.",
+                      "content": "After you submit a packing list, Harbor Goods reviews your invoice, and Bayline Freight collects the cartons when it’s approved.",
                       "enabled": false
                     },
                     "J5P7CH": {
@@ -147253,7 +147261,7 @@
                                       "fill": "$rd-fg",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Amazon’s carton label, printed once Harbor Goods releases labels",
+                                      "content": "Amazon’s carton label, printed after Harbor Goods releases labels",
                                       "lineHeight": 1.4,
                                       "fontFamily": "$rd-font",
                                       "fontSize": 13,
@@ -150789,7 +150797,7 @@
                       "icon": "truck"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Ship 12 cartons on to Amazon FBA ONT8"
@@ -151610,7 +151618,7 @@
                       "icon": "truck"
                     },
                     "e60FF8": {
-                      "content": "Your move"
+                      "content": "Your next step"
                     },
                     "R3R2w": {
                       "content": "Ship 12 cartons on to Amazon FBA ONT8"
@@ -152496,7 +152504,7 @@
                       "id": "r4OLR",
                       "name": "Shipped on",
                       "fill": "$rd-fg",
-                      "content": "Shipped on",
+                      "content": "Shipped onward",
                       "fontFamily": "$rd-font",
                       "fontSize": 13,
                       "fontWeight": "500"
@@ -154623,7 +154631,7 @@
                               "id": "O8Iwl",
                               "name": "Card Title",
                               "fill": "$rd-fg",
-                              "content": "Estimate for a new PO",
+                              "content": "Estimate for a new purchase order",
                               "fontFamily": "$rd-font",
                               "fontSize": 15,
                               "fontWeight": "600"
@@ -155538,7 +155546,7 @@
                               "id": "lwxlJ",
                               "name": "+26% vs previous",
                               "fill": "$rd-success",
-                              "content": "+26% vs previous",
+                              "content": "+26% from previous",
                               "fontFamily": "$rd-font",
                               "fontSize": 12,
                               "fontWeight": "500"
@@ -155584,7 +155592,7 @@
                               "id": "Z92CA",
                               "name": "+18% vs previous",
                               "fill": "$rd-success",
-                              "content": "+18% vs previous",
+                              "content": "+18% from previous",
                               "fontFamily": "$rd-font",
                               "fontSize": 12,
                               "fontWeight": "500"
@@ -155642,7 +155650,7 @@
                               "id": "i7WnkO",
                               "name": "+7% vs previous",
                               "fill": "$rd-success",
-                              "content": "+7% vs previous",
+                              "content": "+7% from previous",
                               "fontFamily": "$rd-font",
                               "fontSize": 12,
                               "fontWeight": "500"
@@ -155688,7 +155696,7 @@
                               "id": "Sirle",
                               "name": "+23% vs previous",
                               "fill": "$rd-success",
-                              "content": "+23% vs previous",
+                              "content": "+23% from previous",
                               "fontFamily": "$rd-font",
                               "fontSize": 12,
                               "fontWeight": "500"
@@ -157576,7 +157584,7 @@
                               "id": "Vj0Fn",
                               "name": "110 ft³",
                               "fill": "$rd-fg",
-                              "content": "110 ft³",
+                              "content": "3.1 m³",
                               "fontFamily": "$rd-font",
                               "fontSize": 15,
                               "fontWeight": "600"
@@ -157614,7 +157622,7 @@
                               "id": "p6H1C",
                               "name": "920 lb",
                               "fill": "$rd-fg",
-                              "content": "920 lb",
+                              "content": "417 kg",
                               "fontFamily": "$rd-font",
                               "fontSize": 15,
                               "fontWeight": "600"
