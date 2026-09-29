@@ -32,17 +32,19 @@ const chapters = [
 // Where each chapter's still frame sits, for reduced motion.
 const stills = [0.09, 0.3, 0.47, 0.69, 0.815, 1]
 
-// The order's documents, each saved to it at the point on the trip where it's made. The carrier issues the bill of
-// lading once the container is aboard. Their names are under marketing.journey.documents.
+// The order's documents, each saved to it at the point on the trip where it's made, with the file name the app gives
+// it for purchase order 1043. Carton and shipping labels come one per carton, so theirs is the first carton's, from the
+// FBA shipment. The carrier issues the bill of lading once the container is aboard, and it keeps the name it's uploaded
+// with. Their types are named under marketing.journey.documents.
 const documents = [
-  { at: 0.06, key: "purchaseOrder", file: "PO-1043.pdf" },
-  { at: 0.138, key: "fnskuLabels", file: "PO-1043-fnsku-labels.pdf" },
-  { at: 0.146, key: "suffocationWarningLabels", file: "PO-1043-suffocation-warnings.pdf" },
-  { at: 0.212, key: "packingList", file: "PO-1043-packing-list.pdf" },
-  { at: 0.232, key: "cartonLabels", file: "PO-1043-carton-labels.pdf" },
-  { at: 0.237, key: "shippingLabels", file: "PO-1043-shipping-labels.pdf" },
-  { at: 0.5, key: "commercialInvoice", file: "PO-1043-invoice.pdf" },
-  { at: 0.558, key: "billOfLading", file: "PO-1043-bill-of-lading.pdf" }
+  { at: 0.06, key: "purchaseOrder", file: "1043.pdf" },
+  { at: 0.138, key: "fnskuLabels", file: "Steel Bottle 32 oz.pdf" },
+  { at: 0.146, key: "suffocationWarningLabels", file: "Suffocation warning labels.pdf" },
+  { at: 0.212, key: "packingList", file: "Packing list.pdf" },
+  { at: 0.232, key: "cartonLabels", file: "Carton 1 - FBA17K3Q2XD5U000001.pdf" },
+  { at: 0.237, key: "shippingLabels", file: "Shipping label - 1.pdf" },
+  { at: 0.5, key: "commercialInvoice", file: "Commercial invoice 1043.pdf" },
+  { at: 0.558, key: "billOfLading", file: "PLL204815.pdf" }
 ] as const
 
 // A card or a pin, pinned to a place in the world, or held at `spot` on the screen when the place moves too much for a
@@ -657,7 +659,10 @@ export function Journey() {
                     <FileText className="size-4 shrink-0 text-muted-foreground" />
                     <span className="flex min-w-0 flex-1 flex-col leading-tight">
                       <span className="font-medium">{t(`documents.${document.key}`)}</span>
-                      <span className="truncate text-xs text-muted-foreground">{document.file}</span>
+                      {/* A file name runs left to right in every language: in Urdu, 1043.pdf would read pdf.1043. */}
+                      <span className="truncate text-xs text-muted-foreground">
+                        <span dir="ltr">{document.file}</span>
+                      </span>
                     </span>
                     <Check className="size-4 shrink-0 text-success" />
                   </div>

@@ -50,7 +50,9 @@ export const Default = meta.story({
     await waitFor(() => expect(current(canvas)).toHaveTextContent("Customs"), { timeout: 10000 })
     await expect(scrollY).toBeGreaterThan(innerHeight)
     await waitFor(() => expect(canvas.getByText("8 documents")).toBeVisible())
-    await waitFor(() => expect(canvas.getByText("PO-1043-bill-of-lading.pdf")).toBeVisible())
+    await waitFor(() => expect(canvas.getByText("PLL204815.pdf")).toBeVisible())
+    // File names stay left to right in a right-to-left language.
+    await expect(canvas.getByText("1043.pdf")).toHaveAttribute("dir", "ltr")
   }
 })
 
