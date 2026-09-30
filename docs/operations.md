@@ -67,7 +67,7 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-Every push to `codex/copacker` runs CI (`pnpm verify`, Copacker's build, every migration on an empty Postgres 18, and
+Every push to `main` runs CI (`pnpm verify`, Copacker's build, every migration on an empty Postgres 18, and
 the [end-to-end suite](e2e.md)). When they pass, the `deploy-staging` job deploys that commit to Railway's staging
 environment and runs the end-to-end suite against it. To release to production, run the **Promote to production**
 workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs against

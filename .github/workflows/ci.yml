@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [codex/copacker]
+    branches: [main]
   pull_request:
 # A newer push replaces a pull request's run. Pushes to the branch each run in full, side by side: only their staging
 # deploys take turns (deploy-staging's own group), so a push doesn't wait for the one before to finish on staging.
