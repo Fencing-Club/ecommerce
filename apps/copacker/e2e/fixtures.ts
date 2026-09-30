@@ -10,11 +10,6 @@ export const workspaces = {
   forwarder: "E2E Forwarder"
 } as const
 export type Role = keyof typeof workspaces
-const subtitles: Record<Role, string> = {
-  buyer: "Buyer workspace",
-  supplier: "Supplier workspace",
-  forwarder: "Forwarder workspace"
-}
 
 // Whether the suite runs against a deployed site, where a worker runs jobs and the stores are real services.
 export const deployed = Boolean(process.env.E2E_BASE_URL)
@@ -24,18 +19,17 @@ export function unique(prefix: string) {
   return `${prefix} ${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
 
-// Opens the workspace menu and switches to the role's workspace, which reloads the portal.
+// Opens the top bar's workspace menu and switches to the role's workspace, which reloads the portal.
 export async function switchWorkspace(page: Page, role: Role) {
-  // The switcher is the only button named with a workspace kind; a page's own rows can name the workspaces too.
-  const switcher = page.getByRole("button", { name: /(Buyer|Supplier|Forwarder) workspace/ })
+  const switcher = page.getByRole("button", { name: /, switch workspace$/ })
   await switcher.click()
   await Promise.all([
     page.waitForResponse(
       (response) => response.url().endsWith("/api/action") && response.request().method() === "POST"
     ),
-    page.getByRole("menuitem", { name: workspaces[role] }).click()
+    page.getByRole("menuitem", { name: new RegExp(`^${workspaces[role]}`) }).click()
   ])
-  await expect(switcher).toHaveAccessibleName(new RegExp(`${workspaces[role]}.*${subtitles[role]}`))
+  await expect(switcher).toHaveAccessibleName(`${workspaces[role]}, switch workspace`)
 }
 
 export async function signIn(page: Page, password = e2ePassword()) {

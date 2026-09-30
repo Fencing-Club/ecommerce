@@ -3,7 +3,8 @@
     "store": "Магазин",
     "purchasing": "Закупівлі",
     "sales": "Продажі",
-    "catalog": "Товари"
+    "catalog": "Товари",
+    "freight": "Вантажі"
   },
   "pages": {
     "overview": "Огляд",
@@ -16,21 +17,30 @@
     "customers": "Клієнти",
     "inventory": "Запаси",
     "catalogs": "Каталоги",
-    "settings": "Налаштування"
+    "settings": "Налаштування",
+    "sales": "Продажі"
   },
-  "sidebar": {
-    "buyerWorkspace": "Робочий простір покупця",
-    "supplierWorkspace": "Робочий простір постачальника",
-    "forwarderWorkspace": "Робочий простір експедитора",
-    "workspaces": "Робочі простори",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Робочий простір покупця",
+      "supplier": "Робочий простір постачальника",
+      "forwarder": "Робочий простір експедитора"
+    },
     "newWorkspace": "Новий робочий простір",
-    "signOut": "Вийти",
+    "label": "{name}, змінити робочий простір",
+    "current": "Відкрито",
+    "workspaceSettings": "Налаштування робочого простору"
+  },
+  "accountMenu": {
     "theme": "Тема",
     "themes": {
       "light": "Світла",
       "dark": "Темна",
       "system": "Системна"
-    }
+    },
+    "signOut": "Вийти",
+    "label": "{name}, обліковий запис",
+    "accountSettings": "Налаштування облікового запису"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -46,8 +56,8 @@
     "close": "Закрити",
     "noResults": "Немає результатів для «{query}»",
     "pages": "Сторінки",
-    "orders": "Замовлення",
-    "loadingOrders": "Завантаження замовлень",
+    "orders": "Замовлення продажу",
+    "loadingOrders": "Завантаження замовлень продажу",
     "loadingResults": "Завантаження результатів",
     "recentPurchaseOrders": "Останні замовлення на закупівлю",
     "products": "Товари",
@@ -57,5 +67,15 @@
     "supplier": "Постачальник",
     "forwarder": "Експедитор",
     "failed": "Не вдалося виконати повний пошук. Спробуйте ще раз."
+  },
+  "create": {
+    "button": "Створити",
+    "purchaseOrder": "Замовлення на закупівлю",
+    "importPurchaseOrder": "Імпортувати замовлення на закупівлю",
+    "supplier": "Постачальник",
+    "forwarder": "Експедитор",
+    "product": "Товар",
+    "catalog": "Каталог",
+    "importProducts": "Імпортувати товари"
   }
 }

@@ -48,7 +48,7 @@ export const Open = meta.story({
     await expect(within(panel).getByRole("combobox")).toHaveFocus()
     await expect(groupNames(panel, "Pages")).toEqual([
       "Overview",
-      "Orders",
+      "Sales",
       "Products",
       "Restock",
       "Purchase orders",
@@ -101,7 +101,7 @@ export const FindPartner = meta.story({
     // The server's sales orders are searched too, and have none.
     await waitFor(() => expect(salesSearched).toHaveBeenLastCalledWith("lotus"))
     await waitFor(() => expect(within(panel).queryByRole("progressbar")).toBeNull())
-    await expect(within(panel).queryByRole("group", { name: "Orders" })).toBeNull()
+    await expect(within(panel).queryByRole("group", { name: "Sales orders" })).toBeNull()
     await userEvent.click(within(partners).getByRole("option", { name: /Lotus Manufacturing/ }))
     await expect(getRouter().push).toHaveBeenCalledWith("/partners?q=Lotus%20Manufacturing")
   }
@@ -136,7 +136,7 @@ export const FindSalesOrder = meta.story({
   play: async ({ canvas }) => {
     const panel = await openSearch(canvas)
     await userEvent.type(within(panel).getByRole("combobox"), "#10")
-    const orders = await within(panel).findByRole("group", { name: "Orders" })
+    const orders = await within(panel).findByRole("group", { name: "Sales orders" })
     await expect(salesSearched).toHaveBeenCalledWith("#10")
     // Only once typing paused, not for each letter.
     await expect(salesSearched).not.toHaveBeenCalledWith("#1")

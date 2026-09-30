@@ -3,7 +3,8 @@
     "store": "اسٹور",
     "purchasing": "خریداری",
     "sales": "سیلز",
-    "catalog": "پروڈکٹس"
+    "catalog": "پروڈکٹس",
+    "freight": "مال برداری"
   },
   "pages": {
     "overview": "جائزہ",
@@ -16,21 +17,30 @@
     "customers": "کسٹمرز",
     "inventory": "انوینٹری",
     "catalogs": "کیٹلاگز",
-    "settings": "سیٹنگز"
+    "settings": "سیٹنگز",
+    "sales": "سیلز"
   },
-  "sidebar": {
-    "buyerWorkspace": "خریدار ورک اسپیس",
-    "supplierWorkspace": "سپلائر ورک اسپیس",
-    "forwarderWorkspace": "فریٹ فارورڈر ورک اسپیس",
-    "workspaces": "ورک اسپیسز",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "خریدار ورک اسپیس",
+      "supplier": "سپلائر ورک اسپیس",
+      "forwarder": "فریٹ فارورڈر ورک اسپیس"
+    },
     "newWorkspace": "نیا ورک اسپیس",
-    "signOut": "سائن آؤٹ",
+    "label": "{name}، ورک اسپیس تبدیل کریں",
+    "current": "ابھی کھلا ہے",
+    "workspaceSettings": "ورک اسپیس سیٹنگز"
+  },
+  "accountMenu": {
     "theme": "تھیم",
     "themes": {
       "light": "لائٹ",
       "dark": "ڈارک",
       "system": "سسٹم"
-    }
+    },
+    "signOut": "سائن آؤٹ",
+    "label": "{name}، اکاؤنٹ",
+    "accountSettings": "اکاؤنٹ سیٹنگز"
   },
   "notifications": {
     "title": "اطلاعات",
@@ -46,8 +56,8 @@
     "close": "بند کریں",
     "noResults": "“{query}” کے لیے کوئی نتیجہ نہیں",
     "pages": "صفحات",
-    "orders": "آرڈرز",
-    "loadingOrders": "آرڈرز لوڈ ہو رہے ہیں",
+    "orders": "سیلز آرڈرز",
+    "loadingOrders": "سیلز آرڈرز لوڈ ہو رہے ہیں",
     "loadingResults": "نتائج لوڈ ہو رہے ہیں",
     "recentPurchaseOrders": "حالیہ خریداری آرڈرز",
     "products": "پروڈکٹس",
@@ -57,5 +67,15 @@
     "supplier": "سپلائر",
     "forwarder": "فریٹ فارورڈر",
     "failed": "ہر جگہ تلاش نہیں ہو سکی۔ دوبارہ کوشش کریں۔"
+  },
+  "create": {
+    "button": "بنائیں",
+    "purchaseOrder": "خریداری آرڈر",
+    "importPurchaseOrder": "خریداری آرڈر امپورٹ کریں",
+    "supplier": "سپلائر",
+    "forwarder": "فریٹ فارورڈر",
+    "product": "پروڈکٹ",
+    "catalog": "کیٹلاگ",
+    "importProducts": "پروڈکٹس امپورٹ کریں"
   }
 }

@@ -192,5 +192,6 @@
     "yours": "Tu siguiente paso",
     "waitingOn": "Esperando a {name}",
     "working": "En proceso"
-  }
+  },
+  "viewOnly": "Solo lectura"
 }

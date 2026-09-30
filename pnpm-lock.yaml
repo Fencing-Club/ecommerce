@@ -108,6 +108,9 @@ importers:
       next-intl:
         specifier: ^4.14.5
         version: 4.14.5(@swc/helpers@0.5.23)(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@24.13.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@24.13.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       pdf-lib:
         specifier: 1.17.1
         version: 1.17.1
@@ -6799,6 +6802,27 @@ packages:
   npm-run-path@6.0.0:
     resolution: {integrity: sha1-Jc/cTq4El28zScCxr8CJBSw2JTc=}
     engines: {node: '>=18'}
+
+  nuqs@2.10.1:
+    resolution: {integrity: sha1-XyHzUJo26UMsUmF3DmtF/VCGsME=}
+    peerDependencies:
+      '@remix-run/react': '>=2'
+      '@tanstack/react-router': ^1
+      next: '>=14.2.0'
+      react: 19.2.7
+      react-router: ^5 || ^6 || ^7 || ^8
+      react-router-dom: ^5 || ^6 || ^7
+    peerDependenciesMeta:
+      '@remix-run/react':
+        optional: true
+      '@tanstack/react-router':
+        optional: true
+      next:
+        optional: true
+      react-router:
+        optional: true
+      react-router-dom:
+        optional: true
 
   nypm@0.6.6:
     resolution: {integrity: sha1-Qx7kVgEm66o3c3bw4WhkAzbuiSA=}
@@ -13962,6 +13986,13 @@ snapshots:
     dependencies:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
+
+  nuqs@2.10.1(next@16.3.1(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@24.13.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7):
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      react: 19.2.7
+    optionalDependencies:
+      next: 16.3.1(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@24.13.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
   nypm@0.6.6:
     dependencies:

@@ -141,12 +141,11 @@ test("a new account signs up, gets started as a buyer, and deletes itself", asyn
 
     await expect(page).toHaveURL(/\/overview$/)
     await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible()
-    const switcher = page.getByRole("button", { name: new RegExp(company) })
-    await expect(switcher).toContainText("Buyer workspace")
+    await expect(page.getByRole("button", { name: `${company}, switch workspace` })).toBeVisible()
   })
 
   await test.step("add a supplier workspace, skipping its address", async () => {
-    await page.getByRole("button", { name: new RegExp(company) }).click()
+    await page.getByRole("button", { name: `${company}, switch workspace` }).click()
     await page.getByRole("menuitem", { name: "New workspace" }).click()
     await expect(page).toHaveURL(/\/workspaces\/new$/)
     const main = page.getByRole("main")
@@ -160,7 +159,7 @@ test("a new account signs up, gets started as a buyer, and deletes itself", asyn
     await main.getByRole("button", { name: "Skip for now" }).click()
 
     await expect(page).toHaveURL(/\/orders$/)
-    await expect(page.getByRole("button", { name: new RegExp(supplier) })).toContainText("Supplier workspace")
+    await expect(page.getByRole("button", { name: `${supplier}, switch workspace` })).toBeVisible()
     await rememberOrganizations()
     expect(organizations.size).toBe(2)
   })
@@ -175,7 +174,7 @@ test("a new account signs up, gets started as a buyer, and deletes itself", asyn
     await confirm.click()
     // The buyer workspace is what's left.
     await expect(page).toHaveURL(/\/overview$/)
-    await expect(page.getByRole("button", { name: new RegExp(company) })).toContainText("Buyer workspace")
+    await expect(page.getByRole("button", { name: `${company}, switch workspace` })).toBeVisible()
   })
 
   await test.step("delete the account", async () => {

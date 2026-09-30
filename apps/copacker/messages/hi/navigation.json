@@ -3,7 +3,8 @@
     "store": "स्टोर",
     "purchasing": "खरीदारी",
     "sales": "बिक्री",
-    "catalog": "प्रोडक्ट"
+    "catalog": "प्रोडक्ट",
+    "freight": "माल ढुलाई"
   },
   "pages": {
     "overview": "ओवरव्यू",
@@ -16,21 +17,30 @@
     "customers": "ग्राहक",
     "inventory": "इन्वेंटरी",
     "catalogs": "कैटलॉग",
-    "settings": "सेटिंग्स"
+    "settings": "सेटिंग्स",
+    "sales": "बिक्री"
   },
-  "sidebar": {
-    "buyerWorkspace": "खरीदार वर्कस्पेस",
-    "supplierWorkspace": "सप्लायर वर्कस्पेस",
-    "forwarderWorkspace": "फ़ॉरवर्डर वर्कस्पेस",
-    "workspaces": "वर्कस्पेस",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "खरीदार वर्कस्पेस",
+      "supplier": "सप्लायर वर्कस्पेस",
+      "forwarder": "फ़ॉरवर्डर वर्कस्पेस"
+    },
     "newWorkspace": "नया वर्कस्पेस",
-    "signOut": "साइन आउट",
+    "label": "{name}, वर्कस्पेस बदलें",
+    "current": "अभी खुला",
+    "workspaceSettings": "वर्कस्पेस सेटिंग्स"
+  },
+  "accountMenu": {
     "theme": "थीम",
     "themes": {
       "light": "लाइट",
       "dark": "डार्क",
       "system": "सिस्टम"
-    }
+    },
+    "signOut": "साइन आउट",
+    "label": "{name}, खाता",
+    "accountSettings": "खाता सेटिंग्स"
   },
   "notifications": {
     "title": "सूचनाएं",
@@ -46,8 +56,8 @@
     "close": "बंद करें",
     "noResults": "“{query}” के लिए कोई नतीजा नहीं",
     "pages": "पेज",
-    "orders": "ऑर्डर",
-    "loadingOrders": "ऑर्डर लोड हो रहे हैं",
+    "orders": "बिक्री ऑर्डर",
+    "loadingOrders": "बिक्री ऑर्डर लोड हो रहे हैं",
     "loadingResults": "नतीजे लोड हो रहे हैं",
     "recentPurchaseOrders": "हाल के खरीद ऑर्डर",
     "products": "प्रोडक्ट",
@@ -57,5 +67,15 @@
     "supplier": "सप्लायर",
     "forwarder": "फ़ॉरवर्डर",
     "failed": "सब कुछ खोजा नहीं जा सका। फिर से कोशिश करें।"
+  },
+  "create": {
+    "button": "बनाएँ",
+    "purchaseOrder": "खरीद ऑर्डर",
+    "importPurchaseOrder": "खरीद ऑर्डर इंपोर्ट करें",
+    "supplier": "सप्लायर",
+    "forwarder": "फ़ॉरवर्डर",
+    "product": "प्रोडक्ट",
+    "catalog": "कैटलॉग",
+    "importProducts": "प्रोडक्ट इंपोर्ट करें"
   }
 }

@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Download, FileText, PackageOpen } from "lucide-react"
+import { AlertTriangle, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -122,55 +122,74 @@ export function Status({ status }: { status: string }) {
   return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
 }
 
-// The page title with its actions on the right. A record's page passes its parents, which lead the title on the same
-// line (Customers › Fencing Club), and a status badge after it. When the actions don't fit beside the title, they wrap
-// below it, across the page's full width. It must be the page's first element, so the sidebar's collapse button sits
-// beside the title. The title's line is 36px tall with or without actions beside it, so titles line up across pages.
+// The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title; a sidebar
+// page has none. Then the title, a record's status and a View only badge when the person can't change the page, with
+// the page's actions on the right: at most one primary, a couple of secondary, and ⋯ last. When the actions don't fit
+// beside the title they wrap below it. A description only where it says something the page doesn't; a record's meta
+// row (who and where, as separate items, never joined by a dot); and the page's tabs.
 export function PageHeader({
   title,
   parents,
   badge,
+  viewOnly,
   description,
+  meta,
+  tabs,
   children
 }: {
   title: React.ReactNode
   // Each links to its page, unless the person can't open it.
   parents?: Array<{ label: string; href?: string }>
   badge?: React.ReactNode
+  viewOnly?: boolean
   description?: React.ReactNode
+  meta?: React.ReactNode
+  tabs?: React.ReactNode
   children?: React.ReactNode
 }) {
   const t = useTranslations("common")
   return (
-    <div data-slot="page-header" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-1">
-        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {parents?.length ? (
-            <nav aria-label={t("breadcrumb")}>
-              <ol className="flex items-center gap-2 text-sm text-muted-foreground">
-                {parents.map((parent) => (
-                  <li key={parent.label} className="flex items-center gap-2">
-                    {parent.href ? (
-                      <Link href={parent.href} className="rounded-sm hover:text-foreground">
-                        {parent.label}
-                      </Link>
-                    ) : (
-                      parent.label
-                    )}
-                    <ChevronRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          ) : null}
-          <h1 className={cn("min-w-0 font-semibold tracking-tight", parents?.length ? "text-xl" : "text-2xl")}>
-            {title}
-          </h1>
+    <div data-slot="page-header" className="flex flex-col gap-3">
+      {parents?.length ? (
+        <nav aria-label={t("breadcrumb")}>
+          <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+            {parents.map((parent) => (
+              <li key={parent.label} className="flex items-center gap-1.5">
+                {parent.href ? (
+                  <Link href={parent.href} className="rounded-sm hover:text-foreground">
+                    {parent.label}
+                  </Link>
+                ) : (
+                  parent.label
+                )}
+                <ChevronRight aria-hidden className="size-3.5 shrink-0 rtl:rotate-180" />
+              </li>
+            ))}
+          </ol>
+        </nav>
+      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="min-w-0 text-[22px] leading-8 font-semibold tracking-tight md:text-2xl">{title}</h1>
           {badge}
+          {viewOnly && (
+            <StatusBadge tone="neutral" icon={<Eye aria-hidden />}>
+              {t("viewOnly")}
+            </StatusBadge>
+          )}
         </div>
-        {description && <div className="text-sm text-muted-foreground">{description}</div>}
+        {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
       </div>
-      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+      {description && <div className="max-w-prose text-sm text-muted-foreground">{description}</div>}
+      {meta && (
+        <div
+          data-slot="page-meta"
+          className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground"
+        >
+          {meta}
+        </div>
+      )}
+      {tabs}
     </div>
   )
 }

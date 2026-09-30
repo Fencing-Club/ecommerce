@@ -4,7 +4,7 @@ test.use({ role: "buyer" })
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/sales")
-  await expect(page.getByRole("heading", { name: "Orders", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Sales", level: 1 })).toBeVisible()
 })
 
 test("lists the seeded Shopify orders newest first", { tag: "@mobile" }, async ({ page }) => {

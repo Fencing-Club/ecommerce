@@ -3,7 +3,8 @@
     "store": "Store",
     "purchasing": "Purchasing",
     "sales": "Sales",
-    "catalog": "Products"
+    "catalog": "Products",
+    "freight": "Freight"
   },
   "pages": {
     "overview": "Overview",
@@ -16,21 +17,30 @@
     "customers": "Customers",
     "inventory": "Inventory",
     "catalogs": "Catalogs",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sales": "Sales"
   },
-  "sidebar": {
-    "buyerWorkspace": "Buyer workspace",
-    "supplierWorkspace": "Supplier workspace",
-    "forwarderWorkspace": "Forwarder workspace",
-    "workspaces": "Workspaces",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Buyer workspace",
+      "supplier": "Supplier workspace",
+      "forwarder": "Forwarder workspace"
+    },
     "newWorkspace": "New workspace",
-    "signOut": "Sign out",
+    "label": "{name}, switch workspace",
+    "current": "Open now",
+    "workspaceSettings": "Workspace settings"
+  },
+  "accountMenu": {
     "theme": "Theme",
     "themes": {
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "signOut": "Sign out",
+    "label": "{name}, account",
+    "accountSettings": "Account settings"
   },
   "notifications": {
     "title": "Notifications",
@@ -46,8 +56,8 @@
     "close": "Close",
     "noResults": "No results for “{query}”",
     "pages": "Pages",
-    "orders": "Orders",
-    "loadingOrders": "Loading orders",
+    "orders": "Sales orders",
+    "loadingOrders": "Loading sales orders",
     "loadingResults": "Loading results",
     "recentPurchaseOrders": "Recent purchase orders",
     "products": "Products",
@@ -57,5 +67,15 @@
     "supplier": "Supplier",
     "forwarder": "Forwarder",
     "failed": "Couldn’t search everything. Try again."
+  },
+  "create": {
+    "button": "Create",
+    "purchaseOrder": "Purchase order",
+    "importPurchaseOrder": "Import purchase order",
+    "supplier": "Supplier",
+    "forwarder": "Forwarder",
+    "product": "Product",
+    "catalog": "Catalog",
+    "importProducts": "Import products"
   }
 }

@@ -3,7 +3,8 @@
     "store": "Negozio",
     "purchasing": "Acquisti",
     "sales": "Vendite",
-    "catalog": "Prodotti"
+    "catalog": "Prodotti",
+    "freight": "Merci"
   },
   "pages": {
     "overview": "Panoramica",
@@ -16,21 +17,30 @@
     "customers": "Clienti",
     "inventory": "Inventario",
     "catalogs": "Cataloghi",
-    "settings": "Impostazioni"
+    "settings": "Impostazioni",
+    "sales": "Vendite"
   },
-  "sidebar": {
-    "buyerWorkspace": "Workspace acquirente",
-    "supplierWorkspace": "Workspace fornitore",
-    "forwarderWorkspace": "Workspace spedizioniere",
-    "workspaces": "Workspace",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Workspace acquirente",
+      "supplier": "Workspace fornitore",
+      "forwarder": "Workspace spedizioniere"
+    },
     "newWorkspace": "Nuovo workspace",
-    "signOut": "Esci",
+    "label": "{name}, cambia workspace",
+    "current": "Aperto",
+    "workspaceSettings": "Impostazioni del workspace"
+  },
+  "accountMenu": {
     "theme": "Tema",
     "themes": {
       "light": "Chiaro",
       "dark": "Scuro",
       "system": "Sistema"
-    }
+    },
+    "signOut": "Esci",
+    "label": "{name}, account",
+    "accountSettings": "Impostazioni account"
   },
   "notifications": {
     "title": "Notifiche",
@@ -46,8 +56,8 @@
     "close": "Chiudi",
     "noResults": "Nessun risultato per “{query}”",
     "pages": "Pagine",
-    "orders": "Ordini",
-    "loadingOrders": "Caricamento ordini",
+    "orders": "Ordini di vendita",
+    "loadingOrders": "Caricamento degli ordini di vendita",
     "loadingResults": "Caricamento risultati",
     "recentPurchaseOrders": "Ordini di acquisto recenti",
     "products": "Prodotti",
@@ -57,5 +67,15 @@
     "supplier": "Fornitore",
     "forwarder": "Spedizioniere",
     "failed": "Impossibile cercare ovunque. Riprova."
+  },
+  "create": {
+    "button": "Crea",
+    "purchaseOrder": "Ordine di acquisto",
+    "importPurchaseOrder": "Importa ordine di acquisto",
+    "supplier": "Fornitore",
+    "forwarder": "Spedizioniere",
+    "product": "Prodotto",
+    "catalog": "Catalogo",
+    "importProducts": "Importa prodotti"
   }
 }

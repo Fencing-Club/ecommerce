@@ -192,5 +192,6 @@
     "yours": "Ihr nächster Schritt",
     "waitingOn": "Wartet auf {name}",
     "working": "Wird bearbeitet"
-  }
+  },
+  "viewOnly": "Nur ansehen"
 }

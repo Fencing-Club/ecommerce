@@ -192,5 +192,6 @@
     "yours": "你的下一步",
     "waitingOn": "等待 {name}",
     "working": "正在处理"
-  }
+  },
+  "viewOnly": "仅查看"
 }

@@ -1,15 +1,25 @@
 # App header
 
-Every Copacker portal page has a header across the top of the window (`components/site-header.tsx`), with the sidebar
-and the page under it, like Shopify's admin.
+Every Copacker portal page has a top bar across the window (`components/top-bar.tsx`), with the sidebar and the page
+under it (`components/shell.tsx`).
 
-- **Top left:** Copacker's logo and name, and nothing else. The sidebar's collapse button starts the page's first row
-  instead, beside its breadcrumb or title (`components/shell.tsx`).
+- **Left:** the sidebar's button, which collapses it to icons (Ctrl+B) or opens it as a sheet on a phone, then the
+  workspace menu (`components/workspace-menu.tsx`): Copacker's mark and the workspace's name. The menu lists every
+  workspace with its kind, then **New workspace** and **Workspace settings**. The bar doesn't name the kind, which
+  leaves room for long names. Switching reloads, as `WorkspaceWatch` needs.
 - **Middle:** the search (`components/search-command.tsx`), a cmdk command menu. With room, it's centered in the
-  window. Narrower, it fills the space between the logo and the bell with equal gaps. Below 30rem it becomes a button
-  beside the notifications.
-- **Right:** notifications (`components/notifications-menu.tsx`). The bell opens an empty dropdown: Copacker
-  doesn't deliver notifications in the app.
+  window. Below 30rem it becomes a button.
+- **Right:** **Create** (`components/create-menu.tsx`), the kind's create actions that the person can edit: a
+  buyer's Purchase order, Import purchase order, Supplier and Forwarder; a supplier's Product, Catalog and Import
+  products. A forwarder, or someone who can edit none of them, doesn't see it. Items link to their pages, and
+  `/partners?add=supplier`, `/partners?add=forwarder` and `/products?import=true` open their sheet or dialog. Then
+  notifications (`components/notifications-menu.tsx`), whose bell opens an empty dropdown until the Inbox replaces
+  it, and the account menu (`components/account-menu.tsx`): name and email, **Account settings**, Theme and **Sign
+  out**.
+
+The sidebar (`components/app-sidebar.tsx`) lists the kind's pages in groups (`lib/navigation.ts`), with Settings
+pinned at the bottom. A buyer's store orders are **Sales**. The open page, or the list a record belongs to, has a muted
+fill and a primary marker on its leading edge. It's 240px wide, and 56px as a rail of icons.
 
 ## Search
 
@@ -18,7 +28,7 @@ bar was, as Shopify's does. Before anything is typed it shows the pages and the 
 sidebar's order and at most five of each:
 
 - **Pages** from the sidebar's navigation (`lib/navigation.ts`), so both list the same pages.
-- **Orders** (a buyer's sales orders), found on the server as the Orders page's search finds them. Choosing one opens
+- **Sales orders** (a buyer's), found on the server as the Sales page's search finds them. Choosing one opens
   `/sales?q=<order number>`.
 - **Products** (a buyer's), one per Shopify product as the Products page lists it, matched on title, variation names
   and SKUs. Choosing one opens `/products?q=<title>`.

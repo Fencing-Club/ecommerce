@@ -9,9 +9,9 @@ Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwin
   ours.
 - **New UI** uses Tailwind classes, shadcn components and their conventions: `data-slot`, `cn()` from `@/lib/utils`,
   `cva` for variants.
-- **Remaining page styles** are three colocated `*.css.ts` files (`app/layout.css.ts`,
-  `components/app-sidebar.css.ts` and `components/shipment-actions.css.ts`) and the `sx()` helper, used by a few
-  components. Move one to Tailwind when it's being reworked anyway.
+- **Remaining page styles** are two colocated `*.css.ts` files (`app/layout.css.ts` and
+  `components/shipment-actions.css.ts`) and the `sx()` helper, used by a few components. Move one to Tailwind when
+  it's being reworked anyway.
 
 ## Theme
 

@@ -68,7 +68,7 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
       email: person.email,
       kind: workspace.kind,
       active: workspace.id,
-      workspaces: Object.values(workspaces).map(({ id, name }) => ({ id, name })),
+      workspaces: Object.values(workspaces),
       children: <StorySlot />
     })
     return { shell }

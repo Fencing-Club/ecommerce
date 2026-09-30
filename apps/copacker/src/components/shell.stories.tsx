@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { expect, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { EmptyState, PageHeader } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -29,7 +29,7 @@ async function ShellStory({
     email: person.email,
     kind: workspace.kind,
     active: workspace.id,
-    workspaces: Object.values(workspaces).map(({ id, name }) => ({ id, name })),
+    workspaces: Object.values(workspaces),
     children: (
       <>
         <PageHeader title="Shipments">
@@ -55,25 +55,6 @@ const meta = preview.meta({
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true, navigation: { pathname: "/shipments" } } }
 })
 
-export const Buyer = meta.story({
-  play: async ({ canvas }) => {
-    const header = canvas.getByRole("banner")
-    await expect(within(header).getByRole("link", { name: "Copacker" })).toBeVisible()
-    await expect(within(header).getByRole("button", { name: "Search" })).toBeVisible()
-    await expect(within(header).getByRole("button", { name: "Notifications" })).toBeVisible()
-    await expect(canvas.getByRole("link", { name: "Shipments" })).toHaveAttribute("data-active")
-    await expect(canvas.getByRole("link", { name: "Restock" })).toBeVisible()
-    // The page sits beside the sidebar's collapse button.
-    const main = byId("main-content")
-    await expect(within(main).getByRole("heading", { name: "Shipments" })).toBeVisible()
-    await expect(within(main).getByText("No shipments yet")).toBeVisible()
-    const sidebar = () => document.querySelector("[data-slot=sidebar][data-state]")
-    await expect(sidebar()).toHaveAttribute("data-state", "expanded")
-    await userEvent.click(within(main).getByRole("button", { name: "Toggle sidebar" }))
-    await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "collapsed"))
-  }
-})
-
 function byId(id: string) {
   const element = document.getElementById(id)
   if (!element) {
@@ -82,15 +63,45 @@ function byId(id: string) {
   return element
 }
 
-export const Supplier = meta.story({
-  args: { kind: "supplier" },
+const sidebar = () => document.querySelector("[data-slot=sidebar][data-state]")
+
+export const Buyer = meta.story({
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Lotus Manufacturing/ })).toHaveTextContent("Supplier workspace")
-    await expect(canvas.getByRole("link", { name: "Catalogs" })).toBeVisible()
-    await expect(canvas.queryByRole("link", { name: "Restock" })).toBeNull()
+    const header = canvas.getByRole("banner")
+    await expect(within(header).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    await expect(within(header).getByRole("button", { name: "Search" })).toBeVisible()
+    await expect(within(header).getByRole("button", { name: "Create" })).toBeVisible()
+    await expect(within(header).getByRole("button", { name: "Notifications" })).toBeVisible()
+    await expect(within(header).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Shipments" })).toHaveAttribute("data-active")
+    await expect(canvas.getByRole("link", { name: "Sales" })).toBeVisible()
+    const main = byId("main-content")
+    await expect(within(main).getByRole("heading", { level: 1, name: "Shipments" })).toBeVisible()
+    await expect(within(main).getByText("No shipments yet")).toBeVisible()
+    // The sidebar's button is in the top bar now, beside the workspace.
+    await expect(sidebar()).toHaveAttribute("data-state", "expanded")
+    await userEvent.click(within(header).getByRole("button", { name: "Toggle sidebar" }))
+    await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "collapsed"))
   }
 })
 
+export const Supplier = meta.story({
+  args: { kind: "supplier" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "Lotus Manufacturing, switch workspace" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Catalogs" })).toBeVisible()
+    await expect(canvas.queryByRole("link", { name: "Restock" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Create" }))
+    const menu = await screen.findByRole("menu")
+    await expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent)
+    ).toEqual(["Product", "Catalog", "Import products"])
+  }
+})
+
+// A member who can only view doesn't see Create at all.
 export const SupplierMember = meta.story({
   args: { kind: "supplier" },
   parameters: { permissions: member },
@@ -98,15 +109,19 @@ export const SupplierMember = meta.story({
     await expect(canvas.getByRole("link", { name: "Inventory" })).toBeVisible()
     await expect(canvas.queryByRole("link", { name: "Catalogs" })).toBeNull()
     await expect(canvas.queryByRole("link", { name: "Customers" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Create" })).toBeNull()
   }
 })
 
+// A forwarder's freight, and nothing to create.
 export const Forwarder = meta.story({
   args: { kind: "forwarder" },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Bayline Freight/ })).toHaveTextContent("Forwarder workspace")
+    await expect(canvas.getByRole("button", { name: "Bayline Freight, switch workspace" })).toBeVisible()
+    await expect(canvas.getByText("Freight")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Purchase orders" })).toBeVisible()
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Create" })).toBeNull()
   }
 })
 
@@ -114,29 +129,27 @@ export const Forwarder = meta.story({
 export const Collapsed = meta.story({
   args: { collapsed: true },
   play: async () => {
-    await expect(document.querySelector("[data-slot=sidebar][data-state]")).toHaveAttribute("data-state", "collapsed")
+    await expect(sidebar()).toHaveAttribute("data-state", "collapsed")
   }
 })
 
-// On a phone the header's buttons wrap under the title and start at the page's edge, and the sidebar's button stays
-// on the title's line.
+// On a phone the header's buttons wrap under the title and start at the page's edge, and the sidebar opens as a sheet
+// from the top bar.
 export const Phone = meta.story({
   args: { actions: true },
   globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async () => {
+  play: async ({ canvas }) => {
     const main = byId("main-content")
-    const title = within(main).getByRole("heading", { name: "Shipments" }).getBoundingClientRect()
-    const toggle = within(main).getByRole("button", { name: "Toggle sidebar" })
-    const button = toggle.getBoundingClientRect()
+    const title = within(main).getByRole("heading", { level: 1, name: "Shipments" }).getBoundingClientRect()
     const create = within(main).getByRole("button", { name: "Create purchase order" }).getBoundingClientRect()
     const edge = main.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(main).paddingInlineStart)
     await expect(create.top).toBeGreaterThanOrEqual(title.bottom)
+    await expect(Math.abs(title.left - edge)).toBeLessThanOrEqual(1)
     await expect(
       Math.abs(within(main).getByRole("button", { name: "Import" }).getBoundingClientRect().left - edge)
     ).toBeLessThanOrEqual(1)
-    await expect(title.left).toBeGreaterThanOrEqual(button.right)
-    await expect(Math.abs(button.top + button.height / 2 - (title.top + title.height / 2))).toBeLessThanOrEqual(2)
-    // The header spans the button's column, but the button stays on top, where a tap finds it.
-    await expect(toggle.contains(document.elementFromPoint(button.left + button.width / 2, button.top + 4))).toBe(true)
+    await userEvent.click(within(canvas.getByRole("banner")).getByRole("button", { name: "Toggle sidebar" }))
+    const sheet = await screen.findByRole("dialog")
+    await waitFor(() => expect(within(sheet).getByRole("link", { name: "Shipments" })).toBeVisible())
   }
 })
