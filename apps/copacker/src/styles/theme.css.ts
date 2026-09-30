@@ -37,7 +37,26 @@ export const vars = createGlobalThemeContract(
       chart3: "chart-3",
       // Status marks and positive-change text. Always paired with an icon or label.
       success: "success",
-      warning: "warning"
+      warning: "warning",
+      // In progress: someone else is working on it. Statuses, current lifecycle stages and proposals to review.
+      info: "info",
+      // Surfaces tinted by a tone: the "Your next step" card, banners, danger zones and changed, failing or added rows.
+      primaryTint: "primary-tint",
+      primaryBorder: "primary-border",
+      infoTint: "info-tint",
+      infoBorder: "info-border",
+      warningTint: "warning-tint",
+      warningBorder: "warning-border",
+      destructiveTint: "destructive-tint",
+      destructiveBorder: "destructive-border",
+      successTint: "success-tint",
+      // Checkbox and switch outlines, and disabled text and icons.
+      borderStrong: "border-strong",
+      disabledForeground: "disabled-foreground",
+      // Each workspace kind's mark, in the workspace menu only. Never on actions.
+      kindBuyer: "kind-buyer",
+      kindSupplier: "kind-supplier",
+      kindForwarder: "kind-forwarder"
     },
     radius: { sm: "radius-sm", md: "radius-md", lg: "radius-lg", xl: "radius-xl", full: "radius-full" },
     font: { sans: "font-sans", mono: "font-mono" },
@@ -47,6 +66,25 @@ export const vars = createGlobalThemeContract(
 )
 
 const radius = "0.625rem"
+
+// A tone mixed into the page's background, so tints and borders follow the theme without a dark value of their own.
+const mix = (tone: string, percent: number) => `color-mix(in oklab, var(--${tone}) ${percent}%, var(--background))`
+
+// The tinted surfaces, the same in both themes because they're mixed from the tone and the background.
+const tints = {
+  primaryTint: mix("primary", 4),
+  primaryBorder: mix("primary", 24),
+  infoTint: mix("info", 6),
+  infoBorder: mix("info", 24),
+  warningTint: mix("warning", 8),
+  warningBorder: mix("warning", 50),
+  destructiveTint: mix("destructive", 4),
+  destructiveBorder: mix("destructive", 28),
+  successTint: mix("success", 5),
+  kindBuyer: "oklch(0.553 0.195 38.402)",
+  kindSupplier: "#0f766e",
+  kindForwarder: "#4338ca"
+}
 
 // The light colors, which :root takes, and which a .light element takes back inside a dark one, such as the product
 // shots on the dark marketing page.
@@ -81,7 +119,11 @@ const light = {
   chart2: "#eb6834",
   chart3: "#b14f9a",
   success: "#006300",
-  warning: "#fab219"
+  warning: "#fab219",
+  info: "#1f63b8",
+  borderStrong: "oklch(0.87 0 0)",
+  disabledForeground: "oklch(0.76 0 0)",
+  ...tints
 }
 
 createGlobalTheme(":root", vars, {
@@ -136,7 +178,13 @@ createGlobalTheme(".dark", vars.color, {
   chart2: "#d95926",
   chart3: "#cf6fb9",
   success: "#0ca30c",
-  warning: "#fab219"
+  warning: "#fab219",
+  info: "#3987e5",
+  borderStrong: "oklch(1 0 0 / 22%)",
+  disabledForeground: "oklch(0.45 0 0)",
+  ...tints,
+  kindSupplier: "#2dd4bf",
+  kindForwarder: "#818cf8"
 })
 
 createGlobalTheme(".light", vars.color, light)
