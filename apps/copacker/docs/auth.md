@@ -1,8 +1,8 @@
 # Sign-in and getting started
 
 Copacker draws its own sign-in pages and talks to WorkOS directly (the User Management API), rather than sending people
-to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, so `withAuth`, the proxy's refreshes and
-sign-out work as before. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
+to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, which `withAuth`, the proxy's refreshes and
+sign-out all use. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
 `src/server/invitations.ts`; the pages are the `(auth)` route group, `app/onboarding` and `app/workspaces/new`.
 
 ## Ways in
@@ -26,21 +26,21 @@ browser had open, or else the first. `next` survives every step, and only ever p
 
 ## WorkOS settings
 
-Local and production share the WorkOS staging environment. In its dashboard:
+Local development, staging and production share the WorkOS staging environment. In its dashboard:
 
-- **Redirects** (Applications → the application → Redirects): `/callback` on every address the app answers on
-  (`APP_URL` and each of `APP_ALIAS_URLS`), each of those addresses as a sign-out redirect, and the **Password reset
-  URL** `https://copacker.ai/reset-password`, so WorkOS's own reset email opens Copacker's page too. Sign-in returns
-  to the address it started on, so `staging.copacker.ai` keeps its own session. The **User invitation URL** is
-  `https://copacker.ai/signup`, so WorkOS's invitations, such as approving a waitlist entry, open Copacker's sign-up
-  with `invitation_token`; WorkOS's default, its hosted page, would pass them on to the Initiate login URI.
-- **Waitlist** (Authentication → Features): on since 2026-09-28. It holds the landing page's waitlist
-  ([Landing page](landing-page.md)). WorkOS says it disables the sign-ups it hosts while it's on; whether that stops
-  a first sign-in with Google or Microsoft isn't documented. Copacker's own password sign-up creates users with the
-  API key, which the waitlist doesn't gate, so `/signup` stays open to anyone with the link.
-- **Password reset email** (Emails → Configuration): off since 2026-09-28, so only Copacker's goes out, from the
-  verified `copacker.ai` in production. Local and staging send from `resend.dev`, so their resets reach only the Resend
-  account's owner.
+- **Redirects** (Applications → the application → Redirects): `/callback` on every address the app answers on (`APP_URL`
+  and each of `APP_ALIAS_URLS`), each of those addresses as a sign-out redirect, `<APP_URL>/login` as the Initiate login
+  URI, and the **Password reset URL** `https://copacker.ai/reset-password`, so WorkOS's own reset email opens Copacker's
+  page too. Sign-in returns to the address it started on, so `staging.copacker.ai` keeps its own session. The **User
+  invitation URL** is `https://copacker.ai/signup`, so WorkOS's invitations, such as approving a waitlist entry, open
+  Copacker's sign-up with `invitation_token`; WorkOS's default, its hosted page, would pass them on to the Initiate
+  login URI.
+- **Waitlist** (Authentication → Features): on. It holds the landing page's waitlist ([Landing page](landing-page.md)).
+  WorkOS says it disables the sign-ups it hosts while it's on; whether that stops a first sign-in with Google or
+  Microsoft isn't documented. Copacker's own password sign-up creates users with the API key, which the waitlist doesn't
+  gate, so `/signup` stays open to anyone with the link.
+- **Password reset email** (Emails → Configuration): off, so only Copacker's goes out, from the verified `copacker.ai`
+  in production. Local and staging send from `resend.dev`, so their resets reach only the Resend account's owner.
 - **Authentication:** email and password, and Google and Microsoft OAuth. Staging uses WorkOS's demo OAuth
   credentials; a production WorkOS environment needs Copacker's own Google and Microsoft apps.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.

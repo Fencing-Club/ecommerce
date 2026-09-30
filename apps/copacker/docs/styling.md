@@ -1,7 +1,7 @@
 # Styling
 
-Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwind CSS](https://tailwindcss.com) v4,
-next to [vanilla-extract](https://vanilla-extract.style) for page styles written before the switch.
+Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwind CSS](https://tailwindcss.com) v4.
+[vanilla-extract](https://vanilla-extract.style) holds the theme tokens, the reset and a few remaining page styles.
 
 - **Shared components** under `apps/copacker/src/components/ui` are shadcn's own source on Base UI (style
   `base-nova`), added with the shadcn CLI and styled with Tailwind classes. Add one from `apps/copacker` with
@@ -9,8 +9,9 @@ next to [vanilla-extract](https://vanilla-extract.style) for page styles written
   ours.
 - **New UI** uses Tailwind classes, shadcn components and their conventions: `data-slot`, `cn()` from `@/lib/utils`,
   `cva` for variants.
-- **Existing page styles** in colocated `*.css.ts` files and the `sx()` helper keep working. Move a component to
-  Tailwind when it's being reworked anyway; there's no need to convert the rest.
+- **Remaining page styles** are three colocated `*.css.ts` files (`app/layout.css.ts`,
+  `components/app-sidebar.css.ts` and `components/shipment-actions.css.ts`) and the `sx()` helper, used by a few
+  components. Move one to Tailwind when it's being reworked anyway.
 
 ## Theme
 

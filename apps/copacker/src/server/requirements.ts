@@ -1,6 +1,7 @@
 import { type AmazonNetwork, amazonNetworkNames, type PrepCategory } from "@repo/aisle"
 import type { Requirement } from "@repo/aisle/requirements"
 import { getFormatter, getTranslations } from "next-intl/server"
+import { match, P } from "ts-pattern"
 
 // Each preparation's instruction, under shipments.requirements.prep.
 const prepKeys = {
@@ -20,24 +21,18 @@ export async function requirementTranslator() {
   const names = (networks: AmazonNetwork[]) => format.list(networks.map((network) => amazonNetworkNames[network]))
   return {
     requirement(requirement: Requirement) {
-      switch (requirement.code) {
-        case "prep":
-          return t(`prep.${prepKeys[requirement.prep]}`)
-        case "cartons":
-          return t(requirement.network === "fba" ? "fbaCartons" : "awdUsCartons")
-        case "separateCartons":
-          return t("separateCartons", { networks: names(requirement.networks) })
-        case "packFor":
-          return t("packFor", { network: amazonNetworkNames[requirement.network] })
-        case "bundle":
-          return t("bundle", { count: requirement.units })
-        case "fnskuLabel":
-          return t("fnskuLabel", { fnsku: requirement.fnsku })
-        case "instruction":
-          return requirement.text
-        default:
-          return t(requirement.code)
-      }
+      return match(requirement)
+        .with({ code: "prep" }, ({ prep }) => t(`prep.${prepKeys[prep]}`))
+        .with({ code: "cartons" }, ({ network }) => t(network === "fba" ? "fbaCartons" : "awdUsCartons"))
+        .with({ code: "separateCartons" }, ({ networks }) => t("separateCartons", { networks: names(networks) }))
+        .with({ code: "packFor" }, ({ network }) => t("packFor", { network: amazonNetworkNames[network] }))
+        .with({ code: "bundle" }, ({ units }) => t("bundle", { count: units }))
+        .with({ code: "fnskuLabel" }, ({ fnsku }) => t("fnskuLabel", { fnsku }))
+        .with({ code: "instruction" }, ({ text }) => text)
+        .with({ code: P.union("unitLabels", "suffocationWarnings", "multiPacks", "suffocationLabel") }, ({ code }) =>
+          t(code)
+        )
+        .exhaustive()
     },
     // A PO to Amazon's destination, such as "Amazon FBA and AWD US".
     amazon: (networks: AmazonNetwork[]) =>

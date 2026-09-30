@@ -1,11 +1,8 @@
 # Design changes
 
-The gap analysis in [stock-template-gaps.md](stock-template-gaps.md) found seven places where a port dropped a branch
-its design carries, and a much larger body of structure that only the ten unported templates exercise.
-
-Almost all of that turned out to be the port owing the design rather than the reverse. Six of the seven are now closed
-by copying what the design already spells out, wording included. What the designs themselves still owe is the collapsed
-state of anything that can disappear, and everything the ten unported templates need.
+Where the React ports and the hand-authored designs disagree, and which side gives way. Most of the time the port owed
+the design, and the ports below now copy what their design spells out, wording included. What the designs themselves still
+owe is the collapsed state of anything that can disappear, and a few decisions nobody has made yet.
 
 ## Ports brought back in line with their design
 
@@ -68,41 +65,31 @@ design away. The design needs a line item drawn in all four states: plain, group
 the parcel has arrived, and repeating it invites a comparison the buyer cannot act on. This is the one place the port
 deliberately disagrees with its design, and one of the two should give way.
 
-## What the ten unported templates still need
+## Decisions still open
 
-The detail is in [unported-templates.md](unported-templates.md), template by template. What the designs owe, in the
-order the templates should be built:
+### Branding
 
-**A shared shell.** Six of the ten are the same page: an eyebrow carrying the order name and an optional PO number, a
-headline, an optional lead, an optional note, an optional numbered instruction list, one or two buttons whose labels
-come from the data rather than from the design, one or more labelled item sections, and an optional totals block. Draw
-it once with every optional part visible, and once with all of them absent, because the collapsed version is what most
-buyers will get.
+Every component hard-codes Fencing Club: the logo URL, the wordmark, the accent colour in `tokens.ts`, and the footer
+navigation. Shopify’s stock templates hard-code the same things, so this is not a gap against them. It is a gap against
+the library ever serving a second store, and it is cheaper to answer before more templates depend on it.
 
-**A numbered instruction list.** Return notifications tell the buyer what to do in three or four steps. Nothing in the
-component set draws a numbered list. It needs a design that survives a step whose text wraps to three lines and a step
-that contains a link.
+### A delivery estimate where none is shown
 
-**A returns ledger.** Subtotal, a row per return fee, estimated taxes, an outstanding balance, and then either an amount
-to pay or an estimated refund. The last row is the one that matters and it is the one that changes label, so it needs to
-be drawn both ways.
-
-**A refunded badge.** `refund-notification` marks the order refunded. The status components draw paid and pending but
-nothing for money going the other way.
-
-**A full order ledger.** `order-cancelled`, `order-edited`, and `refund-notification` share a seventeen-row totals block
-covering duties, tips, cash rounding, and four different flavours of amount due. The current `Totals` component composes
-arbitrary rows so no component change is needed, but the design has never shown more than six rows at once and the
-column widths were chosen for short labels.
-
-**A customer information block.** `order-edited` closes with shipping address, billing address, location, payment
-method, and shipping method. Nothing similar exists.
-
-**A thirteen-sentence cancellation headline.** `order-cancelled` picks its headline from a cancellation reason crossed
-with a refund state. The design needs the longest of the thirteen drawn, because it is what sets the block's height.
+`fulfillment.estimated_delivery_at` appears in the shipping, out-for-delivery, shipping-update, and local
+out-for-delivery emails. Whether an estimate belongs anywhere it is absent today, such as the order confirmation, is a
+design question the stock templates never asked.
 
 ## What is deliberately not changing
 
-Three places where a design is wrong and the port is right are listed in
-[stock-template-gaps.md](stock-template-gaps.md#where-stock-is-wrong-and-we-are-not). None of them should be copied back
-into a port.
+Places where the stock template is wrong and the port is right. None of them should be copied back into a port.
+
+- Stock `customer-marketing-confirmation` guards the subscribe button on `shop.url`, though the button links to
+  `customer.subscribe_url`. A store with no URL would lose the button that confirms the subscription. The port renders
+  it unguarded.
+- Stock `gift-card-notification` resolves `recipient_name` through a nickname, name, and email chain, then never
+  renders it. The port omits it.
+- Stock `buy-online` renders only the first of a line’s `discount_allocations`, so a line carrying two promotions shows
+  one. `ItemRow` loops the whole collection.
+- Stock `order-cancelled`, `order-edited`, and `refund-notification` test `line.quantity < line.quantity`, which is
+  always false. The ports compare the current or refunded quantity against the ordered one, which is what the test
+  meant.

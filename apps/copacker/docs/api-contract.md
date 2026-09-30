@@ -3,6 +3,10 @@
 The HTTP contract between the Copacker pages and `apps/copacker/src/app/api`: the `/api/action` commands, the other
 routes, and the rules behind them.
 
+The pages call these routes through RTK Query (`src/lib/api.ts`), mounted with `ApiProvider` in
+`components/providers.tsx` and with no Redux store of its own. Forms submit `/api/action` commands through
+`useActionForm` (`src/hooks/useActionForm.ts`), which pairs React Hook Form with the command's Zod schema.
+
 ## Authentication and responses
 
 Business routes use the WorkOS session ([Sign-in and getting started](auth.md)). The active workspace is selected with a
@@ -90,7 +94,7 @@ kept with that partner and change through the partner's commands.
 | Action | Data | Permission / result |
 | --- | --- | --- |
 | connection.amazonSelfAuthorized | refreshToken | Buyer admin. Connects a self-authorized Amazon seller after checking the token with Amazon, then starts the first sync |
-| connection.delete | provider: amazon or shopify | Buyer admin. Removes the credentials and reports whether the provider confirmed the revocation |
+| connection.delete | provider: amazon, shopify or ebay | Buyer admin. Removes the credentials and reports whether the provider confirmed the revocation (eBay has no revocation, so it only forgets the token) |
 
 ### Purchase orders
 
@@ -167,6 +171,12 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   the HMAC-verified OAuth callback.
 - `GET /api/connections/amazon`: buyer admin OAuth redirect and callback. Single-use state is tied to user, organization
   and provider. A new connection starts its first order and stock sync at once.
+- `GET /api/connections/ebay`: buyer admin OAuth redirect and callback, the same way; eBay returns to it through the
+  environment's RuName ([eBay](notifications.md#ebay)). A new connection starts its first order sync and subscribes the
+  seller to notifications.
+- `GET, POST /api/webhooks/ebay`: eBay's endpoint check (`challenge_code`) and its signed notifications, checked and
+  sent on to the worker; 412 for a bad signature, 503 when one can't be checked yet
+  ([eBay notifications](notifications.md#notifications)).
 
 ### Purchase orders
 
@@ -207,7 +217,7 @@ Page and price checks follow [permissions.md](permissions.md) and return 403 whe
   source can't be read, 503 when the refresh fails.
 - `GET /api/sales`: Sales. Each connected source's order sync and how much history is stored.
 - `GET /api/sales/orders?source=&page=&q=`: Sales. Stored sales orders, newest first.
-- `POST /api/sales/sync` `{source: shopify | amazon}`: Sales. Queues an order sync; 202.
+- `POST /api/sales/sync` `{source: shopify | amazon | ebay}`: Sales. Queues an order sync; 202.
 - `GET /api/restock/channels`: Restock. Amazon and each counted Shopify location.
 - `POST /api/restock/plan`: Restock. Restock suggestions for a channel from stored orders; without prices, lines omit
   costs, prices and lost sales.

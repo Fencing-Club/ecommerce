@@ -67,7 +67,7 @@ Typed replacements for unsafe built-ins. Import from `ts-extras`. Use these inst
 
 ## `ts-pattern` — pattern matching
 
-Not installed yet: add it to the package the first time you need it.
+Copacker has it; add it to another package the first time it needs it.
 
 Use for branching on unions/shapes instead of `switch` or nested conditionals.
 
@@ -93,7 +93,7 @@ Key API:
 
 ## `tiny-invariant` — runtime assertions
 
-Not installed yet: add it to the package the first time you need it.
+Copacker has it; add it to another package the first time it needs it.
 
 ```ts
 import invariant from "tiny-invariant"

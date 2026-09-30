@@ -8,12 +8,13 @@ customer notifications.
 Every template is React. Nothing here is a hand-maintained Liquid file any more, apart from the two printouts, which the
 admin renders rather than the notification system.
 
-| Path                    | Contents                                                                |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `src/emails/`           | React definitions, in `notifications/`, `marketing/` and `components/`. |
-| `src/emails/printouts/` | The two printed documents and the fixtures they preview against.        |
-| `src/images/`           | Brand artwork used by more than one template.                           |
-| `src/templates.ts`      | The roster of React definitions every whole-library check runs over.    |
+| Path                     | Contents                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `src/emails/`            | React definitions, in `notifications/`, `marketing/` and `components/`.      |
+| `src/emails/printouts/`  | The two printed documents and the fixtures they preview against.             |
+| `src/emails/signatures/` | The two email signatures. See [its README](src/emails/signatures/README.md). |
+| `src/images/`            | Brand artwork used by more than one template.                                |
+| `src/templates.ts`       | The roster of React definitions every whole-library check runs over.         |
 
 `src/liquid.ts` builds the Liquid engine the previews and tests render through, and `src/reactEmail.ts` is the harness
 the tests use to drive a definition down both the compiled and the resolved path.
@@ -23,7 +24,8 @@ export the dev server renders. Its `type` names the Shopify notification, which 
 read and the sample it previews against. Add it to `src/templates.ts` and it joins every whole-library check.
 
 `pnpm build` compiles the React definitions in `src/emails/` into paste-ready Liquid under `dist/`, using the
-`shopify-emails` command from `@repo/shopify-emails`.
+`shopify-emails` command from `@repo/shopify-emails`, then renders the signatures to `dist/signatures/`.
+`pnpm build:signatures` runs only the signature step.
 
 ## Preview
 
@@ -67,8 +69,8 @@ pnpm --filter @repo/fc-templates test
 ```
 
 `src/valueMode.test.ts` asserts that the compiled Liquid and the resolved preview produce the same markup for every
-template, and `src/compiledOutput.test.ts` snapshots the Liquid and subject each one compiles to. Fifty templates hang
-off a handful of shared components, so a one-line change to a component rewrites most of the library at once; the
+template, and `src/compiledOutput.test.ts` snapshots the Liquid and subject each one compiles to. Sixty-three templates
+hang off a handful of shared components, so a one-line change to a component rewrites most of the library at once; the
 snapshots turn that into a diff somebody reads. A failure there is not a defect on its own — read the diff, and if the
 change is the one you meant, run `pnpm --filter @repo/fc-templates test -- -u`.
 
@@ -107,16 +109,10 @@ each one is only the preview.
 
 ## Customer notifications
 
-The catalogue is 46 Shopify notifications, of which 36 are ported to React under `src/emails/notifications/`.
+All 46 Shopify notifications are ported to React under `src/emails/notifications/`, one for one.
 
-[docs/stock-template-gaps.md](docs/stock-template-gaps.md) compares every stock template against its port. The short
-version: three quarters of the branching in the stock catalogue sits in the ten templates we have not built, and the 36
-we have are close to complete against their counterparts. [docs/ported-template-gaps.md](docs/ported-template-gaps.md)
-gives a verdict on each port, and [docs/unported-templates.md](docs/unported-templates.md) describes the ten that are
-missing.
-
-[docs/design-changes.md](docs/design-changes.md) records what the hand-authored designs owe the ports that have already
-moved ahead of them, and what they still owe before the remaining ten can be built.
+[docs/design-changes.md](docs/design-changes.md) records where the ports and the hand-authored designs still disagree,
+and the decisions still open between them.
 
 ## Known gaps
 

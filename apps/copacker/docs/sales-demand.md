@@ -7,8 +7,8 @@ Restock reads orders copied into `sales_orders`, not the providers. The Orders p
 Orders carry prices: Shopify lines their unit price and discount allocations (`originalUnitPriceSet`,
 `discountAllocations`), Amazon items their proceeds (`includedData=FULFILLMENT,PROCEEDS`). `sales_syncs.dataVersion`
 records the shape the stored orders were copied in; when `salesDataVersion` rises, the next sync reads the whole history
-again, newest first, so older orders gain the new fields. Version 2 added Shopify payments (`transactions`, with Shopify
-Payments' processing `fees` and the tax on them); other gateways report no fees.
+again, newest first, so older orders gain the new fields. Version 2 includes Shopify payments (`transactions`, with
+Shopify Payments' processing `fees` and the tax on them); other gateways report no fees.
 
 The Amazon sync also copies posted transactions from the Finances API (`/finances/2024-06-19/transactions`, 14-day
 periods, the same refresh rule as orders) into `amazon_transactions`, each linked to its order ID. `feesMinor` counts
@@ -17,7 +17,7 @@ every fee or commission category in a transaction's breakdown once, positive whe
 
 ## Restock
 
-The Restock page (`POST /api/restock/plan`) works per channel: Amazon as a whole, or one Shopify location counted in inventory. Amazon combines FBA fulfillable and AWD distributable stock, FBA and AWD inbound, open POs to Amazon destinations (the larger of Amazon's inbound and the POs, since a shipped PO appears in both), FBA and FBM sales, and the variation's Amazon stock target, kept in Copacker (0 means not stocked there). Which Amazon warehouse stock goes to is decided when shipping; POs can use the "amazon" destination, which ships to AWD USA until FBA inbound is supported. Each variation's supplier is its product's supplier, else the one chosen for it in Copacker, the one it was last ordered from, or the one linked supplier whose active catalog holds its supplier SKU (kept in Copacker). The supplier's lead time (to the buyer's locations, or to Amazon) replaces the page default. Quantities cover the lead time at the sales period's rate plus the stock target, minus available and incoming stock, then rise to the minimum order and round up to whole cases. Suggestions are grouped by supplier; each group opens a new PO with the ticked lines and edited quantities. Restock never suggests moving the buyer's own stock to Amazon.
+The Restock page (`POST /api/restock/plan`) works per channel: Amazon as a whole, or one Shopify location counted in inventory. Amazon combines FBA fulfillable and AWD distributable stock, FBA and AWD inbound, open POs to Amazon destinations (the larger of Amazon's inbound and the POs, since a shipped PO appears in both), FBA and FBM sales, and the variation's Amazon stock target, kept in Copacker (0 means not stocked there). Which Amazon warehouse stock goes to is decided on the PO: each line to the `amazon` destination ships to FBA (the default) or AWD US ([Amazon inbound shipments](amazon-inbound.md)). Each variation's supplier is its product's supplier, else the one chosen for it in Copacker, the one it was last ordered from, or the one linked supplier whose active catalog holds its supplier SKU (kept in Copacker). The supplier's lead time (to the buyer's locations, or to Amazon) replaces the page default. Quantities cover the lead time at the sales period's rate plus the stock target, minus available and incoming stock, then rise to the minimum order and round up to whole cases. Suggestions are grouped by supplier; each group opens a new PO with the ticked lines and edited quantities. Restock never suggests moving the buyer's own stock to Amazon.
 
 ## Stockout days
 
@@ -25,7 +25,9 @@ A stockout day is a day customers couldn't buy the item in that channel, so its 
 
 ## Manual API
 
-POST `/api/inventory/demand` requires a buyer session and same-origin Origin header. The server chooses the connected account; clients cannot supply an organization, seller or shop ID.
+`POST /api/inventory/demand` reads fulfilled demand straight from a provider for diagnostics; restock uses stored orders
+(above), and the endpoint stores nothing. It needs a buyer session with the Orders page and a same-origin `Origin`
+header. The server picks the connected account; clients never pass an organization, seller or shop ID.
 
 ```json
 {
@@ -37,15 +39,15 @@ POST `/api/inventory/demand` requires a buyer session and same-origin Origin hea
 }
 ```
 
-Source is shopify or amazon (US). Use an exclusive end at least two minutes before now. Maximum duration is 730 days. Shopify requires read_all_orders for a start older than 60 days; a report that starts within the last 60 days needs only read_orders and existing product/location access. OAuth now requests read_orders, but existing grants change only after reconnection.
+`source` is `shopify` or `amazon` (US). The window’s exclusive end is at least two minutes before now, and it spans at
+most 730 days. A Shopify start older than 60 days needs `read_all_orders`. The response has `source`,
+`externalAccountId`, `window`, `observedAt`, `basis`, `quantityUnit`, `collectionComplete`, `attributionComplete`,
+`rows` and `gaps` (and `excludedFulfilledUnits` for Shopify). Rows carry `variantId`, `buyerSku`, `locationId`, `pool`
+(`shopify`, `fba` or `fbm_unassigned`) and `fulfilledUnits`.
 
-The response contains source, externalAccountId, window, observedAt, basis, quantityUnit, collectionComplete, attributionComplete, rows and gaps. Shopify also returns excludedFulfilledUnits.
-
-Rows contain variantId, buyerSku, locationId, pool and fulfilledUnits. Pools are shopify, fba and fbm_unassigned. Join Amazon seller SKU to Shopify only through an exact, unambiguous product mapping with verified pack units. Never match by title.
-
-This is a manual direct read for diagnostics; restock uses stored orders (above). This endpoint persists nothing. Retain the response while adjusting report settings rather than refetching for every change. Limits are five minutes, 2,000 requests, 10,000 orders and 32 MB. Pagination includes Shopify order lines and fulfillment lines. Failed, duplicate or truncated collections return no partial report. Provider throttles fail safely; Amazon's long order-search rate window is not blindly retried. Larger stores may require shorter windows or a future durable collection job.
-
-Responses are private/no-store. Invalid input is 400, supplier/invalid-origin requests 403, unsupported history/grants or changed accounts 409, and other provider failures 503. Account identity is checked around every provider read and before returning.
+A read is limited to five minutes, 2,000 requests, 10,000 orders and 32 MB, and returns no partial report. Responses are
+private and `no-store`. Invalid input is 400, a supplier or another origin 403, missing history, grants or a changed
+account 409, and other provider failures 503.
 
 ## Measurement and attribution
 
@@ -61,11 +63,11 @@ Gaps contain orderId, nullable variantId/buyerSku, sourceName, nullable location
 
 ## Bundles and multipacks
 
-A multipack is a Shopify bundle (a variant that requires components), not a separate stocked SKU. The stock sync records each bundle's components and quantities. Pieces per sellable unit on a PO line come from those quantities (`piecesPerUnit`); the PO builder no longer asks for them, and a bundle line must be a whole number of bundles.
+A multipack is a Shopify bundle (a variant that requires components), not a separate stocked SKU. The stock sync records each bundle's components and quantities. Pieces per sellable unit on a PO line come from those quantities (`piecesPerUnit`), not from the PO builder, and a bundle line must be a whole number of bundles.
 
 Shopify orders expand a bundle into component lines, each with `lineItemGroup` naming the bundle variant bought; demand rows carry it as `bundleVariantId`. Amazon sells the multipack under the bundle variant's own SKU, so an Amazon row whose SKU matches exactly one Shopify bundle variant is a bundle sale. `bundleSales` combines both into, per variant, units sold alone, units sold inside bundles, and bundles sold. Restock uses it to split each variant's sales between units sold alone and inside bundles (`restock-plan.ts`).
 
-Shopify's order search needs quoted timestamps (`created_at:>='…'`); unquoted, the colons cut the value short and Shopify returned orders outside the window.
+Shopify’s order search quotes its timestamps (`created_at:>='…'`), since unquoted colons cut the value short.
 
 Location classifications are the buyer's saved choice, otherwise automatic from the location's fulfillment service: the store's own locations are merchant, Shopify Collective is excluded, Amazon's fulfillment location is amazon_mirror, and other apps' locations are unresolved.
 

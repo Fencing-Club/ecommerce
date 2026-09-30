@@ -64,23 +64,6 @@ These files were included in the audit rather than silently omitted or represent
 - Shared menu/disclosure motion tokens and focus rules. Native details, listbox options and modal dialogs must keep
   their distinct keyboard contracts rather than being forced into one generic dropdown controller.
 
-## Fixes Exposed By The Audit
-
-- Collection filters originally used decorative boxes beside links. They now render shared native checkbox/swatch
-  inputs with real checked/disabled semantics, consistent pointer/keyboard states and URL-based filtering. Enabled
-  options retain links when JavaScript is unavailable.
-- Sorting lacked arrow/Home/End navigation, focus return and synchronized accessible selection/expansion labels.
-- Localization assumed a header and menu drawer always existed. Optional surrounding elements no longer cause throws.
-- Search interpreted previous queries as regular expressions and assumed at least one visible option. Literal query
-  handling and empty-option guards cover those cases.
-- Search results now use named dialog popups with native result links, lists and headings. Keyboard navigation moves
-  real focus, avoiding interactive links nested inside listbox options. Popup and heading IDs are scoped per input.
-- Gallery thumbnails escaped the generated image element, exposing markup instead of rendering an image.
-- Mobile navigation rewrote Mens/Womens to different labels. It now preserves the approved menu spelling.
-- Mobile-menu lists now own their reset; price fields no longer depend on Dawn floating labels; cart and contact
-  controls no longer override shared input/button styling. Sort rows have explicit gaps, and announcement arrows no
-  longer inherit negative margins against zero-gutter edges.
-
 ## Boundaries
 
 All catalog and search responses are loopback-only GET requests; POST requests remain rejected. Search transport and

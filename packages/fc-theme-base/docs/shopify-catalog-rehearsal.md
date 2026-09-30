@@ -5,19 +5,16 @@ from theme migration: the live shop already owns its catalog and must not import
 
 ## Boundaries
 
-- Confirmed source: `8f3f5f-3.myshopify.com`, primary domain `fencing.club`. Source access is read-only.
+- Source: `8f3f5f-3.myshopify.com`, primary domain `fencing.club`. Source access is read-only.
 - Write destination: `contosocamp.myshopify.com` only. Both import and finalization refuse any other destination.
-- The captured source has 204 products and 606 images. The importer preserves existing destination products.
-- After explicit approval, the 29 original Contoso demo products were deleted on September 11, 2026, using their
-  captured IDs and verified handles. All 204 imported products remain. The home page now selects imported products
-  and links to their real collections. This cleanup is separate from the importer's create-only contract.
+- The importer creates missing products and preserves existing destination products.
 - No customers, orders, credentials, fulfillment configuration, or source stock quantities are copied.
 - Titles, descriptions, SEO, and option copy use Mens, Womens, Kids without apostrophes. Handles and SKUs stay literal.
 - Products start as drafts with tracked zero stock and the current product template. Gift cards and subscription-only
   products are rejected. Missing or truncated nested data fails closed; no partial source product is imported.
-- Native bundle relationships are captured separately. The 21 bundle products contain 45 parent variants and 93
-  component references. Destination IDs are resolved through exact option values and SKUs; component quantities
-  are preserved. Shopify recalculates bundle prices on attachment, so verified draft bundles get source prices restored.
+- Native bundle relationships are captured separately. Destination IDs are resolved through exact option values and
+  SKUs; component quantities are preserved. Shopify recalculates bundle prices on attachment, so verified draft bundles
+  get source prices restored.
 
 ## Commands
 
@@ -35,12 +32,12 @@ Import output records created IDs and exclusions. Inspect remote state before re
 
 `finalize-catalog` takes the source snapshot, collection content, exact source bundle captures, explicit chart mapping,
 destination location and Online Store publication. It verifies all product copy, variants, prices, and ready media;
-restores missing components; restores source draft-bundle prices; assigns the 26 charts; seeds 20 units only for
+restores missing components; restores source draft-bundle prices; assigns the mapped charts; seeds 20 units only for
 zero-stock non-bundle items using `changeFromQuantity: 0`; attaches captured collection memberships; then activates
 and publishes products according to source status. It never publishes a theme. Nonzero stock is preserved on rerun.
 
 ```powershell
-pnpm --filter @repo/shopify-content cli finalize-catalog ../../tmp/source-catalog.json --content ../fc-theme-base/content/collections-source.json --bundles ../../tmp --assignments ../fc-theme-base/content/chart-assignments.json --store contosocamp.myshopify.com --confirm-store contosocamp.myshopify.com --location gid://shopify/Location/94863982776 --publication gid://shopify/Publication/218077561016
+pnpm --filter @repo/shopify-content cli finalize-catalog ../../tmp/source-catalog.json --content ../fc-theme-base/content/collections-source.json --bundles ../../tmp --assignments ../fc-theme-base/content/chart-assignments.json --store contosocamp.myshopify.com --confirm-store contosocamp.myshopify.com --location <location-gid> --publication <online-store-publication-gid>
 ```
 
 Bundle files must be named `migration-bundle-{source-product-handle}.json`; their product IDs must match the source.

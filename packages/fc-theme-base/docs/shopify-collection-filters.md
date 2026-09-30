@@ -63,7 +63,5 @@ Verify actual filtered product counts and selected values on desktop and mobile,
 and Clear all returning to the unfiltered collection. The component lab is not evidence that Shopify sources are
 configured. The Clothing design's sidebar is a presentation reference, not authoritative product classification.
 
-Contoso product curation is not a live-store migration. Local rehearsal evidence and the guarded plan are in
-`tmp/filter-catalog-current.json`, `tmp/collection-filter-plan.json`, and `tmp/collection-filter-verified.json`.
-Reconcile the reviewed assignments with the live source before an explicitly authorized cutover. Do not import
+Contoso product curation is not a live-store migration. Reconcile the reviewed assignments with the live source before an explicitly authorized cutover. Do not import
 Contoso products into the live shop or overwrite source records using development-store IDs.

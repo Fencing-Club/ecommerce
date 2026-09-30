@@ -12,7 +12,7 @@ This report compares the following apparel size charts:
 
 Return evidence covers January 12, 2026 through July 12, 2026. Sales use current line-item quantity and exclude cancelled orders. Amazon return counts use the CSV `quantity` field and were matched by exact SKU.
 
-The detailed 100-variation sales and return matrix is maintained in [jacket-pants-variation-sales-2026-01-12-to-2026-07-12.md](jacket-pants-variation-sales-2026-01-12-to-2026-07-12.md).
+The detailed 100-variation sales and return matrix is not kept in the repository; the tables below summarize it.
 
 An additional Amazon returns export covering December 3, 2025 through February 2, 2026 was reconciled against all 100 jacket and pants SKUs. It contained no matching apparel returns. The first jacket sale occurred on February 3, 2026, after that export ended.
 

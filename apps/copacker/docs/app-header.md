@@ -8,8 +8,8 @@ and the page under it, like Shopify's admin.
 - **Middle:** the search (`components/search-command.tsx`), a cmdk command menu. With room, it's centered in the
   window. Narrower, it fills the space between the logo and the bell with equal gaps. Below 30rem it becomes a button
   beside the notifications.
-- **Right:** notifications (`components/notifications-menu.tsx`). Only the bell and an empty dropdown exist for now;
-  Novu will deliver notifications later, so don't build a notification engine in Copacker.
+- **Right:** notifications (`components/notifications-menu.tsx`). The bell opens an empty dropdown: Copacker
+  doesn't deliver notifications in the app.
 
 ## Search
 

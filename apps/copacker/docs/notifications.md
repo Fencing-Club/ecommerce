@@ -4,6 +4,10 @@ Copacker learns about order and stock changes as they happen: Shopify, Amazon an
 that the worker reads (eBay's through Copacker's web service), so events wait through outages instead of depending on
 Copacker answering. A daily reconciliation reads everything again to catch anything missed.
 
+The queue settings (`SHOPIFY_EVENTS_QUEUE_URL`, `SHOPIFY_EVENTBRIDGE_SOURCE_ARN`, `AMAZON_NOTIFICATIONS_QUEUE_URL` and
+`EBAY_EVENTS_QUEUE_URL`) are deploy-only, set on the Railway services and left out of `.env.example`. Without them the
+local worker reads no queue and subscribes to nothing; syncs and the daily reconciliation still copy orders.
+
 ## Shopify events through Amazon EventBridge
 
 Shopify delivers webhook events straight to AWS; nothing calls Copacker's web service.
@@ -17,14 +21,13 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
 - The worker reads the queue with the same IAM user as the Amazon queue (`copacker-worker`, policy
   `read-amazon-notifications`, which covers both queues). It needs `SHOPIFY_EVENTS_QUEUE_URL` and, for subscribing,
   `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (`arn:aws:events:us-east-1::event-source/aws.partner/shopify.com/428016009217/copacker-production`).
-- Subscriptions are created through the Admin API at the EventBridge source when a store connects and again daily,
-  for every change to data Copacker copies. Orders (created, updated, edited, cancelled, deleted), refunds, order
+- Subscriptions are created through the Admin API at the EventBridge source when a store connects and again daily, for
+  every change to data Copacker copies. Orders (created, updated, edited, cancelled, deleted), refunds, order
   transactions and fulfillments start the order sync. Products, inventory items, inventory levels (updated, connected,
   disconnected) and locations start the stock refresh. App uninstalled disconnects the store. Fulfillment topics need
   `read_fulfillments`, so a store connected before Copacker asked for it subscribes to them after reconnecting; its
-  shipments still arrive as order updates until then. Shopify metafields (supplier SKU, ASIN, stock targets, case
-  quantity, supplier) are copied once per store, before its first stock sync, and later edits to them never reach
-  Copacker ([Variation and product details](api-contract.md#variation-and-product-details)). Without
+  shipments still arrive as order updates until then. Shopify metafields are copied once per store, and later edits to
+  them never reach Copacker ([Variation and product details](api-contract.md#variation-and-product-details)). Without
   `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` (local development) nothing is subscribed, and syncs still copy orders.
 - Each event carries the webhook's headers as metadata and its body as the payload. Events are gathered into
   five-minute periods; each period starts the existing order sync or stock refresh three minutes after it ends, so a
@@ -35,16 +38,11 @@ Shopify delivers webhook events straight to AWS; nothing calls Copacker's web se
   `shopify app deploy`. A data request emails workspace owners the stored order details, a customer redaction removes
   the customer's Shopify ID from their orders, and a shop redaction erases the orders, stock snapshots and stock
   history copied from that store.
-- Releasing `shopify.app.toml`: the Shopify CLI signed in with an account is refused for this app ("You are not a
-  member of the requested organization"), because the app belongs to the store's organization. Signing in again, with
-  any account, doesn't help: andrew@fencing.club is a member, and the Dev Dashboard works for it. The CLI's first
-  request goes to App Management's global endpoint (`/app_management/unstable/graphql.json`), which can't place this
-  account in an organization, so it refuses everything past the app's ID. The same token works on the organization's
-  endpoint (`/app_management/unstable/organizations/104739197/graphql.json`). Deploy with the app's automation token
-  instead (Dev Dashboard, Copacker, App settings, App automation token), kept out of git as
-  `SHOPIFY_APP_AUTOMATION_TOKEN` in the local `apps/copacker/.env` and set in the environment of
-  `shopify app deploy --config shopify.app.toml --no-release`. Compare the new version with the active one in the Dev
-  Dashboard before releasing it. Scopes a new version adds reach a store when it reconnects.
+- Releasing `shopify.app.toml`: deploy with the app's automation token (Dev Dashboard, Copacker, App settings, App
+  automation token), not a Shopify CLI sign-in. Keep it out of git as `SHOPIFY_APP_AUTOMATION_TOKEN` in the local
+  `apps/copacker/.env`, and set it in the environment of `shopify app deploy --config shopify.app.toml --no-release`.
+  Compare the new version with the active one in the Dev Dashboard before releasing it. Scopes a new version adds reach
+  a store when it reconnects.
 
 ## Amazon notifications
 
@@ -70,9 +68,10 @@ Amazon delivers notifications only to Amazon SQS or EventBridge, not to HTTPS.
 ## Staging
 
 Staging's worker reads `copacker-amazon-notifications-staging` and `copacker-shopify-events-staging` (each with a
-`-dlq`) as IAM user `copacker-worker-staging`, which can read only those two. Its Shopify queue receives nothing until
-Copacker Dev has an EventBridge source for staging with a rule to that queue, and `SHOPIFY_EVENTBRIDGE_SOURCE_ARN` is
-set on staging's worker.
+`-dlq`) as IAM user `copacker-worker-staging`, which can read only those two. Its Shopify queue receives nothing:
+Copacker Dev has no EventBridge source for staging, and staging's worker has no `SHOPIFY_EVENTBRIDGE_SOURCE_ARN`, so
+staging's Shopify orders come from syncs and the daily reconciliation. Receiving events needs that source, a rule to
+the queue, and the variable.
 
 ## Amazon apps per environment
 
@@ -96,10 +95,10 @@ notification of a new order starts another, and the daily reconciliation reads t
 ### Keys and signing in
 
 - The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
-  `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`), created on 2026-09-28. eBay allows one production keyset per account
-  without a support ticket, so local development shares its keys. A refresh token works from any environment with the
-  same keys. eBay only returns sign-in to an HTTPS address, so a seller connects through a deployed environment;
-  local development can't complete sign-in on `http://localhost`.
+  `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`). eBay allows one production keyset per account without a support ticket,
+  so local development shares its keys. A refresh token works from any environment with the same keys. eBay only returns
+  sign-in to an HTTPS address, so a seller connects through a deployed environment; local development can't complete
+  sign-in on `http://localhost`.
 - Copacker needs `EBAY_CLIENT_ID` (App ID), `EBAY_CLIENT_SECRET` (Cert ID) and `EBAY_RU_NAME` (the redirect URL
   name). Without all three, Settings shows eBay as coming soon.
 - Each environment has its own RuName on the one keyset:
@@ -124,7 +123,7 @@ notification of a new order starts another, and the daily reconciliation reads t
   copied, and a sync reads the last 30 days again, so an order cancelled later disappears. Nothing about the buyer is
   kept: no username, address or tax details.
 - Sales are each line's price less the seller's promotions (no shipping or tax); fees are eBay's
-  `totalMarketplaceFee`. eBay orders appear on the Orders page, the Overview (their own chart series) and in gross
+  `totalMarketplaceFee`. eBay orders appear on the Orders page, the Overview and in gross
   profit, with each line matched to a product by its custom label (SKU). The Overview's channel filter lists eBay:
   its sales, fees and charges are eBay's, and its stock, restock and POs are those of the location eBay orders count
   at (below).
@@ -158,10 +157,9 @@ EventBridge to a queue the worker reads.
   eBay only delivers to public HTTPS addresses.
 - An account deletion notice for a connected seller erases their connection, orders and order syncs from every
   workspace. Copacker keeps nothing about buyers, so a buyer's notice changes nothing.
-- eBay keeps a new production keyset disabled until the account deletion endpoint is set in the developer portal
-  (Alerts & Notifications). The redirect URL name settings under User Tokens only appear once the keyset is compliant.
-  The endpoint and token were entered on 2026-09-28, which enabled the keyset; eBay made the destination the order
-  subscriptions reuse.
+- eBay keeps a new production keyset disabled until the account deletion endpoint is set in the developer portal (Alerts
+  & Notifications). The redirect URL name settings under User Tokens only appear once the keyset is compliant. Setting
+  the endpoint and token enabled the keyset and created the destination the order subscriptions reuse.
 
 ## Daily reconciliation and failures
 

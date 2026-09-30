@@ -27,7 +27,6 @@ Made on 2026-09-28.
 | Amazon Global Logistics        | Copacker does **as much of it as Amazon allows**, and prepares the rest for you.                                                                                                           |
 | Amazon's warehouses in China   | **GWD becomes a destination.** Delivery requests stay in Seller Central until Amazon offers an API, linked to the shipment in Copacker.                                                    |
 | Importer of record             | Your **EIN is stored in Copacker** and used wherever a document needs it.                                                                                                                  |
-| Ready email                    | Only a **supplier on Copacker** gets it; when you process everything yourself, nothing is sent. Done (`84c0ec1`, `bd0a722`).                                                               |
 | Receiving and closing          | Received and rejected units per line, like Shopify, and **you close** the purchase order (inventory sync spec).                                                                            |
 
 ## Routes

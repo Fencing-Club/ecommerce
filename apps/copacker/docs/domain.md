@@ -23,13 +23,9 @@ A supplier can work for several buyers.
 
 ## Shipments
 
-The supplier submits carton identifiers, contents, cm/kg measurements, the ship-from contact and address, and the local
-ready-for-pickup date. Copacker validates them and reads each SKU's prep category from Amazon; an AWD order is also
-checked for eligibility before it's created. Copacker then maps Amazon's carton labels to the supplier's carton numbers
-([Amazon inbound shipments](amazon-inbound.md)). The buyer books the carrier in Amazon and uploads its shipping labels;
-a ready date isn't a booked pickup. Released documents are the packing list, product labels, carton and shipping
-labels, and the packing checklist. A correction outdates all of the shipment's documents. Amazon shipments are never
-updated: one already created is cancelled, and its goods go in a new shipment, so labels are never silently reused.
+The supplier submits cartons, measurements and a ready date, Copacker creates the Amazon shipment and matches its labels
+to the cartons, and a correction outdates the shipment’s documents and replaces an Amazon shipment rather than updating
+it ([Amazon inbound shipments](amazon-inbound.md)).
 
 ## Architecture
 
@@ -38,5 +34,5 @@ updated: one already created is cancelled, and its goods go in a new shipment, s
 - One private Railway bucket for every uploaded and generated document, downloaded only through authorized routes.
 - Store credentials are encrypted per workspace; OAuth state is single-use and expires; supplier invitations match the
   exact email.
-- Durable Postgres jobs run Amazon, email and Shopify work. A create that times out is an unknown outcome to reconcile,
-  never retried blindly.
+- Durable Postgres jobs run Amazon, eBay, email and Shopify work
+  ([Failures and cancellation](amazon-inbound.md#failures-and-cancellation) covers Amazon creates).

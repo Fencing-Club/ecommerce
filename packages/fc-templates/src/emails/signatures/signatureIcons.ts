@@ -1,7 +1,7 @@
 /*
  * The signature glyphs, carried inline as base64 PNGs the same way `lineIcons.ts` carries its
- * line icons: Gmail drops SVG and blocks remote images, so an inline raster is the cut that renders
- * everywhere. Rendered from the design's lucide glyphs at ~5x.
+ * line icons. Gmail, Outlook.com and Yahoo drop a `data:` image source, so they show no glyphs until
+ * these are hosted with `pnpm cli upload` and named by URL. Rendered from the design's lucide glyphs at ~5x.
  *
  * Each is here twice, one cut per scheme, because a PNG cannot be recoloured: the light cut for the
  * light background, and the cut the dark rule swaps in. Contacts are the muted greys, the socials

@@ -98,5 +98,4 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
   someone can't open as plain text.
 
 Invitations carry the role and pages chosen for them (`team_invitations.role` and `access`), and the colleague joins
-with them. Existing members kept what they could do when roles arrived: Edit on every page, View on Partners, and
-prices.
+with them.

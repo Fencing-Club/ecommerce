@@ -15,8 +15,9 @@ When a concept needs a new shape, change the component, so every screen moves to
 
 | Concept                  | Component             | Sizes and states                                                                 | Used for                                                    |
 | ------------------------ | --------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| App header               | RD Top Bar            | Workspace name and kind chip, inbox count                                        | Every desktop screen                                        |
-| Phone header             | RD Mobile Top Bar     | Workspace name, inbox count; kind chip hidden                                    | Every phone screen                                          |
+| App header               | RD Top Bar            | Workspace name, inbox count                                                      | Every desktop screen                                        |
+| Phone header             | RD Mobile Top Bar     | Workspace name, inbox count                                                      | Every phone screen                                          |
+| Workspace menu           | RD Workspace Menu     | Workspaces and their kind, New workspace, Workspace settings                     | The top bar switcher                                        |
 | Navigation item          | RD Nav Item           | Default, active (fill and marker), count                                         | Sidebars and the settings navigation                        |
 | Status                   | RD Status             | Five tones, below                                                                | Every status and state label                                |
 | Button                   | RD Button             | Primary; icon optional                                                           | The one primary action in a view                            |
@@ -50,7 +51,7 @@ Every color on a screen is a variable. New in this audit:
 | Token                                        | Use                                                        |
 | -------------------------------------------- | ---------------------------------------------------------- |
 | `rd-primary-tint`, `rd-primary-border`       | The "Your next step" card                                   |
-| `rd-kind-supplier-soft`, `rd-kind-forwarder-soft` | Kind chips and avatars for supplier and forwarder     |
+| `rd-kind-supplier-soft`, `rd-kind-forwarder-soft` | Workspace marks and avatars for supplier and forwarder |
 | `rd-warning-border`, `rd-danger-border`      | Borders of warning banners and danger zones                |
 | `rd-warning-tint`, `rd-danger-tint`, `rd-success-tint` | Row highlights: changed, failing, added          |
 | `rd-fg-disabled`, `rd-border-strong`         | Disabled text and icons; checkbox and switch outlines       |
@@ -108,45 +109,6 @@ Every screen tells one story. Before adding a screen, reuse these facts.
 
 Product photos: within a workspace, one image per product (the buyer's come from Shopify, the supplier's from its own
 catalog, so they can differ between workspaces).
-
-## What the audit fixed
-
-| Finding                                                                 | Fix                                                                |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| 12 action bars in 3 styles                                              | RD Action Bar everywhere                                            |
-| Lifecycle trackers and next step cards in 3 builds each                 | RD Lifecycle Stage and RD Next Step; phone trackers RD Lifecycle Compact |
-| Segmented controls at 29, 32, 33 and 34 px                              | 32 px everywhere                                                    |
-| 71 icon buttons at 30, 32, 34, 36 and 44 px, hand-drawn                 | RD Icon Button at 34, 44 or quiet 28                                 |
-| 40 checkboxes and 19 switches in two sizes each                         | RD Checkbox and RD Switch                                           |
-| About 40 literal colors, including two light blues for one chart and two supplier tints | Tokens above; only logos and swatches stay literal    |
-| Top bar kind chips tinted differently by each designer                  | Kind soft tokens                                                    |
-| Sidebar and inbox counts disagreeing between screens (Inbox 5 against "8 tasks") | Canonical counts on 147 nav items and 54 top bars           |
-| PO-1045 with different products on the buyer's and supplier's screens   | Canonical lines, proposal and shipment contents; buyer photos matched |
-| Years 2025 and 2026 mixed; Lotus in Yiwu and Dongguan; Alex's title     | Canonical facts above                                               |
-| "23 kg" and "50 lb" limits                                              | 22.68 kg                                                            |
-| "To pack" in the info tone                                              | Warning                                                             |
-| Buyer's PO without the packing requirements the spec promises           | Card added, read-only                                               |
-| Phone screens missing for pages with trackers                           | Proposal review and Mark shipped (sheet) added; 13 phone screens    |
-| One table header without the header band                                | Fixed (Pack shipment cartons)                                       |
-| Text-heavy screens: about 104 sentence-length texts, notices that couldn’t be dismissed | Content and disclosure rules; 14 remain; 29 info tips; 4 banners, all dismissible |
-| Black used for done stages and step markers; network tags colored like states | Green, blue, amber, gray progress; neutral tags            |
-| Forwarder leg listing a product not on PO-1045; 12 identical carton rows | Canonical contents, grouped carton ranges                           |
-
-A second pass, after the purchase order flow and inventory sync screens were added, checked every screen again with
-the Fluent Agent's guidance.
-
-| Finding                                                                 | Fix                                                                |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| A record's step actions in the header on some pages, the next step card on others, and both on one | Header for record-level actions and ⋯ last; step actions in the next step card; phone bars carry only those |
-| Three dialogs with different radii, padding, headers and footers        | One construction; primaries answer the title                        |
-| Two sort designs, pagination in four formats                            | One sort control; "Showing 1–n of m" only when paged                |
-| Team and Inbox Updates filtering with segmented controls                 | Views and chips; segmented controls only switch a display          |
-| The same packing rule worded two or three ways                         | One wording per rule; one row construction for every destination   |
-| 38 of 43 info tips without text; 8 on one screen, several repeating labels | Text on every tip, at most 5 a screen, repeats removed            |
-| "Not started" under upcoming stages, empty Carrier cards, helper lines restating labels | Left out until they have a value                  |
-| A waiting next step with a primary action it couldn't take yet          | Waiting cards have no primary                                       |
-| Stock flow's switch steps always shown under the owner choice            | Moved to that choice's confirm dialog                              |
-| Phone and desktop disagreeing on PO-1045's status and the proposal's wording | Aligned; Purchase orders count 4 on every screen                |
 
 ## Checking it again
 

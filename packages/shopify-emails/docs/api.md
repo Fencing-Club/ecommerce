@@ -2,12 +2,13 @@
 
 Every export, in one place. The [README](../README.md) explains why each exists; this is the lookup table.
 
-Three entry points:
+Four entry points:
 
 | Specifier                       | Holds                                                    |
 | ------------------------------- | -------------------------------------------------------- |
 | `@repo/shopify-emails`          | defining, compiling, previewing, and the tags             |
 | `@repo/shopify-emails/liquid`   | the Shopify filter registry and the engine it builds      |
+| `@repo/shopify-emails/probe`    | the variable probe and the reader for its captured result |
 | `@repo/shopify-emails/store`    | live orders and customers from a store's Admin API        |
 
 ## Defining and compiling
@@ -144,6 +145,7 @@ derived, and what you reach for to check a drop the package has not seen — see
 | `buildProbe`                  | `(questions: ProbeQuestions) => string`                                 |
 | `notificationQuestions`       | What to ask a notification.                                             |
 | `marketingQuestions`          | What to ask a Shopify Email campaign.                                   |
+| `assetQuestions`              | What the CDN filters resolve to.                                        |
 | `ProbeQuestions`              | type                                                                    |
 | `parseProbe`                  | `(html: string) => CapturedValues`                                       |
 | `summariseProbe`              | `(captured: CapturedValues, questions: ProbeQuestions) => ProbeReport`   |

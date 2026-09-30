@@ -10,13 +10,11 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
 
 ## External setup
 
-1. WorkOS: an AuthKit application with `<APP_URL>/callback` as a redirect, `<APP_URL>/login` as the login URI,
-   `<APP_URL>` as a sign-out redirect and `<APP_URL>/reset-password` as the password reset URL. Copacker draws its own
-   sign-in pages against the WorkOS API ([Sign-in and getting started](auth.md)); its database owns workspace
-   memberships and per-order sharing.
+1. WorkOS: an AuthKit application, set up as in [WorkOS settings](auth.md#workos-settings). Copacker draws its own
+   sign-in pages against the WorkOS API; its database owns workspace memberships and per-order sharing.
 2. Shopify: a public-distribution app with `<APP_URL>/api/connections/shopify` as its redirect and the scopes in
-   `apps/copacker/shopify.app.toml`. Supplier SKUs live in Copacker, copied once per store from the variant metafield
-   `custom.supplier_sku`.
+   `apps/copacker/shopify.app.toml`. Product details copied from Shopify metafields are in
+   [Variation and product details](api-contract.md#variation-and-product-details).
 3. Amazon: a public SP-API application with the AWD role and Listings access, redirecting to
    `<APP_URL>/api/connections/amazon`. Amazon requires an HTTPS redirect, so test it on a deployed environment. While the
    app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link then asks for `version=beta`, and sellers can connect by
@@ -30,16 +28,16 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    stays free for a mail provider. Production's `EMAIL_FROM` is `Copacker <hello@copacker.ai>`, on both services. Local
    and staging keep `onboarding@resend.dev`, which reaches only the Resend account's owner, so their tests can't email
    anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
+   Nothing receives `@copacker.ai` mail. Invitations, purchase orders, label notices and password resets set no
+   reply-to, so replies to them go to `hello@copacker.ai` and bounce.
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)).
 
 ## Recovery
 
-An Amazon create is checkpointed before the request. If its response is lost, don't retry: find the order in Amazon and
-use the buyer's reconciliation form, where the reference and cartons must match before it's confirmed. If a correction
-affects a shipment, cancel it in Amazon where Amazon allows and let Copacker verify the cancellation before creating a
-replacement. Copacker never invents an AWD cancellation.
+Lost Amazon creates, cancellations and retries are in
+[Amazon inbound shipments](amazon-inbound.md#failures-and-cancellation).
 
 Failed notification and Shopify write jobs stay visible for an owner to retry once the configuration is fixed. Shopify
 cost updates need matching currencies and use the supplier's piece price times the sellable pack size, with no estimated
@@ -63,15 +61,22 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-Every push to `main` runs CI (`pnpm verify`, Copacker's build, every migration on an empty Postgres 18, and
-the [end-to-end suite](e2e.md)). When they pass, the `deploy-staging` job deploys that commit to Railway's staging
-environment and runs the end-to-end suite against it. To release to production, run the **Promote to production**
-workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs against
-production.
+CI (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request, in three jobs side by side:
+
+- `verify`: format, lint, types, unused code (`check:unused`), the other packages' tests, Copacker's unit tests with
+  coverage, Copacker's build, and every migration on an empty Postgres 18.
+- `stories`: the Storybook tests, in four shards.
+- `e2e`: the [end-to-end suite](e2e.md), in two shards.
+
+When all three pass on a push, `deploy-staging` deploys the commit to Railway's staging environment and runs the
+end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. Pushes run
+side by side, and a new push to a pull request replaces its older run. To release to production, run the **Promote to
+production** workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs
+against production.
 
 Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
 pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
-`/api/health` to report the commit. Deploys to one environment never overlap, and a newer push doesn't cancel one.
+`/api/health` to report the commit. Deploys to one environment never overlap, and none cancels another.
 
 - Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
   (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
@@ -81,11 +86,11 @@ pre-deploy step runs the migrations) and then the worker. It waits for each depl
   command in a shell, so without `sh -c` the `&&` reaches pnpm as arguments. Production's only migrates.
 - Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`).
 - Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
-  forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in
-  one release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to
-  undo a migration, write a new one, or restore one of Railway's scheduled backups of production Postgres: daily (kept 6
-  days) and weekly (27 days). The promote used to take a manual backup too, but manual backups never expire, and
-  Railway allows 10 per volume, scheduled ones included, so they stopped releases on 2026-09-28.
+  forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in one
+  release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to undo a
+  migration, write a new one, or restore one of Railway's scheduled backups of production Postgres: daily (kept 6 days)
+  and weekly (27 days). Don't take manual backups: they never expire, and they count toward Railway's 10 per volume,
+  scheduled ones included.
 - CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change.
 - Deploying by hand with `railway up` still works; prefer the workflows so the health check reports the commit.
 
@@ -104,7 +109,8 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 
 Each environment has its own instance of every service, database and bucket. Production answers on
 `https://copacker.ai` (`APP_URL`) and `https://copacker-production.up.railway.app`; staging on
-`https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both use WorkOS's staging environment.
+`https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both sign in through WorkOS's staging
+environment ([WorkOS settings](auth.md#workos-settings)).
 
 `copacker.ai` is registered with Cloudflare Registrar and uses Cloudflare DNS. The root and `staging` are proxied CNAMEs
 to their environment's web service, each with a `_railway-verify` TXT record; `www` redirects to the root. SSL/TLS is
@@ -116,16 +122,6 @@ the development apps (Copacker Dev, Aisle Dev), so connecting a store there neve
 worker reads its own SQS queues (`copacker-*-staging`) as IAM user `copacker-worker-staging`. To fill it with the demo
 store, sign in there once, then run `railway ssh --environment staging --service copacker-worker -- pnpm --filter
 copacker db:seed`.
-
-Still to do:
-
-- Amazon: add `https://copacker.ai/api/connections/amazon` to the redirect URIs of the Aisle app, and
-  `https://staging.copacker.ai/api/connections/amazon` to Aisle Dev's, in the Solution Provider Portal. The edit page
-  hides OAuth fields while the developer registration is under review; until then, connect by self-authorization.
-- Shopify: an EventBridge source on Copacker Dev for staging's Shopify queue ([notifications](notifications.md)).
-- Email: nothing receives `@copacker.ai` mail yet. Invitations, purchase orders, label notices and password resets
-  set no reply-to, so replies to them go to `hello@copacker.ai` and bounce. Set up mailboxes (Google Workspace, whose
-  records go at the root), then point `CONTACT_EMAIL` there from the personal Gmail.
 
 ## Databases and migrations
 
@@ -141,8 +137,8 @@ Local Shopify connects through "Copacker Dev" in the Shopify Dev Dashboard (clie
 and staging's redirects. Keep its scopes the same as production's app. Until Shopify approves `read_all_orders` for it,
 order syncs through it copy the last 60 days. Local Amazon connects by self-authorization through Aisle Dev; production
 uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application ID) in the local `.env`. Local
-`NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`, registered in WorkOS. Webhooks, notifications and
-queues per environment are in [Shopify webhooks and Amazon notifications](notifications.md).
+`NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`. Webhooks, notifications and queues per
+environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
 Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
 under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied

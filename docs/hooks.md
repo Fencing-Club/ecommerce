@@ -113,7 +113,7 @@ each hook.
 - `useDocumentTitle` — set `document.title`.
 - `useFavicon` — set the page favicon.
 - `useIdle` — boolean: user has been idle past a timeout.
-- `useFullscreen` — enter/exit fullscreen for an element.
+- `useFullscreenElement` / `useFullscreenDocument` — enter/exit fullscreen for an element or the page.
 - `useEyeDropper` — the browser EyeDropper API.
 - `useFileDialog` — open a file picker without an `<input>`.
 - `useClipboard` — `copy(value)` + `copied` state.

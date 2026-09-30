@@ -55,6 +55,7 @@ Because both come from the same tree, the preview cannot drift from what you shi
 - [Previewing against real data](#previewing-against-real-data)
 - [Connecting a store](#connecting-a-store)
 - [Loading live orders and customers](#loading-live-orders-and-customers)
+- [Probing the notification variables](#probing-the-notification-variables)
 - [The CLI](#the-cli)
 - [Limitations](#limitations)
 - [Planned](#planned)
@@ -62,7 +63,7 @@ Because both come from the same tree, the preview cannot drift from what you shi
 
 ## Requirements
 
-Node 20 or newer. The package publishes compiled ESM with type declarations, so no build-time TypeScript support is
+Node 24 or newer. The package publishes compiled ESM with type declarations, so no build-time TypeScript support is
 required to consume it.
 
 `react`, `react-dom`, and `react-email` are **peer dependencies**. That is deliberate: a template tree is your React
@@ -700,11 +701,11 @@ A store is named by its **handle** — the `8f3f5f-3` in `admin.shopify.com/stor
 `.myshopify.com` domain is accepted too and normalised down to the same thing, so it does not matter which one you
 happen to have copied.
 
-The browser asks you to authorise a list of `read_` scopes and nothing else — orders, customers, products, policies,
+The browser asks you to authorise a list of scopes: `read_` scopes for orders, customers, products, policies,
 fulfillment orders, returns, payment terms, companies, gift cards and store credit, which together are what the pull
-reads. Everything here is read-only. Afterwards the command runs one query to confirm the grant works, so a missing
-scope fails at login rather than the first time a preview loads. Widening the list means signing in again, because a
-grant only covers the scopes it was asked for.
+reads — plus `read_files` and `write_files`, which only `upload` uses. Afterwards the command runs one query to confirm
+the grant works, so a missing scope fails at login rather than the first time a preview loads. Widening the list means
+signing in again, because a grant only covers the scopes it was asked for.
 
 Because the CLI never hands the token over, this package stores **no secret at all**. The only thing written to the
 per-user config directory — `%APPDATA%\shopify-emails` on Windows, `~/Library/Application Support/shopify-emails` on
@@ -761,7 +762,7 @@ const html = renderTemplateValues(orderConfirmation, engine, values)
 Financial status arrives lower-cased, because that is how Liquid compares it — a picker showing `Paid` next to a
 template testing `financial_status == "paid"` is a trap worth closing early.
 
-Everything here is read-only. There is no write path, and the credentials are scoped so there could not be one.
+Everything here is read-only. The only write in the package is `upload`, which hosts an image in the store's Files.
 
 ## Probing the notification variables
 
@@ -837,6 +838,7 @@ shopify-emails reset [--values <file>]
 shopify-emails pull [--store <handle>] [--order <name|gid>] [--out <file>]
 shopify-emails probe [--for notification|marketing|asset] [--names a,b] [--out <file>]
 shopify-emails probe --capture <file.html> [--for notification|marketing|asset] [--out <file>]
+shopify-emails upload <files...> [--store <handle>]
 ```
 
 With no command and a terminal to prompt in, the CLI connects a store and then offers the things worth doing with one:
@@ -850,7 +852,8 @@ paste-ready files — see [Building the Liquid files](#building-the-liquid-files
 reads its result back — see [Probing the notification variables](#probing-the-notification-variables). `pull` writes
 what one live order hands a template, and `preview` opens the templates against it — see
 [Previewing in the React Email dev server](#previewing-in-the-react-email-dev-server). `reset` throws the pulled order
-away again, which is how you get back to samples that cover more than any one order does.
+away again, which is how you get back to samples that cover more than any one order does. `upload` hosts images on the
+store's CDN and prints each one's URL — see [Limitations](#limitations) for why an image has to be hosted.
 
 It is built on [commander](https://github.com/tj/commander.js) and
 [@clack/prompts](https://github.com/bombshell-dev/clack), so `--help` on any command is generated from that command
@@ -902,46 +905,35 @@ to `forloop.…`, which Liquid binds to the _innermost_ loop, while value mode u
 at compile time.
 
 **An image has to be hosted.** A `data:` URI previews correctly and then fails in Gmail, Outlook.com and Yahoo, all of
-which refuse an inline image source. Point `src` at a URL the recipient's client can fetch. Publishing those files is
-manual today — see [Planned](#planned).
+which refuse an inline image source. Point `src` at a URL the recipient's client can fetch: `upload` puts a file on the
+store's CDN and prints the URL to use.
 
 ## Planned
 
 None of this is built yet. It is written down so the shape is agreed before anyone starts.
 
-### `assets` — publish images and get the filter back
+### A filter instead of a URL
 
-```
-shopify-emails assets <dir> [--manifest <file>]
-```
-
-Uploads every image under `<dir>` to the connected store's Files, then writes a manifest mapping each local name to the
-filter that renders it:
+`upload` prints each file's CDN URL. That URL carries a version fingerprint that changes when the file is replaced, so a
+template holding one goes stale on the next upload. Writing a manifest that maps each local name to the filter that
+renders it would fix that, because the filter keeps resolving:
 
 ```json
 { "shield-check.png": "{{ 'shield-check.png' | file_url }}" }
 ```
 
-The filter is the useful return value, not the CDN URL. A URL carries a version fingerprint that changes when the file
-is replaced, so a template holding one goes stale on the next upload, while the filter keeps resolving. Uploads are
-idempotent by filename so re-running the command replaces rather than duplicates.
-
-This needs a write scope, which is the first the CLI would ask for — `login` is read-only today and
-[Previewing against real data](#previewing-against-real-data) says so deliberately. Publishing assets should stay a
-separate, explicitly granted permission.
-
 ### An asset shim so the filter previews
 
 `file_url` and `file_img_url` are classified `unverified` in `catalog.ts`: they read the store's Files, and whether a
-notification may reach them is unconfirmed. Confirm that first, because everything above depends on it.
+notification may reach them is unconfirmed. Confirm that first, because the manifest above depends on it.
 
 The shims in `filters/shims.ts` currently guess a CDN path from the filename, which is right in shape and wrong in the
-fingerprint, so a preview shows a broken image. Once `assets` writes a manifest, the engine should read it and resolve
-these two filters against real uploaded URLs — the same trick `NOTIFICATION_ASSETS` already uses to resolve
+fingerprint, so a preview shows a broken image. Once there is a manifest, the engine should read it and resolve these
+two filters against real uploaded URLs — the same trick `NOTIFICATION_ASSETS` already uses to resolve
 `shopify_asset_url` for the three platform assets the stock templates reference.
 
 ### Publishing metadata
 
-The package is private to this monorepo today, so `package.json` carries no `repository`, `homepage`, `bugs`, or
-`license`. npm renders all four on the package page, and `repository` is what lets a consumer find the source from their
-lockfile. Fill them in before the first publish, and add a `LICENSE` file to match — the field alone is not the grant.
+The package is private to this monorepo today. `package.json` carries a `license` and there is a `LICENSE` file, but
+`repository.url` is empty and there is no `homepage` or `bugs`. npm renders all of them on the package page, and
+`repository` is what lets a consumer find the source from their lockfile. Fill them in before the first publish.

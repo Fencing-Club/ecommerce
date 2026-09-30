@@ -21,7 +21,8 @@ parts live in `apps/copacker/src/components/marketing/`:
 | `connect.tsx`, `setups.ts`       | The agent picker, with each agent's setup to copy (`copy-button.tsx`), and the CLI's session.       |
 | `signup.tsx`                     | The close: the waitlist (`#waitlist`), which posts to `/api/mailing-list`.                          |
 | `mockups.tsx`, `scaled.tsx`      | The hero's product shot, and the wrapper that scales it to its column like a screenshot.            |
-| `film.tsx`                       | The ad, in a dialog.                                                                                |
+| `film.tsx`                       | The button that plays the ad; it loads the dialog once the page is idle or on the first click.      |
+| `film-dialog.tsx`                | The dialog that plays the ad from its media URL.                                                    |
 
 - The product shot and the journey's cards are the app's own components (`Table`, `Status`, `StatusBadge` and so on)
   with demo data, in the light theme. Paper sections carry `.light` and the stages `.dark` (`src/styles/theme.css.ts`),
@@ -97,10 +98,10 @@ parts live in `apps/copacker/src/components/marketing/`:
 
 ## Assets
 
-The film, the ad's web mix at 1080p and 30 fps, is in the `copacker-media` R2 bucket, named for the first 8 characters of
-its SHA-256 (`film-924d480a.mp4`), and `film.tsx` plays it from `https://media.copacker.ai/`. `apps/copacker/public/marketing/`
-holds its poster and the social image, both from the ad's end card. After re-rendering the ad (see [Video](../../video/docs/README.md)),
-export them again from `apps/video`:
+The film, the ad's web mix at 1080p and 30 fps, is in the `copacker-media` R2 bucket, named for the first 8 characters
+of its SHA-256 (`film-924d480a.mp4`), and `film-dialog.tsx` plays it from `https://media.copacker.ai/`.
+`apps/copacker/public/marketing/` holds its poster and the social image, both from the ad's end card. After re-rendering
+the ad (see [Video](../../video/docs/README.md)), export them again from `apps/video`:
 
 ```sh
 pnpm exec remotion ffmpeg -y -i out/copacker-web.mp4 -r 30 -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart out/film.mp4
@@ -108,9 +109,8 @@ pnpm exec remotion ffmpeg -y -ss 101.2 -i out/copacker-web.mp4 -frames:v 1 -vf s
 pnpm exec remotion ffmpeg -y -ss 101.2 -i out/copacker-web.mp4 -frames:v 1 -vf crop=1920:1008:0:36,scale=1200:630 -q:v 3 ../copacker/public/marketing/og.jpg
 ```
 
-Then upload the new cut under its own hash and point `film.tsx` at it. A new name means no cache holds an old cut, so
-there's nothing to purge (the old `film.mp4` name was cached for a day). The bucket answers range requests, which Safari
-needs to play and seek it.
+Then upload the new cut under its own hash and point `film-dialog.tsx` at it. A new name means no cache holds an old
+cut, so there's nothing to purge. The bucket answers range requests, which Safari needs to play and seek it.
 
 ```sh
 npx wrangler r2 object put copacker-media/film-<hash>.mp4 --file=out/film.mp4 --content-type=video/mp4 --cache-control="public, max-age=31536000, immutable" --remote

@@ -46,17 +46,17 @@ default.
 
 ## Images
 
-Two kinds, both chosen so nothing new has to be hosted:
+Two kinds:
 
 - **The shield** is a hosted image, and both cuts already live on the shop's CDN: the black shield is the one the
   printout mastheads print, the white the email header shows. The source PNGs sit in `assets/` for reference;
   `pnpm cli upload` re-hosts one if a crisper export is ever wanted, after which its URL in `signatureData.ts` takes the
   new `?v=` hash.
 - **The contact and social glyphs** are inline base64 PNGs in `signatureIcons.ts`, the same way `lineIcons.ts` carries
-  its glyphs — Gmail drops SVG and blocks remote images, so an inline raster is the cut that renders everywhere. They
-  are rendered from the design's lucide glyphs, each in its light cut (the muted greys for contacts, the ink for
-  socials) and the white cut the dark rule swaps in. Regenerate them with `sharp` from the lucide paths if the set ever
-  changes.
+  its glyphs. That does not render everywhere: Gmail, Outlook.com, and Yahoo drop a `data:` image source, so those
+  readers see no glyphs until they are hosted with `pnpm cli upload` and named by URL. They are rendered from the
+  design's lucide glyphs, each in its light cut (the muted greys for contacts, the ink for socials) and the white cut
+  the dark rule swaps in. Regenerate them with `sharp` from the lucide paths if the set ever changes.
 
 ## Another person
 

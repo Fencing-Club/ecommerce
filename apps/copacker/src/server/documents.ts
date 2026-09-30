@@ -3,6 +3,7 @@ import type { Address, OrderInput, Packing } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
+import invariant from "tiny-invariant"
 import { db, type Transaction } from "@/db"
 import {
   contacts,
@@ -65,7 +66,8 @@ export async function storeDocument(input: DocumentInput, bytes: Uint8Array) {
       .insert(documents)
       .values({ ...input, outdated, id, objectKey, bytes: bytes.length })
       .returning()
-    return doc!
+    invariant(doc, "Filing a document inserts one row")
+    return doc
   })
 }
 // Files a copy of a shipment's document with another shipment, under the given ID and with a stored file of its own,

@@ -6,25 +6,25 @@ The tools we reach for **first**. Prefer them before introducing an alternative 
 > a different one than what's listed), raise it — in the issue or PR — and get agreement before adding it. Don't
 > silently swap in a different tool.
 
-**Legend:** ✅ = already wired into this repo · ◻️ = preferred choice, add when the need arises.
-
 ## Developer experience
 
-- ✅ **pnpm** — package manager (workspaces, catalog, hoisted linker).
-- ✅ **Turborepo** — task runner + caching.
-- ✅ **Vite** — bundler / dev server.
-- ✅ **oxlint** — linter · **oxfmt** — formatter.
-- ✅ **knip** — unused files / deps / exports.
-- ✅ **npm-run-all2** — script orchestration (`run-s` / `run-p`).
-- ✅ **lefthook** — git hooks.
-- ✅ **Dependabot** — dependency update PRs.
-- ✅ **beachball** — versioning + changelogs (`pnpm change` to add change files; `pnpm release` to bump + publish).
+- **pnpm** — package manager (workspaces, catalog, hoisted linker).
+- **Turborepo** — task runner + caching.
+- **Vite** — bundler / dev server.
+- **Next.js** — web framework for server-rendered apps.
+- **oxlint** — linter · **oxfmt** — formatter.
+- **knip** — unused files / deps / exports.
+- **npm-run-all2** — script orchestration (`run-s` / `run-p`).
+- **lefthook** — git hooks.
+- **Dependabot** — dependency update PRs.
+- **beachball** — versioning + changelogs (`pnpm change` to add change files; `pnpm change:release` to bump +
+  publish).
 
 ## Library authoring
 
 For building publishable TypeScript libraries.
 
-- ◻️ **tsdown** — Rolldown-powered library bundler; fits this repo's oxc/rolldown toolchain and a good default.
+- **tsdown** — Rolldown-powered library bundler; fits this repo's oxc/rolldown toolchain and a good default.
 
 (Versioning + publishing is **beachball** — see [Developer experience](#developer-experience).)
 
@@ -32,139 +32,137 @@ For building publishable TypeScript libraries.
 
 For building command-line tools.
 
-- ✅ **commander** — command / argument framework.
-- ✅ **@clack/prompts** — interactive prompts.
-- ✅ **picocolors** — terminal colors (tiny, fast).
-- ◻️ **ink** — React for the terminal, for rich interactive CLIs.
-- ◻️ **c12** — Configuration file management.
+- **commander** — command / argument framework.
+- **@clack/prompts** — interactive prompts.
+- **picocolors** — terminal colors (tiny, fast).
+- **ink** — React for the terminal, for rich interactive CLIs.
+- **c12** — Configuration file management.
 
 ## Testing
 
-- ✅ **Vitest** — test runner · **happy-dom** — DOM environment · **@vitest/coverage-v8** — coverage.
-- ✅ **@testing-library/react**, **user-event**, **jest-dom** — component testing.
-- ✅ **@playwright/test** — browser engine (also drives Storybook browser tests).
-- ✅ **msw** — API mocking (see the `ApiMock` helper in tests).
-- ✅ **Storybook** + **@storybook/react-vite** — component workshop.
-- ✅ **@storybook/addon-vitest** — run stories as tests · **@storybook/addon-a11y** — accessibility checks.
-- ✅ **@chromatic-com/storybook** + **chromatic** — visual regression + Storybook publishing.
-- ◻️ **@alwaysmeticulous/recorder-plugin** + **@alwaysmeticulous/recorder-loader** — record real sessions to
+- **Vitest** — test runner · **happy-dom** — DOM environment · **@vitest/coverage-v8** — coverage.
+- **@testing-library/react**, **user-event**, **jest-dom** — component testing.
+- **@playwright/test** — browser engine (also drives Storybook browser tests).
+- **msw** — API mocking.
+- **Storybook** + **@storybook/react-vite** — component workshop.
+- **@storybook/addon-vitest** — run stories as tests · **@storybook/addon-a11y** — accessibility checks.
+- **@chromatic-com/storybook** + **chromatic** — visual regression + Storybook publishing.
+- **@alwaysmeticulous/recorder-plugin** + **@alwaysmeticulous/recorder-loader** — record real sessions to
   auto-generate e2e coverage.
-- ✅ **@axe-core/playwright** — automated accessibility checks in Playwright/e2e (complements the Storybook a11y addon).
+- **@axe-core/playwright** — automated accessibility checks in Playwright/e2e (complements the Storybook a11y addon).
 
 ## Core libraries
 
-- ✅ **zod** — schema validation (Standard Schema; powers forms + env parsing).
-- ✅ **@t3-oss/env-core** — type-safe environment variables.
-- ✅ **exceljs** — reading and writing Excel workbooks (Copacker's product template and catalog price lists).
-- ✅ **ts-pattern** — pattern matching / exhaustive unions · **ts-extras** — type-safe stdlib helpers.
-- ✅ **tiny-invariant** — runtime assertions.
-- ✅ **date-fns** — date utilities.
-- ✅ **@mantine/hooks** — React hooks catalog.
-- ✅ **react-error-boundary** — error boundaries · ✅ **nuqs** — type-safe URL state.
-- ✅ **@tanstack/react-router** — type-safe routing. Preferred setup: **@tanstack/router-plugin** (Vite, file-based
-  routes) + **router-devtools**. _(This repo currently uses code-based routes; move to the plugin when routes grow.)_
-- ✅ **react-hook-form** + **@hookform/resolvers** — forms with Zod-backed validation.
-- ◻️ **@tanstack/react-hotkeys** — keyboard shortcuts (or `useHotkeys` from `@mantine/hooks`).
+- **zod** — schema validation (Standard Schema; powers forms + env parsing).
+- **@t3-oss/env-core** — type-safe environment variables.
+- **exceljs** — reading and writing Excel workbooks.
+- **ts-pattern** — pattern matching / exhaustive unions · **ts-extras** — type-safe stdlib helpers.
+- **tiny-invariant** — runtime assertions.
+- **date-fns** — date utilities.
+- **@mantine/hooks** — React hooks catalog.
+- **react-error-boundary** — error boundaries · **nuqs** — type-safe URL state.
+- **@tanstack/react-router** — type-safe routing. Preferred setup: **@tanstack/router-plugin** (Vite, file-based
+  routes) + **router-devtools**.
+- **react-hook-form** + **@hookform/resolvers** — forms with Zod-backed validation.
+- **@tanstack/react-hotkeys** — keyboard shortcuts (or `useHotkeys` from `@mantine/hooks`).
 
 ## UI & components
 
-- ✅ **the-new-css-reset** — CSS reset.
-- ✅ **@fluentui/react-components** — component library (Fluent UI v9) · ✅ **@fluentui/react-icons** — icons for
+- **the-new-css-reset** — CSS reset.
+- **@fluentui/react-components** — component library (Fluent UI v9) · **@fluentui/react-icons** — icons for
   Fluent-based apps and product surfaces.
-- ✅ **@1js/fluentui-rhf-inputs** — controlled Fluent UI v9 inputs for React Hook Form on Fluent surfaces.
-- ✅ **@1js/fluentui-modal-manager** — implicit and awaitable modals for Fluent surfaces.
-- ✅ **@fluentui/react-datepicker-compat** + **@fluentui/react-timepicker-compat** — date and time inputs for Fluent
+- **@1js/fluentui-rhf-inputs** — controlled Fluent UI v9 inputs for React Hook Form on Fluent surfaces.
+- **@1js/fluentui-modal-manager** — implicit and awaitable modals for Fluent surfaces.
+- **@fluentui/react-datepicker-compat** + **@fluentui/react-timepicker-compat** — date and time inputs for Fluent
   surfaces.
-- ✅ **recharts** — charts / data visualization (Copacker's Overview; colors come from the `chart1`/`chart2` theme
-  tokens). ◻️ **@fluentui/react-charting** for Fluent surfaces.
-- ✅ **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
-  architecture. Copacker uses shadcn's own components on Base UI, added with the shadcn CLI. See [Styling](../apps/copacker/docs/styling.md).
-- ✅ **cmdk** — command menus, through shadcn's `Command`. Copacker's header search (Ctrl+K) uses it.
-- ✅ **@vanilla-extract/css** + **sprinkles** — Copacker's page styles from before Tailwind, which keep working next
-  to it.
+- **recharts** — charts / data visualization; **@fluentui/react-charting** on Fluent surfaces.
+- **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
+  architecture, with shadcn's own components on Base UI added through the shadcn CLI.
+- **cmdk** — command menus, through shadcn's `Command`.
+- **@vanilla-extract/css** + **sprinkles** — typed, zero-runtime CSS where Tailwind doesn't fit.
 
 Select Fluent UI or shadcn/ui at the app or product-surface boundary. Neither is a monorepo-wide requirement, and an
 existing surface should keep its established system unless its architecture is deliberately changed.
 
 ## Video
 
-- ✅ **remotion** — video as React components, rendered to stills and MP4 (the Copacker ad in `apps/video`; see
-  [Video](../apps/video/docs/README.md)).
+- **remotion** — video as React components, rendered to stills and MP4.
 
 ## Markdown & rich text
 
 Built on the **unified** (remark + rehype) ecosystem — the standard for parsing and transforming Markdown/HTML.
 
-- ◻️ **react-markdown** — render Markdown as React components (no `dangerouslySetInnerHTML`); the default for showing
+- **react-markdown** — render Markdown as React components (no `dangerouslySetInnerHTML`); the default for showing
   Markdown content.
-- ◻️ **remark-rehype** + **rehype-react** — build a custom Markdown→React pipeline directly on **unified** when
+- **remark-rehype** + **rehype-react** — build a custom Markdown→React pipeline directly on **unified** when
   `react-markdown` isn't flexible enough.
 
 ## State management
 
-- ◻️ **zustand** — lightweight client state (default for local/global UI state).
-- ✅ **@reduxjs/toolkit** — formal store for larger apps; includes **RTK Query**, our **preferred data-fetching /
-  server-cache** layer. Copacker uses RTK Query through `ApiProvider` only (no app store) for `/api` requests, and
-  its forms submit through `useActionForm` (React Hook Form + Zod).
+- **zustand** — lightweight client state (default for local/global UI state).
+- **@reduxjs/toolkit** — formal store for larger apps; includes **RTK Query**, our **preferred data-fetching /
+  server-cache** layer.
 
 ## Database & data layer
 
-- ◻️ **drizzle-orm** + **drizzle-zod** + **drizzle-kit** — SQL ORM, zod schema bridge, and migrations.
-- ◻️ **@neondatabase/serverless** — serverless Postgres driver.
-- ◻️ **convex** — reactive backend + database (alternative to a SQL stack).
+- **drizzle-orm** + **drizzle-zod** + **drizzle-kit** — SQL ORM, zod schema bridge, and migrations.
+- **@neondatabase/serverless** — serverless Postgres driver.
+- **convex** — reactive backend + database (alternative to a SQL stack).
 
 ## Authentication
 
-- ◻️ **better-auth** — self-hosted auth.
-- ◻️ **@workos-inc/authkit-react** — enterprise SSO / directory sync.
+- **better-auth** — self-hosted auth.
+- **@workos-inc/authkit-react** — enterprise SSO / directory sync.
 
 ## Payments
 
-- ◻️ **stripe** — server-side SDK (checkout, subscriptions, webhooks).
-- ◻️ **@stripe/stripe-js** — the browser Stripe.js loader.
-- ◻️ **@stripe/react-stripe-js** — React components + hooks for Stripe Elements.
+- **stripe** — server-side SDK (checkout, subscriptions, webhooks).
+- **@stripe/stripe-js** — the browser Stripe.js loader.
+- **@stripe/react-stripe-js** — React components + hooks for Stripe Elements.
 
 ## File uploads
 
-- ◻️ **react-dropzone** — drag-and-drop / file-picker hook; pairs with any upload target.
-- ◻️ **uploadthing** — managed uploads (files land in UploadThing's own S3-backed storage, not your bucket). For uploads
+- **react-dropzone** — drag-and-drop / file-picker hook; pairs with any upload target.
+- **uploadthing** — managed uploads (files land in UploadThing's own S3-backed storage, not your bucket). For uploads
   into your **own** blob storage, mint a short-lived SAS/presigned URL server-side and upload directly (e.g.
   `@azure/storage-blob`).
-- ◻️ **convex** — built-in file storage + serving when Convex is the backend.
+- **convex** — built-in file storage + serving when Convex is the backend.
 
 ## Observability
 
-- ◻️ **@sentry/react** — error + performance monitoring.
-- ◻️ **@launchdarkly/react-sdk** — feature flags.
+- **@sentry/react** — error + performance monitoring.
+- **@launchdarkly/react-sdk** — feature flags.
 
 ## Backend / full-stack
 
-- ◻️ **@tanstack/react-start** — full-stack React (SSR, server functions). Scaffold with
+- **@tanstack/react-start** — full-stack React (SSR, server functions). Scaffold with
   `npx @tanstack/cli@latest create`.
 
 ## Background jobs & events
 
-- ◻️ **@trigger.dev/sdk** — durable background tasks, scheduled/cron jobs, and event/webhook handlers (long-running work
+- **@trigger.dev/sdk** — durable background tasks, scheduled/cron jobs, and event/webhook handlers (long-running work
   off the request path).
-- ◻️ **@trigger.dev/react-hooks** — realtime hooks to subscribe to run status from the frontend.
-- ◻️ **convex** — its scheduled functions, cron, and database triggers cover event-driven work when Convex is the
+- **@trigger.dev/react-hooks** — realtime hooks to subscribe to run status from the frontend.
+- **convex** — its scheduled functions, cron, and database triggers cover event-driven work when Convex is the
   backend.
 
 ## Notifications
 
-- ◻️ **@trycourier/courier** — multi-channel notification infrastructure.
-- ◻️ **novu** — multi-channel notification infrastructure with optional self hosting.
+- **@trycourier/courier** — multi-channel notification infrastructure.
+- **novu** — multi-channel notification infrastructure with optional self hosting.
 
 ## Scheduling
 
-- ◻️ **nylas** — calendar / scheduling API (server-side SDK for events, availability, and bookings).
-- ◻️ **@nylas/react** — React components + hooks for embedding Nylas scheduling UI.
+- **nylas** — calendar / scheduling API (server-side SDK for events, availability, and bookings).
+- **@nylas/react** — React components + hooks for embedding Nylas scheduling UI.
 
 ## Localization (i18n)
 
-- ◻️ **react-intl** + **@formatjs/cli** + **@formatjs/unplugin** — FormatJS message extraction + runtime.
-- ◻️ **generaltranslation** — AI-assisted translation.
+- **next-intl** — translations and formatting for Next.js apps.
+- **react-intl** + **@formatjs/cli** + **@formatjs/unplugin** — FormatJS message extraction + runtime, outside
+  Next.js.
+- **generaltranslation** — AI-assisted translation.
 
 ## SEO
 
-- ◻️ **react-schemaorg** — typed schema.org structured data.
+- **react-schemaorg** — typed schema.org structured data.

@@ -20,7 +20,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Storybook: stories and play tests](storybook.md)
 - [Localization](localization.md)
 
-Specs (proposed work, not yet built):
+Specs (planned work; the purchase order flow also maps how orders work today):
 
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)
 - [Inventory sync](specs/inventory-sync/README.md)

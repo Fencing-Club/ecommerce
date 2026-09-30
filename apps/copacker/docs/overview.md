@@ -11,17 +11,19 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
   or else the viewer's computer's, which the browser reports in the `tz` cookie (`components/system-time-zone.tsx`,
   `server/store-time-zone.ts`; UTC until it has).
   `lib/time-zone.ts` finds the instant each day starts, so days around daylight saving changes are 23 or 25 hours.
-- **Channel filter.** `?channel=amazon` or `?channel=shopify:<location>` narrows every card: restock figures to that
-  channel, sales to that source (a Shopify location shows the Shopify orders with a successful fulfillment from it, so
-  unfulfilled orders count for no location), and POs and their shipments to those going to Amazon or received at that
-  location.
+- **Channel filter.** `?channel=amazon`, `?channel=amazon:<marketplace>` (such as `amazon:ca`, listed when the seller
+  sells in more than one), `?channel=shopify:<location>` or `?channel=ebay` (once eBay is connected) narrows every card:
+  restock figures to that channel, sales to that source (a Shopify location shows the Shopify orders with a successful
+  fulfillment from it, so unfulfilled orders count for no location), and POs and their shipments to those going to
+  Amazon or received at that location. An Amazon marketplace keeps Amazon's stock and POs, since its stock is shared,
+  with that marketplace's sales, fees and charges; eBay takes the stock and POs of the location its orders count at.
 - **Period.** A picker like Shopify's (`components/period-picker.tsx`, `lib/date-range.ts`) chooses the days every sales
-  figure covers: presets relative to today in the store's time zone (Today, Yesterday, Last 7/30/90/365 days, last
-  week, month, quarter, 12 months or year, week/month/quarter/year to date) or any range on the calendar, in the URL as
-  `?period=` or `?from=&to=`. Last 30 days is the default. Figures compare with the same number of days just before.
-  The sales chart draws the period by day (up to about 3 months), week (up to a year) or month, with the previous
-  period's total dotted. Stock, cover, upcoming spend, slow stock, shipments and purchasing are as of now; retail value
-  uses the last 60 days' prices and inbound freight the year up to the period's end, whatever the period.
+  figure covers: presets relative to today in the store's time zone (Today, Yesterday, Last 7/30/90/365 days, last week,
+  month, quarter, 12 months or year, week/month/quarter/year to date) or any range on the calendar, in the URL as
+  `?period=` or `?from=&to=`. Last 30 days is the default. Figures compare with the same number of days just before, the
+  same days a year earlier, or nothing (`?compare=previousPeriod`, `previousYear` or `none`). Stock, cover, upcoming
+  spend, slow stock, shipments and purchasing are as of now; retail value uses the last 60 days' prices and inbound
+  freight the year up to the period's end, whatever the period.
 - **Currency.** Money is reported in the Shopify store's currency (US dollars without Shopify sales). Sales, fees and
   charges in other currencies (Amazon Canada, Mexico and Brazil) are converted at the European Central Bank's rate on
   the day each was placed or posted: `exchange_rates`, copied through Frankfurter after each Amazon sync, and the
@@ -64,8 +66,9 @@ cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
     import taxes. Payouts,
     transfers and reserves are cash movements and aren't counted. A Shopify location's view leaves out store-wide
     charges.
-- **Sales by channel** chart: units or sales, 30 days, 90 days, or 12 months by week. Days a source's stored orders
-  don't cover are gaps.
+- **Sales trend** chart: sales, orders or units over the period (orders when no order has a price), the channels shown
+  summed into one line, by day up to 92 days, by week up to 400 and by month beyond, with the compared period dashed.
+  Days no source's stored orders cover are gaps.
 - **Inventory:** units on hand and on the way by channel, value at cost (a bundle held as its own item, such as a
   2-pack at Amazon, at its components' cost; Shopify's bundles are made from component stock and aren't counted), retail value (each unit at its recent average
   selling price in that channel, else its Shopify price) and the potential gross profit between them.
