@@ -42,6 +42,31 @@ export const Statuses = meta.story({
   }
 })
 
+// Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color.
+export const TonesMatchTheKit = meta.story({
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      <StatusBadge tone="info">In transit</StatusBadge>
+      <StatusBadge tone="warning">To pack</StatusBadge>
+      <StatusBadge tone="success">Ready for pickup</StatusBadge>
+      <StatusBadge tone="neutral">Draft</StatusBadge>
+      <StatusBadge tone="destructive">Out of stock</StatusBadge>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const look = (text: string) => {
+      const pill = canvas.getByText(text)
+      return [getComputedStyle(pill).backgroundColor, getComputedStyle(pill).color]
+    }
+    await expect(look("In transit")).toEqual(["rgb(234, 242, 252)", "rgb(31, 99, 184)"])
+    await expect(look("To pack")).toEqual(["rgb(255, 245, 220)", "rgb(122, 75, 0)"])
+    await expect(look("Ready for pickup")).toEqual(["rgb(231, 244, 231)", "rgb(0, 99, 0)"])
+    // Muted is oklch(0.97 0 0), the kit's #F5F5F5.
+    await expect(look("Draft")).toEqual(["oklch(0.97 0 0)", "rgb(107, 107, 107)"])
+    await expect(look("Out of stock")).toEqual(["rgb(253, 236, 236)", "rgb(220, 38, 38)"])
+  }
+})
+
 export const BadgeWithIcon = meta.story({
   render: () => (
     <StatusBadge tone="warning" icon={<Repeat aria-label="Replacement" />}>
@@ -119,13 +144,11 @@ export const FullRecordHeader = meta.story({
       parents={[{ label: "Purchase orders", href: "/orders" }]}
       badge={<Status status="accepted" />}
       viewOnly
-      meta={
-        <>
-          <span>From Lotus Manufacturing</span>
-          <span>Via Bayline Freight</span>
-          <span>To Amazon FBA and AWD US</span>
-        </>
-      }
+      meta={[
+        { label: "Supplier", value: "Lotus Manufacturing" },
+        { label: "Forwarder", value: "Bayline Freight" },
+        { label: "Destination", value: "Amazon FBA and AWD US" }
+      ]}
       tabs={
         <TabLinks
           label="Purchase order"
@@ -144,7 +167,10 @@ export const FullRecordHeader = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Accepted")).toBeVisible()
     await expect(canvas.getByText("View only")).toBeVisible()
-    await expect(canvas.getByText("Via Bayline Freight")).toBeVisible()
+    // Each fact in the meta row is a label and its value.
+    await expect(canvas.getAllByRole("definition")).toHaveLength(3)
+    await expect(canvas.getByText("Bayline Freight")).toBeVisible()
+    await expect(canvas.getByText("Forwarder")).toBeVisible()
     await expect(canvas.getByRole("navigation", { name: "Purchase order" })).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Download PDF" })).toBeVisible()
   }

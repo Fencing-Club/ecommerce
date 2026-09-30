@@ -43,13 +43,13 @@
     "accountSettings": "Configuración de la cuenta"
   },
   "notifications": {
-    "title": "Notificaciones",
+    "title": "Bandeja de entrada",
     "empty": "Sin notificaciones",
     "emptyDescription": "Aquí aparecen las novedades de tus pedidos y envíos"
   },
   "search": {
     "search": "Buscar",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> para moverte",
     "toOpen": "<keys></keys> para abrir",
     "toClose": "<keys></keys> para cerrar",
@@ -66,7 +66,12 @@
     "partners": "Socios",
     "supplier": "Proveedor",
     "forwarder": "Agente de carga",
-    "failed": "No se pudo buscar en todo. Inténtalo de nuevo."
+    "failed": "No se pudo buscar en todo. Inténtalo de nuevo.",
+    "placeholder": {
+      "buyer": "Buscar órdenes de compra, productos y socios",
+      "supplier": "Buscar pedidos, productos y clientes",
+      "forwarder": "Buscar órdenes de compra"
+    }
   },
   "create": {
     "button": "Crear",

@@ -18,11 +18,14 @@ export async function Shell({ children, ...bar }: TopBarProps & { children: Reac
     >
       <TopBar {...bar} />
       <div className="flex flex-1">
-        <AppSidebar kind={bar.kind} />
+        <AppSidebar kind={bar.kind} userName={bar.userName} email={bar.email} />
         <SidebarInset>
-          {/* The page, up to 1280px and aligned to its start. minWidth 0 lets a wide table scroll inside its container
-              instead of stretching it. */}
-          <div id="main-content" className="flex w-full max-w-[80rem] min-w-0 flex-1 flex-col gap-6 p-4 md:p-8">
+          {/* The page, up to 1280px and aligned to its start, 24px between its blocks (16px on a phone). minWidth 0 lets
+              a wide table scroll inside its container instead of stretching it. */}
+          <div
+            id="main-content"
+            className="flex w-full max-w-[80rem] min-w-0 flex-1 flex-col gap-4 px-4 pt-4 pb-7 md:gap-6 md:px-8 md:pt-7 md:pb-12"
+          >
             {children}
           </div>
         </SidebarInset>

@@ -186,7 +186,8 @@
       "upcoming": "未开始"
     },
     "stepOf": "第 {step} 步，共 {total} 步",
-    "allStages": "全部阶段"
+    "allStages": "全部阶段",
+    "stageWithCaption": "{label}，{caption}"
   },
   "nextStep": {
     "yours": "你的下一步",

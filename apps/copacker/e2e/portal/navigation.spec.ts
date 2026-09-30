@@ -92,8 +92,8 @@ test.describe("buyer portal", () => {
 
   test("notifications open an empty list", async ({ page }) => {
     await page.goto("/overview")
-    await page.getByRole("button", { name: "Notifications" }).click()
-    const popover = page.getByRole("dialog", { name: "Notifications" })
+    await page.getByRole("button", { name: "Inbox" }).click()
+    const popover = page.getByRole("dialog", { name: "Inbox" })
     await expect(popover.getByText("No notifications")).toBeVisible()
     await expect(popover.getByText("Updates on your orders and shipments show here")).toBeVisible()
     await page.keyboard.press("Escape")

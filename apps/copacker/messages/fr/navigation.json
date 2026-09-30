@@ -43,13 +43,13 @@
     "accountSettings": "Paramètres du compte"
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Boîte de réception",
     "empty": "Aucune notification",
     "emptyDescription": "Les mises à jour de vos commandes et expéditions s’affichent ici"
   },
   "search": {
     "search": "Rechercher",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> pour naviguer",
     "toOpen": "<keys></keys> pour ouvrir",
     "toClose": "<keys></keys> pour fermer",
@@ -66,7 +66,12 @@
     "partners": "Partenaires",
     "supplier": "Fournisseur",
     "forwarder": "Transitaire",
-    "failed": "Impossible de tout rechercher. Réessayez."
+    "failed": "Impossible de tout rechercher. Réessayez.",
+    "placeholder": {
+      "buyer": "Rechercher des bons de commande, des produits et des partenaires",
+      "supplier": "Rechercher des commandes, des produits et des clients",
+      "forwarder": "Rechercher des bons de commande"
+    }
   },
   "create": {
     "button": "Créer",

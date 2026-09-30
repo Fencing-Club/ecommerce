@@ -43,13 +43,13 @@
     "accountSettings": "Account settings"
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Inbox",
     "empty": "No notifications",
     "emptyDescription": "Updates on your orders and shipments show here"
   },
   "search": {
     "search": "Search",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> to move",
     "toOpen": "<keys></keys> to open",
     "toClose": "<keys></keys> to close",
@@ -66,7 +66,12 @@
     "partners": "Partners",
     "supplier": "Supplier",
     "forwarder": "Forwarder",
-    "failed": "Couldn’t search everything. Try again."
+    "failed": "Couldn’t search everything. Try again.",
+    "placeholder": {
+      "buyer": "Search purchase orders, products, and partners",
+      "supplier": "Search orders, products, and customers",
+      "forwarder": "Search purchase orders"
+    }
   },
   "create": {
     "button": "Create",

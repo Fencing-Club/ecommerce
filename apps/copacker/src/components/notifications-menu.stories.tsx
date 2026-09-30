@@ -10,10 +10,10 @@ const meta = preview.meta({
 
 export const Empty = meta.story({
   play: async ({ canvas }) => {
-    const bell = canvas.getByRole("button", { name: "Notifications" })
+    const bell = canvas.getByRole("button", { name: "Inbox" })
     await userEvent.click(bell)
     const popup = await screen.findByRole("dialog")
-    await expect(within(popup).getByText("Notifications")).toBeInTheDocument()
+    await expect(within(popup).getByText("Inbox")).toBeInTheDocument()
     await expect(within(popup).getByText("No notifications")).toBeInTheDocument()
     await expect(within(popup).getByText("Updates on your orders and shipments show here")).toBeInTheDocument()
     await userEvent.keyboard("{Escape}")

@@ -46,10 +46,30 @@ export const WithoutCounts = meta.story({
   }
 })
 
-// A count of zero says nothing, so it isn't shown.
+// A count of zero says nothing, so it isn't shown. Tabs are 40px, the current one underlined.
 export const ZeroCount = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: /Closed/ })).toHaveTextContent(/^Closed$/)
+    const current = canvas.getByRole("link", { name: /All/ })
+    await expect(current.getBoundingClientRect().height).toBe(40)
+    await expect(getComputedStyle(current).borderBottomWidth).toBe("2px")
+  }
+})
+
+// The Needs you view's count is work waiting on the viewer, in the primary tint.
+export const NeedsYou = meta.story({
+  args: {
+    label: "Views",
+    tabs: [
+      { label: "Needs you", href: "/orders?view=needs-you", current: true, count: 4, attention: true },
+      { label: "Drafts", href: "/orders?view=drafts", current: false, count: 2 }
+    ]
+  },
+  play: async ({ canvas }) => {
+    const count = (name: RegExp) =>
+      getComputedStyle(canvas.getByRole("link", { name }).querySelector("span")!).backgroundColor
+    await expect(count(/Needs you/)).toBe("rgb(255, 241, 234)")
+    await expect(count(/Drafts/)).toBe("oklch(0.97 0 0)")
   }
 })
 

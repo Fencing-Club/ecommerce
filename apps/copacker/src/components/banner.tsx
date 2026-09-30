@@ -7,37 +7,38 @@ import { cn } from "@/lib/utils"
 
 type BannerTone = "warning" | "info" | "destructive"
 
+// Each tone's surface and text, and the border its action takes.
 const tones = {
   warning: {
     icon: TriangleAlert,
-    frame: "border-warning-border bg-warning/15 text-warning-foreground",
-    action: "[&_[data-slot=button]]:border-warning-border"
+    frame: "border-warning-border bg-warning-soft text-warning-foreground",
+    action: "border-warning-border"
   },
-  info: {
-    icon: Info,
-    frame: "border-info-border bg-info-tint text-info",
-    action: "[&_[data-slot=button]]:border-info-border"
-  },
+  info: { icon: Info, frame: "border-info-soft bg-info-soft text-info", action: "border-info-soft" },
   destructive: {
     icon: CircleAlert,
-    frame: "border-destructive-border bg-destructive-tint text-destructive",
-    action: "[&_[data-slot=button]]:border-destructive-border"
+    frame: "border-destructive-border bg-destructive-soft text-destructive",
+    action: "border-destructive-border"
   }
 } satisfies Record<BannerTone, { icon: React.ElementType; frame: string; action: string }>
 
 // The page's one notice, above its content: a line about what happened, the action that deals with it, and a dismiss
 // button. Dismissing hides it for this person until `dismissKey` changes, so a key names the state it's about (a store
 // and when it disconnected). Without a key the banner can't be dismissed, which only a blocking error may do, and then it
-// must carry the action that fixes it.
+// must carry the action that fixes it. `action` is the label of the action, and `onAction` or `href` does it.
 export function Banner({
   tone,
   action,
+  onAction,
+  href,
   dismissKey,
   className,
   children
 }: {
   tone: BannerTone
-  action?: React.ReactNode
+  action?: string
+  onAction?: () => void
+  href?: string
   dismissKey?: string
   className?: string
   children: React.ReactNode
@@ -52,24 +53,28 @@ export function Banner({
     return null
   }
   const { icon: Icon, frame, action: actionBorder } = tones[tone]
+  const actionClass = cn(
+    "inline-flex h-7 shrink-0 items-center rounded-md border bg-background px-2.5 text-[13px] font-semibold text-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+    actionBorder
+  )
   return (
     <div
       data-slot="banner"
       data-tone={tone}
-      className={cn("flex min-h-12 items-center gap-2.5 rounded-lg border py-2 ps-3.5 pe-2 text-sm", frame, className)}
+      className={cn("flex items-center gap-2.5 rounded-lg border py-2.5 ps-3.5 pe-2", frame, className)}
     >
       <Icon className="size-4 shrink-0" aria-hidden />
-      <p className="min-w-0 flex-1 font-medium">{children}</p>
-      {action && (
-        <div
-          className={cn(
-            "shrink-0 [&_[data-slot=button]]:h-7 [&_[data-slot=button]]:bg-background [&_[data-slot=button]]:font-semibold [&_[data-slot=button]]:text-foreground",
-            actionBorder
-          )}
-        >
-          {action}
-        </div>
-      )}
+      <p className="min-w-0 flex-1 text-[13px] font-medium">{children}</p>
+      {action &&
+        (href ? (
+          <a href={href} className={actionClass}>
+            {action}
+          </a>
+        ) : (
+          <button type="button" onClick={onAction} className={actionClass}>
+            {action}
+          </button>
+        ))}
       {dismissKey && (
         <button
           type="button"

@@ -22,11 +22,19 @@ and dark values live once, in `src/styles/theme.css.ts`, which sets the CSS vari
 
 - `info` is in-progress blue, for statuses and current stages; `chart-*` are chart series only.
 - `warning-foreground` is text and icons on a warning surface, where `warning` itself is too light to read.
-- Tinted surfaces mix a tone into the background, so they follow the theme: `primary-tint` and `primary-border` (the
-  "Your next step" card), `info-`, `warning-` and `destructive-tint` and `-border` (banners, danger zones, failing
-  rows), `success-tint` (added rows).
+- Each tone has a soft fill, for status pills, icon tiles, banners and count pills: `primary-soft`, `info-soft`,
+  `success-soft`, `warning-soft` and `destructive-soft`. Lighter tints and their borders: `primary-tint` and
+  `primary-border` (the "Your next step" card), `warning-` and `destructive-tint` and `-border` (banners, danger
+  zones, failing rows), `success-tint` (added rows).
 - `border-strong` outlines checkboxes and switches; `disabled-foreground` is disabled text and icons.
-- `kind-buyer`, `kind-supplier` and `kind-forwarder` mark a workspace's kind in the workspace menu, never an action.
+- `kind-buyer`, `kind-supplier` and `kind-forwarder`, with their `-soft` tiles, mark a workspace's kind in the
+  workspace menu, never an action.
+
+The light values are the design's own, copacker.pen's `rd-*` variables, read from the file rather than approximated.
+The design has no dark values, so the dark theme mixes each tint from its tone and the background.
+
+Controls follow the kit's sizes: buttons, icon buttons and a list's filter controls are 34px, form inputs 36px, touch
+controls on phones and packing 44px, all with an 8px radius (`rounded-md`); cards take 10px (`rounded-lg`).
 
 Dark mode is the `.dark` class on `<html>`, set by the theme menu; use Tailwind's `dark:` variant.
 

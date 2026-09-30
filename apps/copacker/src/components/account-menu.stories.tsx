@@ -18,8 +18,7 @@ export const Default = meta.story({
     await expect(within(menu).getByRole("menuitem", { name: "Account settings" })).toHaveAttribute("href", "/settings")
     const signOut = within(menu).getByRole("menuitem", { name: "Sign out" })
     await expect(signOut).toHaveAttribute("type", "submit")
-    await expect(signOut).toHaveAttribute("form", "sign-out")
-    const form = document.getElementById("sign-out")
+    const form = document.getElementById(signOut.getAttribute("form") ?? "")
     await expect(form).toHaveAttribute("action", "/logout")
     await expect(form).toHaveAttribute("method", "post")
   }

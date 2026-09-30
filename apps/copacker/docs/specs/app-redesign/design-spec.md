@@ -31,7 +31,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 | `muted`                | `#F5F5F5`                       | Table header band, inactive segments                                   |
 | `border`               | `#E5E5E5`                       | Card and table rules                                                    |
 | `foreground`           | `#0A0A0A`                       | Text                                                                    |
-| `muted-foreground`     | `#737373`                       | Secondary text, never below 12 px                                       |
+| `muted-foreground`     | `#6B6B6B`                       | Secondary text, never below 12 px                                       |
 | `info` (new name for `chart-1`) | `#2A78D6`              | In progress statuses                                                    |
 | `success`              | `#006300`                       | Done statuses                                                           |
 | `warning`              | `#FAB219`                       | Needs action; text on it is `foreground`, never white                   |
@@ -73,7 +73,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 - **Search (center).** The existing command menu, unchanged in behavior. Result groups follow the renamed objects
   (Sales orders, Products, Purchase orders, Shipments, Partners or Customers). Adds **Actions** ("Create purchase
   order", "Invite a supplier") above results when the query matches one.
-- **Create (right).** A primary-outline button with the kind's create actions. Buyer: Purchase order, Import purchase
+- **Create (right).** An outline button with the kind's create actions. Buyer: Purchase order, Import purchase
   order, Supplier, Forwarder. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
   access; with none, the button is hidden.
 - **Inbox (right).** Replaces the empty bell (F9). Its count is open tasks plus unread updates, and its popover has To
@@ -390,7 +390,7 @@ at the top, then events by day, each naming the person and workspace. Mentions n
 | ≥ 1280 px      | Sidebar, content up to 1280 px, record rail 320 px                                                  |
 | 1024–1279 px   | Sidebar collapses to the icon rail by default                                                       |
 | 768–1023 px    | Rail stacks under the main column; tables hide their secondary columns with container queries       |
-| < 768 px       | Sidebar as a sheet from a menu button in the top bar; search becomes an icon; rows stack; the primary action is a sticky bottom bar |
+| < 768 px       | Sidebar as a sheet from a menu button in the top bar, with Create and the account in its footer; search becomes an icon; rows stack; the primary action is a sticky bottom bar |
 
 Packing and receiving are designed tablet-first (portrait 820 px): large tap targets (44 px), carton rows as cards,
 and scanning a barcode into a carton's SKU field.

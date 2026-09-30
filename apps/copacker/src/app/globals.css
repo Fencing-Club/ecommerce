@@ -23,10 +23,13 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
+  --color-primary-soft: var(--primary-soft);
+  --color-info-soft: var(--info-soft);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive-soft: var(--destructive-soft);
   --color-primary-tint: var(--primary-tint);
   --color-primary-border: var(--primary-border);
-  --color-info-tint: var(--info-tint);
-  --color-info-border: var(--info-border);
   --color-warning-tint: var(--warning-tint);
   --color-warning-border: var(--warning-border);
   --color-destructive-tint: var(--destructive-tint);
@@ -35,8 +38,11 @@
   --color-border-strong: var(--border-strong);
   --color-disabled-foreground: var(--disabled-foreground);
   --color-kind-buyer: var(--kind-buyer);
+  --color-kind-buyer-soft: var(--kind-buyer-soft);
   --color-kind-supplier: var(--kind-supplier);
+  --color-kind-supplier-soft: var(--kind-supplier-soft);
   --color-kind-forwarder: var(--kind-forwarder);
+  --color-kind-forwarder-soft: var(--kind-forwarder-soft);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

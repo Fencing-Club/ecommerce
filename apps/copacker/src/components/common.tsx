@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
+import { AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -68,16 +68,17 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   not_invited: { label: "notInvited", tone: "neutral" }
 }
 
-// The tone's color, which tints the badge, colors its dot and, mixed with the text color, its label.
-const toneColors: Record<StatusTone, string> = {
-  neutral: "[--tone:var(--muted-foreground)]",
-  info: "[--tone:var(--info)]",
-  success: "[--tone:var(--success)]",
-  warning: "[--tone:var(--warning)]",
-  destructive: "[--tone:var(--destructive)]"
+// Each tone's pill: its soft fill, and its dot and label in the tone's own color. Warning's label takes the darker
+// warning text, and neutral's the muted text, so every label reads on its fill.
+const tonePills: Record<StatusTone, { pill: string; dot: string }> = {
+  neutral: { pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
+  info: { pill: "bg-info-soft text-info", dot: "bg-info" },
+  success: { pill: "bg-success-soft text-success", dot: "bg-success" },
+  warning: { pill: "bg-warning-soft text-warning-foreground", dot: "bg-warning" },
+  destructive: { pill: "bg-destructive-soft text-destructive", dot: "bg-destructive" }
 }
 
-// A status badge in one of the five tones. `icon` replaces the dot, such as a Repeat icon for a replacement order.
+// A status pill in one of the five tones. `icon` replaces the dot, such as a Repeat icon for a replacement order.
 export function StatusBadge({
   tone,
   icon,
@@ -87,16 +88,17 @@ export function StatusBadge({
   icon?: React.ReactNode
   children: React.ReactNode
 }) {
+  const { pill, dot } = tonePills[tone]
   return (
     <span
       data-slot="status"
       data-tone={tone}
       className={cn(
-        "inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-full bg-(--tone)/12 px-2 text-xs font-medium tracking-normal whitespace-nowrap text-(--tone-text) ring-1 ring-(--tone)/20 ring-inset [--tone-text:color-mix(in_oklab,var(--tone)_60%,var(--foreground))] [&>svg]:size-3 [&>svg]:shrink-0 [&>svg]:text-(--tone)",
-        toneColors[tone]
+        "inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-full px-2 text-xs font-medium tracking-normal whitespace-nowrap [&>svg]:size-3 [&>svg]:shrink-0",
+        pill
       )}
     >
-      {icon ?? <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--tone)" />}
+      {icon ?? <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", dot)} />}
       {children}
     </span>
   )
@@ -122,11 +124,12 @@ export function Status({ status }: { status: string }) {
   return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
 }
 
-// The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title; a sidebar
-// page has none. Then the title, a record's status and a View only badge when the person can't change the page, with
-// the page's actions on the right: at most one primary, a couple of secondary, and ⋯ last. When the actions don't fit
-// beside the title they wrap below it. A description only where it says something the page doesn't; a record's meta
-// row (who and where, as separate items, never joined by a dot); and the page's tabs.
+// The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title (on a phone,
+// a back link to the page it's under); a sidebar page has none. Then the title, a record's status and a View only badge
+// when the person can't change the page, with the page's actions on the right: at most one primary, a couple of
+// secondary, and ⋯ last. When the actions don't fit beside the title they wrap below it. A description only where it
+// says something the page doesn't; a record's meta row, each fact a label and its value, never joined by a dot; and the
+// page's tabs.
 export function PageHeader({
   title,
   parents,
@@ -143,16 +146,17 @@ export function PageHeader({
   badge?: React.ReactNode
   viewOnly?: boolean
   description?: React.ReactNode
-  meta?: React.ReactNode
+  meta?: ReadonlyArray<{ label: string; value: React.ReactNode }>
   tabs?: React.ReactNode
   children?: React.ReactNode
 }) {
   const t = useTranslations("common")
+  const back = parents?.findLast((parent) => parent.href)
   return (
-    <div data-slot="page-header" className="flex flex-col gap-3">
+    <div data-slot="page-header" className="flex flex-col gap-2.5">
       {parents?.length ? (
         <nav aria-label={t("breadcrumb")}>
-          <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted-foreground max-md:hidden">
             {parents.map((parent) => (
               <li key={parent.label} className="flex items-center gap-1.5">
                 {parent.href ? (
@@ -166,11 +170,20 @@ export function PageHeader({
               </li>
             ))}
           </ol>
+          {back?.href && (
+            <Link
+              href={back.href}
+              className="flex w-fit items-center gap-1 rounded-sm text-[13px] font-medium text-muted-foreground hover:text-foreground md:hidden"
+            >
+              <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
+              {back.label}
+            </Link>
+          )}
         </nav>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="min-w-0 text-[22px] leading-8 font-semibold tracking-tight md:text-2xl">{title}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 max-md:gap-x-2">
+          <h1 className="min-w-0 text-[22px] leading-8 font-semibold tracking-[-0.3px] md:text-2xl">{title}</h1>
           {badge}
           {viewOnly && (
             <StatusBadge tone="neutral" icon={<Eye aria-hidden />}>
@@ -181,14 +194,19 @@ export function PageHeader({
         {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
       </div>
       {description && <div className="max-w-prose text-sm text-muted-foreground">{description}</div>}
-      {meta && (
-        <div
+      {meta?.length ? (
+        <dl
           data-slot="page-meta"
-          className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground"
+          className="flex flex-wrap items-center gap-x-6 gap-y-1 text-[13px] max-md:flex-col max-md:items-stretch max-md:gap-y-[3px] max-md:pt-1"
         >
-          {meta}
-        </div>
-      )}
+          {meta.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5 max-md:items-start">
+              <dt className="text-muted-foreground max-md:w-[92px] max-md:shrink-0">{item.label}</dt>
+              <dd className="min-w-0 font-medium">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
       {tabs}
     </div>
   )

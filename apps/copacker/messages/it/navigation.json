@@ -43,13 +43,13 @@
     "accountSettings": "Impostazioni account"
   },
   "notifications": {
-    "title": "Notifiche",
+    "title": "Posta in arrivo",
     "empty": "Nessuna notifica",
     "emptyDescription": "Qui compaiono gli aggiornamenti su ordini e spedizioni"
   },
   "search": {
     "search": "Cerca",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> per spostarti",
     "toOpen": "<keys></keys> per aprire",
     "toClose": "<keys></keys> per chiudere",
@@ -66,7 +66,12 @@
     "partners": "Partner",
     "supplier": "Fornitore",
     "forwarder": "Spedizioniere",
-    "failed": "Impossibile cercare ovunque. Riprova."
+    "failed": "Impossibile cercare ovunque. Riprova.",
+    "placeholder": {
+      "buyer": "Cerca ordini di acquisto, prodotti e partner",
+      "supplier": "Cerca ordini, prodotti e clienti",
+      "forwarder": "Cerca ordini di acquisto"
+    }
   },
   "create": {
     "button": "Crea",

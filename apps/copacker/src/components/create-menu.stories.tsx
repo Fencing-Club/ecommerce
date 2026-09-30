@@ -59,12 +59,3 @@ export const NothingToCreate = meta.story({
     await expect(canvas.queryByRole("button", { name: "Create" })).toBeNull()
   }
 })
-
-// On a phone the button is its icon, still named.
-export const OnAPhone = meta.story({
-  globals: { viewport: { value: "iphone12", isRotated: false } },
-  play: async ({ canvas }) => {
-    const button = canvas.getByRole("button", { name: "Create" })
-    await expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(34)
-  }
-})

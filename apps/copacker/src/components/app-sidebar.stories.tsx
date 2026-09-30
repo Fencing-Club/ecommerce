@@ -1,12 +1,12 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { member } from "@/stories/workspace"
+import { member, person } from "@/stories/workspace"
 import { AppSidebar } from "./app-sidebar"
 
 const meta = preview.meta({
   component: AppSidebar,
-  args: { kind: "buyer" },
+  args: { kind: "buyer", userName: person.name, email: person.email },
   parameters: {
     layout: "fullscreen",
     nextjs: { appDirectory: true, navigation: { pathname: "/orders/order-1045" } }
@@ -123,16 +123,29 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, which closes once a page is chosen.
+// On a phone the sidebar is a sheet, which also holds Create and the account, and closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
     const sheet = await screen.findByRole("dialog")
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
+    await expect(within(sheet).getByRole("button", { name: "Create" })).toBeVisible()
+    await expect(within(sheet).getByText("alex@example.com")).toBeVisible()
     const shipments = within(sheet).getByRole("link", { name: "Shipments" })
     await expect(shipments).toHaveAttribute("href", "/shipments")
     await userEvent.click(shipments)
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  }
+})
+
+// Each entry is 34px; the open one has the muted fill and a semibold label.
+export const Measurements = meta.story({
+  play: async ({ canvas }) => {
+    const current = canvas.getByRole("link", { name: "Purchase orders" })
+    await expect(current.getBoundingClientRect().height).toBe(34)
+    await expect(getComputedStyle(current).fontWeight).toBe("600")
+    await expect(getComputedStyle(canvas.getByRole("link", { name: "Sales" })).fontWeight).toBe("400")
   }
 })

@@ -37,7 +37,10 @@ export const Waiting = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Waiting on Amazon")).toBeVisible()
-    await expect(canvas.getByRole("region", { name: "Amazon is receiving shipment 1" })).toHaveAttribute("data-waiting")
+    // A waiting card is quiet: white, with a gray border.
+    const card = canvas.getByRole("region", { name: "Amazon is receiving shipment 1" })
+    await expect(card).toHaveAttribute("data-waiting")
+    await expect(getComputedStyle(card).backgroundColor).toBe("oklch(1 0 0)")
   }
 })
 

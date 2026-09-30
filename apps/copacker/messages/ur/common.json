@@ -186,7 +186,8 @@
       "upcoming": "شروع نہیں ہوا"
     },
     "stepOf": "{total} میں سے مرحلہ {step}",
-    "allStages": "تمام مراحل"
+    "allStages": "تمام مراحل",
+    "stageWithCaption": "{label}، {caption}"
   },
   "nextStep": {
     "yours": "آپ کا اگلا قدم",

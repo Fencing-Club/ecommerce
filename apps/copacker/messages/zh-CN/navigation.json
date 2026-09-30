@@ -43,13 +43,13 @@
     "accountSettings": "账户设置"
   },
   "notifications": {
-    "title": "通知",
+    "title": "收件箱",
     "empty": "暂无通知",
     "emptyDescription": "订单和货件的动态会显示在这里"
   },
   "search": {
     "search": "搜索",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> 移动",
     "toOpen": "<keys></keys> 打开",
     "toClose": "<keys></keys> 关闭",
@@ -66,7 +66,12 @@
     "partners": "合作伙伴",
     "supplier": "供应商",
     "forwarder": "货代",
-    "failed": "未能完成全部搜索，请重试。"
+    "failed": "未能完成全部搜索，请重试。",
+    "placeholder": {
+      "buyer": "搜索采购订单、产品和合作伙伴",
+      "supplier": "搜索订单、产品和客户",
+      "forwarder": "搜索采购订单"
+    }
   },
   "create": {
     "button": "创建",

@@ -186,7 +186,8 @@
       "upcoming": "Sin iniciar"
     },
     "stepOf": "Paso {step} de {total}",
-    "allStages": "Todas las etapas"
+    "allStages": "Todas las etapas",
+    "stageWithCaption": "{label}, {caption}"
   },
   "nextStep": {
     "yours": "Tu siguiente paso",

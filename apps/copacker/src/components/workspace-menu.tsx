@@ -17,12 +17,12 @@ import { cn } from "@/lib/utils"
 
 export type Workspace = { id: string; name: string; kind: string }
 
-// Each kind's mark, and its name under the "navigation" messages' `workspaceMenu.kinds`. The kind colors show here
-// and nowhere else, never on an action.
+// Each kind's mark: its soft tile with its initials in the kind's color, and its name under the "navigation" messages'
+// `workspaceMenu.kinds`. The kind colors show here and nowhere else, never on an action.
 const kinds = {
-  buyer: "bg-kind-buyer/12 text-kind-buyer",
-  supplier: "bg-kind-supplier/12 text-kind-supplier",
-  forwarder: "bg-kind-forwarder/12 text-kind-forwarder"
+  buyer: "bg-kind-buyer-soft text-kind-buyer",
+  supplier: "bg-kind-supplier-soft text-kind-supplier",
+  forwarder: "bg-kind-forwarder-soft text-kind-forwarder"
 } as const
 
 function isKind(kind: string): kind is keyof typeof kinds {
@@ -37,6 +37,10 @@ export function initials(name: string) {
     .slice(0, 2)
     .toUpperCase()
 }
+
+// A 28px tile at the start of each of the menu's items.
+const tile = "flex size-7 shrink-0 items-center justify-center rounded-[7px]"
+const item = "gap-2.5 rounded-[6px] px-2 py-1.5"
 
 // The top bar's workspace switcher: Copacker's mark and the open workspace's name. The bar doesn't name the kind, since
 // most people have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs.
@@ -67,45 +71,54 @@ export function WorkspaceMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-9 min-w-0 items-center gap-2 rounded-lg px-1.5 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted"
+        className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-[15px] font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted md:gap-2.5 md:px-2 md:text-sm"
         aria-label={t("label", { name: current })}
       >
-        <CopackerMark />
+        <CopackerMark className="size-6 rounded-[6px] md:size-7 md:rounded-[7px] [&>svg]:size-3.5 md:[&>svg]:size-4" />
         <span className="truncate">{current}</span>
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground max-md:hidden" aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} className="w-72">
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className="w-[264px] gap-0.5 rounded-[10px] p-1 shadow-[0_8px_24px_rgb(0_0_0/0.12)] ring-border"
+      >
         {workspaces.map((workspace) => (
-          <DropdownMenuItem key={workspace.id} onClick={() => void switchTo(workspace.id)} className="gap-2.5 py-2">
+          <DropdownMenuItem
+            key={workspace.id}
+            onClick={() => void switchTo(workspace.id)}
+            className={cn(item, workspace.id === active && "bg-muted")}
+          >
             <span
               aria-hidden
               className={cn(
-                "flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
+                tile,
+                "text-xs font-semibold",
                 isKind(workspace.kind) ? kinds[workspace.kind] : "bg-muted text-muted-foreground"
               )}
             >
               {initials(workspace.name)}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 flex-1 flex-col gap-px">
               <span className="truncate font-medium">{workspace.name}</span>
               {isKind(workspace.kind) && (
                 <span className="truncate text-xs text-muted-foreground">{t(`kinds.${workspace.kind}`)}</span>
               )}
             </span>
-            {workspace.id === active && <Check className="ms-auto text-primary" aria-label={t("current")} />}
+            {workspace.id === active && <Check className="ms-auto text-foreground" aria-label={t("current")} />}
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="mx-1 my-1" />
         {/* Another company, or another role for this one, such as a buyer that also supplies. */}
-        <DropdownMenuItem render={<Link href="/workspaces/new" />} className="gap-2.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border" aria-hidden>
-            <Plus className="size-4" />
+        <DropdownMenuItem render={<Link href="/workspaces/new" />} className={item}>
+          <span className={cn(tile, "border bg-background text-muted-foreground")} aria-hidden>
+            <Plus className="size-3.5" />
           </span>
           {t("newWorkspace")}
         </DropdownMenuItem>
-        <DropdownMenuItem render={<Link href="/settings" />} className="gap-2.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border" aria-hidden>
-            <Settings className="size-4" />
+        <DropdownMenuItem render={<Link href="/settings" />} className={item}>
+          <span className={cn(tile, "border bg-background text-muted-foreground")} aria-hidden>
+            <Settings className="size-3.5" />
           </span>
           {t("workspaceSettings")}
         </DropdownMenuItem>

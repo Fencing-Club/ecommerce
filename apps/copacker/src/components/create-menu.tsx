@@ -37,9 +37,9 @@ export function CreateMenu({ kind }: { kind: string }) {
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-primary/40 px-2.5 text-sm font-medium text-primary outline-none hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-primary/5 max-sm:size-8 max-sm:justify-center max-sm:px-0">
+      <DropdownMenuTrigger className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium text-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted">
         <Plus className="size-4" aria-hidden />
-        <span className="max-sm:sr-only">{t("button")}</span>
+        {t("button")}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} className="w-56">
         {allowed.map((action) => (

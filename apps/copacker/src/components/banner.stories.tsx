@@ -1,6 +1,5 @@
 import { expect, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Button } from "@/components/ui/button"
 import { Banner } from "./banner"
 
 const meta = preview.meta({
@@ -9,7 +8,8 @@ const meta = preview.meta({
     tone: "warning" as const,
     dismissKey: "story-setup",
     children: "Finish setting up Harbor Goods to see stock and costs.",
-    action: <Button variant="outline">Continue setup</Button>
+    action: "Continue setup",
+    href: "/settings"
   }
 })
 
@@ -17,7 +17,7 @@ export const Warning = meta.story({
   play: async ({ canvas }) => {
     const banner = canvas.getByText(/Finish setting up/).closest("[data-slot=banner]")
     await expect(banner).toHaveAttribute("data-tone", "warning")
-    await expect(canvas.getByRole("button", { name: "Continue setup" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Continue setup" })).toBeVisible()
   }
 })
 
@@ -42,11 +42,12 @@ export const Blocking = meta.story({
     tone: "destructive",
     dismissKey: undefined,
     children: "Shopify needs reconnecting. Stock and sales stopped syncing on Sep 27.",
-    action: <Button variant="outline">Reconnect</Button>
+    action: "Reconnect",
+    href: "/settings/integrations/shopify"
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Reconnect" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Reconnect" })).toBeVisible()
   }
 })
 
@@ -67,6 +68,6 @@ export const OnAPhone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Dismiss" })).toBeVisible()
-    await expect(canvas.getByRole("button", { name: "Continue setup" })).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Continue setup" })).toBeVisible()
   }
 })

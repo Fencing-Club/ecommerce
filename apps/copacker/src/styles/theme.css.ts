@@ -42,11 +42,15 @@ export const vars = createGlobalThemeContract(
       warningForeground: "warning-foreground",
       // In progress: someone else is working on it. Statuses, current lifecycle stages and proposals to review.
       info: "info",
-      // Surfaces tinted by a tone: the "Your next step" card, banners, danger zones and changed, failing or added rows.
+      // Each tone's soft fill: status pills, icon tiles, banners and count pills.
+      primarySoft: "primary-soft",
+      infoSoft: "info-soft",
+      successSoft: "success-soft",
+      warningSoft: "warning-soft",
+      destructiveSoft: "destructive-soft",
+      // Lighter tints and borders: the "Your next step" card, banners, danger zones and changed, failing or added rows.
       primaryTint: "primary-tint",
       primaryBorder: "primary-border",
-      infoTint: "info-tint",
-      infoBorder: "info-border",
       warningTint: "warning-tint",
       warningBorder: "warning-border",
       destructiveTint: "destructive-tint",
@@ -55,10 +59,13 @@ export const vars = createGlobalThemeContract(
       // Checkbox and switch outlines, and disabled text and icons.
       borderStrong: "border-strong",
       disabledForeground: "disabled-foreground",
-      // Each workspace kind's mark, in the workspace menu only. Never on actions.
+      // Each workspace kind's mark and its soft tile, in the workspace menu only. Never on actions.
       kindBuyer: "kind-buyer",
+      kindBuyerSoft: "kind-buyer-soft",
       kindSupplier: "kind-supplier",
-      kindForwarder: "kind-forwarder"
+      kindSupplierSoft: "kind-supplier-soft",
+      kindForwarder: "kind-forwarder",
+      kindForwarderSoft: "kind-forwarder-soft"
     },
     radius: { sm: "radius-sm", md: "radius-md", lg: "radius-lg", xl: "radius-xl", full: "radius-full" },
     font: { sans: "font-sans", mono: "font-mono" },
@@ -69,27 +76,11 @@ export const vars = createGlobalThemeContract(
 
 const radius = "0.625rem"
 
-// A tone mixed into the page's background, so tints and borders follow the theme without a dark value of their own.
+// A tone mixed into the page's background. The design gives light values only, so the dark theme's tints are mixed.
 const mix = (tone: string, percent: number) => `color-mix(in oklab, var(--${tone}) ${percent}%, var(--background))`
 
-// The tinted surfaces, the same in both themes because they're mixed from the tone and the background.
-const tints = {
-  primaryTint: mix("primary", 4),
-  primaryBorder: mix("primary", 24),
-  infoTint: mix("info", 6),
-  infoBorder: mix("info", 24),
-  warningTint: mix("warning", 8),
-  warningBorder: mix("warning", 50),
-  destructiveTint: mix("destructive", 4),
-  destructiveBorder: mix("destructive", 28),
-  successTint: mix("success", 5),
-  kindBuyer: "oklch(0.553 0.195 38.402)",
-  kindSupplier: "#0f766e",
-  kindForwarder: "#4338ca"
-}
-
 // The light colors, which :root takes, and which a .light element takes back inside a dark one, such as the product
-// shots on the dark marketing page.
+// shots on the dark marketing page. The redesign's values are the design's own (copacker.pen's rd-* variables).
 const light = {
   background: "oklch(1 0 0)",
   foreground: "oklch(0.145 0 0)",
@@ -102,10 +93,10 @@ const light = {
   secondary: "oklch(0.97 0 0)",
   secondaryForeground: "oklch(0.205 0 0)",
   muted: "oklch(0.97 0 0)",
-  mutedForeground: "oklch(0.556 0 0)",
+  mutedForeground: "#6b6b6b",
   accent: "oklch(0.97 0 0)",
   accentForeground: "oklch(0.205 0 0)",
-  destructive: "oklch(0.577 0.245 27.325)",
+  destructive: "#dc2626",
   border: "oklch(0.922 0 0)",
   input: "oklch(0.922 0 0)",
   ring: "oklch(0.75 0.183 55.934)",
@@ -124,9 +115,26 @@ const light = {
   warning: "#fab219",
   warningForeground: "#7a4b00",
   info: "#1f63b8",
-  borderStrong: "oklch(0.87 0 0)",
-  disabledForeground: "oklch(0.76 0 0)",
-  ...tints
+  primarySoft: "#fff1ea",
+  infoSoft: "#eaf2fc",
+  successSoft: "#e7f4e7",
+  warningSoft: "#fff5dc",
+  destructiveSoft: "#fdecec",
+  primaryTint: "#fff8f4",
+  primaryBorder: "#f6d5c4",
+  warningTint: "#fffbf0",
+  warningBorder: "#f3d48a",
+  destructiveTint: "#fff7f7",
+  destructiveBorder: "#f5c2c2",
+  successTint: "#f4faf4",
+  borderStrong: "#d4d4d4",
+  disabledForeground: "#b5b5b5",
+  kindBuyer: "#c2410c",
+  kindBuyerSoft: "#fff1ea",
+  kindSupplier: "#0f766e",
+  kindSupplierSoft: "#e6f4f2",
+  kindForwarder: "#4338ca",
+  kindForwarderSoft: "#ecebfb"
 }
 
 createGlobalTheme(":root", vars, {
@@ -186,9 +194,24 @@ createGlobalTheme(".dark", vars.color, {
   info: "#3987e5",
   borderStrong: "oklch(1 0 0 / 22%)",
   disabledForeground: "oklch(0.45 0 0)",
-  ...tints,
+  primarySoft: mix("primary", 18),
+  infoSoft: mix("info", 18),
+  successSoft: mix("success", 18),
+  warningSoft: mix("warning", 16),
+  destructiveSoft: mix("destructive", 18),
+  primaryTint: mix("primary", 8),
+  primaryBorder: mix("primary", 35),
+  warningTint: mix("warning", 8),
+  warningBorder: mix("warning", 45),
+  destructiveTint: mix("destructive", 8),
+  destructiveBorder: mix("destructive", 40),
+  successTint: mix("success", 8),
+  kindBuyer: "oklch(0.705 0.187 47.604)",
+  kindBuyerSoft: mix("kind-buyer", 18),
   kindSupplier: "#2dd4bf",
-  kindForwarder: "#818cf8"
+  kindSupplierSoft: mix("kind-supplier", 18),
+  kindForwarder: "#818cf8",
+  kindForwarderSoft: mix("kind-forwarder", 18)
 })
 
 createGlobalTheme(".light", vars.color, light)

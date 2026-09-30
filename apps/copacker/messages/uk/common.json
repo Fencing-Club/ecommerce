@@ -186,7 +186,8 @@
       "upcoming": "Не розпочато"
     },
     "stepOf": "Крок {step} з {total}",
-    "allStages": "Усі етапи"
+    "allStages": "Усі етапи",
+    "stageWithCaption": "{label}, {caption}"
   },
   "nextStep": {
     "yours": "Ваш наступний крок",

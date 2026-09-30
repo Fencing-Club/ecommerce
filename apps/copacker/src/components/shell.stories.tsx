@@ -71,16 +71,20 @@ export const Buyer = meta.story({
     await expect(within(header).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Search" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Create" })).toBeVisible()
-    await expect(within(header).getByRole("button", { name: "Notifications" })).toBeVisible()
+    await expect(within(header).getByRole("button", { name: "Inbox" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Shipments" })).toHaveAttribute("data-active")
     await expect(canvas.getByRole("link", { name: "Sales" })).toBeVisible()
     const main = byId("main-content")
     await expect(within(main).getByRole("heading", { level: 1, name: "Shipments" })).toBeVisible()
     await expect(within(main).getByText("No shipments yet")).toBeVisible()
-    // The sidebar's button is in the top bar now, beside the workspace.
+    // The page sits 32px in from the sidebar, 28px under the top bar; the sidebar is 240px.
+    const style = getComputedStyle(main)
+    await expect([style.paddingInlineStart, style.paddingTop]).toEqual(["32px", "28px"])
+    await expect(document.querySelector("[data-slot=sidebar-container]")?.getBoundingClientRect().width).toBe(240)
+    // Ctrl+B collapses it to its rail.
     await expect(sidebar()).toHaveAttribute("data-state", "expanded")
-    await userEvent.click(within(header).getByRole("button", { name: "Toggle sidebar" }))
+    await userEvent.keyboard("{Control>}b{/Control}")
     await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "collapsed"))
   }
 })

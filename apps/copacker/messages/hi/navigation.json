@@ -43,13 +43,13 @@
     "accountSettings": "खाता सेटिंग्स"
   },
   "notifications": {
-    "title": "सूचनाएं",
+    "title": "इनबॉक्स",
     "empty": "कोई सूचना नहीं",
     "emptyDescription": "आपके ऑर्डर और शिपमेंट के अपडेट यहां दिखेंगे"
   },
   "search": {
     "search": "खोजें",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> ऊपर-नीचे जाने के लिए",
     "toOpen": "<keys></keys> खोलने के लिए",
     "toClose": "<keys></keys> बंद करने के लिए",
@@ -66,7 +66,12 @@
     "partners": "पार्टनर",
     "supplier": "सप्लायर",
     "forwarder": "फ़ॉरवर्डर",
-    "failed": "सब कुछ खोजा नहीं जा सका। फिर से कोशिश करें।"
+    "failed": "सब कुछ खोजा नहीं जा सका। फिर से कोशिश करें।",
+    "placeholder": {
+      "buyer": "खरीद ऑर्डर, प्रोडक्ट और पार्टनर खोजें",
+      "supplier": "ऑर्डर, प्रोडक्ट और ग्राहक खोजें",
+      "forwarder": "खरीद ऑर्डर खोजें"
+    }
   },
   "create": {
     "button": "बनाएँ",
