@@ -114,7 +114,7 @@ Depth: **L1** is a sidebar page, **L2** a record or sub-flow reached from one, *
 | Level | Page            | Route          | Holds                                                                                                                  |
 | ----- | --------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | L1    | Purchase orders | `/orders`      | The buyer's list, reused: stats Open orders, With suppliers, Drafts; tabs All, With supplier, Closed; no prices          |
-| L2    | Purchase order  | `/orders/[id]` | `forwarder-view.tsx`: route, ship-on address, products and quantities, shipments with Mark shipped (carrier, reference), documents |
+| L2    | Purchase order  | `/orders/[id]` | `forwarder-view.tsx`: route, ship-on address, products and quantities, shipments with Mark shipped (freight cost, carrier, reference), documents |
 
 ### Settings (every kind, one page)
 
@@ -190,7 +190,7 @@ What the inventory shows, which the redesign addresses. Each is referenced by nu
    buyer-only pages redirect elsewhere silently. Links shared between people in different workspaces land on
    different things.
 3. **The forwarder borrows the buyer's list.** Its only page shows Drafts and With suppliers counts and buyer tabs. A
-   forwarder's work (what arrives, what's at the warehouse, what to ship on) has no list, and it can't open shipments.
+   forwarder's work (what arrives, what's at the warehouse, what to ship onward) has no list, and it can't open shipments.
 4. **The next step is split across two pages.** A PO's actions live on the PO, a shipment's on the shipment, and the
    packing form, approval, labels and release all share one shipment page that reshapes with each step. There's no
    visible progress through the lifecycle.

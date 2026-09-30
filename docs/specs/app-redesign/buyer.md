@@ -28,8 +28,9 @@ The landing page (F5). Open to everyone in the workspace; money blocks need pric
 
 1. **Setup checklist** for admins until Shopify, Amazon, order copies, stock, unit costs and a supplier are in place (the
    existing checklist), collapsible, with progress ("4 of 6 done").
-2. **To do:** the first eight tasks from the task source, critical first: Approve invoice changes, Review proposed
-   changes, Upload shipping labels, Release labels, Retry a failed shipment, Reorder due, Send drafts, Reconnect a store.
+2. **To do:** the first eight tasks from the task source, critical first: Retry a failed shipment, Approve invoice
+   changes, Review proposed changes, Upload shipping labels (when you arrange shipping), Reorder due, Receive a
+   shipment, Answer a declined order, Release carton labels for a combined shipment, Send drafts, Reconnect a store.
    Each row: icon in its tone, what, the record, who's waiting and since when, the action. **View all** opens the Inbox.
 3. **Purchasing pipeline:** one row of stages with a count and units each, each opening Purchase orders or Shipments
    filtered to it: Drafts, With supplier, Packing, Ready for pickup, In transit, Received in the last 30 days.
@@ -60,20 +61,20 @@ Index of Shopify products with stock, as today, with the dialogs moved to a prod
 
 - **Header:** Sync menu (secondary), **Export**.
 - **Views:** All, Needs label, Without country of origin, Without supplier, Out of stock at a channel.
-- **Filters:** location or channel, supplier, product type. Search by title, variation or SKU.
-- **Columns:** product with image, variations, available, on hand, incoming, on order, supplier, ⋯ (Reorder, Edit
-  details). Expanding a product shows its variations, as today.
-- **Bulk:** select variations, then Set supplier, Upload barcodes, Print labels, Reorder.
+- **Filters:** location or channel, supplier, product type. Search by title, variant or SKU.
+- **Columns:** product with image, variants, available, on hand, incoming, on order, supplier, ⋯ (Reorder, Edit
+  details). Expanding a product shows its variants, as today.
+- **Bulk:** select variants, then Set supplier, Upload barcodes, Print labels, Reorder.
 
 ### Product `/products/[id]` (new page)
 
 Record template for one Shopify product. Header: title, Shopify status, **Reorder** (primary), Open in Shopify.
 
 - **Tabs:**
-  - **Stock:** variations by location and channel: available, on hand, incoming, on order, days of cover, restock status.
-  - **Purchasing:** supplier and supplier SKU per variation, case packs and dimensions, preparation, the default
+  - **Stock:** variants by location and channel: available, on hand, incoming, on order, days of cover, restock status.
+  - **Purchasing:** supplier and supplier SKU per variant, case packs and dimensions, preparation, the default
     description for PO lines. Edits save through the action bar.
-  - **Labels:** barcode per variation, label type, the label preview, upload and print.
+  - **Labels:** barcode per variant, label type, the label preview, upload and print.
   - **Purchase orders:** POs with this product, quantity, landed unit cost (prices), status.
   - **Activity.**
 - **Rail:** image, SKU range, Shopify unit cost and the landed markup (prices), the Amazon listing link and minimum.
@@ -95,26 +96,40 @@ Keeps the report and moves its controls into the index layout.
 Index template (F6: the stat cards go).
 
 - **Header:** **Import** (secondary), **Create purchase order** (primary).
-- **Views:** Needs you (drafts to send, proposals to answer, labels to upload), Drafts, With supplier, In transit,
-  Closed, All.
+- **Views:** Needs you (drafts to send, proposals and declined orders to answer, labels to upload), Drafts, With
+  supplier, In transit, Closed, All.
 - **Filters:** supplier, destination (Amazon or a location), forwarder, required-by date, created date. Search by
   reference, supplier or Amazon ID.
 - **Columns:** purchase order (reference, products count), supplier, route (forwarder and destination), required by,
-  units shipped of ordered as a small bar, total (prices), status.
+  units shipped of ordered as a small bar, total (prices), status. A sent PO shows **Awaiting acceptance** until the
+  supplier answers, then **Accepted** or **Declined**.
 - **First run:** the existing next steps (connect Shopify, invite a supplier, create the first PO).
 
 ### New purchase order `/orders/new` and Edit draft `/orders/[id]/edit`
 
-Editor template with steps: **Supplier and route** (supplier, destination, forwarder stop), **Products** (catalog
-search, the supplier's catalog match, quantities in pieces and packs, barcode warnings), **Terms** (required by,
-payment terms, currency, adjustments), **Notes and instructions**, **Review** (lines, requirements, total). Action
-bar: **Discard**, **Save draft**, **Send to supplier** (or **Send** when the supplier isn't on Copacker). Lines
-prefilled from Restock or Reorder (`?variant=`) land on Products.
+Editor template with steps: **Supplier and route**, **Products** (catalog search, the supplier's catalog match,
+quantities in units and packs, barcode warnings), **Terms** (required by, payment terms, currency, adjustments),
+**Notes and instructions**, **Review** (lines, requirements, total). Action bar: **Discard**, **Save draft**, **Send to
+supplier** (or **Send** when the supplier isn't on Copacker). Lines prefilled from Restock or Reorder (`?variant=`) land
+on Products.
+
+**Supplier and route** holds the supplier, the default destination for new lines (Amazon FBA, AWD US, your warehouse or
+Amazon GWD in China), the forwarder stop, and the delivery address, which is needed when any line goes to your
+warehouse. **Shipping arranged by** is one choice of the supplier, you, the forwarder or Amazon (Global Logistics, or
+the partnered carrier, which is Optional), defaulted from the route, and each option says what follows from it (who
+books the carrier, who uploads shipping labels). **Customs handled by** is set from the route. The Incoterm is
+Optional.
+
+**Products** gives each line a **Ships to** row: one destination with its units, or **Split** across destinations
+(180 to FBA and 60 to the Oakland warehouse). Lines start at FBA, or at AWD for products set to it.
 
 **Notes and instructions** says Amazon's [packing requirements](design-spec.md#packing-requirements) for the PO's
 networks are added automatically, as chips ("FBA", "Mixed SKUs allowed", "Up to 22.68 kg a carton"), with **Preview what
 the supplier sees**. The buyer's own packing instructions are for anything beyond them. Setting a line's network to
 AWD US adds AWD's rules. The PO page's Items tab shows the same card, read-only, as the supplier sees it.
+
+**Review** asks the buyer to confirm the packing requirements when the order has several destinations or any AWD line;
+sending waits for it. Emailing the forwarder when a shipment is on its way is Optional.
 
 ### Import `/orders/import` and Review import `/orders/import/[id]`
 
@@ -126,24 +141,29 @@ AWD US adds AWD's rules. The PO page's Items tab shows the same card, read-only,
 
 Record template, the buyer's view.
 
-- **Header:** reference, status, **View only** if applicable. Primary by step: **Send to supplier** (draft), **Review
-  changes** (proposal pending), **Upload labels** (a shipment needs them), else none. Secondary: **Edit** (draft),
-  **Download PDF**. ⋯: Duplicate, Close, Delete (draft), Labels download.
+- **Header:** reference, status, **View only** if applicable, then **Edit** (draft), **Download PDF** and ⋯
+  (Duplicate, Close, Delete a draft, download labels).
 - **Meta row:** supplier, forwarder, destination, required by, payment terms.
-- **Lifecycle:** Draft, Sent, Packing, Shipped, Received, Closed. With partial shipments, Packing and Shipped show
-  "2 of 3 shipments".
-- **Next step card:** from the workflow for the buyer. Off Copacker: "Lotus Manufacturing isn't on Copacker. Send
-  them the PDF, and pack for them when the goods are ready."
+- **Lifecycle:** Draft, Sent, Accepted, Packing, Shipped, Received, Closed. With partial shipments, Packing and Shipped
+  show "2 of 3 shipments". A declined PO stops at Sent, in the warning tone, with the decline date.
+- **Next step card:** from the workflow for the buyer, with the step's action: **Send to supplier** (draft), **Review
+  changes** (proposal pending), **Review invoice** (a shipment's invoice changed), **Upload labels** (a shipment needs
+  them), **Close purchase order** (every shipment received or cancelled). Off Copacker: "Lotus Manufacturing isn't on
+  Copacker. Send them the PDF, and pack for them when the goods are ready." Declined: "Cedar Works declined PO-1047",
+  the supplier's reason as the alert, **Close purchase order** and **Edit and send again**.
 - **Tabs:**
-  - **Items:** lines with product, variation, buyer SKU, supplier SKU (warning when not set), ordered, shipped and to
+  - **Items:** lines with product, variant, buyer SKU, supplier SKU (warning when not set), ordered, shipped and to
     ship, unit cost and total (prices), requirements as a secondary line, ⋯ per line (labels, warning labels, edit on a
     draft). Instructions under the table.
   - **Shipments:** one row per shipment: number, Amazon network and ID, cartons, ready date, status, the next step's
-    owner; **Ship on** for a shipment that reached a forwarder not on Copacker (prices, as today).
+    owner; **Ship onward** for a shipment that reached a forwarder not on Copacker (prices, as today).
   - **Documents:** the PO's and each shipment's, grouped.
   - **Activity:** comments and events.
 - **Rail:** Cost summary (prices), Details (required by, terms, ready date, currency, note to supplier), Landed costs
-  (prices), Route (supplier's pickup, forwarder, destination with Amazon's requirements).
+  (prices; a combined shipment's freight arrives split by chargeable weight), Route (supplier's pickup, forwarder,
+  destinations with Amazon's requirements, then shipping arranged by, customs handled by and the Optional Incoterm).
+- **Close:** a dialog with each line's ordered, shipped, received, rejected, short and extra units, then **Close
+  purchase order**. When shipments are still being packed, it says they'll be cancelled.
 - **Proposal review:** with a pending proposal, the Items tab shows each change inline (old value struck through, new
   value, added and removed lines marked), the supplier's note above, and a bar with **Decline** and **Approve
   changes**. Approving says what else happens: the new revision, the supplier SKU written to Shopify, and the choice to
@@ -153,28 +173,46 @@ Record template, the buyer's view.
 
 The shipment becomes a child of its PO (F4). `/shipments/[id]` redirects here.
 
-- **Header:** "Shipment 2", status; breadcrumb Purchase orders, PO-1045. Primary by step: **Approve invoice**,
-  **Upload shipping labels**, **Release labels**, **Mark received**, **Retry**, **Reconcile**. ⋯: Request correction,
-  Cancel in Amazon, Open in Seller Central.
+- **Header:** "Shipment 2", status; breadcrumb Purchase orders, PO-1045; **Download packing list** and ⋯ (Cancel in
+  Amazon, Open in Seller Central).
 - **Meta row:** supplier, from (pickup address), via forwarder, to destination, Amazon shipment ID, ready date.
-- **Lifecycle:** Packing, Approval, Amazon shipment, Labels, Ready for pickup, Shipped, Shipped on (with a forwarder),
-  Received. Correction and Needs attention show on the current stage.
-- **Next step card:** the step's message (`step.next`), its issues listed, and its action.
+- **Lifecycle:** its stages follow the route ([Lifecycle tracker](design-spec.md#lifecycle-tracker)): Packing,
+  Approval, Amazon shipment, Labels, Ready for pickup, Shipped, At the forwarder, Shipped onward, Received. Correction and
+  Needs attention show on the current stage.
+- **Next step card:** the step's message (`step.next`), its issues listed, and its actions: **Approve invoice** with
+  **Request correction**, **Upload shipping labels** (only when you arrange shipping), **Release labels**, **Enter
+  booking number** with **Open Global Logistics**, **Link delivery request** with **Open Seller Central** (GWD),
+  **Receive**, **Retry**, **Reconcile**. While Amazon receives it, the card waits on Amazon with **Open in Seller
+  Central** only.
 - **Tabs:** **Cartons** (carton number, contents, units, dimensions, weight, Amazon label), **Invoice** (the commercial
   invoice file and its lines, with changes against the PO highlighted), **Documents** (packet first when it's ready),
-  **Activity**.
-- **Rail:** Pickup (address, contact, ready date), Carrier (booking, tracking), Amazon (network, IDs, placement).
+  **Activity**. A Global Logistics shipment adds **Booking sheet**: every field Global Logistics asks for, each with a
+  copy button, and the invoice and packing list to upload there. A GWD shipment adds **Delivery request**: what to
+  enter in Seller Central.
+- **Rail:** Pickup (address, contact, ready date), Shipping (arranged by, mode, customs, importer of record), Amazon
+  (network, IDs, placement or region; the delivery window from the expected arrival is Optional).
+- **Amazon receipts:** once Amazon checks a shipment in, the shipment shows shipped and received per SKU from Amazon,
+  with Amazon's status. **Finish receiving** is there after Amazon reports it delivered.
 - **Packing for a supplier not on Copacker:** the buyer opens the same [packing flow](supplier.md#pack-shipment) as
   the supplier, with the supplier's name in the copy.
+
+### Receive shipment `/orders/[id]/shipments/[shipmentId]/receive` (new)
+
+A task flow for a shipment to your own location, tablet-first. It replaces **Mark received**.
+
+- **Items:** one row per item: shipped, received so far, and inputs for received and rejected, with **Receive all**.
+- **Receipts:** each saved receipt with who and when, and **Undo** until receiving is finished.
+- **Action bar:** "234 of 240 units received", rejected units in the detail, **Save** and **Finish receiving**.
+- On a phone, each item is a card with the two inputs side by side, and the bar docks to the bottom.
 
 ## Shipments `/shipments`
 
 Index template of every shipment across POs, and the Amazon account's own inbound shipments.
 
-- **Views:** Needs you, Packing, Ready for pickup, In transit, Received, Cancelled, All.
+- **Views:** Needs you, Packing, Ready for pickup, In transit, Receiving, Received, Cancelled, All.
 - **Filters:** supplier, destination, forwarder, source (Copacker or Amazon account), ready date.
-- **Columns:** shipment (PO reference and number, Amazon ID), supplier, route, cartons, ready date, status, whose move
-  it is (You, Supplier, Forwarder, Amazon).
+- **Columns:** shipment (PO reference and number, Amazon ID, or the combined shipment it's in), supplier, route,
+  cartons, ready date, status, whose move it is (You, Supplier, Forwarder, Amazon).
 - Amazon's own shipments open in Seller Central, marked with an external-link icon, as today.
 
 ## Partners `/partners`
@@ -192,7 +230,7 @@ Index template.
 Record template. Header: name, standing, **Create purchase order** (supplier) and **Invite** when not on Copacker.
 
 - **Tabs:** **Overview** (contact, Shopify supplier name, lead time, invitation), **Purchase orders**, **Products**
-  (variations with this supplier, its SKU and last price), **Addresses** (pickup addresses for a supplier not on
+  (variants with this supplier, its SKU and last price), **Addresses** (pickup addresses for a supplier not on
   Copacker, warehouses for a forwarder), **Activity**.
 - **Rail:** open POs and units, last order, average lead time as measured on the [Lead times](#lead-times) tab
   (production for a supplier, last delivery to received for a forwarder) beside the lead time set on the partner,
@@ -230,11 +268,12 @@ forwarder, destination).
 | Direct transit           | Carrier          | Ready for pickup (routes without a forwarder)               | The destination received it                              |
 | Door to door             | Everyone         | The PO was sent                                             | The destination received it                              |
 
-- The forwarder's time is measured **per purchase order**, from its last shipment's arrival, because a forwarder ships
-  on once every carton is in. Waiting for a late supplier shipment counts against the supplier, not the forwarder. It
-  splits into **handling** (until the forwarder marks it shipped on) and **final transit** (until received).
-- Arrival at a forwarder comes from the forwarder's **Mark received** step ([forwarder workspace](forwarder.md)).
-  For a forwarder not on Copacker, the buyer's **Ship on** dialog asks for the date the goods arrived. A PO or
+- The forwarder's time is measured **per purchase order**, or per combined shipment, from the last shipment's arrival,
+  because a forwarder ships onward once every carton is in. Waiting for a late supplier shipment counts against the
+  supplier, not the forwarder. It splits into **handling** (until the forwarder ships it on) and **final transit**
+  (until received).
+- Arrival at a forwarder comes from the forwarder's **Record arrival** step ([forwarder workspace](forwarder.md)).
+  For a forwarder not on Copacker, the buyer's **Ship onward** dialog asks for the date the goods arrived. A PO or
   shipment missing a timestamp is left out, and the page says how many.
 - A figure shows only with at least 3 measurements; fewer show "—" with the count.
 

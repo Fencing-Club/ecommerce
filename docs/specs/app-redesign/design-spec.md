@@ -97,8 +97,10 @@ One component for every page, replacing `PageHeader`:
 
 - Breadcrumb on its own row above the title for L2 and deeper pages; L1 pages have none.
 - Title, then a status badge for records, then a **View only** badge when the person can't edit this page.
-- Actions right-aligned: at most one primary, up to two secondary, the rest in ⋯. On a phone, the primary moves to a
-  sticky bottom bar and the rest into ⋯.
+- Actions right-aligned: at most one primary, up to two secondary, then ⋯, always last. On a record page the header
+  holds only record-level actions (downloads, **Edit**, **Propose changes**) and ⋯; the step's own actions live in
+  the [next step card](#next-step-card), never in both places. On a phone, the next step's actions move to the docked
+  action bar and record-level actions into ⋯.
 - An optional **meta row** under the title for records: counterparty, key dates and references, as separate text
   elements with space between them, never joined by a dot glyph.
 - Optional **tabs** under the header for records and index views.
@@ -116,18 +118,22 @@ Task queue and a pipeline for the workspace kind, described per kind. No money u
 ```text
 Title                                                        [Secondary] [Primary]
 [Saved view (count)] [View (count)] [View (count)] ...
-[Search          ] [Filter chips ▾ ...]                 [Sort ▾] [Columns ▾] [Export]
-┌──────────────────────────────────────────────────────────────────────────────────────┐
+[Search          ] [Filter chips ...]                  [⇅ Required by] [Columns] [Export]
+┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ ☐ Reference ▲      Counterparty      Route / detail      Date       Amount   Status  ⋯ │
-│ ☐ PO-1045          Lotus Mfg         → Oakland           Sep 24     $2,958   ● ...  ⋯ │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-Showing 1–25 of 132                                                     [‹] 1 2 3 [›]
+│ ☐ PO-1045          Lotus Mfg         → Oakland           Sep 24     $2,958   ● ...   ⋯ │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+Showing 1–25 of 132 purchase orders                                                [‹] [›]
 ```
 
 - **Views, not stat cards (F6).** Tabs are saved views with counts in the tab. The stat cards on Purchase orders and
   Shipments go. The URL holds the view, search, filters and sort, so any list state is a link.
 - **Filter bar:** search on the left, filter chips for the list's facets (status, partner, destination, date), sort,
-  column visibility and export where there is one.
+  column visibility and export where there is one. Sort is one control: an up-down arrow and the current order
+  ("Required by", "Newest first"), no chevron. Subsets of a list are views; a segmented control only switches how the
+  same data displays (Map and List, a chart's grouping).
+- **Pagination:** "Showing 1–25 of 132 purchase orders" with previous and next when the list spans pages; a plain
+  count ("9 partners") when everything fits. No page numbers, and no count that repeats the view's name.
 - **Table:** the `Table` component with its frame. The whole row opens the record (`LinkRow`). Row selection appears
   only where bulk actions exist (archive products, export, set catalog). Per-row actions in a trailing ⋯.
 - **Empty states:** the first-run empty state names the one step that comes next (as Purchase orders does today); an
@@ -138,12 +144,12 @@ Showing 1–25 of 132                                                     [‹] 
 
 ```text
 Purchase orders ›
-PO-1045  ● With supplier                                   [Secondary] [Primary] [⋯]
-From Lotus Manufacturing   To Oakland warehouse   Required by Nov 15   Net 30
+PO-1045  ● Approve invoice                                      [Download PDF] [⋯]
+From Lotus Manufacturing   To Amazon FBA and AWD US via Bayline Freight
 [Stage ── Stage ── Stage ── Stage ── Stage]                               (lifecycle)
-┌ Next step ────────────────────────────────────────────────────────────────────────┐
-│ Mei Chen is packing shipment 1. You'll approve the invoice when it's submitted.     │
-└────────────────────────────────────────────────────────────────────────────────────┘
+┌ Next step ───────────────────────────────────────────────────────────────────────────┐
+│ Your next step: Approve the invoice for shipment 1        [Secondary] [Primary]      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
 [Items] [Shipments 2] [Documents 5] [Activity 12]
 ┌ main (fluid) ─────────────────────────────┐ ┌ rail (320 px) ──────────┐
 │                                            │ │ Summary                 │
@@ -215,7 +221,8 @@ settings bar and the dark bulk bar.
 - **Lead tone:** warning for unsaved changes, neutral for a flow's summary or a selection, info for a proposal to
   review, destructive when submitting is blocked.
 - **Phone:** docked to the bottom edge, full width, no radius; the lead icon hides, the message sits above the
-  actions, and the primary action fills the remaining width.
+  actions, and the primary action fills the remaining width. On a record page it carries only the next step's actions,
+  with no message.
 
 ### Lifecycle tracker
 
@@ -225,30 +232,54 @@ upcoming (border gray), the same meanings the status tones use. The bars keep wo
 which is why they replaced the circle steppers. On a phone the row becomes a compact card: "Step 3 of 6", the current
 stage and its date, the segments, and **All stages**, which expands a vertical list.
 
+Under each stage: the date it was reached, a count or planned date ("1 of 2 shipments", "Pickup planned Oct 2"), or
+"Waiting on you" when the viewer must act. An upcoming stage with no planned date shows nothing; its gray bar already
+says it hasn't started.
+
+A shipment's stages follow its route and who arranges shipping, as the
+[purchase order flow spec](../purchase-order-flow/README.md) sets out:
+
+- **Labels** only when the buyer arranges shipping. The supplier's carrier or the forwarder brings its own.
+- **Booking** for Amazon Global Logistics, which waits for the booking number.
+- **Delivery request** and **Carton labels** for Amazon's warehouses in China (GWD).
+- **At the forwarder** and **Shipped onward** through a forwarder, and **Open**, **Amazon shipment**, **Labels** and
+  **Departed** on a combined shipment.
+- **Receiving** before **Received**, and **Accepted** (or a Declined branch) on the PO.
+
 ### Next step card
 
-**RD Next Step**: a lead icon, an eyebrow ("Your move", or "Waiting on Lotus Manufacturing" in the quiet tone), the
-title, a detail line, an optional warning line, an optional meta (days left, window) and the step's actions. On a
-phone the parts stack and the actions fill the width.
+**RD Next Step**: a lead icon, an eyebrow ("Your next step", or "Waiting on Lotus Manufacturing" in the quiet tone), the
+title, a detail line, an optional warning line, an optional meta (days left, window) and the step's actions, at most
+a secondary and a primary. A waiting card (quiet tone) has no primary; it may keep one secondary that opens where the
+other party works (**Open in Seller Central**). On a phone the card keeps its eyebrow, title and meta, and its actions
+move to the docked action bar.
+
+When the next move happens in Amazon (booking Global Logistics, a GWD delivery request, tracking numbers, a case for
+missing units), the card names it and its secondary action opens Seller Central.
 
 ### Packing requirements
 
 The rules a supplier must follow for where the goods go, shown before packing starts and checked while packing. They
 come from `packages/aisle/src/requirements.ts` (`destinationRequirements`, `itemRequirements`), which today states each
-network's carton rule as one line; the redesign groups them per network into **Cartons** (mixing, size, weight, units
-per carton), **Each unit** (labels, preparation), and **Each carton** (carton labels).
+network's carton rule as one line; the redesign groups them per destination into **Cartons** (mixing, size, weight,
+units per carton, trucks), **Each unit** (labels, preparation), and **Each carton** (carton labels), following the
+[purchase order flow spec's rules](../purchase-order-flow/README.md#one-order-several-destinations).
 
-| Network | Cartons                                                                  | Each unit                                   | Each carton                                                |
-| ------- | ------------------------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------------- |
-| FBA     | Mixed SKUs allowed; up to 63.5 cm a side and 22.68 kg unless one unit is larger | FNSKU label covering other barcodes; suffocation warning on polybags with a 5 in (12.7 cm) opening or wider | Amazon's carton label once the buyer releases labels |
-| AWD US  | One SKU per carton; at most 150 units; every carton of a SKU packed the same way; 63.5 cm and 22.68 kg | FNSKU label covering other barcodes         | Two labels: Amazon's SSCC carton label and the carrier's shipping label |
-| AWD China | Not supported yet: [Amazon inbound shipments](../../amazon-inbound.md) leaves it out until its booking is clear. It gets its own column when it is. | | |
+| Destination    | Cartons                                                                  | Each unit                                   | Each carton                                                |
+| -------------- | ------------------------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------------- |
+| FBA            | Mixed SKUs allowed if they fit one packing group; up to 63.5 cm a side and 22.68 kg unless one unit is larger | FNSKU label covering other barcodes; Amazon's prep, such as a suffocation warning on polybags | Amazon's carton label once the buyer releases labels |
+| AWD US         | One SKU per carton; at most 150 units; every carton of a SKU packed the same way; 63.5 cm and 22.68 kg; never shares a trailer with FBA freight | FNSKU label covering other barcodes         | Amazon's SSCC carton label once the buyer releases labels  |
+| Your warehouse | Mixed SKUs; no size, weight or unit limits                               | A SKU label only for products set to get one; your instructions | None                                            |
+| GWD            | Its rules still need checking; it gets a column when they're known       |                                             |                                                            |
 
-- A PO whose lines go to more than one network says so first: pack each network in separate cartons, and each ships as
-  its own shipment.
+- Shipping labels aren't a destination rule. They come from whoever arranges shipping, and the buyer uploads them only
+  when it arranges shipping itself.
+- A PO whose lines go to more than one destination says so first: pack each destination in separate cartons, and each
+  ships as its own shipment. With three destinations the card lists them as rows.
 - Where they show: the supplier's order page (Items tab, above the buyer's note), the Pack shipment flow's Cartons step
   as live checks with the carton that breaks each rule, the PO PDF and packing checklist (as today), and the buyer's PO
-  builder, which says the rules are added automatically so the buyer doesn't retype them in instructions.
+  builder, which says the rules are added automatically. The buyer confirms them before sending an order with several
+  destinations or any AWD line.
 - Prohibitions ("One SKU per carton") use the destructive tone and bold text; limits and labels are neutral.
 
 ### Status
@@ -268,9 +299,9 @@ queries (`overview.attention`, supplier `tasks`), filtered by what the person ca
 
 | Kind      | Examples                                                                                       |
 | --------- | ---------------------------------------------------------------------------------------------- |
-| Buyer     | Approve invoice changes, Review proposed changes, Upload shipping labels, Release labels, Send draft, Reorder due, Store needs reconnecting, Retry failed Amazon shipment |
-| Supplier  | Pack order, Fix packing problems, Print labels and mark shipped, Answer declined changes, Short stock, Products without a price, Customer without a catalog |
-| Forwarder | Receive shipment, Ship on, Add tracking                                                        |
+| Buyer     | Approve invoice changes, Review proposed changes, Answer a declined order, Send draft, Upload shipping labels (only when you arrange shipping), Release labels (also to a forwarder for a combined shipment), Enter a Global Logistics booking number, Link a GWD delivery request, Receive shipment, Close a received PO, Retry failed Amazon shipment, Reorder due, Store needs reconnecting, Link listings |
+| Supplier  | Accept order, Pack order, Fix packing problems, Print labels and mark shipped, Enter carrier and tracking (when it arranges shipping), Answer declined changes, Short stock, Products without a price, Customer without a catalog |
+| Forwarder | Record arrival, Combine shipments, Ship onward, Add tracking                                     |
 
 ### Inbox
 
@@ -295,6 +326,20 @@ build a notification engine. To do is computed by Copacker and works before Novu
 One **Documents** component on every record: grouped by the record and each child, with type, file name, who added it
 and when, download, and replace where the person can. Downloads stay behind authorized routes.
 
+- The commercial invoice is the one Copacker makes from the packing list, with customs details on overseas routes;
+  the supplier can upload its own instead.
+- A shipment has a slot for bills of lading once the goods leave origin. Whoever handles customs uploads them, several
+  are allowed, and nothing waits for them.
+- A Global Logistics shipment adds the booking sheet, and a GWD shipment adds the carton labels from its delivery
+  request.
+
+### Optional marker
+
+**RD Optional** marks an item the purchase order flow spec only proposes: the Incoterm field, Amazon's partnered
+carrier, the delivery window from the expected arrival, tracking sent to Amazon, prep categories set through Amazon,
+HS codes and unit weights from Shopify, the ISF draft, the pickup phone rule and forwarder emails. The screens draw it
+where it would go; it's built once it's decided. It's a designer's annotation, not product UI.
+
 ### Activity
 
 The PO timeline becomes the **Activity** tab on every shared record (PO, shipment, partner, customer, product). Comments
@@ -302,7 +347,10 @@ at the top, then events by day, each naming the person and workspace. Mentions n
 
 ### Dialogs, sheets and pages
 
-- **Dialog:** a confirmation, or a form of up to four fields (Mark shipped, Add landed cost).
+- **Dialog:** a confirmation, or a form of up to four rows of fields (Ship onward, Mark shipped, Add landed cost). One
+  construction: a title row with a close button, the body, then **Cancel** and the primary on the right; 12 px radius,
+  a border and the overlay shadow. The primary answers the title with its verb ("Close PO-1040?" is answered by **Close
+  purchase order**, "Submit packing list?" by **Submit**). On a phone the same content opens as a sheet.
 - **Sheet:** a quick edit to a record from a list, which also has its own page (edit a partner's contact from the
   Partners list).
 - **Page:** anything with its own history, children or more than one section.
@@ -402,6 +450,12 @@ is a cognitive accessibility problem as much as a visual one. Every screen follo
 | A suggestion ("Use the measured 41 days")    | An inline link in the row it's about, not a banner                              |
 | A chart's reading aid                        | A legend entry, not a footnote                                                  |
 | Keyboard or gesture hints                    | The command menu footer only                                                    |
+| Steps that follow one choice                 | The confirm dialog for that choice (switching eBay quantities to Copacker lists what to turn off first) |
+
+**Info tips** follow Fluent's info label guidance: supplemental definitions only, in one or two short sentences with a
+period after full sentences, never repeating a visible label or value. Anything needed to finish the task stays
+visible. At most five on a screen; a role or option that already has a visible description gets none. In the canvas
+the text is the instance's name after "Info Tip: ".
 
 **Notices.**
 
