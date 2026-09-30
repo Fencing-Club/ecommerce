@@ -94,11 +94,12 @@ acceptance at desktop and phone sizes.
 2. **Settings split:** the settings layout, a route per section, the member page, the action bar.
 3. **Records:** lifecycle tracker, Next step card and tabs on PO and shipment pages; nested shipment routes; the Pack
    shipment flow; proposal review inline.
-4. **Home, Inbox and Analytics:** the task source, Home per kind, Inbox To do, Analytics tabs from the Overview's cards.
-5. **Lists:** views, filter bar and URL state on every index; stat cards removed.
+4. **Home, Inbox and Analytics:** the task source, Home per kind, the Inbox with To do and Updates (on fixtures until
+   Novu), Notifications preferences, Analytics tabs from the Overview's cards.
+5. **Lists:** views, filter bar and URL state (`nuqs`) on every index; stat cards removed.
 6. **New pages:** partner, buyer product, sales order, forwarder Shipments and Clients, supplier Import products.
    The forwarder's Record arrival step, and the Lead times tab once it has data.
-7. **Inbox Updates** once Novu delivers notifications.
+7. **Novu:** the adapter that delivers Updates to the Inbox built in phase 4. Copacker launches once it's in.
 8. **Route estimates:** a new PO's suggested required-by date and Restock's lead time from its route's history.
 
 Screens for the purchase order flow and inventory sync specs ship with those features, not with a redesign phase:
@@ -109,11 +110,14 @@ settings and Stock flow. The inventory sync first slice comes first: supplier eB
 
 - ~~Should a forwarder receive a shipment at its warehouse?~~ Yes: Lead times measure a forwarder from arrival, so
   **Record arrival** is a new workflow step (and the buyer records the arrival date for a forwarder not on Copacker).
-- Lead times show no money. Should that tab open to members with Purchase orders or Partners access but no prices?
+- ~~Lead times show no money. Should that tab open to members with Purchase orders or Partners access but no prices?~~
+  No new access: Analytics stays one area that needs prices. Members without prices see measured lead times on the
+  partner page, and they drive Restock and a new PO's required-by date.
 - ~~AWD China: which rules does it need, and how is it booked?~~ It's AWD US shipped from China through Amazon Global
   Logistics, with AWD's rules. The buyer books it in Seller Central from Copacker's booking sheet.
 - The purchase order flow spec plans the at-the-forwarder status, and its Closing section expects the arrival, but its
   Gates and Changes only propose forwarder arrival. Lead times need the arrival date; should it be planned everywhere?
-- Does Analytics need its own member access separate from prices, or is "prices" enough?
-- Should Home's pipeline count shipments or purchase orders when a PO ships in parts?
+- ~~Does Analytics need its own member access separate from prices, or is "prices" enough?~~ Prices is enough.
+- ~~Should Home's pipeline count shipments or purchase orders when a PO ships in parts?~~ Each stage counts what it's
+  about: purchase orders until they're with the supplier, shipments from Packing on ([Buyer Home](buyer.md#home-home)).
 - Workspace rename in General: WorkOS organization names follow it?

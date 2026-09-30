@@ -31,7 +31,9 @@ Create menu.
    client and destination), Ship onward (every shipment of a PO or combined shipment received), Add tracking (shipped
    onward without a reference).
 2. **Pipeline:** Expected, Arriving, At warehouse, Shipped onward, each with shipments and cartons.
-3. **Arriving this week:** by the supplier's ready-for-pickup date and shipped date: shipment, client, supplier,
+3. **At your warehouse** (beside To do): what's here, grouped by client and destination with days waiting, so shipments
+   that can combine sit together with **Combine**.
+4. **Arriving this week:** by the supplier's ready-for-pickup date and shipped date: shipment, client, supplier,
    cartons, weight, status.
 
 ## Shipments `/shipments` (new for forwarders)
@@ -109,8 +111,9 @@ on, and documents, as `forwarder-view.tsx` has today, in the record template wit
 The buyers this forwarder works for, from the buyer links on its workspace.
 
 - **Columns:** client, active shipments, cartons expected this week, last shipped onward, contact.
-- **Client page `/clients/[id]`:** its shipments and POs through this forwarder, the delivery addresses it ships onward to,
-  and its contact.
+- **Client page `/clients/[id]`:** record template with tabs **Shipments** (first), **Purchase orders** and
+  **Addresses** (the delivery addresses it ships onward to), and a rail with its contact, active shipments and cartons
+  expected this week.
 
 ## Settings
 

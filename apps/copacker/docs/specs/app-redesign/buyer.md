@@ -32,8 +32,10 @@ The landing page (F5). Open to everyone in the workspace; money blocks need pric
    changes, Review proposed changes, Upload shipping labels (when you arrange shipping), Reorder due, Receive a
    shipment, Answer a declined order, Release carton labels for a combined shipment, Send drafts, Reconnect a store.
    Each row: icon in its tone, what, the record, who's waiting and since when, the action. **View all** opens the Inbox.
-3. **Purchasing pipeline:** one row of stages with a count and units each, each opening Purchase orders or Shipments
-   filtered to it: Drafts, With supplier, Packing, Ready for pickup, In transit, Received in the last 30 days.
+3. **Purchasing pipeline:** one row of stages, each opening Purchase orders or Shipments filtered to it. Each stage
+   counts what it's about, and names it: Drafts and With supplier count purchase orders ("3 orders"); Packing, Ready
+   for pickup, In transit and Received in the last 30 days count shipments ("4 shipments"), so a PO shipping in parts
+   is never in two stages at once. Every stage also shows its units.
 4. **Arriving:** the next shipments by expected date: shipment, supplier, destination, cartons, status.
 5. **Restock:** items to reorder by cover band with the estimated cost (prices) and **Open restock**.
 6. **Snapshot** (prices): sales, gross profit and units for the last 30 days against the 30 before, and **Open
@@ -51,9 +53,10 @@ Index template over the synced sales orders.
 - **Filters:** source (Shopify with location, Amazon marketplace, eBay), date range with the period picker's presets,
   status. Search by order number, SKU or product.
 - **Columns:** order, date, source, items (first product and "and 2 more"), units, sales, fees (prices), status.
-- **Row opens the sales order page (new)** `/sales/[id]`: lines with SKU, units and price, fees and proceeds by
-  kind, fulfillment location, status and dates, a link out to the platform, and for an Amazon replacement the order it
-  replaces. Until it ships, rows keep opening the platform.
+- **Row opens the sales order page (new)** `/sales/[id]`: a record page without tabs or Activity, since it's a
+  read-only copy of the platform's order. Lines with SKU, units and price, then fees and proceeds by kind (prices);
+  the rail holds the source and fulfillment location, the platform's status and its dates, **Open in** the platform,
+  and for an Amazon replacement the order it replaces. Until it ships, rows keep opening the platform.
 
 ## Products `/products`
 
@@ -148,9 +151,11 @@ Record template, the buyer's view.
   show "2 of 3 shipments". A declined PO stops at Sent, in the warning tone, with the decline date.
 - **Next step card:** from the workflow for the buyer, with the step's action: **Send to supplier** (draft), **Review
   changes** (proposal pending), **Review invoice** (a shipment's invoice changed), **Upload labels** (a shipment needs
-  them), **Close purchase order** (every shipment received or cancelled). Off Copacker: "Lotus Manufacturing isn't on
-  Copacker. Send them the PDF, and pack for them when the goods are ready." Declined: "Cedar Works declined PO-1047",
-  the supplier's reason as the alert, **Close purchase order** and **Edit and send again**.
+  them), **Close purchase order** (every shipment received or cancelled). Off Copacker, a draft's action is **Mark as
+  sent**, since Copacker doesn't deliver it: its confirm dialog offers **Download PDF**, and the order goes straight to
+  Accepted. Then: "Lotus Manufacturing isn't on Copacker. Pack for them when the goods are ready." Emailing the PDF to
+  the supplier's contact is Optional. Declined: "Cedar Works declined PO-1047", the supplier's reason as the alert,
+  **Close purchase order** and **Edit and send again**.
 - **Tabs:**
   - **Items:** lines with product, variant, buyer SKU, supplier SKU (warning when not set), ordered, shipped and to
     ship, unit cost and total (prices), requirements as a secondary line, ⋯ per line (labels, warning labels, edit on a
@@ -167,7 +172,8 @@ Record template, the buyer's view.
 - **Proposal review:** with a pending proposal, the Items tab shows each change inline (old value struck through, new
   value, added and removed lines marked), the supplier's note above, and a bar with **Decline** and **Approve
   changes**. Approving says what else happens: the new revision, the supplier SKU written to Shopify, and the choice to
-  update Shopify unit costs.
+  update Shopify unit costs. Declining opens "Decline proposed changes?" with an optional reason, which the supplier's
+  next step shows when there is one.
 
 ### Shipment `/orders/[id]/shipments/[shipmentId]`
 

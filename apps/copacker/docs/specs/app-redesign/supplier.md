@@ -58,7 +58,9 @@ The shared PO record, the supplier's view.
 - **Lifecycle:** Ordered, Accepted, Packing, Approval, Ready for pickup, Shipped, Closed.
 - **Accept and decline:** accepting holds the order's units, so the supplier's other channels sell fewer; the next
   step's meta says how many ("520 units, held when you accept"). If a tracked product is short, accepting is refused
-  and lists the short lines with **Propose changes**. Declining asks for a reason, which the buyer sees.
+  and lists the short lines with **Propose changes**. **Accept** acts at once, with a toast ("PO-1051 accepted. 520
+  units held."), since it isn't destructive and the card already said what it holds. **Decline** opens a dialog that
+  asks for a reason, which the buyer sees.
 - **Next step card:** for the supplier: "Accept or decline PO-1051", "Pack 240 units in up to 3 shipments by Nov 15",
   "Waiting for Harbor Goods to approve your invoice", "Harbor Goods declined your changes: reason. Propose again or
   pack as ordered."

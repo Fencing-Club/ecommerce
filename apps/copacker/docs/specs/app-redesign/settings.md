@@ -34,6 +34,8 @@ the person, and **Workspace settings** for the workspace. Both open in a setting
   this. Priya Shah and Alex Rivera are admins."). Pages with nothing to show a member are left out.
 - `/settings` opens Profile. The old anchors (`/settings#integrations`, `#team`, `#addresses`, `#delete`) redirect to
   their pages.
+- On a phone, `/settings` is the settings navigation as a full-page list, and each page opens with **‹ Settings** to go
+  back to it.
 
 ## Account
 
@@ -43,7 +45,7 @@ the person, and **Workspace settings** for the workspace. Both open in a setting
 | Preferences | `/settings/preferences`       | Language (System or a locale), theme (Light, Dark, System)                                         | Everyone |
 | Sign-in     | `/settings/sign-in`           | Email and password, **Change password** (a WorkOS password reset), Google and Microsoft sign-in in use, **Delete account** at the end | Everyone |
 | Workspaces  | `/settings/workspaces`        | Every workspace the person is in, with kind and role; Open, **New workspace**                       | Everyone |
-| Notifications (later) | `/settings/notifications` | Email and in-app preferences per update kind, once Novu delivers them                  | Everyone |
+| Notifications | `/settings/notifications` | Email and in-app preferences per update kind (comments and mentions, purchase orders, proposals, shipments, receiving); built with the Inbox, delivered through Novu | Everyone |
 
 **Delete account** keeps its rules: typed email, transfer ownership first, what closes with the account. It moves
 from the shared Delete section to the end of Sign-in, as a destructive zone.
@@ -54,6 +56,7 @@ from the shared Delete section to the end of Sign-in, as a destructive zone.
 | ---------------- | ----------------------------------- | ----- | -------- | --------- | ---------------------------------------------------------------------------------------------- |
 | General          | `/settings/general`                 | Yes   | Yes      | Yes       | Workspace name (renaming is new) and kind; buyer: company website, store time zone; supplier: the supplier profile (contact name, email, phone, website) |
 | Team             | `/settings/team`                    | Yes   | Yes      | Yes       | People and invitations, roles, access                                                          |
+| Invite           | `/settings/team/invite`             | Yes   | Yes      | Yes       | Invite someone with a role, page access and prices                                             |
 | Member           | `/settings/team/[memberId]`         | Yes   | Yes      | Yes       | One person's role, page access and prices; transfer ownership; remove                          |
 | Integrations     | `/settings/integrations`            | Yes   | Yes      |           | Buyer: Shopify, Amazon and eBay cards with status and last sync. Supplier: eBay, with Shopify and Amazon coming later |
 | Store            | `/settings/integrations/[provider]` | Yes   | Yes      |           | The store's account, connect or disconnect, and its settings (below)                           |
@@ -67,11 +70,18 @@ from the shared Delete section to the end of Sign-in, as a destructive zone.
 
 ### Team `/settings/team`
 
-- **Header:** **Invite** (admins).
+- **Header:** **Invite** (admins), which opens the invite page.
 - **Table:** person (avatar, name, email, "You"), role, pages ("All pages", or "4 pages, prices"), last active (new,
   optional), ⋯ (Change access, Resend or Cancel invitation, Remove, Transfer ownership for the owner).
 - Invitations show in the same table with Invited or Invitation expired and the expiry date.
-- The row opens the member page.
+- The row opens the member page; an invitation's row opens the invite page, to change its access before it's
+  accepted.
+
+### Invite `/settings/team/invite`
+
+The member page's layout for someone not in the workspace yet: email, role, and for a member the page access table and
+the prices switch, then **Send invitation** in the action bar. A member needs at least one page. It replaces the
+invite dialog, which had to scroll to fit the access table.
 
 ### Member `/settings/team/[memberId]`
 

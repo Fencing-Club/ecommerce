@@ -76,10 +76,11 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 - **Create (right).** A primary-outline button with the kind's create actions. Buyer: Purchase order, Import purchase
   order, Supplier, Forwarder. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
   access; with none, the button is hidden.
-- **Inbox (right).** Replaces the empty bell (F9). A count of open tasks, and a popover with the latest five and "View
-  all" to `/inbox`. See [Inbox](#inbox).
-- **Account (right).** Avatar menu: name and email, **Account settings**, Theme (Light, Dark, System), Keyboard
-  shortcuts, Help, **Sign out**. Moves out of the sidebar's footer.
+- **Inbox (right).** Replaces the empty bell (F9). Its count is open tasks plus unread updates, and its popover has To
+  do and Updates, the latest five of each, **Mark all read** and "View all" to `/inbox`. See [Inbox](#inbox).
+- **Account (right).** Avatar menu: name and email, **Account settings**, Theme (Light, Dark, System), Help, **Sign
+  out**. Moves out of the sidebar's footer. The two shortcuts (Ctrl K search, Ctrl B sidebar) show in the command
+  menu's footer and in the tooltips of the search field and the sidebar toggle, not in a menu item.
 
 ### Sidebar
 
@@ -175,10 +176,10 @@ import review.
 Purchase orders › PO-1045 ›
 Pack shipment 2                                                          [Save draft] [×]
 ┌ Steps ─────────┐ ┌ Section ─────────────────────────────────────────────────────────┐
-│ ✓ Invoice      │ │                                                                   │
-│ ● Contents     │ │                                                                   │
-│ ○ Cartons      │ │                                                                   │
-│ ○ Pickup       │ └───────────────────────────────────────────────────────────────────┘
+│ ✓ Contents     │ │                                                                   │
+│ ● Cartons      │ │                                                                   │
+│ ○ Pickup       │ │                                                                   │
+│ ○ Invoice      │ └───────────────────────────────────────────────────────────────────┘
 │ ○ Review       │
 └────────────────┘
 ┌ Action bar ─────────────────────────────────────────────────────────────────────────┐
@@ -310,10 +311,15 @@ queries (`overview.attention`, supplier `tasks`), filtered by what the person ca
 - **To do:** open tasks, grouped by due or by record, each with its record, who's waiting and the action. Done tasks
   leave by themselves when the record moves on.
 - **Updates:** events on records the person follows (created, sent, commented on or assigned to them): comments,
-  sent POs, proposals, shipments created, received. Mark read, mark all read.
+  sent POs, proposals, shipments created, received. Unread ones are marked; each has **Mark read**, the tab has **Mark
+  all read** and filters by type, record and partner, and days group them. An update about a record the person can't
+  open shows as plain text.
 
 Updates are delivered by Novu, as [App header](../../app-header.md) plans; Copacker supplies the events and doesn't
-build a notification engine. To do is computed by Copacker and works before Novu arrives.
+build a notification engine. To do is computed by Copacker. The whole Inbox, both tabs, the popover and the
+Notifications preferences in Account settings are built before Novu is connected, rendering a Copacker `Update` type
+from fixtures; a Novu adapter then feeds them through `@novu/react`'s headless hooks, so the UI stays on the kit rather
+than Novu's prebuilt Inbox. Copacker launches once the adapter delivers.
 
 ### Money and prices
 
