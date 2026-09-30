@@ -1,0 +1,9 @@
+// Deployed with `pnpm dlx wrangler deploy` from this folder; see docs/README.md.
+{
+  "name": "turbo-cache",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "turbo.copacker.ai", "custom_domain": true }],
+  "r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "turbo-cache" }]
+}

@@ -44,6 +44,9 @@
     "packages/copacker-emails": {
       "entry": ["src/emails/*.tsx"],
       "ignoreDependencies": ["@repo/oxlint-config"]
+    },
+    "apps/turbo-cache": {
+      "ignoreDependencies": ["@repo/oxlint-config"]
     }
   },
   "ignoreIssues": {

@@ -10,6 +10,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+  # Turbo replays any task whose inputs haven't changed from the shared cache on Cloudflare (apps/turbo-cache).
+  TURBO_API: https://turbo.copacker.ai
+  TURBO_TEAM: ecommerce
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -40,12 +45,6 @@ jobs:
           path: ${{ env.PNPM_STORE }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
-      # Turbo replays lint, types and tests for the packages a push didn't change.
-      - uses: actions/cache@v6
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       # pnpm verify, less Copacker's stories, which the stories job runs side by side.
       - run: pnpm check:format
