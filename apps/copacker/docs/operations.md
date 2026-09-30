@@ -61,18 +61,23 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-CI (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request, in three jobs side by side:
+CI (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request. A `changes` job first works out
+whether the change affects Copacker (`.github/scripts/affected.mjs`): code in `apps/copacker` or a workspace package
+it uses, or anything every app shares, such as the workflows, the lockfile or the root configs. Docs, Markdown and
+design files don't count. A pull request is compared with its target branch, and a push with the commit staging serves.
+Then, side by side:
 
-- `verify`: format, lint, types, unused code (`check:unused`), the other packages' tests, Copacker's unit tests with
-  coverage, Copacker's build, and every migration on an empty Postgres 18.
-- `stories`: the Storybook tests, in four shards.
-- `e2e`: the [end-to-end suite](e2e.md), in two shards.
+- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always; Copacker's unit
+  tests with coverage, its build and every migration on an empty Postgres 18 when Copacker is affected.
+- `stories`: the Storybook tests, in four shards, when Copacker is affected.
+- `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
 
-When all three pass on a push, `deploy-staging` deploys the commit to Railway's staging environment and runs the
-end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. Pushes run
-side by side, and a new push to a pull request replaces its older run. To release to production, run the **Promote to
-production** workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs
-against production.
+Turbo replays any task whose inputs haven't changed from the [remote cache](../../turbo-cache/docs/README.md). When the
+jobs pass on a push that affects Copacker, `deploy-staging` deploys the commit to Railway's staging environment and runs
+the end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. A last
+job, `ci-ok`, passes when nothing failed, counting skipped jobs as passed. Pushes run side by side, and a new push to a
+pull request replaces its older run. To release to production, run the **Promote to production** workflow in GitHub
+Actions. It releases the commit staging serves, then runs the signed-out smoke specs against production.
 
 Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
 pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for

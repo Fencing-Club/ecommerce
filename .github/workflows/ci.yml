@@ -16,7 +16,35 @@ env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 jobs:
+  # Which apps this change affects (.github/scripts/affected.mjs), so a change to one app, a package it doesn't use or
+  # the docs skips another app's tests and deploy. A pull request is compared with its target branch; a push to main
+  # with the commit staging serves, so a change an earlier failed run didn't deploy still counts.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      copacker: ${{ steps.affected.outputs.copacker }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: base
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            echo "sha=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
+          else
+            deployed=$(curl -fsS --max-time 20 "$STAGING_URL/api/health" | jq -r ".commit // empty" || true)
+            echo "sha=${deployed:-$BEFORE}" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+          STAGING_URL: ${{ vars.STAGING_URL }}
+      - id: affected
+        run: node .github/scripts/affected.mjs "${{ steps.base.outputs.sha }}" "$GITHUB_SHA"
+
   verify:
+    needs: changes
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -52,11 +80,15 @@ jobs:
       - run: pnpm check:types
       - run: pnpm check:unused
       - run: pnpm turbo run test:coverage --filter=!copacker
-      - run: pnpm --filter copacker exec vitest run --project unit --coverage
-      # Only Copacker is deployed; the Docker build on Railway builds it again, so this is the pull request's check.
-      - run: pnpm turbo run build --filter=copacker
+      # Copacker's own checks, when the change affects it.
+      - if: needs.changes.outputs.copacker == 'true'
+        run: pnpm --filter copacker exec vitest run --project unit --coverage
+      # The Docker build on Railway builds it again, so this is the pull request's check.
+      - if: needs.changes.outputs.copacker == 'true'
+        run: pnpm turbo run build --filter=copacker
       # Every migration applies to an empty Postgres 18, as it will on staging and production.
-      - run: |
+      - if: needs.changes.outputs.copacker == 'true'
+        run: |
           psql "$TEST_DATABASE_URL" -c "CREATE DATABASE copacker_migrate"
           pnpm --filter copacker db:migrate
         env:
@@ -65,6 +97,8 @@ jobs:
   # Every story renders in Chromium and runs its play function. Run one after another they took 20 minutes, so they're
   # split across four machines.
   stories:
+    needs: changes
+    if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -90,6 +124,8 @@ jobs:
   # The Playwright suite (apps/copacker/e2e) against a production build, with the E2E seed in a fresh Postgres and an
   # S3 mock for uploads. It signs in through the WorkOS environment staging uses. See apps/copacker/docs/e2e.md.
   e2e:
+    needs: changes
+    if: needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
     # Split in two, each with its own build, database and S3 mock.
     strategy:
@@ -144,7 +180,8 @@ jobs:
       - run: |
           echo "WORKOS_COOKIE_PASSWORD=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
           echo "TOKEN_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-      - run: pnpm --filter copacker build
+      # Through Turbo, so an unchanged build replays from the cache.
+      - run: pnpm turbo run build --filter=copacker
       - run: pnpm --filter copacker db:migrate
       - run: pnpm --filter copacker db:seed:e2e
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
@@ -161,8 +198,8 @@ jobs:
           include-hidden-files: true
 
   deploy-staging:
-    needs: [verify, stories, e2e]
-    if: github.event_name == 'push'
+    needs: [changes, verify, stories, e2e]
+    if: github.event_name == 'push' && needs.changes.outputs.copacker == 'true'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -214,3 +251,16 @@ jobs:
           retention-days: 14
           # The report folders start with a dot, which upload-artifact skips unless told otherwise.
           include-hidden-files: true
+
+  # One check for the whole run, passed when nothing failed or was cancelled; a job skipped because the change didn't
+  # affect it counts as passed. It's the check to require in branch protection.
+  ci-ok:
+    if: always()
+    needs: [changes, verify, stories, e2e, deploy-staging]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "$RESULTS"
+          if echo "$RESULTS" | grep -qE "failure|cancelled"; then exit 1; fi
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
