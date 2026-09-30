@@ -3,7 +3,7 @@
 This directory holds approved Fencing Club content to install when migrating the existing shop to the new theme.
 It is not optional demo content or a snapshot of development-store resource IDs. The same portable bundle supports
 rehearsals in Contoso without treating the migration as a new shop.
-Use [the installation guide](../../../docs/shopify-content-installation.md) for validation, packaging, planning,
+Use [the installation guide](../docs/shopify-content-installation.md) for validation, packaging, planning,
 authentication, and explicit application.
 
 - `sizing-source.json` holds the approved chart values, guide text, and fit advice captured from the published
@@ -39,7 +39,7 @@ The sizing-only pack creates a separate `size-charts` menu in the same order as 
 `collections-source.json`, and `journal-source.json` to produce the complete 248-resource `migration-manifest.json`.
 It also defines the product filter fields `custom.weapon` (Weapon), `custom.gender` (Gender),
 `custom.skill_level` (Skill Level), `custom.protection_rating` (Safety Level) and `custom.fie_status` (FIE Rating). Definitions do not populate missing product values or enable
-Search & Discovery filters. See [collection filters](../../../docs/shopify-collection-filters.md).
+Search & Discovery filters. See [collection filters](../docs/shopify-collection-filters.md).
 `theme-configuration.json` contains the separate menu-attachment and ordered-group settings. Creating records
 and attaching them to the theme are separate steps.
 For a store-specific product assignment, add a `product-chart-assignment` resource with explicit `productHandle`,
@@ -54,6 +54,6 @@ Collection membership is a catalog snapshot; existing destination collections ar
 The 26 chart mappings are explicit product handles, grounded in their source sizing Page references.
 
 Charts and the root page are initially unpublished. The theme includes the shared chart templates and product
-flyout; see [the sizing runtime guide](../../../docs/shopify-size-charts.md). Verify those templates on the destination
+flyout; see [the sizing runtime guide](../docs/shopify-size-charts.md). Verify those templates on the destination
 store before publishing content. The measuring-tape PDFs ship in the theme's assets directory and are not duplicated
 in Shopify Files by this pack.

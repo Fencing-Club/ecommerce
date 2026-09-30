@@ -32,16 +32,16 @@ checks run directly.
 
 ## Workspace layout
 
-- `apps/` — product applications.
+- `apps/` — product applications; `packages/` — shared libraries, themes and templates. Each keeps its own `docs/`.
 - **Reusable shared config** (extend these; don't redefine per package): `@repo/oxlint-config`,
   `@repo/typescript-config`.
 
 ## Conventions
 
 Coding conventions live in the [`docs/`](../docs/README.md) folder — start at the index and read the relevant page
-before writing code. Two points worth stating up front: the **React Compiler is on** (don't hand-write
-`useMemo`/`useCallback`/`memo`), and **reuse before building** — check the [hooks](../docs/hooks.md) and
-[type-helper](../docs/typescript.md) catalogs before writing your own.
+before writing code. Working in an app or package, read its own `docs/README.md` too. Two points worth stating up front:
+the **React Compiler is on** (don't hand-write `useMemo`/`useCallback`/`memo`), and **reuse before building** — check
+the [hooks](../docs/hooks.md) and [type-helper](../docs/typescript.md) catalogs before writing your own.
 
 Prefer the tools in the [preferred tech stack](../docs/tech-stack.md); **introducing a library that isn't already used
 needs a human discussion**, not a silent add.
@@ -49,7 +49,12 @@ needs a human discussion**, not a silent add.
 ## Documentation
 
 - **Keep this file brief** — it's the entry point; link to `docs/` articles rather than duplicating detail.
-- **Prefer small, focused `docs/` pages**, and update them (and the [index](../docs/README.md)) in the same change as
+- **Docs live with what they describe.** The root [`docs/`](../docs/README.md) is only for engineering across the whole
+  monorepo (setup, TypeScript, hooks, the preferred stack). Everything specific to one app or package — its product
+  rules, pages, APIs, operations, tests and specs — goes in that app or package's own `docs/` folder, indexed by its
+  `docs/README.md` (for example [Copacker's](../apps/copacker/docs/README.md)). A new app or package gets a `docs/`
+  folder with its first doc, and a link from the root index.
+- **Prefer small, focused `docs/` pages**, and update them (and their folder's `README.md` index) in the same change as
   the behavior they describe.
 - Do not create executable validators or test suites for prose documentation, evidence ledgers, backlog/status tables,
   or narrative part-selection records. Review those artifacts directly. Tests should cover executable code and generated
@@ -67,7 +72,7 @@ needs a human discussion**, not a silent add.
   workflow, inspect the rendered result at desktop and mobile sizes, and check keyboard and accessible-name behavior.
   Unit or component tests do not replace this browser acceptance check.
 - Every Copacker page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or
-  update them with the change. See [docs/storybook.md](../docs/storybook.md).
+  update them with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
 
 ## Gotchas
 

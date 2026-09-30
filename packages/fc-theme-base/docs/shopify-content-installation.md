@@ -105,7 +105,7 @@ digest. Run a single installer per store and avoid concurrent edits during expli
 
 ## Current Fencing Club Pack
 
-The pack in [packages/fc-theme-base/content](../packages/fc-theme-base/content/README.md) contains five definitions,
+The pack in [packages/fc-theme-base/content](../content/README.md) contains five definitions,
 five image files, five illustrated guides, 94 size entries, 13 charts, seven directory groups, one root page, and one
 dedicated sizing menu: 131 resources.
 The approved source measurements, including gaps and overlaps, remain literal strings. Only Mens jackets have

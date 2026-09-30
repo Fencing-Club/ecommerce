@@ -86,7 +86,7 @@ jobs:
       - run: pnpm --filter copacker exec vitest run --project 'storybook*' --shard=${{ matrix.shard }}/4
 
   # The Playwright suite (apps/copacker/e2e) against a production build, with the E2E seed in a fresh Postgres and an
-  # S3 mock for uploads. It signs in through the WorkOS environment staging uses. See docs/e2e.md.
+  # S3 mock for uploads. It signs in through the WorkOS environment staging uses. See apps/copacker/docs/e2e.md.
   e2e:
     runs-on: ubuntu-latest
     # Split in two, each with its own build, database and S3 mock.

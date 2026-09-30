@@ -99,7 +99,7 @@ parts live in `apps/copacker/src/components/marketing/`:
 
 The film, the ad's web mix at 1080p and 30 fps, is in the `copacker-media` R2 bucket, named for the first 8 characters of
 its SHA-256 (`film-924d480a.mp4`), and `film.tsx` plays it from `https://media.copacker.ai/`. `apps/copacker/public/marketing/`
-holds its poster and the social image, both from the ad's end card. After re-rendering the ad (see [Video](video.md)),
+holds its poster and the social image, both from the ad's end card. After re-rendering the ad (see [Video](../../video/docs/README.md)),
 export them again from `apps/video`:
 
 ```sh

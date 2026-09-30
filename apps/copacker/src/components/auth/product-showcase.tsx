@@ -5,7 +5,7 @@ import { BrandMark, Stage } from "./stage"
 
 // The panel beside the sign-in forms: Copacker's promise over a glimpse of the product at work, in the order it
 // happens: Restock finds what runs out, a purchase order goes to the supplier, and the shipment heads for Amazon. The
-// figures are the ad's demo restock (docs/video.md), so the cards agree. It's dark in both themes.
+// figures are the ad's demo restock (apps/video/docs/README.md), so the cards agree. It's dark in both themes.
 
 const restock = [
   { name: "Steel Bottle 32 oz", days: 18, order: 2520, tone: "bg-orange-400" },

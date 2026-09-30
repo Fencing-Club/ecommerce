@@ -39,6 +39,6 @@ accordions. The root `size-charts` page is a directory without measurement help.
 generic product popups do not inject the PDFs. Theme settings can hide the links across both chart contexts.
 
 A4 and US Letter are separate 32px rows with no additional gap. No chart values or per-product download URLs are
-duplicated. See [the sizing runtime guide](../../../docs/shopify-size-charts.md) for metaobject and product assignment
+duplicated. See [the sizing runtime guide](../docs/shopify-size-charts.md) for metaobject and product assignment
 setup. Browsers may open a PDF viewer instead of downloading when Shopify serves assets from a different origin;
 the viewer's download command remains available.

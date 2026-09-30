@@ -73,7 +73,7 @@ effects and the scenes all read their timing from it. `src/ad.tsx` plays each se
 - `node scripts/loudness.ts <file.wav>` measures a mix's integrated loudness (BS.1770, gated) and sample peak. Decode a
   render at 48 kHz first: `pnpm --filter video exec remotion ffmpeg -i out/copacker.mp4 -vn -ar 48000 out/copacker.wav`.
   Deliver about -14 LUFS for YouTube and social, and -24 LKFS for US broadcast (ATSC A/85).
-- The landing page plays the -14 LUFS web mix, made smaller and served from R2, as [Landing page](landing-page.md#assets)
+- The landing page plays the -14 LUFS web mix, made smaller and served from R2, as [Landing page](../../copacker/docs/landing-page.md#assets)
   says.
 - Before release: the logo is the app's
   orange box tile, and every figure on screen is demo data, so any customer proof added later must be real. The

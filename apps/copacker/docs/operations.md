@@ -1,10 +1,6 @@
 # Run Copacker
 
-Node 24+ and pnpm 11 are required. Install at the root with `pnpm install`, then `pnpm dev`. The checked-in `.npmrc`
-points at the corporate registry (`pnpm auth` signs in to it); outside that network set
-`PNPM_CONFIG_REGISTRY=https://registry.npmjs.org/` for install. CI and the Docker builds use the public registry.
-
-Copy `apps/copacker/.env.example` to `apps/copacker/.env` and fill it in. `TOKEN_ENCRYPTION_KEY` is 32 random bytes
+Install the monorepo first ([Setup](../../../docs/setup.md)). Copy `apps/copacker/.env.example` to `apps/copacker/.env` and fill it in. `TOKEN_ENCRYPTION_KEY` is 32 random bytes
 encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Never commit environment files.
 
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and

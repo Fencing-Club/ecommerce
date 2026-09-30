@@ -78,7 +78,7 @@ For building command-line tools.
 - ✅ **recharts** — charts / data visualization (Copacker's Overview; colors come from the `chart1`/`chart2` theme
   tokens). ◻️ **@fluentui/react-charting** for Fluent surfaces.
 - ✅ **shadcn/ui** + **Tailwind CSS v4** — component patterns for apps and product surfaces that select the shadcn
-  architecture. Copacker uses shadcn's own components on Base UI, added with the shadcn CLI. See [Styling](styling.md).
+  architecture. Copacker uses shadcn's own components on Base UI, added with the shadcn CLI. See [Styling](../apps/copacker/docs/styling.md).
 - ✅ **cmdk** — command menus, through shadcn's `Command`. Copacker's header search (Ctrl+K) uses it.
 - ✅ **@vanilla-extract/css** + **sprinkles** — Copacker's page styles from before Tailwind, which keep working next
   to it.
@@ -89,7 +89,7 @@ existing surface should keep its established system unless its architecture is d
 ## Video
 
 - ✅ **remotion** — video as React components, rendered to stills and MP4 (the Copacker ad in `apps/video`; see
-  [Video](video.md)).
+  [Video](../apps/video/docs/README.md)).
 
 ## Markdown & rich text
 

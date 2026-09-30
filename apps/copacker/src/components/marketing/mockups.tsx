@@ -23,7 +23,7 @@ import { navigationGroups, pagesFor } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 // The product as the marketing page shows it: the app's own components, in its light theme, holding a demo buyer's
-// data, the same brand and suppliers as the ad (docs/video.md). The shots are pictures: nothing in them can be focused or
+// data, the same brand and suppliers as the ad (apps/video/docs/README.md). The shots are pictures: nothing in them can be focused or
 // clicked, and screen readers get the figure's caption instead.
 
 const nav = pagesFor("buyer")
