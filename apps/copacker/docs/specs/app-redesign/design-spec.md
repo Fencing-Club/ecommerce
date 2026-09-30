@@ -44,6 +44,8 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
   inside cards.
 - **Radius:** 10 px cards, 8 px controls, full pills for statuses.
 - **Elevation:** borders, not shadows. Shadows only on overlays (menus, sheets, dialogs, the action bar).
+- **Mark:** Copacker's mark is Lucide's `box` in white on a `primary` tile, the same in the top bar, the favicon and
+  sign-in. Locked on 2026-09-30.
 
 ## The shell
 
@@ -485,4 +487,6 @@ the action's confirm dialog, or an alert line when something blocks the step.
 - Short and literal. Prefer a number or a noun phrase to a sentence: "35-day lead time", "5 orders", "No catalog match".
 - Sentence case everywhere. Actions are verbs ("Approve changes", "Mark shipped").
 - Never use `·`, `•` or another dot glyph as a separator. Use layout or words.
+- A page someone can see but not change is **View only**, not "Read-only": it names the View access level members
+  are given in Team settings, so the badge and the access they were granted use the same words. Locked on 2026-09-30.
 - Every new or changed string goes through the Fluent Agent MCP before it ships, per the repository's rules.
