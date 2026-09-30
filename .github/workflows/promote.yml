@@ -25,12 +25,13 @@ jobs:
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "Promoting $sha" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.staging.outputs.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - run: npm install --global @railway/cli
       - run: bash .github/scripts/deploy.sh "${{ steps.staging.outputs.sha }}" "${{ vars.PRODUCTION_URL }}"
       # Production holds real data, so only the read-only, signed-out specs run against it.
@@ -42,7 +43,7 @@ jobs:
       - run: pnpm --filter copacker test:e2e --grep @smoke
         env:
           E2E_BASE_URL: ${{ vars.PRODUCTION_URL }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-production

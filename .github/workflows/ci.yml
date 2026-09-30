@@ -24,22 +24,24 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql://postgres:copacker_test@localhost:5432/copacker_test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          # The pnpm store has its own cache step below, and pnpm isn't installed yet.
+          package-manager-cache: false
       # npm, not pnpm/action-setup: that reads .npmrc's private registry, which CI can't sign in to.
       - run: npm install --global pnpm@11.9.0
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ env.PNPM_STORE }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
       # Turbo replays lint, types and tests for the packages a push didn't change.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -70,13 +72,14 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - run: npm install --global pnpm@11.9.0
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ env.PNPM_STORE }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -125,13 +128,14 @@ jobs:
             echo "::error::Add the WORKOS_API_KEY repository secret (the WorkOS staging environment's API key)"
             exit 1
           fi
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - run: npm install --global pnpm@11.9.0
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ env.PNPM_STORE }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -146,7 +150,7 @@ jobs:
       - run: pnpm --filter copacker db:seed:e2e
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
       - run: pnpm --filter copacker test:e2e --shard=${{ matrix.shard }}/2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report-${{ matrix.shard }}
@@ -178,11 +182,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - if: steps.tip.outputs.latest == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - if: steps.tip.outputs.latest == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
       - if: steps.tip.outputs.latest == 'true'
         run: npm install --global @railway/cli
       # The web service's pre-deploy step on staging migrates and then runs the E2E seed (pnpm db:seed:e2e).
@@ -200,7 +205,7 @@ jobs:
         env:
           E2E_BASE_URL: ${{ vars.STAGING_URL }}
           WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure() && steps.tip.outputs.latest == 'true'
         with:
           name: playwright-report-staging
