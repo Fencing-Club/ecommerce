@@ -51,7 +51,7 @@ marker: it's drawn now and built once it's decided.
 | Settings             | Split into Account and Workspace settings, a route per section, with its own navigation.                                                  |
 | Forwarder            | Organized around shipment legs: Home, Shipments, Purchase orders, Clients. No new permission area.                                        |
 | Notifications        | The bell becomes **Inbox**: To do from Copacker's own tasks now, Updates through Novu later.                                               |
-| Visual               | Copacker's orange `primary`, Geist, borders over shadows. Workspace kind colors only on the switcher's chip.                              |
+| Visual               | Copacker's orange `primary`, Geist, borders over shadows. Workspace kind colors only in the workspace menu.                               |
 | Lead times           | Analytics measures every handoff: supplier production, pickup to forwarder, and a forwarder's time per PO or combined shipment from the last arrival until received. Route history will estimate a new PO's arrival. |
 
 ## Routes

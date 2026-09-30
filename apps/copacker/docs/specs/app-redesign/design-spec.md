@@ -36,7 +36,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 | `success`              | `#006300`                       | Done statuses                                                           |
 | `warning`              | `#FAB219`                       | Needs action; text on it is `foreground`, never white                   |
 | `destructive`          | `#DC2626`                       | Failed, lost, delete                                                    |
-| Workspace kind accents | Buyer `#C2410C`, Supplier `#0F766E`, Forwarder `#4338CA` | The switcher's kind chip only. Never on actions. |
+| Workspace kind accents | Buyer `#C2410C`, Supplier `#0F766E`, Forwarder `#4338CA` | The workspace menu only. Never on actions.       |
 
 - **Type:** Geist Sans, Geist Mono for SKUs, references and tracking numbers. Page title 24/32 semibold, section
   title 16/24 semibold, body 14/20, meta 12/16. Numbers are tabular.
@@ -66,10 +66,10 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 
 ### Top bar
 
-- **Workspace switcher (left).** Replaces the logo-only corner and the sidebar's switcher (F2). Shows the Copacker mark,
-  the workspace's name and a kind chip (Buyer, Supplier or Forwarder). The menu lists workspaces with their kind,
-  **New workspace** and **Workspace settings**. Switching reloads, as `WorkspaceWatch` requires today. On a phone the
-  kind chip moves into the workspace menu, so long workspace names fit.
+- **Workspace switcher (left).** Replaces the logo-only corner and the sidebar's switcher (F2). Shows the Copacker mark
+  and the workspace's name. The menu lists the workspaces, each with its kind, then **New workspace** and **Workspace
+  settings**. Switching reloads, as `WorkspaceWatch` requires today. The bar names no kind of its own: most people have
+  one workspace, and the menu already says which kind each is, which also leaves room for long workspace names.
 - **Search (center).** The existing command menu, unchanged in behavior. Result groups follow the renamed objects
   (Sales orders, Products, Purchase orders, Shipments, Partners or Customers). Adds **Actions** ("Create purchase
   order", "Invite a supplier") above results when the query matches one.

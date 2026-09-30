@@ -5,8 +5,8 @@
       "type": "frame",
       "id": "Fy0wp",
       "x": 0,
-      "y": 0,
-      "name": "Redesign — Kit",
+      "y": -500,
+      "name": "Kit",
       "width": 1600,
       "fill": "$rd-bg",
       "layout": "vertical",
@@ -359,7 +359,10 @@
                     {
                       "type": "frame",
                       "id": "d2ztu5",
+                      "x": 149,
+                      "y": 11,
                       "name": "Kind Chip",
+                      "enabled": false,
                       "fill": "$rd-primary-soft",
                       "cornerRadius": 999,
                       "padding": [
@@ -2325,6 +2328,417 @@
               ]
             }
           ]
+        },
+        {
+          "type": "frame",
+          "id": "lEGvp",
+          "name": "Kit Row Menus",
+          "width": "fill_container",
+          "gap": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "pXYNq",
+              "name": "RD Workspace Menu",
+              "reusable": true,
+              "width": 264,
+              "fill": "$rd-bg",
+              "cornerRadius": 10,
+              "stroke": "$rd-border",
+              "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#0000001F",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24
+              },
+              "layout": "vertical",
+              "gap": 2,
+              "padding": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "V4ohoO",
+                  "name": "Item Harbor Goods",
+                  "width": "fill_container",
+                  "fill": "$rd-muted",
+                  "cornerRadius": 6,
+                  "gap": 10,
+                  "padding": [
+                    6,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "d27l0T",
+                      "name": "Mark HG",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$rd-primary-soft",
+                      "cornerRadius": 7,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "c6AH4",
+                          "name": "Initials HG",
+                          "fill": "$rd-kind-buyer",
+                          "content": "HG",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kk4vQ",
+                      "name": "Text HG",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m9Y9Jt",
+                          "name": "Name HG",
+                          "fill": "$rd-fg",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Harbor Goods",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "V616qS",
+                          "name": "Kind HG",
+                          "fill": "$rd-fg-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Buyer workspace",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "WNT8C",
+                      "name": "Check HG",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "check",
+                      "library": "lucide",
+                      "fill": "$rd-fg"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "eRFZD",
+                  "name": "Item Lotus Manufacturing",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 10,
+                  "padding": [
+                    6,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "r3FcA",
+                      "name": "Mark LM",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$rd-kind-supplier-soft",
+                      "cornerRadius": 7,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m7PIrn",
+                          "name": "Initials LM",
+                          "fill": "$rd-kind-supplier",
+                          "content": "LM",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PQceU",
+                      "name": "Text LM",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mqeDq",
+                          "name": "Name LM",
+                          "fill": "$rd-fg",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Lotus Manufacturing",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lY7z1",
+                          "name": "Kind LM",
+                          "fill": "$rd-fg-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Supplier workspace",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "DM4VM",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Check LM",
+                      "enabled": false,
+                      "width": 16,
+                      "height": 16,
+                      "icon": "check",
+                      "library": "lucide",
+                      "fill": "$rd-fg"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nugoA",
+                  "name": "Item Bayline Freight",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 10,
+                  "padding": [
+                    6,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PDMKI",
+                      "name": "Mark BF",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$rd-kind-forwarder-soft",
+                      "cornerRadius": 7,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Jz0py",
+                          "name": "Initials BF",
+                          "fill": "$rd-kind-forwarder",
+                          "content": "BF",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TvkWa",
+                      "name": "Text BF",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HhWJI",
+                          "name": "Name BF",
+                          "fill": "$rd-fg",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Bayline Freight",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 14,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "UX3ZF",
+                          "name": "Kind BF",
+                          "fill": "$rd-fg-muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Forwarder workspace",
+                          "fontFamily": "$rd-font",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "vHH71",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Check BF",
+                      "enabled": false,
+                      "width": 16,
+                      "height": 16,
+                      "icon": "check",
+                      "library": "lucide",
+                      "fill": "$rd-fg"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "k6RSE",
+                  "name": "Divider",
+                  "width": "fill_container",
+                  "height": 9,
+                  "layout": "vertical",
+                  "padding": [
+                    0,
+                    4
+                  ],
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "E2mS2",
+                      "name": "Rule",
+                      "fill": "$rd-border",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aPRUo",
+                  "name": "Item New workspace",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 10,
+                  "padding": [
+                    6,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "quET7",
+                      "name": "Mark plus",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$rd-bg",
+                      "cornerRadius": 7,
+                      "stroke": "$rd-border",
+                      "strokeWidth": 1,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "EU3gB",
+                          "name": "Icon plus",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "plus",
+                          "library": "lucide",
+                          "fill": "$rd-fg-muted"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "gtOxD",
+                      "name": "Label plus",
+                      "fill": "$rd-fg",
+                      "content": "New workspace",
+                      "fontFamily": "$rd-font",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "llfpZ",
+                  "name": "Item Workspace settings",
+                  "width": "fill_container",
+                  "cornerRadius": 6,
+                  "gap": 10,
+                  "padding": [
+                    6,
+                    8
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "NofKz",
+                      "name": "Mark settings",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$rd-bg",
+                      "cornerRadius": 7,
+                      "stroke": "$rd-border",
+                      "strokeWidth": 1,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "U5LikO",
+                          "name": "Icon settings",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "settings",
+                          "library": "lucide",
+                          "fill": "$rd-fg-muted"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ACuv7",
+                      "name": "Label settings",
+                      "fill": "$rd-fg",
+                      "content": "Workspace settings",
+                      "fontFamily": "$rd-font",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -2333,13 +2747,13 @@
       "id": "eO4yt",
       "x": 0,
       "y": 3200,
-      "name": "Redesign — Buyer / Home and lists",
+      "name": "Buyer / Home and lists",
       "gap": 160,
       "children": [
         {
           "type": "frame",
           "id": "r92O8I",
-          "name": "Redesign — Buyer / Home",
+          "name": "Buyer / Home",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -5350,7 +5764,7 @@
         {
           "type": "frame",
           "id": "awIJu",
-          "name": "Redesign — Buyer / Purchase orders",
+          "name": "Buyer / Purchase orders",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -7272,7 +7686,7 @@
       "id": "xbHbk",
       "x": 3400,
       "y": 3200,
-      "name": "Redesign — Buyer / Purchasing records",
+      "name": "Buyer / Purchasing records",
       "gap": 160,
       "children": [
         {
@@ -42925,13 +43339,13 @@
       "id": "yNLb5",
       "x": 0,
       "y": 6800,
-      "name": "Redesign — Buyer / Store, partners and analytics",
+      "name": "Buyer / Store, partners and analytics",
       "gap": 160,
       "children": [
         {
           "type": "frame",
           "id": "Znvi1",
-          "name": "Redesign — Buyer / Sales",
+          "name": "Buyer / Sales",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -46436,7 +46850,7 @@
         {
           "type": "frame",
           "id": "Z5lioH",
-          "name": "Redesign — Buyer / Products",
+          "name": "Buyer / Products",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -51020,7 +51434,7 @@
         {
           "type": "frame",
           "id": "fBDsI",
-          "name": "Redesign — Buyer / Product",
+          "name": "Buyer / Product",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -55972,7 +56386,7 @@
         {
           "type": "frame",
           "id": "CLdJK",
-          "name": "Redesign — Buyer / Restock",
+          "name": "Buyer / Restock",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -59720,7 +60134,7 @@
         {
           "type": "frame",
           "id": "oegvy",
-          "name": "Redesign — Buyer / Partners",
+          "name": "Buyer / Partners",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -62844,7 +63258,7 @@
         {
           "type": "frame",
           "id": "O2avYa",
-          "name": "Redesign — Buyer / Partner",
+          "name": "Buyer / Partner",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -65731,7 +66145,7 @@
         {
           "type": "frame",
           "id": "dWF8R",
-          "name": "Redesign — Buyer / Analytics",
+          "name": "Buyer / Analytics",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -69552,7 +69966,7 @@
         {
           "type": "frame",
           "id": "gtrCp",
-          "name": "Redesign — Buyer / Analytics / Lead times",
+          "name": "Buyer / Analytics / Lead times",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -74467,7 +74881,7 @@
       "id": "Q0GS9",
       "x": 0,
       "y": 10400,
-      "name": "Redesign — Supplier / Orders, fulfillment and customers",
+      "name": "Supplier / Orders, fulfillment and customers",
       "gap": 160,
       "children": [
         {
@@ -100958,7 +101372,7 @@
       "id": "n4G3N",
       "x": 0,
       "y": 14000,
-      "name": "Redesign — Supplier / Products and catalogs",
+      "name": "Supplier / Products and catalogs",
       "gap": 160,
       "children": [
         {
@@ -119074,13 +119488,13 @@
       "id": "U0zg2J",
       "x": 0,
       "y": 17600,
-      "name": "Redesign — Forwarder and shared surfaces",
+      "name": "Forwarder and shared surfaces",
       "gap": 160,
       "children": [
         {
           "type": "frame",
           "id": "A8LKgP",
-          "name": "Redesign — Forwarder / Home",
+          "name": "Forwarder / Home",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -121909,7 +122323,7 @@
         {
           "type": "frame",
           "id": "EiIyE",
-          "name": "Redesign — Forwarder / Shipments",
+          "name": "Forwarder / Shipments",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -125028,7 +125442,7 @@
         {
           "type": "frame",
           "id": "yWv7K",
-          "name": "Redesign — Forwarder / Shipment leg",
+          "name": "Forwarder / Shipment leg",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -126922,7 +127336,7 @@
         {
           "type": "frame",
           "id": "c6l6Iv",
-          "name": "Redesign — Forwarder / Shipment leg, Ship onward",
+          "name": "Forwarder / Shipment leg, Ship onward",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -129487,7 +129901,7 @@
         {
           "type": "frame",
           "id": "s5Q5vx",
-          "name": "Redesign — Forwarder / Purchase orders",
+          "name": "Forwarder / Purchase orders",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -131728,7 +132142,7 @@
         {
           "type": "frame",
           "id": "Gj3T6",
-          "name": "Redesign — Forwarder / Clients",
+          "name": "Forwarder / Clients",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -133021,7 +133435,7 @@
         {
           "type": "frame",
           "id": "Kev6g",
-          "name": "Redesign — Buyer / Inbox, To do",
+          "name": "Buyer / Inbox, To do",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -135406,7 +135820,7 @@
         {
           "type": "frame",
           "id": "r638S4",
-          "name": "Redesign — Buyer / Inbox, Updates",
+          "name": "Buyer / Inbox, Updates",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -137276,7 +137690,7 @@
         {
           "type": "frame",
           "id": "xWgea",
-          "name": "Redesign — Buyer / Command menu",
+          "name": "Buyer / Command menu",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -140583,7 +140997,7 @@
         {
           "type": "frame",
           "id": "X4ZBT",
-          "name": "Redesign — Forwarder / Combined shipment",
+          "name": "Forwarder / Combined shipment",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -142153,13 +142567,13 @@
       "id": "QlAfl",
       "x": 0,
       "y": 21200,
-      "name": "Redesign — Settings and account",
+      "name": "Settings and account",
       "gap": 160,
       "children": [
         {
           "type": "frame",
           "id": "njvBe",
-          "name": "Redesign — Settings / Profile",
+          "name": "Settings / Profile",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -143126,7 +143540,7 @@
         {
           "type": "frame",
           "id": "QGXvM",
-          "name": "Redesign — Settings / Team",
+          "name": "Settings / Team",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -144934,7 +145348,7 @@
         {
           "type": "frame",
           "id": "gLASa",
-          "name": "Redesign — Settings / Member access",
+          "name": "Settings / Member access",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -147207,7 +147621,7 @@
         {
           "type": "frame",
           "id": "cXQit",
-          "name": "Redesign — Settings / Integrations",
+          "name": "Settings / Integrations",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -148971,7 +149385,7 @@
         {
           "type": "frame",
           "id": "FrzwO",
-          "name": "Redesign — Settings / Shopify",
+          "name": "Settings / Shopify",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -150431,7 +150845,7 @@
         {
           "type": "frame",
           "id": "v7mB8m",
-          "name": "Redesign — Settings / General (supplier)",
+          "name": "Settings / General (supplier)",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -151399,7 +151813,7 @@
         {
           "type": "frame",
           "id": "RktZq",
-          "name": "Redesign — Settings / Customs",
+          "name": "Settings / Customs",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -152502,7 +152916,7 @@
         {
           "type": "frame",
           "id": "jUAvQ",
-          "name": "Redesign — Settings / Stock flow",
+          "name": "Settings / Stock flow",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -154616,7 +155030,7 @@
         {
           "type": "frame",
           "id": "xFeFO",
-          "name": "Redesign — Settings / Stock flow (supplier)",
+          "name": "Settings / Stock flow (supplier)",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -156441,7 +156855,7 @@
         {
           "type": "frame",
           "id": "n1pMSp",
-          "name": "Redesign — Settings / Integrations (supplier)",
+          "name": "Settings / Integrations (supplier)",
           "clip": true,
           "width": 1440,
           "fill": "$rd-bg",
@@ -157680,7 +158094,7 @@
       "id": "gPMmN",
       "x": 0,
       "y": 795,
-      "name": "Redesign — Information architecture",
+      "name": "Information architecture",
       "gap": 120,
       "children": [
         {
@@ -169463,7 +169877,7 @@
                             {
                               "type": "frame",
                               "id": "KWaqJ",
-                              "name": "Item Workspace switcher with kind",
+                              "name": "Item Workspace switcher, kind in menu",
                               "width": "fill_container",
                               "gap": 6,
                               "padding": [
@@ -169483,9 +169897,9 @@
                                 {
                                   "type": "text",
                                   "id": "kKhL1",
-                                  "name": "Workspace switcher with ",
+                                  "name": "Workspace switcher, kind in menu",
                                   "fill": "$rd-fg",
-                                  "content": "Workspace switcher with kind",
+                                  "content": "Workspace switcher, kind in menu",
                                   "fontFamily": "$rd-font",
                                   "fontSize": 13,
                                   "fontWeight": "500"
@@ -170849,9 +171263,9 @@
     {
       "type": "frame",
       "id": "h0tu2",
-      "x": 1760,
-      "y": 0,
-      "name": "Redesign — Read me",
+      "x": 1720,
+      "y": -106,
+      "name": "Read me",
       "width": 1800,
       "fill": "$rd-bg",
       "cornerRadius": 16,
@@ -171765,7 +172179,7 @@
       "id": "NJuMH",
       "x": 0,
       "y": 23043,
-      "name": "Redesign — Mobile",
+      "name": "Mobile",
       "gap": 80,
       "children": [
         {
