@@ -113,7 +113,7 @@ export function SearchCommand({ kind }: { kind: string }) {
         </Kbd>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-scrim duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         {/* The panel's padding is 8px around its text box, so it starts 8px above the bar and is 16px wider. */}
         <PopoverPrimitive.Positioner
           side="bottom"
@@ -124,7 +124,7 @@ export function SearchCommand({ kind }: { kind: string }) {
           <PopoverPrimitive.Popup
             aria-label={t("search")}
             initialFocus={input}
-            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-command ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           >
             <SearchResults kind={kind} input={input} onSelect={go} />
             {/* Keyboard hints, in line with the results' icons. Screen readers skip them, as they announce the results as

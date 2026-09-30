@@ -29,6 +29,15 @@ and dark values live once, in `src/styles/theme.css.ts`, which sets the CSS vari
 - `border-strong` outlines checkboxes and switches; `disabled-foreground` is disabled text and icons.
 - `kind-buyer`, `kind-supplier` and `kind-forwarder`, with their `-soft` tiles, mark a workspace's kind in the
   workspace menu, never an action.
+- `scrim` is behind dialogs, sheets and the command menu. `chart-1` to `chart-3`, `chart-1-soft` and `chart-muted`
+  are chart series; `handoff-pickup`, `handoff-forwarder-soft` and `on-light-info` are the lead time bars.
+- Shadows are for overlays and the action bar only, each its own token: `shadow-menu` (menus, popovers, selects),
+  `shadow-dialog`, `shadow-command`, `shadow-sheet`, `shadow-action-bar` and `shadow-action-bar-docked`, and
+  `shadow-tooltip`.
+
+Every color in the app is one of these tokens, never a literal: no hex, `rgb()` or Tailwind palette color such as
+`bg-black`. The exceptions are content, not UI: store and sign-in provider logos, product option swatches, and the
+marketing site, sign-in, getting started and maintenance pages, which have their own look.
 
 The light values are the design's own, copacker.pen's `rd-*` variables, read from the file rather than approximated.
 The design has no dark values, so the dark theme mixes each tint from its tone and the background.

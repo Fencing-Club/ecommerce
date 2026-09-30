@@ -12,9 +12,7 @@ export function InfoTip({ label, children }: { label: string; children: React.Re
       >
         <Info className="size-3.5" aria-hidden />
       </TooltipTrigger>
-      <TooltipContent className="max-w-[260px] rounded-md px-2.5 py-2 leading-[1.45] shadow-[0_4px_12px_rgb(15_15_15/0.16)]">
-        {children}
-      </TooltipContent>
+      <TooltipContent className="max-w-[260px] rounded-md px-2.5 py-2 leading-[1.45]">{children}</TooltipContent>
     </Tooltip>
   )
 }

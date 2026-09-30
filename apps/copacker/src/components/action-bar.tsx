@@ -57,8 +57,8 @@ export function ActionBar({
       data-tone={tone}
       aria-label={t("label")}
       className={cn(
-        "sticky bottom-6 z-30 mt-6 flex items-center gap-3 rounded-xl border bg-background py-2.5 ps-3 pe-2.5 shadow-[0_10px_28px_rgb(15_15_15/0.12),0_1px_3px_rgb(15_15_15/0.08)]",
-        "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:mt-0 max-md:flex-col max-md:items-stretch max-md:gap-2.5 max-md:rounded-none max-md:border-x-0 max-md:border-b-0 max-md:px-4 max-md:pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))] max-md:shadow-[0_-4px_16px_rgb(15_15_15/0.08)]",
+        "sticky bottom-6 z-30 mt-6 flex items-center gap-3 rounded-xl border bg-background py-2.5 ps-3 pe-2.5 shadow-action-bar",
+        "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:mt-0 max-md:flex-col max-md:items-stretch max-md:gap-2.5 max-md:rounded-none max-md:border-x-0 max-md:border-b-0 max-md:px-4 max-md:pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))] max-md:shadow-action-bar-docked",
         className
       )}
     >

@@ -78,11 +78,7 @@ export function WorkspaceMenu({
         <span className="truncate">{current}</span>
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground max-md:hidden" aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        sideOffset={6}
-        className="w-[264px] gap-0.5 rounded-[10px] p-1 shadow-[0_8px_24px_rgb(0_0_0/0.12)] ring-border"
-      >
+      <DropdownMenuContent align="start" sideOffset={6} className="w-[264px] gap-0.5 rounded-[10px] p-1 ring-border">
         {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
