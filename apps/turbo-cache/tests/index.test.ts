@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { type ArtifactStore, type Env, handle } from "../src/index"
 
 const token = "test-token"
+const otherToken = "other-token"
+const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 
 // An R2 bucket in memory.
 function memoryStore(): ArtifactStore & {
@@ -39,7 +41,7 @@ const call = (path: string, init: RequestInit & { auth?: string | null } = {}) =
 }
 
 beforeEach(() => {
-  env = { ARTIFACTS: memoryStore(), TOKEN_SHA256: createHash("sha256").update(token).digest("hex") }
+  env = { ARTIFACTS: memoryStore(), TOKEN_TEAMS: JSON.stringify({ [hash(token)]: "one", [hash(otherToken)]: "two" }) }
 })
 
 describe("turbo remote cache", () => {
@@ -50,27 +52,35 @@ describe("turbo remote cache", () => {
   })
 
   it("stores an artifact and returns it with its tag and duration", async () => {
-    const put = await call("/v8/artifacts/abc123?slug=ecommerce", {
+    const put = await call("/v8/artifacts/abc123?slug=one", {
       method: "PUT",
       body: "artifact bytes",
       headers: { "x-artifact-tag": "signature", "x-artifact-duration": "420" }
     })
     expect(put.status).toBe(202)
 
-    const head = await call("/v8/artifacts/abc123?slug=ecommerce", { method: "HEAD" })
+    const head = await call("/v8/artifacts/abc123?slug=one", { method: "HEAD" })
     expect(head.status).toBe(200)
     expect(head.headers.get("x-artifact-tag")).toBe("signature")
 
-    const get = await call("/v8/artifacts/abc123?slug=ecommerce")
+    const get = await call("/v8/artifacts/abc123?slug=one")
     expect(await get.text()).toBe("artifact bytes")
     expect(get.headers.get("x-artifact-duration")).toBe("420")
     expect(get.headers.get("content-type")).toBe("application/octet-stream")
   })
 
-  it("keeps each team's artifacts apart", async () => {
-    await call("/v8/artifacts/abc123?teamId=one", { method: "PUT", body: "one" })
-    expect((await call("/v8/artifacts/abc123?teamId=two")).status).toBe(404)
-    expect((await call("/v8/artifacts/abc123?teamId=two", { method: "HEAD" })).status).toBe(404)
+  it("lets a token use only its own team", async () => {
+    expect((await call("/v8/artifacts/abc123?slug=two", { method: "PUT", body: "x" })).status).toBe(403)
+    expect((await call("/v8/artifacts/abc123?teamId=two")).status).toBe(403)
+    expect(env.ARTIFACTS.objects.size).toBe(0)
+  })
+
+  it("keeps each monorepo's artifacts apart", async () => {
+    await call("/v8/artifacts/abc123?slug=one", { method: "PUT", body: "one" })
+    await call("/v8/artifacts/abc123?slug=two", { method: "PUT", body: "two", auth: otherToken })
+    expect(await (await call("/v8/artifacts/abc123?slug=one")).text()).toBe("one")
+    expect(await (await call("/v8/artifacts/abc123?slug=two", { auth: otherToken })).text()).toBe("two")
+    expect([...env.ARTIFACTS.objects.keys()].sort()).toEqual(["one/abc123", "two/abc123"])
   })
 
   it("says which hashes are cached", async () => {

@@ -6,7 +6,7 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 
 - `apps/copacker`: Next.js supplier/buyer portal, WorkOS authentication, Drizzle/Postgres, private Railway documents.
 - `apps/video`: the Copacker ad, made with Remotion ([video](apps/video/docs/README.md)).
-- `apps/turbo-cache`: the Turborepo remote cache on Cloudflare R2 ([turbo cache](apps/turbo-cache/docs/README.md)).
+- `apps/turbo-cache`: the Turborepo remote cache the monorepos share ([turbo cache](apps/turbo-cache/docs/README.md)).
 - `packages/aisle`: reusable shipment, catalog, packing validation, and label/document logic adapted from Aisle.
 - `packages/copacker-emails`: Copacker's transactional emails, built with React Email; `pnpm dev` there previews them.
 - `packages/fc-templates`: Fencing Club email and print templates.
