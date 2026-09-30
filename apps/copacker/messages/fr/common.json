@@ -22,7 +22,7 @@
     "waitingLabels": "Étiquettes d’expédition requises",
     "ready": "Prêt pour l’enlèvement",
     "shipped": "Expédié",
-    "forwarded": "Expédié par le transitaire",
+    "forwarded": "Réexpédié",
     "received": "Reçu",
     "correction": "Correction demandée",
     "needsAttention": "À traiter",
@@ -49,7 +49,10 @@
     "onCopacker": "Sur Copacker",
     "invited": "Invité",
     "invitationExpired": "Invitation expirée",
-    "notInvited": "Non invité"
+    "notInvited": "Non invité",
+    "accepted": "Accepté",
+    "declined": "Refusé",
+    "atForwarder": "Chez le transitaire"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,30 @@
       "text": "Vos données sont en sécurité, et cette page se recharge dès notre retour.",
       "contact": "Nous contacter"
     }
+  },
+  "banner": {
+    "dismiss": "Ignorer"
+  },
+  "actionBar": {
+    "label": "Actions",
+    "discard": "Abandonner",
+    "problems": "{count, plural, one {# problème} other {# problèmes}}",
+    "clearSelection": "Effacer la sélection"
+  },
+  "lifecycle": {
+    "stage": "{label}, {state}",
+    "states": {
+      "done": "Terminé",
+      "current": "En cours",
+      "attention": "En attente de votre action",
+      "upcoming": "Pas commencé"
+    },
+    "stepOf": "Étape {step} sur {total}",
+    "allStages": "Toutes les étapes"
+  },
+  "nextStep": {
+    "yours": "Votre prochaine étape",
+    "waitingOn": "En attente de {name}",
+    "working": "En cours de traitement"
   }
 }

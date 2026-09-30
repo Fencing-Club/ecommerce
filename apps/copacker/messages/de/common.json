@@ -22,7 +22,7 @@
     "waitingLabels": "Versandetiketten fehlen",
     "ready": "Abholbereit",
     "shipped": "Versendet",
-    "forwarded": "Vom Spediteur versendet",
+    "forwarded": "Weiterversendet",
     "received": "Eingegangen",
     "correction": "Korrektur angefordert",
     "needsAttention": "Handlungsbedarf",
@@ -49,7 +49,10 @@
     "onCopacker": "Auf Copacker",
     "invited": "Eingeladen",
     "invitationExpired": "Einladung abgelaufen",
-    "notInvited": "Nicht eingeladen"
+    "notInvited": "Nicht eingeladen",
+    "accepted": "Angenommen",
+    "declined": "Abgelehnt",
+    "atForwarder": "Beim Spediteur"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,30 @@
       "text": "Ihre Daten sind sicher, und diese Seite lädt neu, sobald wir zurück sind.",
       "contact": "Kontakt aufnehmen"
     }
+  },
+  "banner": {
+    "dismiss": "Ausblenden"
+  },
+  "actionBar": {
+    "label": "Aktionen",
+    "discard": "Verwerfen",
+    "problems": "{count, plural, one {# Problem} other {# Probleme}}",
+    "clearSelection": "Auswahl aufheben"
+  },
+  "lifecycle": {
+    "stage": "{label}, {state}",
+    "states": {
+      "done": "Erledigt",
+      "current": "Aktuell",
+      "attention": "Wartet auf Sie",
+      "upcoming": "Nicht begonnen"
+    },
+    "stepOf": "Schritt {step} von {total}",
+    "allStages": "Alle Phasen"
+  },
+  "nextStep": {
+    "yours": "Ihr nächster Schritt",
+    "waitingOn": "Wartet auf {name}",
+    "working": "Wird bearbeitet"
   }
 }

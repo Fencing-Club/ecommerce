@@ -5,9 +5,9 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
 
-// Every status reads in one of five tones: neutral when not started, closed or cancelled; info while in progress or
-// waiting on someone else; success when done or healthy; warning when someone needs to act; destructive when it failed
-// or stock ran out.
+// Every status reads in one of five tones, the same label always in the same tone: warning when the viewer has to act,
+// info while someone else is working on it, success when it's ready or done well, neutral when idle or filed, and
+// destructive when it failed or is lost.
 export type StatusTone = "neutral" | "info" | "success" | "warning" | "destructive"
 
 type StatusKey = keyof typeof messages.status
@@ -21,6 +21,8 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   active: { label: "active", tone: "success" },
   archived: { label: "archived", tone: "neutral" },
   submitted: { label: "submitted", tone: "info" },
+  accepted: { label: "accepted", tone: "info" },
+  declined: { label: "declined", tone: "warning" },
   closed: { label: "closed", tone: "neutral" },
   // Shipments
   packing: { label: "packing", tone: "info" },
@@ -30,17 +32,18 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   waiting_labels: { label: "waitingLabels", tone: "warning" },
   ready: { label: "ready", tone: "success" },
   shipped: { label: "shipped", tone: "info" },
+  at_forwarder: { label: "atForwarder", tone: "info" },
   forwarded: { label: "forwarded", tone: "info" },
-  received: { label: "received", tone: "success" },
+  received: { label: "received", tone: "neutral" },
   correction: { label: "correction", tone: "warning" },
   needs_attention: { label: "needsAttention", tone: "destructive" },
-  cancelled: { label: "cancelled", tone: "neutral" },
+  cancelled: { label: "cancelled", tone: "destructive" },
   // Amazon inbound shipments, in Seller Central's words (shipped, closed and cancelled read as above)
   working: { label: "working", tone: "info" },
   created: { label: "created", tone: "info" },
   ready_to_ship: { label: "readyToShip", tone: "info" },
   in_transit: { label: "inTransit", tone: "info" },
-  delivered: { label: "delivered", tone: "info" },
+  delivered: { label: "delivered", tone: "success" },
   checked_in: { label: "checkedIn", tone: "info" },
   receiving: { label: "receiving", tone: "info" },
   error: { label: "error", tone: "destructive" },
@@ -51,7 +54,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   partially_shipped: { label: "partiallyShipped", tone: "info" },
   partially_fulfilled: { label: "partiallyFulfilled", tone: "info" },
   fulfilled: { label: "fulfilled", tone: "success" },
-  canceled: { label: "cancelled", tone: "neutral" },
+  canceled: { label: "cancelled", tone: "destructive" },
   unfulfillable: { label: "unfulfillable", tone: "destructive" },
   // Stock
   in_stock: { label: "inStock", tone: "success" },
@@ -68,7 +71,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
 // The tone's color, which tints the badge, colors its dot and, mixed with the text color, its label.
 const toneColors: Record<StatusTone, string> = {
   neutral: "[--tone:var(--muted-foreground)]",
-  info: "[--tone:var(--chart-1)]",
+  info: "[--tone:var(--info)]",
   success: "[--tone:var(--success)]",
   warning: "[--tone:var(--warning)]",
   destructive: "[--tone:var(--destructive)]"

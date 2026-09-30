@@ -33,7 +33,7 @@ export const Statuses = meta.story({
     const tone = (text: string) => canvas.getByText(text).getAttribute("data-tone")
     await expect(tone("Draft")).toBe("neutral")
     await expect(tone("Approval needed")).toBe("warning")
-    await expect(tone("Received")).toBe("success")
+    await expect(tone("Received")).toBe("neutral")
     await expect(tone("Needs attention")).toBe("destructive")
     await expect(tone("Partially fulfilled")).toBe("info")
     await expect(tone("Out of stock")).toBe("destructive")

@@ -38,6 +38,8 @@ export const vars = createGlobalThemeContract(
       // Status marks and positive-change text. Always paired with an icon or label.
       success: "success",
       warning: "warning",
+      // Text and icons on a warning surface, where the warning color itself is too light to read.
+      warningForeground: "warning-foreground",
       // In progress: someone else is working on it. Statuses, current lifecycle stages and proposals to review.
       info: "info",
       // Surfaces tinted by a tone: the "Your next step" card, banners, danger zones and changed, failing or added rows.
@@ -120,6 +122,7 @@ const light = {
   chart3: "#b14f9a",
   success: "#006300",
   warning: "#fab219",
+  warningForeground: "#7a4b00",
   info: "#1f63b8",
   borderStrong: "oklch(0.87 0 0)",
   disabledForeground: "oklch(0.76 0 0)",
@@ -179,6 +182,7 @@ createGlobalTheme(".dark", vars.color, {
   chart3: "#cf6fb9",
   success: "#0ca30c",
   warning: "#fab219",
+  warningForeground: "#fcd57a",
   info: "#3987e5",
   borderStrong: "oklch(1 0 0 / 22%)",
   disabledForeground: "oklch(0.45 0 0)",

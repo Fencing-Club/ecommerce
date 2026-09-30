@@ -15,12 +15,32 @@ Copacker uses [shadcn/ui](https://ui.shadcn.com) components styled with [Tailwin
 
 ## Theme
 
-Colors keep shadcn's names (`primary`, `muted-foreground`, `chart-1`, plus `success` and `warning`). Their light and
-dark values live once, in `src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`.
+Colors keep shadcn's names (`primary`, `muted-foreground`, `chart-1`, plus `success`, `warning` and `info`). Their light
+and dark values live once, in `src/styles/theme.css.ts`, which sets the CSS variables on `:root` and `.dark`.
 `src/app/globals.css` maps those variables into Tailwind's theme (`bg-primary`, `text-muted-foreground`,
 `text-success`), so both systems read the same tokens. Change a color in `theme.css.ts` only.
 
+- `info` is in-progress blue, for statuses and current stages; `chart-*` are chart series only.
+- `warning-foreground` is text and icons on a warning surface, where `warning` itself is too light to read.
+- Tinted surfaces mix a tone into the background, so they follow the theme: `primary-tint` and `primary-border` (the
+  "Your next step" card), `info-`, `warning-` and `destructive-tint` and `-border` (banners, danger zones, failing
+  rows), `success-tint` (added rows).
+- `border-strong` outlines checkboxes and switches; `disabled-foreground` is disabled text and icons.
+- `kind-buyer`, `kind-supplier` and `kind-forwarder` mark a workspace's kind in the workspace menu, never an action.
+
 Dark mode is the `.dark` class on `<html>`, set by the theme menu; use Tailwind's `dark:` variant.
+
+## Page patterns
+
+One component per concept, from the redesign's kit ([consistency](specs/app-redesign/consistency.md)):
+
+| Component                                        | Use                                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `Banner` (`components/banner.tsx`)               | The page's one notice, dismissible until its state changes; blocking errors can't be dismissed |
+| `ActionBar` (`components/action-bar.tsx`)        | Unsaved changes, a task flow's summary and submit, a proposal to review, bulk actions. Floats over the column, docks on a phone |
+| `LifecycleTracker` (`components/lifecycle-tracker.tsx`) | A record's stages: done, current, waiting on the viewer, not started. A compact card on a phone |
+| `NextStepCard` (`components/next-step.tsx`)      | A record's one next step for the viewer, or who it waits on. On a phone its actions go in the `ActionBar` |
+| `TabLinks` (`components/tab-links.tsx`)          | A list's views and a record's tabs, as links with counts                                     |
 
 ## Precedence
 
@@ -52,5 +72,7 @@ table and body, `@max-md:flex` on rows) instead of scrolling sideways. See Resto
 ## Statuses
 
 Every status renders through `Status` (a known status string) or `StatusBadge` (a tone and a label) from
-`@/components/common`: a lightly tinted pill with a dot or icon, in one of five tones: neutral (idle), info (in
-progress), success (done), warning (needs action) and destructive (failed or lost). Don't style badges by hand.
+`@/components/common`: a lightly tinted pill with a dot or icon, in one of five tones. One label always takes one tone:
+warning when the viewer has to act, info while someone else is working, success when it's ready or done well, neutral
+when idle or filed, destructive when it failed or is lost. The full list is in
+[consistency](specs/app-redesign/consistency.md#statuses). Don't style badges by hand.

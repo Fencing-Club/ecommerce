@@ -1,9 +1,13 @@
+"use client"
+
 import { useLocale } from "next-intl"
 import Link from "next/link"
+import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 
-// Tabs that filter a list through the URL, such as a status, as links styled like shadcn's Tabs (the segmented control
-// the supplier lists use), each with an optional count.
+// Tabs that change the URL: a list's saved views, or a record's sections. Each is a link, the current one marked with
+// aria-current, and a count shows only when it's more than zero. A row too wide for the screen scrolls sideways and keeps
+// the current tab in view.
 export function TabLinks({
   label,
   tabs,
@@ -14,11 +18,18 @@ export function TabLinks({
   className?: string
 }) {
   const locale = useLocale()
+  const nav = useRef<HTMLElement>(null)
+  const currentHref = tabs.find((tab) => tab.current)?.href
+  useEffect(() => {
+    nav.current?.querySelector("[aria-current=page]")?.scrollIntoView({ block: "nearest", inline: "nearest" })
+  }, [currentHref])
   return (
     <nav
+      ref={nav}
       aria-label={label}
+      data-slot="tab-links"
       className={cn(
-        "inline-flex h-8 w-fit max-w-full items-center overflow-x-auto rounded-lg bg-muted p-[3px] [scrollbar-width:none]",
+        "flex h-10 max-w-full items-stretch gap-5 overflow-x-auto border-b [scrollbar-width:none]",
         className
       )}
     >
@@ -28,15 +39,16 @@ export function TabLinks({
           href={tab.href}
           aria-current={tab.current ? "page" : undefined}
           className={cn(
-            "inline-flex h-full shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all outline-none hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:text-muted-foreground dark:hover:text-foreground",
-            tab.current &&
-              "bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30 dark:text-foreground"
+            "-mb-px inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50",
+            tab.current && "border-foreground text-foreground"
           )}
         >
           {tab.label}
-          {tab.count !== undefined && (
-            <span className="text-xs text-muted-foreground tabular-nums">{tab.count.toLocaleString(locale)}</span>
-          )}
+          {tab.count ? (
+            <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground tabular-nums">
+              {tab.count.toLocaleString(locale)}
+            </span>
+          ) : null}
         </Link>
       ))}
     </nav>

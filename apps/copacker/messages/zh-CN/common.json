@@ -22,7 +22,7 @@
     "waitingLabels": "需要运输标签",
     "ready": "待提货",
     "shipped": "已发货",
-    "forwarded": "货代已发货",
+    "forwarded": "已转运",
     "received": "已收货",
     "correction": "已申请更正",
     "needsAttention": "需要处理",
@@ -49,7 +49,10 @@
     "onCopacker": "已加入 Copacker",
     "invited": "已邀请",
     "invitationExpired": "邀请已过期",
-    "notInvited": "未邀请"
+    "notInvited": "未邀请",
+    "accepted": "已接受",
+    "declined": "已拒绝",
+    "atForwarder": "在货代处"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,30 @@
       "text": "你的数据安全无虞，我们回来后此页面会自动刷新。",
       "contact": "联系我们"
     }
+  },
+  "banner": {
+    "dismiss": "关闭"
+  },
+  "actionBar": {
+    "label": "操作",
+    "discard": "放弃",
+    "problems": "{count, plural, other {# 个问题}}",
+    "clearSelection": "清除选择"
+  },
+  "lifecycle": {
+    "stage": "{label}，{state}",
+    "states": {
+      "done": "已完成",
+      "current": "当前",
+      "attention": "等待你处理",
+      "upcoming": "未开始"
+    },
+    "stepOf": "第 {step} 步，共 {total} 步",
+    "allStages": "全部阶段"
+  },
+  "nextStep": {
+    "yours": "你的下一步",
+    "waitingOn": "等待 {name}",
+    "working": "正在处理"
   }
 }

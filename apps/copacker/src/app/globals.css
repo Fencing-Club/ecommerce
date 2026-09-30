@@ -21,6 +21,7 @@
 @theme inline {
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-primary-tint: var(--primary-tint);
   --color-primary-border: var(--primary-border);

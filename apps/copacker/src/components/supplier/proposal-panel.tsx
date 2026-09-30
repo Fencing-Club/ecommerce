@@ -27,10 +27,11 @@ import type { proposalChanges } from "@/server/order-proposals"
 
 type Changes = ReturnType<typeof proposalChanges>
 
-// How an order line changes, in the shared status tones. The supplier's edit page marks its lines the same way.
+// How an order line changes, in the shared status tones: a change waits on someone's review, an addition is new, a
+// removal is lost. The supplier's edit page marks its lines the same way.
 const lineChanges = {
   added: "success",
-  changed: "info",
+  changed: "warning",
   removed: "destructive"
 } as const satisfies Record<string, StatusTone>
 
@@ -78,10 +79,11 @@ function Delta({
   return <FromTo before={format(before)} after={format(after)} />
 }
 
-// Pending changes wait on the buyer, who has to act, while the supplier waits; declined ones read as failed.
+// Pending changes wait on the buyer, who has to act, while the supplier waits. Declined changes need the supplier to
+// choose what to do next, so they read as needing action too.
 function proposalStatus(status: "pending" | "declined", viewer: "buyer" | "supplier") {
   if (status === "declined") {
-    return { tone: "destructive", label: "declined" } as const
+    return { tone: "warning", label: "declined" } as const
   }
   return viewer === "buyer"
     ? ({ tone: "warning", label: "approvalNeeded" } as const)

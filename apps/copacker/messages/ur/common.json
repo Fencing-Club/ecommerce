@@ -22,7 +22,7 @@
     "waitingLabels": "شپنگ لیبلز درکار",
     "ready": "پک اپ کے لیے تیار",
     "shipped": "بھیج دیا گیا",
-    "forwarded": "فریٹ فارورڈر نے بھیج دیا",
+    "forwarded": "آگے بھیج دیا گیا",
     "received": "موصول",
     "correction": "درستگی کی درخواست",
     "needsAttention": "توجہ درکار",
@@ -49,7 +49,10 @@
     "onCopacker": "Copacker پر",
     "invited": "مدعو",
     "invitationExpired": "دعوت نامے کی میعاد ختم",
-    "notInvited": "مدعو نہیں"
+    "notInvited": "مدعو نہیں",
+    "accepted": "قبول شدہ",
+    "declined": "مسترد",
+    "atForwarder": "فریٹ فارورڈر کے پاس"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,30 @@
       "text": "آپ کا ڈیٹا محفوظ ہے، اور ہماری واپسی پر یہ صفحہ دوبارہ لوڈ ہو جائے گا۔",
       "contact": "ہم سے رابطہ کریں"
     }
+  },
+  "banner": {
+    "dismiss": "بند کریں"
+  },
+  "actionBar": {
+    "label": "کارروائیاں",
+    "discard": "ترک کریں",
+    "problems": "{count, plural, one {# مسئلہ} other {# مسائل}}",
+    "clearSelection": "انتخاب ختم کریں"
+  },
+  "lifecycle": {
+    "stage": "{label}، {state}",
+    "states": {
+      "done": "مکمل",
+      "current": "موجودہ",
+      "attention": "آپ کا انتظار ہے",
+      "upcoming": "شروع نہیں ہوا"
+    },
+    "stepOf": "{total} میں سے مرحلہ {step}",
+    "allStages": "تمام مراحل"
+  },
+  "nextStep": {
+    "yours": "آپ کا اگلا قدم",
+    "waitingOn": "{name} کا انتظار",
+    "working": "کام جاری ہے"
   }
 }

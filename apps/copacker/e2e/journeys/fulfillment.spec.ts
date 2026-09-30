@@ -198,13 +198,13 @@ test("a purchase order goes from the buyer through the supplier and forwarder an
     await dialog.getByLabel("Tracking or booking number").fill("MAEU1234567")
     await dialog.getByRole("button", { name: "Mark shipped" }).click()
     await expect(dialog).toBeHidden()
-    await expect(main.getByText("Shipped by forwarder")).toBeVisible()
+    await expect(main.getByText("Shipped onward")).toBeVisible()
     await expect(main).toContainText("Maersk MAEU1234567")
   })
 
   await test.step("the buyer receives it", async () => {
     await page.goto(shipmentUrl)
-    await expect(titleStatus(page)).toHaveText("Shipped by forwarder")
+    await expect(titleStatus(page)).toHaveText("Shipped onward")
     await page.getByRole("button", { name: "Mark received" }).click()
     await expect(titleStatus(page)).toHaveText("Received")
 
