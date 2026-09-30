@@ -38,7 +38,7 @@ marker: it's drawn now and built once it's decided.
 | Shared records       | A PO and its shipments have one URL for everyone: `/orders/[id]` and `/orders/[id]/shipments/[shipmentId]`, rendered from the viewer's side. Workspace-owned objects (products, customers, partners) are scoped to the workspace. |
 | Shipments            | A shipment is a child of its PO in the URL and breadcrumb; the Shipments list stays as a cross-PO view. Packing becomes its own task flow. |
 | Next step            | Every PO and shipment shows a lifecycle tracker and one **Next step** card from `server/workflow.ts`, instead of per-state alerts.       |
-| Lists                | Views with counts replace stat cards; filters and sort live in the URL.                                                                   |
+| Lists                | Views with counts replace stat cards; filters and sort live in the URL, through `nuqs`.                                                   |
 | Save model           | One component, the **action bar**, for unsaved changes, task flows, proposals and bulk selection: floating on desktop, docked on a phone. Lifecycle trackers, next step cards and segmented controls are single components too. |
 | Packing requirements | Each destination's rules (FBA, AWD US, your warehouse, and GWD once its rules are checked) show on the supplier's order before packing and check live in the Cartons step. They're added to a buyer's PO automatically, and the buyer confirms them before sending an order with several destinations or any AWD line. AWD US from China keeps AWD's rules and ships through Amazon Global Logistics. |
 | Shipping and customs | Every PO says who arranges shipping (the supplier, you, the forwarder or Amazon) and who handles customs. Label, tracking, booking and bill of lading steps follow from them. |
@@ -46,7 +46,7 @@ marker: it's drawn now and built once it's decided.
 | Receiving            | Shipments to your own locations are received on a task page, with received and rejected units per line. Amazon shipments show Amazon's counts. Closing a PO shows a per-line summary. |
 | Combined shipments   | A forwarder combines shipments for the same buyer and destination into a combined shipment with its own page. Freight splits across the POs by chargeable weight. |
 | Stock flow           | The inventory sync spec's Stock flow page lives in Workspace settings for buyers and suppliers: a map on desktop, a list on a phone. |
-| Content density      | Only what the task needs now: no page subtitles, definitions in info tips, long rule lists behind Show all, consequences in confirm dialogs, one dismissible banner at most. |
+| Content density      | Only what the task needs now: a page description only where it adds something the page doesn't show, definitions in info tips, long rule lists behind Show all, consequences in confirm dialogs, one dismissible banner at most. |
 | Phones               | Every horizontal visualization has a phone form (stage lists, compact lifecycle, stacked route bars, vertical timelines), and every page that uses one has a phone design. |
 | Settings             | Split into Account and Workspace settings, a route per section, with its own navigation.                                                  |
 | Forwarder            | Organized around shipment legs: Home, Shipments, Purchase orders, Clients. No new permission area.                                        |

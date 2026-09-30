@@ -122,7 +122,8 @@ Before handing screens over, and after anyone adds one:
 5. **Scenario facts** (products, totals, dates, places, people) match the table above.
 6. **Every page with a horizontal visualization has a phone screen** ([Responsive](design-spec.md#horizontal-visualizations-on-a-phone)).
 7. **Copy**: sentence case, no dot glyph separators, limits written the same way.
-8. **Quiet**: no page subtitles, no card subtitle restating its title, no paragraph under a next step, no notice
+8. **Quiet**: a page description only where it adds something the page doesn't show, no card subtitle restating its
+   title, no paragraph under a next step, no notice
    without a dismiss button except a blocking error, definitions in info tips
    ([Content and disclosure](design-spec.md#content-and-disclosure)).
 9. **Optional marked**: every item the specs list as Proposed carries the Optional marker, and nothing else does

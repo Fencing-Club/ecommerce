@@ -127,7 +127,7 @@ Showing 1–25 of 132 purchase orders                                           
 ```
 
 - **Views, not stat cards (F6).** Tabs are saved views with counts in the tab. The stat cards on Purchase orders and
-  Shipments go. The URL holds the view, search, filters and sort, so any list state is a link.
+  Shipments go. The URL holds the view, search, filters and sort through `nuqs`, so any list state is a link.
 - **Filter bar:** search on the left, filter chips for the list's facets (status, partner, destination, date), sort,
   column visibility and export where there is one. Sort is one control: an up-down arrow and the current order
   ("Required by", "Newest first"), no chevron. Subsets of a list are views; a segmented control only switches how the
@@ -429,8 +429,12 @@ is a cognitive accessibility problem as much as a visual one. Every screen follo
 
 **Show only what the task needs now.**
 
-- No page subtitles. The title, the breadcrumb and the meta row say what the page is. A state that matters ("Draft
-  saved 2 minutes ago") goes in the meta row.
+- A page description only when it adds what the page doesn't already show, following Fluent's guidance to give
+  details that aren't readily apparent in a sentence or two, without restating the title. It fits settings pages whose
+  effect reaches elsewhere ("Prints on commercial invoices, ISF data, and Global Logistics booking sheets.") and task
+  flows with a consequence worth knowing up front. Lists, records and Home rarely need one: the title, the breadcrumb,
+  the views and the meta row already say what the page is. One line, about 100 characters at most. A state that matters
+  ("Draft saved 2 minutes ago") goes in the meta row.
 - No card subtitles that restate the title. A short scope stays ("Aug 30 to Sep 28", "8 tasks, 2 urgent").
 - The meta row under a record's title says who and where (counterparty, route). Dates, terms and totals live in the
   rail, once.
