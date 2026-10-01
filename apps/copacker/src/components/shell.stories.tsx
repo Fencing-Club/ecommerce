@@ -68,7 +68,10 @@ const sidebar = () => document.querySelector("[data-slot=sidebar][data-state]")
 export const Buyer = meta.story({
   play: async ({ canvas }) => {
     const header = canvas.getByRole("banner")
-    await expect(within(header).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    // Copacker in the top bar, the workspace at the top of the sidebar.
+    await expect(within(header).getByRole("link", { name: "Copacker" })).toBeVisible()
+    const switcher = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
+    await expect(switcher.closest("[data-slot=sidebar]")).not.toBeNull()
     await expect(within(header).getByRole("button", { name: "Search" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Create" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Inbox" })).toBeVisible()

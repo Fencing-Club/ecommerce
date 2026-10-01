@@ -89,7 +89,8 @@ marker: it's drawn now and built once it's decided.
 Each phase ships on its own, behind no flag, with its Storybook stories and play tests, e2e updates and browser
 acceptance at desktop and phone sizes.
 
-1. **Shell and names:** top bar with the switcher, Create and account menus; sidebar groups and counts; Sales renamed;
+1. **Shell and names:** top bar with Copacker, Create and account menus; the sidebar's workspace switcher, groups and
+   counts; Sales renamed;
    page header component; status tones.
 2. **Settings split:** the settings layout, a route per section, the member page, the action bar.
 3. **Records:** lifecycle tracker, Next step card and tabs on PO and shipment pages; nested shipment routes; the Pack

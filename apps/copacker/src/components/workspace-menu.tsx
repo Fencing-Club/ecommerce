@@ -3,7 +3,6 @@
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { CopackerMark } from "@/components/auth/stage"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +41,9 @@ export function initials(name: string) {
 const tile = "flex size-7 shrink-0 items-center justify-center rounded-[7px]"
 const item = "gap-2.5 rounded-[6px] px-2 py-1.5"
 
-// The top bar's workspace switcher: Copacker's mark and the open workspace's name. The bar doesn't name the kind, since
-// most people have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs.
+// The workspace switcher at the top of the sidebar: the open workspace's kind tile and its name. Collapsed to the rail,
+// only its tile. Copacker's own mark and name are in the top bar. The trigger doesn't name the kind, since most people
+// have one workspace; the menu names each workspace's kind. Switching reloads, as WorkspaceWatch needs.
 export function WorkspaceMenu({
   active,
   fallbackName,
@@ -56,7 +56,8 @@ export function WorkspaceMenu({
 }) {
   const t = useTranslations("navigation.workspaceMenu")
   const [run] = useActionMutation()
-  const current = workspaces.find((workspace) => workspace.id === active)?.name ?? fallbackName
+  const open = workspaces.find((workspace) => workspace.id === active)
+  const current = open?.name ?? fallbackName
 
   async function switchTo(id: string) {
     if (id === active) {
@@ -71,12 +72,24 @@ export function WorkspaceMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-[15px] font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted md:gap-2.5 md:px-2 md:text-sm"
+        className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-sm font-semibold outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
         aria-label={t("label", { name: current })}
       >
-        <CopackerMark className="size-6 rounded-[6px] md:size-7 md:rounded-[7px] [&>svg]:size-3.5 md:[&>svg]:size-4" />
-        <span className="truncate">{current}</span>
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground max-md:hidden" aria-hidden />
+        <span
+          aria-hidden
+          className={cn(
+            tile,
+            "text-xs font-semibold",
+            open && isKind(open.kind) ? kinds[open.kind] : "bg-muted text-muted-foreground"
+          )}
+        >
+          {initials(current)}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-start group-data-[collapsible=icon]:hidden">{current}</span>
+        <ChevronsUpDown
+          className="size-3.5 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden"
+          aria-hidden
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={6} className="w-[264px] gap-0.5 rounded-[10px] p-1 ring-border">
         {workspaces.map((workspace) => (

@@ -3,13 +3,11 @@
 Every Copacker portal page has a top bar across the window (`components/top-bar.tsx`), with the sidebar and the page
 under it (`components/shell.tsx`).
 
-- **Left:** the workspace menu (`components/workspace-menu.tsx`): Copacker's mark and the workspace's name. The menu
-  lists every workspace with its kind, the open one marked, then **New workspace** and **Workspace settings**. The bar
-  doesn't name the kind, which leaves room for long names. Switching reloads, as `WorkspaceWatch` needs. On a computer
-  the sidebar collapses from its rail or Ctrl+B, so the bar has no button for it.
+- **Left:** Copacker's mark and name, linking home. The workspace isn't in the bar; its switcher tops the sidebar. On a
+  computer the sidebar collapses from its rail or Ctrl+B, so the bar has no button for it.
 - **Middle:** the search (`components/search-command.tsx`), a cmdk command menu: a 480px field, centered in the
   window, that says what it finds in the workspace ("Search purchase orders, products, and partners") with its
-  shortcut.
+  shortcut. In a window too narrow to center it, it narrows rather than covering Copacker or the actions.
 - **Right:** **Create** (`components/create-menu.tsx`), the kind's create actions that the person can edit: a
   buyer's Purchase order, Import purchase order, Supplier and Forwarder; a supplier's Product, Catalog and Import
   products. A forwarder, or someone who can edit none of them, doesn't see it. Items link to their pages, and
@@ -17,12 +15,17 @@ under it (`components/shell.tsx`).
   the **Inbox** (`components/notifications-menu.tsx`), which opens an empty dropdown until its tasks and updates come,
   and the account menu (`components/account-menu.tsx`): the person's initials, then name and email, **Account
   settings**, Theme and **Sign out**.
-- **On a phone:** a menu button that opens the sidebar as a sheet, the workspace, then search and the Inbox as 44px
-  buttons. Create and the account move to the sheet's footer.
+- **On a phone:** a menu button that opens the sidebar as a sheet, Copacker, then search and the Inbox as 44px
+  buttons. The account moves to the sheet's footer. Create isn't on a phone; each list page's primary action covers
+  it.
 
-The sidebar (`components/app-sidebar.tsx`) lists the kind's pages in groups (`lib/navigation.ts`), with Settings
-pinned at the bottom. A buyer's store orders are **Sales**. The open page, or the list a record belongs to, has a muted
-fill and a primary marker on its leading edge. It's 240px wide, and 56px as a rail of icons.
+The sidebar (`components/app-sidebar.tsx`) starts with the workspace switcher (`components/workspace-menu.tsx`): the
+workspace's kind tile with its initials, its name and chevrons, and on the rail just the tile. The menu lists every
+workspace with its kind, the open one marked, then **New workspace** and **Workspace settings**. The switcher doesn't
+name the kind, which leaves room for long names. Switching reloads, as `WorkspaceWatch` needs. Under it, the sidebar
+lists the kind's pages in groups (`lib/navigation.ts`), with Settings pinned at the bottom. A buyer's store orders are
+**Sales**. The open page, or the list a record belongs to, has a muted fill and a primary marker on its leading edge.
+It's 240px wide, as is its sheet on a phone, and 56px as a rail of icons.
 
 ## Search
 

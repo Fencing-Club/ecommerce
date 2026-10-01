@@ -10,6 +10,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -19,17 +20,28 @@ import {
 import { navigationFor, navigationGroups } from "@/lib/navigation"
 import { usePermissions } from "./access"
 import { AccountMenu } from "./account-menu"
-import { CreateMenu } from "./create-menu"
+import { type Workspace, WorkspaceMenu } from "./workspace-menu"
 
 // A page's entry: 34px, its icon muted. The open page, or the list a record belongs to, has a muted fill, a primary
 // marker on its leading edge, and its label and icon in full.
 const itemClass =
   "relative h-[34px] gap-2.5 rounded-md px-2.5 text-sidebar-foreground data-active:bg-muted data-active:font-semibold data-active:text-foreground [&>svg]:text-muted-foreground data-active:[&>svg]:text-foreground data-active:before:absolute data-active:before:start-0 data-active:before:top-1/2 data-active:before:h-[18px] data-active:before:w-[3px] data-active:before:-translate-y-1/2 data-active:before:rounded-[2px] data-active:before:bg-primary"
 
-// The workspace kind's pages in their groups, Settings pinned at the bottom. On a computer the sidebar starts under the
-// top bar and collapses to its icons; on a phone it's a sheet over everything, which also holds Create and the account,
-// since the phone's top bar has no room for them.
-export function AppSidebar({ kind, userName, email }: { kind: string; userName: string | null; email: string }) {
+export type AppSidebarProps = {
+  kind: string
+  // The open workspace, and its name as the session gave it until the workspace list has it.
+  active: string
+  name: string
+  workspaces: ReadonlyArray<Workspace>
+  // The signed-in person's name; their email shows until they give one.
+  userName: string | null
+  email: string
+}
+
+// The workspace switcher, then the workspace kind's pages in their groups, Settings pinned at the bottom. On a computer
+// the sidebar starts under the top bar and collapses to its icons; on a phone it's a sheet over everything, which also
+// holds Create and the account, since the phone's top bar has no room for them.
+export function AppSidebar({ kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const pathname = usePathname()
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { isMobile, setOpenMobile } = useSidebar()
@@ -39,6 +51,9 @@ export function AppSidebar({ kind, userName, email }: { kind: string; userName: 
 
   return (
     <Sidebar collapsible="icon" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
+      <SidebarHeader className="border-b p-3">
+        <WorkspaceMenu active={active} fallbackName={name} workspaces={workspaces} />
+      </SidebarHeader>
       <SidebarContent className="gap-0 p-3">
         {navigationGroups.map((group) => {
           const items = navigation.filter((item) => item.group === group.key)
@@ -74,8 +89,7 @@ export function AppSidebar({ kind, userName, email }: { kind: string; userName: 
         })}
       </SidebarContent>
       {isMobile && (
-        <SidebarFooter className="gap-2 border-t p-3">
-          <CreateMenu kind={kind} />
+        <SidebarFooter className="border-t p-3">
           <AccountMenu name={userName ?? email} email={email} layout="row" />
         </SidebarFooter>
       )}

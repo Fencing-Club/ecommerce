@@ -12,10 +12,18 @@ const meta = preview.meta({
 export const Default = meta.story({
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
-    // The bar names the workspace, not its kind.
-    await expect(trigger).toHaveTextContent(/^Harbor Goods$/)
-    // Copacker's mark is Lucide's box, as on the favicon and sign-in.
-    await expect(trigger.querySelector("svg.lucide-box")).not.toBeNull()
+    // The workspace's initials on its kind's tile, then its name; the trigger doesn't name the kind.
+    await expect(trigger).toHaveTextContent(/^HGHarbor Goods$/)
+    await expect(getComputedStyle(within(trigger).getByText("HG")).backgroundColor).toBe("rgb(255, 241, 234)")
+  }
+})
+
+// A supplier's workspace takes the supplier's teal tile.
+export const SupplierWorkspace = meta.story({
+  args: { active: workspaces.supplier.id, fallbackName: workspaces.supplier.name },
+  play: async ({ canvas }) => {
+    const trigger = canvas.getByRole("button", { name: "Lotus Manufacturing, switch workspace" })
+    await expect(getComputedStyle(within(trigger).getByText("LM")).color).toBe("rgb(15, 118, 110)")
   }
 })
 

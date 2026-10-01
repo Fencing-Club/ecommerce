@@ -3,19 +3,12 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { searchIndex } from "@/stories/fixtures/shared"
-import { person, workspaces } from "@/stories/workspace"
+import { person } from "@/stories/workspace"
 import { TopBar } from "./top-bar"
 
 const meta = preview.meta({
   component: TopBar,
-  args: {
-    name: workspaces.buyer.name,
-    userName: person.name,
-    email: person.email,
-    kind: "buyer",
-    active: workspaces.buyer.id,
-    workspaces: Object.values(workspaces)
-  },
+  args: { userName: person.name, email: person.email, kind: "buyer" },
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (
@@ -32,11 +25,20 @@ const meta = preview.meta({
 export const Buyer = meta.story({
   play: async ({ canvas }) => {
     const header = canvas.getByRole("banner")
-    // In order across the bar: the workspace, search, then Create, the Inbox and the account. The sidebar collapses from
-    // its rail or Ctrl+B, so the bar has no button for it on a computer.
-    const order = ["Harbor Goods, switch workspace", "Search", "Create", "Inbox", "Alex Rivera, account"].map(
-      (name) => within(header).getByRole("button", { name }).getBoundingClientRect().left
-    )
+    // In order across the bar: Copacker, search, then Create, the Inbox and the account. The sidebar collapses from its
+    // rail or Ctrl+B, so the bar has no button for it on a computer.
+    const brand = within(header).getByRole("link", { name: "Copacker" })
+    await expect(brand).toHaveAttribute("href", "/")
+    // Copacker's mark is Lucide's box, as on the favicon and sign-in.
+    await expect(brand.querySelector("svg.lucide-box")).not.toBeNull()
+    const order = [
+      brand.getBoundingClientRect().left,
+      ...["Search", "Create", "Inbox", "Alex Rivera, account"].map(
+        (name) => within(header).getByRole("button", { name }).getBoundingClientRect().left
+      )
+    ]
+    // The workspace switcher is in the sidebar, not the bar.
+    await expect(within(header).queryByRole("button", { name: /switch workspace/ })).toBeNull()
     await expect(order).toEqual(order.toSorted((a, b) => a - b))
     await expect(within(header).queryByRole("button", { name: "Toggle sidebar" })).toBeNull()
     // The bar is 56px, with 34px controls and a 36px search.
@@ -62,14 +64,23 @@ export const Centered = meta.story({
   }
 })
 
-export const Supplier = meta.story({
-  args: {
-    name: workspaces.supplier.name,
-    kind: "supplier",
-    active: workspaces.supplier.id
-  },
+// In a window too narrow to center it, the search narrows instead of covering Copacker or the actions.
+export const Narrow = meta.story({
+  globals: { viewport: { value: "ipad", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Lotus Manufacturing, switch workspace" })).toBeVisible()
+    const header = canvas.getByRole("banner")
+    const brand = within(header).getByRole("link", { name: "Copacker" }).getBoundingClientRect()
+    const search = within(header).getByRole("button", { name: "Search" }).getBoundingClientRect()
+    const create = within(header).getByRole("button", { name: "Create" }).getBoundingClientRect()
+    await expect(search.left).toBeGreaterThan(brand.right)
+    await expect(search.right).toBeLessThan(create.left)
+    await expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth)
+  }
+})
+
+export const Supplier = meta.story({
+  args: { kind: "supplier" },
+  play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Search" }))
     const panel = await screen.findByRole("dialog", { name: "Search" })
     await expect(within(panel).getByRole("option", { name: "Catalogs" })).toBeInTheDocument()
@@ -78,18 +89,14 @@ export const Supplier = meta.story({
 })
 
 export const Forwarder = meta.story({
-  args: {
-    name: workspaces.forwarder.name,
-    kind: "forwarder",
-    active: workspaces.forwarder.id
-  },
+  args: { kind: "forwarder" },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Create" })).toBeNull()
   }
 })
 
-// On a phone: the menu button, the workspace, then search and the Inbox as 44px buttons. Create and the account are in
-// the sidebar's sheet.
+// On a phone: the menu button, Copacker, then search and the Inbox as 44px buttons. The workspace switcher and the
+// account are in the sidebar's sheet; Create isn't on a phone.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
@@ -98,7 +105,7 @@ export const Phone = meta.story({
     for (const name of ["Toggle sidebar", "Search", "Inbox"]) {
       await expect(within(header).getByRole("button", { name }).getBoundingClientRect().width).toBe(44)
     }
-    await expect(within(header).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    await expect(within(header).getByRole("link", { name: "Copacker" })).toBeVisible()
     await expect(within(header).queryByRole("button", { name: "Create" })).toBeNull()
     await expect(within(header).queryByRole("button", { name: "Alex Rivera, account" })).toBeNull()
   }

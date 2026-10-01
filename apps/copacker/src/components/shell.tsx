@@ -1,12 +1,12 @@
 import { cookies } from "next/headers"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "./app-sidebar"
-import { TopBar, type TopBarProps } from "./top-bar"
+import { AppSidebar, type AppSidebarProps } from "./app-sidebar"
+import { TopBar } from "./top-bar"
 
 // The sidebar is 240px wide, and 56px as a rail of icons.
 const sidebarWidths = { "--sidebar-width": "15rem", "--sidebar-width-icon": "3.5rem" } as React.CSSProperties
 
-export async function Shell({ children, ...bar }: TopBarProps & { children: React.ReactNode }) {
+export async function Shell({ children, ...shell }: AppSidebarProps & { children: React.ReactNode }) {
   const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false"
 
   return (
@@ -16,9 +16,9 @@ export async function Shell({ children, ...bar }: TopBarProps & { children: Reac
       style={sidebarWidths}
       className="flex-col [--header-height:calc(--spacing(14))]"
     >
-      <TopBar {...bar} />
+      <TopBar userName={shell.userName} email={shell.email} kind={shell.kind} />
       <div className="flex flex-1">
-        <AppSidebar kind={bar.kind} userName={bar.userName} email={bar.email} />
+        <AppSidebar {...shell} />
         <SidebarInset>
           {/* The page, up to 1280px and aligned to its start, 24px between its blocks (16px on a phone). minWidth 0 lets
               a wide table scroll inside its container instead of stretching it. */}

@@ -1,12 +1,25 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { member, person } from "@/stories/workspace"
+import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { AppSidebar } from "./app-sidebar"
+
+// The sidebar in a workspace of each kind, as the portal's shell passes it.
+function inWorkspace(kind: WorkspaceKind) {
+  const workspace = workspaces[kind]
+  return {
+    kind: workspace.kind,
+    active: workspace.id,
+    name: workspace.name,
+    workspaces: Object.values(workspaces),
+    userName: person.name,
+    email: person.email
+  }
+}
 
 const meta = preview.meta({
   component: AppSidebar,
-  args: { kind: "buyer", userName: person.name, email: person.email },
+  args: inWorkspace("buyer"),
   parameters: {
     layout: "fullscreen",
     nextjs: { appDirectory: true, navigation: { pathname: "/orders/order-1045" } }
@@ -55,6 +68,30 @@ export const Buyer = meta.story({
   }
 })
 
+// The workspace switcher tops the sidebar.
+export const WorkspaceSwitcher = meta.story({
+  play: async ({ canvas }) => {
+    // The switcher tops the sidebar, above every page.
+    const switcher = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
+    const first = canvas.getAllByRole("link")[0]!
+    await expect(switcher.getBoundingClientRect().bottom).toBeLessThanOrEqual(first.getBoundingClientRect().top)
+    await expect(switcher).toHaveTextContent("HGHarbor Goods")
+    await userEvent.click(switcher)
+    const menu = await screen.findByRole("menu")
+    await waitFor(() => expect(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ })).toBeVisible())
+  }
+})
+
+// Collapsed to the rail, the switcher is just the workspace's tile.
+export const WorkspaceSwitcherCollapsed = meta.story({
+  parameters: { sidebarOpen: false },
+  play: async ({ canvas }) => {
+    const switcher = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
+    await expect(switcher.getBoundingClientRect().width).toBe(32)
+    await expect(within(switcher).getByText("Harbor Goods")).not.toBeVisible()
+  }
+})
+
 // A member sees only the pages they were given, and Settings.
 export const BuyerMember = meta.story({
   parameters: { permissions: member },
@@ -66,7 +103,7 @@ export const BuyerMember = meta.story({
 })
 
 export const Supplier = meta.story({
-  args: { kind: "supplier" },
+  args: inWorkspace("supplier"),
   parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/inventory" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual([
@@ -85,7 +122,7 @@ export const Supplier = meta.story({
 })
 
 export const SupplierMember = meta.story({
-  args: { kind: "supplier" },
+  args: inWorkspace("supplier"),
   parameters: { permissions: member, nextjs: { appDirectory: true, navigation: { pathname: "/orders" } } },
   play: async ({ canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Orders", "Shipments", "Products", "Inventory", "Settings"])
@@ -94,7 +131,7 @@ export const SupplierMember = meta.story({
 
 // A forwarder's freight: the purchase orders coming through it, and Settings.
 export const Forwarder = meta.story({
-  args: { kind: "forwarder" },
+  args: inWorkspace("forwarder"),
   parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/settings" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Purchase orders", "Settings"])
@@ -123,7 +160,8 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, which also holds Create and the account, and closes once a page is chosen.
+// On a phone the sidebar is a sheet, the sidebar's width, that also holds the account (Create stays on desktop; each
+// list page has its own primary action). It closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
@@ -131,7 +169,9 @@ export const Phone = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
     const sheet = await screen.findByRole("dialog")
     await waitFor(() => expect(within(sheet).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
-    await expect(within(sheet).getByRole("button", { name: "Create" })).toBeVisible()
+    await expect(sheet.getBoundingClientRect().width).toBe(240)
+    await expect(within(sheet).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    await expect(within(sheet).queryByRole("button", { name: "Create" })).toBeNull()
     await expect(within(sheet).getByText("alex@example.com")).toBeVisible()
     const shipments = within(sheet).getByRole("link", { name: "Shipments" })
     await expect(shipments).toHaveAttribute("href", "/shipments")

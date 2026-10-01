@@ -51,9 +51,11 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Workspace ▾]           [ Search  Ctrl K ]                  [+ Create] [Inbox 3] [AR ▾]  │  56 px
+│ [■] Copacker            [ Search  Ctrl K ]                  [+ Create] [Inbox 3] [AR ▾]  │  56 px
 ├──────────────┬───────────────────────────────────────────────────────────────────────────┤
-│ Home         │  Breadcrumb                                                               │
+│ [HG] Name  ⇕ │  Breadcrumb                                                               │
+│ ──────────── │                                                                           │
+│ Home         │                                                                           │
 │ Inbox     3  │  Title  Status                                    [Secondary] [Primary]   │
 │              │  ─────────────────────────────────────────────────────────────────────── │
 │ GROUP        │                                                                           │
@@ -68,13 +70,13 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 
 ### Top bar
 
-- **Workspace switcher (left).** Replaces the logo-only corner and the sidebar's switcher (F2). Shows the Copacker mark
-  and the workspace's name. The menu lists the workspaces, each with its kind, then **New workspace** and **Workspace
-  settings**. Switching reloads, as `WorkspaceWatch` requires today. The bar names no kind of its own: most people have
-  one workspace, and the menu already says which kind each is, which also leaves room for long workspace names.
-- **Search (center).** The existing command menu, unchanged in behavior. Result groups follow the renamed objects
-  (Sales orders, Products, Purchase orders, Shipments, Partners or Customers). Adds **Actions** ("Create purchase
-  order", "Invite a supplier") above results when the query matches one.
+- **Copacker (left).** The Copacker mark (Lucide `box`) and the name "Copacker", linking home. The workspace isn't
+  here: it's the sidebar's switcher.
+- **Search (center).** The existing command menu, unchanged in behavior. Centered in the window, up to 480 px; when
+  the window is too narrow to center it between Copacker and the actions, it narrows instead of covering either.
+  Result groups follow the renamed objects (Sales orders, Products, Purchase orders, Shipments, Partners or
+  Customers). Adds **Actions** ("Create purchase order", "Invite a supplier") above results when the query matches
+  one.
 - **Create (right).** An outline button with the kind's create actions. Buyer: Purchase order, Import purchase
   order, Supplier, Forwarder. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
   access; with none, the button is hidden.
@@ -87,7 +89,12 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 ### Sidebar
 
 - 240 px, `sidebar` background, collapses to a 56 px icon rail (Ctrl+B) that shows labels in tooltips, and becomes a
-  sheet under 768 px.
+  240 px sheet under 768 px.
+- **Workspace switcher (top),** in a header with a bottom border (F2): the workspace's 28 px kind tile with its
+  initials, its name (truncated) and chevrons, 44 px tall. On the rail, only the tile. The menu lists the workspaces,
+  each with its kind, then **New workspace** and **Workspace settings**. Switching reloads, as `WorkspaceWatch`
+  requires today. The switcher names no kind of its own: most people have one workspace, and the menu already says
+  which kind each is, which also leaves room for long workspace names.
 - **Home** and **Inbox** first, ungrouped, then the kind's groups, then **Settings** pinned at the bottom.
 - An item shows a count only for work waiting on this workspace (Inbox tasks, Purchase orders needing a reply,
   Orders to pack, Shipments needing action). Counts are never totals.
@@ -392,7 +399,7 @@ at the top, then events by day, each naming the person and workspace. Mentions n
 | ≥ 1280 px      | Sidebar, content up to 1280 px, record rail 320 px                                                  |
 | 1024–1279 px   | Sidebar collapses to the icon rail by default                                                       |
 | 768–1023 px    | Rail stacks under the main column; tables hide their secondary columns with container queries       |
-| < 768 px       | Sidebar as a sheet from a menu button in the top bar, with Create and the account in its footer; search becomes an icon; rows stack; the primary action is a sticky bottom bar |
+| < 768 px       | Sidebar as a sheet from a menu button in the top bar, with the account in its footer; no Create menu (each list page's primary action covers it); search becomes an icon; rows stack; the primary action is a sticky bottom bar |
 
 Packing and receiving are designed tablet-first (portrait 820 px): large tap targets (44 px), carton rows as cards,
 and scanning a barcode into a carton's SKU field.
