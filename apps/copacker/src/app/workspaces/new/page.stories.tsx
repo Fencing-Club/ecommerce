@@ -48,7 +48,7 @@ async function NewWorkspace({
 }
 
 const meta = preview.meta({
-  title: "Pages/Workspaces/New",
+  title: "Pages/Shared/Workspaces/New",
   ...serverStory(NewWorkspace),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/workspaces/new" } } },
   args: { profile: savedProfile, complete: true },

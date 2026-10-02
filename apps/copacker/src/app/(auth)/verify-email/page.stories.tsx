@@ -37,7 +37,7 @@ async function VerifyEmail({ email }: { email: string }) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Verify email",
+  title: "Pages/Shared/Auth/Verify email",
   ...serverStory(VerifyEmail),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/verify-email" } } },
   args: { email: "alex@example.com" },

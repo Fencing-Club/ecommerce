@@ -51,7 +51,7 @@ const viewer: Permissions = { role: "member", access: { products: "view" } }
 let saved: unknown[] = []
 
 const meta = preview.meta({
-  title: "Pages/Products/Detail",
+  title: "Pages/Supplier/Products/Detail",
   ...pageStory(`/products/${editorProduct.id}`, ProductPage, "supplier"),
   args: { product: editorProduct, catalogs, permissions: owner },
   beforeEach: ({ msw }) => {

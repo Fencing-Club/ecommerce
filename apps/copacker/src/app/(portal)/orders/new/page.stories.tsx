@@ -69,7 +69,7 @@ const actions = fn()
 const [tote, apron] = order.items
 
 const meta = preview.meta({
-  title: "Pages/Purchase orders/New",
+  title: "Pages/Buyer/Purchase orders/New",
   ...pageStory("/orders/new", NewOrder),
   args: {
     params: {},

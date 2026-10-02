@@ -170,7 +170,7 @@ function catchSubmit() {
 const signedOut: Args = { kind: "team", invitation: invitation("team"), user: null }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Invitation",
+  title: "Pages/Shared/Auth/Invitation",
   ...serverStory(InvitationPage),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/invite" } } },
   args: signedOut,

@@ -18,7 +18,7 @@ async function ForgotPasswordPage({ email }: { email?: string }) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Forgot password",
+  title: "Pages/Shared/Auth/Forgot password",
   ...serverStory(ForgotPasswordPage),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/forgot-password" } } },
   beforeEach: ({ msw }) => {

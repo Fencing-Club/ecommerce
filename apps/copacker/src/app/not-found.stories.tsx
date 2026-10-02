@@ -6,7 +6,7 @@ import NotFound from "./not-found"
 // A URL that matches no page, outside the app's shell. The root layout around it adds only the document, fonts and
 // skip link.
 const meta = preview.meta({
-  title: "Pages/Errors/Not found",
+  title: "Pages/Shared/Errors/Not found",
   ...serverStory(() => <NotFound />),
   parameters: { layout: "fullscreen" }
 })

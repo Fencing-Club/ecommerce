@@ -27,7 +27,7 @@ let plans: unknown[] = []
 const loaded = { timeout: 4000 }
 
 const meta = preview.meta({
-  title: "Pages/Restock",
+  title: "Pages/Buyer/Restock",
   ...pageStory("/restock", RestockPage, "buyer"),
   args: { org: { restockSalesDays: null, restockLeadTimeDays: null } },
   beforeEach: ({ msw }) => {

@@ -57,7 +57,7 @@ const actions = fn()
 const draft = orderRecord({ status: "draft", revision: 3 })
 
 const meta = preview.meta({
-  title: "Pages/Purchase orders/Edit",
+  title: "Pages/Buyer/Purchase orders/Edit",
   ...pageStory(`/orders/${orderId}/edit`, EditOrder),
   args: {
     order: draft,

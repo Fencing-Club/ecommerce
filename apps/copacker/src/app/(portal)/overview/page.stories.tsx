@@ -97,7 +97,7 @@ const reader: Permissions = { role: "member", access: { overview: "view", prices
 const buyer = pageStory("/overview", BuyerOverviewPage, "buyer")
 
 const meta = preview.meta({
-  title: "Pages/Overview",
+  title: "Pages/Shared/Overview",
   // Each story renders its workspace's page, whose loaders and portal come with it.
   render: buyer.render,
   args: { permissions: owner, data: buyerOverview, supplier: supplierOverviewData }

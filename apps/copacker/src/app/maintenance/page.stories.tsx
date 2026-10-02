@@ -16,7 +16,7 @@ async function MaintenancePage({ standingIn }: { standingIn: boolean }) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Maintenance",
+  title: "Pages/Shared/Maintenance",
   ...serverStory(MaintenancePage),
   args: { standingIn: true },
   parameters: { layout: "fullscreen" },

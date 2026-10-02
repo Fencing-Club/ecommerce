@@ -8,7 +8,7 @@ const failed = (pathname: string, kind: "buyer" | "supplier") =>
   pageStory(pathname, ({ retry }: { retry: () => void }) => <PortalError retry={retry} />, kind)
 
 const meta = preview.meta({
-  title: "Pages/Errors/Portal error",
+  title: "Pages/Shared/Errors/Portal error",
   component: PortalError,
   args: { retry: fn() }
 })

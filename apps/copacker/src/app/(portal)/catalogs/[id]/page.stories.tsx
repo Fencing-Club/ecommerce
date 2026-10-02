@@ -18,7 +18,7 @@ async function CatalogPage({ data, permissions }: { data: CatalogEditorData; per
 const saved = fn()
 
 const meta = preview.meta({
-  title: "Pages/Catalogs/Detail",
+  title: "Pages/Supplier/Catalogs/Detail",
   ...pageStory(`/catalogs/${catalogIds.wholesale}`, CatalogPage, "supplier"),
   args: { data: wholesaleCatalog, permissions: owner },
   beforeEach: ({ msw }) => {

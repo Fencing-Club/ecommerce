@@ -25,7 +25,7 @@ async function SalesPage({ q: raw }: { q?: string | string[] }) {
 let queries: Record<string, string>[] = []
 
 const meta = preview.meta({
-  title: "Pages/Sales",
+  title: "Pages/Buyer/Sales",
   ...pageStory("/sales", SalesPage, "buyer"),
   args: {},
   beforeEach: ({ msw }) => {

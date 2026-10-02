@@ -19,7 +19,7 @@ async function ImportOrder() {
 }
 
 const meta = preview.meta({
-  title: "Pages/Purchase orders/Import",
+  title: "Pages/Buyer/Purchase orders/Import",
   ...pageStory("/orders/import", ImportOrder),
   beforeEach: ({ msw }) => {
     msw.use(http.get("/api/imports", () => HttpResponse.json({ items: importList })))

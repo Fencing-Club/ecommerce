@@ -48,7 +48,7 @@ async function SignUp({
 }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Sign up",
+  title: "Pages/Shared/Auth/Sign up",
   ...serverStory(SignUp),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/signup" } } },
   args: { next: "/" },

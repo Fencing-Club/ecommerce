@@ -37,7 +37,7 @@ async function ResetPassword({ token }: { token?: string }) {
 }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Reset password",
+  title: "Pages/Shared/Auth/Reset password",
   ...serverStory(ResetPassword),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/reset-password" } } },
   args: { token },
