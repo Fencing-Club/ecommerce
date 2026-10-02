@@ -148,7 +148,7 @@ export const Collapsed = meta.story({
     await expect(sidebar()).toHaveAttribute("data-state", "collapsed")
     await userEvent.hover(canvas.getByRole("link", { name: "Shipments" }))
     await waitFor(() => expect(document.querySelector("[data-slot=tooltip-content]")).toHaveTextContent("Shipments"))
-    // The rail along its edge expands it, as the top bar's button does.
+    // The rail along its edge expands it, as the page's toggle does.
     const rail = canvas
       .getAllByRole("button", { name: "Toggle sidebar" })
       .find((button) => button.dataset.sidebar === "rail")
@@ -160,8 +160,8 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, the sidebar's width, that also holds the account (Create stays on desktop; each
-// list page has its own primary action). It closes once a page is chosen.
+// On a phone the sidebar is a sheet, the sidebar's width (Create stays on desktop; each list page has its own primary
+// action). It closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {

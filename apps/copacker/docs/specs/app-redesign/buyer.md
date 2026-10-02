@@ -20,7 +20,7 @@ exists.
 |            | Settings        | `/settings`   | always            |                                     |
 
 The store's orders are renamed **Sales** in the sidebar, search and page title (F1), so "Orders" never means two things
-in one workspace. Create menu: Purchase order, Import purchase order, Supplier, Forwarder.
+in one workspace. Create menu: Purchase order, Import purchase order.
 
 ## Home `/home`
 

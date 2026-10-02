@@ -1,5 +1,6 @@
 "use client"
 
+import { PanelLeft } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -27,6 +28,23 @@ import { type Workspace, WorkspaceMenu } from "./workspace-menu"
 const itemClass =
   "relative h-[34px] gap-2.5 rounded-md px-2.5 text-sidebar-foreground data-active:bg-muted data-active:font-semibold data-active:text-foreground [&>svg]:text-muted-foreground data-active:[&>svg]:text-foreground data-active:before:absolute data-active:before:start-0 data-active:before:top-1/2 data-active:before:h-[18px] data-active:before:w-[3px] data-active:before:-translate-y-1/2 data-active:before:rounded-[2px] data-active:before:bg-primary"
 
+// On a computer, the button at the top of the page that collapses the sidebar to its icons and expands it again, as
+// its rail and Ctrl+B do. A phone opens the sidebar from the top bar's menu button instead.
+export function SidebarToggle() {
+  const t = useTranslations("common.ui")
+  const { toggleSidebar } = useSidebar()
+  return (
+    <button
+      type="button"
+      onClick={toggleSidebar}
+      aria-label={t("toggleSidebar")}
+      className="-ms-1.5 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <PanelLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+    </button>
+  )
+}
+
 export type AppSidebarProps = {
   kind: string
   // The open workspace, and its name as the session gave it until the workspace list has it.
@@ -38,13 +56,13 @@ export type AppSidebarProps = {
   email: string
 }
 
-// The workspace switcher, then the workspace kind's pages in their groups, Settings pinned at the bottom. On a computer
-// the sidebar starts under the top bar and collapses to its icons; on a phone it's a sheet over everything, which also
-// holds Create and the account, since the phone's top bar has no room for them.
+// The workspace switcher, then the workspace kind's pages in their groups, Settings pinned at the bottom, and the
+// signed-in person's account below them. On a computer the sidebar starts under the top bar and collapses to its icons;
+// on a phone it's a sheet over everything.
 export function AppSidebar({ kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const pathname = usePathname()
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { setOpenMobile } = useSidebar()
   const t = useTranslations("navigation")
   // A member sees only the pages they were given.
   const navigation = navigationFor(kind, usePermissions())
@@ -88,11 +106,9 @@ export function AppSidebar({ kind, active, name, workspaces, userName, email }: 
           )
         })}
       </SidebarContent>
-      {isMobile && (
-        <SidebarFooter className="border-t p-3">
-          <AccountMenu name={userName ?? email} email={email} layout="row" />
-        </SidebarFooter>
-      )}
+      <SidebarFooter className="border-t p-3 group-data-[collapsible=icon]:p-2">
+        <AccountMenu name={userName ?? email} email={email} />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

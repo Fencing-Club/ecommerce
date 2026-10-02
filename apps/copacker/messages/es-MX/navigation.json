@@ -77,8 +77,6 @@
     "button": "Crear",
     "purchaseOrder": "Orden de compra",
     "importPurchaseOrder": "Importar orden de compra",
-    "supplier": "Proveedor",
-    "forwarder": "Agente de carga",
     "product": "Producto",
     "catalog": "Catálogo",
     "importProducts": "Importar productos"

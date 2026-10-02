@@ -5,24 +5,21 @@ import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { CopackerMark } from "@/components/auth/stage"
 import { useSidebar } from "@/components/ui/sidebar"
-import { AccountMenu } from "./account-menu"
 import { CreateMenu } from "./create-menu"
 import { NotificationsMenu } from "./notifications-menu"
 import { SearchCommand } from "./search-command"
 
 export type TopBarProps = {
-  // The signed-in person's name; their email shows until they give one.
-  userName: string | null
-  email: string
   kind: string
 }
 
-// The bar across the top of every portal page: Copacker's mark and name, search in the middle, then Create, the Inbox
-// and the person's account. The outer columns share the width equally, so the search is centered in the window; when
-// the window is too narrow for that, the search narrows rather than covering either side. The workspace switcher is at
-// the top of the sidebar, which collapses from its rail or Ctrl+B on a computer. On a phone the bar is the menu button
-// that opens the sidebar as a sheet, Copacker, then search and the Inbox as buttons; the account is in the sheet.
-export function TopBar({ userName, email, kind }: TopBarProps) {
+// The bar across the top of every portal page: Copacker's mark and name, search in the middle, then Create and the
+// Inbox. The outer columns share the width equally, so the search is centered in the window; when the window is too
+// narrow for that, the search narrows rather than covering either side. The workspace switcher is at the top of the
+// sidebar and the person's account at its bottom; on a computer the sidebar's toggle is in the page's corner. On a phone
+// the bar starts with the menu button that opens the sidebar as a sheet, and Create isn't shown since each list's own
+// action covers it.
+export function TopBar({ kind }: TopBarProps) {
   const t = useTranslations("common.ui")
   const { toggleSidebar } = useSidebar()
   return (
@@ -52,9 +49,6 @@ export function TopBar({ userName, email, kind }: TopBarProps) {
           <CreateMenu kind={kind} />
         </span>
         <NotificationsMenu />
-        <span className="max-md:hidden">
-          <AccountMenu name={userName ?? email} email={email} />
-        </span>
       </div>
     </header>
   )

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar, type AppSidebarProps } from "./app-sidebar"
+import { AppSidebar, type AppSidebarProps, SidebarToggle } from "./app-sidebar"
 import { TopBar } from "./top-bar"
 
 // The sidebar is 240px wide, and 56px as a rail of icons.
@@ -16,15 +16,19 @@ export async function Shell({ children, ...shell }: AppSidebarProps & { children
       style={sidebarWidths}
       className="flex-col [--header-height:calc(--spacing(14))]"
     >
-      <TopBar userName={shell.userName} email={shell.email} kind={shell.kind} />
+      <TopBar kind={shell.kind} />
       <div className="flex flex-1">
         <AppSidebar {...shell} />
         <SidebarInset>
+          {/* A row above the page for the sidebar's toggle, its icon in line with the page's start. */}
+          <div className="flex h-12 shrink-0 items-center px-8 max-md:hidden">
+            <SidebarToggle />
+          </div>
           {/* The page, up to 1280px and aligned to its start, 24px between its blocks (16px on a phone). minWidth 0 lets
               a wide table scroll inside its container instead of stretching it. */}
           <div
             id="main-content"
-            className="flex w-full max-w-[80rem] min-w-0 flex-1 flex-col gap-4 px-4 pt-4 pb-7 md:gap-6 md:px-8 md:pt-7 md:pb-12"
+            className="flex w-full max-w-[80rem] min-w-0 flex-1 flex-col gap-4 px-4 pt-4 pb-7 md:gap-6 md:px-8 md:pt-2 md:pb-12"
           >
             {children}
           </div>

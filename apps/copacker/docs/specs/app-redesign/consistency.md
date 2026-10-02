@@ -15,7 +15,7 @@ When a concept needs a new shape, change the component, so every screen moves to
 
 | Concept                  | Component             | Sizes and states                                                                 | Used for                                                    |
 | ------------------------ | --------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| App header               | RD Top Bar            | Inbox count, account initials                                                    | Every desktop screen                                        |
+| App header               | RD Top Bar            | Inbox count                                                                      | Every desktop screen                                        |
 | Phone header             | RD Mobile Top Bar     | Inbox count                                                                      | Every phone screen                                          |
 | Workspace switcher       | RD Sidebar Workspace  | Kind tile and initials, workspace name (truncated)                               | The top of every sidebar                                    |
 | Workspace menu           | RD Workspace Menu     | Workspaces and their kind, New workspace, Workspace settings                     | The sidebar's workspace switcher                            |

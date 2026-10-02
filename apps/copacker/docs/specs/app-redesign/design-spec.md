@@ -70,7 +70,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 
 ### Top bar
 
-- **Copacker (left).** The Copacker mark (Lucide `box`) and the name "Copacker", linking home. The workspace isn't
+- **Copacker (left).** The Copacker mark (after the menu button on a phone) (Lucide `box`) and the name "Copacker", linking home. The workspace isn't
   here: it's the sidebar's switcher.
 - **Search (center).** The existing command menu, unchanged in behavior. Centered in the window, up to 480 px; when
   the window is too narrow to center it between Copacker and the actions, it narrows instead of covering either.
@@ -78,17 +78,17 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
   Customers). Adds **Actions** ("Create purchase order", "Invite a supplier") above results when the query matches
   one.
 - **Create (right).** An outline button with the kind's create actions. Buyer: Purchase order, Import purchase
-  order, Supplier, Forwarder. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
+  order. Suppliers and forwarders are added from Partners. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
   access; with none, the button is hidden.
 - **Inbox (right).** Replaces the empty bell (F9). Its count is open tasks plus unread updates, and its popover has To
   do and Updates, the latest five of each, **Mark all read** and "View all" to `/inbox`. See [Inbox](#inbox).
-- **Account (right).** Avatar menu: name and email, **Account settings**, Theme (Light, Dark, System), Help, **Sign
-  out**. Moves out of the sidebar's footer. The two shortcuts (Ctrl K search, Ctrl B sidebar) show in the command
+- **Account.** Not in the top bar: it's the sidebar's footer. The two shortcuts (Ctrl K search, Ctrl B sidebar) show in the command
   menu's footer and in the tooltips of the search field and the sidebar toggle, not in a menu item.
 
 ### Sidebar
 
-- 240 px, `sidebar` background, collapses to a 56 px icon rail (Ctrl+B) that shows labels in tooltips, and becomes a
+- 240 px, `sidebar` background, collapses to a 56 px icon rail (Ctrl+B, or the 28 px `panel-left` toggle in the page's
+  top corner) that shows labels in tooltips, and becomes a
   240 px sheet under 768 px.
 - **Workspace switcher (top),** in a header with a bottom border (F2): the workspace's 28 px kind tile with its
   initials, its name (truncated) and chevrons, 44 px tall. On the rail, only the tile. The menu lists the workspaces,
@@ -96,6 +96,8 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
   requires today. The switcher names no kind of its own: most people have one workspace, and the menu already says
   which kind each is, which also leaves room for long workspace names.
 - **Home** and **Inbox** first, ungrouped, then the kind's groups, then **Settings** pinned at the bottom.
+- **Account (footer),** under a top border: the person's initials, name and email; on the rail, only the initials. Its
+  menu opens upward: name and email, **Account settings**, Theme (Light, Dark, System), Help, **Sign out**.
 - An item shows a count only for work waiting on this workspace (Inbox tasks, Purchase orders needing a reply,
   Orders to pack, Shipments needing action). Counts are never totals.
 - The active item has a `muted` fill and a 2 px `primary` marker on its leading edge.

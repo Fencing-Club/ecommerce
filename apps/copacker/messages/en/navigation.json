@@ -77,8 +77,6 @@
     "button": "Create",
     "purchaseOrder": "Purchase order",
     "importPurchaseOrder": "Import purchase order",
-    "supplier": "Supplier",
-    "forwarder": "Forwarder",
     "product": "Product",
     "catalog": "Catalog",
     "importProducts": "Import products"

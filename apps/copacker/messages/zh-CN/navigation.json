@@ -77,8 +77,6 @@
     "button": "创建",
     "purchaseOrder": "采购订单",
     "importPurchaseOrder": "导入采购订单",
-    "supplier": "供应商",
-    "forwarder": "货代",
     "product": "产品",
     "catalog": "目录",
     "importProducts": "导入产品"

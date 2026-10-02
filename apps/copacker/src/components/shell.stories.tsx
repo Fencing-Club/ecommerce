@@ -75,20 +75,30 @@ export const Buyer = meta.story({
     await expect(within(header).getByRole("button", { name: "Search" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Create" })).toBeVisible()
     await expect(within(header).getByRole("button", { name: "Inbox" })).toBeVisible()
-    await expect(within(header).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible()
+    // The account at the bottom of the sidebar.
+    const account = canvas.getByRole("button", { name: "Alex Rivera, account" })
+    await expect(account.closest("[data-slot=sidebar-footer]")).not.toBeNull()
     await expect(canvas.getByRole("link", { name: "Shipments" })).toHaveAttribute("data-active")
     await expect(canvas.getByRole("link", { name: "Sales" })).toBeVisible()
     const main = byId("main-content")
     await expect(within(main).getByRole("heading", { level: 1, name: "Shipments" })).toBeVisible()
     await expect(within(main).getByText("No shipments yet")).toBeVisible()
-    // The page sits 32px in from the sidebar, 28px under the top bar; the sidebar is 240px.
+    // The page sits 32px in from the sidebar, under the 48px row with the sidebar's toggle; the sidebar is 240px.
     const style = getComputedStyle(main)
-    await expect([style.paddingInlineStart, style.paddingTop]).toEqual(["32px", "28px"])
+    await expect([style.paddingInlineStart, style.paddingTop]).toEqual(["32px", "8px"])
     await expect(document.querySelector("[data-slot=sidebar-container]")?.getBoundingClientRect().width).toBe(240)
-    // Ctrl+B collapses it to its rail.
+    // The toggle in the page's corner collapses it to its rail, and Ctrl+B expands it again.
     await expect(sidebar()).toHaveAttribute("data-state", "expanded")
-    await userEvent.keyboard("{Control>}b{/Control}")
+    const toggle = canvas
+      .getAllByRole("button", { name: "Toggle sidebar" })
+      .find((button) => button.closest("[data-slot=sidebar-inset]"))
+    if (!toggle) {
+      throw new Error("The page has no sidebar toggle")
+    }
+    await userEvent.click(toggle)
     await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "collapsed"))
+    await userEvent.keyboard("{Control>}b{/Control}")
+    await waitFor(() => expect(sidebar()).toHaveAttribute("data-state", "expanded"))
   }
 })
 

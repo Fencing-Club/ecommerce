@@ -1,6 +1,6 @@
 "use client"
 
-import { ClipboardList, FileUp, Plus, Tag, Truck, Upload, UserPlus, BookOpen, type LucideIcon } from "lucide-react"
+import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen, type LucideIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePermissions } from "@/components/access"
@@ -11,9 +11,7 @@ import { type Area, can } from "@/lib/access"
 const actions = {
   buyer: [
     { key: "purchaseOrder", href: "/orders/new", area: "orders", icon: ClipboardList },
-    { key: "importPurchaseOrder", href: "/orders/import", area: "orders", icon: FileUp },
-    { key: "supplier", href: "/partners?add=supplier", area: "partners", icon: UserPlus },
-    { key: "forwarder", href: "/partners?add=forwarder", area: "partners", icon: Truck }
+    { key: "importPurchaseOrder", href: "/orders/import", area: "orders", icon: FileUp }
   ],
   supplier: [
     { key: "product", href: "/products/new", area: "products", icon: Tag },

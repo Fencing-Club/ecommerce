@@ -19,9 +19,7 @@ export const Buyer = meta.story({
     const links = await items()
     await expect(links.map((item) => [item.textContent, item.getAttribute("href")])).toEqual([
       ["Purchase order", "/orders/new"],
-      ["Import purchase order", "/orders/import"],
-      ["Supplier", "/partners?add=supplier"],
-      ["Forwarder", "/partners?add=forwarder"]
+      ["Import purchase order", "/orders/import"]
     ])
   }
 })
@@ -31,16 +29,6 @@ export const Supplier = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Create" }))
     await expect((await items()).map((item) => item.textContent)).toEqual(["Product", "Catalog", "Import products"])
-  }
-})
-
-// Each action needs Edit on its page: a member who edits purchase orders but only views partners.
-const ordersEditor: Permissions = { role: "member", access: { orders: "edit", partners: "view" } }
-export const OnlyWhatTheyCanEdit = meta.story({
-  parameters: { permissions: ordersEditor },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Create" }))
-    await expect((await items()).map((item) => item.textContent)).toEqual(["Purchase order", "Import purchase order"])
   }
 })
 
