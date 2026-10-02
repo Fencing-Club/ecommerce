@@ -38,6 +38,10 @@
       "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
+    "apps/farewell": {
+      "entry": ["src/index.ts", "remotion.config.ts"],
+      "ignoreDependencies": ["@repo/oxlint-config"]
+    },
     "packages/aisle": {
       "ignoreDependencies": ["@repo/oxlint-config"]
     },

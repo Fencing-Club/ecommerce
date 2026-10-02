@@ -1,0 +1,26 @@
+{
+  "name": "farewell",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio --port=3200",
+    "captions": "node scripts/captions.ts",
+    "lint": "oxlint --max-warnings=0",
+    "check:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.526",
+    "@remotion/google-fonts": "4.0.526",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.526"
+  },
+  "devDependencies": {
+    "@repo/oxlint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.17",
+    "typescript": "catalog:"
+  }
+}
