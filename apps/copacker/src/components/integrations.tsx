@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { AmazonConnect } from "./amazon-connect"
+import { AmazonSelfAuthorize } from "./amazon-self-authorize"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
 import { useStockSync } from "./inventory-sync"
@@ -52,6 +53,7 @@ const clickable =
 export function Integrations({
   admin,
   ebayAvailable,
+  amazonSelfAuth = false,
   shopify,
   amazon,
   ebay,
@@ -61,6 +63,7 @@ export function Integrations({
 }: {
   admin: boolean
   ebayAvailable: boolean
+  amazonSelfAuth?: boolean
   shopify: Connection | null
   amazon: Connection | null
   ebay: Connection | null
@@ -87,11 +90,11 @@ export function Integrations({
       </Connected>
     )
   } else if (admin) {
-    // Amazon's consent page, which comes back to Settings.
+    const ConnectAmazon = amazonSelfAuth ? AmazonSelfAuthorize : AmazonConnect
     amazonCard = (
-      <AmazonConnect className={cn(tile, clickable)}>
+      <ConnectAmazon className={cn(tile, clickable)}>
         <TileBody store="amazon" footer={<ConnectLabel />} />
-      </AmazonConnect>
+      </ConnectAmazon>
     )
   }
   let ebayCard = (

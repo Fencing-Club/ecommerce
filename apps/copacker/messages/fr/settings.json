@@ -126,6 +126,13 @@
       "description": "Choisissez votre marketplace, puis connectez-vous à Amazon pour autoriser Copacker.",
       "marketplace": "Marketplace",
       "continue": "Continuer vers Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connecter Amazon",
+      "description": "Dans le Solution Provider Portal d’Amazon, ouvrez le menu à côté de l’application Copacker, choisissez Authorize et copiez le jeton d’actualisation. Votre jeton marchand se trouve dans Seller Central, sous Paramètres, Informations sur le compte.",
+      "connect": "Connecter",
+      "merchantToken": "Jeton marchand",
+      "refreshToken": "Jeton d’actualisation"
     }
   },
   "excludedTags": {
