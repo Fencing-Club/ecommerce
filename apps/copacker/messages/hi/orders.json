@@ -121,7 +121,12 @@
     "charges": "शुल्क",
     "documentTotal": "दस्तावेज़ का कुल योग",
     "overDocumentTotal": "दस्तावेज़ के कुल योग से {amount} ज़्यादा",
-    "underDocumentTotal": "दस्तावेज़ के कुल योग से {amount} कम"
+    "underDocumentTotal": "दस्तावेज़ के कुल योग से {amount} कम",
+    "sourceDetails": "स्रोत का विवरण",
+    "matchDetails": "मिलान का विवरण",
+    "importNotes": "आयात नोट्स",
+    "noSuppliers": "इस कार्यस्थान में अभी कोई आपूर्तिकर्ता नहीं है। जारी रखने के लिए एक जोड़ें।",
+    "addSupplier": "आपूर्तिकर्ता जोड़ें"
   },
   "builder": {
     "newTitle": "नया खरीद ऑर्डर",
@@ -330,7 +335,7 @@
     },
     "statuses": {
       "queued": "प्रतीक्षा में",
-      "running": "पढ़ा जा रहा है",
+      "running": "प्रोसेस हो रहा है",
       "review": "समीक्षा के लिए तैयार",
       "failed": "विफल",
       "cancelled": "रद्द",
@@ -393,7 +398,9 @@
     "addAddress": "पता जोड़ें",
     "pickupAddress": "पिकअप का पता",
     "otherAddress": "दूसरा पता",
-    "readyForPickup": "पिकअप के लिए तैयार"
+    "readyForPickup": "पिकअप के लिए तैयार",
+    "addCartonProduct": "कार्टन में उत्पाद जोड़ें",
+    "removeCartonProduct": "कार्टन से उत्पाद {number} हटाएँ"
   },
   "paymentTerms": {
     "net7": "नेट 7",

@@ -9,7 +9,7 @@ setup and the [docs index](../docs/README.md) for conventions.
 - **Lint:** `oxlint` (not eslint) · **Format:** `oxfmt` (not prettier).
 - **Type-check:** `tsc` from the pinned TypeScript 7 native compiler — keep the version aligned across packages.
 - **Test:** Vitest · **Web framework:** Next.js · **Workshop:** Storybook.
-- **Package manager:** pnpm (`>=11`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
+- **Package manager:** pnpm (`>=12`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
 - **Task runner:** Turborepo.
 - oxlint rules live in the shared `@repo/oxlint-config` base; add new rules there so every package benefits.
 - Hosted on **GitHub** — use GitHub for PRs and issues.

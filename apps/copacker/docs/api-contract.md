@@ -497,6 +497,17 @@ changes the same way.
 
 ## AI document imports
 
+The intake page keeps the PDF attachment, Import action and previous imports in one card. UploadCN handles file
+selection, drops, pasting and validation. Selecting a PDF only stages it locally: the buyer can remove it before
+clicking Import. Upload failures keep the attachment for another attempt. Worker status `running` displays as
+"Processing".
+
+The review keeps source descriptions and matching explanations behind each line's **Source details** action. Money
+inputs show a prefix derived from the order currency and the reader's locale. Empty supplier lists explain how to add
+a supplier without leaving the review. Optional `notes` preserve informational context; `warnings` are reserved for
+unresolved issues needing buyer action. The importer includes non-product charges in `adjustments`, using the printed
+charge total, negative discounts and source pages, without double-counting subtotals or included taxes.
+
 Buyer routes (Orders: Edit) that bind every record and store lookup to the active workspace:
 
 - `POST /api/imports`: multipart `file` PDF, up to 10 MB and 50 pages; returns `202 {id, status: "queued"}` once the
@@ -522,6 +533,11 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
 The proposal schema is `src/server/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
 values and non-product charges. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
 SKU. Processing runs in the worker with the prompt's `production` label.
+
+Catalog search accepts up to 50 SKU or description queries per call and returns compact identity matches, with full
+variant details fetched only when needed. This avoids one model round trip per line on large orders. The model has
+32,000 output tokens for proposals of up to 150 lines, a cumulative 600,000-token budget and an eight-minute deadline.
+Catalog access remains read-only and scoped to the import's pinned store; candidates must have been returned by a tool.
 
 Each import attempt sends Langfuse a root observation and bounded generation and catalog-tool child observations.
 Children carry only timing, fixed operation names and status; document content, model responses, tool arguments and

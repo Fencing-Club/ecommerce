@@ -45,9 +45,10 @@ import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
+import { currencySymbol } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
-import { currencySymbol, moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
+import { moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { IndexToolbar, matches, Pager, ProductThumb, SaveBar, StatusBadge } from "./shared"
 
 type Product = CatalogEditorData["products"][number]

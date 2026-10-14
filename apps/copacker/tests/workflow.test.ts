@@ -1721,12 +1721,14 @@ describe("Postgres workflow and authorization", () => {
       objectKey: `private/${id}`,
       filename: "invoice.pdf",
       shopifyDomain: "test.myshopify.com",
-      status: "failed"
+      status: "failed",
+      promptVersion: 1
     })
     const params = { params: Promise.resolve({ id }) }
     const origin = process.env.APP_URL ?? "http://localhost:3000"
     const request = () => new Request(`${origin}/api/imports/${id}`, { method: "POST", headers: { origin } })
     expect((await retryImport(request(), params)).status).toBe(202)
+    expect((await database.select().from(tables.poImports))[0]?.promptVersion).toBeNull()
     expect((await retryImport(request(), params)).status).toBe(409)
     expect(await database.select().from(tables.jobs)).toHaveLength(1)
     expect((await cancelImport(request(), params)).status).toBe(200)
@@ -4036,7 +4038,7 @@ describe("import worker", () => {
   it("uses pinned tenant accounts and supplier SKU matching, retaining prompt version and usage", async () => {
     const t = await setup()
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "supplier-1" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1"] }))
       .mockResolvedValueOnce(call("get_shopify_variants", { ids: [orderData.items[0]!.variantId] }))
       .mockResolvedValueOnce(call("search_amazon_listings", { skus: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
@@ -4050,12 +4052,34 @@ describe("import worker", () => {
   })
   it("rejects model attempts to choose another account before a catalog call", async () => {
     const t = await setup()
-    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { query: "cord", orgId: otherId }))
+    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"], orgId: otherId }))
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow(
       "Unrecognized key"
     )
     expect(t.catalogPage).not.toHaveBeenCalled()
     expect(await t.record()).toMatchObject({ status: "failed", proposal: null })
+  })
+  it("matches multiple document SKUs in one lookup without repeating full catalog records", async () => {
+    const t = await setup()
+    t.fetcher
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1", "foil-2", "missing"] }))
+      .mockImplementationOnce(async (_url, init) => {
+        const sent = JSON.parse(String(init?.body))
+        const result = JSON.parse(sent.messages.at(-1).content)
+        expect(result.searches.map((search: { results: unknown[] }) => search.results.length)).toEqual([1, 1, 0])
+        expect(result.searches[0].results[0]).toMatchObject({
+          id: orderData.items[0]!.variantId,
+          sku: "foil-2",
+          supplierSku: "supplier-1",
+          product: "Foil cord",
+          variant: "Two-pack"
+        })
+        expect(result.searches[0].results[0]).not.toHaveProperty("inventoryItem")
+        return call("finish_import", t.proposal)
+      })
+    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    expect(t.catalogPage).toHaveBeenCalledTimes(1)
+    expect(await t.record()).toMatchObject({ status: "review" })
   })
   it("does not resurrect a cancelled import when a provider response arrives late", async () => {
     const t = await setup()
@@ -4064,7 +4088,7 @@ describe("import worker", () => {
         .update(tables.poImports)
         .set({ status: "cancelled", revision: 2 })
         .where(eq(tables.poImports.id, t.id))
-      return call("search_shopify_products", { query: "cord" })
+      return call("search_shopify_products", { queries: ["cord"] })
     })
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("cancelled")
     expect(await t.record()).toMatchObject({ status: "cancelled", revision: 2, proposal: null })
@@ -4076,7 +4100,7 @@ describe("import worker", () => {
     expect(t.fetcher).not.toHaveBeenCalled()
     await database.update(tables.poImports).set({ promptVersion: 7 }).where(eq(tables.poImports.id, t.id))
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "foil-2" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
     await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
     expect(t.fetcher.mock.calls[0]![0]).toBe(
@@ -4087,7 +4111,7 @@ describe("import worker", () => {
   it("fails a stalled catalog cursor instead of looping or accepting incomplete identities", async () => {
     const t = await setup()
     t.catalogPage.mockResolvedValue({ nodes: [], pageInfo: { hasNextPage: true, endCursor: null } })
-    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { query: "cord" }))
+    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"] }))
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("pagination")
     expect(t.catalogPage).toHaveBeenCalledTimes(1)
     expect(await t.record()).toMatchObject({ status: "failed", proposal: null })
@@ -4110,12 +4134,12 @@ describe("import worker", () => {
       pageInfo: { hasNextPage: false, endCursor: null }
     })
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "supplier-1" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1"] }))
       .mockImplementationOnce(async (_url, init) => {
         const sent = JSON.parse(String(init?.body))
         const results = JSON.parse(sent.messages.at(-1).content)
-        expect(results.results.slice(0, 2).map((v: { id: string }) => v.id)).toEqual(exact.map((v) => v.id))
-        expect(results.matchesTruncated).toBe(true)
+        expect(results.searches[0].results.slice(0, 2).map((v: { id: string }) => v.id)).toEqual(exact.map((v) => v.id))
+        expect(results.searches[0].matchesTruncated).toBe(true)
         expect(results.catalogComplete).toBe(true)
         return call("finish_import", t.proposal)
       })
@@ -4147,7 +4171,7 @@ describe("import worker", () => {
       pageInfo: { hasNextPage: true, endCursor: `page-${++page}` }
     }))
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "foil-2" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
     await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
     expect(t.catalogPage).toHaveBeenCalledTimes(5)

@@ -41,6 +41,7 @@ export const NoImports = meta.story({
     msw.use(http.get("/api/imports", () => HttpResponse.json({ items: [] })))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("No imports yet")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: /Drop a PDF or browse/ })).toBeVisible()
+    await expect(canvas.queryByRole("table")).toBeNull()
   }
 })

@@ -121,7 +121,12 @@
     "charges": "Витрати",
     "documentTotal": "Сума документа",
     "overDocumentTotal": "На {amount} більше за суму документа",
-    "underDocumentTotal": "На {amount} менше за суму документа"
+    "underDocumentTotal": "На {amount} менше за суму документа",
+    "sourceDetails": "Дані джерела",
+    "matchDetails": "Деталі зіставлення",
+    "importNotes": "Примітки до імпорту",
+    "noSuppliers": "У цьому робочому просторі ще немає постачальників. Додайте одного, щоб продовжити.",
+    "addSupplier": "Додати постачальника"
   },
   "builder": {
     "newTitle": "Нове замовлення на закупівлю",
@@ -330,7 +335,7 @@
     },
     "statuses": {
       "queued": "Очікує",
-      "running": "Зчитування",
+      "running": "Обробка",
       "review": "Готово до перевірки",
       "failed": "Помилка",
       "cancelled": "Скасовано",
@@ -393,7 +398,9 @@
     "addAddress": "Додати адресу",
     "pickupAddress": "Адреса забору",
     "otherAddress": "Інша адреса",
-    "readyForPickup": "Готово до забору"
+    "readyForPickup": "Готово до забору",
+    "addCartonProduct": "Додати товар до коробки",
+    "removeCartonProduct": "Видалити товар {number} з коробки"
   },
   "paymentTerms": {
     "net7": "Відстрочка 7 днів",

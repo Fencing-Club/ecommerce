@@ -75,6 +75,67 @@ const productName = (item: { name: string; variant: string }) =>
 const savedAddress = (addresses: PartnerAddress[], origin: Partial<Address>) =>
   addresses.find(({ address }) => objectKeys(emptyAddress).every((key) => (address[key] ?? "") === (origin[key] ?? "")))
 
+function CartonContents({ index, order }: { index: number; order: OrderInput }) {
+  const t = useTranslations("orders.packing")
+  const { control } = useFormContext<Values>()
+  const contents = useFieldArray({ control, name: `cartons.${index}.items` })
+  const values = useWatch({ control, name: `cartons.${index}.items` }) ?? []
+  const first = order.items.find((item) => item.id === values[0]?.itemId)
+  const next = order.items.find(
+    (item) =>
+      !values.some((content) => content.itemId === item.id) &&
+      (order.destination !== "amazon" || item.amazonNetwork === first?.amazonNetwork)
+  )
+  const canMix = order.destination !== "amazon" || first?.amazonNetwork === "fba"
+  return (
+    <div className="col-span-2 flex min-w-0 flex-col gap-2 @4xl/cartons:col-span-2">
+      {contents.fields.map((content, itemIndex) => (
+        <div key={content.id} className="grid grid-cols-[minmax(0,1fr)_5rem_2rem] items-start gap-2">
+          <FormSelect
+            name={`cartons.${index}.items.${itemIndex}.itemId`}
+            required
+            label={t("product")}
+            options={order.items.map((item) => ({ value: item.id, label: `${productName(item)} / ${item.buyerSku}` }))}
+            className={cartonLabel}
+          />
+          <FormNumber
+            name={`cartons.${index}.items.${itemIndex}.pieces`}
+            required
+            label={t("units")}
+            min={1}
+            step={1}
+            className={cartonLabel}
+          />
+          {contents.fields.length > 1 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="mt-7 @4xl/cartons:mt-0.5"
+              aria-label={t("removeCartonProduct", { number: itemIndex + 1 })}
+              onClick={() => contents.remove(itemIndex)}
+            >
+              <Trash2 />
+            </Button>
+          )}
+        </div>
+      ))}
+      {canMix && next && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="self-start"
+          onClick={() => contents.append({ itemId: next.id, pieces: blank })}
+        >
+          <Plus data-icon="inline-start" />
+          {t("addCartonProduct")}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 // Enter in a field would submit the packing list, which can create the Amazon shipment, so only the Submit button
 // submits. Buttons still press and text areas still start a new line, and a dialog opened from here keeps its own
 // Enter: its fields belong to its own form.
@@ -153,7 +214,9 @@ export function PackingForm({
         width: carton.width || blank,
         height: carton.height || blank,
         weight: carton.weight || blank,
-        items: [{ itemId: carton.items?.[0]?.itemId || firstItem, pieces: carton.items?.[0]?.pieces || blank }]
+        items: carton.items?.length
+          ? carton.items.map((item) => ({ itemId: item.itemId || firstItem, pieces: item.pieces || blank }))
+          : [{ itemId: firstItem, pieces: blank }]
       })),
       changes: order.items.map((item) => {
         const change = initial?.changes?.find((c) => c.itemId === item.id)
@@ -167,12 +230,10 @@ export function PackingForm({
   })
   const cartons = useFieldArray({ control: form.control, name: "cartons" })
   const cartonValues = useWatch({ control: form.control, name: "cartons" }) ?? []
-  const pieces = cartonValues.reduce((n, c) => n + (c?.items?.[0]?.pieces || 0), 0)
+  const contents = cartonValues.flatMap((carton) => carton?.items ?? [])
+  const pieces = contents.reduce((total, item) => total + (item.pieces || 0), 0)
   const packed = (itemId: string) =>
-    cartonValues.reduce((n, c) => {
-      const content = c?.items?.[0]
-      return n + (content?.itemId === itemId ? content.pieces || 0 : 0)
-    }, 0)
+    contents.reduce((total, item) => total + (item.itemId === itemId ? item.pieces || 0 : 0), 0)
   const cartonsError = form.formState.errors.cartons?.message ?? form.formState.errors.cartons?.root?.message
 
   // Drafts save whatever is entered; check and submit only run after the form passes packingSchema.
@@ -357,7 +418,7 @@ export function PackingForm({
                   ))}
                   {multipleProducts && <span>{t("product")}</span>}
                   <span>{t("units")}</span>
-                  <span />
+                  <span className="w-17" />
                 </div>
                 {cartons.fields.map((carton, index) => {
                   const name = cartonValues[index]?.cartonId || index + 1
@@ -386,26 +447,18 @@ export function PackingForm({
                           className={cartonLabel}
                         />
                       ))}
-                      {multipleProducts && (
-                        <FormSelect
-                          name={`cartons.${index}.items.0.itemId`}
+                      {multipleProducts ? (
+                        <CartonContents index={index} order={order} />
+                      ) : (
+                        <FormNumber
+                          name={`cartons.${index}.items.0.pieces`}
                           required
-                          label={t("product")}
-                          options={order.items.map((item) => ({
-                            value: item.id,
-                            label: `${productName(item)} / ${item.buyerSku}`
-                          }))}
-                          className={cn("col-span-2 @4xl/cartons:col-span-1", cartonLabel)}
+                          label={t("units")}
+                          min={1}
+                          step={1}
+                          className={cartonLabel}
                         />
                       )}
-                      <FormNumber
-                        name={`cartons.${index}.items.0.pieces`}
-                        required
-                        label={t("units")}
-                        min={1}
-                        step={1}
-                        className={cartonLabel}
-                      />
                       <div className="col-span-2 flex justify-end gap-1 @4xl/cartons:col-span-1 @4xl/cartons:pt-0.5">
                         <Button
                           type="button"

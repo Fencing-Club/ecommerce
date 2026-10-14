@@ -17,15 +17,7 @@ import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { useMoney } from "@/hooks/use-money"
 import { countOf, type PriceBasis, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
-
-// The currency's symbol as the page's language writes it: $ in English, US$ in Chinese.
-export function currencySymbol(currency: string, locale: string) {
-  return (
-    new Intl.NumberFormat(locale, { style: "currency", currency })
-      .formatToParts(0)
-      .find((part) => part.type === "currency")?.value ?? currency
-  )
-}
+import { currencySymbol } from "@/lib/currency"
 
 // Typed money as minor units: null for blank, undefined for something that isn't an amount.
 export function parseMoney(text: string) {

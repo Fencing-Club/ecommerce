@@ -35,7 +35,9 @@ runs again, reading the plan to find where it is:
    the ready date, or the latest Amazon offers. The buyer can move the window in Seller Central until the shipment closes.
 6. Download each box's label on plain paper and match boxes to cartons by contents, then size and weight.
 
-Mixed-SKU cartons are allowed. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
+Mixed-SKU cartons are allowed. The packing editor shows every product and quantity in each carton, with Add product
+to carton and individual removal. Saving, reopening, duplicating and counting cartons preserve all their contents.
+AWD cartons keep one product. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
 
 ## Origin
 

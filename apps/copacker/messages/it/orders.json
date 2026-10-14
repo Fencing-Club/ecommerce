@@ -121,7 +121,12 @@
     "charges": "Addebiti",
     "documentTotal": "Totale documento",
     "overDocumentTotal": "{amount} oltre il totale del documento",
-    "underDocumentTotal": "{amount} sotto il totale del documento"
+    "underDocumentTotal": "{amount} sotto il totale del documento",
+    "sourceDetails": "Dettagli del documento",
+    "matchDetails": "Dettagli della corrispondenza",
+    "importNotes": "Note di importazione",
+    "noSuppliers": "Non ci sono ancora fornitori in questo spazio di lavoro. Aggiungine uno per continuare.",
+    "addSupplier": "Aggiungi fornitore"
   },
   "builder": {
     "newTitle": "Nuovo ordine di acquisto",
@@ -330,7 +335,7 @@
     },
     "statuses": {
       "queued": "In attesa",
-      "running": "Lettura in corso",
+      "running": "Elaborazione in corso",
       "review": "Pronto da controllare",
       "failed": "Non riuscito",
       "cancelled": "Annullato",
@@ -393,7 +398,9 @@
     "addAddress": "Aggiungi indirizzo",
     "pickupAddress": "Indirizzo di ritiro",
     "otherAddress": "Altro indirizzo",
-    "readyForPickup": "Pronto per il ritiro"
+    "readyForPickup": "Pronto per il ritiro",
+    "addCartonProduct": "Aggiungi prodotto al cartone",
+    "removeCartonProduct": "Rimuovi il prodotto {number} dal cartone"
   },
   "paymentTerms": {
     "net7": "7 giorni netti",

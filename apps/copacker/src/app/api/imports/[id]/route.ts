@@ -153,7 +153,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const revision = row.revision + 1
     await tx
       .update(poImports)
-      .set({ status: "queued", error: null, revision, updatedAt: new Date() })
+      // A buyer retry is a new attempt and should pick up a corrected production prompt. Worker retries within
+      // that attempt still use the version pinned by importJob.
+      .set({ status: "queued", error: null, promptVersion: null, revision, updatedAt: new Date() })
       .where(eq(poImports.id, id))
     await tx.insert(jobs).values({ key: `import:${id}:${revision}`, kind: "import", payload: { id, revision } })
     return { id, revision, status: "queued" }

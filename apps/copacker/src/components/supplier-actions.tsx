@@ -28,10 +28,12 @@ import { sx } from "@/styles/sprinkles.css"
 
 export function InviteSupplier({
   open: shown,
-  onOpenChange
+  onOpenChange,
+  finalFocus
 }: {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  finalFocus?: React.RefObject<HTMLElement | null>
 }) {
   const t = useTranslations("partners.supplier.add")
   const [own, setOwn] = useState(false)
@@ -45,7 +47,7 @@ export function InviteSupplier({
           {t("trigger")}
         </DialogTrigger>
       )}
-      <DialogContent>
+      <DialogContent finalFocus={finalFocus}>
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>

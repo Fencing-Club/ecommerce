@@ -121,7 +121,12 @@
     "charges": "Charges",
     "documentTotal": "Document total",
     "overDocumentTotal": "{amount} over the document total",
-    "underDocumentTotal": "{amount} under the document total"
+    "underDocumentTotal": "{amount} under the document total",
+    "sourceDetails": "Source details",
+    "matchDetails": "Match details",
+    "importNotes": "Import notes",
+    "noSuppliers": "No suppliers in this workspace yet. Add one to continue.",
+    "addSupplier": "Add supplier"
   },
   "builder": {
     "newTitle": "New purchase order",
@@ -330,7 +335,7 @@
     },
     "statuses": {
       "queued": "Waiting",
-      "running": "Reading",
+      "running": "Processing",
       "review": "Ready for review",
       "failed": "Failed",
       "cancelled": "Canceled",
@@ -393,7 +398,9 @@
     "addAddress": "Add address",
     "pickupAddress": "Pickup address",
     "otherAddress": "Other address",
-    "readyForPickup": "Ready for pickup"
+    "readyForPickup": "Ready for pickup",
+    "addCartonProduct": "Add product to carton",
+    "removeCartonProduct": "Remove product {number} from carton"
   },
   "paymentTerms": {
     "net7": "Net 7",

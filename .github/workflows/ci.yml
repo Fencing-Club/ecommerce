@@ -66,7 +66,7 @@ jobs:
           # The pnpm store has its own cache step below, and pnpm isn't installed yet.
           package-manager-cache: false
       # npm, not pnpm/action-setup: that reads .npmrc's private registry, which CI can't sign in to.
-      - run: npm install --global pnpm@11.9.0
+      - run: npm install --global pnpm@12.10.1
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
       - uses: actions/cache@v6
         with:
@@ -110,7 +110,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --global pnpm@11.9.0
+      - run: npm install --global pnpm@12.10.1
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
       - uses: actions/cache@v6
         with:
@@ -168,7 +168,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
-      - run: npm install --global pnpm@11.9.0
+      - run: npm install --global pnpm@12.10.1
       - run: echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
       - uses: actions/cache@v6
         with:
@@ -231,7 +231,7 @@ jobs:
         run: bash .github/scripts/deploy.sh "$GITHUB_SHA" "${{ vars.STAGING_URL }}"
       # Then the whole Playwright suite runs against what was just deployed.
       - if: steps.tip.outputs.latest == 'true'
-        run: npm install --global pnpm@11.9.0
+        run: npm install --global pnpm@12.10.1
       - if: steps.tip.outputs.latest == 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.tip.outputs.latest == 'true'
