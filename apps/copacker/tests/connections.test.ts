@@ -7,7 +7,13 @@ import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ database: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.database }))
-import { connection, shopifyFor, amazonFor, connectAmazonSelfAuthorized } from "../src/server/connections"
+import {
+  connection,
+  shopifyFor,
+  amazonFor,
+  connectAmazonSelfAuthorized,
+  amazonSelfAuthEnabled
+} from "../src/server/connections"
 import { encrypt, decrypt } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -150,5 +156,21 @@ describe("Amazon self-authorization", () => {
       connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: "nope" })
     ).rejects.toThrow("shipments.amazonAuthorization.refreshToken")
     expect(await database.select().from(tables.connections)).toHaveLength(0)
+  })
+})
+
+describe("Amazon self-authorization configuration", () => {
+  it("defaults to enabled and respects an explicit false", () => {
+    vi.stubEnv("AMAZON_SELF_AUTH_ENABLED", undefined)
+    expect(amazonSelfAuthEnabled()).toBe(true)
+    vi.stubEnv("AMAZON_SELF_AUTH_ENABLED", "true")
+    expect(amazonSelfAuthEnabled()).toBe(true)
+    vi.stubEnv("AMAZON_SELF_AUTH_ENABLED", "false")
+    expect(amazonSelfAuthEnabled()).toBe(false)
+  })
+  it("rejects manual tokens before validation or network access when disabled", async () => {
+    vi.stubEnv("AMAZON_SELF_AUTH_ENABLED", "false")
+    await expect(connectAmazonSelfAuthorized(orgId, {})).rejects.toMatchObject({ key: "forbidden" })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

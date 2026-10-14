@@ -279,3 +279,13 @@ export const SyncingStock = meta.story({
     await expect(await canvas.findByText("Syncing inventory")).toBeVisible()
   }
 })
+
+export const AmazonPrivateAuthorization = meta.story({
+  args: { amazonSelfAuth: true },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^Amazon/ }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(within(dialog).queryByRole("combobox", { name: "Marketplace" })).toBeNull()
+  }
+})

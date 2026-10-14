@@ -22,7 +22,7 @@ import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
-import { ebayApp } from "@/server/connections"
+import { amazonSelfAuthEnabled, ebayApp } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
@@ -130,6 +130,7 @@ export default async function Settings() {
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
               admin={admin}
+              amazonSelfAuth={amazonSelfAuthEnabled()}
               ebayAvailable={ebayApp() !== null}
               shopify={
                 shopifyAccount

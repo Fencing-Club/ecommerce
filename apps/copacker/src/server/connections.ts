@@ -7,7 +7,7 @@ import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { selfAuthorizationSchema } from "@/lib/amazon"
-import { ReconnectRequiredError } from "./errors"
+import { AccessError, ReconnectRequiredError } from "./errors"
 import { decrypt, encrypt } from "./security"
 
 export const shopifyTokenResponse = z.object({
@@ -155,7 +155,14 @@ export async function disconnect(orgId: string, provider: Provider) {
 
 // Administrative self-authorization for private developer apps. The customer-facing flow uses Seller Central OAuth,
 // including for draft public apps. The token is checked with Amazon before it is saved.
+export function amazonSelfAuthEnabled() {
+  return process.env.AMAZON_SELF_AUTH_ENABLED !== "false"
+}
+
 export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
+  if (!amazonSelfAuthEnabled()) {
+    throw new AccessError("forbidden")
+  }
   const input = selfAuthorizationSchema.parse(raw)
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
     throw new Error("Amazon developer credentials are not configured")

@@ -267,16 +267,12 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   const shopify = integrations.getByRole("button", { name: "Shopify settings" })
   await expect(shopify).toContainText("Connected")
   await expect(shopify).toContainText("copacker-demo.myshopify.com")
-  // Amazon asks for a marketplace before leaving the app for consent. Check that flow without granting access.
+  // Default private authorization never sends credentials to Amazon until the form is submitted.
   await integrations.getByRole("button", { name: /^Amazon .*Connect$/ }).click()
   const amazonDialog = page.getByRole("dialog", { name: "Connect Amazon" })
-  const marketplace = amazonDialog.getByRole("combobox", { name: "Marketplace" })
-  await expect(marketplace).toContainText("United States")
-  await marketplace.click()
-  await page.getByRole("option", { name: "Canada", exact: true }).click()
-  await expect(marketplace).toContainText("Canada")
-  await expect(amazonDialog.getByRole("button", { name: "Continue to Amazon" })).toBeEnabled()
-  await expect(amazonDialog.getByLabel(/token/i)).toHaveCount(0)
+  await expect(amazonDialog.getByLabel(/^Refresh token/)).toHaveAttribute("type", "password")
+  await expect(amazonDialog.getByRole("textbox", { name: "Merchant token" })).toBeVisible()
+  await expect(amazonDialog.getByRole("button", { name: "Connect", exact: true })).toBeVisible()
   await amazonDialog.getByRole("button", { name: "Close", exact: true }).click()
   if (!deployed) {
     await expect(integrations.getByText("Coming soon")).toBeVisible()

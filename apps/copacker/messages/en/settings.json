@@ -126,6 +126,13 @@
       "description": "Choose your marketplace, then sign in to Amazon to approve Copacker.",
       "marketplace": "Marketplace",
       "continue": "Continue to Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connect Amazon",
+      "description": "In Amazon’s Solution Provider Portal, open the menu next to Copacker’s app, choose Authorize, and copy the refresh token. Your merchant token is in Seller Central under Settings, Account Info.",
+      "connect": "Connect",
+      "merchantToken": "Merchant token",
+      "refreshToken": "Refresh token"
     }
   },
   "excludedTags": {

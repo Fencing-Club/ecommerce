@@ -126,6 +126,13 @@
       "description": "اپنی مارکیٹ منتخب کریں، پھر Copacker کو اجازت دینے کے لیے Amazon میں سائن ان کریں۔",
       "marketplace": "مارکیٹ",
       "continue": "Amazon پر جاری رکھیں"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon منسلک کریں",
+      "description": "Amazon کے Solution Provider Portal میں Copacker کی ایپ کے ساتھ والا مینو کھولیں، Authorize منتخب کریں اور ریفریش ٹوکن کاپی کریں۔ آپ کا مرچنٹ ٹوکن Seller Central میں Settings، Account Info کے تحت ہے۔",
+      "connect": "منسلک کریں",
+      "merchantToken": "مرچنٹ ٹوکن",
+      "refreshToken": "ریفریش ٹوکن"
     }
   },
   "excludedTags": {

@@ -163,3 +163,7 @@ with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local databas
 To read a deployed database, go through the Railway CLI rather than storing its URL locally: `railway run` uses the
 private `postgres.railway.internal` hostname, which a local computer can't reach, and the public TCP proxy needs
 `sslmode=verify-ca` with the CA from Railway. Never disable certificate verification.
+
+### Amazon connection mode
+
+`AMAZON_SELF_AUTH_ENABLED` defaults to `true`. Settings then accepts the seller merchant token and refresh token for private self-authorization, validates access with Amazon, and stores the token encrypted. The token must belong to the configured `AMAZON_CLIENT_ID` and `AMAZON_CLIENT_SECRET`. Set the flag to `false` to show the marketplace selector and launch the existing Seller Central OAuth flow. Manual-token submissions are also rejected server-side when disabled. This flag does not change existing connections.
