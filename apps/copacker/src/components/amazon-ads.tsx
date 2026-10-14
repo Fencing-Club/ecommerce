@@ -1,8 +1,10 @@
 "use client"
 
+import { ArrowRight, CircleCheck, CircleDashed } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { match } from "ts-pattern"
 import { api } from "@/lib/api"
+import { StatusBadge } from "./common"
 import { Button } from "./ui/button"
 
 const adsApi = api.injectEndpoints({
@@ -15,6 +17,33 @@ const adsApi = api.injectEndpoints({
     })
   })
 })
+
+export function AmazonAdsIndicator({ admin }: { admin: boolean }) {
+  const t = useTranslations("settings.amazonAds")
+  const { data, isError } = adsApi.useAmazonAdsStatusQuery(undefined, { pollingInterval: 10000 })
+  let badge = <span className="text-xs text-muted-foreground">{t("checking")}</span>
+  if (isError) {
+    badge = <span className="text-xs text-muted-foreground">{t("statusUnavailable")}</span>
+  } else if (data) {
+    badge = (
+      <span className="inline-flex items-center gap-1">
+        <StatusBadge
+          tone={data.connected ? "success" : "neutral"}
+          icon={data.connected ? <CircleCheck aria-hidden /> : <CircleDashed aria-hidden />}
+        >
+          {t(data.connected ? "connected" : "notConnected")}
+        </StatusBadge>
+        {admin && !data.connected && <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden />}
+      </span>
+    )
+  }
+  return (
+    <span className="flex w-full flex-wrap items-center justify-between gap-2 border-t pt-2" aria-live="polite">
+      <span>{t("title")}</span>
+      {badge}
+    </span>
+  )
+}
 
 export function AmazonAdsSettings({ available }: { available: boolean }) {
   const t = useTranslations("settings.amazonAds")

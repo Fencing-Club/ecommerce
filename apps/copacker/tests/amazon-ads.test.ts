@@ -154,9 +154,10 @@ describe("Amazon Ads authorization and transport", () => {
       ).status
     ).toBe(403)
     context.role = "member"
-    await expect(GET(new Request("https://copacker.ai/api/connections/amazon-ads?status=1"))).rejects.toThrow(
-      "Only admins"
-    )
+    expect(
+      await (await GET(new Request("https://copacker.ai/api/connections/amazon-ads?status=1"))).json()
+    ).toMatchObject({ connected: false })
+    await expect(GET(new Request("https://copacker.ai/api/connections/amazon-ads"))).rejects.toThrow("Only admins")
     expect(fetchMock).not.toHaveBeenCalled()
   })
   it("uses distinct developer credentials and form-encoded grants", async () => {

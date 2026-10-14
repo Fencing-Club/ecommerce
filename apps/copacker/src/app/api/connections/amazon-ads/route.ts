@@ -11,11 +11,11 @@ import { hash, isAppOrigin, siteUrlFor, token } from "@/server/security"
 export async function GET(request: Request) {
   const s = await session()
   requireBuyer(s)
-  requireAdmin(s)
   const url = new URL(request.url)
   if (url.searchParams.has("status")) {
     return Response.json(await adsStatus(s.org.id), { headers: { "Cache-Control": "private, no-store" } })
   }
+  requireAdmin(s)
   const site = siteUrlFor(request.headers),
     callback = `${site}/api/connections/amazon-ads`
   const settings = `${site}/settings#integrations`
