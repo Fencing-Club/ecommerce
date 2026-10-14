@@ -11,7 +11,6 @@ import {
   stockSync,
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
-import { AmazonAdsSettings } from "./amazon-ads"
 import { Integrations } from "./integrations"
 
 const sent: ActionRequest[] = []
@@ -30,6 +29,7 @@ const meta = preview.meta({
   component: Integrations,
   args: {
     admin: true,
+    amazonAdsAvailable: true,
     ebayAvailable: false,
     shopify: null,
     amazon: null,
@@ -54,13 +54,13 @@ const meta = preview.meta({
 })
 
 export const AmazonAdsNotConnected = meta.story({
-  args: { amazon, amazonSettings: <AmazonAdsSettings available /> },
+  args: { amazon },
   play: async ({ canvas }) => {
-    const card = canvas.getByRole("button", { name: "Amazon settings" })
+    const card = canvas.getByRole("button", { name: "Amazon Ads settings" })
     await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
     await expect(await within(card).findByText("Not connected")).toBeVisible()
     await userEvent.click(card)
-    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    const panel = await screen.findByRole("dialog", { name: "Amazon Ads" })
     await waitFor(() => expect(within(panel).getByRole("link", { name: "Connect Amazon Ads" })).toBeVisible())
   }
 })
@@ -74,9 +74,9 @@ export const AmazonAdsConnected = meta.story({
       )
     ),
   play: async ({ canvas }) => {
-    const card = canvas.getByRole("button", { name: "Amazon settings" })
+    const card = canvas.getByRole("button", { name: "Amazon Ads settings" })
     await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
-    await waitFor(() => expect(within(card).getAllByText("Connected")).toHaveLength(2))
+    await waitFor(() => expect(within(card).getAllByText("Connected")).toHaveLength(1))
   }
 })
 
@@ -108,7 +108,7 @@ export const EbayAvailable = meta.story({
 export const EbayAvailableMember = meta.story({
   args: { admin: false, ebayAvailable: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText("Not connected")).toHaveLength(3)
+    await waitFor(() => expect(canvas.getAllByText("Not connected")).toHaveLength(4))
     await expect(canvas.queryByRole("link")).toBeNull()
   }
 })
@@ -209,7 +209,7 @@ export const ConnectAmazon = meta.story({
 export const MemberNothingConnected = meta.story({
   args: { admin: false },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText("Not connected")).toHaveLength(2)
+    await waitFor(() => expect(canvas.getAllByText("Not connected")).toHaveLength(3))
     await expect(canvas.queryByRole("button")).toBeNull()
     await expect(canvas.queryByRole("link")).toBeNull()
   }
@@ -274,7 +274,7 @@ export const MemberConnected = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Connected")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Shopify settings" })).toBeNull()
-    await expect(canvas.getByText("Not connected")).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText("Not connected")).toHaveLength(2))
   }
 })
 
@@ -316,5 +316,28 @@ export const AmazonPrivateAuthorization = meta.story({
     const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
     await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
     await expect(within(dialog).getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
+  }
+})
+
+export const AdsRequiresStore = meta.story({
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("region", { name: "Advertising" })).toHaveTextContent(
+      "Connect your Amazon store first."
+    )
+    await expect(canvas.queryByRole("button", { name: "Amazon Ads settings" })).toBeNull()
+  }
+})
+export const AdsConnectedMember = meta.story({
+  args: { admin: false, amazon },
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/connections/amazon-ads", () =>
+        HttpResponse.json({ connected: true, active: false, failed: false })
+      )
+    ),
+  play: async ({ canvas }) => {
+    const ads = canvas.getByRole("region", { name: "Advertising" })
+    await expect(await within(ads).findByText("Connected")).toBeVisible()
+    await expect(within(ads).queryByRole("button")).toBeNull()
   }
 })

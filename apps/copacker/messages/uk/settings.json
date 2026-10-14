@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Інтеграції",
-    "description": "Магазини, з якими синхронізується Copacker",
+    "description": "Магазини та рекламні облікові записи",
     "marketplaces": "Маркетплейси",
     "marketplacesUnavailable": "Не вдалося завантажити з Amazon",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "Виберіть маркетплейс і вставте токен оновлення з Amazon Solution Provider Portal.",
       "connect": "Підключити",
       "refreshToken": "Refresh token"
-    }
+    },
+    "storeGroup": "Магазини",
+    "advertisingGroup": "Реклама",
+    "manage": "Керувати"
   },
   "excludedTags": {
     "title": "Виключені теги замовлень",
@@ -245,6 +248,8 @@
     "sync": "Синхронізувати витрати",
     "disconnect": "Відключити Ads",
     "checking": "Перевірка…",
-    "statusUnavailable": "Статус недоступний"
+    "statusUnavailable": "Статус недоступний",
+    "summary": "Витрати на рекламу",
+    "requiresStore": "Спочатку підключіть свій магазин Amazon."
   }
 }

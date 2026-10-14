@@ -29,7 +29,7 @@ import {
   SheetTrigger
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { AmazonAdsIndicator } from "./amazon-ads"
+import { AmazonAdsCard } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
@@ -54,6 +54,7 @@ export function Integrations({
   admin,
   ebayAvailable,
   amazonSelfAuth = false,
+  amazonAdsAvailable = false,
   shopify,
   amazon,
   ebay,
@@ -64,6 +65,7 @@ export function Integrations({
   admin: boolean
   ebayAvailable: boolean
   amazonSelfAuth?: boolean
+  amazonAdsAvailable?: boolean
   shopify: Connection | null
   amazon: Connection | null
   ebay: Connection | null
@@ -118,12 +120,26 @@ export function Integrations({
     ebayCard = <NotConnected store="ebay" />
   }
   return (
-    <div className="@container">
-      <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
-        {shopifyCard}
-        {amazonCard}
-        {ebayCard}
-      </div>
+    <div className="@container space-y-6">
+      <section className="space-y-3" aria-label={t("storeGroup")}>
+        <h3 className="text-sm font-medium">{t("storeGroup")}</h3>
+        <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
+          {shopifyCard}
+          {amazonCard}
+          {ebayCard}
+        </div>
+      </section>
+      <section className="space-y-3" aria-label={t("advertisingGroup")}>
+        <h3 className="text-sm font-medium">{t("advertisingGroup")}</h3>
+        <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
+          <AmazonAdsCard
+            admin={admin}
+            available={amazonAdsAvailable}
+            sellerConnected={Boolean(amazon)}
+            className={tile}
+          />
+        </div>
+      </section>
     </div>
   )
 }
@@ -217,7 +233,6 @@ function Connected({
             </span>
           )}
           <StoreSync store={store} />
-          {store === "amazon" && <AmazonAdsIndicator admin={admin} />}
         </span>
       }
     />

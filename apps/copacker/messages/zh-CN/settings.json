@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "集成",
-    "description": "与 Copacker 同步的店铺",
+    "description": "店铺和广告账户",
     "marketplaces": "站点",
     "marketplacesUnavailable": "无法从 Amazon 加载",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "选择商城，并粘贴 Amazon Solution Provider Portal 中的刷新令牌。",
       "connect": "连接",
       "refreshToken": "刷新令牌"
-    }
+    },
+    "storeGroup": "店铺",
+    "advertisingGroup": "广告",
+    "manage": "管理"
   },
   "excludedTags": {
     "title": "排除的订单标签",
@@ -245,6 +248,8 @@
     "sync": "同步广告支出",
     "disconnect": "断开 Ads",
     "checking": "检查中…",
-    "statusUnavailable": "状态不可用"
+    "statusUnavailable": "状态不可用",
+    "summary": "广告支出",
+    "requiresStore": "请先连接您的 Amazon 店铺。"
   }
 }

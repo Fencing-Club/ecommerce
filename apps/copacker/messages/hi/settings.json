@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "इंटीग्रेशन",
-    "description": "वे स्टोर जिनके साथ Copacker सिंक करता है",
+    "description": "स्टोर और विज्ञापन खाते",
     "marketplaces": "मार्केटप्लेस",
     "marketplacesUnavailable": "Amazon से लोड नहीं हो सका",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "अपना मार्केटप्लेस चुनें और Amazon के Solution Provider Portal से रिफ्रेश टोकन पेस्ट करें।",
       "connect": "कनेक्ट करें",
       "refreshToken": "रीफ़्रेश टोकन"
-    }
+    },
+    "storeGroup": "स्टोर",
+    "advertisingGroup": "विज्ञापन",
+    "manage": "प्रबंधित करें"
   },
   "excludedTags": {
     "title": "बाहर रखे गए ऑर्डर टैग",
@@ -245,6 +248,8 @@
     "sync": "विज्ञापन खर्च सिंक करें",
     "disconnect": "Ads डिस्कनेक्ट करें",
     "checking": "जाँच जारी है…",
-    "statusUnavailable": "स्थिति उपलब्ध नहीं"
+    "statusUnavailable": "स्थिति उपलब्ध नहीं",
+    "summary": "विज्ञापन खर्च",
+    "requiresStore": "पहले अपना Amazon स्टोर कनेक्ट करें।"
   }
 }

@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integraciones",
-    "description": "Tiendas que Copacker sincroniza",
+    "description": "Tiendas y cuentas publicitarias",
     "marketplaces": "Marketplaces",
     "marketplacesUnavailable": "No se pudo cargar desde Amazon",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "Elige tu marketplace y pega el token de actualización del Solution Provider Portal de Amazon.",
       "connect": "Conectar",
       "refreshToken": "Token de actualización"
-    }
+    },
+    "storeGroup": "Tiendas",
+    "advertisingGroup": "Publicidad",
+    "manage": "Administrar"
   },
   "excludedTags": {
     "title": "Etiquetas de pedido excluidas",
@@ -245,6 +248,8 @@
     "sync": "Sincronizar gastos",
     "disconnect": "Desconectar Ads",
     "checking": "Consultando…",
-    "statusUnavailable": "Estado no disponible"
+    "statusUnavailable": "Estado no disponible",
+    "summary": "Gasto publicitario",
+    "requiresStore": "Conecta primero tu tienda de Amazon."
   }
 }

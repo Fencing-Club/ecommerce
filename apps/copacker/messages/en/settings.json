@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integrations",
-    "description": "Stores Copacker syncs with",
+    "description": "Stores and advertising accounts",
     "marketplaces": "Marketplaces",
     "marketplacesUnavailable": "Couldn’t load from Amazon",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "Choose your marketplace and paste the refresh token from Amazon’s Solution Provider Portal.",
       "connect": "Connect",
       "refreshToken": "Refresh token"
-    }
+    },
+    "storeGroup": "Stores",
+    "advertisingGroup": "Advertising",
+    "manage": "Manage"
   },
   "excludedTags": {
     "title": "Excluded order tags",
@@ -245,6 +248,8 @@
     "sync": "Sync ad spend",
     "disconnect": "Disconnect Ads",
     "checking": "Checking…",
-    "statusUnavailable": "Status unavailable"
+    "statusUnavailable": "Status unavailable",
+    "summary": "Advertising spend",
+    "requiresStore": "Connect your Amazon store first."
   }
 }
