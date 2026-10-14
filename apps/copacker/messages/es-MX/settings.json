@@ -230,5 +230,19 @@
     "shopifyLocation": "Ubicación de Shopify",
     "shopifyLocationDescription": "Las órdenes de compra enviadas aquí aparecen como ordenadas allá",
     "notLinked": "Sin vincular"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Gasto diario de Sponsored Products, Brands y Display. Los periodos con informes completos usan el gasto publicitario en lugar de los pagos de Amazon. Los demás usan los pagos registrados. Los informes cubren hasta 90 días y pueden cambiar con los ajustes de Amazon.",
+    "unavailable": "La configuración de Amazon Ads está incompleta.",
+    "error": "No se pudo actualizar Amazon Ads. Inténtalo de nuevo.",
+    "syncing": "Sincronizando gastos…",
+    "failed": "Algunos informes fallaron. Vuelve a sincronizar o conecta la cuenta de nuevo.",
+    "connected": "Conectado",
+    "notConnected": "Sin conectar",
+    "reconnect": "Reconectar Ads",
+    "connect": "Conectar Amazon Ads",
+    "sync": "Sincronizar gastos",
+    "disconnect": "Desconectar Ads"
   }
 }

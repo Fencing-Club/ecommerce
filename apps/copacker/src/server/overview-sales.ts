@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm"
 import { db } from "@/db"
 import { type DayRange, rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
+import { adsCharge } from "./amazon-ads"
 import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
 import type { SalesSource } from "./sales-orders"
@@ -723,6 +724,14 @@ export async function platformCharges(
   const lines: ChargeLine[] = []
   for (const account of accounts) {
     if (account.provider === "amazon") {
+      const advertising = await adsCharge(
+        orgId,
+        account.externalId,
+        account.marketplaceId ?? undefined,
+        from,
+        to,
+        currency
+      )
       const result = await db().execute(sql`
         select case when type = 'Refund' then 'amazon-refunds'
             when type = 'ProductAdsPayment' then 'amazon-ads'
@@ -749,12 +758,18 @@ export async function platformCharges(
           and not coalesce(data->'relatedIdentifiers', '[]'::jsonb) @> '[{"relatedIdentifierName": "DEFERRED_TRANSACTION_ID"}]'
         group by 1`)
       for (const row of rows(result)) {
+        if (row.key === "amazon-ads" && advertising !== null) {
+          continue
+        }
         lines.push({
           key: String(row.key),
           label: t(amazonChargeLabels[String(row.key)] ?? "charges.amazon"),
           minor: count(row.minor),
           currency
         })
+      }
+      if (advertising !== null) {
+        lines.push({ key: "amazon-ads", label: t("charges.amazonAds"), minor: advertising, currency })
       }
     } else if (account.provider === "shopify" && !account.locationId) {
       const result = await db().execute(sql`

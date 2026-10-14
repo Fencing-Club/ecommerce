@@ -230,5 +230,19 @@
     "shopifyLocation": "Shopify-Standort",
     "shopifyLocationDescription": "Bestellungen an diese Adresse erscheinen dort als bestellt",
     "notLinked": "Nicht verknüpft"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Tägliche Ausgaben für Sponsored Products, Brands und Display. Vollständige Berichtszeiträume verwenden Werbeausgaben statt Amazon-Zahlungen. Andere Zeiträume verwenden gebuchte Zahlungen. Berichte umfassen bis zu 90 Tage und können sich durch Anpassungen von Amazon ändern.",
+    "unavailable": "Amazon Ads ist noch nicht eingerichtet.",
+    "error": "Amazon Ads konnte nicht aktualisiert werden. Versuche es erneut.",
+    "syncing": "Werbeausgaben werden synchronisiert…",
+    "failed": "Einige Berichte sind fehlgeschlagen. Synchronisiere erneut oder verbinde das Konto neu.",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "reconnect": "Ads erneut verbinden",
+    "connect": "Amazon Ads verbinden",
+    "sync": "Werbeausgaben synchronisieren",
+    "disconnect": "Ads trennen"
   }
 }

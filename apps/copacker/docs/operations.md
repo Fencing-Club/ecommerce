@@ -40,6 +40,10 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)).
+7. Amazon Ads: a separate approved Login with Amazon profile, with `AMAZON_ADS_CLIENT_ID` and
+   `AMAZON_ADS_CLIENT_SECRET` on both the web and worker services. Register
+   `<APP_URL>/api/connections/amazon-ads` as an allowed return URL, then connect Ads from Amazon's settings sheet.
+   See [Amazon Ads expenses](amazon-ads.md) for reporting coverage and the expense calculation.
 
 ## Recovery
 

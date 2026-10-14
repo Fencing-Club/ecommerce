@@ -1,5 +1,9 @@
 # Overview page
 
+Connected [Amazon Ads reporting](amazon-ads.md) replaces posted ad payments with daily campaign spend only when
+the entire selected period has imported reports and exchange rates. Incomplete periods retain posted payments;
+the two sources are never added together.
+
 `/overview` is where buyers land (`/` redirects buyers there and suppliers to `/orders`). It summarizes data Copacker
 already stores and reads nothing from Shopify or Amazon directly. `overview()` in `apps/copacker/src/server/overview.ts`
 assembles it, with the sales queries and maths in `overview-sales.ts`. The page renders `components/overview.tsx`, the

@@ -3,6 +3,8 @@ import type { Transaction } from "@/db"
 import {
   amazonInboundShipments,
   amazonTransactions,
+  amazonAdsConnections,
+  amazonAdsDays,
   catalogs,
   connections,
   contacts,
@@ -62,6 +64,8 @@ export async function deleteWorkspaceRecords(tx: Transaction, orgId: string) {
     stockDays,
     stockSnapshots,
     amazonTransactions,
+    amazonAdsConnections,
+    amazonAdsDays,
     shopifyBalanceTransactions,
     monthlyCosts,
     amazonInboundShipments,

@@ -230,5 +230,19 @@
     "shopifyLocation": "Shopify location",
     "shopifyLocationDescription": "Purchase orders sent here show as on order there",
     "notLinked": "Not linked"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Daily Sponsored Products, Brands and Display spend. Complete reporting periods use ad spend instead of Amazon payments. Other periods use posted payments. Reports cover up to 90 days and may change as Amazon adjusts them.",
+    "unavailable": "Amazon Ads setup is not complete.",
+    "error": "Could not update Amazon Ads. Try again.",
+    "syncing": "Syncing ad spend…",
+    "failed": "Some reports failed. Try syncing again, or reconnect to renew access.",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "reconnect": "Reconnect Ads",
+    "connect": "Connect Amazon Ads",
+    "sync": "Sync ad spend",
+    "disconnect": "Disconnect Ads"
   }
 }
