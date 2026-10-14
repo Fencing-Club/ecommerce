@@ -60,7 +60,10 @@ PR deployments are enabled. The GitHub source follows `main` after this rollout 
 | --- | --- | --- |
 | Preview base | `https://copacker-stories-preview-base.up.railway.app` | Tracks `main`; exists to supply the PR template |
 | Storybook PR | Railway-issued `*.up.railway.app` URL shown on the PR deployment | Created per eligible repository PR, updated on pushes, removed on close/merge |
-| App PR | Not provisioned | Requires a separate isolated data, credentials and authentication rollout |
+| UX preview | Page and component stories, with fixture data and mocked API responses | Review flows through Storybook; no connection to shared staging or production data |
+| Database preview | Deferred until the Neon migration | Plan per-PR branches, sanitized seeds, credential isolation and deletion on PR close |
+| Storage preview | Deferred until the Cloudflare storage migration | Plan isolated per-PR namespaces or buckets, scoped credentials and cleanup on PR close |
+| Full data-backed app PR | Deferred with database and storage | Add real persistence and integration acceptance only after isolated resources are available |
 
 Use the actual Railway-issued preview URL; `pr-123.stories.preview.copacker.ai` is not configured.
 Generated domains give automatic HTTPS and cleanup without per-PR DNS records. They require no WorkOS, Google,
@@ -68,6 +71,19 @@ Shopify, Amazon or eBay callback entries because Storybook runs fixtures. Runtim
 with sleeping enabled. Railway restricts automatic PR deployment to recognized project/workspace contributors.
 Health metadata uses `RAILWAY_GIT_COMMIT_SHA` for GitHub deployments; release CD supplies `APP_COMMIT_SHA` explicitly.
 Do not enable app-project PR duplication from production: that would copy live integration configuration.
+
+### Deferred persistence (decision: 2026-10-14)
+
+Preview scope is Storybook and fixture-backed UX only. Do not provision a Railway database or storage bucket per PR,
+run migrations/seeds against shared environments, or wire UX previews to staging/production persistence.
+Database previews are deferred until the migration to Neon; storage previews are deferred until the migration to
+Cloudflare. The intent is to make isolated preview resources simpler and cheaper to provision and remove. This is a
+planned dependency, not a claim that either migration or preview resource automation has been completed.
+
+Revisit full app previews after those migrations: define per-PR resource ownership and lifetime, sanitized fixture
+seeding, least-privilege credentials, callback/origin registrations, cost limits, CI readiness checks and automatic
+cleanup on PR close. Workers, real emails and external integration/webhook subscriptions remain disabled unless a
+preview explicitly provisions dedicated test resources.
 
 ## Configuration change register
 
