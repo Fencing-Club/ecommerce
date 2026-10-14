@@ -126,6 +126,12 @@
       "description": "Choisissez votre marketplace, puis connectez-vous à Amazon pour autoriser Copacker.",
       "marketplace": "Marketplace",
       "continue": "Continuer vers Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connecter Amazon",
+      "description": "Choisissez votre marketplace et collez le jeton de renouvellement du Solution Provider Portal Amazon.",
+      "connect": "Connecter",
+      "refreshToken": "Jeton d’actualisation"
     }
   },
   "excludedTags": {

@@ -52,6 +52,7 @@ const clickable =
 export function Integrations({
   admin,
   ebayAvailable,
+  amazonSelfAuth = false,
   shopify,
   amazon,
   ebay,
@@ -61,6 +62,7 @@ export function Integrations({
 }: {
   admin: boolean
   ebayAvailable: boolean
+  amazonSelfAuth?: boolean
   shopify: Connection | null
   amazon: Connection | null
   ebay: Connection | null
@@ -87,9 +89,8 @@ export function Integrations({
       </Connected>
     )
   } else if (admin) {
-    // Amazon's consent page, which comes back to Settings.
     amazonCard = (
-      <AmazonConnect className={cn(tile, clickable)}>
+      <AmazonConnect selfAuth={amazonSelfAuth} className={cn(tile, clickable)}>
         <TileBody store="amazon" footer={<ConnectLabel />} />
       </AmazonConnect>
     )

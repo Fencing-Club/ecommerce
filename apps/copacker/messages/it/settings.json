@@ -126,6 +126,12 @@
       "description": "Scegli il marketplace, poi accedi ad Amazon per autorizzare Copacker.",
       "marketplace": "Marketplace",
       "continue": "Continua su Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Collega Amazon",
+      "description": "Scegli il marketplace e incolla il token di aggiornamento dal Solution Provider Portal di Amazon.",
+      "connect": "Collega",
+      "refreshToken": "Refresh token"
     }
   },
   "excludedTags": {

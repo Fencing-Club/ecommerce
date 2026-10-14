@@ -1,13 +1,9 @@
 import { z } from "zod"
+import { amazonMarketplaceSchema } from "./amazon-marketplaces"
 
-// A self-authorization: the seller's merchant token and the refresh token Amazon issues when the seller authorizes
-// Copacker's app from the Solution Provider Portal.
+// Private authorization supplies a marketplace and refresh token; the seller ID stays in server configuration.
 export const selfAuthorizationSchema = z.object({
-  sellerId: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z0-9]{8,32}$/, "shipments.amazonAuthorization.sellerId"),
+  marketplace: amazonMarketplaceSchema,
   refreshToken: z
     .string()
     .trim()

@@ -154,7 +154,7 @@ async function SettingsPage(args: Args) {
               amazon={
                 amazonAccount
                   ? {
-                      account: account(amazon?.name ?? null, amazonAccount.externalId),
+                      account: amazon?.name ?? "Amazon",
                       externalId: amazonAccount.externalId,
                       marketplaces: amazon?.marketplaces ?? null
                     }
@@ -547,18 +547,19 @@ export const AmazonSettings = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(sheet).toHaveTextContent(`Harbor Goods US, ${amazonAccount}`)
+    await expect(sheet).toHaveTextContent("Harbor Goods US")
+    await expect(sheet).not.toHaveTextContent(amazonAccount)
     await expect(sheet).toHaveTextContent("United States, Canada")
     await expect(within(sheet).queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
   }
 })
 
-// Amazon didn't say what the store is called: its account shows by ID, and its marketplaces can't be listed.
+// A missing store name never exposes the account identifier.
 export const AmazonUnavailable = meta.story({
   ...buyer,
   args: { amazonStore: null, linked: [{ provider: "amazon", externalId: amazonAccount }] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(amazonAccount)).toBeVisible()
+    await expect(canvas.queryByText(amazonAccount)).toBeNull()
     await expect(canvas.getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
     await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })

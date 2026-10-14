@@ -126,6 +126,12 @@
       "description": "Виберіть маркетплейс і ввійдіть в Amazon, щоб надати доступ Copacker.",
       "marketplace": "Маркетплейс",
       "continue": "Перейти до Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Підключити Amazon",
+      "description": "Виберіть маркетплейс і вставте токен оновлення з Amazon Solution Provider Portal.",
+      "connect": "Підключити",
+      "refreshToken": "Refresh token"
     }
   },
   "excludedTags": {

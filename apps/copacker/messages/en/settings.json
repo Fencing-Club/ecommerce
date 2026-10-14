@@ -126,6 +126,12 @@
       "description": "Choose your marketplace, then sign in to Amazon to approve Copacker.",
       "marketplace": "Marketplace",
       "continue": "Continue to Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connect Amazon",
+      "description": "Choose your marketplace and paste the refresh token from Amazon’s Solution Provider Portal.",
+      "connect": "Connect",
+      "refreshToken": "Refresh token"
     }
   },
   "excludedTags": {

@@ -126,6 +126,12 @@
       "description": "अपना मार्केटप्लेस चुनें, फिर Copacker को अनुमति देने के लिए Amazon में साइन इन करें।",
       "marketplace": "मार्केटप्लेस",
       "continue": "Amazon पर जारी रखें"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon कनेक्ट करें",
+      "description": "अपना मार्केटप्लेस चुनें और Amazon के Solution Provider Portal से रिफ्रेश टोकन पेस्ट करें।",
+      "connect": "कनेक्ट करें",
+      "refreshToken": "रीफ़्रेश टोकन"
     }
   },
   "excludedTags": {

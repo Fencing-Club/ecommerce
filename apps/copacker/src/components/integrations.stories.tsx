@@ -18,7 +18,7 @@ const connectShopify = fn()
 
 const shopify = { account: `Harbor Goods, ${shopifyAccount}`, externalId: shopifyAccount }
 const amazon = {
-  account: `Harbor Goods US, ${amazonAccount}`,
+  account: "Harbor Goods US",
   externalId: amazonAccount,
   marketplaces: ["United States", "Canada"]
 }
@@ -277,5 +277,15 @@ export const SyncingStock = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Syncing inventory")).toBeVisible()
+  }
+})
+
+export const AmazonPrivateAuthorization = meta.story({
+  args: { amazonSelfAuth: true },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^Amazon/ }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(within(dialog).getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
   }
 })

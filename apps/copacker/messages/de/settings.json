@@ -126,6 +126,12 @@
       "description": "Wählen Sie Ihren Marktplatz und melden Sie sich bei Amazon an, um Copacker zu autorisieren.",
       "marketplace": "Marktplatz",
       "continue": "Weiter zu Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon verbinden",
+      "description": "Wähle deinen Marktplatz und füge den Aktualisierungstoken aus Amazons Solution Provider Portal ein.",
+      "connect": "Verbinden",
+      "refreshToken": "Refresh-Token"
     }
   },
   "excludedTags": {

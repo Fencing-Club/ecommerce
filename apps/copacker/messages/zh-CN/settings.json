@@ -126,6 +126,12 @@
       "description": "选择商城，然后登录 Amazon 以授权 Copacker。",
       "marketplace": "商城",
       "continue": "前往 Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "连接 Amazon",
+      "description": "选择商城，并粘贴 Amazon Solution Provider Portal 中的刷新令牌。",
+      "connect": "连接",
+      "refreshToken": "刷新令牌"
     }
   },
   "excludedTags": {
