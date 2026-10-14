@@ -36,11 +36,12 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Configuration | Applied or verified | Remaining action |
 | --- | --- | --- |
 | Local DNS | DNS-only `*.local.copacker.ai` A `127.0.0.1`, TTL 300; superseded loopback `*.dev.copacker.ai` removed | Each workstation runs `dev:setup` to trust its own CA |
-| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered | Existing production defaults and seven prior entries retained; separate identity environments require their own migration |
+| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered; CI callback `http://127.0.0.1:3005/callback` and logout origin `http://127.0.0.1:3005` registered after the real logout test exposed fallback to production | Existing production defaults and seven prior entries retained; separate identity environments require their own migration |
 | Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local Google sign-in reaches account selection; password sign-in and logout return to the exact local origin in E2E acceptance | No upstream callback change required for local rename; Google account consent/return still needs interactive verification |
-| Google Maps restrictions | Required local pattern is `https://*.local.copacker.ai/*` | Saved and verified on 2026-10-14; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved. The current key is shared across environments; separate keys remain planned |
+| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | The current key is shared across environments; separate keys remain planned |
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
+| GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
 | Public development hooks | Namespace reserved only; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
 | Other integration dashboards | Exact callback changes are specified in the register below | Shopify, Amazon and eBay local callbacks are opt-in per integration worktree; not automatically registered |
 
@@ -54,7 +55,13 @@ Storybook previews run in the separate Railway project `copacker-storybook-previ
 (`16c32c30-7ae6-41c7-b3c9-896d0c4d3876`). Its `preview-base` environment
 (`379f7435-fe02-47d2-8125-3bcb58a890e1`) contains only `copacker-stories`
 (`4af6c3a1-6118-46c0-b434-de0deecf8185`), with no application secrets, database, bucket or worker.
-PR deployments are enabled. The GitHub source follows `main` after this rollout is merged.
+PR deployments are enabled and the GitHub source follows `main`. PR #8 merged after all checks passed; its CI logout test now verifies the exact return origin.
+
+Opening [PR #9](https://github.com/AndrewCraswell/ecommerce/pull/9) automatically created ephemeral environment
+`ecommerce-pr-9` (`dfc03b53-5dcc-4f0d-ba00-b34cda91a67d`) and
+`https://copacker-stories-ecommerce-pr-9.up.railway.app`. Its inventory contains one Storybook service, only
+`PORT` / `RAILWAY_DOCKERFILE_PATH` variables, and no volumes or buckets. The PR records deployment and cleanup
+acceptance evidence; its temporary address is not a permanent environment URL.
 
 | Surface | Address and lifecycle | Configuration |
 | --- | --- | --- |
