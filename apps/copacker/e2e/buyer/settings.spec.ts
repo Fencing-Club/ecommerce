@@ -271,7 +271,8 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   await integrations.getByRole("button", { name: /^Amazon .*Connect$/ }).click()
   const amazonDialog = page.getByRole("dialog", { name: "Connect Amazon" })
   await expect(amazonDialog.getByLabel(/^Refresh token/)).toHaveAttribute("type", "password")
-  await expect(amazonDialog.getByRole("textbox", { name: "Merchant token" })).toBeVisible()
+  await expect(amazonDialog.getByRole("combobox", { name: "Marketplace" })).toContainText("United States")
+  await expect(amazonDialog.getByLabel(/merchant token/i)).toHaveCount(0)
   await expect(amazonDialog.getByRole("button", { name: "Connect", exact: true })).toBeVisible()
   await amazonDialog.getByRole("button", { name: "Close", exact: true }).click()
   if (!deployed) {

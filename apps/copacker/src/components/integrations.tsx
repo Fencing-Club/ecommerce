@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { AmazonConnect } from "./amazon-connect"
-import { AmazonSelfAuthorize } from "./amazon-self-authorize"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
 import { useStockSync } from "./inventory-sync"
@@ -90,11 +89,10 @@ export function Integrations({
       </Connected>
     )
   } else if (admin) {
-    const ConnectAmazon = amazonSelfAuth ? AmazonSelfAuthorize : AmazonConnect
     amazonCard = (
-      <ConnectAmazon className={cn(tile, clickable)}>
+      <AmazonConnect selfAuth={amazonSelfAuth} className={cn(tile, clickable)}>
         <TileBody store="amazon" footer={<ConnectLabel />} />
-      </ConnectAmazon>
+      </AmazonConnect>
     )
   }
   let ebayCard = (

@@ -124,6 +124,7 @@ describe("Amazon self-authorization", () => {
 
   beforeEach(() => {
     vi.stubEnv("AMAZON_CLIENT_ID", "amazon-client")
+    vi.stubEnv("AMAZON_MERCHANT_TOKEN", "A2CIYIV0E1FHU3")
     vi.stubEnv("AMAZON_CLIENT_SECRET", "amazon-secret")
   })
 
@@ -131,7 +132,7 @@ describe("Amazon self-authorization", () => {
     fetchMock
       .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
       .mockResolvedValueOnce(participations("ATVPDKIKX0DER"))
-    expect(await connectAmazonSelfAuthorized(orgId, { sellerId: " a2ciyiv0e1fhu3 ", refreshToken: token })).toEqual({
+    expect(await connectAmazonSelfAuthorized(orgId, { marketplace: "US", refreshToken: token })).toEqual({
       sellerId: "A2CIYIV0E1FHU3"
     })
     const [saved] = await database.select().from(tables.connections)
@@ -141,20 +142,36 @@ describe("Amazon self-authorization", () => {
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/sellers/v1/marketplaceParticipations")
   })
 
-  it("saves nothing when Amazon rejects the token or the seller isn't in the US", async () => {
+  it("connects Canada using the configured seller ID without accepting a submitted seller ID", async () => {
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
+      .mockResolvedValueOnce(participations("A2EUQ1WTGCTBG2"))
+    expect(
+      await connectAmazonSelfAuthorized(orgId, { marketplace: "CA", refreshToken: token, sellerId: "WRONGSELLER" })
+    ).toEqual({ sellerId: "A2CIYIV0E1FHU3" })
+  })
+  it("rejects missing seller configuration before contacting Amazon", async () => {
+    vi.stubEnv("AMAZON_MERCHANT_TOKEN", undefined)
+    await expect(connectAmazonSelfAuthorized(orgId, { marketplace: "US", refreshToken: token })).rejects.toMatchObject({
+      key: "requestFailed"
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("saves nothing when Amazon rejects the token or the selected marketplace is unavailable", async () => {
     fetchMock.mockResolvedValueOnce(new Response("", { status: 400 }))
-    await expect(
-      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: token })
-    ).rejects.toThrow("didn’t accept this token")
+    await expect(connectAmazonSelfAuthorized(orgId, { marketplace: "US", refreshToken: token })).rejects.toThrow(
+      "didn’t accept this token"
+    )
     fetchMock
       .mockResolvedValueOnce(Response.json({ access_token: "access", expires_in: 3600 }))
       .mockResolvedValueOnce(participations("A1F83G8C2ARO7P"))
-    await expect(
-      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: token })
-    ).rejects.toThrow("US marketplace")
-    await expect(
-      connectAmazonSelfAuthorized(orgId, { sellerId: "A2CIYIV0E1FHU3", refreshToken: "nope" })
-    ).rejects.toThrow("shipments.amazonAuthorization.refreshToken")
+    await expect(connectAmazonSelfAuthorized(orgId, { marketplace: "US", refreshToken: token })).rejects.toThrow(
+      "didn’t accept this token"
+    )
+    await expect(connectAmazonSelfAuthorized(orgId, { marketplace: "US", refreshToken: "nope" })).rejects.toThrow(
+      "shipments.amazonAuthorization.refreshToken"
+    )
     expect(await database.select().from(tables.connections)).toHaveLength(0)
   })
 })

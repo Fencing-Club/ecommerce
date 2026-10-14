@@ -129,9 +129,8 @@
     },
     "amazonSelfAuthorize": {
       "title": "Підключити Amazon",
-      "description": "У Solution Provider Portal Amazon відкрийте меню біля застосунку Copacker, виберіть Authorize і скопіюйте refresh token. Ваш merchant token є в Seller Central у розділі Settings, Account Info.",
+      "description": "Виберіть маркетплейс і вставте токен оновлення з Amazon Solution Provider Portal.",
       "connect": "Підключити",
-      "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
     }
   },

@@ -13,13 +13,32 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 import { Field } from "@/components/ui/field"
+import { useActionForm } from "@/hooks/useActionForm"
+import { selfAuthorizationSchema } from "@/lib/amazon"
 import { amazonMarketplaces } from "@/lib/amazon-marketplaces"
 import { countriesIn } from "@/lib/countries"
-import { FormLabel } from "./form-controls"
-import { SelectControl } from "./form-select"
+import { ActionForm } from "./actions"
+import { FormInput, FormLabel } from "./form-controls"
+import { FormSelect, SelectControl } from "./form-select"
 
-export function AmazonConnect({ className, children }: { className?: string; children: React.ReactNode }) {
+export function AmazonConnect({
+  className,
+  children,
+  selfAuth = false
+}: {
+  className?: string
+  children: React.ReactNode
+  selfAuth?: boolean
+}) {
   const t = useTranslations("settings.integrations.amazonConnect")
+  const privateText = useTranslations("settings.integrations.amazonSelfAuthorize")
+  const [open, setOpen] = useState(false)
+  const { form, submit } = useActionForm({
+    schema: selfAuthorizationSchema,
+    action: "connection.amazonSelfAuthorized",
+    defaultValues: { marketplace: "US", refreshToken: "" },
+    onSuccess: () => setOpen(false)
+  })
   const id = useId()
   const [marketplace, setMarketplace] = useState("US")
   const countries = countriesIn(useLocale())
@@ -28,29 +47,42 @@ export function AmazonConnect({ className, children }: { className?: string; chi
     label: countries.find((country) => country.value === value)?.label ?? value
   }))
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger className={className}>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
+          <DialogDescription>{selfAuth ? privateText("description") : t("description")}</DialogDescription>
         </DialogHeader>
-        <form method="get" action="/api/connections/amazon" className="grid gap-5">
-          <Field>
-            <FormLabel htmlFor={id} label={t("marketplace")} required />
-            <SelectControl
-              id={id}
-              name="marketplace"
-              options={options}
-              value={marketplace}
-              onValueChange={(value) => setMarketplace(value ?? "US")}
+        {selfAuth ? (
+          <ActionForm form={form} onSubmit={submit} label={privateText("connect")} dialog>
+            <FormSelect name="marketplace" label={t("marketplace")} options={options} required />
+            <FormInput
+              name="refreshToken"
+              label={privateText("refreshToken")}
+              type="password"
+              autoComplete="off"
               required
             />
-          </Field>
-          <DialogFooter>
-            <Button type="submit">{t("continue")}</Button>
-          </DialogFooter>
-        </form>
+          </ActionForm>
+        ) : (
+          <form method="get" action="/api/connections/amazon" className="grid gap-5">
+            <Field>
+              <FormLabel htmlFor={id} label={t("marketplace")} required />
+              <SelectControl
+                id={id}
+                name="marketplace"
+                options={options}
+                value={marketplace}
+                onValueChange={(value) => setMarketplace(value ?? "US")}
+                required
+              />
+            </Field>
+            <DialogFooter>
+              <Button type="submit">{t("continue")}</Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   )

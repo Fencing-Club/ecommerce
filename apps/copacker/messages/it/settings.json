@@ -129,9 +129,8 @@
     },
     "amazonSelfAuthorize": {
       "title": "Collega Amazon",
-      "description": "Nel Solution Provider Portal di Amazon, apri il menu accanto all’app di Copacker, scegli Authorize e copia il refresh token. Il merchant token si trova in Seller Central, in Impostazioni, Informazioni sull’account.",
+      "description": "Scegli il marketplace e incolla il token di aggiornamento dal Solution Provider Portal di Amazon.",
       "connect": "Collega",
-      "merchantToken": "Merchant token",
       "refreshToken": "Refresh token"
     }
   },
