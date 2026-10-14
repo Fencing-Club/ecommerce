@@ -17,14 +17,17 @@ const sent: ActionRequest[] = []
 const connectShopify = fn()
 
 const shopify = { account: `Harbor Goods, ${shopifyAccount}`, externalId: shopifyAccount }
-const amazon = { account: `Harbor Goods US, ${amazonAccount}`, externalId: amazonAccount }
+const amazon = {
+  account: "Harbor Goods US",
+  externalId: amazonAccount,
+  marketplaces: ["United States", "Canada"]
+}
 const ebay = { account: ebayAccount, externalId: ebayAccount }
 
 const meta = preview.meta({
   component: Integrations,
   args: {
     admin: true,
-    amazonDraft: false,
     ebayAvailable: false,
     shopify: null,
     amazon: null,
@@ -52,7 +55,7 @@ const meta = preview.meta({
 export const NothingConnected = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
-    await expect(canvas.getByRole("link", { name: /^Amazon/ })).toHaveAttribute("href", "/api/connections/amazon")
+    await expect(canvas.getByRole("button", { name: /^Amazon/ })).toHaveTextContent("Connect")
     await expect(canvas.getByText("eBay")).toBeVisible()
     await expect(canvas.getByText("Coming soon")).toBeVisible()
     await expect(canvas.getByText("Orders, inventory, expenses, shipments")).toBeVisible()
@@ -163,14 +166,13 @@ export const ConnectShopify = meta.story({
   }
 })
 
-// While Copacker's Amazon app is a draft, Amazon connects with a token the seller pastes.
-export const AmazonDraft = meta.story({
-  args: { amazonDraft: true },
+// Amazon connects through a marketplace-specific sign-in.
+export const ConnectAmazon = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: /^Amazon/ })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: /^Amazon/ }))
     const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
-    await expect(dialog).toHaveTextContent("Solution Provider Portal")
+    await expect(dialog).toHaveTextContent("Choose your marketplace")
   }
 })
 
@@ -188,12 +190,39 @@ export const Connected = meta.story({
   args: { shopify, amazon },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText("Connected")).toHaveLength(2)
+    await expect(canvas.getByText("United States")).toBeVisible()
+    await expect(canvas.getByText("Canada")).toBeVisible()
     await expect(canvas.getByText(`Harbor Goods, ${shopifyAccount}`)).toBeVisible()
     await expect(await canvas.findAllByText(/^Synced/)).toHaveLength(2)
     await userEvent.click(canvas.getByRole("button", { name: "Shopify settings" }))
     const sheet = await screen.findByRole("dialog", { name: "Shopify" })
     await expect(within(sheet).getByText("Shopify sync settings")).toBeInTheDocument()
     await expect(within(sheet).queryByText("Amazon sync settings")).toBeNull()
+  }
+})
+
+export const AmazonMarketplacesUnavailable = meta.story({
+  args: { amazon: { ...amazon, marketplaces: null } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Connected")).toBeVisible()
+    await expect(canvas.getByText("Couldn’t load from Amazon")).toBeVisible()
+    await expect(canvas.queryByText("United States")).toBeNull()
+  }
+})
+
+export const AmazonNoMarketplaces = meta.story({
+  args: { amazon: { ...amazon, marketplaces: [] } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("No supported marketplaces")).toBeVisible()
+  }
+})
+
+export const AmazonMarketplacesMember = meta.story({
+  args: { admin: false, amazon },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("United States")).toBeVisible()
+    await expect(canvas.getByText("Canada")).toBeVisible()
+    await expect(canvas.queryByRole("button", { name: "Amazon settings" })).toBeNull()
   }
 })
 
@@ -248,5 +277,15 @@ export const SyncingStock = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Syncing inventory")).toBeVisible()
+  }
+})
+
+export const AmazonPrivateAuthorization = meta.story({
+  args: { amazonSelfAuth: true },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^Amazon/ }))
+    const dialog = await screen.findByRole("dialog", { name: "Connect Amazon" })
+    await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
+    await expect(within(dialog).getByRole("combobox", { name: "Marketplace" })).toHaveTextContent("United States")
   }
 })

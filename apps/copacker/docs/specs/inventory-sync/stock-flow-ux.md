@@ -7,7 +7,7 @@ and audit every write. Every name and string here is a working draft. Customer-f
 - "units", never "pieces";
 - "purchase order", never "PO";
 - no dot glyph as a separator;
-- every string validated with the Fluent Agent MCP.
+- clear, concise wording consistent with the surrounding UI.
 
 ## Why a page of its own
 

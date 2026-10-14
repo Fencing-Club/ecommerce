@@ -1,6 +1,7 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
+import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -20,9 +21,10 @@ import { isLocale } from "@/i18n/locales"
 import { systemLocale } from "@/i18n/request"
 import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
+import { amazonAdsApp } from "@/server/amazon-ads-client"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
-import { ebayApp } from "@/server/connections"
+import { amazonSelfAuthEnabled, ebayApp } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
@@ -75,7 +77,6 @@ export default async function Settings() {
     buyer && shopifyAccount && admin ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
-  const amazonDraft = process.env.AMAZON_APP_DRAFT === "true"
   // Delivery addresses can be linked to one of the store's own Shopify locations.
   const ownLocations = buyer
     ? (await readLocationMappings(s)).locations
@@ -131,7 +132,7 @@ export default async function Settings() {
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
               admin={admin}
-              amazonDraft={amazonDraft}
+              amazonSelfAuth={amazonSelfAuthEnabled()}
               ebayAvailable={ebayApp() !== null}
               shopify={
                 shopifyAccount
@@ -141,8 +142,9 @@ export default async function Settings() {
               amazon={
                 amazonAccount
                   ? {
-                      account: account(amazon?.name ?? null, amazonAccount.externalId),
-                      externalId: amazonAccount.externalId
+                      account: amazon?.name ?? "Amazon",
+                      externalId: amazonAccount.externalId,
+                      marketplaces: amazon?.marketplaces ?? null
                     }
                   : null
               }
@@ -163,9 +165,12 @@ export default async function Settings() {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
+                  <AmazonAdsSettings available={amazonAdsApp() !== null} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
-                    {amazon ? amazon.marketplaces.join(", ") || "—" : t("integrations.marketplacesUnavailable")}
+                    {amazon
+                      ? amazon.marketplaces.join(", ") || t("integrations.noMarketplaces")
+                      : t("integrations.marketplacesUnavailable")}
                   </DetailRow>
                 </>
               }

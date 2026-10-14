@@ -17,8 +17,15 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    [Variation and product details](api-contract.md#variation-and-product-details).
 3. Amazon: a public SP-API application with the AWD role and Listings access, redirecting to
    `<APP_URL>/api/connections/amazon`. Amazon requires an HTTPS redirect, so test it on a deployed environment. While the
-   app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link then asks for `version=beta`, and sellers can connect by
-   self-authorization. Tokens are encrypted per workspace.
+   public app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link asks for `version=beta` and still uses Amazon
+   sign-in. Settings first asks for the US, Canada, Mexico or Brazil marketplace, then opens its Seller Central consent
+   page. The callback receives the seller ID and exchanges the authorization code for a token, encrypted per workspace.
+   The connected Amazon card lists the supported marketplaces returned by Amazon's seller account API, visible to
+   members as well as admins. If that lookup fails, the card says the marketplace list could not be loaded; it does not
+   infer marketplace access from the country selected during sign-in.
+   Marketplace choice controls the sign-in site; syncing remains North American, with US FBA/AWD inventory and inbound shipments.
+   Private apps cannot use this public-app OAuth flow. Configure Copacker's public app and register the exact callback
+   URL in Amazon's Solution Provider Portal. See [Amazon's website authorization workflow](https://developer-docs.amazon/sp-api/lang-US/docs/website-authorization-workflow).
 4. Email (Resend): `EMAIL_API_KEY` (sending only) and `EMAIL_FROM`. The worker sends invitations, POs and label-ready
    notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
    `APP_URL` (`public/email/mark.png`). Resend only sends: the landing page's waitlist is WorkOS's
@@ -33,6 +40,10 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
 5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)).
+7. Amazon Ads: a separate approved Login with Amazon profile, with `AMAZON_ADS_CLIENT_ID` and
+   `AMAZON_ADS_CLIENT_SECRET` on both the web and worker services. Register
+   `<APP_URL>/api/connections/amazon-ads` as an allowed return URL, then connect Ads from Amazon's settings sheet.
+   See [Amazon Ads expenses](amazon-ads.md) for reporting coverage and the expense calculation.
 
 ## Recovery
 
@@ -61,18 +72,23 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 ## Releases
 
-CI (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request, in three jobs side by side:
+CI (`.github/workflows/ci.yml`) runs on every push to `main` and every pull request. A `changes` job first works out
+whether the change affects Copacker (`.github/scripts/affected.mjs`): code in `apps/copacker` or a workspace package
+it uses, or anything every app shares, such as the workflows, the lockfile or the root configs. Docs, Markdown and
+design files don't count. A pull request is compared with its target branch, and a push with the commit staging serves.
+Then, side by side:
 
-- `verify`: format, lint, types, unused code (`check:unused`), the other packages' tests, Copacker's unit tests with
-  coverage, Copacker's build, and every migration on an empty Postgres 18.
-- `stories`: the Storybook tests, in four shards.
-- `e2e`: the [end-to-end suite](e2e.md), in two shards.
+- `verify`: format, lint, types, unused code (`check:unused`) and the other packages' tests, always; Copacker's unit
+  tests with coverage, its build and every migration on an empty Postgres 18 when Copacker is affected.
+- `stories`: the Storybook tests, in four shards, when Copacker is affected.
+- `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
 
-When all three pass on a push, `deploy-staging` deploys the commit to Railway's staging environment and runs the
-end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. Pushes run
-side by side, and a new push to a pull request replaces its older run. To release to production, run the **Promote to
-production** workflow in GitHub Actions. It releases the commit staging serves, then runs the signed-out smoke specs
-against production.
+Turbo replays any task whose inputs haven't changed from the [remote cache](../../turbo-cache/docs/README.md). When the
+jobs pass on a push that affects Copacker, `deploy-staging` deploys the commit to Railway's staging environment and runs
+the end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. A last
+job, `ci-ok`, passes when nothing failed, counting skipped jobs as passed. Pushes run side by side, and a new push to a
+pull request replaces its older run. To release to production, run the **Promote to production** workflow in GitHub
+Actions. It releases the commit staging serves, then runs the signed-out smoke specs against production.
 
 Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
 pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
@@ -151,3 +167,7 @@ with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local databas
 To read a deployed database, go through the Railway CLI rather than storing its URL locally: `railway run` uses the
 private `postgres.railway.internal` hostname, which a local computer can't reach, and the public TCP proxy needs
 `sslmode=verify-ca` with the CA from Railway. Never disable certificate verification.
+
+### Amazon connection mode
+
+`AMAZON_SELF_AUTH_ENABLED` defaults to `true`. Settings retains the marketplace selector and adds a refresh-token field for private self-authorization, validates access with Amazon, and stores the token encrypted. The seller ID is configured server-side in `AMAZON_MERCHANT_TOKEN`; customers never enter it. The token must belong to the configured `AMAZON_CLIENT_ID` and `AMAZON_CLIENT_SECRET`. Set the flag to `false` to show the marketplace selector and launch the existing Seller Central OAuth flow. Manual-token submissions are also rejected server-side when disabled. This flag does not change existing connections.

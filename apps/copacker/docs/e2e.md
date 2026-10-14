@@ -9,7 +9,7 @@ documents, labels, catalog and product exports).
 
 | When | Against | What |
 | --- | --- | --- |
-| Every pull request and push (`e2e` job in CI, split in two) | A production build started in each half, a fresh Postgres and an S3 mock | Everything |
+| Every pull request and push that affects Copacker (`e2e` job in CI, split in two) | A production build started in each half, a fresh Postgres and an S3 mock | Everything |
 | After each staging deploy (`deploy-staging`) | Staging | Everything |
 | After promoting to production | Production | Only specs tagged `@smoke`: signed out and read-only |
 

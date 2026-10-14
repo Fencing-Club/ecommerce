@@ -114,18 +114,24 @@
       "storeDescription": "Lien d’administration ou domaine myshopify.com",
       "enterStore": "Saisissez le lien d’administration ou le domaine myshopify.com de votre boutique"
     },
-    "amazonSelfAuthorize": {
-      "title": "Connecter Amazon",
-      "description": "Dans le Solution Provider Portal d’Amazon, ouvrez le menu à côté de l’application Copacker, choisissez Authorize et copiez le jeton d’actualisation. Votre jeton marchand se trouve dans Seller Central, sous Paramètres, Informations sur le compte.",
-      "connect": "Connecter",
-      "merchantToken": "Jeton marchand",
-      "refreshToken": "Jeton d’actualisation"
-    },
     "sync": {
       "orders": "Synchronisation des commandes",
       "ordersProgress": "Synchronisation des commandes : {progress, number, percent}",
       "stock": "Synchronisation du stock",
       "failed": "Échec de la dernière synchronisation"
+    },
+    "noMarketplaces": "Aucune marketplace prise en charge",
+    "amazonConnect": {
+      "title": "Connecter Amazon",
+      "description": "Choisissez votre marketplace, puis connectez-vous à Amazon pour autoriser Copacker.",
+      "marketplace": "Marketplace",
+      "continue": "Continuer vers Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Connecter Amazon",
+      "description": "Choisissez votre marketplace et collez le jeton de renouvellement du Solution Provider Portal Amazon.",
+      "connect": "Connecter",
+      "refreshToken": "Jeton d’actualisation"
     }
   },
   "excludedTags": {
@@ -224,5 +230,19 @@
     "shopifyLocation": "Emplacement Shopify",
     "shopifyLocationDescription": "Les bons de commande envoyés ici y apparaissent comme en commande",
     "notLinked": "Non lié"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Dépenses quotidiennes Sponsored Products, Brands et Display. Les périodes entièrement couvertes utilisent les dépenses publicitaires à la place des paiements Amazon. Les autres utilisent les paiements comptabilisés. Les rapports couvrent jusqu’à 90 jours et peuvent être ajustés par Amazon.",
+    "unavailable": "La configuration Amazon Ads est incomplète.",
+    "error": "Impossible de mettre à jour Amazon Ads. Réessayez.",
+    "syncing": "Synchronisation des dépenses…",
+    "failed": "Certains rapports ont échoué. Relancez la synchronisation ou reconnectez le compte.",
+    "connected": "Connecté",
+    "notConnected": "Non connecté",
+    "reconnect": "Reconnecter Ads",
+    "connect": "Connecter Amazon Ads",
+    "sync": "Synchroniser les dépenses",
+    "disconnect": "Déconnecter Ads"
   }
 }

@@ -498,4 +498,4 @@ the action's confirm dialog, or an alert line when something blocks the step.
 - Never use `·`, `•` or another dot glyph as a separator. Use layout or words.
 - A page someone can see but not change is **View only**, not "Read-only": it names the View access level members
   are given in Team settings, so the badge and the access they were granted use the same words. Locked on 2026-09-30.
-- Every new or changed string goes through the Fluent Agent MCP before it ships, per the repository's rules.
+- Review every new or changed string for clarity, brevity, and consistency with the surrounding UI.

@@ -114,18 +114,24 @@
       "storeDescription": "एडमिन लिंक या myshopify.com डोमेन",
       "enterStore": "अपने स्टोर का एडमिन लिंक या myshopify.com डोमेन डालें"
     },
-    "amazonSelfAuthorize": {
-      "title": "Amazon कनेक्ट करें",
-      "description": "Amazon के Solution Provider Portal में, Copacker के ऐप के पास वाला मेनू खोलें, Authorize चुनें और रीफ़्रेश टोकन कॉपी करें। आपका मर्चेंट टोकन Seller Central में Settings, Account Info के अंदर है।",
-      "connect": "कनेक्ट करें",
-      "merchantToken": "मर्चेंट टोकन",
-      "refreshToken": "रीफ़्रेश टोकन"
-    },
     "sync": {
       "orders": "ऑर्डर सिंक हो रहे हैं",
       "ordersProgress": "ऑर्डर सिंक हो रहे हैं: {progress, number, percent}",
       "stock": "इन्वेंटरी सिंक हो रही है",
       "failed": "पिछला सिंक विफल रहा"
+    },
+    "noMarketplaces": "कोई समर्थित मार्केटप्लेस नहीं",
+    "amazonConnect": {
+      "title": "Amazon कनेक्ट करें",
+      "description": "अपना मार्केटप्लेस चुनें, फिर Copacker को अनुमति देने के लिए Amazon में साइन इन करें।",
+      "marketplace": "मार्केटप्लेस",
+      "continue": "Amazon पर जारी रखें"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon कनेक्ट करें",
+      "description": "अपना मार्केटप्लेस चुनें और Amazon के Solution Provider Portal से रिफ्रेश टोकन पेस्ट करें।",
+      "connect": "कनेक्ट करें",
+      "refreshToken": "रीफ़्रेश टोकन"
     }
   },
   "excludedTags": {
@@ -224,5 +230,19 @@
     "shopifyLocation": "Shopify लोकेशन",
     "shopifyLocationDescription": "यहां भेजे गए खरीद ऑर्डर वहां ऑर्डर पर दिखते हैं",
     "notLinked": "लिंक नहीं है"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Sponsored Products, Brands और Display का दैनिक खर्च। पूरी रिपोर्ट वाले समय में Amazon भुगतानों की जगह विज्ञापन खर्च इस्तेमाल होता है। दूसरे समय में दर्ज भुगतान इस्तेमाल होते हैं। रिपोर्ट 90 दिनों तक की होती हैं और Amazon के समायोजन से बदल सकती हैं।",
+    "unavailable": "Amazon Ads का सेटअप पूरा नहीं हुआ है।",
+    "error": "Amazon Ads अपडेट नहीं हो सका। फिर कोशिश करें।",
+    "syncing": "विज्ञापन खर्च सिंक हो रहा है…",
+    "failed": "कुछ रिपोर्ट विफल रहीं। फिर से सिंक करें या पहुँच नवीनीकृत करने के लिए दोबारा जोड़ें।",
+    "connected": "जुड़ा हुआ",
+    "notConnected": "जुड़ा नहीं है",
+    "reconnect": "Ads दोबारा जोड़ें",
+    "connect": "Amazon Ads जोड़ें",
+    "sync": "विज्ञापन खर्च सिंक करें",
+    "disconnect": "Ads डिस्कनेक्ट करें"
   }
 }

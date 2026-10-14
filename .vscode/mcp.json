@@ -11,14 +11,6 @@
     //   "type": "http",
     //   "url": "https://mcp.openrouter.ai/mcp"
     // },
-    // chat.fluentui.dev lacks CORS headers, so VS Code's built-in OAuth can't discover its auth server.
-    // mcp-remote runs the OAuth flow from Node instead.
-    "fluent-agent": {
-      "type": "stdio",
-      "command": "npx",
-      // --prefer-offline starts from the npx cache, since the repo's package feed can stall.
-      "args": ["-y", "--prefer-offline", "mcp-remote@0.14.3", "https://chat.fluentui.dev/mcp/server"]
-    },
     // "shadcn": {
     //   "command": "npx",
     //   "args": [

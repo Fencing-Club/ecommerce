@@ -268,15 +268,15 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   const shopify = integrations.getByRole("button", { name: "Shopify settings" })
   await expect(shopify).toContainText("Connected")
   await expect(shopify).toContainText("copacker-demo.myshopify.com")
-  // Amazon and eBay offer Connect; neither is clicked. Without their apps configured, as locally and in CI, Amazon's
-  // goes to Seller Central's consent and eBay isn't available yet. Staging's draft Amazon app connects in a dialog.
-  const amazon = /^Amazon .*Connect$/
-  if (deployed) {
-    await expect(
-      integrations.getByRole("link", { name: amazon }).or(integrations.getByRole("button", { name: amazon }))
-    ).toBeVisible()
-  } else {
-    await expect(integrations.getByRole("link", { name: amazon })).toHaveAttribute("href", "/api/connections/amazon")
+  // Default private authorization never sends credentials to Amazon until the form is submitted.
+  await integrations.getByRole("button", { name: /^Amazon .*Connect$/ }).click()
+  const amazonDialog = page.getByRole("dialog", { name: "Connect Amazon" })
+  await expect(amazonDialog.getByLabel(/^Refresh token/)).toHaveAttribute("type", "password")
+  await expect(amazonDialog.getByRole("combobox", { name: "Marketplace" })).toContainText("United States")
+  await expect(amazonDialog.getByLabel(/merchant token/i)).toHaveCount(0)
+  await expect(amazonDialog.getByRole("button", { name: "Connect", exact: true })).toBeVisible()
+  await amazonDialog.getByRole("button", { name: "Close", exact: true }).click()
+  if (!deployed) {
     await expect(integrations.getByText("Coming soon")).toBeVisible()
   }
 

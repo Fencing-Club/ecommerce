@@ -114,18 +114,24 @@
       "storeDescription": "ایڈمن لنک یا myshopify.com ڈومین",
       "enterStore": "اپنے اسٹور کا ایڈمن لنک یا myshopify.com ڈومین درج کریں"
     },
-    "amazonSelfAuthorize": {
-      "title": "Amazon منسلک کریں",
-      "description": "Amazon کے Solution Provider Portal میں Copacker کی ایپ کے ساتھ والا مینو کھولیں، Authorize منتخب کریں اور ریفریش ٹوکن کاپی کریں۔ آپ کا مرچنٹ ٹوکن Seller Central میں Settings، Account Info کے تحت ہے۔",
-      "connect": "منسلک کریں",
-      "merchantToken": "مرچنٹ ٹوکن",
-      "refreshToken": "ریفریش ٹوکن"
-    },
     "sync": {
       "orders": "آرڈر سنک ہو رہے ہیں",
       "ordersProgress": "آرڈر سنک ہو رہے ہیں: {progress, number, percent}",
       "stock": "انوینٹری سنک ہو رہی ہے",
       "failed": "پچھلا سنک ناکام رہا"
+    },
+    "noMarketplaces": "کوئی معاونت یافتہ مارکیٹ پلیس نہیں",
+    "amazonConnect": {
+      "title": "Amazon منسلک کریں",
+      "description": "اپنی مارکیٹ منتخب کریں، پھر Copacker کو اجازت دینے کے لیے Amazon میں سائن ان کریں۔",
+      "marketplace": "مارکیٹ",
+      "continue": "Amazon پر جاری رکھیں"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Amazon منسلک کریں",
+      "description": "اپنی مارکیٹ پلیس منتخب کریں اور Amazon کے Solution Provider Portal سے ریفریش ٹوکن پیسٹ کریں۔",
+      "connect": "منسلک کریں",
+      "refreshToken": "ریفریش ٹوکن"
     }
   },
   "excludedTags": {
@@ -224,5 +230,19 @@
     "shopifyLocation": "Shopify لوکیشن",
     "shopifyLocationDescription": "یہاں بھیجے گئے خریداری آرڈرز وہاں آرڈر شدہ کے طور پر دکھائی دیتے ہیں",
     "notLinked": "منسلک نہیں"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Sponsored Products، Brands اور Display کے روزانہ اخراجات۔ مکمل رپورٹس والے ادوار میں Amazon ادائیگیوں کے بجائے اشتہاری اخراجات استعمال ہوتے ہیں۔ دیگر ادوار میں درج شدہ ادائیگیاں استعمال ہوتی ہیں۔ رپورٹس 90 دن تک کا احاطہ کرتی ہیں اور Amazon کی ایڈجسٹمنٹ سے بدل سکتی ہیں۔",
+    "unavailable": "Amazon Ads کا سیٹ اپ مکمل نہیں ہے۔",
+    "error": "Amazon Ads اپ ڈیٹ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+    "syncing": "اشتہاری اخراجات سنک ہو رہے ہیں…",
+    "failed": "کچھ رپورٹس ناکام ہوئیں۔ دوبارہ سنک کریں یا رسائی کی تجدید کے لیے دوبارہ منسلک کریں۔",
+    "connected": "منسلک",
+    "notConnected": "منسلک نہیں",
+    "reconnect": "Ads دوبارہ منسلک کریں",
+    "connect": "Amazon Ads منسلک کریں",
+    "sync": "اشتہاری اخراجات سنک کریں",
+    "disconnect": "Ads منقطع کریں"
   }
 }

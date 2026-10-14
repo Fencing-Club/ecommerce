@@ -14,9 +14,9 @@ export interface ArtifactStore {
 
 export interface Env {
   ARTIFACTS: ArtifactStore
-  // The SHA-256 of the bearer token, in hex. Only its hash is stored, so the token itself never leaves the machines
-  // that use it.
-  TOKEN_SHA256: string
+  // Each monorepo's token, by its SHA-256 in hex, and the one Turbo team (TURBO_TEAM) it may read and write, as JSON:
+  // {"<sha256>": "ecommerce"}. Only hashes are stored, so the tokens never leave the machines that use them.
+  TOKEN_TEAMS: string
 }
 
 const artifactPath = /^\/v8\/artifacts\/([0-9a-f]{1,128})$/i
@@ -29,15 +29,20 @@ async function sha256(text: string) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("")
 }
 
-async function authorized(request: Request, env: Env) {
+// The team the request's token belongs to, or null for a missing or unknown token. Looking up hashes rather than tokens
+// means timing can reveal at most part of a hash, which no one can reverse.
+async function tokenTeam(request: Request, env: Env) {
   const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1]
-  // Comparing hashes rather than tokens means timing can reveal at most part of the hash, which no one can reverse.
-  return Boolean(token && env.TOKEN_SHA256 && (await sha256(token)) === env.TOKEN_SHA256.toLowerCase())
+  if (!token) {
+    return null
+  }
+  const teams: Record<string, string> = JSON.parse(env.TOKEN_TEAMS || "{}")
+  return teams[await sha256(token)] ?? null
 }
 
-// Artifacts are kept per team, from Turbo's teamId or slug query parameter.
-function team(url: URL) {
-  return url.searchParams.get("teamId") ?? url.searchParams.get("slug") ?? "default"
+// The team a request names, from Turbo's teamId or slug query parameter.
+function requestedTeam(url: URL) {
+  return url.searchParams.get("teamId") ?? url.searchParams.get("slug")
 }
 
 function artifactHeaders(object: { size: number; customMetadata?: Record<string, string> }) {
@@ -54,11 +59,17 @@ function artifactHeaders(object: { size: number; customMetadata?: Record<string,
 }
 
 export async function handle(request: Request, env: Env): Promise<Response> {
-  if (!(await authorized(request, env))) {
+  const team = await tokenTeam(request, env)
+  if (!team) {
     return json({ error: { code: "unauthorized", message: "Unauthorized" } }, 401)
   }
   const url = new URL(request.url)
-  const scope = team(url)
+  // A token reads and writes only its own team's artifacts, kept under <team>/<hash>.
+  const requested = requestedTeam(url)
+  if (requested && requested !== team) {
+    return json({ error: { code: "forbidden", message: "This token is for another team" } }, 403)
+  }
+  const scope = team
 
   if (url.pathname === "/v8/artifacts/status" && request.method === "GET") {
     return json({ status: "enabled" })

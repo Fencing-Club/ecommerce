@@ -114,18 +114,24 @@
       "storeDescription": "Enlace de administración o dominio myshopify.com",
       "enterStore": "Ingresa el enlace de administración o el dominio myshopify.com de tu tienda"
     },
-    "amazonSelfAuthorize": {
-      "title": "Conectar Amazon",
-      "description": "En el Solution Provider Portal de Amazon, abre el menú junto a la app de Copacker, elige Authorize y copia el token de actualización. Tu token de comerciante está en Seller Central, en Configuración, Información de la cuenta.",
-      "connect": "Conectar",
-      "merchantToken": "Token de comerciante",
-      "refreshToken": "Token de actualización"
-    },
     "sync": {
       "orders": "Sincronizando pedidos",
       "ordersProgress": "Sincronizando pedidos: {progress, number, percent}",
       "stock": "Sincronizando inventario",
       "failed": "Falló la última sincronización"
+    },
+    "noMarketplaces": "No hay marketplaces compatibles",
+    "amazonConnect": {
+      "title": "Conectar Amazon",
+      "description": "Elige tu marketplace e inicia sesión en Amazon para autorizar a Copacker.",
+      "marketplace": "Marketplace",
+      "continue": "Continuar a Amazon"
+    },
+    "amazonSelfAuthorize": {
+      "title": "Conectar Amazon",
+      "description": "Elige tu marketplace y pega el token de actualización del Solution Provider Portal de Amazon.",
+      "connect": "Conectar",
+      "refreshToken": "Token de actualización"
     }
   },
   "excludedTags": {
@@ -224,5 +230,19 @@
     "shopifyLocation": "Ubicación de Shopify",
     "shopifyLocationDescription": "Las órdenes de compra enviadas aquí aparecen como ordenadas allá",
     "notLinked": "Sin vincular"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Gasto diario de Sponsored Products, Brands y Display. Los periodos con informes completos usan el gasto publicitario en lugar de los pagos de Amazon. Los demás usan los pagos registrados. Los informes cubren hasta 90 días y pueden cambiar con los ajustes de Amazon.",
+    "unavailable": "La configuración de Amazon Ads está incompleta.",
+    "error": "No se pudo actualizar Amazon Ads. Inténtalo de nuevo.",
+    "syncing": "Sincronizando gastos…",
+    "failed": "Algunos informes fallaron. Vuelve a sincronizar o conecta la cuenta de nuevo.",
+    "connected": "Conectado",
+    "notConnected": "Sin conectar",
+    "reconnect": "Reconectar Ads",
+    "connect": "Conectar Amazon Ads",
+    "sync": "Sincronizar gastos",
+    "disconnect": "Desconectar Ads"
   }
 }

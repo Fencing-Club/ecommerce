@@ -1,11 +1,11 @@
 // Deployed with `pnpm dlx wrangler deploy` from this folder; see docs/README.md.
 {
-  // The ecommerce monorepo's Turborepo remote cache.
-  "name": "ecommerce-turbo-cache",
+  // The Turborepo remote cache every monorepo shares, each under its own Turbo team.
+  "name": "shared-turbo-cache",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
   "workers_dev": false,
   "routes": [{ "pattern": "turbo.copacker.ai", "custom_domain": true }],
-  // Turbo's signed task outputs, kept 30 days.
-  "r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "ecommerce-turbo-cache" }]
+  // Turbo's signed task outputs, under <team>/<hash>, kept 30 days.
+  "r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "shared-turbo-cache" }]
 }

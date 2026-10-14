@@ -2,6 +2,7 @@ import { money } from "@repo/aisle"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -76,7 +77,6 @@ type Args = {
   ebayAvailable: boolean
   orderTags: string[]
   copyingTags: boolean
-  amazonDraft: boolean
   // The store's Shopify locations and what each counts as.
   locations: typeof inventoryLocations.locations
   // The workspaces the person owns: those others use, and those that close with the account.
@@ -145,7 +145,6 @@ async function SettingsPage(args: Args) {
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
               admin={admin}
-              amazonDraft={args.amazonDraft}
               ebayAvailable={args.ebayAvailable}
               shopify={
                 shopifyAccount
@@ -155,8 +154,9 @@ async function SettingsPage(args: Args) {
               amazon={
                 amazonAccount
                   ? {
-                      account: account(amazon?.name ?? null, amazonAccount.externalId),
-                      externalId: amazonAccount.externalId
+                      account: amazon?.name ?? "Amazon",
+                      externalId: amazonAccount.externalId,
+                      marketplaces: amazon?.marketplaces ?? null
                     }
                   : null
               }
@@ -177,9 +177,12 @@ async function SettingsPage(args: Args) {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
+                  <AmazonAdsSettings available={false} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
-                    {amazon ? amazon.marketplaces.join(", ") || "—" : t("integrations.marketplacesUnavailable")}
+                    {amazon
+                      ? amazon.marketplaces.join(", ") || t("integrations.noMarketplaces")
+                      : t("integrations.marketplacesUnavailable")}
                   </DetailRow>
                 </>
               }
@@ -449,7 +452,6 @@ const buyerArgs: Args = {
   ebayAvailable: true,
   orderTags: ["Amazon", "wholesale", "sample"],
   copyingTags: false,
-  amazonDraft: false,
   locations: inventoryLocations.locations,
   owned: { handOver: [], closing: [workspaces.buyer.name] }
 }
@@ -543,18 +545,19 @@ export const AmazonSettings = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
-    await expect(sheet).toHaveTextContent(`Harbor Goods US, ${amazonAccount}`)
+    await expect(sheet).toHaveTextContent("Harbor Goods US")
+    await expect(sheet).not.toHaveTextContent(amazonAccount)
     await expect(sheet).toHaveTextContent("United States, Canada")
     await expect(within(sheet).queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
   }
 })
 
-// Amazon didn't say what the store is called: its account shows by ID, and its marketplaces can't be listed.
+// A missing store name never exposes the account identifier.
 export const AmazonUnavailable = meta.story({
   ...buyer,
   args: { amazonStore: null, linked: [{ provider: "amazon", externalId: amazonAccount }] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(amazonAccount)).toBeVisible()
+    await expect(canvas.queryByText(amazonAccount)).toBeNull()
     await expect(canvas.getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
     await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
@@ -564,7 +567,7 @@ export const AmazonUnavailable = meta.story({
 
 export const NothingConnected = meta.story({
   ...buyer,
-  args: { linked: [], amazonDraft: true },
+  args: { linked: [] },
   play: async ({ canvas }) => {
     const integrations = canvas.getByRole("region", { name: "Integrations" })
     await expect(within(integrations).getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
@@ -572,7 +575,7 @@ export const NothingConnected = meta.story({
       "href",
       "/api/connections/ebay"
     )
-    // While Copacker's Amazon app is a draft, Amazon connects with a pasted token.
+    // Amazon starts with a marketplace choice.
     await userEvent.click(within(integrations).getByRole("button", { name: /^Amazon/ }))
     await expect(await screen.findByRole("dialog", { name: "Connect Amazon" })).toBeInTheDocument()
   }

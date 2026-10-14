@@ -1,6 +1,6 @@
 # App redesign spec
 
-Status: **proposed**. Nothing here is built yet. Written 2026-09-28 from an audit of the app and its Storybook pages.
+Status: **foundations implemented; page rollout planned**. The shared shell, design tokens and reusable components are built. The later page and workflow phases below remain planned. Written 2026-09-28 from an audit of the app and its Storybook pages.
 When a part ships, its behavior moves into the regular docs (and [Roles and page access](../../permissions.md),
 [App header](../../app-header.md), [Overview page](../../overview.md) change with it), and this spec is trimmed.
 
