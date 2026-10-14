@@ -161,7 +161,7 @@ export const InvitedSupplierWithProfile = meta.story({
     await expect(canvas.getByText("Step 1 of 2")).toBeVisible()
     await expect(canvas.getByRole("heading", { level: 1, name: "Your company" })).toBeVisible()
     await expect(canvas.getByLabelText(/Company name/)).toHaveValue("Lotus Manufacturing")
-    await expect(canvas.getByLabelText(/Website/)).toHaveValue("https://lotus.example.com")
+    await expect(canvas.getByLabelText(/Website/)).toHaveValue("lotus.example.com")
     await expect(canvas.getByLabelText(/Phone number/)).toHaveValue("+86 188 6161 3263")
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
     await expect(await canvas.findByRole("heading", { level: 1, name: "Pickup address" })).toBeVisible()
