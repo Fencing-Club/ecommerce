@@ -142,7 +142,7 @@ export async function amazonAdsJob(payload: Record<string, unknown>, assertOwned
     if (report.status !== "COMPLETED") {
       throw new PollAgain("Waiting for Amazon Ads report", { delayMs: 300000 })
     }
-    if (!report.completedReportParts) {
+    if (!report.completedReportParts?.length) {
       throw new Error("Amazon Ads report download is missing")
     }
     const totals = new Map<string, number>()

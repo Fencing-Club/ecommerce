@@ -65,12 +65,20 @@ export class AdsRequestError extends Error {
     super(`Amazon Ads request failed (${status})`)
   }
 }
+// Normalize transport failures so the durable worker retries without logging request credentials.
+async function adsFetch(input: string | URL, init: RequestInit) {
+  try {
+    return await fetch(input, init)
+  } catch {
+    throw new AdsRequestError(503)
+  }
+}
 export async function adsToken(grant: Record<string, string>) {
   const app = amazonAdsApp()
   if (!app) {
     throw new Error("Amazon Ads application is not configured")
   }
-  const response = await fetch("https://api.amazon.com/auth/o2/token", {
+  const response = await adsFetch("https://api.amazon.com/auth/o2/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ ...grant, client_id: app.clientId, client_secret: app.clientSecret }),
@@ -90,7 +98,7 @@ export class AmazonAds {
     if (!app) {
       throw new Error("Amazon Ads application is not configured")
     }
-    const response = await fetch(`${api}${path}`, {
+    const response = await adsFetch(`${api}${path}`, {
       method: body ? "POST" : "GET",
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -235,7 +243,7 @@ export async function downloadAdsReport(url: string) {
     throw new Error("Unexpected Amazon Ads report location")
   }
   // Signed report downloads must never receive the Ads token or client secret.
-  const response = await fetch(location, { redirect: "error", signal: AbortSignal.timeout(60000) })
+  const response = await adsFetch(location, { redirect: "error", signal: AbortSignal.timeout(60000) })
   if (!response.ok) {
     throw new AdsRequestError(response.status)
   }

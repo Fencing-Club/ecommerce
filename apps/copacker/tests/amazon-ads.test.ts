@@ -365,4 +365,54 @@ describe("durable ad spend imports", () => {
     ).rejects.toThrow("generation failed")
     expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
   })
+  it("rejects completed reports without downloads instead of erasing spend", async () => {
+    await connect()
+    await database.insert(tables.amazonAdsDays).values({
+      orgId,
+      sellerId: "SELLER1",
+      profileId: "1234",
+      marketplaceId: "ATVPDKIKX0DER",
+      day: "2026-10-12",
+      currency: "USD",
+      cost: "12.500000",
+      syncedAt: new Date()
+    })
+    fetchMock.mockImplementation(async (url) =>
+      String(url).includes("auth/o2")
+        ? Response.json({ access_token: "access" })
+        : Response.json({
+            success: [{ report: { reportId: "report", status: "COMPLETED", completedReportParts: [] } }]
+          })
+    )
+    await expect(
+      amazonAdsJob(
+        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
+        async () => undefined
+      )
+    ).rejects.toThrow("download is missing")
+    expect((await database.select().from(tables.amazonAdsDays)).map((day) => day.cost)).toEqual(["12.500000"])
+  })
+  it.each(["token", "report", "download"])("retries a %s network failure without writing spend", async (stage) => {
+    await connect()
+    fetchMock.mockImplementation(async (url) => {
+      const location = String(url)
+      let current = "report"
+      if (location.includes("auth/o2")) {
+        current = "token"
+      } else if (location.includes("amazonaws.com")) {
+        current = "download"
+      }
+      if (current === stage) {
+        throw new TypeError("fetch failed")
+      }
+      return current === "token" ? Response.json({ access_token: "access" }) : reportResponse()
+    })
+    await expect(
+      amazonAdsJob(
+        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-12", reportId: "report" },
+        async () => undefined
+      )
+    ).rejects.toMatchObject({ options: { delayMs: 60000 } })
+    expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
+  })
 })
