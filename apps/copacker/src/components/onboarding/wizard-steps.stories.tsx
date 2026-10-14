@@ -138,6 +138,9 @@ export const CompanyBuyer = meta.story({
     await userEvent.type(canvas.getByLabelText(/Company name/), "arbor Goods")
     await userEvent.clear(canvas.getByLabelText(/Website/))
     await userEvent.type(canvas.getByLabelText(/Website/), "harborgoods.example.com")
+    await userEvent.tab()
+    await expect(canvas.getByLabelText(/Website/)).toHaveValue("harborgoods.example.com")
+    await expect(canvas.getByText("https://")).toBeVisible()
     await waitFor(() => expect(canvas.queryByText("Enter a website, such as example.com")).toBeNull())
     await expect(canvas.queryByText("Enter your company’s name")).toBeNull()
   }

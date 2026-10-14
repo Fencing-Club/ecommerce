@@ -40,7 +40,7 @@ async function Login({ next, email, error }: { next: string; email?: string; err
 }
 
 const meta = preview.meta({
-  title: "Pages/Auth/Sign in",
+  title: "Pages/Shared/Auth/Sign in",
   ...serverStory(Login),
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/login" } } },
   args: { next: "/" },

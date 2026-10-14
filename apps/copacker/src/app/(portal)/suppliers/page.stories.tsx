@@ -15,7 +15,7 @@ function Redirected() {
 }
 
 const meta = preview.meta({
-  title: "Pages/Partners/Suppliers",
+  title: "Pages/Buyer/Partners/Suppliers",
   render: () => <Redirected />
 })
 

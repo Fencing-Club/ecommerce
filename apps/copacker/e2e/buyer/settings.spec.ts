@@ -48,10 +48,11 @@ test("edits the profile and puts it back", async ({ page }) => {
   await save.click()
   await expect(profile.getByText("Saved")).toBeVisible()
 
-  // The website is saved with its https://.
+  // The saved scheme appears beside the editable domain, just like onboarding.
   await page.reload()
   await expect(position).toHaveText(/^Purchasing manager/)
-  await expect(website).toHaveValue("https://e2e-buyer.example.net")
+  await expect(profile.getByText("https://", { exact: true })).toBeVisible()
+  await expect(website).toHaveValue("e2e-buyer.example.net")
 
   await position.click()
   await page.getByRole("option", { name: before.position, exact: true }).click()

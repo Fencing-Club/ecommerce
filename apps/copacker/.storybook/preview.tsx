@@ -3,6 +3,7 @@ import { definePreview } from "@storybook/nextjs-vite"
 import addonMsw from "msw-storybook-addon"
 import { setupWorker } from "msw/browser"
 import { NextIntlClientProvider } from "next-intl"
+import { NuqsTestingAdapter } from "nuqs/adapters/testing"
 import { useEffect } from "react"
 import { configure } from "storybook/test"
 import { INITIAL_VIEWPORTS } from "storybook/viewport"
@@ -37,19 +38,23 @@ function applyTheme(theme: Theme) {
   window.dispatchEvent(new StorageEvent("storage", { key: "theme" }))
 }
 
-// What each story renders in: the page's language and direction, the app's providers, and the permissions of the
-// person signed in (an owner unless the story's `permissions` parameter says otherwise).
+// What each story renders in: the page's language and direction, the app's providers, the permissions of the person
+// signed in (an owner unless the story's `permissions` parameter says otherwise), and the URL's query, which state kept
+// in the URL reads (`parameters.nextjs.navigation.query`). Each story gets its own, so one story's URL never leaks into
+// the next.
 function StoryFrame({
   locale,
   messages,
   theme,
   permissions,
+  query,
   children
 }: {
   locale: Locale
   messages: Messages
   theme: Theme
   permissions: Permissions
+  query: Record<string, string>
   children: React.ReactNode
 }) {
   useEffect(() => applyTheme(theme), [theme])
@@ -60,7 +65,9 @@ function StoryFrame({
   return (
     <NextIntlClientProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
       <Providers>
-        <AccessProvider permissions={permissions}>{children}</AccessProvider>
+        <NuqsTestingAdapter searchParams={query} hasMemory>
+          <AccessProvider permissions={permissions}>{children}</AccessProvider>
+        </NuqsTestingAdapter>
       </Providers>
     </NextIntlClientProvider>
   )
@@ -121,6 +128,7 @@ export default definePreview({
         messages={loaded.messages}
         theme={themes.find((theme) => theme === globals.theme) ?? "light"}
         permissions={parameters.permissions ?? owner}
+        query={parameters.nextjs?.navigation?.query ?? {}}
       >
         <Story />
       </StoryFrame>

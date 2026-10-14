@@ -38,10 +38,10 @@ export const Every = meta.story({
     for (const status of ["Partially shipped", "Unfulfillable", "Unknown", "On hold"]) {
       await expect(canvas.getByText(status)).toBeVisible()
     }
-    // Waiting to ship needs action, cancelled is lost, and anything else is neutral.
+    // Waiting to ship is in progress, cancelled is lost, and anything else is neutral.
     const tone = (text: string) => canvas.getByText(text).closest("[data-tone]")?.getAttribute("data-tone")
     await expect(tone("Shipped")).toBe("success")
-    await expect(tone("Unshipped")).toBe("warning")
+    await expect(tone("Unshipped")).toBe("info")
     await expect(tone("Canceled")).toBe("destructive")
     await expect(tone("On hold")).toBe("neutral")
   }

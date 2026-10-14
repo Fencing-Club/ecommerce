@@ -31,7 +31,7 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 | `muted`                | `#F5F5F5`                       | Table header band, inactive segments                                   |
 | `border`               | `#E5E5E5`                       | Card and table rules                                                    |
 | `foreground`           | `#0A0A0A`                       | Text                                                                    |
-| `muted-foreground`     | `#737373`                       | Secondary text, never below 12 px                                       |
+| `muted-foreground`     | `#6B6B6B`                       | Secondary text, never below 12 px                                       |
 | `info` (new name for `chart-1`) | `#2A78D6`              | In progress statuses                                                    |
 | `success`              | `#006300`                       | Done statuses                                                           |
 | `warning`              | `#FAB219`                       | Needs action; text on it is `foreground`, never white                   |
@@ -44,14 +44,18 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
   inside cards.
 - **Radius:** 10 px cards, 8 px controls, full pills for statuses.
 - **Elevation:** borders, not shadows. Shadows only on overlays (menus, sheets, dialogs, the action bar).
+- **Mark:** Copacker's mark is Lucide's `box` in white on a `primary` tile, the same in the top bar, the favicon and
+  sign-in. Locked on 2026-09-30.
 
 ## The shell
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Workspace ▾]           [ Search  Ctrl K ]                  [+ Create] [Inbox 3] [AR ▾]  │  56 px
+│ [■] Copacker            [ Search  Ctrl K ]                  [+ Create] [Inbox 3] [AR ▾]  │  56 px
 ├──────────────┬───────────────────────────────────────────────────────────────────────────┤
-│ Home         │  Breadcrumb                                                               │
+│ [HG] Name  ⇕ │  Breadcrumb                                                               │
+│ ──────────── │                                                                           │
+│ Home         │                                                                           │
 │ Inbox     3  │  Title  Status                                    [Secondary] [Primary]   │
 │              │  ─────────────────────────────────────────────────────────────────────── │
 │ GROUP        │                                                                           │
@@ -66,26 +70,34 @@ The redesign keeps Copacker's brand and shadcn/ui on Base UI (`base-nova`). Toke
 
 ### Top bar
 
-- **Workspace switcher (left).** Replaces the logo-only corner and the sidebar's switcher (F2). Shows the Copacker mark
-  and the workspace's name. The menu lists the workspaces, each with its kind, then **New workspace** and **Workspace
-  settings**. Switching reloads, as `WorkspaceWatch` requires today. The bar names no kind of its own: most people have
-  one workspace, and the menu already says which kind each is, which also leaves room for long workspace names.
-- **Search (center).** The existing command menu, unchanged in behavior. Result groups follow the renamed objects
-  (Sales orders, Products, Purchase orders, Shipments, Partners or Customers). Adds **Actions** ("Create purchase
-  order", "Invite a supplier") above results when the query matches one.
-- **Create (right).** A primary-outline button with the kind's create actions. Buyer: Purchase order, Import purchase
-  order, Supplier, Forwarder. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
+- **Copacker (left).** The Copacker mark (after the menu button on a phone) (Lucide `box`) and the name "Copacker", linking home. The workspace isn't
+  here: it's the sidebar's switcher.
+- **Search (center).** The existing command menu, unchanged in behavior. Centered in the window, up to 480 px; when
+  the window is too narrow to center it between Copacker and the actions, it narrows instead of covering either.
+  Result groups follow the renamed objects (Sales orders, Products, Purchase orders, Shipments, Partners or
+  Customers). Adds **Actions** ("Create purchase order", "Invite a supplier") above results when the query matches
+  one.
+- **Create (right).** An outline button with the kind's create actions. Buyer: Purchase order, Import purchase
+  order. Suppliers and forwarders are added from Partners. Supplier: Product, Catalog, Import products. Forwarder: hidden. Each item respects Edit
   access; with none, the button is hidden.
-- **Inbox (right).** Replaces the empty bell (F9). A count of open tasks, and a popover with the latest five and "View
-  all" to `/inbox`. See [Inbox](#inbox).
-- **Account (right).** Avatar menu: name and email, **Account settings**, Theme (Light, Dark, System), Keyboard
-  shortcuts, Help, **Sign out**. Moves out of the sidebar's footer.
+- **Inbox (right).** Replaces the empty bell (F9). Its count is open tasks plus unread updates, and its popover has To
+  do and Updates, the latest five of each, **Mark all read** and "View all" to `/inbox`. See [Inbox](#inbox).
+- **Account.** Not in the top bar: it's the sidebar's footer. The two shortcuts (Ctrl K search, Ctrl B sidebar) show in the command
+  menu's footer and in the tooltips of the search field and the sidebar toggle, not in a menu item.
 
 ### Sidebar
 
-- 240 px, `sidebar` background, collapses to a 56 px icon rail (Ctrl+B) that shows labels in tooltips, and becomes a
-  sheet under 768 px.
+- 240 px, `sidebar` background, collapses to a 56 px icon rail (Ctrl+B, or the 28 px `panel-left` toggle in the page's
+  top corner) that shows labels in tooltips, and becomes a
+  240 px sheet under 768 px.
+- **Workspace switcher (top),** in a header with a bottom border (F2): the workspace's 28 px kind tile with its
+  initials, its name (truncated) and chevrons, 44 px tall. On the rail, only the tile. The menu lists the workspaces,
+  each with its kind, then **New workspace** and **Workspace settings**. Switching reloads, as `WorkspaceWatch`
+  requires today. The switcher names no kind of its own: most people have one workspace, and the menu already says
+  which kind each is, which also leaves room for long workspace names.
 - **Home** and **Inbox** first, ungrouped, then the kind's groups, then **Settings** pinned at the bottom.
+- **Account (footer),** under a top border: the person's initials, name and email; on the rail, only the initials. Its
+  menu opens upward: name and email, **Account settings**, Theme (Light, Dark, System), Help, **Sign out**.
 - An item shows a count only for work waiting on this workspace (Inbox tasks, Purchase orders needing a reply,
   Orders to pack, Shipments needing action). Counts are never totals.
 - The active item has a `muted` fill and a 2 px `primary` marker on its leading edge.
@@ -127,7 +139,7 @@ Showing 1–25 of 132 purchase orders                                           
 ```
 
 - **Views, not stat cards (F6).** Tabs are saved views with counts in the tab. The stat cards on Purchase orders and
-  Shipments go. The URL holds the view, search, filters and sort, so any list state is a link.
+  Shipments go. The URL holds the view, search, filters and sort through `nuqs`, so any list state is a link.
 - **Filter bar:** search on the left, filter chips for the list's facets (status, partner, destination, date), sort,
   column visibility and export where there is one. Sort is one control: an up-down arrow and the current order
   ("Required by", "Newest first"), no chevron. Subsets of a list are views; a segmented control only switches how the
@@ -175,10 +187,10 @@ import review.
 Purchase orders › PO-1045 ›
 Pack shipment 2                                                          [Save draft] [×]
 ┌ Steps ─────────┐ ┌ Section ─────────────────────────────────────────────────────────┐
-│ ✓ Invoice      │ │                                                                   │
-│ ● Contents     │ │                                                                   │
-│ ○ Cartons      │ │                                                                   │
-│ ○ Pickup       │ └───────────────────────────────────────────────────────────────────┘
+│ ✓ Contents     │ │                                                                   │
+│ ● Cartons      │ │                                                                   │
+│ ○ Pickup       │ │                                                                   │
+│ ○ Invoice      │ └───────────────────────────────────────────────────────────────────┘
 │ ○ Review       │
 └────────────────┘
 ┌ Action bar ─────────────────────────────────────────────────────────────────────────┐
@@ -310,10 +322,15 @@ queries (`overview.attention`, supplier `tasks`), filtered by what the person ca
 - **To do:** open tasks, grouped by due or by record, each with its record, who's waiting and the action. Done tasks
   leave by themselves when the record moves on.
 - **Updates:** events on records the person follows (created, sent, commented on or assigned to them): comments,
-  sent POs, proposals, shipments created, received. Mark read, mark all read.
+  sent POs, proposals, shipments created, received. Unread ones are marked; each has **Mark read**, the tab has **Mark
+  all read** and filters by type, record and partner, and days group them. An update about a record the person can't
+  open shows as plain text.
 
 Updates are delivered by Novu, as [App header](../../app-header.md) plans; Copacker supplies the events and doesn't
-build a notification engine. To do is computed by Copacker and works before Novu arrives.
+build a notification engine. To do is computed by Copacker. The whole Inbox, both tabs, the popover and the
+Notifications preferences in Account settings are built before Novu is connected, rendering a Copacker `Update` type
+from fixtures; a Novu adapter then feeds them through `@novu/react`'s headless hooks, so the UI stays on the kit rather
+than Novu's prebuilt Inbox. Copacker launches once the adapter delivers.
 
 ### Money and prices
 
@@ -384,7 +401,7 @@ at the top, then events by day, each naming the person and workspace. Mentions n
 | ≥ 1280 px      | Sidebar, content up to 1280 px, record rail 320 px                                                  |
 | 1024–1279 px   | Sidebar collapses to the icon rail by default                                                       |
 | 768–1023 px    | Rail stacks under the main column; tables hide their secondary columns with container queries       |
-| < 768 px       | Sidebar as a sheet from a menu button in the top bar; search becomes an icon; rows stack; the primary action is a sticky bottom bar |
+| < 768 px       | Sidebar as a sheet from a menu button in the top bar, with the account in its footer; no Create menu (each list page's primary action covers it); search becomes an icon; rows stack; the primary action is a sticky bottom bar |
 
 Packing and receiving are designed tablet-first (portrait 820 px): large tap targets (44 px), carton rows as cards,
 and scanning a barcode into a carton's SKU field.
@@ -429,8 +446,12 @@ is a cognitive accessibility problem as much as a visual one. Every screen follo
 
 **Show only what the task needs now.**
 
-- No page subtitles. The title, the breadcrumb and the meta row say what the page is. A state that matters ("Draft
-  saved 2 minutes ago") goes in the meta row.
+- A page description only when it adds what the page doesn't already show, following Fluent's guidance to give
+  details that aren't readily apparent in a sentence or two, without restating the title. It fits settings pages whose
+  effect reaches elsewhere ("Prints on commercial invoices, ISF data, and Global Logistics booking sheets.") and task
+  flows with a consequence worth knowing up front. Lists, records and Home rarely need one: the title, the breadcrumb,
+  the views and the meta row already say what the page is. One line, about 100 characters at most. A state that matters
+  ("Draft saved 2 minutes ago") goes in the meta row.
 - No card subtitles that restate the title. A short scope stays ("Aug 30 to Sep 28", "8 tasks, 2 urgent").
 - The meta row under a record's title says who and where (counterparty, route). Dates, terms and totals live in the
   rail, once.
@@ -475,4 +496,6 @@ the action's confirm dialog, or an alert line when something blocks the step.
 - Short and literal. Prefer a number or a noun phrase to a sentence: "35-day lead time", "5 orders", "No catalog match".
 - Sentence case everywhere. Actions are verbs ("Approve changes", "Mark shipped").
 - Never use `·`, `•` or another dot glyph as a separator. Use layout or words.
+- A page someone can see but not change is **View only**, not "Read-only": it names the View access level members
+  are given in Team settings, so the badge and the access they were granted use the same words. Locked on 2026-09-30.
 - Review every new or changed string for clarity, brevity, and consistency with the surrounding UI.

@@ -1,22 +1,19 @@
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { held, recordActions } from "@/stories/fixtures/shared"
 import { member, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
 import { AppSidebar } from "./app-sidebar"
-
-const allWorkspaces = Object.values(workspaces).map(({ id, name }) => ({ id, name }))
 
 // The sidebar in a workspace of each kind, as the portal's shell passes it.
 function inWorkspace(kind: WorkspaceKind) {
   const workspace = workspaces[kind]
   return {
-    name: workspace.name,
-    userName: person.name,
-    email: person.email,
     kind: workspace.kind,
     active: workspace.id,
-    workspaces: allWorkspaces
+    name: workspace.name,
+    workspaces: Object.values(workspaces),
+    userName: person.name,
+    email: person.email
   }
 }
 
@@ -27,7 +24,7 @@ const meta = preview.meta({
     layout: "fullscreen",
     nextjs: { appDirectory: true, navigation: { pathname: "/orders/order-1045" } }
   },
-  // The sidebar lives in the shell's provider, beside the page with its collapse button.
+  // The sidebar lives in the shell's provider, beside the page, whose top bar has its button.
   decorators: [
     (Story, { parameters }) => (
       <SidebarProvider defaultOpen={parameters.sidebarOpen !== false} className="[--header-height:0px]">
@@ -51,7 +48,7 @@ export const Buyer = meta.story({
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual([
       "Overview",
-      "Orders",
+      "Sales",
       "Products",
       "Restock",
       "Purchase orders",
@@ -62,12 +59,36 @@ export const Buyer = meta.story({
     await expect(canvas.getByText("Store")).toBeVisible()
     await expect(canvas.getByText("Purchasing")).toBeVisible()
     // The page's own entry is marked, including on a record under it.
-    await expect(canvas.getByRole("link", { name: "Purchase orders" })).toHaveAttribute("data-active")
-    await expect(canvas.getByRole("link", { name: "Purchase orders" })).toHaveAttribute("href", "/orders")
-    await expect(canvas.getByRole("link", { name: "Orders" })).not.toHaveAttribute("data-active")
-    const switcher = canvas.getByRole("button", { name: /Harbor Goods/ })
-    await expect(switcher).toHaveTextContent("HGHarbor GoodsBuyer workspace")
-    await expect(canvas.getByRole("button", { name: /Alex Rivera/ })).toHaveTextContent("ARAlex Riveraalex@example.com")
+    const current = canvas.getByRole("link", { name: "Purchase orders" })
+    await expect(current).toHaveAttribute("data-active")
+    await expect(current).toHaveAttribute("href", "/orders")
+    // Its marker is the primary color on its leading edge.
+    await expect(getComputedStyle(current, "::before").backgroundColor).not.toBe("rgba(0, 0, 0, 0)")
+    await expect(canvas.getByRole("link", { name: "Sales" })).not.toHaveAttribute("data-active")
+  }
+})
+
+// The workspace switcher tops the sidebar.
+export const WorkspaceSwitcher = meta.story({
+  play: async ({ canvas }) => {
+    // The switcher tops the sidebar, above every page.
+    const switcher = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
+    const first = canvas.getAllByRole("link")[0]!
+    await expect(switcher.getBoundingClientRect().bottom).toBeLessThanOrEqual(first.getBoundingClientRect().top)
+    await expect(switcher).toHaveTextContent("HGHarbor Goods")
+    await userEvent.click(switcher)
+    const menu = await screen.findByRole("menu")
+    await waitFor(() => expect(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ })).toBeVisible())
+  }
+})
+
+// Collapsed to the rail, the switcher is just the workspace's tile.
+export const WorkspaceSwitcherCollapsed = meta.story({
+  parameters: { sidebarOpen: false },
+  play: async ({ canvas }) => {
+    const switcher = canvas.getByRole("button", { name: "Harbor Goods, switch workspace" })
+    await expect(switcher.getBoundingClientRect().width).toBe(32)
+    await expect(within(switcher).getByText("Harbor Goods")).not.toBeVisible()
   }
 })
 
@@ -97,9 +118,6 @@ export const Supplier = meta.story({
     ])
     await expect(canvas.getByText("Sales")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Inventory" })).toHaveAttribute("data-active")
-    await expect(canvas.getByRole("button", { name: /Lotus Manufacturing/ })).toHaveTextContent(
-      "LMLotus ManufacturingSupplier workspace"
-    )
   }
 })
 
@@ -111,88 +129,14 @@ export const SupplierMember = meta.story({
   }
 })
 
-// A forwarder sees the purchase orders coming through it, and Settings.
+// A forwarder's freight: the purchase orders coming through it, and Settings.
 export const Forwarder = meta.story({
   args: inWorkspace("forwarder"),
   parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/settings" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Purchase orders", "Settings"])
+    await expect(canvas.getByText("Freight")).toBeVisible()
     await expect(canvas.getByRole("link", { name: "Settings" })).toHaveAttribute("data-active")
-    await expect(canvas.getByRole("button", { name: /Bayline Freight/ })).toHaveTextContent("Forwarder workspace")
-  }
-})
-
-export const SwitchWorkspace = meta.story({
-  play: async ({ canvas, msw }) => {
-    // Switching loads the new workspace's home, so the server holds its answer and the story stays here.
-    const posted = recordActions(msw, held)
-    await userEvent.click(canvas.getByRole("button", { name: /Harbor Goods/ }))
-    const menu = await screen.findByRole("menu")
-    await expect(within(menu).getByText("Workspaces")).toBeInTheDocument()
-    const items = within(menu).getAllByRole("menuitem")
-    await expect(items.map((item) => item.textContent)).toEqual([
-      "HGHarbor Goods",
-      "LMLotus Manufacturing",
-      "BFBayline Freight",
-      "New workspace"
-    ])
-    // The open workspace is checked.
-    await expect(items[0]?.querySelector("svg")).not.toBeNull()
-    await expect(items[1]?.querySelector("svg")).toBeNull()
-    await expect(within(menu).getByRole("menuitem", { name: "New workspace" })).toHaveAttribute(
-      "href",
-      "/workspaces/new"
-    )
-    await userEvent.click(within(menu).getByRole("menuitem", { name: /Lotus Manufacturing/ }))
-    await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_supplier" } }]))
-  }
-})
-
-// Until the workspace list has the open workspace, it shows by the name the session gave.
-export const WorkspaceNotListed = meta.story({
-  args: { name: "Harbor Goods EU", active: "org_new", workspaces: [] },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /Harbor Goods EU/ })).toHaveTextContent("HGHarbor Goods EU")
-  }
-})
-
-// Someone who hasn't given their name shows by their email.
-export const WithoutName = meta.story({
-  args: { userName: null },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: /alex@example.com/ })).toHaveTextContent(
-      "Aalex@example.comalex@example.com"
-    )
-  }
-})
-
-// The account menu: who's signed in, the theme, and signing out.
-export const AccountMenu = meta.story({
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: /Alex Rivera/ }))
-    const menu = await screen.findByRole("menu")
-    await expect(within(menu).getByText("alex@example.com")).toBeInTheDocument()
-    const signOut = within(menu).getByRole("menuitem", { name: "Sign out" })
-    await expect(signOut).toHaveAttribute("type", "submit")
-    await expect(signOut).toHaveAttribute("form", "sign-out")
-    const form = document.getElementById("sign-out")
-    await expect(form).toHaveAttribute("action", "/logout")
-    await expect(form).toHaveAttribute("method", "post")
-
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Theme" }))
-    const light = await screen.findByRole("menuitemradio", { name: "Light" })
-    await expect(light).toHaveAttribute("aria-checked", "true")
-    await expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute("aria-checked", "false")
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "Dark" }))
-    await waitFor(() => expect(document.documentElement).toHaveClass("dark"))
-    await expect(localStorage.getItem("theme")).toBe("dark")
-    await expect(screen.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute("aria-checked", "true")
-    // System follows the computer and forgets the choice.
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "System" }))
-    await waitFor(() => expect(localStorage.getItem("theme")).toBeNull())
-    await expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute("aria-checked", "true")
-    await userEvent.click(screen.getByRole("menuitemradio", { name: "Light" }))
-    await waitFor(() => expect(document.documentElement).not.toHaveClass("dark"))
   }
 })
 
@@ -204,7 +148,7 @@ export const Collapsed = meta.story({
     await expect(sidebar()).toHaveAttribute("data-state", "collapsed")
     await userEvent.hover(canvas.getByRole("link", { name: "Shipments" }))
     await waitFor(() => expect(document.querySelector("[data-slot=tooltip-content]")).toHaveTextContent("Shipments"))
-    // The rail along its edge expands it, as the page's button does.
+    // The rail along its edge expands it, as the page's toggle does.
     const rail = canvas
       .getAllByRole("button", { name: "Toggle sidebar" })
       .find((button) => button.dataset.sidebar === "rail")
@@ -216,16 +160,32 @@ export const Collapsed = meta.story({
   }
 })
 
-// On a phone the sidebar is a sheet, which closes once a page is chosen.
+// On a phone the sidebar is a sheet, the sidebar's width (Create stays on desktop; each list page has its own primary
+// action). It closes once a page is chosen.
 export const Phone = meta.story({
   globals: { viewport: { value: "iphone12", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("link", { name: "Shipments" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Toggle sidebar" }))
     const sheet = await screen.findByRole("dialog")
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Alex Rivera, account" })).toBeVisible())
+    await expect(sheet.getBoundingClientRect().width).toBe(240)
+    await expect(within(sheet).getByRole("button", { name: "Harbor Goods, switch workspace" })).toBeVisible()
+    await expect(within(sheet).queryByRole("button", { name: "Create" })).toBeNull()
+    await expect(within(sheet).getByText("alex@example.com")).toBeVisible()
     const shipments = within(sheet).getByRole("link", { name: "Shipments" })
     await expect(shipments).toHaveAttribute("href", "/shipments")
     await userEvent.click(shipments)
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  }
+})
+
+// Each entry is 34px; the open one has the muted fill and a semibold label.
+export const Measurements = meta.story({
+  play: async ({ canvas }) => {
+    const current = canvas.getByRole("link", { name: "Purchase orders" })
+    await expect(current.getBoundingClientRect().height).toBe(34)
+    await expect(getComputedStyle(current).fontWeight).toBe("600")
+    await expect(getComputedStyle(canvas.getByRole("link", { name: "Sales" })).fontWeight).toBe("400")
   }
 })

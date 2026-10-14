@@ -29,7 +29,14 @@ const config: StorybookConfig = {
         ]
       },
       optimizeDeps: {
-        include: ["msw", "msw/browser", "msw-storybook-addon", "@vanilla-extract/sprinkles/createRuntimeSprinkles"]
+        include: [
+          "msw",
+          "msw/browser",
+          "msw-storybook-addon",
+          "@vanilla-extract/sprinkles/createRuntimeSprinkles",
+          "nuqs",
+          "nuqs/adapters/testing"
+        ]
       }
     })
 }

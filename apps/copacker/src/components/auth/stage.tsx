@@ -24,8 +24,8 @@ export function Stage({ className, children }: { className?: string; children: R
   )
 }
 
-// Copacker's box and name, the same in the app header and on the pages around it. `flat` drops the box's glow where it
-// sits in a header with a border under it, which the glow would spill over.
+// Copacker's box and name, on sign-in and the pages around the app. `flat` drops the box's glow where it sits in a
+// header with a border under it, which the glow would spill over.
 export function BrandMark({ className, flat }: { className?: string; flat?: boolean }) {
   return (
     <span
@@ -34,16 +34,23 @@ export function BrandMark({ className, flat }: { className?: string; flat?: bool
         className
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-[0.625rem] bg-primary text-primary-foreground",
-          !flat && "shadow-lg shadow-orange-500/25"
-        )}
-      >
-        <Box className="size-4" />
-      </span>
+      <CopackerMark className={cn("size-8 rounded-[0.625rem]", !flat && "shadow-lg shadow-orange-500/25")} />
       Copacker
+    </span>
+  )
+}
+
+// Copacker's box on its own, as the app's top bar shows it beside the workspace's name.
+export function CopackerMark({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground",
+        className
+      )}
+    >
+      <Box className="size-4" />
     </span>
   )
 }

@@ -98,7 +98,7 @@ const order = { revision: 2, data: orderData({ reference: "PO-2051", items: [tot
 const proposed = fn()
 
 const meta = preview.meta({
-  title: "Pages/Orders/Edit order",
+  title: "Pages/Supplier/Orders/Propose changes",
   ...pageStory(`/orders/${orderId}/revise`, ReviseOrderPage, "supplier"),
   args: { order, latest: null, customer: "Harbor Goods", products: reviserProducts },
   beforeEach: ({ msw }) => {

@@ -15,7 +15,7 @@ async function NewCatalogPage({ data }: { data: CatalogEditorData }) {
 const saved = fn()
 
 const meta = preview.meta({
-  title: "Pages/Catalogs/New",
+  title: "Pages/Supplier/Catalogs/New",
   ...pageStory("/catalogs/new", NewCatalogPage, "supplier"),
   args: { data: newCatalog },
   beforeEach: ({ msw }) => {

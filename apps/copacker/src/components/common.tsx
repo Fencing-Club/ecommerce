@@ -1,13 +1,13 @@
-import { AlertTriangle, ChevronRight, Download, FileText, PackageOpen } from "lucide-react"
+import { AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
 
-// Every status reads in one of five tones: neutral when not started, closed or cancelled; info while in progress or
-// waiting on someone else; success when done or healthy; warning when someone needs to act; destructive when it failed
-// or stock ran out.
+// Every status reads in one of five tones, the same label always in the same tone: warning when the viewer has to act,
+// info while someone else is working on it, success when it's ready or done well, neutral when idle or filed, and
+// destructive when it failed or is lost.
 export type StatusTone = "neutral" | "info" | "success" | "warning" | "destructive"
 
 type StatusKey = keyof typeof messages.status
@@ -21,6 +21,8 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   active: { label: "active", tone: "success" },
   archived: { label: "archived", tone: "neutral" },
   submitted: { label: "submitted", tone: "info" },
+  accepted: { label: "accepted", tone: "info" },
+  declined: { label: "declined", tone: "warning" },
   closed: { label: "closed", tone: "neutral" },
   // Shipments
   packing: { label: "packing", tone: "info" },
@@ -30,17 +32,18 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   waiting_labels: { label: "waitingLabels", tone: "warning" },
   ready: { label: "ready", tone: "success" },
   shipped: { label: "shipped", tone: "info" },
+  at_forwarder: { label: "atForwarder", tone: "info" },
   forwarded: { label: "forwarded", tone: "info" },
-  received: { label: "received", tone: "success" },
+  received: { label: "received", tone: "neutral" },
   correction: { label: "correction", tone: "warning" },
   needs_attention: { label: "needsAttention", tone: "destructive" },
-  cancelled: { label: "cancelled", tone: "neutral" },
+  cancelled: { label: "cancelled", tone: "destructive" },
   // Amazon inbound shipments, in Seller Central's words (shipped, closed and cancelled read as above)
   working: { label: "working", tone: "info" },
   created: { label: "created", tone: "info" },
   ready_to_ship: { label: "readyToShip", tone: "info" },
   in_transit: { label: "inTransit", tone: "info" },
-  delivered: { label: "delivered", tone: "info" },
+  delivered: { label: "delivered", tone: "success" },
   checked_in: { label: "checkedIn", tone: "info" },
   receiving: { label: "receiving", tone: "info" },
   error: { label: "error", tone: "destructive" },
@@ -51,7 +54,7 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   partially_shipped: { label: "partiallyShipped", tone: "info" },
   partially_fulfilled: { label: "partiallyFulfilled", tone: "info" },
   fulfilled: { label: "fulfilled", tone: "success" },
-  canceled: { label: "cancelled", tone: "neutral" },
+  canceled: { label: "cancelled", tone: "destructive" },
   unfulfillable: { label: "unfulfillable", tone: "destructive" },
   // Stock
   in_stock: { label: "inStock", tone: "success" },
@@ -65,16 +68,17 @@ const statuses: Record<string, { label: StatusKey; tone: StatusTone }> = {
   not_invited: { label: "notInvited", tone: "neutral" }
 }
 
-// The tone's color, which tints the badge, colors its dot and, mixed with the text color, its label.
-const toneColors: Record<StatusTone, string> = {
-  neutral: "[--tone:var(--muted-foreground)]",
-  info: "[--tone:var(--chart-1)]",
-  success: "[--tone:var(--success)]",
-  warning: "[--tone:var(--warning)]",
-  destructive: "[--tone:var(--destructive)]"
+// Each tone's pill: its soft fill, and its dot and label in the tone's own color. Warning's label takes the darker
+// warning text, and neutral's the muted text, so every label reads on its fill.
+const tonePills: Record<StatusTone, { pill: string; dot: string }> = {
+  neutral: { pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
+  info: { pill: "bg-info-soft text-info", dot: "bg-info" },
+  success: { pill: "bg-success-soft text-success", dot: "bg-success" },
+  warning: { pill: "bg-warning-soft text-warning-foreground", dot: "bg-warning" },
+  destructive: { pill: "bg-destructive-soft text-destructive", dot: "bg-destructive" }
 }
 
-// A status badge in one of the five tones. `icon` replaces the dot, such as a Repeat icon for a replacement order.
+// A status pill in one of the five tones. `icon` replaces the dot, such as a Repeat icon for a replacement order.
 export function StatusBadge({
   tone,
   icon,
@@ -84,16 +88,17 @@ export function StatusBadge({
   icon?: React.ReactNode
   children: React.ReactNode
 }) {
+  const { pill, dot } = tonePills[tone]
   return (
     <span
       data-slot="status"
       data-tone={tone}
       className={cn(
-        "inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-full bg-(--tone)/12 px-2 text-xs font-medium tracking-normal whitespace-nowrap text-(--tone-text) ring-1 ring-(--tone)/20 ring-inset [--tone-text:color-mix(in_oklab,var(--tone)_60%,var(--foreground))] [&>svg]:size-3 [&>svg]:shrink-0 [&>svg]:text-(--tone)",
-        toneColors[tone]
+        "inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-full px-2 text-xs font-medium tracking-normal whitespace-nowrap [&>svg]:size-3 [&>svg]:shrink-0",
+        pill
       )}
     >
-      {icon ?? <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--tone)" />}
+      {icon ?? <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", dot)} />}
       {children}
     </span>
   )
@@ -119,55 +124,90 @@ export function Status({ status }: { status: string }) {
   return <StatusBadge tone={known?.tone ?? "neutral"}>{known ? t(known.label) : words(status)}</StatusBadge>
 }
 
-// The page title with its actions on the right. A record's page passes its parents, which lead the title on the same
-// line (Customers › Fencing Club), and a status badge after it. When the actions don't fit beside the title, they wrap
-// below it, across the page's full width. It must be the page's first element, so the sidebar's collapse button sits
-// beside the title. The title's line is 36px tall with or without actions beside it, so titles line up across pages.
+// The page's header, the same on every page. A deeper page's breadcrumb sits on its own row above the title (on a phone,
+// a back link to the page it's under); a sidebar page has none. Then the title, a record's status and a View only badge
+// when the person can't change the page, with the page's actions on the right: at most one primary, a couple of
+// secondary, and ⋯ last. When the actions don't fit beside the title they wrap below it. A description only where it
+// says something the page doesn't; a record's meta row, each fact a label and its value, never joined by a dot; and the
+// page's tabs.
 export function PageHeader({
   title,
   parents,
   badge,
+  viewOnly,
   description,
+  meta,
+  tabs,
   children
 }: {
   title: React.ReactNode
   // Each links to its page, unless the person can't open it.
   parents?: Array<{ label: string; href?: string }>
   badge?: React.ReactNode
+  viewOnly?: boolean
   description?: React.ReactNode
+  meta?: ReadonlyArray<{ label: string; value: React.ReactNode }>
+  tabs?: React.ReactNode
   children?: React.ReactNode
 }) {
   const t = useTranslations("common")
+  const back = parents?.findLast((parent) => parent.href)
   return (
-    <div data-slot="page-header" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 flex-[1_1_18rem] flex-col gap-1">
-        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {parents?.length ? (
-            <nav aria-label={t("breadcrumb")}>
-              <ol className="flex items-center gap-2 text-sm text-muted-foreground">
-                {parents.map((parent) => (
-                  <li key={parent.label} className="flex items-center gap-2">
-                    {parent.href ? (
-                      <Link href={parent.href} className="rounded-sm hover:text-foreground">
-                        {parent.label}
-                      </Link>
-                    ) : (
-                      parent.label
-                    )}
-                    <ChevronRight aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          ) : null}
-          <h1 className={cn("min-w-0 font-semibold tracking-tight", parents?.length ? "text-xl" : "text-2xl")}>
-            {title}
-          </h1>
+    <div data-slot="page-header" className="flex flex-col gap-2.5">
+      {parents?.length ? (
+        <nav aria-label={t("breadcrumb")}>
+          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted-foreground max-md:hidden">
+            {parents.map((parent) => (
+              <li key={parent.label} className="flex items-center gap-1.5">
+                {parent.href ? (
+                  <Link href={parent.href} className="rounded-sm hover:text-foreground">
+                    {parent.label}
+                  </Link>
+                ) : (
+                  parent.label
+                )}
+                <ChevronRight aria-hidden className="size-3.5 shrink-0 rtl:rotate-180" />
+              </li>
+            ))}
+          </ol>
+          {back?.href && (
+            <Link
+              href={back.href}
+              className="flex w-fit items-center gap-1 rounded-sm text-[13px] font-medium text-muted-foreground hover:text-foreground md:hidden"
+            >
+              <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
+              {back.label}
+            </Link>
+          )}
+        </nav>
+      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 max-md:gap-x-2">
+          <h1 className="min-w-0 text-[22px] leading-8 font-semibold tracking-[-0.3px] md:text-2xl">{title}</h1>
           {badge}
+          {viewOnly && (
+            <StatusBadge tone="neutral" icon={<Eye aria-hidden />}>
+              {t("viewOnly")}
+            </StatusBadge>
+          )}
         </div>
-        {description && <div className="text-sm text-muted-foreground">{description}</div>}
+        {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
       </div>
-      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+      {description && <div className="max-w-prose text-sm text-muted-foreground">{description}</div>}
+      {meta?.length ? (
+        <dl
+          data-slot="page-meta"
+          className="flex flex-wrap items-center gap-x-6 gap-y-1 text-[13px] max-md:flex-col max-md:items-stretch max-md:gap-y-[3px] max-md:pt-1"
+        >
+          {meta.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5 max-md:items-start">
+              <dt className="text-muted-foreground max-md:w-[92px] max-md:shrink-0">{item.label}</dt>
+              <dd className="min-w-0 font-medium">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {tabs}
     </div>
   )
 }

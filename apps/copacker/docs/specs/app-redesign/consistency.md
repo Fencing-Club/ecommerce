@@ -15,9 +15,10 @@ When a concept needs a new shape, change the component, so every screen moves to
 
 | Concept                  | Component             | Sizes and states                                                                 | Used for                                                    |
 | ------------------------ | --------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| App header               | RD Top Bar            | Workspace name, inbox count                                                      | Every desktop screen                                        |
-| Phone header             | RD Mobile Top Bar     | Workspace name, inbox count                                                      | Every phone screen                                          |
-| Workspace menu           | RD Workspace Menu     | Workspaces and their kind, New workspace, Workspace settings                     | The top bar switcher                                        |
+| App header               | RD Top Bar            | Inbox count                                                                      | Every desktop screen                                        |
+| Phone header             | RD Mobile Top Bar     | Inbox count                                                                      | Every phone screen                                          |
+| Workspace switcher       | RD Sidebar Workspace  | Kind tile and initials, workspace name (truncated)                               | The top of every sidebar                                    |
+| Workspace menu           | RD Workspace Menu     | Workspaces and their kind, New workspace, Workspace settings                     | The sidebar's workspace switcher                            |
 | Navigation item          | RD Nav Item           | Default, active (fill and marker), count                                         | Sidebars and the settings navigation                        |
 | Status                   | RD Status             | Five tones, below                                                                | Every status and state label                                |
 | Button                   | RD Button             | Primary; icon optional                                                           | The one primary action in a view                            |
@@ -122,7 +123,8 @@ Before handing screens over, and after anyone adds one:
 5. **Scenario facts** (products, totals, dates, places, people) match the table above.
 6. **Every page with a horizontal visualization has a phone screen** ([Responsive](design-spec.md#horizontal-visualizations-on-a-phone)).
 7. **Copy**: sentence case, no dot glyph separators, limits written the same way.
-8. **Quiet**: no page subtitles, no card subtitle restating its title, no paragraph under a next step, no notice
+8. **Quiet**: a page description only where it adds something the page doesn't show, no card subtitle restating its
+   title, no paragraph under a next step, no notice
    without a dismiss button except a blocking error, definitions in info tips
    ([Content and disclosure](design-spec.md#content-and-disclosure)).
 9. **Optional marked**: every item the specs list as Proposed carries the Optional marker, and nothing else does

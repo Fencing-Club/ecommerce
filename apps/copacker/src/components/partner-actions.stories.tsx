@@ -105,6 +105,15 @@ export const AddMenu = meta.story({
   }
 })
 
+// The top bar's Create > Supplier lands here with ?add=supplier, which opens its sheet.
+export const OpenedFromCreate = meta.story({
+  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/partners", query: { add: "supplier" } } } },
+  play: async () => {
+    const dialog = await screen.findByRole("dialog", { name: "Add a supplier" })
+    await waitFor(() => expect(dialog).toBeVisible())
+  }
+})
+
 // A supplier that isn't on Copacker: a click on the row edits it, and its menu invites it.
 export const Supplier = meta.story({
   render: () => <SupplierStory />,

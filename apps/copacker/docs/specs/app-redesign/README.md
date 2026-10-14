@@ -1,6 +1,6 @@
 # App redesign spec
 
-Status: **proposed**. Nothing here is built yet. Written 2026-09-28 from an audit of the app and its Storybook pages.
+Status: **foundations implemented; page rollout planned**. The shared shell, design tokens and reusable components are built. The later page and workflow phases below remain planned. Written 2026-09-28 from an audit of the app and its Storybook pages.
 When a part ships, its behavior moves into the regular docs (and [Roles and page access](../../permissions.md),
 [App header](../../app-header.md), [Overview page](../../overview.md) change with it), and this spec is trimmed.
 
@@ -38,7 +38,7 @@ marker: it's drawn now and built once it's decided.
 | Shared records       | A PO and its shipments have one URL for everyone: `/orders/[id]` and `/orders/[id]/shipments/[shipmentId]`, rendered from the viewer's side. Workspace-owned objects (products, customers, partners) are scoped to the workspace. |
 | Shipments            | A shipment is a child of its PO in the URL and breadcrumb; the Shipments list stays as a cross-PO view. Packing becomes its own task flow. |
 | Next step            | Every PO and shipment shows a lifecycle tracker and one **Next step** card from `server/workflow.ts`, instead of per-state alerts.       |
-| Lists                | Views with counts replace stat cards; filters and sort live in the URL.                                                                   |
+| Lists                | Views with counts replace stat cards; filters and sort live in the URL, through `nuqs`.                                                   |
 | Save model           | One component, the **action bar**, for unsaved changes, task flows, proposals and bulk selection: floating on desktop, docked on a phone. Lifecycle trackers, next step cards and segmented controls are single components too. |
 | Packing requirements | Each destination's rules (FBA, AWD US, your warehouse, and GWD once its rules are checked) show on the supplier's order before packing and check live in the Cartons step. They're added to a buyer's PO automatically, and the buyer confirms them before sending an order with several destinations or any AWD line. AWD US from China keeps AWD's rules and ships through Amazon Global Logistics. |
 | Shipping and customs | Every PO says who arranges shipping (the supplier, you, the forwarder or Amazon) and who handles customs. Label, tracking, booking and bill of lading steps follow from them. |
@@ -46,7 +46,7 @@ marker: it's drawn now and built once it's decided.
 | Receiving            | Shipments to your own locations are received on a task page, with received and rejected units per line. Amazon shipments show Amazon's counts. Closing a PO shows a per-line summary. |
 | Combined shipments   | A forwarder combines shipments for the same buyer and destination into a combined shipment with its own page. Freight splits across the POs by chargeable weight. |
 | Stock flow           | The inventory sync spec's Stock flow page lives in Workspace settings for buyers and suppliers: a map on desktop, a list on a phone. |
-| Content density      | Only what the task needs now: no page subtitles, definitions in info tips, long rule lists behind Show all, consequences in confirm dialogs, one dismissible banner at most. |
+| Content density      | Only what the task needs now: a page description only where it adds something the page doesn't show, definitions in info tips, long rule lists behind Show all, consequences in confirm dialogs, one dismissible banner at most. |
 | Phones               | Every horizontal visualization has a phone form (stage lists, compact lifecycle, stacked route bars, vertical timelines), and every page that uses one has a phone design. |
 | Settings             | Split into Account and Workspace settings, a route per section, with its own navigation.                                                  |
 | Forwarder            | Organized around shipment legs: Home, Shipments, Purchase orders, Clients. No new permission area.                                        |
@@ -89,16 +89,18 @@ marker: it's drawn now and built once it's decided.
 Each phase ships on its own, behind no flag, with its Storybook stories and play tests, e2e updates and browser
 acceptance at desktop and phone sizes.
 
-1. **Shell and names:** top bar with the switcher, Create and account menus; sidebar groups and counts; Sales renamed;
+1. **Shell and names:** top bar with Copacker, Create and account menus; the sidebar's workspace switcher, groups and
+   counts; Sales renamed;
    page header component; status tones.
 2. **Settings split:** the settings layout, a route per section, the member page, the action bar.
 3. **Records:** lifecycle tracker, Next step card and tabs on PO and shipment pages; nested shipment routes; the Pack
    shipment flow; proposal review inline.
-4. **Home, Inbox and Analytics:** the task source, Home per kind, Inbox To do, Analytics tabs from the Overview's cards.
-5. **Lists:** views, filter bar and URL state on every index; stat cards removed.
+4. **Home, Inbox and Analytics:** the task source, Home per kind, the Inbox with To do and Updates (on fixtures until
+   Novu), Notifications preferences, Analytics tabs from the Overview's cards.
+5. **Lists:** views, filter bar and URL state (`nuqs`) on every index; stat cards removed.
 6. **New pages:** partner, buyer product, sales order, forwarder Shipments and Clients, supplier Import products.
    The forwarder's Record arrival step, and the Lead times tab once it has data.
-7. **Inbox Updates** once Novu delivers notifications.
+7. **Novu:** the adapter that delivers Updates to the Inbox built in phase 4. Copacker launches once it's in.
 8. **Route estimates:** a new PO's suggested required-by date and Restock's lead time from its route's history.
 
 Screens for the purchase order flow and inventory sync specs ship with those features, not with a redesign phase:
@@ -109,11 +111,14 @@ settings and Stock flow. The inventory sync first slice comes first: supplier eB
 
 - ~~Should a forwarder receive a shipment at its warehouse?~~ Yes: Lead times measure a forwarder from arrival, so
   **Record arrival** is a new workflow step (and the buyer records the arrival date for a forwarder not on Copacker).
-- Lead times show no money. Should that tab open to members with Purchase orders or Partners access but no prices?
+- ~~Lead times show no money. Should that tab open to members with Purchase orders or Partners access but no prices?~~
+  No new access: Analytics stays one area that needs prices. Members without prices see measured lead times on the
+  partner page, and they drive Restock and a new PO's required-by date.
 - ~~AWD China: which rules does it need, and how is it booked?~~ It's AWD US shipped from China through Amazon Global
   Logistics, with AWD's rules. The buyer books it in Seller Central from Copacker's booking sheet.
 - The purchase order flow spec plans the at-the-forwarder status, and its Closing section expects the arrival, but its
   Gates and Changes only propose forwarder arrival. Lead times need the arrival date; should it be planned everywhere?
-- Does Analytics need its own member access separate from prices, or is "prices" enough?
-- Should Home's pipeline count shipments or purchase orders when a PO ships in parts?
+- ~~Does Analytics need its own member access separate from prices, or is "prices" enough?~~ Prices is enough.
+- ~~Should Home's pipeline count shipments or purchase orders when a PO ships in parts?~~ Each stage counts what it's
+  about: purchase orders until they're with the supplier, shipments from Packing on ([Buyer Home](buyer.md#home-home)).
 - Workspace rename in General: WorkOS organization names follow it?

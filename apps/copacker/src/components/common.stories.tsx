@@ -5,6 +5,7 @@ import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { DocumentList, EmptyState, formatDestination, PageHeader, Status, StatusBadge, WarningNote } from "./common"
+import { TabLinks } from "./tab-links"
 
 const meta = preview.meta({
   component: Status,
@@ -33,11 +34,36 @@ export const Statuses = meta.story({
     const tone = (text: string) => canvas.getByText(text).getAttribute("data-tone")
     await expect(tone("Draft")).toBe("neutral")
     await expect(tone("Approval needed")).toBe("warning")
-    await expect(tone("Received")).toBe("success")
+    await expect(tone("Received")).toBe("neutral")
     await expect(tone("Needs attention")).toBe("destructive")
     await expect(tone("Partially fulfilled")).toBe("info")
     await expect(tone("Out of stock")).toBe("destructive")
     await expect(tone("Needs review")).toBe("neutral")
+  }
+})
+
+// Each tone's pill as the kit draws it: its soft fill, with its dot and label in the tone's color.
+export const TonesMatchTheKit = meta.story({
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      <StatusBadge tone="info">In transit</StatusBadge>
+      <StatusBadge tone="warning">To pack</StatusBadge>
+      <StatusBadge tone="success">Ready for pickup</StatusBadge>
+      <StatusBadge tone="neutral">Draft</StatusBadge>
+      <StatusBadge tone="destructive">Out of stock</StatusBadge>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const look = (text: string) => {
+      const pill = canvas.getByText(text)
+      return [getComputedStyle(pill).backgroundColor, getComputedStyle(pill).color]
+    }
+    await expect(look("In transit")).toEqual(["rgb(234, 242, 252)", "rgb(31, 99, 184)"])
+    await expect(look("To pack")).toEqual(["rgb(255, 245, 220)", "rgb(122, 75, 0)"])
+    await expect(look("Ready for pickup")).toEqual(["rgb(231, 244, 231)", "rgb(0, 99, 0)"])
+    // Muted is oklch(0.97 0 0), the kit's #F5F5F5.
+    await expect(look("Draft")).toEqual(["oklch(0.97 0 0)", "rgb(107, 107, 107)"])
+    await expect(look("Out of stock")).toEqual(["rgb(253, 236, 236)", "rgb(220, 38, 38)"])
   }
 })
 
@@ -88,7 +114,8 @@ export const TitlesLineUp = meta.story({
   }
 })
 
-// A record's page: its parents lead the title, with its status after it. A parent the person can't open is plain text.
+// A record's page: its parents on their own row above the title, with its status after the title. A parent the person
+// can't open is plain text.
 export const RecordHeader = meta.story({
   render: () => (
     <PageHeader
@@ -102,8 +129,67 @@ export const RecordHeader = meta.story({
     await expect(within(breadcrumb).getByRole("link", { name: "Purchase orders" })).toHaveAttribute("href", "/orders")
     await expect(within(breadcrumb).queryByRole("link", { name: "Lotus Manufacturing" })).toBeNull()
     await expect(within(breadcrumb).getByText("Lotus Manufacturing")).toBeVisible()
-    await expect(canvas.getByRole("heading", { level: 1, name: "PO-1045" })).toBeVisible()
+    const title = canvas.getByRole("heading", { level: 1, name: "PO-1045" })
+    await expect(title).toBeVisible()
+    await expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(breadcrumb.getBoundingClientRect().bottom)
     await expect(canvas.getByText("With supplier")).toBeVisible()
+  }
+})
+
+// The whole record header: breadcrumb, title, status, View only, the record's actions, its meta row and its tabs.
+export const FullRecordHeader = meta.story({
+  render: () => (
+    <PageHeader
+      title="PO-1045"
+      parents={[{ label: "Purchase orders", href: "/orders" }]}
+      badge={<Status status="accepted" />}
+      viewOnly
+      meta={[
+        { label: "Supplier", value: "Lotus Manufacturing" },
+        { label: "Forwarder", value: "Bayline Freight" },
+        { label: "Destination", value: "Amazon FBA and AWD US" }
+      ]}
+      tabs={
+        <TabLinks
+          label="Purchase order"
+          tabs={[
+            { label: "Items", href: "/orders/po-1045", current: true },
+            { label: "Shipments", href: "/orders/po-1045?tab=shipments", current: false, count: 2 },
+            { label: "Documents", href: "/orders/po-1045?tab=documents", current: false, count: 5 },
+            { label: "Activity", href: "/orders/po-1045?tab=activity", current: false, count: 12 }
+          ]}
+        />
+      }
+    >
+      <Button variant="outline">Download PDF</Button>
+    </PageHeader>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Accepted")).toBeVisible()
+    await expect(canvas.getByText("View only")).toBeVisible()
+    // Each fact in the meta row is a label and its value.
+    await expect(canvas.getAllByRole("definition")).toHaveLength(3)
+    await expect(canvas.getByText("Bayline Freight")).toBeVisible()
+    await expect(canvas.getByText("Forwarder")).toBeVisible()
+    await expect(canvas.getByRole("navigation", { name: "Purchase order" })).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Download PDF" })).toBeVisible()
+  }
+})
+
+// On a phone the title is a size smaller, and the actions wrap under it.
+export const HeaderOnAPhone = meta.story({
+  globals: { viewport: { value: "iphone12", isRotated: false } },
+  render: () => (
+    <PageHeader title="Purchase orders">
+      <Button variant="outline">Import</Button>
+      <Button>Create purchase order</Button>
+    </PageHeader>
+  ),
+  play: async ({ canvas }) => {
+    const title = canvas.getByRole("heading", { level: 1, name: "Purchase orders" })
+    await expect(getComputedStyle(title).fontSize).toBe("22px")
+    const create = canvas.getByRole("button", { name: "Create purchase order" }).getBoundingClientRect()
+    await expect(create.top).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom)
   }
 })
 

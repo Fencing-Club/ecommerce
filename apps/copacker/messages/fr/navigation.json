@@ -3,7 +3,8 @@
     "store": "Boutique",
     "purchasing": "Achats",
     "sales": "Ventes",
-    "catalog": "Produits"
+    "catalog": "Produits",
+    "freight": "Fret"
   },
   "pages": {
     "overview": "Vue d’ensemble",
@@ -16,38 +17,47 @@
     "customers": "Clients",
     "inventory": "Stock",
     "catalogs": "Catalogues",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "sales": "Ventes"
   },
-  "sidebar": {
-    "buyerWorkspace": "Espace de travail acheteur",
-    "supplierWorkspace": "Espace de travail fournisseur",
-    "forwarderWorkspace": "Espace de travail transitaire",
-    "workspaces": "Espaces de travail",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Espace de travail acheteur",
+      "supplier": "Espace de travail fournisseur",
+      "forwarder": "Espace de travail transitaire"
+    },
     "newWorkspace": "Nouvel espace de travail",
-    "signOut": "Se déconnecter",
+    "label": "{name}, changer d’espace de travail",
+    "current": "Ouvert",
+    "workspaceSettings": "Paramètres de l’espace de travail"
+  },
+  "accountMenu": {
     "theme": "Thème",
     "themes": {
       "light": "Clair",
       "dark": "Sombre",
       "system": "Système"
-    }
+    },
+    "signOut": "Se déconnecter",
+    "label": "{name}, compte",
+    "accountSettings": "Paramètres du compte"
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Boîte de réception",
     "empty": "Aucune notification",
     "emptyDescription": "Les mises à jour de vos commandes et expéditions s’affichent ici"
   },
   "search": {
     "search": "Rechercher",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> pour naviguer",
     "toOpen": "<keys></keys> pour ouvrir",
     "toClose": "<keys></keys> pour fermer",
     "close": "Fermer",
     "noResults": "Aucun résultat pour « {query} »",
     "pages": "Pages",
-    "orders": "Commandes",
-    "loadingOrders": "Chargement des commandes",
+    "orders": "Commandes de vente",
+    "loadingOrders": "Chargement des commandes de vente",
     "loadingResults": "Chargement des résultats",
     "recentPurchaseOrders": "Bons de commande récents",
     "products": "Produits",
@@ -56,6 +66,19 @@
     "partners": "Partenaires",
     "supplier": "Fournisseur",
     "forwarder": "Transitaire",
-    "failed": "Impossible de tout rechercher. Réessayez."
+    "failed": "Impossible de tout rechercher. Réessayez.",
+    "placeholder": {
+      "buyer": "Rechercher des bons de commande, des produits et des partenaires",
+      "supplier": "Rechercher des commandes, des produits et des clients",
+      "forwarder": "Rechercher des bons de commande"
+    }
+  },
+  "create": {
+    "button": "Créer",
+    "purchaseOrder": "Bon de commande",
+    "importPurchaseOrder": "Importer un bon de commande",
+    "product": "Produit",
+    "catalog": "Catalogue",
+    "importProducts": "Importer des produits"
   }
 }

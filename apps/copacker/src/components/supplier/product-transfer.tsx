@@ -3,6 +3,7 @@
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
+import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"
 import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
@@ -25,8 +26,9 @@ import {
 import { Input } from "@/components/ui/input"
 
 // The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
+// `?import=true` opens the import, so the top bar's Create menu can link straight to it.
 export function ProductActions() {
-  const [importing, setImporting] = useState(false)
+  const [importing, setImporting] = useQueryState("import", parseAsBoolean.withDefault(false))
   // Importing changes products; exporting only reads them, prices included.
   const editable = useCan("products", "edit")
   const prices = useCan("prices")
@@ -41,7 +43,7 @@ export function ProductActions() {
         <DropdownMenuContent align="end" className="w-52">
           {editable && (
             <>
-              <DropdownMenuItem onClick={() => setImporting(true)}>
+              <DropdownMenuItem onClick={() => void setImporting(true)}>
                 <Upload />
                 {t("importProducts")}
               </DropdownMenuItem>
@@ -75,7 +77,7 @@ export function ProductActions() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {editable && <ProductImportDialog open={importing} onOpenChange={setImporting} />}
+      {editable && <ProductImportDialog open={importing} onOpenChange={(open) => void setImporting(open)} />}
     </>
   )
 }

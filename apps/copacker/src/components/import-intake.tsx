@@ -38,7 +38,7 @@ const statuses = {
   running: "info",
   review: "warning",
   failed: "destructive",
-  cancelled: "neutral",
+  cancelled: "destructive",
   saved: "success"
 } satisfies Record<string, StatusTone>
 

@@ -251,7 +251,7 @@ const supplier = portalPage("/shipments", "supplier")
 const db = { contacts: buyerContacts.map(({ id, name }) => ({ id, name })) }
 
 const meta = preview.meta({
-  title: "Pages/Shipments/List",
+  title: "Pages/Shared/Shipments/List",
   ...serverStory(ShipmentsPage),
   args: {
     kind: "buyer",

@@ -22,7 +22,7 @@
     "waitingLabels": "शिपिंग लेबल चाहिए",
     "ready": "पिकअप के लिए तैयार",
     "shipped": "भेजा गया",
-    "forwarded": "फ़ॉरवर्डर ने भेजा",
+    "forwarded": "आगे भेजा गया",
     "received": "प्राप्त",
     "correction": "सुधार का अनुरोध",
     "needsAttention": "ध्यान देना ज़रूरी",
@@ -49,7 +49,10 @@
     "onCopacker": "Copacker पर",
     "invited": "आमंत्रित",
     "invitationExpired": "आमंत्रण की अवधि खत्म",
-    "notInvited": "आमंत्रित नहीं"
+    "notInvited": "आमंत्रित नहीं",
+    "accepted": "स्वीकृत",
+    "declined": "अस्वीकृत",
+    "atForwarder": "फ़ॉरवर्डर के पास"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,32 @@
       "text": "आपका डेटा सुरक्षित है, और हमारे लौटते ही यह पेज फिर से लोड होगा।",
       "contact": "हमसे संपर्क करें"
     }
-  }
+  },
+  "banner": {
+    "dismiss": "खारिज करें"
+  },
+  "actionBar": {
+    "label": "कार्रवाइयाँ",
+    "discard": "छोड़ें",
+    "problems": "{count, plural, one {# समस्या} other {# समस्याएँ}}",
+    "clearSelection": "चयन हटाएँ"
+  },
+  "lifecycle": {
+    "stage": "{label}, {state}",
+    "states": {
+      "done": "पूरा",
+      "current": "मौजूदा",
+      "attention": "आपका इंतज़ार",
+      "upcoming": "शुरू नहीं हुआ"
+    },
+    "stepOf": "{total} में से चरण {step}",
+    "allStages": "सभी चरण",
+    "stageWithCaption": "{label}, {caption}"
+  },
+  "nextStep": {
+    "yours": "आपका अगला कदम",
+    "waitingOn": "{name} का इंतज़ार",
+    "working": "काम जारी है"
+  },
+  "viewOnly": "केवल देखें"
 }

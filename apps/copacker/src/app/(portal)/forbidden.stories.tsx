@@ -6,7 +6,7 @@ import PortalForbidden from "./forbidden"
 
 // What a member sees on a page they weren't given, such as Partners from a colleague's link.
 const meta = preview.meta({
-  title: "Pages/Errors/No access",
+  title: "Pages/Shared/Errors/No access",
   parameters: { permissions: member }
 })
 

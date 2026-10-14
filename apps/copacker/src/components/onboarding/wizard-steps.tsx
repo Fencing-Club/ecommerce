@@ -128,6 +128,7 @@ export function CompanyFields({ kind }: { kind: WorkspaceKind | "" }) {
       <FormInput name="company.name" required label={t("companyName")} autoComplete="organization" />
       <FormInput
         name="company.website"
+        urlPrefix
         label={t("website")}
         inputMode="url"
         autoComplete="url"

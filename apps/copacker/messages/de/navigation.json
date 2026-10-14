@@ -3,7 +3,8 @@
     "store": "Shop",
     "purchasing": "Einkauf",
     "sales": "Verkauf",
-    "catalog": "Produkte"
+    "catalog": "Produkte",
+    "freight": "Fracht"
   },
   "pages": {
     "overview": "Übersicht",
@@ -16,38 +17,47 @@
     "customers": "Kunden",
     "inventory": "Bestand",
     "catalogs": "Kataloge",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "sales": "Verkäufe"
   },
-  "sidebar": {
-    "buyerWorkspace": "Käufer-Workspace",
-    "supplierWorkspace": "Lieferanten-Workspace",
-    "forwarderWorkspace": "Spediteur-Workspace",
-    "workspaces": "Workspaces",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Käufer-Workspace",
+      "supplier": "Lieferanten-Workspace",
+      "forwarder": "Spediteur-Workspace"
+    },
     "newWorkspace": "Neuer Workspace",
-    "signOut": "Abmelden",
+    "label": "{name}, Workspace wechseln",
+    "current": "Geöffnet",
+    "workspaceSettings": "Workspace-Einstellungen"
+  },
+  "accountMenu": {
     "theme": "Design",
     "themes": {
       "light": "Hell",
       "dark": "Dunkel",
       "system": "System"
-    }
+    },
+    "signOut": "Abmelden",
+    "label": "{name}, Konto",
+    "accountSettings": "Kontoeinstellungen"
   },
   "notifications": {
-    "title": "Benachrichtigungen",
+    "title": "Posteingang",
     "empty": "Keine Benachrichtigungen",
     "emptyDescription": "Neuigkeiten zu Ihren Aufträgen und Sendungen erscheinen hier"
   },
   "search": {
     "search": "Suchen",
-    "ctrl": "Strg",
+    "ctrlK": "Strg+K",
     "toMove": "<keys></keys> zum Navigieren",
     "toOpen": "<keys></keys> zum Öffnen",
     "toClose": "<keys></keys> zum Schließen",
     "close": "Schließen",
     "noResults": "Keine Ergebnisse für „{query}“",
     "pages": "Seiten",
-    "orders": "Aufträge",
-    "loadingOrders": "Aufträge werden geladen",
+    "orders": "Verkaufsaufträge",
+    "loadingOrders": "Verkaufsaufträge werden geladen",
     "loadingResults": "Ergebnisse werden geladen",
     "recentPurchaseOrders": "Letzte Bestellungen",
     "products": "Produkte",
@@ -56,6 +66,19 @@
     "partners": "Partner",
     "supplier": "Lieferant",
     "forwarder": "Spediteur",
-    "failed": "Nicht alles konnte durchsucht werden. Versuchen Sie es erneut."
+    "failed": "Nicht alles konnte durchsucht werden. Versuchen Sie es erneut.",
+    "placeholder": {
+      "buyer": "Bestellungen, Produkte und Partner suchen",
+      "supplier": "Aufträge, Produkte und Kunden suchen",
+      "forwarder": "Bestellungen suchen"
+    }
+  },
+  "create": {
+    "button": "Erstellen",
+    "purchaseOrder": "Bestellung",
+    "importPurchaseOrder": "Bestellung importieren",
+    "product": "Produkt",
+    "catalog": "Katalog",
+    "importProducts": "Produkte importieren"
   }
 }

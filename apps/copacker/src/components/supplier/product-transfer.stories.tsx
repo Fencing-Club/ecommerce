@@ -71,6 +71,15 @@ export const Menu = meta.story({
   }
 })
 
+// The top bar's Create > Import products lands here with ?import=true, which opens the import.
+export const OpenedFromCreate = meta.story({
+  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/products", query: { import: "true" } } } },
+  play: async () => {
+    const dialog = await screen.findByRole("dialog", { name: "Import products" })
+    await waitFor(() => expect(dialog).toBeVisible())
+  }
+})
+
 export const Import = meta.story({
   play: async ({ canvas }) => {
     const dialog = await openImport(canvas)

@@ -22,7 +22,7 @@
     "waitingLabels": "Needs shipping labels",
     "ready": "Ready for pickup",
     "shipped": "Shipped",
-    "forwarded": "Shipped by forwarder",
+    "forwarded": "Shipped onward",
     "received": "Received",
     "correction": "Correction requested",
     "needsAttention": "Needs attention",
@@ -49,7 +49,10 @@
     "onCopacker": "On Copacker",
     "invited": "Invited",
     "invitationExpired": "Invitation expired",
-    "notInvited": "Not invited"
+    "notInvited": "Not invited",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "atForwarder": "At the forwarder"
   },
   "destinations": {
     "amazon": "Amazon",
@@ -164,5 +167,32 @@
       "text": "Your data is safe, and this page reloads when we’re back.",
       "contact": "Contact us"
     }
-  }
+  },
+  "banner": {
+    "dismiss": "Dismiss"
+  },
+  "actionBar": {
+    "label": "Actions",
+    "discard": "Discard",
+    "problems": "{count, plural, one {# problem} other {# problems}}",
+    "clearSelection": "Clear selection"
+  },
+  "lifecycle": {
+    "stage": "{label}, {state}",
+    "states": {
+      "done": "Done",
+      "current": "Current",
+      "attention": "Waiting on you",
+      "upcoming": "Not started"
+    },
+    "stepOf": "Step {step} of {total}",
+    "allStages": "All stages",
+    "stageWithCaption": "{label}, {caption}"
+  },
+  "nextStep": {
+    "yours": "Your next step",
+    "waitingOn": "Waiting on {name}",
+    "working": "Working on it"
+  },
+  "viewOnly": "View only"
 }

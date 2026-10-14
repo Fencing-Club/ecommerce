@@ -20,20 +20,22 @@ import { type Area, can, type Permissions } from "./access"
 type PageKey = keyof typeof messages.pages
 type GroupKey = keyof typeof messages.groups
 
-// Overview on its own at the top, then a buyer's store pages and purchasing from suppliers, or a supplier's sales to
-// its customers and what it sells. Settings sit on their own at the bottom.
+// Overview on its own at the top, then a buyer's store pages and purchasing from suppliers, a supplier's sales to its
+// customers and what it sells, or a forwarder's freight. Settings sit on their own at the bottom.
 export const navigationGroups = [
   { key: "home", labelKey: null },
   { key: "store", labelKey: "store" },
   { key: "purchasing", labelKey: "purchasing" },
   { key: "sales", labelKey: "sales" },
   { key: "catalog", labelKey: "catalog" },
+  { key: "freight", labelKey: "freight" },
   { key: "workspace", labelKey: null }
 ] as const satisfies ReadonlyArray<{ key: string; labelKey: GroupKey | null }>
 
+// A buyer's store orders are Sales, so "Orders" only ever means a supplier's orders from its customers.
 const navigation = [
   { view: "overview", labelKey: "overview", icon: LayoutDashboard, group: "home", buyerOnly: true },
-  { view: "sales", labelKey: "orders", icon: Receipt, group: "store", buyerOnly: true },
+  { view: "sales", labelKey: "sales", icon: Receipt, group: "store", buyerOnly: true },
   { view: "products", labelKey: "products", icon: Box, group: "store", buyerOnly: true },
   { view: "restock", labelKey: "restock", icon: PackagePlus, group: "store", buyerOnly: true },
   { view: "orders", labelKey: "purchaseOrders", icon: ClipboardList, group: "purchasing", buyerOnly: true },
@@ -46,6 +48,7 @@ const navigation = [
   { view: "products", labelKey: "products", icon: Tag, group: "catalog", supplierOnly: true },
   { view: "inventory", labelKey: "inventory", icon: Warehouse, group: "catalog", supplierOnly: true },
   { view: "catalogs", labelKey: "catalogs", icon: BookOpen, group: "catalog", supplierOnly: true },
+  { view: "orders", labelKey: "purchaseOrders", icon: ClipboardList, group: "freight", forwarderOnly: true },
   { view: "settings", labelKey: "settings", icon: Settings, group: "workspace" }
 ] satisfies Array<
   { view: Area | "settings"; labelKey: PageKey; group: (typeof navigationGroups)[number]["key"] } & Record<
@@ -57,11 +60,11 @@ const navigation = [
 // Every page a workspace's kind has, as the marketing page's pictures of the app show them. A forwarder's workspace sees
 // the POs coming through it, and keeps its addresses and profile in Settings.
 export function pagesFor(kind: string) {
-  if (kind === "forwarder") {
-    return navigation.filter((item) => (item.view === "orders" && item.buyerOnly) || item.view === "settings")
-  }
   return navigation.filter(
-    (item) => (!item.buyerOnly || kind === "buyer") && (!item.supplierOnly || kind === "supplier")
+    (item) =>
+      (!("buyerOnly" in item) || kind === "buyer") &&
+      (!("supplierOnly" in item) || kind === "supplier") &&
+      (!("forwarderOnly" in item) || kind === "forwarder")
   )
 }
 

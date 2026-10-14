@@ -14,9 +14,10 @@ test("signing out from the user menu ends the session", async ({ browser, baseUR
   try {
     const page = await context.newPage()
     await signIn(page)
-    await expect(page.getByRole("link", { name: "Copacker" })).toBeVisible()
+    await expect(page.getByRole("button", { name: /, switch workspace$/ })).toBeVisible()
 
-    await page.getByRole("button", { name: new RegExp(e2eEmail.replace(/[.+]/g, "\\$&")) }).click()
+    await page.getByRole("button", { name: /, account$/ }).click()
+    await expect(page.getByRole("menu").getByText(e2eEmail)).toBeVisible()
     const workosLogout = page.waitForRequest(
       (request) => new URL(request.url()).hostname.endsWith("workos.com") && request.url().includes("logout")
     )

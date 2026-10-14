@@ -3,7 +3,8 @@
     "store": "Store",
     "purchasing": "Purchasing",
     "sales": "Sales",
-    "catalog": "Products"
+    "catalog": "Products",
+    "freight": "Freight"
   },
   "pages": {
     "overview": "Overview",
@@ -16,38 +17,47 @@
     "customers": "Customers",
     "inventory": "Inventory",
     "catalogs": "Catalogs",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sales": "Sales"
   },
-  "sidebar": {
-    "buyerWorkspace": "Buyer workspace",
-    "supplierWorkspace": "Supplier workspace",
-    "forwarderWorkspace": "Forwarder workspace",
-    "workspaces": "Workspaces",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Buyer workspace",
+      "supplier": "Supplier workspace",
+      "forwarder": "Forwarder workspace"
+    },
     "newWorkspace": "New workspace",
-    "signOut": "Sign out",
+    "label": "{name}, switch workspace",
+    "current": "Open now",
+    "workspaceSettings": "Workspace settings"
+  },
+  "accountMenu": {
     "theme": "Theme",
     "themes": {
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "signOut": "Sign out",
+    "label": "{name}, account",
+    "accountSettings": "Account settings"
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Inbox",
     "empty": "No notifications",
     "emptyDescription": "Updates on your orders and shipments show here"
   },
   "search": {
     "search": "Search",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> to move",
     "toOpen": "<keys></keys> to open",
     "toClose": "<keys></keys> to close",
     "close": "Close",
     "noResults": "No results for “{query}”",
     "pages": "Pages",
-    "orders": "Orders",
-    "loadingOrders": "Loading orders",
+    "orders": "Sales orders",
+    "loadingOrders": "Loading sales orders",
     "loadingResults": "Loading results",
     "recentPurchaseOrders": "Recent purchase orders",
     "products": "Products",
@@ -56,6 +66,19 @@
     "partners": "Partners",
     "supplier": "Supplier",
     "forwarder": "Forwarder",
-    "failed": "Couldn’t search everything. Try again."
+    "failed": "Couldn’t search everything. Try again.",
+    "placeholder": {
+      "buyer": "Search purchase orders, products, and partners",
+      "supplier": "Search orders, products, and customers",
+      "forwarder": "Search purchase orders"
+    }
+  },
+  "create": {
+    "button": "Create",
+    "purchaseOrder": "Purchase order",
+    "importPurchaseOrder": "Import purchase order",
+    "product": "Product",
+    "catalog": "Catalog",
+    "importProducts": "Import products"
   }
 }

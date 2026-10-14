@@ -12,7 +12,7 @@ function sidebar(page: Page) {
 const pages: Record<Role, Array<{ link: string; path: string; heading: string }>> = {
   buyer: [
     { link: "Overview", path: "/overview", heading: "Overview" },
-    { link: "Orders", path: "/sales", heading: "Orders" },
+    { link: "Sales", path: "/sales", heading: "Sales" },
     { link: "Products", path: "/products", heading: "Products" },
     { link: "Restock", path: "/restock", heading: "Restock" },
     { link: "Purchase orders", path: "/orders", heading: "Purchase orders" },
@@ -92,8 +92,8 @@ test.describe("buyer portal", () => {
 
   test("notifications open an empty list", async ({ page }) => {
     await page.goto("/overview")
-    await page.getByRole("button", { name: "Notifications" }).click()
-    const popover = page.getByRole("dialog", { name: "Notifications" })
+    await page.getByRole("button", { name: "Inbox" }).click()
+    const popover = page.getByRole("dialog", { name: "Inbox" })
     await expect(popover.getByText("No notifications")).toBeVisible()
     await expect(popover.getByText("Updates on your orders and shipments show here")).toBeVisible()
     await page.keyboard.press("Escape")
@@ -157,13 +157,12 @@ test.describe("buyer portal", () => {
     }
   })
 
-  test("a phone opens the sidebar from its menu button", { tag: "@mobile" }, async ({ page, isMobile }) => {
+  test("a phone opens the sidebar from the top bar's menu button", { tag: "@mobile" }, async ({ page, isMobile }) => {
     test.skip(!isMobile, "The sidebar stays open on a wide screen")
     await page.goto("/overview")
     await expect(sidebar(page)).toHaveCount(0)
-    await page.getByRole("button", { name: "Toggle sidebar" }).click()
+    await page.getByRole("banner").getByRole("button", { name: "Toggle sidebar" }).click()
     const sheet = page.getByRole("dialog", { name: "Sidebar" })
-    await expect(sheet.getByText("Buyer workspace")).toBeVisible()
     await sheet.getByRole("link", { name: "Purchase orders" }).click()
     await expect(page).toHaveURL(/\/orders$/)
     await expect(page.getByRole("heading", { level: 1, name: "Purchase orders" })).toBeVisible()

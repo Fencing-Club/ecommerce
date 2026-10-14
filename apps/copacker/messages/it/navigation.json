@@ -3,7 +3,8 @@
     "store": "Negozio",
     "purchasing": "Acquisti",
     "sales": "Vendite",
-    "catalog": "Prodotti"
+    "catalog": "Prodotti",
+    "freight": "Merci"
   },
   "pages": {
     "overview": "Panoramica",
@@ -16,38 +17,47 @@
     "customers": "Clienti",
     "inventory": "Inventario",
     "catalogs": "Cataloghi",
-    "settings": "Impostazioni"
+    "settings": "Impostazioni",
+    "sales": "Vendite"
   },
-  "sidebar": {
-    "buyerWorkspace": "Workspace acquirente",
-    "supplierWorkspace": "Workspace fornitore",
-    "forwarderWorkspace": "Workspace spedizioniere",
-    "workspaces": "Workspace",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Workspace acquirente",
+      "supplier": "Workspace fornitore",
+      "forwarder": "Workspace spedizioniere"
+    },
     "newWorkspace": "Nuovo workspace",
-    "signOut": "Esci",
+    "label": "{name}, cambia workspace",
+    "current": "Aperto",
+    "workspaceSettings": "Impostazioni del workspace"
+  },
+  "accountMenu": {
     "theme": "Tema",
     "themes": {
       "light": "Chiaro",
       "dark": "Scuro",
       "system": "Sistema"
-    }
+    },
+    "signOut": "Esci",
+    "label": "{name}, account",
+    "accountSettings": "Impostazioni account"
   },
   "notifications": {
-    "title": "Notifiche",
+    "title": "Posta in arrivo",
     "empty": "Nessuna notifica",
     "emptyDescription": "Qui compaiono gli aggiornamenti su ordini e spedizioni"
   },
   "search": {
     "search": "Cerca",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> per spostarti",
     "toOpen": "<keys></keys> per aprire",
     "toClose": "<keys></keys> per chiudere",
     "close": "Chiudi",
     "noResults": "Nessun risultato per “{query}”",
     "pages": "Pagine",
-    "orders": "Ordini",
-    "loadingOrders": "Caricamento ordini",
+    "orders": "Ordini di vendita",
+    "loadingOrders": "Caricamento degli ordini di vendita",
     "loadingResults": "Caricamento risultati",
     "recentPurchaseOrders": "Ordini di acquisto recenti",
     "products": "Prodotti",
@@ -56,6 +66,19 @@
     "partners": "Partner",
     "supplier": "Fornitore",
     "forwarder": "Spedizioniere",
-    "failed": "Impossibile cercare ovunque. Riprova."
+    "failed": "Impossibile cercare ovunque. Riprova.",
+    "placeholder": {
+      "buyer": "Cerca ordini di acquisto, prodotti e partner",
+      "supplier": "Cerca ordini, prodotti e clienti",
+      "forwarder": "Cerca ordini di acquisto"
+    }
+  },
+  "create": {
+    "button": "Crea",
+    "purchaseOrder": "Ordine di acquisto",
+    "importPurchaseOrder": "Importa ordine di acquisto",
+    "product": "Prodotto",
+    "catalog": "Catalogo",
+    "importProducts": "Importa prodotti"
   }
 }

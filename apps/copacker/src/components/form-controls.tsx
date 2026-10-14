@@ -67,13 +67,18 @@ export function FormInput({
   description,
   className,
   type,
+  urlPrefix = false,
   ...props
-}: FormFieldProps & Omit<React.ComponentProps<typeof Input>, "name" | "value" | "defaultValue" | "onChange">) {
+}: FormFieldProps & { urlPrefix?: boolean } & Omit<
+    React.ComponentProps<typeof Input>,
+    "name" | "value" | "defaultValue" | "onChange"
+  >) {
   const id = useId()
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
     fieldState
   } = useController({ name })
+  const scheme = typeof fieldValue === "string" && /^http:\/\//i.test(fieldValue) ? "http://" : "https://"
   const control = {
     ...props,
     id,
@@ -88,7 +93,31 @@ export function FormInput({
   return (
     <Field data-invalid={fieldState.invalid} className={className}>
       <FormLabel htmlFor={id} label={label} required={props.required} />
-      {type === "date" ? <DateInput {...control} /> : <Input {...control} type={type} />}
+      {urlPrefix && (
+        <InputGroup dir="ltr">
+          <InputGroupAddon>
+            <InputGroupText>{scheme}</InputGroupText>
+          </InputGroupAddon>
+          <InputGroupInput
+            {...control}
+            type="text"
+            value={typeof fieldValue === "string" ? fieldValue.replace(/^https?:\/\//i, "") : ""}
+            onChange={(event) => {
+              const next = event.currentTarget.value.trim()
+              if (!next) {
+                onChange("")
+              } else {
+                onChange(/^[a-z][a-z\d+.-]*:\/\//i.test(next) ? next : `${scheme}${next}`)
+              }
+            }}
+            onBlur={(event) => {
+              onBlur()
+              props.onBlur?.(event)
+            }}
+          />
+        </InputGroup>
+      )}
+      {!urlPrefix && (type === "date" ? <DateInput {...control} /> : <Input {...control} type={type} />)}
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldError id={`${id}-error`} errors={[fieldState.error]} />
     </Field>

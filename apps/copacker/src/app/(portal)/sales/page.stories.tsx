@@ -25,7 +25,7 @@ async function SalesPage({ q: raw }: { q?: string | string[] }) {
 let queries: Record<string, string>[] = []
 
 const meta = preview.meta({
-  title: "Pages/Sales",
+  title: "Pages/Buyer/Sales",
   ...pageStory("/sales", SalesPage, "buyer"),
   args: {},
   beforeEach: ({ msw }) => {
@@ -43,7 +43,7 @@ const meta = preview.meta({
 export const Default = meta.story({
   play: async ({ canvas }) => {
     const page = within(canvas.getByRole("main"))
-    await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "Sales" })).toBeVisible()
     await expect(await page.findByRole("table", { name: "Orders" })).toBeVisible()
     await expect(page.getByRole("list", { name: "Sources" })).toBeVisible()
     await expect(queries).toEqual([{ page: "0" }])

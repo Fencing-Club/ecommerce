@@ -3,6 +3,7 @@
 import { CheckCircle2, ChevronDown, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Plus, Send } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
+import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useState } from "react"
 import { StatusBadge } from "@/components/common"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -23,10 +24,11 @@ import { isRowClick } from "./link-row"
 import { type PartnerAddress, PartnerAddressSheet } from "./partner-address"
 import { EditSupplier, InviteSupplier, InviteSupplierByEmail } from "./supplier-actions"
 
-// One button for adding either kind of partner.
+// One button for adding either kind of partner. `?add=supplier` or `?add=forwarder` opens its sheet, so the top bar's
+// Create menu can link straight to it.
 export function AddPartner() {
   const t = useTranslations("partners.add")
-  const [adding, setAdding] = useState<"supplier" | "forwarder" | null>(null)
+  const [adding, setAdding] = useQueryState("add", parseAsStringLiteral(["supplier", "forwarder"]))
   return (
     <>
       <DropdownMenu>
@@ -36,12 +38,12 @@ export function AddPartner() {
           <ChevronDown data-icon="inline-end" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => setAdding("supplier")}>{t("supplier")}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setAdding("forwarder")}>{t("forwarder")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void setAdding("supplier")}>{t("supplier")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void setAdding("forwarder")}>{t("forwarder")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <InviteSupplier open={adding === "supplier"} onOpenChange={(open) => setAdding(open ? "supplier" : null)} />
-      <AddForwarder open={adding === "forwarder"} onOpenChange={(open) => setAdding(open ? "forwarder" : null)} />
+      <InviteSupplier open={adding === "supplier"} onOpenChange={(open) => void setAdding(open ? "supplier" : null)} />
+      <AddForwarder open={adding === "forwarder"} onOpenChange={(open) => void setAdding(open ? "forwarder" : null)} />
     </>
   )
 }

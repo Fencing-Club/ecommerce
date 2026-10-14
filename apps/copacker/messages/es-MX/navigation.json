@@ -3,7 +3,8 @@
     "store": "Tienda",
     "purchasing": "Compras",
     "sales": "Ventas",
-    "catalog": "Productos"
+    "catalog": "Productos",
+    "freight": "Carga"
   },
   "pages": {
     "overview": "Resumen",
@@ -16,38 +17,47 @@
     "customers": "Clientes",
     "inventory": "Inventario",
     "catalogs": "Catálogos",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "sales": "Ventas"
   },
-  "sidebar": {
-    "buyerWorkspace": "Espacio de trabajo de comprador",
-    "supplierWorkspace": "Espacio de trabajo de proveedor",
-    "forwarderWorkspace": "Espacio de trabajo de agente de carga",
-    "workspaces": "Espacios de trabajo",
+  "workspaceMenu": {
+    "kinds": {
+      "buyer": "Espacio de trabajo de comprador",
+      "supplier": "Espacio de trabajo de proveedor",
+      "forwarder": "Espacio de trabajo de agente de carga"
+    },
     "newWorkspace": "Nuevo espacio de trabajo",
-    "signOut": "Cerrar sesión",
+    "label": "{name}, cambiar de espacio de trabajo",
+    "current": "Abierto",
+    "workspaceSettings": "Configuración del espacio de trabajo"
+  },
+  "accountMenu": {
     "theme": "Tema",
     "themes": {
       "light": "Claro",
       "dark": "Oscuro",
       "system": "Sistema"
-    }
+    },
+    "signOut": "Cerrar sesión",
+    "label": "{name}, cuenta",
+    "accountSettings": "Configuración de la cuenta"
   },
   "notifications": {
-    "title": "Notificaciones",
+    "title": "Bandeja de entrada",
     "empty": "Sin notificaciones",
     "emptyDescription": "Aquí aparecen las novedades de tus pedidos y envíos"
   },
   "search": {
     "search": "Buscar",
-    "ctrl": "Ctrl",
+    "ctrlK": "Ctrl+K",
     "toMove": "<keys></keys> para moverte",
     "toOpen": "<keys></keys> para abrir",
     "toClose": "<keys></keys> para cerrar",
     "close": "Cerrar",
     "noResults": "Sin resultados para “{query}”",
     "pages": "Páginas",
-    "orders": "Pedidos",
-    "loadingOrders": "Cargando pedidos",
+    "orders": "Pedidos de venta",
+    "loadingOrders": "Cargando pedidos de venta",
     "loadingResults": "Cargando resultados",
     "recentPurchaseOrders": "Órdenes de compra recientes",
     "products": "Productos",
@@ -56,6 +66,19 @@
     "partners": "Socios",
     "supplier": "Proveedor",
     "forwarder": "Agente de carga",
-    "failed": "No se pudo buscar en todo. Inténtalo de nuevo."
+    "failed": "No se pudo buscar en todo. Inténtalo de nuevo.",
+    "placeholder": {
+      "buyer": "Buscar órdenes de compra, productos y socios",
+      "supplier": "Buscar pedidos, productos y clientes",
+      "forwarder": "Buscar órdenes de compra"
+    }
+  },
+  "create": {
+    "button": "Crear",
+    "purchaseOrder": "Orden de compra",
+    "importPurchaseOrder": "Importar orden de compra",
+    "product": "Producto",
+    "catalog": "Catálogo",
+    "importProducts": "Importar productos"
   }
 }

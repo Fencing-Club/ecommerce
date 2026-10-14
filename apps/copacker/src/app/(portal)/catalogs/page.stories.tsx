@@ -31,7 +31,7 @@ async function CatalogsPage({ catalogs, permissions }: { catalogs: typeof catalo
 }
 
 const meta = preview.meta({
-  title: "Pages/Catalogs",
+  title: "Pages/Supplier/Catalogs",
   ...pageStory("/catalogs", CatalogsPage, "supplier"),
   args: { catalogs: catalogRows, permissions: owner }
 })

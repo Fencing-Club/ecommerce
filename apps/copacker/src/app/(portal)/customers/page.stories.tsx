@@ -25,7 +25,7 @@ async function CustomersPage({ list, permissions }: { list: typeof customerListD
 }
 
 const meta = preview.meta({
-  title: "Pages/Customers",
+  title: "Pages/Supplier/Customers",
   ...pageStory("/customers", CustomersPage, "supplier"),
   args: { list: customerListData, permissions: owner }
 })

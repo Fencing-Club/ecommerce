@@ -666,7 +666,7 @@ export function InventoryProducts({ syncKey, search: initialSearch = "" }: { syn
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-4">
           {/* A row of its own on a phone, so the filters and actions wrap under it instead of squeezing it. */}
-          <InputGroup className="w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1">
+          <InputGroup className="h-[34px] w-full sm:w-auto sm:min-w-48 sm:max-w-sm sm:flex-1">
             <InputGroupAddon>
               <Search />
             </InputGroupAddon>

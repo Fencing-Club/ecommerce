@@ -476,7 +476,7 @@ const supplier = portalPage("/shipments", "supplier")
 const packer: Permissions = { role: "member", access: { shipments: "edit" } }
 
 const meta = preview.meta({
-  title: "Pages/Shipments/Detail",
+  title: "Pages/Shared/Shipments/Detail",
   ...serverStory(ShipmentPage),
   args: {
     kind: "buyer",

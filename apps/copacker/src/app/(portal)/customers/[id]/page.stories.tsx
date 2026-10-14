@@ -116,7 +116,7 @@ async function CustomerPage({ detail, permissions }: { detail: typeof harborDeta
 }
 
 const meta = preview.meta({
-  title: "Pages/Customers/Detail",
+  title: "Pages/Supplier/Customers/Detail",
   ...pageStory(`/customers/${customerIds.harbor}`, CustomerPage, "supplier"),
   args: { detail: harborDetail, permissions: owner }
 })

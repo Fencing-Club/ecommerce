@@ -140,7 +140,7 @@ export const ToAmazon = meta.story({
     await expect(canvas.getByText(`${amazonOrder.items[0]!.buyerSku}, to Amazon FBA`)).toBeVisible()
     await expect(canvas.getByText("Shipment 1 to Amazon FBA")).toBeVisible()
     await expect(canvas.getByText("3 cartons, Maersk MAEU 204113")).toBeVisible()
-    await expect(canvas.getByText("Shipped by forwarder")).toBeVisible()
+    await expect(canvas.getByText("Shipped onward")).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Mark shipped" })).toBeNull()
     await expect(canvas.queryByText("Documents")).toBeNull()
   }

@@ -71,9 +71,9 @@ function closeKey() {
   return <Kbd>Esc</Kbd>
 }
 
-// The search in the app header, like Shopify's: clicking it, or Ctrl+K (⌘K on a Mac) from anywhere, opens a panel over
-// the bar with the text box where the bar was and results under it. The bar shrinks with the window and becomes a
-// button on a phone.
+// The search in the top bar, like Shopify's: clicking it, or Ctrl+K (⌘K on a Mac) from anywhere, opens a panel over the
+// bar with the text box where the bar was and results under it. The bar says what it finds in this kind of workspace,
+// and becomes a button on a phone.
 export function SearchCommand({ kind }: { kind: string }) {
   const t = useTranslations("navigation.search")
   const [open, setOpen] = useState(false)
@@ -82,6 +82,7 @@ export function SearchCommand({ kind }: { kind: string }) {
   const os = useOs()
   const mac = os === "macos" || os === "ios"
   useHotkeys([["mod+K", () => setOpen((current) => !current)]], [])
+  const placeholder = kind === "supplier" || kind === "forwarder" ? kind : "buyer"
 
   function go(href: string) {
     setOpen(false)
@@ -94,20 +95,25 @@ export function SearchCommand({ kind }: { kind: string }) {
         render={
           <Button
             variant="outline"
+            aria-label={t("search")}
             aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
-            className="w-full justify-start gap-1.5 bg-muted/50 px-2 font-normal text-muted-foreground shadow-none max-[30rem]:size-8 max-[30rem]:justify-center max-[30rem]:border-transparent max-[30rem]:bg-transparent max-[30rem]:px-0 max-[30rem]:text-foreground"
+            className="h-9 w-full justify-start gap-2 rounded-md bg-muted px-3 font-normal text-muted-foreground shadow-none hover:bg-muted dark:bg-muted max-md:size-11 max-md:justify-center max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:text-foreground max-md:[&_svg:not([class*='size-'])]:size-5"
           />
         }
       >
         <Search />
-        <span className="max-[30rem]:sr-only">{t("search")}</span>
-        <KbdGroup aria-hidden="true" className="ms-auto max-sm:hidden">
-          <Kbd>{mac ? "⌘" : t("ctrl")}</Kbd>
-          <Kbd>K</Kbd>
-        </KbdGroup>
+        <span className="truncate max-md:hidden" aria-hidden>
+          {t(`placeholder.${placeholder}`)}
+        </span>
+        <Kbd
+          aria-hidden="true"
+          className="ms-auto h-auto rounded-[4px] border bg-background px-1.5 py-px text-[11px] font-medium text-muted-foreground max-md:hidden"
+        >
+          {mac ? "⌘K" : t("ctrlK")}
+        </Kbd>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <PopoverPrimitive.Backdrop className="fixed inset-0 z-50 bg-scrim duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         {/* The panel's padding is 8px around its text box, so it starts 8px above the bar and is 16px wider. */}
         <PopoverPrimitive.Positioner
           side="bottom"
@@ -118,7 +124,7 @@ export function SearchCommand({ kind }: { kind: string }) {
           <PopoverPrimitive.Popup
             aria-label={t("search")}
             initialFocus={input}
-            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-lg ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+            className="w-[calc(var(--anchor-width)+1rem)] min-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl bg-popover shadow-command ring-1 ring-foreground/10 outline-none duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
           >
             <SearchResults kind={kind} input={input} onSelect={go} />
             {/* Keyboard hints, in line with the results' icons. Screen readers skip them, as they announce the results as

@@ -46,6 +46,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         {profile.website !== undefined && (
           <FormInput
             name="website"
+            urlPrefix
             label={t("website")}
             inputMode="url"
             placeholder="example.com"
