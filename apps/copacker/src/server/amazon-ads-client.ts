@@ -85,7 +85,7 @@ export async function adsToken(grant: Record<string, string>) {
 }
 export class AmazonAds {
   constructor(private readonly accessToken: string) {}
-  private async request(path: string, profileId?: string, body?: unknown): Promise<unknown> {
+  private async request(path: string, body?: unknown, contentType = "application/json"): Promise<unknown> {
     const app = amazonAdsApp()
     if (!app) {
       throw new Error("Amazon Ads application is not configured")
@@ -96,8 +96,8 @@ export class AmazonAds {
         Authorization: `Bearer ${this.accessToken}`,
         "Amazon-Advertising-API-ClientId": app.clientId,
         "Amazon-Ads-ClientId": app.clientId,
-        ...(profileId ? { "Amazon-Advertising-API-Scope": profileId } : {}),
-        ...(body ? { "Content-Type": "application/json" } : {})
+        Accept: contentType,
+        ...(body ? { "Content-Type": contentType } : {})
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
       signal: AbortSignal.timeout(30000)
@@ -120,31 +120,47 @@ export class AmazonAds {
     if (!profiles.length) {
       return []
     }
-    const accounts = z
-      .array(
-        z.object({
-          adsAccount: z.object({
-            adsAccountId: z.string().min(1),
-            alternateIds: z.array(z.object({ profileId: identifier.optional(), countryCode: z.string() }))
-          })
-        })
-      )
-      .parse(await this.request("/adsAccounts/list", undefined, {}))
+    const accountSchema = z.object({
+      adsAccountId: z.string().min(1),
+      alternateIds: z
+        .array(z.object({ profileId: identifier.optional(), countryCode: z.string().optional() }))
+        .default([])
+    })
+    const accounts: z.infer<typeof accountSchema>[] = []
+    const seen = new Set<string>()
+    let nextToken: string | undefined
+    do {
+      const page = z
+        .object({ adsAccounts: z.array(accountSchema), nextToken: z.string().nullish() })
+        .parse(
+          await this.request(
+            "/adsAccounts/list",
+            { maxResults: 100, ...(nextToken ? { nextToken } : {}) },
+            "application/vnd.listaccountsresource.v1+json"
+          )
+        )
+      accounts.push(...page.adsAccounts)
+      nextToken = page.nextToken || undefined
+      if (nextToken) {
+        if (seen.has(nextToken) || seen.size >= 100) {
+          throw new Error("Amazon Ads account pagination did not finish")
+        }
+        seen.add(nextToken)
+      }
+    } while (nextToken)
     return profiles.map((profile) => {
       const matches = accounts.filter((account) =>
-        account.adsAccount.alternateIds.some(
-          (id) => id.profileId === profile.profileId && id.countryCode === profile.countryCode
-        )
+        account.alternateIds.some((id) => id.profileId === profile.profileId && id.countryCode === profile.countryCode)
       )
       if (matches.length !== 1) {
         throw new Error("Amazon Ads account mapping is unavailable")
       }
-      return { ...profile, adsAccountId: matches[0]!.adsAccount.adsAccountId }
+      return { ...profile, adsAccountId: matches[0]!.adsAccountId }
     })
   }
   async createReport(profile: AdsProfile, from: string, to: string) {
     return readReport(
-      await this.request("/adsApi/v1/create/reports", undefined, {
+      await this.request("/adsApi/v1/create/reports", {
         accessRequestedAccounts: [{ advertiserAccountId: profile.adsAccountId }],
         reports: [
           {
@@ -181,7 +197,7 @@ export class AmazonAds {
     ).reportId
   }
   async report(reportId: string) {
-    const report = readReport(await this.request("/adsApi/v1/retrieve/reports", undefined, { reportIds: [reportId] }))
+    const report = readReport(await this.request("/adsApi/v1/retrieve/reports", { reportIds: [reportId] }))
     if (report.reportId !== reportId) {
       throw new Error("Amazon Ads returned a different report")
     }

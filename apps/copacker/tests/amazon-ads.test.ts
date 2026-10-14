@@ -45,14 +45,14 @@ const profile = {
   accountInfo: { id: "SELLER1", type: "seller", marketplaceStringId: "ATVPDKIKX0DER" }
 }
 const accountsResponse = () =>
-  Response.json([
-    {
-      adsAccount: {
+  Response.json({
+    adsAccounts: [
+      {
         adsAccountId: profile.adsAccountId,
         alternateIds: [{ profileId: profile.profileId, countryCode: "US" }]
       }
-    }
-  ])
+    ]
+  })
 const reportResponse = (status = "COMPLETED") =>
   Response.json({
     success: [
@@ -188,6 +188,17 @@ describe("Amazon Ads authorization and transport", () => {
     fetchMock.mockResolvedValue(Response.json([]))
     await expect(saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds("access"))).rejects.toThrow("No matching")
     expect(await database.select().from(tables.amazonAdsConnections)).toEqual([])
+  })
+  it("finds the matching account after a paginated response", async () => {
+    fetchMock
+      .mockResolvedValueOnce(Response.json([profile]))
+      .mockResolvedValueOnce(Response.json({ adsAccounts: [], nextToken: "next" }))
+      .mockResolvedValueOnce(accountsResponse())
+    expect(await new AmazonAds("access").profiles("SELLER1")).toEqual([profile])
+    expect(fetchMock.mock.calls[2]![1]).toMatchObject({
+      headers: { "Content-Type": "application/vnd.listaccountsresource.v1+json" },
+      body: JSON.stringify({ maxResults: 100, nextToken: "next" })
+    })
   })
   it("stores grants encrypted and rejects a changed seller", async () => {
     fetchMock.mockImplementation(async (url) =>
