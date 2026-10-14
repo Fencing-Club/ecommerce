@@ -164,6 +164,14 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
     throw new AccessError("forbidden")
   }
   const input = selfAuthorizationSchema.parse(raw)
+  const sellerId = z
+    .string()
+    .trim()
+    .regex(/^[A-Z0-9]{8,32}$/)
+    .safeParse(process.env.AMAZON_MERCHANT_TOKEN)
+  if (!sellerId.success) {
+    throw new LocalizedError("requestFailed")
+  }
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
     throw new Error("Amazon developer credentials are not configured")
   }
@@ -178,19 +186,23 @@ export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
   } catch {
     throw new LocalizedError("amazonTokenRejected")
   }
-  const us = z
+  const account = z
     .object({ payload: z.array(z.object({ marketplace: z.object({ id: z.string() }) })) })
     .safeParse(participations)
-  if (!us.success || !us.data.payload.some((entry) => entry.marketplace.id === "ATVPDKIKX0DER")) {
-    throw new LocalizedError("amazonNotUs")
+  const marketplaceIds = { US: "ATVPDKIKX0DER", CA: "A2EUQ1WTGCTBG2", MX: "A1AM78C64UM0Y8", BR: "A2Q3Y263D00KWC" }
+  if (
+    !account.success ||
+    !account.data.payload.some((entry) => entry.marketplace.id === marketplaceIds[input.marketplace])
+  ) {
+    throw new LocalizedError("amazonTokenRejected")
   }
   const encryptedToken = encrypt(JSON.stringify({ token: input.refreshToken }), `${orgId}:amazon`)
   await db()
     .insert(connections)
-    .values({ orgId, provider: "amazon", externalId: input.sellerId, encryptedToken })
+    .values({ orgId, provider: "amazon", externalId: sellerId.data, encryptedToken })
     .onConflictDoUpdate({
       target: [connections.orgId, connections.provider],
-      set: { externalId: input.sellerId, encryptedToken, scopes: "" }
+      set: { externalId: sellerId.data, encryptedToken, scopes: "" }
     })
-  return { sellerId: input.sellerId }
+  return { sellerId: sellerId.data }
 }

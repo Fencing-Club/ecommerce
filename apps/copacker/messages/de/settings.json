@@ -129,9 +129,8 @@
     },
     "amazonSelfAuthorize": {
       "title": "Amazon verbinden",
-      "description": "Öffnen Sie im Solution Provider Portal von Amazon das Menü neben der App von Copacker, wählen Sie „Authorize“ und kopieren Sie das Refresh-Token. Ihr Händler-Token finden Sie in Seller Central unter Einstellungen, Kontoinformationen.",
+      "description": "Wähle deinen Marktplatz und füge den Aktualisierungstoken aus Amazons Solution Provider Portal ein.",
       "connect": "Verbinden",
-      "merchantToken": "Händler-Token",
       "refreshToken": "Refresh-Token"
     }
   },
