@@ -5,6 +5,7 @@ import { and, eq, gt } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
+import { amazonConsentUrl, amazonMarketplaceSchema } from "@/lib/amazon-marketplaces"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
 import { session, requireAdmin, requireBuyer } from "@/server/auth"
 import { ebayApp, shopifyTokenResponse, storedShopifyToken } from "@/server/connections"
@@ -51,14 +52,17 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       if (!process.env.AMAZON_APPLICATION_ID || !process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {
         return Response.json({ error: "Amazon developer app is not configured" }, { status: 503 })
       }
-      target = new URL("https://sellercentral.amazon.com/apps/authorize/consent")
-      target.search = new URLSearchParams({
-        application_id: process.env.AMAZON_APPLICATION_ID,
+      const marketplace = amazonMarketplaceSchema.safeParse(url.searchParams.get("marketplace") ?? "US")
+      if (!marketplace.success) {
+        return Response.json({ error: "Unsupported Amazon marketplace" }, { status: 400 })
+      }
+      target = amazonConsentUrl({
+        marketplace: marketplace.data,
+        applicationId: process.env.AMAZON_APPLICATION_ID,
         state,
-        redirect_uri: callback,
-        // Amazon only authorizes a draft (unpublished) app when the consent link asks for its beta version.
-        ...(process.env.AMAZON_APP_DRAFT === "true" ? { version: "beta" } : {})
-      }).toString()
+        callback,
+        draft: process.env.AMAZON_APP_DRAFT === "true"
+      })
     }
     await db()
       .insert(oauthStates)

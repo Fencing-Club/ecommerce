@@ -114,18 +114,18 @@
       "storeDescription": "Посилання на адмінпанель або домен myshopify.com",
       "enterStore": "Введіть посилання на адмінпанель магазину або домен myshopify.com"
     },
-    "amazonSelfAuthorize": {
-      "title": "Підключити Amazon",
-      "description": "У Solution Provider Portal Amazon відкрийте меню біля застосунку Copacker, виберіть Authorize і скопіюйте refresh token. Ваш merchant token є в Seller Central у розділі Settings, Account Info.",
-      "connect": "Підключити",
-      "merchantToken": "Merchant token",
-      "refreshToken": "Refresh token"
-    },
     "sync": {
       "orders": "Синхронізація замовлень",
       "ordersProgress": "Синхронізація замовлень: {progress, number, percent}",
       "stock": "Синхронізація запасів",
       "failed": "Остання синхронізація не вдалася"
+    },
+    "noMarketplaces": "Немає підтримуваних маркетплейсів",
+    "amazonConnect": {
+      "title": "Підключити Amazon",
+      "description": "Виберіть маркетплейс і ввійдіть в Amazon, щоб надати доступ Copacker.",
+      "marketplace": "Маркетплейс",
+      "continue": "Перейти до Amazon"
     }
   },
   "excludedTags": {

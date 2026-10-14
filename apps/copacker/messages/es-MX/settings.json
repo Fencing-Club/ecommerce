@@ -114,18 +114,18 @@
       "storeDescription": "Enlace de administración o dominio myshopify.com",
       "enterStore": "Ingresa el enlace de administración o el dominio myshopify.com de tu tienda"
     },
-    "amazonSelfAuthorize": {
-      "title": "Conectar Amazon",
-      "description": "En el Solution Provider Portal de Amazon, abre el menú junto a la app de Copacker, elige Authorize y copia el token de actualización. Tu token de comerciante está en Seller Central, en Configuración, Información de la cuenta.",
-      "connect": "Conectar",
-      "merchantToken": "Token de comerciante",
-      "refreshToken": "Token de actualización"
-    },
     "sync": {
       "orders": "Sincronizando pedidos",
       "ordersProgress": "Sincronizando pedidos: {progress, number, percent}",
       "stock": "Sincronizando inventario",
       "failed": "Falló la última sincronización"
+    },
+    "noMarketplaces": "No hay marketplaces compatibles",
+    "amazonConnect": {
+      "title": "Conectar Amazon",
+      "description": "Elige tu marketplace e inicia sesión en Amazon para autorizar a Copacker.",
+      "marketplace": "Marketplace",
+      "continue": "Continuar a Amazon"
     }
   },
   "excludedTags": {

@@ -29,7 +29,7 @@ import {
   SheetTrigger
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { AmazonSelfAuthorize } from "./amazon-self-authorize"
+import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
 import { useStockSync } from "./inventory-sync"
@@ -38,7 +38,7 @@ import { StoreLogo } from "./store-logos"
 import { SyncedAt, SyncProgress } from "./sync-menu"
 
 type Store = "shopify" | "amazon" | "ebay"
-type Connection = { account: string; externalId: string }
+type Connection = { account: string; externalId: string; marketplaces?: string[] | null }
 
 // Each store's name. What connecting it brings is under settings.integrations.stores.
 const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
@@ -51,7 +51,6 @@ const clickable =
 // in a dialog. A connected store's card opens its settings and Disconnect. eBay is coming until Copacker has its keys.
 export function Integrations({
   admin,
-  amazonDraft,
   ebayAvailable,
   shopify,
   amazon,
@@ -61,8 +60,6 @@ export function Integrations({
   ebaySettings
 }: {
   admin: boolean
-  // While Copacker's Amazon app is a draft, Amazon connects with a self-authorization token instead.
-  amazonDraft: boolean
   ebayAvailable: boolean
   shopify: Connection | null
   amazon: Connection | null
@@ -89,18 +86,12 @@ export function Integrations({
         {amazonSettings}
       </Connected>
     )
-  } else if (admin && amazonDraft) {
-    amazonCard = (
-      <AmazonSelfAuthorize className={cn(tile, clickable)}>
-        <TileBody store="amazon" footer={<ConnectLabel />} />
-      </AmazonSelfAuthorize>
-    )
   } else if (admin) {
     // Amazon's consent page, which comes back to Settings.
     amazonCard = (
-      <a href="/api/connections/amazon" className={cn(tile, clickable)}>
+      <AmazonConnect className={cn(tile, clickable)}>
         <TileBody store="amazon" footer={<ConnectLabel />} />
-      </a>
+      </AmazonConnect>
     )
   }
   let ebayCard = (
@@ -202,8 +193,27 @@ function Connected({
         </StatusBadge>
       }
       footer={
-        <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex min-w-0 flex-col gap-2">
           <span className="truncate text-muted-foreground">{connection.account}</span>
+          {store === "amazon" && (
+            <span className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">{t("marketplaces")}</span>
+              {connection.marketplaces?.length ? (
+                <span className="flex flex-wrap gap-1.5">
+                  {connection.marketplaces.map((marketplace) => (
+                    <Badge key={marketplace} variant="secondary">
+                      <CircleCheck className="size-3 text-success" aria-hidden />
+                      {marketplace}
+                    </Badge>
+                  ))}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
+                </span>
+              )}
+            </span>
+          )}
           <StoreSync store={store} />
         </span>
       }
