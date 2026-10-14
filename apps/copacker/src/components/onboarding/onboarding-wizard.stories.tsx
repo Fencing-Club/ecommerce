@@ -41,7 +41,7 @@ async function fillAbout(canvas: Canvas) {
 async function fillStreet(canvas: Canvas) {
   await userEvent.type(canvas.getByLabelText(/Street address/), "12 Harbor Way")
   await userEvent.type(canvas.getByLabelText(/City/), "Oakland")
-  await userEvent.type(canvas.getByLabelText(/State or province/), "CA")
+  await choose(canvas, /State or province/, "California")
   await userEvent.type(canvas.getByLabelText(/Postal code/), "94607")
 }
 
@@ -52,7 +52,8 @@ const newAccount: React.ComponentProps<typeof OnboardingWizard> = {
   kind: null,
   initial: blankWizard(),
   invitedBy: null,
-  account: <SignedInAs email="alex@example.com" />
+  account: <SignedInAs email="alex@example.com" />,
+  accountEmail: "alex@example.com"
 }
 
 const meta = preview.meta({
@@ -113,6 +114,7 @@ export const NewBuyer = meta.story({
     // The address starts from what's known.
     await expect(canvas.getByLabelText(/Address name/)).toHaveValue("Warehouse")
     await expect(canvas.getByLabelText(/Contact name/)).toHaveValue("Alex Rivera")
+    await expect(canvas.getByLabelText(/^Email/)).toHaveValue("alex@example.com")
     await expect(canvas.getByRole("combobox", { name: /Country/ })).toHaveTextContent("United States")
 
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
@@ -197,7 +199,7 @@ export const Supplier = meta.story({
     await expect(actions.sent[0]?.data).toMatchObject({
       kind: "supplier",
       company: { name: "Lotus Manufacturing", phone: "+86 188 6161 3263" },
-      address: { name: "Factory", address: { phoneNumber: "+1 425 260 2501" } }
+      address: { name: "Factory", address: { phoneNumber: "+1 (425) 260-2501" } }
     })
   }
 })

@@ -261,6 +261,9 @@ importers:
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
+      libphonenumber-js:
+        specifier: ^1.13.15
+        version: 1.13.15
       lucide-react:
         specifier: 1.31.0
         version: 1.31.0(react@19.2.7)
@@ -394,6 +397,9 @@ importers:
       playwright:
         specifier: 1.63.0
         version: 1.63.0
+      portless:
+        specifier: 0.15.8
+        version: 0.15.8
       storybook:
         specifier: 10.6.0
         version: 10.6.0(@types/react@19.3.0)(prettier@3.9.8)(react@19.2.7)
@@ -6358,6 +6364,9 @@ packages:
   lefthook@2.1.14:
     resolution: {integrity: sha512-Y9TL1dmpRlIdSp73SJ6bb+xAZ4s2SinGTK3pgC9PRWMSjMr2iOfowPGnlSOfAo5fu6S5rdiItsQDxeLEWCGk4g==}
 
+  libphonenumber-js@1.13.15:
+    resolution: {integrity: sha512-AHdhEQeDFEJ4GKDAQ9AwxChy+v2kUILUB3TGQRpkXMkWePjXTU/WQEzWVQoIx/Gz8fE73Wr5SEuZCy2vk8jrMQ==}
+
   lie@3.3.0:
     resolution: {integrity: sha1-3Pgt7lRfRgdNryAMfBxaCOD0D2o=}
 
@@ -7242,6 +7251,12 @@ packages:
 
   po-parser@2.2.0:
     resolution: {integrity: sha512-NdTrKgh0oO7+y+RFX8KKhOB438x/j94UGXEFzl/7pHH0JjWSn42iJ9tgmPksIO6n1JKDHmNDcejPJfKspljB9g==}
+
+  portless@0.15.8:
+    resolution: {integrity: sha512-kzGoG4xLsEytczl7O/COZaBwSAOKsWsZDxHv7/iFHKIC0X71OonpgbsQw58CGO29RklIHIx6yLM31TJMnTtPEw==}
+    engines: {node: '>=24'}
+    os: [darwin, linux, win32]
+    hasBin: true
 
   postcss-modules-extract-imports@3.1.0:
     resolution: {integrity: sha1-tEl8uFqcDEtaq+t1m7JejYnxUAI=}
@@ -13570,6 +13585,8 @@ snapshots:
       lefthook-windows-arm64: 2.1.14
       lefthook-windows-x64: 2.1.14
 
+  libphonenumber-js@1.13.15: {}
+
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -14480,6 +14497,8 @@ snapshots:
   pngjs@7.0.0: {}
 
   po-parser@2.2.0: {}
+
+  portless@0.15.8: {}
 
   postcss-modules-extract-imports@3.1.0(postcss@8.5.28):
     dependencies:

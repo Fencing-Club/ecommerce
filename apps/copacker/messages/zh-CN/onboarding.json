@@ -69,7 +69,7 @@
     "legend": "你的公司做什么",
     "buyer": {
       "title": "买家",
-      "description": "向供应商采购，在 Amazon 或 Shopify 上销售"
+      "description": "向供应商采购，向客户销售"
     },
     "supplier": {
       "title": "供应商",

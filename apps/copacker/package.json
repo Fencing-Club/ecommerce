@@ -11,8 +11,8 @@
     ]
   },
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "storybook": "storybook dev --port 6006 --no-open",
+    "dev": "node --import tsx scripts/dev.ts app",
+    "storybook": "node --import tsx scripts/dev.ts stories",
     "build-storybook": "storybook build",
     "build": "next build",
     "lint": "oxlint --max-warnings=0",
@@ -20,6 +20,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "update:address-regions": "tsx scripts/update-address-regions.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "predeploy": "pnpm db:migrate",
@@ -28,7 +29,11 @@
     "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
-    "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts"
+    "worker": "node --import tsx scripts/dev.ts worker",
+    "dev:setup": "node --import tsx scripts/dev.ts setup",
+    "dev:urls": "node --import tsx scripts/dev.ts urls",
+    "dev:status": "node --import tsx scripts/dev.ts status",
+    "build:e2e": "node --import tsx scripts/dev.ts build-e2e"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",
@@ -50,6 +55,7 @@
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.2",
     "exceljs": "^4.4.0",
+    "libphonenumber-js": "^1.13.15",
     "lucide-react": "1.31.0",
     "next": "16.3.1",
     "next-intl": "^4.14.5",
@@ -96,6 +102,7 @@
     "msw": "^2.15.0",
     "msw-storybook-addon": "^3.0.3",
     "playwright": "1.63.0",
+    "portless": "0.15.8",
     "storybook": "10.6.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.0",
