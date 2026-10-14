@@ -1,5 +1,11 @@
 # Shopify webhooks, Amazon notifications and eBay notifications
 
+See [domains and provider configuration](domains.md) for the cross-environment endpoint and credential checklist.
+Portless app addresses are local even though they use HTTPS. For live local eBay testing, explicitly reserve a public
+`<slot>.hooks.dev.copacker.ai` receiver and set `WEBHOOK_BASE_URL` on both the web process and worker to that origin.
+Without it, local subscription jobs skip eBay. The challenge response hashes this public endpoint, not the app origin.
+Use separate provider apps/destinations and queues for a slot; never repoint staging or production subscriptions.
+
 Copacker learns about order and stock changes as they happen: Shopify, Amazon and eBay deliver events to SQS queues
 that the worker reads (eBay's through Copacker's web service), so events wait through outages instead of depending on
 Copacker answering. A daily reconciliation reads everything again to catch anything missed.

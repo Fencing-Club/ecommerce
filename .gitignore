@@ -1,6 +1,8 @@
 node_modules/
 .turbo/
 .next/
+.next-e2e/
+storybook-static/
 dist/
 coverage/
 *.log

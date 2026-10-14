@@ -9,6 +9,11 @@ const withVanillaExtract = createVanillaExtractPlugin({ unstable_turbopack: { mo
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts")
 
 const config: NextConfig = {
+  ...(process.env.COPACKER_E2E_BUILD === "1" && { distDir: ".next-e2e" }),
+  ...(process.env.COPACKER_LOCAL === "1" &&
+    process.env.APP_URL && {
+      allowedDevOrigins: [new URL(process.env.APP_URL).hostname]
+    }),
   output: "standalone",
   reactCompiler: true,
   transpilePackages: ["@repo/aisle", "@repo/copacker-emails"],

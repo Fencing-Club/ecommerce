@@ -11,15 +11,15 @@
     ]
   },
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "storybook": "storybook dev --port 6006 --no-open",
+    "dev": "node --import tsx scripts/dev.ts app",
+    "storybook": "node --import tsx scripts/dev.ts stories",
     "build-storybook": "storybook build",
     "build": "next build",
     "lint": "oxlint --max-warnings=0",
     "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "node --use-system-ca --import tsx scripts/test-e2e.ts test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "predeploy": "pnpm db:migrate",
@@ -28,7 +28,12 @@
     "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
-    "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts"
+    "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts",
+    "dev:setup": "node --import tsx scripts/dev.ts setup",
+    "dev:urls": "node --import tsx scripts/dev.ts urls",
+    "dev:status": "node --import tsx scripts/dev.ts status",
+    "build:e2e": "node --import tsx scripts/dev.ts build-e2e",
+    "worker:dev": "node --import tsx scripts/dev.ts worker"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",
@@ -100,6 +105,7 @@
     "tsx": "^4.23.0",
     "typescript": "catalog:",
     "vite": "^8.3.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "portless": "0.15.8"
   }
 }

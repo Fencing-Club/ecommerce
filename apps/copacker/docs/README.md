@@ -15,6 +15,8 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Run Copacker: setup, releases and infrastructure](operations.md)
+- [Domains and provider configuration across environments](domains.md)
+- [Local development with Portless](development.md)
 - [End-to-end tests: the Playwright suite](e2e.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [Styling](styling.md)

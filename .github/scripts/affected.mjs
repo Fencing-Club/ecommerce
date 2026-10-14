@@ -12,6 +12,8 @@ const apps = ["copacker"]
 
 // Files every app builds, tests or deploys with.
 const shared = [
+  /^Dockerfile(?:\..+)?$/,
+  /^\.dockerignore$/,
   /^\.github\//,
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,

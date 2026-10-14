@@ -9,7 +9,7 @@ setup and the [docs index](../docs/README.md) for conventions.
 - **Lint:** `oxlint` (not eslint) · **Format:** `oxfmt` (not prettier).
 - **Type-check:** `tsc` from the pinned TypeScript 7 native compiler — keep the version aligned across packages.
 - **Test:** Vitest · **Web framework:** Next.js · **Workshop:** Storybook.
-- **Package manager:** pnpm (`>=11`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
+- **Package manager:** pnpm (`>=12`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
 - **Task runner:** Turborepo.
 - oxlint rules live in the shared `@repo/oxlint-config` base; add new rules there so every package benefits.
 - Hosted on **GitHub** — use GitHub for PRs and issues.
@@ -75,6 +75,10 @@ needs a human discussion**, not a silent add.
   Unit or component tests do not replace this browser acceptance check.
 
 ## Copacker
+
+- Local servers use [Portless](../apps/copacker/docs/development.md). Discover worktree URLs with
+  `pnpm --filter copacker dev:urls`; never kill another checkout's server, replace its route with `--force`, or stop the
+  shared proxy. Update the [domain/provider inventory](../apps/copacker/docs/domains.md) for integration changes.
 
 - Every page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or update them
   with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
