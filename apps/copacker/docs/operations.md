@@ -92,9 +92,9 @@ job, `ci-ok`, passes when nothing failed, counting skipped jobs as passed. Pushe
 pull request replaces its older run. To release to production, run the **Promote to production** workflow in GitHub
 Actions. It releases the commit staging serves, then runs the signed-out smoke specs against production.
 
-Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
-pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
-`/api/health` to report the commit. Deploys to one environment never overlap, and none cancels another.
+Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on all three services, then deploys the web service (its
+pre-deploy step runs the migrations), the worker and Storybook. It waits for each deployment to succeed, then checks
+app `/api/health` and Storybook `/health.json` for the same commit. Deploys to one environment never overlap, and none cancels another.
 
 - Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
   (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
@@ -174,3 +174,7 @@ private `postgres.railway.internal` hostname, which a local computer can't reach
 ### Amazon connection mode
 
 `AMAZON_SELF_AUTH_ENABLED` defaults to `true`. Settings retains the marketplace selector and adds a refresh-token field for private self-authorization, validates access with Amazon, and stores the token encrypted. The seller ID is configured server-side in `AMAZON_MERCHANT_TOKEN`; customers never enter it. The token must belong to the configured `AMAZON_CLIENT_ID` and `AMAZON_CLIENT_SECRET`. Set the flag to `false` to show the marketplace selector and launch the existing Seller Central OAuth flow. Manual-token submissions are also rejected server-side when disabled. This flag does not change existing connections.
+
+## Preview scope
+
+PR previews currently cover Storybook and fixture-backed UX. Do not provision preview databases or storage on Railway or reuse staging/production data. Database previews are deferred until the Neon migration, and storage previews until the Cloudflare migration, to simplify and reduce the cost of isolated resources. See the [domain inventory](domains.md#pull-request-previews) for the current deployment and the deferred persistence checklist.

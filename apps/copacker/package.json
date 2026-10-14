@@ -109,6 +109,7 @@
     "tsx": "^4.23.0",
     "typescript": "catalog:",
     "vite": "^8.3.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "portless": "0.15.8"
   }
 }

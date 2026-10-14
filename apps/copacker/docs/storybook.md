@@ -17,6 +17,13 @@ Production promotion deploys the commit staging serves, including its Storybook.
 Storybook service. Use DNS-only CNAMEs to Railway for these domains so Railway's own certificate covers the nested
 `stories.staging.copacker.ai` hostname. Provision services and domains before merging the workflow change.
 
+## PR previews
+
+A separate Railway project hosts fixture-only PR previews. Railway posts the generated HTTPS preview URL on the PR,
+updates it on pushes and removes the environment when the PR closes. See the [preview inventory](domains.md#pull-request-previews).
+Page stories provide the UX preview using fixtures and mocked APIs. These environments do not inherit application credentials or data. Database previews are deferred until Neon and storage previews until Cloudflare; see the [deferred persistence decision](domains.md#deferred-persistence-decision-2026-10-14). Main's CI still validates the static build and
+runs the story tests before staging release deployment.
+
 ## Stories and tests
 
 Copacker's pages and components live in Storybook 10 (`@storybook/nextjs-vite`), each story beside its source:

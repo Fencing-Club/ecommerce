@@ -36,17 +36,61 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Configuration | Applied or verified | Remaining action |
 | --- | --- | --- |
 | Local DNS | DNS-only `*.local.copacker.ai` A `127.0.0.1`, TTL 300; superseded loopback `*.dev.copacker.ai` removed | Each workstation runs `dev:setup` to trust its own CA |
-| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered | Existing production defaults and seven prior entries retained; separate identity environments require their own migration |
-| Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local sign-in reaches Google account selection | No upstream callback change required for local rename; full authenticated round trip still to verify |
-| Google Maps restrictions | Required local pattern is `https://*.local.copacker.ai/*` | Google Cloud requires account reauthentication; key restrictions have **not** been inspected or changed in this rollout |
+| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered; CI callback `http://127.0.0.1:3005/callback` and logout origin `http://127.0.0.1:3005` registered after the real logout test exposed fallback to production | Existing production defaults and seven prior entries retained; separate identity environments require their own migration |
+| Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local Google sign-in reaches account selection; password sign-in and logout return to the exact local origin in E2E acceptance | No upstream callback change required for local rename; Google account consent/return still needs interactive verification |
+| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | The current key is shared across environments; separate keys remain planned |
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
+| GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
 | Public development hooks | Namespace reserved only; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
 | Other integration dashboards | Exact callback changes are specified in the register below | Shopify, Amazon and eBay local callbacks are opt-in per integration worktree; not automatically registered |
 
 The initial Storybook deployments use each environment's currently deployed application source: staging
 `c651bdcd16d6fadb198b86041cd3e2cd04d8dec6`, production `a09712165d84fa3340d2c80aa2e7bafc0a382917`,
 plus the static hosting files from this rollout. Subsequent releases build app and Storybook from the same release.
+
+## Pull request previews
+
+Storybook previews run in the separate Railway project `copacker-storybook-previews`
+(`16c32c30-7ae6-41c7-b3c9-896d0c4d3876`). Its `preview-base` environment
+(`379f7435-fe02-47d2-8125-3bcb58a890e1`) contains only `copacker-stories`
+(`4af6c3a1-6118-46c0-b434-de0deecf8185`), with no application secrets, database, bucket or worker.
+PR deployments are enabled and the GitHub source follows `main`. PR #8 merged after all checks passed; its CI logout test now verifies the exact return origin.
+
+Opening [PR #9](https://github.com/AndrewCraswell/ecommerce/pull/9) automatically created ephemeral environment
+`ecommerce-pr-9` (`dfc03b53-5dcc-4f0d-ba00-b34cda91a67d`) and
+`https://copacker-stories-ecommerce-pr-9.up.railway.app`. Its inventory contains one Storybook service, only
+`PORT` / `RAILWAY_DOCKERFILE_PATH` variables, and no volumes or buckets. The PR records deployment and cleanup
+acceptance evidence; its temporary address is not a permanent environment URL.
+
+| Surface | Address and lifecycle | Configuration |
+| --- | --- | --- |
+| Preview base | `https://copacker-stories-preview-base.up.railway.app` | Tracks `main`; exists to supply the PR template |
+| Storybook PR | Railway-issued `*.up.railway.app` URL shown on the PR deployment | Created per eligible repository PR, updated on pushes, removed on close/merge |
+| UX preview | Page and component stories, with fixture data and mocked API responses | Review flows through Storybook; no connection to shared staging or production data |
+| Database preview | Deferred until the Neon migration | Plan per-PR branches, sanitized seeds, credential isolation and deletion on PR close |
+| Storage preview | Deferred until the Cloudflare storage migration | Plan isolated per-PR namespaces or buckets, scoped credentials and cleanup on PR close |
+| Full data-backed app PR | Deferred with database and storage | Add real persistence and integration acceptance only after isolated resources are available |
+
+Use the actual Railway-issued preview URL; `pr-123.stories.preview.copacker.ai` is not configured.
+Generated domains give automatic HTTPS and cleanup without per-PR DNS records. They require no WorkOS, Google,
+Shopify, Amazon or eBay callback entries because Storybook runs fixtures. Runtime is limited to 0.5 GB and one CPU,
+with sleeping enabled. Railway restricts automatic PR deployment to recognized project/workspace contributors.
+Health metadata uses `RAILWAY_GIT_COMMIT_SHA` for GitHub deployments; release CD supplies `APP_COMMIT_SHA` explicitly.
+Do not enable app-project PR duplication from production: that would copy live integration configuration.
+
+### Deferred persistence (decision: 2026-10-14)
+
+Preview scope is Storybook and fixture-backed UX only. Do not provision a Railway database or storage bucket per PR,
+run migrations/seeds against shared environments, or wire UX previews to staging/production persistence.
+Database previews are deferred until the migration to Neon; storage previews are deferred until the migration to
+Cloudflare. The intent is to make isolated preview resources simpler and cheaper to provision and remove. This is a
+planned dependency, not a claim that either migration or preview resource automation has been completed.
+
+Revisit full app previews after those migrations: define per-PR resource ownership and lifetime, sanitized fixture
+seeding, least-privilege credentials, callback/origin registrations, cost limits, CI readiness checks and automatic
+cleanup on PR close. Workers, real emails and external integration/webhook subscriptions remain disabled unless a
+preview explicitly provisions dedicated test resources.
 
 ## Configuration change register
 
@@ -67,7 +111,7 @@ requires exact matching. `H` means the public webhook origin. Local `H` must nev
 | Google consent / Google Cloud | Branding homepage/privacy/terms, authorized domains and ownership verification, audience/test users, scopes | Keep test audience explicit; record scope additions | `https://copacker.ai`, `/privacy`, `/terms`; verify controlled domains when required | Consent screen, test-user access and verification status |
 | Google direct OAuth / future integrations | Exact redirect URIs and, if browser OAuth is used, exact authorized JavaScript origins; no wildcard redirects | Preregister a bounded set of integration origins or register each exact worktree | Register exact staging/production and intended aliases | OAuth state/PKCE and matching token-exchange redirect |
 | Google Maps/Places / Google Cloud | Separate `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` per environment; API restrictions: Maps JavaScript API and Places API (New) | Website restrictions `https://*.local.copacker.ai/*`; add origin-only patterns if required by console/browser behavior; test E2E scope only when live APIs needed | `https://staging.copacker.ai/*`, `https://copacker.ai/*` on their respective keys; add exact aliases only when used | Autocomplete works on intended origins; unauthorized origin rejected; billing/quota enabled |
-| Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker uses `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` build argument | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls, without logging keys |
+| Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker uses the `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` build argument | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls, without logging keys |
 | Microsoft OAuth / Microsoft and WorkOS | Exact upstream redirect URI supplied by auth provider, credentials, tenant/audience/scopes | Current WorkOS environment uses demo credentials | Own provider app when moving to production auth environment | Microsoft login and tenant restrictions |
 | Shopify / Dev Dashboard | App URL `A`; allowed redirect `A/api/connections/shopify`; scopes; app client ID/secret | Register exact local worktree callbacks in Copacker Dev; no automatic dashboard mutation | Development app for staging, production app for production; `shopify.app.toml` configures production only | Connect and reconnect return to same origin |
 | Amazon SP-API / Solution Provider Portal | Exact callback `A/api/connections/amazon`; `AMAZON_APPLICATION_ID`, client credentials, draft setting | Self-authorization remains available; register exact local HTTPS callback if exercising public OAuth | Separate Aisle Dev / Aisle configuration | Seller consent, state and token exchange |
