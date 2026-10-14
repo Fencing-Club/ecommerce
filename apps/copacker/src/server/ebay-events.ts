@@ -5,7 +5,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
 import { ebayApp, ebayFor } from "./connections"
-import { ebayEndpoint, ebayVerificationToken } from "./ebay-notifications"
+import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
@@ -208,7 +208,7 @@ export async function ebaySubscribeJob(payload: Record<string, unknown>, assertO
     skipped = "no eBay keys"
   } else if (!verificationToken) {
     skipped = "no verification token"
-  } else if (!endpoint.startsWith("https://") || new URL(endpoint).hostname === "localhost") {
+  } else if (!hasPublicEbayEndpoint()) {
     skipped = "no public endpoint"
   }
   if (skipped || !app || !verificationToken) {

@@ -37,10 +37,12 @@ that call. On staging a worker runs; specs that only make sense locally skip the
    `docker run -d --name copacker-e2e-s3 -p 127.0.0.1:9090:9090 -e COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS=copacker-e2e adobe/s3mock:5.2.3`.
 2. Use a separate database, such as `copacker_e2e`, and point `apps/copacker/.env` at it, at the mock
    (`S3_ENDPOINT=http://127.0.0.1:9090`, `S3_BUCKET=copacker-e2e`, any access key and secret) and at
-   `APP_URL=http://127.0.0.1:3005`. Keep the WorkOS settings.
-3. `pnpm --filter copacker db:migrate`, `pnpm --filter copacker db:seed:e2e` and `pnpm --filter copacker build`.
-4. `pnpm --filter copacker test:e2e`. Playwright starts `next start` on port 3005 (`E2E_PORT` changes it; `E2E_DEV=1`
-   uses the dev server). `pnpm --filter copacker exec playwright install chromium` downloads the browser once.
+   the dedicated local E2E database. Keep the WorkOS settings. Complete [Portless setup](development.md) once.
+3. `pnpm --filter copacker db:migrate`, `pnpm --filter copacker db:seed:e2e` and `pnpm --filter copacker build:e2e`.
+4. `pnpm --filter copacker test:e2e`. Playwright starts its own server at `<worktree>.e2e.local.copacker.ai`, with
+   the matching app/callback origin and `.next-e2e` build directory. It refuses to reuse an existing server.
+   `E2E_DEV=1` uses the dev server. CI keeps port 3005 (`E2E_PORT` changes it) and the normal build.
+   `pnpm --filter copacker exec playwright install chromium` downloads the browser once.
 
 `E2E_BASE_URL=https://copacker-staging.up.railway.app` runs the suite against staging instead; it needs
 `WORKOS_API_KEY` and a seeded staging database.

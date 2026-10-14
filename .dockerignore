@@ -2,6 +2,8 @@
 **/.env
 **/.env.*
 **/.next
+**/.next-e2e
+**/storybook-static
 **/.turbo
 **/dist
 **/coverage

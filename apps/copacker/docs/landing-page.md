@@ -60,7 +60,7 @@ parts live in `apps/copacker/src/components/marketing/`:
   close animation as the page loads, and a tint that changes (the nav bar's tone, the journey's latest document) is a
   layer that fades. The FAQ answers opening and closing and the journey's documents joining the list still animate
   height, since the content below has to move with them.
-- To see the signed-out page while signed in, open it on another host, such as `127.0.0.1` or `copacker.localhost`,
+- To see the signed-out page while signed in, open the same Portless URL in a separate browser context,
   where the session cookie isn't set.
 - There are no paid plans, so the page asks only for a sign-up, and says it's free.
 - The contact form emails each message through Resend to `CONTACT_EMAIL`, with replies going to the person who wrote

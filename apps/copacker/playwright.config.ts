@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs"
 import { defineConfig, devices } from "@playwright/test"
+import { developmentEnvironment, localAppEnvironment } from "./scripts/dev-environment"
 
 // A local run reads the app's .env for WORKOS_API_KEY, which the test account's password is derived from.
 if (existsSync(".env")) {
@@ -10,8 +11,11 @@ if (existsSync(".env")) {
 // E2E_BASE_URL points it at a deployed site instead, such as staging after a deploy. See docs/e2e.md.
 const deployed = process.env.E2E_BASE_URL
 const port = Number(process.env.E2E_PORT ?? 3005)
-const baseURL = deployed ?? `http://127.0.0.1:${port}`
 const ci = Boolean(process.env.CI)
+const baseURL = deployed ?? (ci ? `http://127.0.0.1:${port}` : developmentEnvironment().e2e)
+if (!deployed && !ci) {
+  Object.assign(process.env, localAppEnvironment(baseURL))
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -41,9 +45,11 @@ export default defineConfig({
   webServer: deployed
     ? undefined
     : {
-        command: `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`,
+        command: ci
+          ? `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`
+          : "node --import tsx scripts/dev.ts e2e",
         url: `${baseURL}/api/health`,
-        reuseExistingServer: !ci,
+        reuseExistingServer: false,
         timeout: 180_000,
         stdout: "pipe"
       }

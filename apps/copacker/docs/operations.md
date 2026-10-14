@@ -4,7 +4,9 @@ Install the monorepo first ([Setup](../../../docs/setup.md)). Copy `apps/copacke
 encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Never commit environment files.
 
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
-`pnpm --filter copacker worker` in a second process. The worker runs the durable jobs queued in Postgres. Staging and
+`pnpm --filter copacker worker:dev` in a second process. Set up [Portless](development.md) before `pnpm dev`.
+The [domain inventory](domains.md) lists every environment address and provider setting.
+The worker runs the durable jobs queued in Postgres. Staging and
 production run it as a second Railway service built from `Dockerfile.worker`, which skips `next build` and runs the
 worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
 
@@ -90,9 +92,9 @@ job, `ci-ok`, passes when nothing failed, counting skipped jobs as passed. Pushe
 pull request replaces its older run. To release to production, run the **Promote to production** workflow in GitHub
 Actions. It releases the commit staging serves, then runs the signed-out smoke specs against production.
 
-Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on both services, then deploys the web service (its
-pre-deploy step runs the migrations) and then the worker. It waits for each deployment to succeed, then for
-`/api/health` to report the commit. Deploys to one environment never overlap, and none cancels another.
+Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on all three services, then deploys the web service (its
+pre-deploy step runs the migrations), the worker and Storybook. It waits for each deployment to succeed, then checks
+app `/api/health` and Storybook `/health.json` for the same commit. Deploys to one environment never overlap, and none cancels another.
 
 - Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
   (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
@@ -153,7 +155,8 @@ Local Shopify connects through "Copacker Dev" in the Shopify Dev Dashboard (clie
 and staging's redirects. Keep its scopes the same as production's app. Until Shopify approves `read_all_orders` for it,
 order syncs through it copy the last 60 days. Local Amazon connects by self-authorization through Aisle Dev; production
 uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application ID) in the local `.env`. Local
-`NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`. Webhooks, notifications and queues per
+`APP_URL` and `NEXT_PUBLIC_WORKOS_REDIRECT_URI` are supplied by the Portless launcher for each worktree.
+Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
 Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
