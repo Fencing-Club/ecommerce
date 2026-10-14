@@ -1,4 +1,4 @@
-import { expect, fn, screen, userEvent, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ActionRequest, recordActions } from "@/stories/fixtures/logistics"
 import { AmazonConnect } from "./amazon-connect"
@@ -56,14 +56,14 @@ export const PrivateAuthorization = meta.story({
     await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
     await expect(within(dialog).getByLabelText(/^Refresh token/)).toHaveAttribute("type", "password")
     await userEvent.type(within(dialog).getByLabelText(/^Refresh token/), "Atzr|exampleRefreshToken0123456789")
-    await userEvent.click(within(dialog).getByRole("button", { name: "Connect", exact: true }))
-    await expect
-      .poll(() => privateRequests)
-      .toEqual([
+    await userEvent.click(within(dialog).getByRole("button", { name: "Connect" }))
+    await waitFor(() =>
+      expect(privateRequests).toEqual([
         {
           action: "connection.amazonSelfAuthorized",
           data: { marketplace: "CA", refreshToken: "Atzr|exampleRefreshToken0123456789" }
         }
       ])
+    )
   }
 })
