@@ -19,9 +19,13 @@ export function unique(prefix: string) {
   return `${prefix} ${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
 
-// Opens the top bar's workspace menu and switches to the role's workspace, which reloads the portal.
+// Switches through the sidebar workspace menu when the requested workspace is not already open.
 export async function switchWorkspace(page: Page, role: Role) {
   const switcher = page.getByRole("button", { name: /, switch workspace$/ })
+  await expect(switcher).toBeVisible()
+  if ((await switcher.getAttribute("aria-label")) === `${workspaces[role]}, switch workspace`) {
+    return
+  }
   await switcher.click()
   await Promise.all([
     page.waitForResponse(
