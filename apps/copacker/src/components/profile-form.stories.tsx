@@ -17,6 +17,34 @@ const meta = preview.meta({
   }
 })
 
+export const SavedWebsite = meta.story({
+  args: {
+    profile: {
+      firstName: "Alex",
+      lastName: "Rivera",
+      position: "Owner",
+      company: "Harbor Goods",
+      website: "http://harbor.example.com"
+    }
+  },
+  play: async ({ canvas }) => {
+    const website = canvas.getByRole("textbox", { name: "Company website" })
+    await expect(website).toHaveValue("harbor.example.com")
+    await expect(canvas.getByText("http://", { exact: true })).toBeVisible()
+    await userEvent.clear(website)
+    await userEvent.click(website)
+    await userEvent.paste("https://fencing.club")
+    await userEvent.tab()
+    await expect(website).toHaveValue("fencing.club")
+    await expect(canvas.getByText("https://", { exact: true })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(sent.at(-1)?.data.website).toBe("https://fencing.club"))
+    await userEvent.clear(website)
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(sent.at(-1)?.data.website).toBe(""))
+  }
+})
+
 // A buyer's owner also keeps the website its purchase orders print, saved with its https://.
 export const Owner = meta.story({
   play: async ({ canvas }) => {
@@ -41,8 +69,9 @@ export const Owner = meta.story({
       ])
     )
     await expect(await canvas.findByRole("status")).toHaveTextContent("Saved")
-    // The field shows the website as saved.
-    await expect(website).toHaveValue("https://harbor.example.com")
+    // Like onboarding, the scheme stays beside the editable domain after saving.
+    await expect(canvas.getByText("https://", { exact: true })).toBeVisible()
+    await expect(website).toHaveValue("harbor.example.com")
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
     await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
   }

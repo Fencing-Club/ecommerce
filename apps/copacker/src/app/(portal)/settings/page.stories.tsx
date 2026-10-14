@@ -491,9 +491,7 @@ export const BuyerOwner = meta.story({
     await expect(profile).toHaveTextContent(person.email)
     // The company falls back to the workspace's name, and its website shows for the owner.
     await expect(within(profile).getByRole("textbox", { name: "Company" })).toHaveValue("Harbor Goods")
-    await expect(within(profile).getByRole("textbox", { name: "Company website" })).toHaveValue(
-      "https://harbor.example.com"
-    )
+    await expect(within(profile).getByRole("textbox", { name: "Company website" })).toHaveValue("harbor.example.com")
     const restock = canvas.getByRole("region", { name: "Restock" })
     await expect(within(restock).getByRole("spinbutton", { name: "Sales period (days)" })).toHaveValue(90)
     await expect(within(restock).getByRole("spinbutton", { name: "Lead time (days)" })).toHaveValue(60)

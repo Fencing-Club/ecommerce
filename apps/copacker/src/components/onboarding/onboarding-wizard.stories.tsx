@@ -130,7 +130,7 @@ export const NewBuyer = meta.story({
       data: {
         person: { firstName: "Alex", lastName: "Rivera", position: "Operations manager" },
         kind: "buyer",
-        company: { name: "Harbor Goods", website: "harborgoods.example.com", phone: "" },
+        company: { name: "Harbor Goods", website: "https://harborgoods.example.com", phone: "" },
         address: {
           name: "Warehouse",
           address: {
