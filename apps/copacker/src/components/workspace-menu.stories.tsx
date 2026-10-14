@@ -65,6 +65,17 @@ export const Switch = meta.story({
   }
 })
 
+// Choosing the displayed default must persist it too, so later requests do not fall back to another workspace.
+export const SelectCurrentWorkspace = meta.story({
+  play: async ({ canvas, msw }) => {
+    const posted = recordActions(msw, held)
+    await userEvent.click(canvas.getByRole("button", { name: /switch workspace/ }))
+    const menu = await screen.findByRole("menu")
+    await userEvent.click(within(menu).getByRole("menuitem", { name: /Harbor Goods/ }))
+    await waitFor(() => expect(posted).toEqual([{ action: "workspace.switch", data: { id: "org_buyer" } }]))
+  }
+})
+
 // Until the workspace list has the open workspace, it shows by the name the session gave.
 export const NotListedYet = meta.story({
   args: { fallbackName: "Harbor Goods EU", active: "org_new", workspaces: [] },

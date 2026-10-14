@@ -60,9 +60,7 @@ export function WorkspaceMenu({
   const current = open?.name ?? fallbackName
 
   async function switchTo(id: string) {
-    if (id === active) {
-      return
-    }
+    // Persist even the displayed default: without a workspace cookie, later requests can choose another workspace.
     await run({ action: "workspace.switch", data: { id } }).unwrap()
     announceWorkspace(id)
     // A full load re-renders the shared portal layout, which a client navigation keeps from the old workspace.
