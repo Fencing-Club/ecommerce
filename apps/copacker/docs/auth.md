@@ -26,6 +26,10 @@ browser had open, or else the first. `next` survives every step, and only ever p
 
 ## WorkOS settings
 
+The [domain and provider inventory](domains.md) is the cross-environment checklist for redirects, sign-out destinations,
+Google/Microsoft upstream callbacks, browser API restrictions, and adding or replacing authentication providers.
+Local Portless launchers supply the exact worktree `APP_URL` and callback; never share a parent-domain session cookie.
+
 Local development, staging and production share the WorkOS staging environment. In its dashboard:
 
 - **Redirects** (Applications → the application → Redirects): `/callback` on every address the app answers on (`APP_URL`

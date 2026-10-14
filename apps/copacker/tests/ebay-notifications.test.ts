@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { GET } from "../src/app/api/webhooks/ebay/route"
-import { ebayChallengeResponse } from "../src/server/ebay-notifications"
+import { ebayChallengeResponse, ebayEndpoint, hasPublicEbayEndpoint } from "../src/server/ebay-notifications"
 
 const verificationToken = "copacker_ebay-verification-token-0123456789"
 
 beforeEach(() => {
+  vi.stubEnv("WEBHOOK_BASE_URL", "")
+  vi.stubEnv("COPACKER_LOCAL", "")
   vi.stubEnv("APP_URL", "https://copacker.ai")
   vi.stubEnv("EBAY_VERIFICATION_TOKEN", verificationToken)
 })
@@ -14,6 +16,23 @@ afterEach(() => {
 })
 
 describe("eBay's endpoint challenge", () => {
+  it("never subscribes a local HTTPS app as a public endpoint", () => {
+    vi.stubEnv("APP_URL", "https://main.local.copacker.ai")
+    expect(hasPublicEbayEndpoint()).toBe(false)
+    vi.stubEnv("COPACKER_LOCAL", "1")
+    vi.stubEnv("APP_URL", "https://copacker.ai")
+    expect(hasPublicEbayEndpoint()).toBe(false)
+  })
+  it("uses the owned public slot for both delivery and challenge hashing", () => {
+    vi.stubEnv("COPACKER_LOCAL", "1")
+    vi.stubEnv("APP_URL", "https://main.local.copacker.ai")
+    vi.stubEnv("WEBHOOK_BASE_URL", "https://slot1.hooks.dev.copacker.ai")
+    expect(ebayEndpoint()).toBe("https://slot1.hooks.dev.copacker.ai/api/webhooks/ebay")
+    expect(hasPublicEbayEndpoint()).toBe(true)
+    expect(ebayChallengeResponse("abc", verificationToken)).toBe(
+      createHash("sha256").update(`abc${verificationToken}${ebayEndpoint()}`).digest("hex")
+    )
+  })
   it("hashes the challenge code, the verification token and the endpoint", async () => {
     const response = GET(new Request("http://internal:8080/api/webhooks/ebay?challenge_code=a8628072-3d33-45ee-9004"))
     expect(response.status).toBe(200)

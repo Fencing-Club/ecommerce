@@ -12,7 +12,7 @@ import type { Messages } from "@/i18n/messages"
 import { type AccessLevel, type Area, can, type Grant, isAdmin, type Permissions } from "@/lib/access"
 import { areaLabelKey } from "@/lib/navigation"
 import { AccessError } from "@/server/errors"
-import { returnPath } from "@/server/security"
+import { appUrl, returnPath } from "@/server/security"
 
 // The workspace this browser has open, until another is chosen.
 export const workspaceCookie = "copacker-workspace"
@@ -20,7 +20,7 @@ export const workspaceCookie = "copacker-workspace"
 export async function setWorkspace(id: string) {
   ;(await cookies()).set(workspaceCookie, id, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: appUrl().startsWith("https:"),
     sameSite: "lax",
     path: "/"
   })

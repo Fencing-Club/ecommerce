@@ -19,7 +19,7 @@
     "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "node --use-system-ca --import tsx scripts/test-e2e.ts test",
     "update:address-regions": "tsx scripts/update-address-regions.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
@@ -29,11 +29,12 @@
     "db:drift": "node --env-file-if-exists=.env --import tsx scripts/schema-drift.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
-    "worker": "node --import tsx scripts/dev.ts worker",
+    "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts",
     "dev:setup": "node --import tsx scripts/dev.ts setup",
     "dev:urls": "node --import tsx scripts/dev.ts urls",
     "dev:status": "node --import tsx scripts/dev.ts status",
-    "build:e2e": "node --import tsx scripts/dev.ts build-e2e"
+    "build:e2e": "node --import tsx scripts/dev.ts build-e2e",
+    "worker:dev": "node --import tsx scripts/dev.ts worker"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",

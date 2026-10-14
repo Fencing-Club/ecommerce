@@ -1,5 +1,24 @@
 # Storybook
 
+Local Storybook runs at `<worktree>.stories.local.copacker.ai` through [Portless](development.md).
+Deployed static builds use `stories.staging.copacker.ai` and `stories.copacker.ai`; see the
+[environment domain inventory](domains.md) for DNS, TLS and release configuration.
+
+## Hosting
+
+Each Railway environment has a `copacker-stories` service built with the root `Dockerfile.storybook`, listening on
+8080 with `/health` as its healthcheck and `/health.json` for release metadata. It builds Storybook, then serves only the static output with unprivileged
+nginx. Do not supply database, WorkOS, Google Maps or other application credentials to this service. Stories use
+fixtures and MSW. The site is public documentation with `noindex, nofollow`; do not put private data into fixtures.
+
+Set Railway's Dockerfile path to `Dockerfile.storybook` and `APP_COMMIT_SHA` to the release SHA before building. The
+shared deployment script deploys web, worker and Storybook, then checks both health endpoints for the expected SHA.
+Production promotion deploys the commit staging serves, including its Storybook. No database migration runs on the
+Storybook service. Use DNS-only CNAMEs to Railway for these domains so Railway's own certificate covers the nested
+`stories.staging.copacker.ai` hostname. Provision services and domains before merging the workflow change.
+
+## Stories and tests
+
 Copacker's pages and components live in Storybook 10 (`@storybook/nextjs-vite`), each story beside its source:
 `src/app/**/page.stories.tsx` for pages and `src/components/**/<name>.stories.tsx` for components. Every story has a
 `play` function, and Vitest runs them all in Chromium.

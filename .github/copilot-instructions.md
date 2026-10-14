@@ -76,6 +76,10 @@ needs a human discussion**, not a silent add.
 
 ## Copacker
 
+- Local servers use [Portless](../apps/copacker/docs/development.md). Discover worktree URLs with
+  `pnpm --filter copacker dev:urls`; never kill another checkout's server, replace its route with `--force`, or stop the
+  shared proxy. Update the [domain/provider inventory](../apps/copacker/docs/domains.md) for integration changes.
+
 - Every page and component has stories with `play` tests beside its source (`<name>.stories.tsx`); add or update them
   with the change. See [apps/copacker/docs/storybook.md](../apps/copacker/docs/storybook.md).
 - Its database holds production data. Change the schema only through a new migration: edit

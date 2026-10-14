@@ -5,7 +5,23 @@ import { appUrl } from "./security"
 // eBay sends its notifications to this address: the account deletion endpoint registered in the developer portal, and
 // the destination sellers' order notifications are delivered to.
 export function ebayEndpoint() {
-  return `${appUrl()}/api/webhooks/ebay`
+  const origin = process.env.WEBHOOK_BASE_URL || appUrl()
+  return `${new URL(origin).origin}/api/webhooks/ebay`
+}
+
+// A local HTTPS origin is still loopback. Live delivery requires an explicitly owned public endpoint.
+export function hasPublicEbayEndpoint() {
+  if (process.env.COPACKER_LOCAL === "1" && !process.env.WEBHOOK_BASE_URL) {
+    return false
+  }
+  const url = new URL(ebayEndpoint())
+  return (
+    url.protocol === "https:" &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
+    !url.hostname.endsWith(".localhost") &&
+    !url.hostname.endsWith(".local.copacker.ai") &&
+    (!url.hostname.endsWith(".dev.copacker.ai") || url.hostname.endsWith(".hooks.dev.copacker.ai"))
+  )
 }
 
 // The token entered next to the endpoint in the developer portal: 32 to 80 letters, digits, underscores or hyphens.

@@ -4,7 +4,9 @@ Install the monorepo first ([Setup](../../../docs/setup.md)). Copy `apps/copacke
 encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Never commit environment files.
 
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
-`pnpm --filter copacker worker` in a second process. The worker runs the durable jobs queued in Postgres. Staging and
+`pnpm --filter copacker worker:dev` in a second process. Set up [Portless](development.md) before `pnpm dev`.
+The [domain inventory](domains.md) lists every environment address and provider setting.
+The worker runs the durable jobs queued in Postgres. Staging and
 production run it as a second Railway service built from `Dockerfile.worker`, which skips `next build` and runs the
 worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
 
@@ -153,7 +155,8 @@ Local Shopify connects through "Copacker Dev" in the Shopify Dev Dashboard (clie
 and staging's redirects. Keep its scopes the same as production's app. Until Shopify approves `read_all_orders` for it,
 order syncs through it copy the last 60 days. Local Amazon connects by self-authorization through Aisle Dev; production
 uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application ID) in the local `.env`. Local
-`NEXT_PUBLIC_WORKOS_REDIRECT_URI` is `http://localhost:3000/callback`. Webhooks, notifications and queues per
+`APP_URL` and `NEXT_PUBLIC_WORKOS_REDIRECT_URI` are supplied by the Portless launcher for each worktree.
+Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
 Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file

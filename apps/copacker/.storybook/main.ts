@@ -4,6 +4,8 @@ import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin"
 import { mergeConfig } from "vite"
 
 const mock = (file: string) => fileURLToPath(new URL(`./mocks/${file}`, import.meta.url))
+const localHost =
+  process.env.COPACKER_LOCAL === "1" && process.env.APP_URL ? new URL(process.env.APP_URL).hostname : undefined
 
 // Every page and component, each beside its source: src/app/**/page.stories.tsx for the pages, and
 // src/components/**/*.stories.tsx for the components.
@@ -11,11 +13,12 @@ const config: StorybookConfig = {
   stories: ["../src/**/*.stories.tsx"],
   addons: ["@storybook/addon-vitest", "@storybook/addon-a11y"],
   framework: { name: "@storybook/nextjs-vite", options: { nextConfigPath: "../next.config.ts" } },
-  core: { disableTelemetry: true },
+  core: { disableTelemetry: true, ...(localHost && { allowedHosts: [localHost] }) },
   // The mock service worker lives with Storybook, so the app never serves it.
   staticDirs: ["../public", "./public"],
   viteFinal: (vite) =>
     mergeConfig(vite, {
+      ...(localHost && { server: { allowedHosts: [localHost] } }),
       plugins: [vanillaExtractPlugin()],
       resolve: {
         // The server's side of what server components use: messages from the story's language, a database that

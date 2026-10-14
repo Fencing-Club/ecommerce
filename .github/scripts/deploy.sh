@@ -3,11 +3,12 @@
 # database migrations), then the worker, so the worker never runs against an older schema. Then it waits for the
 # site to report the commit. RAILWAY_TOKEN is a project token, which picks the environment.
 #
-#   deploy.sh <commit sha> <site url>
+#   deploy.sh <commit sha> <site url> <storybook url>
 set -euo pipefail
 
 sha="$1"
 site="$2"
+stories="$3"
 
 # A token pasted into `gh secret set` on Windows can carry a carriage return, which Railway rejects.
 RAILWAY_TOKEN=$(printf '%s' "${RAILWAY_TOKEN:-}" | tr -d '[:space:]')
@@ -74,12 +75,13 @@ deploy() {
   return 1
 }
 
-for service in copacker copacker-worker; do
+for service in copacker copacker-worker copacker-stories; do
   railway variable set "APP_COMMIT_SHA=$sha" --service "$service" --skip-deploys >/dev/null
 done
 
 deploy copacker
 deploy copacker-worker
+deploy copacker-stories
 
 # The web service is healthy by now; this confirms the address serves the new release, not an earlier one.
 for _ in $(seq 1 30); do
@@ -88,9 +90,23 @@ for _ in $(seq 1 30); do
     process.stdin.on("data", (chunk) => (input += chunk)).on("end", () => process.stdout.write(JSON.parse(input).commit ?? ""))' || true)
   if [ "$live" = "$sha" ]; then
     echo "$site serves $sha"
+    break
+  fi
+  sleep 10
+done
+if [ "$live" != "$sha" ]; then
+  echo "::error::$site still serves ${live:-an unknown commit}, not $sha"
+  exit 1
+fi
+for _ in $(seq 1 30); do
+  live=$(curl -fsS "$stories/health.json" | node -e '
+    let input = ""
+    process.stdin.on("data", (chunk) => (input += chunk)).on("end", () => process.stdout.write(JSON.parse(input).commit ?? ""))' || true)
+  if [ "$live" = "$sha" ]; then
+    echo "$stories serves $sha"
     exit 0
   fi
   sleep 10
 done
-echo "::error::$site still serves ${live:-an unknown commit}, not $sha"
+echo "::error::$stories still serves ${live:-an unknown commit}, not $sha"
 exit 1

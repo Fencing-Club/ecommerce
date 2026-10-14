@@ -55,7 +55,7 @@ const tenMinutes = 600
 async function seal(name: string, value: unknown) {
   ;(await cookies()).set(name, encrypt(JSON.stringify(value), name), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: appUrl().startsWith("https:"),
     sameSite: "lax",
     path: "/",
     maxAge: tenMinutes
