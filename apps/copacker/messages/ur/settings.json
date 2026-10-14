@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "انٹیگریشنز",
-    "description": "وہ اسٹورز جن کے ساتھ Copacker سنک کرتا ہے",
+    "description": "اسٹورز اور اشتہاری اکاؤنٹس",
     "marketplaces": "مارکیٹ پلیسز",
     "marketplacesUnavailable": "Amazon سے لوڈ نہیں ہو سکا",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "اپنی مارکیٹ پلیس منتخب کریں اور Amazon کے Solution Provider Portal سے ریفریش ٹوکن پیسٹ کریں۔",
       "connect": "منسلک کریں",
       "refreshToken": "ریفریش ٹوکن"
-    }
+    },
+    "storeGroup": "اسٹورز",
+    "advertisingGroup": "اشتہارات",
+    "manage": "انتظام کریں"
   },
   "excludedTags": {
     "title": "خارج شدہ آرڈر ٹیگز",
@@ -245,6 +248,8 @@
     "sync": "اشتہاری اخراجات سنک کریں",
     "disconnect": "Ads منقطع کریں",
     "checking": "جانچ جاری ہے…",
-    "statusUnavailable": "حیثیت دستیاب نہیں"
+    "statusUnavailable": "حیثیت دستیاب نہیں",
+    "summary": "اشتہارات کے اخراجات",
+    "requiresStore": "پہلے اپنا Amazon اسٹور منسلک کریں۔"
   }
 }

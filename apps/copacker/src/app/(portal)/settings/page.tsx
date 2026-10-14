@@ -1,7 +1,6 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
-import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -131,6 +130,7 @@ export default async function Settings() {
         {buyer && (
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
+              amazonAdsAvailable={amazonAdsApp() !== null}
               admin={admin}
               amazonSelfAuth={amazonSelfAuthEnabled()}
               ebayAvailable={ebayApp() !== null}
@@ -165,7 +165,6 @@ export default async function Settings() {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
-                  <AmazonAdsSettings available={amazonAdsApp() !== null} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
                     {amazon

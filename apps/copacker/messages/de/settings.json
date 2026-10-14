@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integrationen",
-    "description": "Shops, mit denen Copacker synchronisiert",
+    "description": "Shops und Werbekonten",
     "marketplaces": "Marktplätze",
     "marketplacesUnavailable": "Laden von Amazon fehlgeschlagen",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "Wähle deinen Marktplatz und füge den Aktualisierungstoken aus Amazons Solution Provider Portal ein.",
       "connect": "Verbinden",
       "refreshToken": "Refresh-Token"
-    }
+    },
+    "storeGroup": "Shops",
+    "advertisingGroup": "Werbung",
+    "manage": "Verwalten"
   },
   "excludedTags": {
     "title": "Ausgeschlossene Auftrags-Tags",
@@ -245,6 +248,8 @@
     "sync": "Werbeausgaben synchronisieren",
     "disconnect": "Ads trennen",
     "checking": "Wird geprüft…",
-    "statusUnavailable": "Status nicht verfügbar"
+    "statusUnavailable": "Status nicht verfügbar",
+    "summary": "Werbeausgaben",
+    "requiresStore": "Verbinde zuerst deinen Amazon-Shop."
   }
 }

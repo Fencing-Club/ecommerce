@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integrazioni",
-    "description": "Negozi sincronizzati con Copacker",
+    "description": "Negozi e account pubblicitari",
     "marketplaces": "Marketplace",
     "marketplacesUnavailable": "Impossibile caricare da Amazon",
     "stores": {
@@ -132,7 +132,10 @@
       "description": "Scegli il marketplace e incolla il token di aggiornamento dal Solution Provider Portal di Amazon.",
       "connect": "Collega",
       "refreshToken": "Refresh token"
-    }
+    },
+    "storeGroup": "Negozi",
+    "advertisingGroup": "Pubblicità",
+    "manage": "Gestisci"
   },
   "excludedTags": {
     "title": "Tag degli ordini esclusi",
@@ -245,6 +248,8 @@
     "sync": "Sincronizza la spesa",
     "disconnect": "Scollega Ads",
     "checking": "Verifica…",
-    "statusUnavailable": "Stato non disponibile"
+    "statusUnavailable": "Stato non disponibile",
+    "summary": "Spesa pubblicitaria",
+    "requiresStore": "Collega prima il tuo negozio Amazon."
   }
 }

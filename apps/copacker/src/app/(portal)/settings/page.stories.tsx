@@ -2,7 +2,6 @@ import { money } from "@repo/aisle"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -144,6 +143,7 @@ async function SettingsPage(args: Args) {
         {buyer && (
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
+              amazonAdsAvailable={false}
               admin={admin}
               ebayAvailable={args.ebayAvailable}
               shopify={
@@ -177,7 +177,6 @@ async function SettingsPage(args: Args) {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
-                  <AmazonAdsSettings available={false} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
                     {amazon
@@ -476,9 +475,7 @@ export const BuyerOwner = meta.story({
   ...buyer,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible()
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual([
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Profile",
       "Language",
       "Team",
@@ -547,6 +544,7 @@ export const AmazonSettings = meta.story({
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Harbor Goods US")
     await expect(sheet).not.toHaveTextContent(amazonAccount)
+    await expect(sheet).not.toHaveTextContent("Amazon Ads")
     await expect(sheet).toHaveTextContent("United States, Canada")
     await expect(within(sheet).queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
   }
@@ -695,9 +693,14 @@ export const Supplier = meta.story({
   ...supplier,
   args: supplierArgs,
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual(["Profile", "Language", "Team", "Supplier profile", "Pickup addresses", "Delete"])
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Profile",
+      "Language",
+      "Team",
+      "Supplier profile",
+      "Pickup addresses",
+      "Delete"
+    ])
     await expect(canvas.getByRole("combobox", { name: "Language" })).toHaveTextContent("简体中文")
     const profile = canvas.getByRole("region", { name: "Supplier profile" })
     await expect(within(profile).getByRole("textbox", { name: "Contact name" })).toHaveValue("Mei Chen")
@@ -742,9 +745,13 @@ export const Forwarder = meta.story({
     team: { members: [team.members[0]!], invitations: [] }
   },
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual(["Profile", "Language", "Team", "Addresses", "Delete"])
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Profile",
+      "Language",
+      "Team",
+      "Addresses",
+      "Delete"
+    ])
     // Without a saved profile, the name starts empty and the company is the workspace's.
     await expect(canvas.getByRole("textbox", { name: "First name" })).toHaveValue("")
     await expect(canvas.getByRole("textbox", { name: "Company" })).toHaveValue("Bayline Freight")
