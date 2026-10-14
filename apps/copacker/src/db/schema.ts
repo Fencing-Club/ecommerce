@@ -32,6 +32,7 @@ import { defaultQuantityRules, type PriceBreak, type QuantityRules } from "../li
 import { contactKinds } from "../lib/contacts"
 import type { ProductImage } from "../lib/supplier-product"
 import { revisionReasons, type TimelineEvent, type TimelineEventKey } from "../lib/timeline-events"
+import type { AdsProfile } from "../server/amazon-ads-client"
 import type { ImportProposal } from "../server/import-proposal"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
@@ -297,6 +298,34 @@ export const oauthStates = pgTable("oauth_states", {
   shop: text(),
   expiresAt: timestamp({ withTimezone: true }).notNull()
 })
+// Ads grants are separate from seller API grants, and can only read profiles belonging to the connected seller.
+export const amazonAdsConnections = pgTable("amazon_ads_connections", {
+  orgId: uuid()
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  sellerId: text().notNull(),
+  generation: uuid().defaultRandom().notNull(),
+  encryptedToken: text().notNull(),
+  profiles: jsonb().$type<AdsProfile[]>().notNull(),
+  createdAt: createdAt()
+})
+// One complete day across Sponsored Products, Brands and Display, including verified zero-spend days.
+export const amazonAdsDays = pgTable(
+  "amazon_ads_days",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sellerId: text().notNull(),
+    profileId: text().notNull(),
+    marketplaceId: text().notNull(),
+    day: date().notNull(),
+    currency: text().notNull(),
+    cost: numeric({ precision: 20, scale: 6 }).notNull(),
+    syncedAt: timestamp({ withTimezone: true }).notNull()
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.sellerId, t.profileId, t.day] })]
+)
 export const teamInvitations = pgTable("team_invitations", {
   id: uuid().defaultRandom().primaryKey(),
   orgId: uuid()
@@ -522,6 +551,7 @@ export const jobs = pgTable(
         "shopify-compliance",
         "amazon-event",
         "amazon-subscribe",
+        "amazon-ads",
         "ebay-event",
         "ebay-subscribe",
         "reconcile"

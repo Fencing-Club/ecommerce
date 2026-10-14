@@ -2,6 +2,7 @@ import { money } from "@repo/aisle"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -176,6 +177,7 @@ async function SettingsPage(args: Args) {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
+                  <AmazonAdsSettings available={false} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
                     {amazon

@@ -20,6 +20,7 @@ export async function syncExchangeRates(orgId: string, now = new Date(), fetcher
   const result = await db().execute(sql`
     select currency from (
       select distinct currency from amazon_transactions where "orgId" = ${orgId}
+      union select distinct currency from amazon_ads_days where "orgId" = ${orgId}
       union select distinct currency from shopify_balance_transactions where "orgId" = ${orgId}
       union select distinct currency from monthly_costs where "orgId" = ${orgId}
       union select distinct coalesce(o.data #>> '{lines,0,originalUnitPriceSet,shopMoney,currencyCode}',

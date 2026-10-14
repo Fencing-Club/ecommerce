@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, stockSnapshots } from "@/db/schema"
+import { queueAdsSync } from "./amazon-ads"
 import { queueAmazonSubscription } from "./amazon-notifications"
 import { queueEbaySubscription } from "./ebay-events"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
@@ -73,6 +74,7 @@ export async function reconcileJob(payload: Record<string, unknown>, assertOwned
       await queueEbaySubscription(account.orgId, date)
     } else {
       await queueAmazonSubscription(account.orgId, date)
+      await queueAdsSync(account.orgId)
     }
   }
 }

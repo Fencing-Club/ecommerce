@@ -224,5 +224,19 @@
     "shopifyLocation": "Shopify लोकेशन",
     "shopifyLocationDescription": "यहां भेजे गए खरीद ऑर्डर वहां ऑर्डर पर दिखते हैं",
     "notLinked": "लिंक नहीं है"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Sponsored Products, Brands और Display का दैनिक खर्च। पूरी रिपोर्ट वाले समय में Amazon भुगतानों की जगह विज्ञापन खर्च इस्तेमाल होता है। दूसरे समय में दर्ज भुगतान इस्तेमाल होते हैं। रिपोर्ट 90 दिनों तक की होती हैं और Amazon के समायोजन से बदल सकती हैं।",
+    "unavailable": "Amazon Ads का सेटअप पूरा नहीं हुआ है।",
+    "error": "Amazon Ads अपडेट नहीं हो सका। फिर कोशिश करें।",
+    "syncing": "विज्ञापन खर्च सिंक हो रहा है…",
+    "failed": "कुछ रिपोर्ट विफल रहीं। फिर से सिंक करें या पहुँच नवीनीकृत करने के लिए दोबारा जोड़ें।",
+    "connected": "जुड़ा हुआ",
+    "notConnected": "जुड़ा नहीं है",
+    "reconnect": "Ads दोबारा जोड़ें",
+    "connect": "Amazon Ads जोड़ें",
+    "sync": "विज्ञापन खर्च सिंक करें",
+    "disconnect": "Ads डिस्कनेक्ट करें"
   }
 }

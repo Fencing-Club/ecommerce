@@ -1,6 +1,7 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
+import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
@@ -20,6 +21,7 @@ import { isLocale } from "@/i18n/locales"
 import { systemLocale } from "@/i18n/request"
 import { can, isAdmin } from "@/lib/access"
 import { timeZoneLabel, timeZones } from "@/lib/time-zone"
+import { amazonAdsApp } from "@/server/amazon-ads-client"
 import { session } from "@/server/auth"
 import { amazonStore, ebayUsername, shopifyStoreName } from "@/server/connected-accounts"
 import { ebayApp } from "@/server/connections"
@@ -162,6 +164,7 @@ export default async function Settings() {
               amazonSettings={
                 <>
                   <OrdersSyncRow source="amazon" />
+                  <AmazonAdsSettings available={amazonAdsApp() !== null} />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
                     {amazon

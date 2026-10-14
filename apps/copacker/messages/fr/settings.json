@@ -224,5 +224,19 @@
     "shopifyLocation": "Emplacement Shopify",
     "shopifyLocationDescription": "Les bons de commande envoyés ici y apparaissent comme en commande",
     "notLinked": "Non lié"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Dépenses quotidiennes Sponsored Products, Brands et Display. Les périodes entièrement couvertes utilisent les dépenses publicitaires à la place des paiements Amazon. Les autres utilisent les paiements comptabilisés. Les rapports couvrent jusqu’à 90 jours et peuvent être ajustés par Amazon.",
+    "unavailable": "La configuration Amazon Ads est incomplète.",
+    "error": "Impossible de mettre à jour Amazon Ads. Réessayez.",
+    "syncing": "Synchronisation des dépenses…",
+    "failed": "Certains rapports ont échoué. Relancez la synchronisation ou reconnectez le compte.",
+    "connected": "Connecté",
+    "notConnected": "Non connecté",
+    "reconnect": "Reconnecter Ads",
+    "connect": "Connecter Amazon Ads",
+    "sync": "Synchroniser les dépenses",
+    "disconnect": "Déconnecter Ads"
   }
 }

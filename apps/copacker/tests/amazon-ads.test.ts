@@ -1,0 +1,357 @@
+import { randomUUID } from "node:crypto"
+import { gzipSync } from "node:zlib"
+import { PGlite } from "@electric-sql/pglite"
+import { drizzle } from "drizzle-orm/pglite"
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import * as tables from "../src/db/schema"
+import { applyMigrations } from "./migrations"
+const context = vi.hoisted(() => ({ database: null as unknown, orgId: "", userId: "user-1", role: "owner" }))
+vi.mock("@/db", () => ({ db: () => context.database }))
+vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }), headers: async () => new Headers() }))
+vi.mock("@/server/auth", async (original) => ({
+  ...(await original<typeof import("../src/server/auth")>()),
+  session: async () => ({
+    user: { id: context.userId },
+    org: { id: context.orgId, kind: "buyer" },
+    role: context.role,
+    access: {}
+  })
+}))
+import { GET, POST } from "../src/app/api/connections/amazon-ads/route"
+vi.mock("../src/server/exchange-rates", () => ({ syncExchangeRates: vi.fn<() => Promise<void>>() }))
+import {
+  adsCharge,
+  adsStatus,
+  amazonAdsJob,
+  disconnectAds,
+  queueAdsSync,
+  saveAdsConnection
+} from "../src/server/amazon-ads"
+import { adsToken, AmazonAds, downloadAdsReport } from "../src/server/amazon-ads-client"
+import { platformCharges } from "../src/server/overview-sales"
+import { encrypt } from "../src/server/security"
+
+const pg = new PGlite(),
+  database = drizzle(pg, { schema: tables })
+const orgId = randomUUID(),
+  generation = randomUUID()
+const profile = {
+  adsAccountId: "amzn1.ads-account.g.test",
+  profileId: "1234",
+  countryCode: "US",
+  currencyCode: "USD",
+  timezone: "America/Los_Angeles",
+  accountInfo: { id: "SELLER1", type: "seller", marketplaceStringId: "ATVPDKIKX0DER" }
+}
+const accountsResponse = () =>
+  Response.json([
+    {
+      adsAccount: {
+        adsAccountId: profile.adsAccountId,
+        alternateIds: [{ profileId: profile.profileId, countryCode: "US" }]
+      }
+    }
+  ])
+const reportResponse = (status = "COMPLETED") =>
+  Response.json({
+    success: [
+      {
+        report: {
+          reportId: "report",
+          status,
+          completedReportParts: [{ url: "https://reports.s3.amazonaws.com/report" }]
+        }
+      }
+    ]
+  })
+const reportRow = (cost: number, product = "SPONSORED_PRODUCTS") => ({
+  "date.value": "2026-10-12",
+  "campaign.id": "1",
+  "campaign.country": "US",
+  "budgetCurrency.value": "USD",
+  "adProduct.value": product,
+  "metric.totalCost": cost
+})
+const fetchMock = vi.fn<typeof fetch>()
+beforeAll(async () => {
+  context.database = database
+  await applyMigrations(pg)
+})
+afterAll(async () => {
+  await pg.close()
+})
+beforeEach(async () => {
+  context.orgId = orgId
+  context.userId = "user-1"
+  context.role = "owner"
+  vi.stubEnv("APP_URL", "https://copacker.ai")
+  vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
+  vi.stubEnv("AMAZON_ADS_CLIENT_ID", "ads-client")
+  vi.stubEnv("AMAZON_ADS_CLIENT_SECRET", "ads-secret")
+  fetchMock.mockReset()
+  vi.stubGlobal("fetch", fetchMock)
+  await pg.exec("TRUNCATE organizations CASCADE; TRUNCATE jobs")
+  await database.insert(tables.organizations).values({ id: orgId, name: "Buyer", kind: "buyer" })
+  await database
+    .insert(tables.connections)
+    .values({ orgId, provider: "amazon", externalId: "SELLER1", encryptedToken: "seller-token" })
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+})
+async function connect() {
+  await database.insert(tables.amazonAdsConnections).values({
+    orgId,
+    generation,
+    sellerId: "SELLER1",
+    profiles: [profile],
+    encryptedToken: encrypt("refresh", `${orgId}:amazon-ads`)
+  })
+}
+describe("Amazon Ads authorization and transport", () => {
+  it("binds consent to the initiating user and consumes the state once", async () => {
+    const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+    const target = new URL(start.headers.get("location")!)
+    expect(target.searchParams.get("scope")).toBe("advertising::campaign_management")
+    expect(target.searchParams.get("redirect_uri")).toBe("https://copacker.ai/api/connections/amazon-ads")
+    const callback = new Request(
+      `https://copacker.ai/api/connections/amazon-ads?state=${target.searchParams.get("state")}&code=code`
+    )
+    context.userId = "another-user"
+    expect((await GET(callback)).status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+    context.userId = "user-1"
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("auth/o2")) {
+        return Response.json({ access_token: "access", refresh_token: "refresh" })
+      }
+      return String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
+    })
+    expect((await GET(callback)).headers.get("location")).toBe("https://copacker.ai/settings#integrations")
+    expect(await adsStatus(orgId)).toMatchObject({ connected: true, active: true })
+    expect((await GET(callback)).status).toBe(400)
+  })
+  it("rejects expired consent, a different workspace, non-admins and cross-origin mutations", async () => {
+    const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
+    const state = new URL(start.headers.get("location")!).searchParams.get("state")
+    const callback = new Request(`https://copacker.ai/api/connections/amazon-ads?state=${state}&code=code`)
+    context.orgId = randomUUID()
+    expect((await GET(callback)).status).toBe(409)
+    context.orgId = orgId
+    await database.update(tables.oauthStates).set({ expiresAt: new Date(0) })
+    expect((await GET(callback)).status).toBe(400)
+    expect(
+      (
+        await POST(
+          new Request("https://copacker.ai/api/connections/amazon-ads", {
+            method: "POST",
+            headers: { origin: "https://example.com" },
+            body: JSON.stringify({ action: "disconnect" })
+          })
+        )
+      ).status
+    ).toBe(403)
+    context.role = "member"
+    await expect(GET(new Request("https://copacker.ai/api/connections/amazon-ads?status=1"))).rejects.toThrow(
+      "Only admins"
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+  it("uses distinct developer credentials and form-encoded grants", async () => {
+    fetchMock.mockResolvedValue(Response.json({ access_token: "access", refresh_token: "refresh" }))
+    await adsToken({
+      grant_type: "authorization_code",
+      code: "code",
+      redirect_uri: "https://copacker.ai/api/connections/amazon-ads"
+    })
+    expect(Object.fromEntries(new URLSearchParams(String(fetchMock.mock.calls[0]![1]!.body)))).toMatchObject({
+      client_id: "ads-client",
+      client_secret: "ads-secret",
+      code: "code"
+    })
+  })
+  it("never imports another seller, vendor or unsupported region", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json([
+        profile,
+        { ...profile, accountInfo: { ...profile.accountInfo, id: "OTHER" } },
+        { ...profile, accountInfo: { ...profile.accountInfo, type: "vendor" } },
+        { ...profile, countryCode: "DE" }
+      ])
+    )
+    fetchMock.mockResolvedValueOnce(accountsResponse())
+    expect(await new AmazonAds("access").profiles("SELLER1")).toEqual([profile])
+  })
+  it("does not save an authorization with no matching profiles", async () => {
+    fetchMock.mockResolvedValue(Response.json([]))
+    await expect(saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds("access"))).rejects.toThrow("No matching")
+    expect(await database.select().from(tables.amazonAdsConnections)).toEqual([])
+  })
+  it("stores grants encrypted and rejects a changed seller", async () => {
+    fetchMock.mockImplementation(async (url) =>
+      String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
+    )
+    await saveAdsConnection(orgId, "SELLER1", "refresh", new AmazonAds("access"))
+    const [grant] = await database.select().from(tables.amazonAdsConnections)
+    expect(grant!.encryptedToken).not.toContain("refresh")
+    await expect(saveAdsConnection(orgId, "OTHER", "refresh", new AmazonAds("access"))).rejects.toThrow("No matching")
+  })
+  it("downloads bounded gzip without authorization headers", async () => {
+    fetchMock.mockResolvedValue(new Response(gzipSync(JSON.stringify([reportRow(1.25)]))))
+    expect(await downloadAdsReport("https://reports.s3.amazonaws.com/report")).toEqual([
+      { date: "2026-10-12", campaignId: "1", country: "US", currency: "USD", product: "SPONSORED_PRODUCTS", cost: 1.25 }
+    ])
+    expect(fetchMock.mock.calls[0]![1]!.headers).toBeUndefined()
+    await expect(downloadAdsReport("https://example.com/report")).rejects.toThrow("Unexpected")
+  })
+  it("scopes current API reports by account, country and sponsored ad products", async () => {
+    fetchMock.mockResolvedValue(reportResponse("PENDING"))
+    expect(await new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).toBe("report")
+    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]!.body))).toMatchObject({
+      accessRequestedAccounts: [{ advertiserAccountId: profile.adsAccountId }],
+      reports: [
+        {
+          query: {
+            fields: expect.arrayContaining(["date.value", "metric.totalCost", "budgetCurrency.value"]),
+            filter: {
+              and: {
+                filters: expect.arrayContaining([
+                  { on: { field: "campaign.country", comparisonOperator: "EQUALS", not: false, values: ["US"] } }
+                ])
+              }
+            }
+          }
+        }
+      ]
+    })
+  })
+  it("retries per-report throttling and rejects redacted reports", async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({ error: [{ errors: [{ code: "TOO_MANY_REQUESTS" }] }] }))
+    await expect(new AmazonAds("access").createReport(profile, "2026-10-01", "2026-10-14")).rejects.toThrow("429")
+    fetchMock.mockResolvedValueOnce(
+      Response.json({
+        success: [{ report: { reportId: "report", status: "COMPLETED", warnings: [{ field: "metric.totalCost" }] } }]
+      })
+    )
+    await expect(new AmazonAds("access").report("report")).rejects.toThrow("incomplete")
+  })
+})
+describe("durable ad spend imports", () => {
+  it("queues bounded windows once while work is active", async () => {
+    await connect()
+    await queueAdsSync(orgId, new Date("2026-10-14T12:00:00Z"))
+    await queueAdsSync(orgId, new Date("2026-10-14T12:00:00Z"))
+    const work = await database.select().from(tables.jobs)
+    expect(work).toHaveLength(1)
+    expect(work[0]!.payload).toMatchObject({ from: "2026-07-17", to: "2026-10-14", profileId: "1234" })
+    expect(await adsStatus(orgId)).toMatchObject({ connected: true, active: true })
+  })
+  it("abandons disconnected or replaced authorizations", async () => {
+    await connect()
+    await disconnectAds(orgId)
+    await amazonAdsJob(
+      { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
+      async () => undefined
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+  it("persists report IDs before polling", async () => {
+    await connect()
+    fetchMock.mockImplementation(async (url) =>
+      String(url).includes("auth/o2") ? Response.json({ access_token: "access" }) : reportResponse("PENDING")
+    )
+    await expect(
+      amazonAdsJob(
+        { orgId, generation, profileId: "1234", from: "2026-10-12", to: "2026-10-13" },
+        async () => undefined
+      )
+    ).rejects.toMatchObject({
+      options: {
+        progressed: true,
+        payload: {
+          reportId: "report"
+        }
+      }
+    })
+  })
+  it("atomically imports all products, writes zero days and replaces corrections without adding twice", async () => {
+    await connect()
+    let cost = 1.25
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("auth/o2")) {
+        return Response.json({ access_token: "access" })
+      }
+      if (String(url).includes("amazonaws.com")) {
+        return Response.json([
+          reportRow(cost),
+          reportRow(cost, "SPONSORED_BRANDS"),
+          reportRow(cost, "SPONSORED_DISPLAY")
+        ])
+      }
+      return reportResponse()
+    })
+    const payload = {
+      orgId,
+      generation,
+      profileId: "1234",
+      from: "2026-10-12",
+      to: "2026-10-13",
+      reportId: "report"
+    }
+    await amazonAdsJob(payload, async () => undefined)
+    expect((await database.select().from(tables.amazonAdsDays)).map((d) => d.cost)).toEqual(["3.750000", "0.000000"])
+    cost = 2
+    await amazonAdsJob(payload, async () => undefined)
+    const from = new Date("2026-10-12T07:00:00Z"),
+      to = new Date("2026-10-14T07:00:00Z")
+    expect(await adsCharge(orgId, "SELLER1", undefined, from, to, "USD")).toBe(-600)
+    await database.insert(tables.amazonTransactions).values({
+      orgId,
+      externalAccountId: "SELLER1",
+      transactionId: "payment",
+      type: "ProductAdsPayment",
+      postedAt: from,
+      currency: "USD",
+      totalMinor: -900,
+      feesMinor: 0,
+      data: {}
+    })
+    const accounts = [{ provider: "amazon" as const, externalId: "SELLER1" }]
+    expect(
+      (await platformCharges(orgId, accounts, from, to, "USD"))
+        .filter((line) => line.key === "amazon-ads")
+        .map((line) => line.minor)
+    ).toEqual([-600])
+    expect(
+      (await platformCharges(orgId, accounts, new Date("2026-10-11T07:00:00Z"), to, "USD"))
+        .filter((line) => line.key === "amazon-ads")
+        .map((line) => line.minor)
+    ).toEqual([-900])
+    expect(await adsCharge(orgId, "OTHER", undefined, from, to, "USD")).toBeNull()
+    expect(await adsCharge(orgId, "SELLER1", "OTHER", from, to, "USD")).toBeNull()
+    expect(await adsCharge(orgId, "SELLER1", undefined, new Date("2026-10-11T07:00:00Z"), to, "USD")).toBeNull()
+    expect(await database.select().from(tables.amazonAdsDays)).toHaveLength(2)
+  })
+  it("leaves stored data untouched on a failed product report", async () => {
+    await connect()
+    fetchMock.mockImplementation(async (url) =>
+      String(url).includes("auth/o2") ? Response.json({ access_token: "access" }) : reportResponse("FAILED")
+    )
+    await expect(
+      amazonAdsJob(
+        {
+          orgId,
+          generation,
+          profileId: "1234",
+          from: "2026-10-12",
+          to: "2026-10-13",
+          reportId: "report"
+        },
+        async () => undefined
+      )
+    ).rejects.toThrow("generation failed")
+    expect(await database.select().from(tables.amazonAdsDays)).toEqual([])
+  })
+})

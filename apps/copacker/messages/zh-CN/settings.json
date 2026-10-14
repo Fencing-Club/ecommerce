@@ -224,5 +224,19 @@
     "shopifyLocation": "Shopify 地点",
     "shopifyLocationDescription": "发往此处的采购订单会在该地点显示为已订购",
     "notLinked": "未关联"
+  },
+  "amazonAds": {
+    "title": "Amazon Ads",
+    "description": "Sponsored Products、Brands 和 Display 的每日支出。完整报告期间使用广告支出代替亚马逊付款，其他期间使用已入账付款。报告最多涵盖 90 天，并可能随亚马逊调整而变化。",
+    "unavailable": "Amazon Ads 设置尚未完成。",
+    "error": "无法更新 Amazon Ads，请重试。",
+    "syncing": "正在同步广告支出…",
+    "failed": "部分报告失败。请重新同步，或重新连接以续期授权。",
+    "connected": "已连接",
+    "notConnected": "未连接",
+    "reconnect": "重新连接 Ads",
+    "connect": "连接 Amazon Ads",
+    "sync": "同步广告支出",
+    "disconnect": "断开 Ads"
   }
 }
