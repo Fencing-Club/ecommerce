@@ -140,7 +140,7 @@ export default async function Settings() {
               amazon={
                 amazonAccount
                   ? {
-                      account: account(amazon?.name ?? null, amazonAccount.externalId),
+                      account: amazon?.name ?? "Amazon",
                       externalId: amazonAccount.externalId,
                       marketplaces: amazon?.marketplaces ?? null
                     }

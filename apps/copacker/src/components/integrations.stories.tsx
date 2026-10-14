@@ -18,7 +18,7 @@ const connectShopify = fn()
 
 const shopify = { account: `Harbor Goods, ${shopifyAccount}`, externalId: shopifyAccount }
 const amazon = {
-  account: `Harbor Goods US, ${amazonAccount}`,
+  account: "Harbor Goods US",
   externalId: amazonAccount,
   marketplaces: ["United States", "Canada"]
 }
