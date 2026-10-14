@@ -17,8 +17,15 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    [Variation and product details](api-contract.md#variation-and-product-details).
 3. Amazon: a public SP-API application with the AWD role and Listings access, redirecting to
    `<APP_URL>/api/connections/amazon`. Amazon requires an HTTPS redirect, so test it on a deployed environment. While the
-   app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link then asks for `version=beta`, and sellers can connect by
-   self-authorization. Tokens are encrypted per workspace.
+   public app is a draft, set `AMAZON_APP_DRAFT=true`: the consent link asks for `version=beta` and still uses Amazon
+   sign-in. Settings first asks for the US, Canada, Mexico or Brazil marketplace, then opens its Seller Central consent
+   page. The callback receives the seller ID and exchanges the authorization code for a token, encrypted per workspace.
+   The connected Amazon card lists the supported marketplaces returned by Amazon's seller account API, visible to
+   members as well as admins. If that lookup fails, the card says the marketplace list could not be loaded; it does not
+   infer marketplace access from the country selected during sign-in.
+   Marketplace choice controls the sign-in site; syncing remains North American, with US FBA/AWD inventory and inbound shipments.
+   Private apps cannot use this public-app OAuth flow. Configure Copacker's public app and register the exact callback
+   URL in Amazon's Solution Provider Portal. See [Amazon's website authorization workflow](https://developer-docs.amazon/sp-api/lang-US/docs/website-authorization-workflow).
 4. Email (Resend): `EMAIL_API_KEY` (sending only) and `EMAIL_FROM`. The worker sends invitations, POs and label-ready
    notices, and the app sends password resets, all from `packages/copacker-emails`; their header mark loads from
    `APP_URL` (`public/email/mark.png`). Resend only sends: the landing page's waitlist is WorkOS's

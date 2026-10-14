@@ -114,18 +114,18 @@
       "storeDescription": "后台链接或 myshopify.com 域名",
       "enterStore": "请输入你店铺的后台链接或 myshopify.com 域名"
     },
-    "amazonSelfAuthorize": {
-      "title": "连接 Amazon",
-      "description": "在 Amazon 的 Solution Provider Portal 中，打开 Copacker 应用旁的菜单，选择 Authorize 并复制刷新令牌。商家令牌位于 Seller Central 的“设置”>“账户信息”中。",
-      "connect": "连接",
-      "merchantToken": "商家令牌",
-      "refreshToken": "刷新令牌"
-    },
     "sync": {
       "orders": "正在同步订单",
       "ordersProgress": "正在同步订单：{progress, number, percent}",
       "stock": "正在同步库存",
       "failed": "上次同步失败"
+    },
+    "noMarketplaces": "没有受支持的站点",
+    "amazonConnect": {
+      "title": "连接 Amazon",
+      "description": "选择商城，然后登录 Amazon 以授权 Copacker。",
+      "marketplace": "商城",
+      "continue": "前往 Amazon"
     }
   },
   "excludedTags": {

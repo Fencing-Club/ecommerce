@@ -75,7 +75,6 @@ export default async function Settings() {
     buyer && shopifyAccount && admin ? untaggedShopifyOrders(s.org.id, salesHistoryDays) : false
   ])
   // Amazon's consent page doesn't offer a draft app, so the seller can connect with a self-authorization instead.
-  const amazonDraft = process.env.AMAZON_APP_DRAFT === "true"
   // Delivery addresses can be linked to one of the store's own Shopify locations.
   const ownLocations = buyer
     ? (await readLocationMappings(s)).locations
@@ -131,7 +130,6 @@ export default async function Settings() {
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
               admin={admin}
-              amazonDraft={amazonDraft}
               ebayAvailable={ebayApp() !== null}
               shopify={
                 shopifyAccount
@@ -142,7 +140,8 @@ export default async function Settings() {
                 amazonAccount
                   ? {
                       account: account(amazon?.name ?? null, amazonAccount.externalId),
-                      externalId: amazonAccount.externalId
+                      externalId: amazonAccount.externalId,
+                      marketplaces: amazon?.marketplaces ?? null
                     }
                   : null
               }
@@ -165,7 +164,9 @@ export default async function Settings() {
                   <OrdersSyncRow source="amazon" />
                   <InventorySyncRow provider="amazon" />
                   <DetailRow title={t("integrations.marketplaces")}>
-                    {amazon ? amazon.marketplaces.join(", ") || "—" : t("integrations.marketplacesUnavailable")}
+                    {amazon
+                      ? amazon.marketplaces.join(", ") || t("integrations.noMarketplaces")
+                      : t("integrations.marketplacesUnavailable")}
                   </DetailRow>
                 </>
               }

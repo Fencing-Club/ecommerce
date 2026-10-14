@@ -15,8 +15,7 @@ Quick reference:
   vanilla-extract page styles stay. See [apps/copacker/docs/styling.md](apps/copacker/docs/styling.md).
 - **Reuse first:** prefer `@mantine/hooks`, `ts-extras`, `ts-pattern`, and `tiny-invariant` over hand-rolled hooks /
   type helpers; narrow with type guards, not `as`.
-- **Product copy:** validate every customer-facing string with Fluent Agent MCP when available. Never use `·`, `•`, or
-  another dot glyph as a visual separator.
+- **Product copy:** use clear, concise wording. Never use `·`, `•`, or another dot glyph as a visual separator.
 - **Storybook:** every page and component has sibling `*.stories.tsx` with `play` tests
   (`pnpm --filter copacker storybook`); `tests/stories.test.ts` fails on a missing one. See
   [apps/copacker/docs/storybook.md](apps/copacker/docs/storybook.md).

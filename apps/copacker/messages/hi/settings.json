@@ -114,18 +114,18 @@
       "storeDescription": "एडमिन लिंक या myshopify.com डोमेन",
       "enterStore": "अपने स्टोर का एडमिन लिंक या myshopify.com डोमेन डालें"
     },
-    "amazonSelfAuthorize": {
-      "title": "Amazon कनेक्ट करें",
-      "description": "Amazon के Solution Provider Portal में, Copacker के ऐप के पास वाला मेनू खोलें, Authorize चुनें और रीफ़्रेश टोकन कॉपी करें। आपका मर्चेंट टोकन Seller Central में Settings, Account Info के अंदर है।",
-      "connect": "कनेक्ट करें",
-      "merchantToken": "मर्चेंट टोकन",
-      "refreshToken": "रीफ़्रेश टोकन"
-    },
     "sync": {
       "orders": "ऑर्डर सिंक हो रहे हैं",
       "ordersProgress": "ऑर्डर सिंक हो रहे हैं: {progress, number, percent}",
       "stock": "इन्वेंटरी सिंक हो रही है",
       "failed": "पिछला सिंक विफल रहा"
+    },
+    "noMarketplaces": "कोई समर्थित मार्केटप्लेस नहीं",
+    "amazonConnect": {
+      "title": "Amazon कनेक्ट करें",
+      "description": "अपना मार्केटप्लेस चुनें, फिर Copacker को अनुमति देने के लिए Amazon में साइन इन करें।",
+      "marketplace": "मार्केटप्लेस",
+      "continue": "Amazon पर जारी रखें"
     }
   },
   "excludedTags": {

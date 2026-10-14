@@ -153,8 +153,8 @@ export async function disconnect(orgId: string, provider: Provider) {
   return { revoked }
 }
 
-// Connects a seller account that authorized Copacker's Amazon app directly (self-authorization), for use while the
-// app is a draft that Amazon's consent page won't offer. The token is checked with Amazon before it is saved.
+// Administrative self-authorization for private developer apps. The customer-facing flow uses Seller Central OAuth,
+// including for draft public apps. The token is checked with Amazon before it is saved.
 export async function connectAmazonSelfAuthorized(orgId: string, raw: unknown) {
   const input = selfAuthorizationSchema.parse(raw)
   if (!process.env.AMAZON_CLIENT_ID || !process.env.AMAZON_CLIENT_SECRET) {

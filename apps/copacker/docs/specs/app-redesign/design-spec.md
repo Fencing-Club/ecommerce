@@ -475,4 +475,4 @@ the action's confirm dialog, or an alert line when something blocks the step.
 - Short and literal. Prefer a number or a noun phrase to a sentence: "35-day lead time", "5 orders", "No catalog match".
 - Sentence case everywhere. Actions are verbs ("Approve changes", "Mark shipped").
 - Never use `·`, `•` or another dot glyph as a separator. Use layout or words.
-- Every new or changed string goes through the Fluent Agent MCP before it ships, per the repository's rules.
+- Review every new or changed string for clarity, brevity, and consistency with the surrounding UI.

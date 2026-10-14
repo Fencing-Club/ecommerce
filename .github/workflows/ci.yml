@@ -150,7 +150,7 @@ jobs:
       NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://127.0.0.1:3005/callback
       DATABASE_URL: postgresql://postgres:copacker_e2e@localhost:5432/copacker_e2e
       # WorkOS's client ID is public; the API key is the repository secret.
-      WORKOS_CLIENT_ID: client_01M3BJHM6XAWTG9WKHNBZGG8AV
+      WORKOS_CLIENT_ID: client_01M4WPTK4JK0HKFZA7ZSMQBVYD
       WORKOS_API_KEY: ${{ secrets.WORKOS_API_KEY }}
       S3_ENDPOINT: http://127.0.0.1:9090
       S3_BUCKET: copacker-e2e

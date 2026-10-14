@@ -114,18 +114,18 @@
       "storeDescription": "ایڈمن لنک یا myshopify.com ڈومین",
       "enterStore": "اپنے اسٹور کا ایڈمن لنک یا myshopify.com ڈومین درج کریں"
     },
-    "amazonSelfAuthorize": {
-      "title": "Amazon منسلک کریں",
-      "description": "Amazon کے Solution Provider Portal میں Copacker کی ایپ کے ساتھ والا مینو کھولیں، Authorize منتخب کریں اور ریفریش ٹوکن کاپی کریں۔ آپ کا مرچنٹ ٹوکن Seller Central میں Settings، Account Info کے تحت ہے۔",
-      "connect": "منسلک کریں",
-      "merchantToken": "مرچنٹ ٹوکن",
-      "refreshToken": "ریفریش ٹوکن"
-    },
     "sync": {
       "orders": "آرڈر سنک ہو رہے ہیں",
       "ordersProgress": "آرڈر سنک ہو رہے ہیں: {progress, number, percent}",
       "stock": "انوینٹری سنک ہو رہی ہے",
       "failed": "پچھلا سنک ناکام رہا"
+    },
+    "noMarketplaces": "کوئی معاونت یافتہ مارکیٹ پلیس نہیں",
+    "amazonConnect": {
+      "title": "Amazon منسلک کریں",
+      "description": "اپنی مارکیٹ منتخب کریں، پھر Copacker کو اجازت دینے کے لیے Amazon میں سائن ان کریں۔",
+      "marketplace": "مارکیٹ",
+      "continue": "Amazon پر جاری رکھیں"
     }
   },
   "excludedTags": {
