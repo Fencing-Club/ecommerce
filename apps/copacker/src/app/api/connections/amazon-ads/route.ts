@@ -4,11 +4,21 @@ import { db } from "@/db"
 import { connections, oauthStates } from "@/db/schema"
 import { adsStatus, disconnectAds, queueAdsSync, saveAdsConnection } from "@/server/amazon-ads"
 import { adsScope, adsToken, amazonAdsApp, AmazonAds } from "@/server/amazon-ads-client"
+import { adsOAuthCallback, relayAdsOAuth, startAdsOAuth } from "@/server/amazon-ads-oauth"
 import { requireAdmin, requireBuyer, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
-import { hash, isAppOrigin, siteUrlFor, token } from "@/server/security"
+import { hash, isAppOrigin, siteUrlFor } from "@/server/security"
 
 export async function GET(request: Request) {
+  const site = siteUrlFor(request.headers)
+  try {
+    const relayed = relayAdsOAuth(request, site)
+    if (relayed) {
+      return relayed
+    }
+  } catch {
+    return errorResponse("connectionExpired", 400)
+  }
   const s = await session()
   requireBuyer(s)
   const url = new URL(request.url)
@@ -16,8 +26,6 @@ export async function GET(request: Request) {
     return Response.json(await adsStatus(s.org.id), { headers: { "Cache-Control": "private, no-store" } })
   }
   requireAdmin(s)
-  const site = siteUrlFor(request.headers),
-    callback = `${site}/api/connections/amazon-ads`
   const settings = `${site}/settings#integrations`
   const app = amazonAdsApp()
   if (!app) {
@@ -34,7 +42,13 @@ export async function GET(request: Request) {
     if (url.searchParams.has("code") || url.searchParams.has("error")) {
       return errorResponse("connectionExpired", 400)
     }
-    const state = token()
+    let authorization
+    try {
+      authorization = startAdsOAuth(site)
+    } catch {
+      return errorResponse("amazonConnectionFailed", 503)
+    }
+    const { state, callback } = authorization
     await db()
       .insert(oauthStates)
       .values({
@@ -54,6 +68,12 @@ export async function GET(request: Request) {
       state
     }).toString()
     return Response.redirect(target)
+  }
+  let callback
+  try {
+    callback = adsOAuthCallback(site, url.searchParams.get("state") ?? "")
+  } catch {
+    return errorResponse("connectionExpired", 400)
   }
   // Consumed atomically and bound to both the workspace and the person who started consent.
   const [state] = await db()

@@ -25,6 +25,10 @@ Private PDF responses (`/api/documents/:id`, `/api/shipments/:id/packet`, `/api/
 workspace membership after the storage read or packet assembly, before returning bytes. Removing a member during a slow
 download stops that response. They are sent `private, no-store` with `Content-Security-Policy: sandbox`.
 
+The optional Amazon Ads development relay is a narrow exception: `GET /api/connections/amazon-ads` forwards a valid
+signed callback ticket before requiring a session. It never accesses a workspace, exchanges tokens or fetches a
+return URL. The originating app performs all authorization and single-use checks. See [Amazon Ads](amazon-ads.md).
+
 ## Commands
 
 Permissions below name the checks the route makes: _buyer_, _supplier_ and _forwarder_ are the workspace kind;
