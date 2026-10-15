@@ -113,6 +113,15 @@ describe("shared Amazon Ads callback", () => {
     expect(target.searchParams.get("error")).toBe("access_denied")
     expect(target.searchParams.has("error_description")).toBe(false)
   })
+  it("accepts modest clock skew but rejects implausibly future tickets", () => {
+    vi.useFakeTimers()
+    const started = Date.now()
+    const { state } = startAdsOAuth(local)
+    vi.setSystemTime(started - 15_000)
+    expect(relayAdsOAuth(response(state), relay)?.status).toBe(302)
+    vi.setSystemTime(started - 120_000)
+    expect(() => relayAdsOAuth(response(state), relay)).toThrow("Expired relay state")
+  })
   it.each(["", "code=a&error=b", "code=a&code=b", "error=a&error=b", "code=a&state=second"])(
     "rejects ambiguous responses %s",
     (query) => {

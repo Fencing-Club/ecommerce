@@ -6,6 +6,7 @@ import { token } from "./security"
 const path = "/api/connections/amazon-ads"
 const prefix = "ads-relay."
 const lifetime = 10 * 60_000
+const clockSkew = 60_000
 const ticketSchema = z
   .object({
     origin: z.string(),
@@ -72,7 +73,8 @@ function readTicket(state: string, config: NonNullable<ReturnType<typeof relayCo
   const actual = Buffer.from(supplied)
   invariant(actual.length === expected.length && timingSafeEqual(actual, expected), "Invalid relay signature")
   const ticket = ticketSchema.parse(JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")))
-  invariant(ticket.expires > Date.now() && ticket.expires <= Date.now() + lifetime, "Expired relay state")
+  // The workstation and relay clocks can differ; the originating database still enforces its ten-minute expiry.
+  invariant(ticket.expires > Date.now() && ticket.expires <= Date.now() + lifetime + clockSkew, "Expired relay state")
   invariant(
     ticket.callback === config.callback && ticket.origin !== config.origin && allows(ticket.origin, config),
     "Invalid relay destination"
