@@ -1,8 +1,9 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { refreshStock, stockSelection } from "@/server/stock"
 
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
@@ -18,4 +19,4 @@ export async function POST(request: Request) {
     return errorResponse("connectBeforeStockRefresh", 409, headers)
   }
   return Response.json(result, { status: 202, headers })
-}
+})

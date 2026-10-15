@@ -6,6 +6,7 @@ import { ClientMessages } from "@/components/client-messages"
 import { ThemeScript } from "@/components/theme-provider"
 import { direction, type Locale } from "@/i18n/locales"
 import { cn } from "@/lib/utils"
+import { withRequest } from "@/server/next-request"
 import geistCyrillic from "@/styles/fonts/geist-cyrillic.woff2"
 import nastaliq from "@/styles/fonts/noto-nastaliq-urdu.woff2"
 import devanagari from "@/styles/fonts/noto-sans-devanagari.woff2"
@@ -48,20 +49,20 @@ const fontFace = ({ family, file, weight, unicodeRange }: Face) =>
 const fontStack = ({ family }: Face) =>
   ({ "--font-geist-sans": `${family}, ${geistSans.style.fontFamily}` }) as React.CSSProperties
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common")
   return {
     // Each page names itself, such as "Products | Copacker".
     title: { template: "%s | Copacker", default: "Copacker" },
     description: t("appDescription")
   }
-}
+})
 
 // What every page shares: the document in the page's language, its fonts and the skip link. The app's stylesheet,
 // providers and messages come with its own layouts (AppProviders), and the marketing pages bring only what they use,
 // so a visitor's first page carries none of the app. The error page shows outside every other layout, so its messages
 // are here.
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default withRequest(async function RootLayout({ children }: { children: React.ReactNode }) {
   const [locale, t] = await Promise.all([getLocale(), getTranslations("common")])
   const face = localeFaces[locale]
   if (face) {
@@ -89,4 +90,4 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </body>
     </html>
   )
-}
+})

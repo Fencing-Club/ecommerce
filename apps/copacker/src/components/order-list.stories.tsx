@@ -84,6 +84,33 @@ export const WithoutValues = meta.story({
   }
 })
 
+// The server builds the destination while client components translate the surrounding UI. Both must use Urdu.
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  args: {
+    rows: [
+      {
+        ...toAmazon,
+        order: {
+          ...toAmazon.order,
+          data: {
+            ...amazonOrder,
+            reference: "PO-1050",
+            items: amazonOrder.items.map((item, index) => ({ ...item, amazonNetwork: index === 0 ? "fba" : "awd_us" }))
+          }
+        }
+      }
+    ],
+    showValue: false,
+    drafts: false
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute("dir", "rtl")
+    await expect(canvas.getByText("Amazon FBA اور AWD US")).toBeInTheDocument()
+    await expect(canvas.getByRole("link", { name: "PO-1050" })).toHaveAttribute("href", "/orders/order-PO-1050")
+  }
+})
+
 // On a phone each row stacks to its reference and status, with the supplier under the reference and the value below,
 // instead of scrolling sideways.
 export const Phone = meta.story({

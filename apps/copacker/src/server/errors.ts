@@ -1,8 +1,8 @@
-import { getTranslations } from "next-intl/server"
 import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
 import { AccessError, type ErrorKey, LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
+import { localization } from "@/server/localization"
 
 type Values = Record<string, string | number>
 
@@ -30,18 +30,10 @@ type MessageKey = MessageKeys<Messages, NestedKeyOf<Messages>>
 // The request's "errors" messages, and all messages, or English outside a request (the worker, and tests that call
 // routes directly).
 export async function errorText(): Promise<(key: ErrorKey, values?: Values) => string> {
-  try {
-    return await getTranslations("errors")
-  } catch {
-    return createTranslator({ locale: "en", messages: english, namespace: "errors" })
-  }
+  return createTranslator({ ...(await localization()), namespace: "errors" })
 }
 async function messagesText(): Promise<(key: MessageKey) => string> {
-  try {
-    return await getTranslations()
-  } catch {
-    return createTranslator({ locale: "en", messages: english })
-  }
+  return createTranslator(await localization())
 }
 
 // Whether a message, such as a zod issue's, is the full key of a message ("orders.builder.chooseSupplier") rather than

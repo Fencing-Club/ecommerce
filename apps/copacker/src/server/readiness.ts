@@ -1,6 +1,6 @@
 import { packingSchema, validatePacking, type OrderInput, type Packing } from "@repo/aisle"
+import { type ServerText, serverTextInEnglish } from "@/i18n/server-text"
 import type { documents, shipments, ShipmentState } from "../db/schema"
-import { type ServerText, serverTextInEnglish } from "./text"
 
 type Shipment = typeof shipments.$inferSelect
 type Document = typeof documents.$inferSelect

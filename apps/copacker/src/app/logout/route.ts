@@ -1,9 +1,10 @@
 import { signOut } from "@workos-inc/authkit-nextjs"
 import { cookies } from "next/headers"
 import { errorTextResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { appUrl, isAppOrigin, resumeCookie, returnPath, siteUrlFor } from "@/server/security"
 // A form can name the page to continue on after signing out, in a `next` field.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorTextResponse("forbidden", 403)
   }
@@ -19,4 +20,4 @@ export async function POST(request: Request) {
     })
   }
   await signOut({ returnTo: siteUrlFor(request.headers) })
-}
+})

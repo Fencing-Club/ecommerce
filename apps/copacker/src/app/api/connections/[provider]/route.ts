@@ -13,10 +13,14 @@ import { ebayApp, shopifyTokenResponse, storedShopifyToken } from "@/server/conn
 import { queueEbaySubscription } from "@/server/ebay-events"
 import { errorResponse } from "@/server/errors"
 import { startFirstSync } from "@/server/first-sync"
+import { withRequest } from "@/server/next-request"
 import { siteUrlFor, token, hash, encrypt, verifyShopifyHmac } from "@/server/security"
 import { queueShopifySubscription } from "@/server/shopify-webhooks"
 
-export async function GET(request: Request, context: { params: Promise<{ provider: string }> }) {
+export const GET = withRequest(async function GET(
+  request: Request,
+  context: { params: Promise<{ provider: string }> }
+) {
   const s = await session()
   requireAdmin(s)
   requireBuyer(s)
@@ -181,4 +185,4 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   }
   await startFirstSync(s.org, provider)
   return Response.redirect(`${site}/settings?connected=${provider}#integrations`)
-}
+})

@@ -10,6 +10,7 @@ import { requirePage, session, titleFor } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
 import { forwarderAddresses } from "@/server/forwarders"
+import { withRequest } from "@/server/next-request"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 import { lineDefaultsFor } from "@/server/product-defaults"
 import { withVariantFields } from "@/server/product-fields"
@@ -47,7 +48,11 @@ async function reorderLines(orgId: string, raw: string | string[] | undefined) {
   })
 }
 
-export default async function NewOrder({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
+export default withRequest(async function NewOrder({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[]>>
+}) {
   const [s, t] = await Promise.all([session(), getTranslations("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -89,4 +94,4 @@ export default async function NewOrder({ searchParams }: { searchParams: Promise
       initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
     />
   )
-}
+})

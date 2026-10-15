@@ -6,6 +6,7 @@ import { documents, shipments } from "@/db/schema"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { session, requirePage } from "@/server/auth"
 import { errorTextResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
 import { type Session, requireMembership } from "@/server/workspace-session"
@@ -39,7 +40,7 @@ async function canRead(s: Session, doc: typeof documents.$inferSelect) {
     notFound()
   }
 }
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
     id = z.uuid().parse((await context.params).id)
   const [doc] = await db()
@@ -76,4 +77,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       "Content-Security-Policy": "sandbox"
     }
   })
-}
+})

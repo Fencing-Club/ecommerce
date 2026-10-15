@@ -4,9 +4,10 @@ import { redirect } from "next/navigation"
 import { Landing } from "@/components/marketing/landing"
 import { homeFor } from "@/lib/navigation"
 import { session, signedInUser } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { appUrl } from "@/server/security"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketing.metadata")
   const title = t("title")
   const description = t("description")
@@ -23,16 +24,16 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
   }
-}
+})
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
 // Buyers land on the Overview, and suppliers and forwarders on their purchase orders, or a member on their first page.
 // Anyone signed out gets the marketing page.
-export default async function Home() {
+export default withRequest(async function Home() {
   if (!(await signedInUser())) {
     return <Landing />
   }
   const s = await session()
   redirect(homeFor(s.org.kind, s))
-}
+})

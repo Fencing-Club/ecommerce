@@ -13,18 +13,19 @@ import { connections, suppliers } from "@/db/schema"
 import { can, isAdmin } from "@/lib/access"
 import { forwarderOrders, visibleOrders } from "@/server/access"
 import { noAccessTitle, requirePage, session } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { supplierOrders, withoutTotals } from "@/server/supplier-workspace"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const [s, t] = await Promise.all([session(), getTranslations("orders.index")])
   if (!can(s, "orders")) {
     return noAccessTitle()
   }
   return { title: s.org.kind === "supplier" ? t("supplierTitle") : t("title") }
-}
+})
 
-export default async function OrdersPage({
+export default withRequest(async function OrdersPage({
   searchParams
 }: {
   searchParams: Promise<{ status?: string; tab?: string }>
@@ -142,4 +143,4 @@ export default async function OrdersPage({
       )}
     </>
   )
-}
+})

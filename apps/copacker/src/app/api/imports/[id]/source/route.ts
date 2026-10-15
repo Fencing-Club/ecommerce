@@ -5,10 +5,11 @@ import { poImports } from "@/db/schema"
 import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorTextResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { getFile } from "@/server/storage"
 import { requireMembership } from "@/server/workspace-session"
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -34,4 +35,4 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       "content-security-policy": "sandbox"
     }
   })
-}
+})

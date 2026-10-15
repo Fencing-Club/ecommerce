@@ -24,6 +24,7 @@ import { formatPhone, phoneHref } from "@/lib/phone"
 import { accessibleOrder } from "@/server/access"
 import { amazonShipmentLinks } from "@/server/amazon-shipments"
 import { requirePage, session, titleFor } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { proposalState } from "@/server/order-proposals"
 import { unpricedDraft, unpricedOrder } from "@/server/prices"
 import { finishedStates, releasedStates, reservedPieces } from "@/server/readiness"
@@ -33,7 +34,7 @@ import { readyDateFormat, shipmentDestinations } from "../destination"
 
 export const generateMetadata = titleFor("shipments.detail.metaTitle", "shipments")
 
-export default async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
+export default withRequest(async function ShipmentPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requirePage(s, "shipments")
   const [t, format, locale] = await Promise.all([getTranslations("shipments.detail"), getFormatter(), getLocale()])
@@ -442,4 +443,4 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
       )}
     </>
   )
-}
+})

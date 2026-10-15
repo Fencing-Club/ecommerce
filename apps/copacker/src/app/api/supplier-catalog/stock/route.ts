@@ -6,6 +6,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 
 const stockInput = z.strictObject({
@@ -17,7 +18,7 @@ const stockInput = z.strictObject({
 
 // Saves the on hand counts changed on the Inventory page, all or none. A count replaces what was there, so it needs no
 // revision: the supplier counted what's on the shelf now.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -62,4 +63,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "stockNotSaved") }, { status: failureStatus(error) })
   }
-}
+})

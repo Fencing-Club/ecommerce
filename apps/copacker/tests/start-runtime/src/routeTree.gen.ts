@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CallbackRouteImport } from './routes/callback'
+import { Route as LocalizationRouteImport } from './routes/localization'
 import { Route as ProbeRouteImport } from './routes/probe'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as LoginProviderRouteImport } from './routes/login.$provider'
@@ -29,6 +30,11 @@ const AuthRoute = AuthRouteImport.update({
 const CallbackRoute = CallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocalizationRoute = LocalizationRouteImport.update({
+  id: '/localization',
+  path: '/localization',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProbeRoute = ProbeRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/localization': typeof LocalizationRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/localization': typeof LocalizationRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/localization': typeof LocalizationRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
@@ -75,14 +84,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/callback' | '/probe' | '/workspace' | '/login/$provider'
+    | '/'
+    | '/auth'
+    | '/callback'
+    | '/localization'
+    | '/probe'
+    | '/workspace'
+    | '/login/$provider'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/callback' | '/probe' | '/workspace' | '/login/$provider'
+  to:
+    | '/'
+    | '/auth'
+    | '/callback'
+    | '/localization'
+    | '/probe'
+    | '/workspace'
+    | '/login/$provider'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/callback'
+    | '/localization'
     | '/probe'
     | '/workspace'
     | '/login/$provider'
@@ -92,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   CallbackRoute: typeof CallbackRoute
+  LocalizationRoute: typeof LocalizationRoute
   ProbeRoute: typeof ProbeRoute
   WorkspaceRoute: typeof WorkspaceRoute
   LoginProviderRoute: typeof LoginProviderRoute
@@ -118,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/callback'
       fullPath: '/callback'
       preLoaderRoute: typeof CallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/localization': {
+      id: '/localization'
+      path: '/localization'
+      fullPath: '/localization'
+      preLoaderRoute: typeof LocalizationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/probe': {
@@ -148,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   CallbackRoute: CallbackRoute,
+  LocalizationRoute: LocalizationRoute,
   ProbeRoute: ProbeRoute,
   WorkspaceRoute: WorkspaceRoute,
   LoginProviderRoute: LoginProviderRoute,

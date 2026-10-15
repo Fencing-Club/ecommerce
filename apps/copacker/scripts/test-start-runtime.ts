@@ -2,7 +2,10 @@ import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { parseEnv } from "node:util"
+import { createFormatter, createTranslator } from "use-intl"
 import { createBuilder, preview } from "vite"
+import { direction, locales } from "../src/i18n/locales"
+import { loadMessages } from "../src/i18n/messages"
 
 const configFile = fileURLToPath(new URL("../tests/start-runtime/vite.config.ts", import.meta.url))
 const remote = process.argv[2] === "--remote" ? process.argv[3] : undefined
@@ -98,6 +101,38 @@ try {
   const workspace = await request("/workspace", { method: "POST", headers: { Origin: origin } })
   assert.equal(workspace.status, 401, "Workspace queries require a validated session")
 
+  // Each invocation must keep its own language and time zone while all nine catalogs load concurrently.
+  await Promise.all(
+    locales.flatMap((locale) =>
+      ["America/Los_Angeles", "Asia/Tokyo"].map(async (timeZone) => {
+        const response = await request("/localization", {
+          headers: { "Accept-Language": locale, Cookie: `tz=${timeZone}` }
+        })
+        assert.equal(response.status, 200)
+        assert.equal(response.headers.getSetCookie().length, 0)
+        const messages = await loadMessages(locale)
+        const config = { locale, messages, timeZone }
+        assert.deepEqual(await response.json(), {
+          locale,
+          direction: direction(locale),
+          timeZone,
+          failure: messages.errors.requestFailed,
+          pricing: messages.supplier.pricing.priceFirst,
+          requirement: createTranslator({ ...config, namespace: "shipments.requirements" })("bundle", { count: 2 }),
+          date: createFormatter(config).dateTime(new Date("2026-10-15T01:30:00Z"), { dateStyle: "full" }),
+          label: messages.server.overview.due.overdue
+        })
+      })
+    )
+  )
+  const fallback = await request("/localization", {
+    headers: { "Accept-Language": "unsupported", Cookie: "tz=invalid" }
+  })
+  assert.equal(fallback.status, 200)
+  const fallbackData = await fallback.json()
+  assert.equal(fallbackData.locale, "en")
+  assert.equal(fallbackData.timeZone, "UTC")
+
   const saved = await request("/probe", { method: "POST", headers: { Origin: origin } })
   assert.equal(saved.status, 200, await saved.text())
   const cookies = saved.headers.getSetCookie()
@@ -135,7 +170,7 @@ try {
     })
   )
   process.stdout.write(
-    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
+    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
   )
 } finally {
   await server?.close()

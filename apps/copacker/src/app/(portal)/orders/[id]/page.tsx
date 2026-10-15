@@ -28,6 +28,7 @@ import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { noAccessTitle, requirePage, session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
+import { withRequest } from "@/server/next-request"
 import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
@@ -40,16 +41,16 @@ type Props = { params: Promise<{ id: string }> }
 
 // The PO's reference names the tab. Looking the PO up here too gives a malformed or unknown id the not-found page's
 // title.
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [s, { id }] = await Promise.all([session(), params])
   if (!can(s, "orders")) {
     return noAccessTitle()
   }
   const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
   return { title: order.data.reference }
-}
+})
 
-export default async function OrderPage({ params }: Props) {
+export default withRequest(async function OrderPage({ params }: Props) {
   const [s, t, common, format, locale] = await Promise.all([
     session(),
     getTranslations("orders"),
@@ -544,7 +545,7 @@ export default async function OrderPage({ params }: Props) {
       </div>
     </>
   )
-}
+})
 
 // A line's supplier SKU, or each component's for a bundle, so the supplier knows what to make.
 function SupplierSku({ item, notSet }: { item: OrderItem; notSet: string }) {

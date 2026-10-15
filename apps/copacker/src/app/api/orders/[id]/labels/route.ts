@@ -2,12 +2,13 @@ import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { ProductBarcodeError, orderLabelsPdf } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
 
 // All of a PO's current product labels as one PDF, in line order.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404, headers)
@@ -33,4 +34,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     }
     return errorResponse("labelsNotCombined", 500, headers)
   }
-}
+})

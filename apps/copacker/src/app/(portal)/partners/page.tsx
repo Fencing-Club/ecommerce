@@ -9,6 +9,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { can } from "@/lib/access"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
+import { withRequest } from "@/server/next-request"
 import { listPartners, type PartnerForwarder, type PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
 
@@ -57,7 +58,7 @@ function tabHref(tab: string, q: string) {
 
 // Everyone the buyer works with in one list: suppliers and freight forwarders. `?q=` filters by name, such as a
 // header search for a partner.
-export default async function PartnersPage({
+export default withRequest(async function PartnersPage({
   searchParams
 }: {
   searchParams: Promise<{ type?: string; q?: string | string[] }>
@@ -160,4 +161,4 @@ export default async function PartnersPage({
       </Card>
     </>
   )
-}
+})

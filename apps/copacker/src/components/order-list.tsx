@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { db } from "@/db"
 import { contacts, type orders } from "@/db/schema"
 import { cn } from "@/lib/utils"
+import { withRequest } from "@/server/next-request"
 import { requirementTranslator } from "@/server/requirements"
 import { LinkRow } from "./link-row"
 import { TabLinks } from "./tab-links"
@@ -64,7 +65,7 @@ const columns = {
 }
 
 // The purchase order list: status tabs, then a row per PO that opens it from anywhere on the row.
-export async function OrderList({
+export const OrderList = withRequest(async function OrderList({
   rows,
   status,
   showValue,
@@ -159,4 +160,4 @@ export async function OrderList({
       </div>
     </div>
   )
-}
+})

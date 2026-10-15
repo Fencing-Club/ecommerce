@@ -8,10 +8,11 @@ import { requirePage, session, titleFor } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
 import { importProposalSchema } from "@/server/import-proposal"
+import { withRequest } from "@/server/next-request"
 
 export const generateMetadata = titleFor("orders.review.title", "orders", "edit")
 
-export default async function ReviewImport({ params }: { params: Promise<{ id: string }> }) {
+export default withRequest(async function ReviewImport({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -65,4 +66,4 @@ export default async function ReviewImport({ params }: { params: Promise<{ id: s
       suppliers={rows}
     />
   )
-}
+})

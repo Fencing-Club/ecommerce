@@ -5,6 +5,7 @@ import { connections, stockSnapshots } from "@/db/schema"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { stockSource, stockScopes, stockSelection } from "@/server/stock"
 
 const cursorSchema = z.strictObject({
@@ -36,7 +37,7 @@ const querySchema = z.strictObject({
 // A Shopify variation's cost and price, which the stock rows carry for the Overview and Restock.
 const moneyFields = new Set(["unitCostMinor", "costCurrency", "priceMinor", "priceCurrency"])
 
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
@@ -135,4 +136,4 @@ export async function GET(request: Request) {
     },
     { headers }
   )
-}
+})

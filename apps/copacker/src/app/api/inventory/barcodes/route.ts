@@ -1,6 +1,7 @@
 import { type ErrorKey } from "@/i18n/errors"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import {
   ProductBarcodeError,
   productLabelFile,
@@ -24,7 +25,7 @@ function variantFrom(request: Request) {
 }
 
 // Uploads a variation's barcode label: form fields variantId and file, a one-page PDF.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
   }
@@ -41,9 +42,9 @@ export async function POST(request: Request) {
   } catch (error) {
     return failure(error, "barcodeNotUploaded")
   }
-}
+})
 
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   requirePage(s, "products")
   const variantId = variantFrom(request)
@@ -66,9 +67,9 @@ export async function GET(request: Request) {
   } catch (error) {
     return failure(error, "barcodeNotDownloaded")
   }
-}
+})
 
-export async function DELETE(request: Request) {
+export const DELETE = withRequest(async function DELETE(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
   }
@@ -84,4 +85,4 @@ export async function DELETE(request: Request) {
   } catch (error) {
     return failure(error, "barcodeNotRemoved")
   }
-}
+})

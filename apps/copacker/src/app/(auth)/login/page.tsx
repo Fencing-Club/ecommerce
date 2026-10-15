@@ -7,17 +7,18 @@ import { SignInForm } from "@/components/auth/sign-in-form"
 import { SocialSignIn } from "@/components/auth/social-sign-in"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { signedInUser } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { returnPath } from "@/server/security"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
   return { title: t("login.title") }
-}
+})
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
 
-export default async function Login({
+export default withRequest(async function Login({
   searchParams
 }: {
   searchParams: Promise<{ next?: string; email?: string; error?: string }>
@@ -49,4 +50,4 @@ export default async function Login({
       </AuthSwitch>
     </AuthPage>
   )
-}
+})

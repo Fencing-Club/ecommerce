@@ -1,10 +1,11 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { sheetCsv, sheetRows, sheetWorkbook } from "@/server/product-sheet"
 import { productList } from "@/server/supplier-products"
 
 // Every product and variant in the product template, as CSV or an Excel workbook, to edit and import again.
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   if (s.org.kind !== "supplier") {
     return errorResponse("supplierWorkspaceRequired", 403)
@@ -34,4 +35,4 @@ export async function GET(request: Request) {
       "Content-Disposition": `attachment; filename="products-${day}.xlsx"`
     }
   })
-}
+})

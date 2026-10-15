@@ -20,6 +20,16 @@ another namespace needs it added to its page's list.
 Dates format in the time zone the browser last reported (the `tz` cookie), so the server and browser render the same
 text. Worker jobs and emails have no request: use `translatorFor(profile.locale)` from `src/i18n/translator.ts`.
 
+Shared server operations use `src/server/localization.ts`, which holds a lazy configuration lookup in
+`AsyncLocalStorage`. Each request owns its lookup, including overlapping Workers invocations. Nested operations reuse
+it; requests that never need translated text do not read profiles or sessions for localization. The Next entry points
+establish it with `withRequest` from `src/server/next-request.ts`; a server component that React invokes separately must
+also establish that boundary. `resolveLocalization` validates profile/browser preferences and the reported time zone.
+Server errors, pricing, preparation instructions and store dates use standalone `use-intl` through this context.
+Outside a request they use English/UTC, and `requestLocale()` returns `undefined` for email-job payloads. Storybook
+mocks the context with its selected toolbar language. The Start compatibility probe exercises the same domain helpers
+with browser preferences; production profile resolution and route integration remain part of the route conversion.
+
 Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
 Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
 
@@ -48,6 +58,7 @@ needs room past the line too.
 ## In code
 
 - Server components, `generateMetadata`, route handlers: `const t = await getTranslations("orders")`.
+- Framework-independent server operations: `createTranslator({ ...(await localization()), namespace: "orders" })`.
 - Client components: `const t = useTranslations("orders")`, imported from `use-intl`.
 - Page titles: replace `export const metadata` with `generateMetadata` that calls `getTranslations`.
 - Numbers, dates and currency: use `useFormatter()`/`getFormatter()`, or pass `useLocale()`/`getLocale()` to `Intl` and

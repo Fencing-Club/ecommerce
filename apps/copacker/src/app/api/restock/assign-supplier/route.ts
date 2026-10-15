@@ -1,11 +1,12 @@
 import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { ProductDefaultsError, assignProductSupplier } from "@/server/product-defaults"
 import { isAppOrigin } from "@/server/security"
 
 // Sets the supplier for several products at once, from restock.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
@@ -23,4 +24,4 @@ export async function POST(request: Request) {
     }
     return errorResponse("supplierNotSaved", 500, headers)
   }
-}
+})

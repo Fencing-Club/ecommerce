@@ -1,9 +1,10 @@
 import { type AmazonNetwork, amazonNetworkNames, type OrderInput } from "@repo/aisle"
 import { inArray } from "drizzle-orm"
-import { getTranslations } from "next-intl/server"
+import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"
 import { db } from "@/db"
 import { contacts } from "@/db/schema"
+import { localization } from "@/server/localization"
 
 type Destination = Pick<OrderInput, "destination" | "deliveryId" | "items">
 
@@ -11,12 +12,13 @@ type Destination = Pick<OrderInput, "destination" | "deliveryId" | "items">
 // Amazon FBA, or the delivery address by name.
 export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliveryId">>) {
   const ids = [...new Set(orders.flatMap((order) => order.deliveryId ?? []))]
-  const [common, places] = await Promise.all([
-    getTranslations("common"),
+  const [config, places] = await Promise.all([
+    localization(),
     ids.length
       ? db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, ids))
       : []
   ])
+  const common = createTranslator({ ...config, namespace: "common" })
   return (order: Destination, network: AmazonNetwork | null) => {
     if (order.destination === "amazon") {
       // A shipment gets its network when it's queued; until then it's its PO lines', when they all go to one.

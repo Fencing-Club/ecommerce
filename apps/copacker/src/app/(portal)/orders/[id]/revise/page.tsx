@@ -6,12 +6,13 @@ import { OrderReviser } from "@/components/supplier/order-reviser"
 import { db } from "@/db"
 import { organizations } from "@/db/schema"
 import { requirePage, session, titleFor } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { reviseContext } from "@/server/order-proposals"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 
 export const generateMetadata = titleFor("orders.revise.title", "orders", "edit")
 
-export default async function ReviseOrderPage({ params }: { params: Promise<{ id: string }> }) {
+export default withRequest(async function ReviseOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const [s, t] = await Promise.all([session(), getTranslations("orders.revise")])
   // A malformed id, such as /orders/abc/revise, finds nothing, like an unknown one.
   const parsed = z.uuid().safeParse((await params).id)
@@ -104,4 +105,4 @@ export default async function ReviseOrderPage({ params }: { params: Promise<{ id
       })}
     />
   )
-}
+})

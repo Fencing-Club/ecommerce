@@ -2,6 +2,7 @@ import { z } from "zod"
 import { negotiateLocale } from "@/i18n/locales"
 import { errorResponse } from "@/server/errors"
 import { joinWaitlist, sendSignupNotice, sendWelcome } from "@/server/mailing-list"
+import { withRequest } from "@/server/next-request"
 import { clientAddress, rateLimit } from "@/server/rate-limit"
 
 const signup = z.object({
@@ -16,7 +17,7 @@ const limited = rateLimit({ period: 10 * 60 * 1000, allowed: 5 })
 // The marketing page's waitlist signup, a WorkOS waitlist entry. Anyone signed out can use it. The entry keeps the
 // language the page was shown in. Someone new to it gets a welcome email in that language, and CONTACT_EMAIL hears
 // they joined; if either email fails, they're still on the waitlist.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null)
   if (typeof body === "object" && body && "website" in body && body.website) {
     return Response.json({ ok: true })
@@ -45,4 +46,4 @@ export async function POST(request: Request) {
     ])
   }
   return Response.json({ ok: true })
-}
+})

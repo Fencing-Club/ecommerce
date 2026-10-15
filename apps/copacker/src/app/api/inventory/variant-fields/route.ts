@@ -1,10 +1,11 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { saveVariantFields, VariantFieldsError } from "@/server/product-fields"
 import { isAppOrigin } from "@/server/security"
 
 // Saves a variation's supplier SKU, ASIN or stock targets, which Copacker keeps.
-export async function PATCH(request: Request) {
+export const PATCH = withRequest(async function PATCH(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
@@ -22,4 +23,4 @@ export async function PATCH(request: Request) {
     }
     return errorResponse("variantFieldsNotSaved", 500, headers)
   }
-}
+})

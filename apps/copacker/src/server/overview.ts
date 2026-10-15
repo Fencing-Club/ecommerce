@@ -13,6 +13,7 @@ import {
   stockSnapshots,
   suppliers
 } from "@/db/schema"
+import { type ServerText, serverTextInEnglish } from "@/i18n/server-text"
 import { type CoverBucket, coverBucket, coverBuckets } from "@/lib/cover"
 import { comparisons, rangeLabel, readPeriod } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
@@ -53,7 +54,7 @@ import {
   salesSources
 } from "./sales-orders"
 import { excludedShopifyTags } from "./shopify-tags"
-import { type ServerText, serverText, serverTextInEnglish } from "./text"
+import { serverText } from "./text"
 
 const day = 86400000
 // A sync that hasn't finished within this long is out of date.

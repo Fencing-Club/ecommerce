@@ -7,6 +7,7 @@ import { accessibleOrder } from "@/server/access"
 import { session, requirePage } from "@/server/auth"
 import { packingDocuments } from "@/server/documents"
 import { errorTextResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
@@ -14,7 +15,7 @@ import { getFile } from "@/server/storage"
 import { requireMembership } from "@/server/workspace-session"
 // The supplier's packet, to print: the packing list and checklist, the product labels and suffocation warning labels
 // for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels and the buyer's shipping labels.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const s = await session(),
     id = z.uuid().parse((await context.params).id)
   requirePage(s, "shipments")
@@ -97,4 +98,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       "Content-Security-Policy": "sandbox"
     }
   })
-}
+})

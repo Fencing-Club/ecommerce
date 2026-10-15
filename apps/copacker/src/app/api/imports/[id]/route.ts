@@ -7,9 +7,10 @@ import { requireBuyer } from "@/server/authorization"
 import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
 import { importProposalSchema } from "@/server/import-proposal"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -32,8 +33,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .from(poImports)
     .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
   return row ? Response.json(row) : errorResponse("importNotFound", 404)
-}
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+})
+export const DELETE = withRequest(async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -60,9 +64,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return true
   })
   return result ? Response.json({ status: "cancelled" }) : errorResponse("importCannotBeCancelled", 409)
-}
+})
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withRequest(async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -129,9 +136,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     )
     .returning({ revision: poImports.revision })
   return updated[0] ? Response.json(updated[0]) : errorResponse("importChangedCorrections", 409)
-}
+})
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withRequest(async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -162,4 +169,4 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return { id, revision, status: "queued" }
   })
   return retried ? Response.json(retried, { status: 202 }) : errorResponse("onlyFailedImportsRetry", 409)
-}
+})

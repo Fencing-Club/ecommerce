@@ -7,6 +7,7 @@ import type { ProductImage } from "@/lib/supplier-product"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { errorResponse, errorTextResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 import { getFile, putFile } from "@/server/storage"
 
@@ -25,7 +26,7 @@ const kinds = [
 const keyPattern = /^supplier-images\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|gif|webp)$/
 
 // Stores a product photo a supplier uploads. The product keeps it once the product is saved.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -57,10 +58,10 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "uploadFailed") }, { status: failureStatus(error) })
   }
-}
+})
 
 // A product photo, for the supplier that owns it and the buyers it supplies.
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   const key = new URL(request.url).searchParams.get("key") ?? ""
   const match = keyPattern.exec(key)
@@ -92,4 +93,4 @@ export async function GET(request: Request) {
       "X-Content-Type-Options": "nosniff"
     }
   })
-}
+})

@@ -6,8 +6,8 @@ import { db, type Transaction } from "@/db"
 import { contacts, forwarders, jobs, memberships, orderRevisions, orders, organizations, shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
+import { requestLocale } from "@/server/localization"
 import { hash, token } from "./security"
-import { requestLocale } from "./text"
 
 const week = 7 * 86400000
 

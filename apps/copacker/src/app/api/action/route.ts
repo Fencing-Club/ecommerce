@@ -38,7 +38,9 @@ import {
   saveForwarderAddress
 } from "@/server/forwarders"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
+import { requestLocale } from "@/server/localization"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
+import { withRequest } from "@/server/next-request"
 import { joinWorkspace, setUpWorkspace } from "@/server/onboarding"
 import {
   createOrder,
@@ -79,7 +81,7 @@ import {
   resendInvitation,
   transferOwnership
 } from "@/server/team"
-import { requestLocale, serverText } from "@/server/text"
+import { serverText } from "@/server/text"
 import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
@@ -91,7 +93,7 @@ const signInActions = new Map<string, (request: SignInRequest, data: unknown) =>
   ["auth.forgotPassword", requestPasswordReset],
   ["auth.resetPassword", resetPassword]
 ])
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -734,4 +736,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error) }, { status: failureStatus(error) })
   }
-}
+})

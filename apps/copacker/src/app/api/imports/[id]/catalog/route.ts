@@ -7,9 +7,10 @@ import { requireBuyer } from "@/server/authorization"
 import { catalogMatches } from "@/server/catalog-matches"
 import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { withVariantFields } from "@/server/product-fields"
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -48,4 +49,4 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   } catch {
     return errorResponse("catalogSearchUnavailable", 503)
   }
-}
+})

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import { db } from "@/db"
+import { type ServerKey, type ServerText, serverTextInEnglish } from "@/i18n/server-text"
 import { type DayRange, rangeDays } from "@/lib/date-range"
 import { addDays, zonedStart } from "@/lib/time-zone"
 import { adsCharge } from "./amazon-ads"
@@ -7,7 +8,7 @@ import { freightDescriptions, freightPerSku } from "./amazon-shipments"
 import { amazonReplacement, countedOrder } from "./counted-orders"
 import type { SalesSource } from "./sales-orders"
 import { taggedWith } from "./shopify-tags"
-import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
+import { serverText } from "./text"
 
 // Money here is net product sales: what customers paid for the products, after discounts, without tax, shipping or
 // tips. Shopify lines count at their current quantity (removed and refunded units are gone), with their share of

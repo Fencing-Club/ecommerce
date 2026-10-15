@@ -3,12 +3,13 @@ import { z } from "zod"
 import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { warningLabelFile } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
 
 // The PO's sheet of suffocation warning labels, when any of its lines needs them.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404, headers)
@@ -35,4 +36,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     unstable_rethrow(error)
     return errorResponse("warningLabelsNotMade", 500, headers)
   }
-}
+})

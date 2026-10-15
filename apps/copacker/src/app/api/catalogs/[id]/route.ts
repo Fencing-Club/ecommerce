@@ -3,9 +3,13 @@ import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { deleteCatalog } from "@/server/catalogs"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withRequest(async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -21,4 +25,4 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       { status: failureStatus(error) }
     )
   }
-}
+})

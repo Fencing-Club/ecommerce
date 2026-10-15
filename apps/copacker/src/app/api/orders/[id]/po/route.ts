@@ -4,12 +4,13 @@ import { accessibleOrder } from "@/server/access"
 import { requirePage, session } from "@/server/auth"
 import { filedPo } from "@/server/documents"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 
 const headers = { "Cache-Control": "private, no-store" }
 
 // The PO document, to download and share with a supplier that hasn't joined Copacker. Downloading serves the filed PDF
 // rather than a fresh one, so it stays the document the purchase order's page links to.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await context.params).id)
   if (!id.success) {
     return errorResponse("orderNotFound", 404, headers)
@@ -34,4 +35,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     unstable_rethrow(error)
     return errorResponse("orderDocumentNotCreated", 500, headers)
   }
-}
+})

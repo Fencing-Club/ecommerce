@@ -5,9 +5,10 @@ import { suppliers } from "@/db/schema"
 import { can } from "@/lib/access"
 import { session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 
 // The buyer's suppliers and lead times, for the restock supplier filter.
-export async function GET() {
+export const GET = withRequest(async function GET() {
   const headers = { "Cache-Control": "private, no-store" }
   const s = await session()
   if (s.org.kind !== "buyer") {
@@ -27,4 +28,4 @@ export async function GET() {
     .where(and(eq(suppliers.buyerOrgId, s.org.id), isNull(suppliers.removedAt)))
     .orderBy(suppliers.name)
   return Response.json(rows, { headers })
-}
+})

@@ -28,6 +28,7 @@ import { amazonSelfAuthEnabled, ebayApp } from "@/server/connections"
 import { ownedWorkspaces } from "@/server/deletion"
 import { readLocationMappings } from "@/server/inventory-location-settings"
 import { listMonthlyCosts, monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
+import { withRequest } from "@/server/next-request"
 import { reportingCurrency } from "@/server/overview-sales"
 import { restockSettings } from "@/server/restock-report"
 import { salesHistoryDays } from "@/server/sales-orders"
@@ -35,14 +36,14 @@ import { shopifyOrderTags, untaggedShopifyOrders } from "@/server/shopify-tags"
 import { storeTimeZone } from "@/server/store-time-zone"
 import { teamOf } from "@/server/team"
 
-export async function generateMetadata() {
+export const generateMetadata = withRequest(async function generateMetadata() {
   const t = await getTranslations("settings")
   return { title: t("title") }
-}
+})
 
 // The person's own profile first, then the workspace's settings, each as a section: its title and a short description
 // on the left, its cards on the right, stacked on smaller screens.
-export default async function Settings() {
+export default withRequest(async function Settings() {
   const s = await session()
   // The viewer's computer's zone, as their browser last reported it.
   const computerZone = await storeTimeZone({ timeZone: null })
@@ -304,7 +305,7 @@ export default async function Settings() {
       </div>
     </>
   )
-}
+})
 
 function Section({
   id,

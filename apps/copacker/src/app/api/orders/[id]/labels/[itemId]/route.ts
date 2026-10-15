@@ -2,12 +2,16 @@ import { unstable_rethrow } from "next/navigation"
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { ProductBarcodeError, orderLineLabel } from "@/server/product-barcodes"
 
 const headers = { "Cache-Control": "private, no-store" }
 
 // One PO line's product label, made from its product's current label.
-export async function GET(_request: Request, context: { params: Promise<{ id: string; itemId: string }> }) {
+export const GET = withRequest(async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string; itemId: string }> }
+) {
   const params = z.object({ id: z.uuid(), itemId: z.uuid() }).safeParse(await context.params)
   if (!params.success) {
     return errorResponse("labelNotFound", 404, headers)
@@ -33,4 +37,4 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     }
     return errorResponse("labelNotMade", 500, headers)
   }
-}
+})

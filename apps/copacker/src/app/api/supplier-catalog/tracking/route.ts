@@ -5,6 +5,7 @@ import { supplierProducts } from "@/db/schema"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 
 const trackingInput = z.strictObject({
@@ -14,7 +15,7 @@ const trackingInput = z.strictObject({
 })
 
 // Turns stock counting on or off for a product, or lets POs order it past what's on hand, from the Inventory page.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -37,4 +38,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "saveFailedShort") }, { status: failureStatus(error) })
   }
-}
+})

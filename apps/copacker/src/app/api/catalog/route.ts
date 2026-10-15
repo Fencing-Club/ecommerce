@@ -4,9 +4,10 @@ import { connections } from "@/db/schema"
 import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { shopifyFor, amazonFor, connection } from "@/server/connections"
+import { withRequest } from "@/server/next-request"
 import { lineDefaultsFor } from "@/server/product-defaults"
 import { withVariantFields } from "@/server/product-fields"
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   requireBuyer(s)
   // Purchase orders' product picker reads it.
@@ -66,4 +67,4 @@ export async function GET(request: Request) {
       }))
     )
   }
-}
+})

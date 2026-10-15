@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { Contact } from "@/components/marketing/contact"
+import { withRequest } from "@/server/next-request"
 import { appUrl } from "@/server/security"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketing")
   const title = t("contact.metadata.title")
   const description = t("contact.metadata.description")
@@ -20,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
   }
-}
+})
 
 // Rendered per request, like the home page, so its links carry the deployed address rather than the build's.
 export const dynamic = "force-dynamic"

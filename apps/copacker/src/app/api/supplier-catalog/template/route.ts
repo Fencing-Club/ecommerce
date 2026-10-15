@@ -1,8 +1,9 @@
 import { session } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { sheetCsv, sheetWorkbook } from "@/server/product-sheet"
 
 // The blank product template, as an Excel workbook with instructions, or as CSV.
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   const csv = new URL(request.url).searchParams.get("format") === "csv"
   return csv
@@ -20,4 +21,4 @@ export async function GET(request: Request) {
           "Cache-Control": "no-store"
         }
       })
-}
+})

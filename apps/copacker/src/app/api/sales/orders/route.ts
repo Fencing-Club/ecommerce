@@ -2,6 +2,7 @@ import { z } from "zod"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { listSalesOrders, salesSources } from "@/server/sales-orders"
 
 const inputSchema = z.object({
@@ -11,7 +12,7 @@ const inputSchema = z.object({
 })
 
 // Stored sales orders, newest first.
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   const s = await session()
   if (s.org.kind !== "buyer") {
@@ -34,4 +35,4 @@ export async function GET(request: Request) {
     prices ? list : { ...list, orders: list.orders.map((order) => ({ ...order, sales: null, fees: null })) },
     { headers }
   )
-}
+})

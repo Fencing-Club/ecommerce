@@ -8,9 +8,10 @@ import { adsOAuthCallback, relayAdsOAuth, startAdsOAuth } from "@/server/amazon-
 import { session } from "@/server/auth"
 import { requireAdmin, requireBuyer } from "@/server/authorization"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { hash, isAppOrigin, siteUrlFor } from "@/server/security"
 
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const site = siteUrlFor(request.headers)
   try {
     const relayed = relayAdsOAuth(request, site)
@@ -110,8 +111,8 @@ export async function GET(request: Request) {
     return errorResponse("amazonConnectionFailed", 400)
   }
   return Response.redirect(settings)
-}
-export async function POST(request: Request) {
+})
+export const POST = withRequest(async function POST(request: Request) {
   const s = await session()
   requireBuyer(s)
   requireAdmin(s)
@@ -125,4 +126,4 @@ export async function POST(request: Request) {
     await queueAdsSync(s.org.id)
   }
   return Response.json({ ok: true }, { headers: { "Cache-Control": "private, no-store" } })
-}
+})

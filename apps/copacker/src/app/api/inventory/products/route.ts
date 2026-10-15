@@ -5,6 +5,7 @@ import { session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
 import { inventoryContext } from "@/server/inventory-context"
 import { type AmazonOnlyStock, groupInventory, isCollective, pageSizes } from "@/server/inventory-products"
+import { withRequest } from "@/server/next-request"
 import { fnskuFor, type ProductBarcode, readProductBarcodes } from "@/server/product-barcodes"
 import { noDefaults, readProductDefaults } from "@/server/product-defaults"
 import { readVariantFields } from "@/server/product-fields"
@@ -55,7 +56,7 @@ function duplicateSkus(rows: Awaited<ReturnType<typeof inventoryContext>>["rows"
 }
 
 // Inventory across Shopify's counted locations and Amazon's FBA and AWD, grouped by product, one page at a time.
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {
@@ -167,4 +168,4 @@ export async function GET(request: Request) {
     },
     { headers }
   )
-}
+})

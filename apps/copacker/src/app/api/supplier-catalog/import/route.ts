@@ -5,6 +5,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { commitImport, previewImport } from "@/server/product-import"
 import { readSheet } from "@/server/product-sheet"
 import { isAppOrigin } from "@/server/security"
@@ -18,7 +19,7 @@ const types = {
 
 // Imports a filled-in product template, CSV or Excel: first a preview of what would change, then the import itself,
 // which the preview's hash guards against changes made in between. Each file is imported once.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -79,4 +80,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "importFailed") }, { status: failureStatus(error) })
   }
-}
+})

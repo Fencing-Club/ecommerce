@@ -1,13 +1,14 @@
 import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { requestSalesSync, SalesSyncError, salesSources } from "@/server/sales-orders"
 import { isAppOrigin } from "@/server/security"
 
 const inputSchema = z.strictObject({ source: z.enum(salesSources) })
 
 // Queues a sync that copies a source's recent orders into Copacker.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
@@ -26,4 +27,4 @@ export async function POST(request: Request) {
     }
     throw error
   }
-}
+})

@@ -1,9 +1,10 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { restockChannels } from "@/server/restock-page"
 
 // Where the buyer can restock: Amazon and each Shopify location counted in inventory.
-export async function GET() {
+export const GET = withRequest(async function GET() {
   const headers = { "Cache-Control": "private, no-store" }
   const s = await session()
   if (s.org.kind !== "buyer") {
@@ -11,4 +12,4 @@ export async function GET() {
   }
   requirePage(s, "restock")
   return Response.json(await restockChannels(s.org.id), { headers })
-}
+})

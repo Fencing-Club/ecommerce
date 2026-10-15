@@ -10,22 +10,23 @@ import { accessibleOrder } from "@/server/access"
 import { noAccessTitle, requirePage, session } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { forwarderAddresses } from "@/server/forwarders"
+import { withRequest } from "@/server/next-request"
 import { variantsNeedingBarcode } from "@/server/product-barcodes"
 
 type Props = { params: Promise<{ id: string }> }
 
 // Looking the PO up here too gives a malformed or unknown id the not-found page's title.
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [s, t] = await Promise.all([session(), getTranslations("orders.builder")])
   if (!can(s, "orders", "edit")) {
     return noAccessTitle()
   }
   const { order } = await accessibleOrder(s, (await params).id)
   return { title: t("editTitle", { reference: order.data.reference }) }
-}
+})
 
 // Edits a draft PO. Once sent, a PO changes through its shipments instead, so this goes back to the PO.
-export default async function EditOrder({ params }: Props) {
+export default withRequest(async function EditOrder({ params }: Props) {
   const [s, t] = await Promise.all([session(), getTranslations("orders")])
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -67,4 +68,4 @@ export default async function EditOrder({ params }: Props) {
       draft={{ id, revision: order.revision, data: order.data }}
     />
   )
-}
+})

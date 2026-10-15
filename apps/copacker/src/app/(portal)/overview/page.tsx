@@ -6,12 +6,13 @@ import { OverviewPagePending, OverviewPageView } from "@/components/overview-pag
 import { can } from "@/lib/access"
 import { homeFor } from "@/lib/navigation"
 import { requirePage, session } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { overviewPageData, type OverviewPageData } from "@/server/overview-page"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("overview")
   return { title: t("title") }
-}
+})
 
 type Query = Record<string, string | string[] | undefined>
 
@@ -19,7 +20,7 @@ async function Content({ data }: { data: Promise<OverviewPageData> }) {
   return <OverviewPageView page={await data} />
 }
 
-export default async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
+export default withRequest(async function OverviewPage({ searchParams }: { searchParams: Promise<Query> }) {
   const s = await session()
   // Every workspace has an Overview for links to land on; a member without it goes to their home.
   if (!can(s, "overview") || s.org.kind === "forwarder") {
@@ -32,4 +33,4 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       <Content data={overviewPageData(s, query)} />
     </Suspense>
   )
-}
+})

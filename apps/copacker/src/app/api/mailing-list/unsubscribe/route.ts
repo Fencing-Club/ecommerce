@@ -1,10 +1,11 @@
 import { canUnsubscribe, leaveWaitlist } from "@/server/mailing-list"
+import { withRequest } from "@/server/next-request"
 import { appUrl } from "@/server/security"
 
 // Takes an address off the waitlist, deleting its entry. The unsubscribe page's button posts its form here, and a
 // mail app's own unsubscribe posts to the link in the email's List-Unsubscribe header (RFC 8058), with the address and
 // its signature in the query. The signature is the proof either way, so it takes posts from anywhere.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const query = new URL(request.url).searchParams
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
@@ -30,4 +31,4 @@ export async function POST(request: Request) {
     return new Response(null, { status: 200 })
   }
   return new Response(null, { status: valid ? 502 : 400 })
-}
+})

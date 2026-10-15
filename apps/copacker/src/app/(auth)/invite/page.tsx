@@ -13,13 +13,14 @@ import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
 import { signedInUser } from "@/server/auth"
 import { findInvitation, invitationKind, invitationPath } from "@/server/invitations"
+import { withRequest } from "@/server/next-request"
 import { ownProfile } from "@/server/profile"
 import { hasAccount } from "@/server/sign-in"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.invite")
   return { title: t("title") }
-}
+})
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
@@ -41,7 +42,7 @@ function initials(name: string) {
 
 // The link in an invitation email. It says who sent it before anyone signs in, then signs up or signs in with the
 // invited email, and hands over to getting started for whatever the new workspace still needs.
-export default async function Invitation({
+export default withRequest(async function Invitation({
   searchParams
 }: {
   searchParams: Promise<{ token?: string; kind?: string; mode?: string }>
@@ -174,4 +175,4 @@ export default async function Invitation({
       <AcceptInvitation kind={kind} token={token} label={t("accept")} workspaces={owned} setUp={setUp} />
     </AuthPage>
   )
-}
+})

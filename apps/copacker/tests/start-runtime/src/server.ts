@@ -1,6 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto"
+import { getCookie } from "@tanstack/react-start/server"
 import handler from "@tanstack/react-start/server-entry"
+import { timeZoneCookie } from "../../../src/lib/time-zone"
 import { withAuthentication } from "../../../src/server/auth-session"
+import { resolveLocalization, withLocalization } from "../../../src/server/localization"
 
 export default {
   async fetch(request, env) {
@@ -19,7 +22,16 @@ export default {
         return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } })
       }
     }
-    const response = await withAuthentication(request, () => handler.fetch(request))
+    // The probe follows browser preferences. Production routes must also supply the authenticated profile's locale.
+    // Cookie access is deferred until a Start handler has established its request event.
+    const response = await withLocalization(
+      () =>
+        resolveLocalization({
+          acceptLanguage: request.headers.get("accept-language"),
+          timeZone: getCookie(timeZoneCookie)
+        }),
+      () => withAuthentication(request, () => handler.fetch(request))
+    )
     const headers = new Headers(response.headers)
     headers.set("Cache-Control", "private, no-store")
     headers.set("X-Robots-Tag", "noindex, nofollow")

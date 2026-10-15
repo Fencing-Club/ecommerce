@@ -3,15 +3,16 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { PageHeader } from "@/components/common"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty"
+import { withRequest } from "@/server/next-request"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common.pages.forbidden")
   return { title: t("title") }
-}
+})
 
 // Shown in the shell when a member opens a page they weren't given, such as from a colleague's link. Like the portal's
 // not-found page, it reads no session; the sidebar lists the pages they can open.
-export default async function PortalForbidden() {
+export default withRequest(async function PortalForbidden() {
   const t = await getTranslations("common.pages.forbidden")
   return (
     <>
@@ -26,4 +27,4 @@ export default async function PortalForbidden() {
       </Empty>
     </>
   )
-}
+})

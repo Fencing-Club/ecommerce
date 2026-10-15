@@ -1,10 +1,11 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { demandInputSchema, DemandAccessError, readSalesDemand } from "@/server/sales"
 import { isAppOrigin } from "@/server/security"
 
 export const maxDuration = 300
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
@@ -29,4 +30,4 @@ export async function POST(request: Request) {
     }
     return errorResponse("salesRefreshFailed", 503, headers)
   }
-}
+})

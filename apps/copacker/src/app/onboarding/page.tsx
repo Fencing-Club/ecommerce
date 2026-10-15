@@ -10,14 +10,15 @@ import { memberships, organizations } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
 import { identity } from "@/server/auth"
 import { findInvitation, invitationKind, invitationPath } from "@/server/invitations"
+import { withRequest } from "@/server/next-request"
 import { ownProfile } from "@/server/profile"
 import { returnPath } from "@/server/security"
 import { workspaceCookie } from "@/server/workspace-session"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("onboarding")
   return { title: t("title") }
-}
+})
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
@@ -25,7 +26,7 @@ export const dynamic = "force-dynamic"
 // Getting started asks only what's missing. Someone new says who they are, what their company does, the company and
 // its first address. An invitation from a buyer settles what the company does and brings the buyer's details for it;
 // one from a colleague needs only who they are. Someone already in a workspace without a full profile gives just that.
-export default async function Onboarding({
+export default withRequest(async function Onboarding({
   searchParams
 }: {
   searchParams: Promise<{ next?: string; invite?: string; kind?: string }>
@@ -122,4 +123,4 @@ export default async function Onboarding({
     )
   }
   redirect(next)
-}
+})

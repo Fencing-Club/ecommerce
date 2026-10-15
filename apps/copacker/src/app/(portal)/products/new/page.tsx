@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation"
 import { ProductEditor } from "@/components/supplier/product-editor"
 import { requirePage, session, titleFor } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 
 export const generateMetadata = titleFor("products.page.addProduct", "products", "edit")
 
-export default async function NewProductPage() {
+export default withRequest(async function NewProductPage() {
   const s = await session()
   if (s.org.kind !== "supplier") {
     redirect("/products")
@@ -12,4 +13,4 @@ export default async function NewProductPage() {
   requirePage(s, "products", "edit")
   requirePage(s, "prices")
   return <ProductEditor />
-}
+})

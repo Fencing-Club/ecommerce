@@ -17,6 +17,7 @@ import { visibleOrders } from "@/server/access"
 import { type AmazonShipment, listAmazonShipments } from "@/server/amazon-shipments"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { amazonFor } from "@/server/connections"
+import { withRequest } from "@/server/next-request"
 import { readyDateFormat, shipmentDestinations } from "./destination"
 
 export const generateMetadata = titleFor("shipments.list.title", "shipments")
@@ -67,7 +68,11 @@ function stage(status: string) {
   return ["cancelled", "CANCELLED"].includes(status) ? "cancelled" : undefined
 }
 
-export default async function ShipmentsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+export default withRequest(async function ShipmentsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ view?: string }>
+}) {
   const requested = (await searchParams).view
   const current = views.find((tab) => tab.view === requested) ?? views[0]
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
@@ -267,4 +272,4 @@ export default async function ShipmentsPage({ searchParams }: { searchParams: Pr
       )}
     </>
   )
-}
+})

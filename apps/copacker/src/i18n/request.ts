@@ -5,10 +5,10 @@ import { cache } from "react"
 import { db } from "@/db"
 import { profiles } from "@/db/schema"
 import { maintenanceHeader } from "@/lib/maintenance"
-import { isTimeZone, timeZoneCookie } from "@/lib/time-zone"
+import { timeZoneCookie } from "@/lib/time-zone"
 import { signedInUser } from "@/server/auth"
+import { resolveLocalization } from "@/server/localization"
 import { isLocale, negotiateLocale } from "./locales"
-import { loadMessages } from "./messages"
 
 // The language the browser asks for, which follows the computer's language settings.
 export async function systemLocale() {
@@ -32,11 +32,9 @@ export const chosenLocale = cache(async () => {
 // Every page and route renders in the chosen language, or else the computer's. Dates and times format in the
 // computer's time zone as the browser last reported it, so the server and the browser render the same text.
 export default getRequestConfig(async () => {
-  const locale = (await chosenLocale()) ?? (await systemLocale())
-  const zone = (await cookies()).get(timeZoneCookie)?.value
-  return {
-    locale,
-    messages: await loadMessages(locale),
-    timeZone: zone && isTimeZone(zone) ? zone : "UTC"
-  }
+  return resolveLocalization({
+    preferredLocale: await chosenLocale(),
+    acceptLanguage: (await headers()).get("accept-language"),
+    timeZone: (await cookies()).get(timeZoneCookie)?.value
+  })
 })

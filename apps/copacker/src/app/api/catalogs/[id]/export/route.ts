@@ -2,10 +2,11 @@ import { z } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { priceList } from "@/server/catalog-export"
 import { errorTextResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { priceListPdf, priceListWorkbook } from "@/server/price-list-files"
 
 // A catalog's price list to send its customers, as an Excel workbook or a PDF.
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withRequest(async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   const id = z.uuid().safeParse((await params).id)
   if (s.org.kind !== "supplier" || !id.success) {
@@ -35,4 +36,4 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           "Content-Disposition": `attachment; filename="${name}.xlsx"`
         }
       })
-}
+})

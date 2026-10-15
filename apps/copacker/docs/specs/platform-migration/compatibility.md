@@ -14,6 +14,15 @@ catalogs and existing locale behavior remain the contract. Client hooks and shar
 sites), with the typed catalog augmentation moved to `use-intl`. Storybook uses its `IntlProvider`; its framework/router
 conversion and the application's Next server translation integration are still pending.
 
+Shared server errors, Zod messages, pricing, preparation instructions and store time zones now use standalone
+localization backed by invocation-scoped `AsyncLocalStorage`. Current Next entry points supply a lazy configuration
+resolver; nested operations reuse it without another lookup. Untranslated background work retains English/UTC and
+does not acquire an email-job language. Browser-safe text definitions are separate from request storage; the production
+build exposed and verified removal of an inventory helper's indirect server import. Seventeen focused unit cases cover
+concurrent requests, cached lookups, defaults, profile precedence, invalid time zones and the Next API boundary.
+The protected Start probe runs the canonical helpers in all nine languages and two time zones concurrently. Its
+language selection uses browser preferences; actual Start profile lookup and localized overview routing are still pending.
+
 The WorkOS Start SDK 0.11.1 trial exposed a cookie ordering conflict: its middleware appends automatic refresh after
 the handler's explicit session change. A reproduction of its public middleware with a controlled refresh result emitted
 the logout deletion followed by the refreshed session cookie. The dependency was removed. The canonical integration
@@ -66,8 +75,8 @@ The real partners/product-import consumers still need their complete acceptance 
 ## Verified checks
 
 The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
-unit/Storybook tests with coverage, including 2,271 Copacker tests across 280 files after the page-data and custom sign-in
-changes. This verifies the current
+unit/Storybook tests with coverage, including 2,289 Copacker tests across 282 files after request localization was added.
+This verifies the current
 compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
 gate V01.
 
@@ -81,6 +90,12 @@ The catalog/customer/product/inventory/sales/restock views passed their automate
 covered the canonical customer and product views on desktop and mobile, keyboard tabs and catalog selection, restricted
 member data/actions, and the Urdu customer layout without page overflow. A fresh browser check reported no errors.
 
+After request localization changed, integrated-browser acceptance covered the order list's Urdu desktop and narrow
+layouts, translated Amazon network conjunction, keyboard access to the PO link, and retained RTL direction. The new
+Urdu story asserts the server-generated destination alongside the client UI. The browser reported no errors on the
+fresh acceptance tab. One earlier tab crashed while full verification and a production build were running concurrently;
+acceptance was repeated after those processes finished.
+
 `pnpm --filter copacker test:start-runtime` builds and tests the fixture in local workerd against local Postgres.
 The same test script accepts an explicit `--remote <origin>` for the protected staging Worker.
 
@@ -88,6 +103,8 @@ Passed locally and on the deployed Worker:
 
 - SSR with partner/import direct-link state and a preserved additional search key.
 - Urdu language/direction and translated fixture text.
+- Eighteen concurrent localization requests across all nine languages and two time zones, including translated errors,
+  pricing, preparation instructions and dates; invalid language/time-zone fallback without response cookies.
 - Cross-origin and missing-origin POST rejection without setting cookies.
 - AuthKit session storage round trip, host-only HttpOnly cookies, two response cookies and cookie clearing.
 - Custom Google/Microsoft OAuth initiation with PKCE, encrypted ten-minute host-only cookies, unknown-provider rejection,
@@ -143,7 +160,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive | `copacker-staging`, ID `0a74043480fe42a6acdbf46b9572ef58` |
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
-| Tested Worker version | `6ea7a43e-84ed-457d-902d-063247f2c843` |
+| Tested Worker version | `43d38445-2856-43db-b174-99272e81f800` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,

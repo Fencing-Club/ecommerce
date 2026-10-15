@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation"
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import { requirePage, session, titleFor } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { catalogPageData } from "@/server/workspace-pages"
 
 export const generateMetadata = titleFor("supplier.pages.catalog", "catalogs")
-export default async function CatalogPage({ params }: { params: Promise<{ id: string }> }) {
+export default withRequest(async function CatalogPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await session()
   if (s.org.kind !== "supplier") {
     redirect("/")
@@ -16,4 +17,4 @@ export default async function CatalogPage({ params }: { params: Promise<{ id: st
     notFound()
   }
   return <CatalogEditor key={page.data.catalog?.revision} {...page} />
-}
+})

@@ -2,9 +2,10 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Legal, Rows } from "@/components/marketing/legal"
+import { withRequest } from "@/server/next-request"
 import { appUrl } from "@/server/security"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const [t, marketing] = await Promise.all([getTranslations("legal"), getTranslations("marketing")])
   const title = t("privacy.metadata.title")
   const description = t("privacy.metadata.description")
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
   }
-}
+})
 
 // Rendered per request, like the home page, so its links carry the deployed address rather than the build's.
 export const dynamic = "force-dynamic"
@@ -31,7 +32,7 @@ export const dynamic = "force-dynamic"
 // reads (never a customer's contact details), the providers that run it, and the cookies it sets. Amazon's, Amazon Ads'
 // and eBay's developer programs read the marketplace data section. Change the text with the code it describes, and
 // the date with the text.
-export default async function PrivacyPage() {
+export default withRequest(async function PrivacyPage() {
   const t = await getTranslations("legal")
   const contact = <Link href="/contact">contact page</Link>
   return (
@@ -379,4 +380,4 @@ export default async function PrivacyPage() {
       ]}
     />
   )
-}
+})

@@ -7,10 +7,11 @@ import { LocalizedError } from "@/i18n/errors"
 import { session, requirePage } from "@/server/auth"
 import { requireBuyer } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
-export async function GET() {
+export const GET = withRequest(async function GET() {
   const s = await session()
   requireBuyer(s)
   requirePage(s, "orders", "edit")
@@ -27,8 +28,8 @@ export async function GET() {
     .orderBy(desc(poImports.createdAt))
     .limit(50)
   return Response.json({ items })
-}
-export async function POST(request: Request) {
+})
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -84,4 +85,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "importNotStarted") }, { status: 400 })
   }
-}
+})

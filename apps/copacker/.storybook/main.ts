@@ -38,6 +38,8 @@ const config: StorybookConfig = {
         // answers with each story's rows, and ClientMessages, which the marketing pages render inside sync components.
         alias: [
           { find: /^next-intl\/server$/, replacement: mock("next-intl-server.ts") },
+          { find: /^@\/server\/localization$/, replacement: mock("localization.ts") },
+          { find: /^@\/server\/next-request$/, replacement: mock("next-request.ts") },
           { find: /^@\/db$/, replacement: mock("db.ts") },
           { find: /^@\/components\/client-messages$/, replacement: mock("client-messages.ts") },
           // vanilla-extract compiles .css.ts files apart from the app's modules, without the tsconfig paths.

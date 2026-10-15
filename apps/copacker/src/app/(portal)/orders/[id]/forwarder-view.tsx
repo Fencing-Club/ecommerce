@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { db } from "@/db"
 import { contacts, documents, shipments } from "@/db/schema"
 import type { forwarderOrders } from "@/server/access"
+import { withRequest } from "@/server/next-request"
 import { releasedStates } from "@/server/readiness"
 
 // The products table runs edge to edge in its card, its first and last columns in line with the route above it and
@@ -30,7 +31,7 @@ const documentOrder: Array<(typeof documents.$inferSelect)["kind"]> = [
 // that's the buyer's own location, what's coming and in how many cartons, and the shipping documents. No prices; the
 // commercial invoice carries what customs needs. The cards are the buyer's purchase order page's, less its costs and
 // history.
-export async function ForwarderView({
+export const ForwarderView = withRequest(async function ForwarderView({
   row,
   editable
 }: {
@@ -201,7 +202,7 @@ export async function ForwarderView({
       </div>
     </>
   )
-}
+})
 
 // Under a shipment's name: its cartons once they're packed, and the carrier and tracking number once it's shipped on.
 function ShipmentDetails({ shipment, cartons }: { shipment: typeof shipments.$inferSelect; cartons?: string }) {

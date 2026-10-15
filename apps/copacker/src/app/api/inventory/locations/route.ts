@@ -4,6 +4,7 @@ import { session } from "@/server/auth"
 import { requireAdmin } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
 import { LocationSettingsError, readLocationMappings, saveLocationMapping } from "@/server/inventory-location-settings"
+import { withRequest } from "@/server/next-request"
 
 const headers = { "Cache-Control": "private, no-store" }
 async function failure(error: unknown) {
@@ -18,15 +19,15 @@ async function failure(error: unknown) {
   }
   return errorResponse("locationSettingsUnavailable", 500, headers)
 }
-export async function GET() {
+export const GET = withRequest(async function GET() {
   const s = await session()
   try {
     return Response.json(await readLocationMappings(s), { headers })
   } catch (error) {
     return failure(error)
   }
-}
-export async function PATCH(request: Request) {
+})
+export const PATCH = withRequest(async function PATCH(request: Request) {
   const s = await session()
   if (s.org.kind !== "buyer") {
     return errorResponse("buyerWorkspaceRequired", 403, headers)
@@ -38,4 +39,4 @@ export async function PATCH(request: Request) {
   } catch (error) {
     return failure(error)
   }
-}
+})

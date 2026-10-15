@@ -2,6 +2,7 @@ import { ZodError } from "zod"
 import { can } from "@/lib/access"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { RestockInputError, restockReport } from "@/server/restock-page"
 import type { RestockLine } from "@/server/restock-plan"
 import { isAppOrigin } from "@/server/security"
@@ -22,7 +23,7 @@ function withoutPrices(line: RestockLine): RestockLine {
 }
 
 // Restock suggestions for Amazon or one Shopify location, from stored orders.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const headers = { "Cache-Control": "private, no-store" }
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
@@ -44,4 +45,4 @@ export async function POST(request: Request) {
     }
     throw error
   }
-}
+})

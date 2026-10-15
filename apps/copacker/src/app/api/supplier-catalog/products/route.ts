@@ -2,11 +2,12 @@ import { AccessError } from "@/i18n/errors"
 import { session } from "@/server/auth"
 import { requireAccess } from "@/server/authorization"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 import { saveProduct } from "@/server/supplier-products"
 
 // Creates or saves a product and its variants from the product page.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -27,4 +28,4 @@ export async function POST(request: Request) {
       { status: error instanceof Error && error.message.includes("changed") ? 409 : 400 }
     )
   }
-}
+})

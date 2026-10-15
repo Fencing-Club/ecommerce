@@ -4,12 +4,13 @@ import { redirect } from "next/navigation"
 import { AuthPage, AuthSwitch } from "@/components/auth/auth-shell"
 import { VerifyEmailForm } from "@/components/auth/verify-email-form"
 import { signInRequest } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { pendingVerification } from "@/server/sign-in"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
   return { title: t("verifyEmail.title") }
-}
+})
 
 // Bold text inside a translated sentence, such as an email address.
 function strong(chunks: React.ReactNode) {
@@ -19,7 +20,7 @@ function strong(chunks: React.ReactNode) {
 export const dynamic = "force-dynamic"
 
 // After signing up, or signing in to an account whose email isn't confirmed yet: the code WorkOS emailed.
-export default async function VerifyEmail() {
+export default withRequest(async function VerifyEmail() {
   const pending = pendingVerification(await signInRequest())
   if (!pending) {
     redirect("/login")
@@ -39,4 +40,4 @@ export default async function VerifyEmail() {
       </AuthSwitch>
     </AuthPage>
   )
-}
+})

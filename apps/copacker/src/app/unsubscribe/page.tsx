@@ -2,12 +2,13 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { Unsubscribe } from "@/components/marketing/unsubscribe"
 import { canUnsubscribe } from "@/server/mailing-list"
+import { withRequest } from "@/server/next-request"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketing.unsubscribe")
   // A page for one address's link, so search engines leave it out.
   return { title: t("metaTitle"), robots: { index: false, follow: false } }
-}
+})
 
 // Rendered per request: it reads the link's address and signature.
 export const dynamic = "force-dynamic"
@@ -25,7 +26,7 @@ function stateOf(valid: boolean, done: string, failed: string) {
 
 // Where an email's unsubscribe link lands: it asks before unsubscribing, since mail scanners open links on their own,
 // and says how it went once the button's post comes back.
-export default async function UnsubscribePage({
+export default withRequest(async function UnsubscribePage({
   searchParams
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -39,4 +40,4 @@ export default async function UnsubscribePage({
   const token = read("token")
   const valid = Boolean(email) && canUnsubscribe(email, token)
   return <Unsubscribe email={email} token={token} state={stateOf(valid, read("done"), read("failed"))} />
-}
+})

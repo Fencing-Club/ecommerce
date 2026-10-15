@@ -1,6 +1,7 @@
 import { ZodError } from "zod"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { ProductBarcodeError, productLabelChoices } from "@/server/product-barcodes"
 import { ProductDefaultsError, assignProductLabel } from "@/server/product-defaults"
 import { isAppOrigin } from "@/server/security"
@@ -8,7 +9,7 @@ import { isAppOrigin } from "@/server/security"
 const headers = { "Cache-Control": "private, no-store" }
 
 // Every product with its label type, for choosing several at once.
-export async function GET() {
+export const GET = withRequest(async function GET() {
   const s = await session()
   requirePage(s, "products")
   try {
@@ -19,10 +20,10 @@ export async function GET() {
     }
     return errorResponse("productsNotLoaded", 500, headers)
   }
-}
+})
 
 // Sets the label type for several products at once: { productIds, productLabel: "standard" | "uploaded" }.
-export async function PATCH(request: Request) {
+export const PATCH = withRequest(async function PATCH(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403, headers)
   }
@@ -39,4 +40,4 @@ export async function PATCH(request: Request) {
     }
     return errorResponse("labelTypeNotSaved", 500, headers)
   }
-}
+})

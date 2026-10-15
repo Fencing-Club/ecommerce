@@ -1,5 +1,6 @@
 import { ebayNotificationSchema, ebaySigned, forwardEbayNotification } from "@/server/ebay-events"
 import { ebayChallengeResponse, ebayVerificationToken } from "@/server/ebay-notifications"
+import { withRequest } from "@/server/next-request"
 
 // eBay confirms the endpoint is ours before it sends anything to it.
 export function GET(request: Request) {
@@ -17,7 +18,7 @@ export function GET(request: Request) {
 // eBay's notifications: account deletion notices and the order topics sellers are subscribed to. Each is checked
 // against eBay's signature, then sent on to its work (see forwardEbayNotification). A notice eBay doesn't get
 // acknowledged is sent again.
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   const body = await request.text()
   let json: unknown
   try {
@@ -49,4 +50,4 @@ export async function POST(request: Request) {
   // oxlint-disable-next-line no-console
   console.log(JSON.stringify({ ...logged, outcome }))
   return new Response(null, { status: 204 })
-}
+})

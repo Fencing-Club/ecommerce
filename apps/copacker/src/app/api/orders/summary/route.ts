@@ -5,6 +5,7 @@ import { db } from "@/db"
 import { orders, shipments, suppliers } from "@/db/schema"
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { orderCoverage } from "@/server/readiness"
 
 const querySchema = z.strictObject({
@@ -20,7 +21,7 @@ const querySchema = z.strictObject({
 })
 const headers = { "Cache-Control": "private, no-store" }
 
-export async function GET(request: Request) {
+export const GET = withRequest(async function GET(request: Request) {
   const s = await session()
   if (s.org.kind !== "buyer") {
     return errorResponse("buyerWorkspaceRequired", 403, headers)
@@ -96,4 +97,4 @@ export async function GET(request: Request) {
     { isolationLevel: "repeatable read", accessMode: "read only" }
   )
   return Response.json(result, { headers })
-}
+})

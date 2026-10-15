@@ -6,6 +6,7 @@ import { session } from "@/server/auth"
 import { requireAccess, requireBuyer } from "@/server/authorization"
 import { customerProducts } from "@/server/catalogs"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
+import { withRequest } from "@/server/next-request"
 import { isAppOrigin } from "@/server/security"
 import { matchSupplierCatalog } from "@/server/supplier-catalog-match"
 import { availableStock } from "@/server/supplier-stock"
@@ -17,7 +18,7 @@ const inputSchema = z.object({
   supplierSkus: z.array(z.string().trim().max(255)).max(3750)
 })
 
-export async function POST(request: Request) {
+export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)
   }
@@ -62,4 +63,4 @@ export async function POST(request: Request) {
       { status: failureStatus(error) }
     )
   }
-}
+})

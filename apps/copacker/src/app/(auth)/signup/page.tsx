@@ -5,20 +5,21 @@ import { AuthPage, AuthSwitch } from "@/components/auth/auth-shell"
 import { SignUpForm } from "@/components/auth/sign-up-form"
 import { SocialSignIn } from "@/components/auth/social-sign-in"
 import { signedInUser } from "@/server/auth"
+import { withRequest } from "@/server/next-request"
 import { returnPath } from "@/server/security"
 import { invitedEmail } from "@/server/sign-in"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
   return { title: t("signup.title") }
-}
+})
 
 // Rendered per request: at build time the WorkOS settings are absent, so a prerendered page would always go to setup.
 export const dynamic = "force-dynamic"
 
 // WorkOS's invitation links, such as the one approving a waitlist entry, open this page with `invitation_token`: the
 // form keeps to the invited address and accepts the invitation. Google and Microsoft can't carry it, so they're left out.
-export default async function SignUp({
+export default withRequest(async function SignUp({
   searchParams
 }: {
   searchParams: Promise<{ next?: string; email?: string; invitation_token?: string }>
@@ -52,4 +53,4 @@ export default async function SignUp({
       </AuthSwitch>
     </AuthPage>
   )
-}
+})

@@ -2,9 +2,10 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { Legal } from "@/components/marketing/legal"
+import { withRequest } from "@/server/next-request"
 import { appUrl } from "@/server/security"
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const [t, marketing] = await Promise.all([getTranslations("legal"), getTranslations("marketing")])
   const title = t("terms.metadata.title")
   const description = t("terms.metadata.description")
@@ -22,14 +23,14 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
   }
-}
+})
 
 // Rendered per request, like the home page, so its links carry the deployed address rather than the build's.
 export const dynamic = "force-dynamic"
 
 // The terms for using Copacker. The company's legal name, address and governing law aren't settled yet, so the clauses
 // that need them are left out until they are. Fees follow the marketing page: free for now, with no promise it stays so.
-export default async function TermsPage() {
+export default withRequest(async function TermsPage() {
   const t = await getTranslations("legal")
   const contact = <Link href="/contact">contact page</Link>
   return (
@@ -282,4 +283,4 @@ export default async function TermsPage() {
       ]}
     />
   )
-}
+})

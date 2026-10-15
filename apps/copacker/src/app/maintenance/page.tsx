@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 import { Maintenance } from "@/components/maintenance"
 import { maintenanceHeader } from "@/lib/maintenance"
+import { withRequest } from "@/server/next-request"
 
 // The page only stands in for another while Copacker is down for maintenance (src/server/maintenance.ts). Opened
 // directly while Copacker is up, it isn't a page.
@@ -13,13 +14,13 @@ async function standingIn() {
   }
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   await standingIn()
   const t = await getTranslations("common.pages.maintenance")
   return { title: t("title"), robots: { index: false } }
-}
+})
 
-export default async function MaintenancePage() {
+export default withRequest(async function MaintenancePage() {
   await standingIn()
   return <Maintenance />
-}
+})
