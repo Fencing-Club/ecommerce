@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} نے سامان بھیج دیا: {tracking}",
       "packingReady": "پیکنگ جمع کرائی گئی؛ بھیجنے کے لیے تیار",
       "invoiceEntered": "خریداری آرڈر میں تبدیلیوں کے ساتھ انوائس درج کی گئی",
-      "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں"
+      "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں",
+      "existingAwdLinked": "موجودہ AWD شپمنٹ {shipmentId} منسلک کر دی گئی",
+      "existingAwdUnlinked": "موجودہ AWD شپمنٹ کا لنک ہٹا دیا گیا"
     }
   },
   "actions": {

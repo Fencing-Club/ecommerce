@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} 已发货：{tracking}",
       "packingReady": "已提交装箱信息；可以发货",
       "invoiceEntered": "已录入发票，其中包含对采购订单的修改",
-      "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批"
+      "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批",
+      "existingAwdLinked": "已关联现有 AWD 货件 {shipmentId}",
+      "existingAwdUnlinked": "已取消现有 AWD 货件关联"
     }
   },
   "actions": {

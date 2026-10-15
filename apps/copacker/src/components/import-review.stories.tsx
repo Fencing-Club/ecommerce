@@ -133,14 +133,15 @@ export const SaveDraft = meta.story({
     await expect(supplier).toHaveAttribute("aria-invalid", "true")
     await expect(supplier).toHaveAccessibleDescription("Choose a supplier")
     const requiredBy = canvas.getByLabelText(/Required by/)
-    await expect(requiredBy).toHaveAttribute("aria-invalid", "true")
-    await expect(requiredBy).toHaveAccessibleDescription("Fill in this field")
+    await expect(requiredBy).not.toBeRequired()
+    await expect(requiredBy).not.toHaveAttribute("aria-invalid", "true")
     await expect(canvas.getByRole("textbox", { name: /Reference number/ })).toHaveAttribute("aria-invalid", "false")
     await expect(saved).not.toHaveBeenCalled()
 
     await fillDetails(canvas)
     await expect(supplier).toHaveAttribute("aria-invalid", "false")
     await expect(canvas.queryByText("Fill in this field")).toBeNull()
+    await userEvent.clear(requiredBy)
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
     await expect(corrected).toHaveBeenCalledWith({ revision: 3, proposal: importProposal })
@@ -148,7 +149,6 @@ export const SaveDraft = meta.story({
       revision: 4,
       supplierId,
       reference: "LM-2026-118",
-      dueDate: "2026-11-01",
       reviewed: true,
       destination: "amazon"
     })

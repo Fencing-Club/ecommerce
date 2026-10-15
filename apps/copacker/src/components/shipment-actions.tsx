@@ -1,13 +1,15 @@
 "use client"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { FormProvider } from "react-hook-form"
+import { FormProvider, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FieldGroup } from "@/components/ui/field"
+import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { ActionForm, FormError, SubmitButton } from "./actions"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
@@ -101,6 +103,60 @@ const fbaReconcileSchema = z.object({
     .toLowerCase()
     .regex(/^wf[0-9a-f-]{36}$/, "shipments.actions.reconcile.fbaInvalid")
 })
+
+export function LinkExistingShipment({
+  linkedId,
+  onLink
+}: {
+  linkedId: string | null
+  onLink: (shipmentId: string | null) => Promise<void>
+}) {
+  const t = useTranslations("shipments.actions.linkExisting")
+  const errorMessage = useErrorMessage()
+  const errorMap = useFormErrorMap()
+  const schema = z.object({
+    amazonShipmentId: linkedId
+      ? z.string()
+      : z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^STAR-[A-Z0-9]+$/, "shipments.actions.linkExisting.invalid")
+  })
+  const form = useForm({
+    resolver: zodResolver(schema, { error: errorMap }),
+    defaultValues: { amazonShipmentId: linkedId ?? "" }
+  })
+  const submit = form.handleSubmit(async ({ amazonShipmentId }) => {
+    try {
+      await onLink(linkedId ? null : amazonShipmentId)
+    } catch (error) {
+      form.setError("root.server", { message: errorMessage(error) })
+    }
+  })
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+        <CardDescription>{linkedId ? t("linked", { shipmentId: linkedId }) : t("description")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {linkedId ? (
+          <form onSubmit={submit}>
+            <SubmitButton type="submit" pending={form.formState.isSubmitting} variant="outline">
+              {t("unlink")}
+            </SubmitButton>
+            <FormError message={form.formState.errors.root?.server?.message} />
+          </form>
+        ) : (
+          <ActionForm form={form} onSubmit={submit} label={t("submit")}>
+            <FormInput name="amazonShipmentId" required label={t("label")} placeholder="STAR-" />
+          </ActionForm>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 // Links a shipment to the AWD order or FBA inbound plan Amazon made when Copacker lost its reply.
 export function ReconcileShipment({ id, fba }: { id: string; fba: boolean }) {

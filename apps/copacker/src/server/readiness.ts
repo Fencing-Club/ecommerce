@@ -100,6 +100,16 @@ export function packingReadiness(
   }
   const packing = parsed.data
   if (
+    shipment.amazonNetwork &&
+    packing.cartons.some((carton) =>
+      carton.items.some(
+        (content) => order.items.find((item) => item.id === content.itemId)?.amazonNetwork !== shipment.amazonNetwork
+      )
+    )
+  ) {
+    issues.push({ code: "network_mismatch", message: t("readiness.networkMismatch") })
+  }
+  if (
     !docs.some(
       (doc) =>
         doc.id === packing.invoiceDocumentId &&

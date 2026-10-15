@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} envió la mercancía: {tracking}",
       "packingReady": "Empaque enviado; listo para enviar",
       "invoiceEntered": "Factura registrada con cambios en la orden de compra",
-      "invoiceChangesSubmitted": "El proveedor envió cambios de la factura para aprobación"
+      "invoiceChangesSubmitted": "El proveedor envió cambios de la factura para aprobación",
+      "existingAwdLinked": "Se vinculó el envío AWD existente {shipmentId}",
+      "existingAwdUnlinked": "Se quitó el vínculo al envío AWD existente"
     }
   },
   "actions": {

@@ -449,6 +449,9 @@ export const shipments = pgTable(
     // The Amazon network this shipment's cartons go to, for a PO to Amazon: FBA or AWD US. Set when the shipment is
     // queued; a submission with cartons for several networks becomes one shipment each.
     amazonNetwork: text({ enum: amazonNetworks }),
+    // A buyer-selected existing AWD shipment. The worker validates its cartons and downloads its labels without
+    // creating, confirming or cancelling an Amazon order. Kept through corrections so retries cannot create a duplicate.
+    linkedAmazonShipmentId: text(),
     amazonOrderId: text(),
     amazonShipmentId: text(),
     operation: text().notNull().default("none"),

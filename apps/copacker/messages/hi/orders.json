@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} ने सामान शिप कर दिया: {tracking}",
       "packingReady": "पैकिंग सबमिट की गई; शिप करने के लिए तैयार",
       "invoiceEntered": "खरीद ऑर्डर में बदलावों के साथ इनवॉइस दर्ज किया गया",
-      "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए"
+      "invoiceChangesSubmitted": "सप्लायर ने इनवॉइस के बदलाव मंज़ूरी के लिए सबमिट किए",
+      "existingAwdLinked": "मौजूदा AWD शिपमेंट {shipmentId} लिंक किया गया",
+      "existingAwdUnlinked": "मौजूदा AWD शिपमेंट का लिंक हटाया गया"
     }
   },
   "actions": {

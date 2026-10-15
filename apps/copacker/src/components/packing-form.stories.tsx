@@ -59,6 +59,42 @@ const meta = preview.meta({
   }
 })
 
+export const LinkExistingAwd = meta.story({
+  args: { linkedAmazonShipmentId: null },
+  beforeEach: ({ msw }) => {
+    msw.use(actionHandler(actions, (body) => HttpResponse.json({ revision: Number(body.data.revision) + 1 })))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
+    const carton = canvas.getByRole("textbox", { name: "Carton number" })
+    await userEvent.type(carton, "A1")
+    await userEvent.type(canvas.getByRole("textbox", { name: "AWD shipment ID" }), "star-example")
+    await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
+    await expect(await canvas.findByText(/Linked to STAR-EXAMPLE/)).toBeVisible()
+    await expect(carton).toHaveValue("A1")
+    await expect(actions).toHaveBeenNthCalledWith(1, {
+      action: "shipment.save",
+      data: expect.objectContaining({
+        revision: 1,
+        draft: expect.objectContaining({
+          cartons: [{ cartonId: "A1", items: [{ itemId: tote!.id }] }]
+        })
+      })
+    })
+    await expect(actions).toHaveBeenNthCalledWith(2, {
+      action: "shipment.linkExisting",
+      data: { id: shipment.id, revision: 2, amazonShipmentId: "STAR-EXAMPLE" }
+    })
+    await userEvent.click(canvas.getByRole("button", { name: "Remove link" }))
+    await expect(await canvas.findByRole("textbox", { name: "AWD shipment ID" })).toBeVisible()
+    await expect(carton).toHaveValue("A1")
+    await expect(actions).toHaveBeenNthCalledWith(4, {
+      action: "shipment.linkExisting",
+      data: { id: shipment.id, revision: 4, amazonShipmentId: null }
+    })
+  }
+})
+
 // A new packing list: no cartons yet, so it can be saved but not submitted.
 export const Empty = meta.story({
   play: async ({ canvas }) => {

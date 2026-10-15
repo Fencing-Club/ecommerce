@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} hat die Ware versendet: {tracking}",
       "packingReady": "Packliste gesendet; versandbereit",
       "invoiceEntered": "Rechnung mit Änderungen an der Bestellung erfasst",
-      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet"
+      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet",
+      "existingAwdLinked": "Vorhandene AWD-Sendung {shipmentId} verknüpft",
+      "existingAwdUnlinked": "Verknüpfung zur vorhandenen AWD-Sendung entfernt"
     }
   },
   "actions": {

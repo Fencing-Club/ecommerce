@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku}：请让每箱的内容、尺寸和重量相同，或拆分为不同的货件",
       "overQuantity": "{sku}：箱内数量超过采购订单的剩余数量",
       "unknownChange": "发票更改必须对应采购订单上不重复的商品"
-    }
+    },
+    "networkMismatch": "请仅装入分配给此货件 Amazon 网络的产品。"
   },
   "workflow": {
     "arrived": "货物已到达",

@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} shipped the goods: {tracking}",
       "packingReady": "Packing submitted; ready to ship",
       "invoiceEntered": "Invoice entered with changes to the purchase order",
-      "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval"
+      "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval",
+      "existingAwdLinked": "Linked existing AWD shipment {shipmentId}",
+      "existingAwdUnlinked": "Removed the existing AWD shipment link"
     }
   },
   "actions": {

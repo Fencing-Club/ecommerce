@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} відвантажив товар: {tracking}",
       "packingReady": "Пакування надіслано; готово до відправлення",
       "invoiceEntered": "Рахунок внесено зі змінами до замовлення на закупівлю",
-      "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення"
+      "invoiceChangesSubmitted": "Постачальник надіслав зміни в рахунку на схвалення",
+      "existingAwdLinked": "Пов’язано наявне відправлення AWD {shipmentId}",
+      "existingAwdUnlinked": "Прибрано зв’язок із наявним відправленням AWD"
     }
   },
   "actions": {

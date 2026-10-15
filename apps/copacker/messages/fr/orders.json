@@ -282,7 +282,9 @@
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
-      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation"
+      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
+      "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",
+      "existingAwdUnlinked": "Lien vers l’envoi AWD existant supprimé"
     }
   },
   "actions": {
