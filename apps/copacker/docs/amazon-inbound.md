@@ -5,19 +5,29 @@ A line starts with its product's Amazon warehouse setting (Products, Edit) and c
 decides how the supplier packs the line's cartons, so the PO and checklist give each network's carton rules and say on
 each line which network it's packed for. AWD China is left out until it's clear how it's booked.
 
-When the supplier submits packing, each carton must hold products for one network, following that network's rules.
-Submitting (or approving invoice changes) splits the cartons into one shipment per network: the shipment keeps the first
-network's cartons (FBA, then AWD US) and each other network's become a new shipment with the same ready date and pickup
-address, and its own copy of the invoice, so a correction to one shipment leaves the others' invoice current. Each
-shipment records its `amazonNetwork`, gets its own `amazon` job, labels, shipping-label upload, release and packet. The
-job creates the shipment in Amazon and fetches a label for every carton; the shipment then waits for the buyer's carrier
-labels, the same way for both networks.
+Submitting a PO creates a separate packing draft for each network. Each draft lists only that network's products,
+so the supplier can upload and submit the AWD packing list while FBA cartons are still being prepared. Older drafts
+that do not yet have a network split their cartons at packing submission, copying the invoice to each shipment. Every
+shipment has its own packing, Amazon job, labels, release and supplier packet.
 
 ## AWD US (`awd_us`)
 
 One AWD inbound order per shipment, with the reference `copacker-{shipmentId}-{revision}`. The job checks eligibility,
 creates and confirms the order, then downloads Amazon's SSCC carton labels and matches each page to a carton by SKU,
 FNSKU and units. AWD cartons hold one SKU, at most 150 units, packed the same way per SKU.
+
+### Link an existing AWD shipment
+
+The buyer can enter an existing `STAR-…` shipment ID on an AWD packing draft. Copacker verifies it belongs to the
+connected seller, is still `CREATED`, and contains only this PO's AWD products within the ordered quantities. The same
+Amazon shipment cannot be linked twice in a buyer workspace. Linking or removing a link saves any incomplete packing
+first. Suppliers cannot change the link.
+
+On packing submission, the worker checks the existing shipment's pickup location and every carton's contents, count,
+size and weight against the packing list. Measurements are compared in metric units (1 mm and 10 g precision), allowing
+rotated dimensions and regrouped identical cartons. It then downloads and matches the existing labels. It does not
+create, confirm or cancel an Amazon order. Corrections retain the link and repeat these checks; carrier labels and
+packet release follow the ordinary workflow.
 
 ## FBA (`fba`)
 
@@ -35,7 +45,9 @@ runs again, reading the plan to find where it is:
    the ready date, or the latest Amazon offers. The buyer can move the window in Seller Central until the shipment closes.
 6. Download each box's label on plain paper and match boxes to cartons by contents, then size and weight.
 
-Mixed-SKU cartons are allowed. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
+Mixed-SKU cartons are allowed. The packing editor shows every product and quantity in each carton, with Add product
+to carton and individual removal. Saving, reopening, duplicating and counting cartons preserve all their contents.
+AWD cartons keep one product. Cartons are limited to 63.5 cm a side and 22.68 kg unless one holds a single unit.
 
 ## Origin
 

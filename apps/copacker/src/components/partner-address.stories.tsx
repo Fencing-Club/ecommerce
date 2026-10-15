@@ -125,10 +125,11 @@ export const AddPickup = meta.story({
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Phone number" }), "+86 579 8555 1234")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Street address" }), "12 Chouzhou Road")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "City" }), "Yiwu")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "State or province" }), "Zhejiang")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Postal code" }), "322000")
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Country" }))
     await userEvent.click(await screen.findByRole("option", { name: "China" }))
+    await userEvent.click(within(dialog).getByRole("combobox", { name: "State or province" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Zhejiang Sheng" }))
     await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toMatchObject({

@@ -61,13 +61,13 @@ Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript
 | Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | Production Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
 
 Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
-through Docker's build argument. Do not add these keys to workers or fixture Storybook previews. The
-address-autocomplete UI is separate work and is not present in this release.
+through Docker's build argument. Do not add these keys to workers or fixture Storybook previews.
+Address autocomplete uses the key embedded in each environment's web build.
 
 Acceptance: Places Autocomplete (New) returned HTTP 200 with suggestions for each key's intended referrer
 (`main.local.copacker.ai`, `staging.copacker.ai`, `copacker.ai`). All three returned HTTP 403 with
 `API_KEY_HTTP_REFERRER_BLOCKED` for `https://example.org/`. These are API restriction checks, not a substitute for
-browser acceptance of the future autocomplete UI. Railway variable values were compared without logging secrets.
+browser acceptance of address autocomplete in each environment. Railway variable values were compared without logging secrets.
 
 The previous shared key (`829033b6-204a-48a7-9e52-fda3b6226976`) remains active. Retire it only after active local
 checkouts refresh their ignored environment configuration and the consuming UI passes browser acceptance.
@@ -144,7 +144,7 @@ requires exact matching. `H` means the public webhook origin. Local `H` must nev
 | Google consent / Google Cloud | Branding homepage/privacy/terms, authorized domains and ownership verification, audience/test users, scopes | Keep test audience explicit; record scope additions | `https://copacker.ai`, `/privacy`, `/terms`; verify controlled domains when required | Consent screen, test-user access and verification status |
 | Google direct OAuth / future integrations | Exact redirect URIs and, if browser OAuth is used, exact authorized JavaScript origins; no wildcard redirects | Preregister a bounded set of integration origins or register each exact worktree | Register exact staging/production and intended aliases | OAuth state/PKCE and matching token-exchange redirect |
 | Google Maps/Places / Google Cloud | Separate `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` per environment; API restrictions: Maps JavaScript API and Places API (New) | Website restrictions `https://*.local.copacker.ai/*`; add origin-only patterns if required by console/browser behavior; test E2E scope only when live APIs needed | `https://staging.copacker.ai/*`, `https://copacker.ai/*` on their respective keys; add exact aliases only when used | Autocomplete works on intended origins; unauthorized origin rejected; billing/quota enabled |
-| Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker accepts `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` as a build argument and exposes it to the build | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls when the address-autocomplete feature ships, without logging keys |
+| Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker accepts `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` as a build argument and exposes it to the build | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls, without logging keys |
 | Microsoft OAuth / Microsoft and WorkOS | Exact upstream redirect URI supplied by auth provider, credentials, tenant/audience/scopes | Current WorkOS environment uses demo credentials | Own provider app when moving to production auth environment | Microsoft login and tenant restrictions |
 | Shopify / Dev Dashboard | App URL `A`; allowed redirect `A/api/connections/shopify`; scopes; app client ID/secret | Register exact local worktree callbacks in Copacker Dev; no automatic dashboard mutation | Development app for staging, production app for production; `shopify.app.toml` configures production only | Connect and reconnect return to same origin |
 | Amazon SP-API / Solution Provider Portal | Exact callback `A/api/connections/amazon`; `AMAZON_APPLICATION_ID`, client credentials, draft setting | Self-authorization remains available; register exact local HTTPS callback if exercising public OAuth | Separate Aisle Dev / Aisle configuration | Seller consent, state and token exchange |

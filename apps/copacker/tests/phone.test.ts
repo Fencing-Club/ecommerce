@@ -15,9 +15,18 @@ describe("formatPhone", () => {
   })
 
   it("leaves unrecognized and local numbers as saved", () => {
-    expect(formatPhone("+442071838750")).toBe("+442071838750")
+    expect(formatPhone("+442071838750")).toBe("+44 20 7183 8750")
     expect(formatPhone("+1 (530) 704-08448")).toBe("+1 (530) 704-08448")
     expect(formatPhone("4252602501")).toBe("4252602501")
+  })
+
+  it("uses the address country for national numbers and honors explicit country codes", () => {
+    expect(formatPhone("4252602501", "US")).toBe("+1 (425) 260-2501")
+    expect(formatPhone("020 7183 8750", "GB")).toBe("+44 20 7183 8750")
+    expect(formatPhone("+442071838750", "US")).toBe("+44 20 7183 8750")
+    expect(formatPhone("（0755）8654-3210", "CN")).toBe("+86 755 8654 3210")
+    expect(formatPhone("123", "US")).toBe("123")
+    expect(formatPhone("", "US")).toBe("")
   })
 })
 

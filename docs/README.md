@@ -2,7 +2,7 @@
 
 How the monorepo is built: the conventions and tools every app and package shares.
 
-- [Setup: Node, pnpm and the package registry](setup.md)
+- [Setup: Node, pnpm and checks](setup.md)
 - [TypeScript conventions](typescript.md)
 - [React hooks](hooks.md)
 - [Preferred stack](tech-stack.md)

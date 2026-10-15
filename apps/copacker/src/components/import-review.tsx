@@ -2,23 +2,27 @@
 
 import type { CatalogVariant } from "@repo/aisle/shopify"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
-import { Fragment, useState } from "react"
+import { Fragment, useId, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"
+import { currencySymbol } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import { priceInMinorUnits, type ImportProposal } from "@/server/import-proposal"
+import { useCan } from "./access"
 import { FormError, SubmitButton } from "./actions"
 import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
+import { InviteSupplier } from "./supplier-actions"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Field, FieldError, FieldGroup } from "./ui/field"
 import { Input } from "./ui/input"
@@ -40,7 +44,7 @@ const reviewApi = api.injectEndpoints({
     }),
     saveImport: build.mutation<
       { id: string; redirect: string },
-      { id: string; revision: number; supplierId: string; reference: string; dueDate: string }
+      { id: string; revision: number; supplierId: string; reference: string; dueDate?: string }
     >({
       query: ({ id, ...body }) => ({
         url: `imports/${id}/save`,
@@ -52,6 +56,32 @@ const reviewApi = api.injectEndpoints({
 })
 
 type Line = ImportProposal["items"][number]
+
+function AmountInput({
+  currency,
+  className,
+  ...props
+}: React.ComponentProps<typeof Input> & { currency: string | null }) {
+  const locale = useLocale()
+  const currencyId = useId()
+  return (
+    <InputGroup className={className}>
+      {currency && (
+        <InputGroupAddon>
+          <span aria-hidden>{currencySymbol(currency, locale)}</span>
+          <span id={currencyId} className="sr-only">
+            {currency}
+          </span>
+        </InputGroupAddon>
+      )}
+      <InputGroupInput
+        {...props}
+        aria-describedby={currency ? currencyId : undefined}
+        className="text-end tabular-nums"
+      />
+    </InputGroup>
+  )
+}
 
 // A catalog product as the review shows it: the product's title, the variant's, and its SKU.
 export type ReviewProduct = { title: string; variant: string; sku: string | null }
@@ -243,10 +273,15 @@ export function ImportReview({
   const validation = useTranslations("validation")
   const errorMessage = useErrorMessage()
   const router = useRouter()
+  const canAddSupplier = useCan("partners", "edit")
   const [proposal, setProposal] = useState(initialProposal)
   const [selectedProducts, setSelectedProducts] = useState(initialSelectedProducts)
   const [revision, setRevision] = useState(initialRevision)
   const [supplierId, setSupplierId] = useState("")
+  const [addingSupplier, setAddingSupplier] = useState(false)
+  const [sourceDetails, setSourceDetails] = useState<Line | null>(null)
+  const sourceReturnFocus = useRef<HTMLElement | null>(null)
+  const supplierButton = useRef<HTMLButtonElement | null>(null)
   const [dueDate, setDueDate] = useState("")
   const [error, setError] = useState<string | null>(null)
   // Once saving has been tried, what it still needs is marked, and clears as it's filled in.
@@ -272,7 +307,6 @@ export function ImportReview({
   const missing = {
     supplier: !supplierId,
     reference: !proposal.reference?.trim(),
-    dueDate: !dueDate,
     currency: !currency
   }
   const flagged = (value: string | number | null) => checking && blank(value)
@@ -379,7 +413,7 @@ export function ImportReview({
         revision: corrected.revision,
         supplierId,
         reference: proposal.reference ?? "",
-        dueDate
+        dueDate: dueDate || undefined
       }).unwrap()
       router.push(result.redirect)
       router.refresh()
@@ -425,17 +459,46 @@ export function ImportReview({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Warnings warnings={proposal.warnings} />
+              {!!proposal.notes?.length && (
+                <details className="text-sm text-muted-foreground">
+                  <summary className="cursor-pointer rounded-sm focus-visible:outline-ring">
+                    {tr("importNotes")}
+                  </summary>
+                  <ul className="mt-2 space-y-2">
+                    {proposal.notes.map((note, index) => (
+                      <li key={index}>{note}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               <FieldGroup className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-1">
-                <SelectField
-                  id="import-supplier"
-                  label={tr("supplier")}
-                  required
-                  placeholder={tr("chooseSupplier")}
-                  error={checking && missing.supplier ? tr("chooseSupplier") : undefined}
-                  options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
-                  value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
-                />
+                <div className="flex flex-col gap-2">
+                  <SelectField
+                    id="import-supplier"
+                    label={tr("supplier")}
+                    required
+                    placeholder={tr("chooseSupplier")}
+                    disabled={suppliers.length === 0}
+                    description={suppliers.length === 0 ? tr("noSuppliers") : undefined}
+                    error={checking && missing.supplier ? tr("chooseSupplier") : undefined}
+                    options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+                    value={supplierId}
+                    onChange={(e) => setSupplierId(e.target.value)}
+                  />
+                  {canAddSupplier && (
+                    <Button
+                      ref={supplierButton}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="self-start"
+                      onClick={() => setAddingSupplier(true)}
+                    >
+                      <Plus data-icon="inline-start" />
+                      {tr("addSupplier")}
+                    </Button>
+                  )}
+                </div>
                 <Field data-invalid={checking && missing.reference}>
                   <FormLabel htmlFor="import-reference" label={tr("reference")} required />
                   <Input
@@ -456,19 +519,9 @@ export function ImportReview({
                     {checking && missing.reference ? validation("required") : undefined}
                   </FieldError>
                 </Field>
-                <Field data-invalid={checking && missing.dueDate}>
-                  <FormLabel htmlFor="import-due-date" label={t("detail.requiredBy")} required />
-                  <DateInput
-                    id="import-due-date"
-                    required
-                    aria-invalid={checking && missing.dueDate}
-                    aria-describedby={checking && missing.dueDate ? "import-due-date-error" : undefined}
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                  <FieldError id="import-due-date-error">
-                    {checking && missing.dueDate ? validation("required") : undefined}
-                  </FieldError>
+                <Field>
+                  <FormLabel htmlFor="import-due-date" label={t("detail.requiredBy")} />
+                  <DateInput id="import-due-date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </Field>
                 <SelectField
                   id="import-currency"
@@ -513,7 +566,6 @@ export function ImportReview({
                 {proposal.items.map((item, index) => {
                   const line = index + 1
                   const product = item.selectedVariantId ? selectedProducts[item.selectedVariantId] : undefined
-                  const source = sourceLine(item, tr)
                   const price = minorUnits(item.pricePerPiece)
                   const lineTotal = minorUnits(item.sourceLineTotal)
                   const computed = item.pieces !== null && price !== null ? item.pieces * price : null
@@ -535,19 +587,6 @@ export function ImportReview({
                               selected={item.selectedVariantId !== null}
                               onFind={() => openSearch(index)}
                             />
-                            {(item.description || source) && (
-                              <p className="mt-1 flex gap-1.5 text-xs text-muted-foreground">
-                                <FileText aria-hidden className="mt-px size-3.5 shrink-0" />
-                                <span className="min-w-0">
-                                  <span className="sr-only">{tr("onTheDocument")} </span>
-                                  {item.description}
-                                  {source && <span className="block">{source}</span>}
-                                </span>
-                              </p>
-                            )}
-                            {item.reason && (
-                              <p className="text-xs text-muted-foreground">{reasonText(item.reason, tr)}</p>
-                            )}
                             <Warnings warnings={warnings} />
                           </div>
                         </TableCell>
@@ -590,7 +629,8 @@ export function ImportReview({
                           />
                         </TableCell>
                         <TableCell className="align-top">
-                          <Input
+                          <AmountInput
+                            currency={currency}
                             aria-label={tr("pricePerUnitOnLine", { line })}
                             required
                             aria-invalid={flagged(item.pricePerPiece)}
@@ -607,7 +647,8 @@ export function ImportReview({
                           />
                         </TableCell>
                         <TableCell className="align-top">
-                          <Input
+                          <AmountInput
+                            currency={currency}
                             aria-label={tr("lineTotalOnLine", { line })}
                             inputMode="decimal"
                             autoComplete="off"
@@ -624,6 +665,7 @@ export function ImportReview({
                         <TableCell className="align-top">
                           <DropdownMenu>
                             <DropdownMenuTrigger
+                              id={`import-line-menu-${index}`}
                               render={
                                 <Button
                                   type="button"
@@ -637,6 +679,14 @@ export function ImportReview({
                               <Ellipsis />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  sourceReturnFocus.current = document.getElementById(`import-line-menu-${index}`)
+                                  setSourceDetails(item)
+                                }}
+                              >
+                                {tr("sourceDetails")}
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openSearch(index)}>
                                 {item.selectedVariantId ? tr("changeProduct") : tr("findProduct")}
                               </DropdownMenuItem>
@@ -806,7 +856,8 @@ export function ImportReview({
                           })
                         }}
                       />
-                      <Input
+                      <AmountInput
+                        currency={currency}
                         aria-label={tr("chargeAmount", { number: index + 1 })}
                         placeholder="0.00"
                         required
@@ -860,7 +911,8 @@ export function ImportReview({
                   </label>
                 </dt>
                 <dd>
-                  <Input
+                  <AmountInput
+                    currency={currency}
                     id="import-document-total"
                     inputMode="decimal"
                     autoComplete="off"
@@ -886,6 +938,35 @@ export function ImportReview({
           </Card>
         </fieldset>
       </form>
+      {canAddSupplier && (
+        <InviteSupplier open={addingSupplier} onOpenChange={setAddingSupplier} finalFocus={supplierButton} />
+      )}
+      <Dialog
+        open={sourceDetails !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSourceDetails(null)
+          }
+        }}
+      >
+        <DialogContent finalFocus={sourceReturnFocus}>
+          <DialogHeader>
+            <DialogTitle>{tr("sourceDetails")}</DialogTitle>
+            <DialogDescription>{sourceDetails?.description}</DialogDescription>
+          </DialogHeader>
+          {sourceDetails && (
+            <>
+              <p className="text-sm">{sourceLine(sourceDetails, tr)}</p>
+              {sourceDetails.reason && (
+                <div className="space-y-1">
+                  <p className="font-medium">{tr("matchDetails")}</p>
+                  <p className="text-sm text-muted-foreground">{reasonText(sourceDetails.reason, tr)}</p>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

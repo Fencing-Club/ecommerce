@@ -73,6 +73,8 @@
     "separator": ", "
   },
   "address": {
+    "findAddress": "Buscar una dirección",
+    "lookupUnavailable": "La búsqueda de direcciones no está disponible. Ingresa la dirección abajo.",
     "country": "País",
     "chooseCountry": "Elige un país",
     "contactName": "Nombre de contacto",

@@ -29,7 +29,7 @@ Shopify edits do not sync back to the pack: reconcile approved content changes b
 
 ## Commands
 
-Run from the repository root on Node 24+ and pnpm 11+:
+Run from the repository root on Node 24+ and pnpm 12+:
 
 ```powershell
 pnpm --filter @repo/fc-theme-base content:build

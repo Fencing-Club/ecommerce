@@ -49,9 +49,12 @@ is not required for this domain rollout. In its dashboard:
   gate, so `/signup` stays open to anyone with the link.
 - **Password reset email** (Emails → Configuration): off, so only Copacker's goes out, from the verified `copacker.ai`
   in production. Local and staging send from `resend.dev`, so their resets reach only the Resend account's owner.
-- **Authentication:** email and password, and Google and Microsoft OAuth. The shared environment uses Copacker's own
-  Google OAuth client; Google sign-in returned successfully to staging in browser acceptance on 2026-10-14.
-  Microsoft still uses WorkOS's demo credentials. A future production identity migration must provision its own
+- **Authentication:** email and password, and Google and Microsoft OAuth. The shared WorkOS staging environment uses
+  Copacker's own Google OAuth client from the `copacker` Google Cloud project. Google sign-in returned successfully to
+  staging in browser acceptance on 2026-10-14. Microsoft still uses WorkOS's demo credentials.
+  Google branding is configured with Copacker's name, cube logo, home page, privacy policy and terms; the Google app
+  remains in Testing pending publication and brand verification. Google can display the WorkOS callback domain until
+  branding is verified. A future production identity migration must provision its own
   provider credentials and preserve existing user and organization associations.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.
 
@@ -59,6 +62,22 @@ WorkOS sends the verification code emails itself. Copacker's own emails (passwor
 go through Resend, from `src/server/email.ts`.
 
 ## Getting started
+
+Address search uses Google's Places Autocomplete Data API (New). Set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` before building
+the app, with website restrictions for each deployment origin and API restrictions for Maps JavaScript API and
+Places API (New), and enable both APIs in the Google Cloud project. The combobox displays Google Maps attribution;
+each search session keeps its token until a result is selected. Selecting a result fills the street, city,
+region, postal code and country, clears any previous unit, and leaves all fields editable. Manual entry remains
+available without a key or if Google is unavailable. Address text typed into the search field is sent to Google.
+Phone numbers are formatted when leaving the field using `libphonenumber-js`; address country supplies the default
+for national numbers, while an explicit international calling code takes precedence. Unrecognized input stays editable.
+
+State/province options use a bundled snapshot of [Google libaddressinput address metadata](https://github.com/google/libaddressinput),
+licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The snapshot is adapted to region keys,
+local and Latin names, and language only. Refresh it with `pnpm --filter copacker exec tsx scripts/update-address-regions.ts`
+and format the generated JSON. Countries without a region list retain manual entry. Changing country clears the
+region; existing and Google-filled names remain visible even when absent from the list. Address email starts with
+the signed-in email when no address email was supplied, and remains editable.
 
 `/onboarding` asks only what's missing, one step at a time beside a preview of the workspace taking shape, and saves
 everything in one request at the end:

@@ -6,9 +6,12 @@ verifyDepsBeforeRun: error
 catalog:
   "@types/node": 24.13.2
   typescript: 7.0.1-rc
+# react-is must match React: recharts reads element types through it, and an older copy hoisted from
+# pretty-format does not recognise React 19 elements.
 overrides:
   react: 19.2.7
   react-dom: 19.2.7
+  react-is: 19.2.7
 allowBuilds:
   esbuild: true
   lefthook: true

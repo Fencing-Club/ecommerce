@@ -131,6 +131,15 @@
       "awdLabel": "Existing Amazon AWD order ID",
       "awdInvalid": "Enter the Amazon order ID, which starts with STAR-",
       "fbaInvalid": "Enter the inbound plan ID, which starts with wf"
+    },
+    "linkExisting": {
+      "title": "Use an existing AWD shipment",
+      "description": "Enter its STAR ID. Copacker will check the cartons and retrieve its labels.",
+      "linked": "Linked to {shipmentId}. Submitting packing will retrieve its labels.",
+      "unlink": "Remove link",
+      "label": "AWD shipment ID",
+      "submit": "Link shipment",
+      "invalid": "Enter a shipment ID starting with STAR-"
     }
   },
   "forward": {

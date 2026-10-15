@@ -46,6 +46,26 @@ describe("import proposals", () => {
     expect(validateProposal(proposal(), new Set([id])).adjustments[0]?.amount).toBe("12.80")
     expect(() => validateProposal(proposal(), new Set())).toThrow("unverified")
   })
+  it("keeps separate packing, freight, tax and negative discounts in the proposal", () => {
+    const result = validateProposal(
+      {
+        ...proposal(),
+        adjustments: [
+          { description: "Packing, 1560 packs at 0.16", amount: "249.60", sourcePage: 2 },
+          { description: "Freight", amount: "80.00", sourcePage: 2 },
+          { description: "Tax", amount: "6.40", sourcePage: 2 },
+          { description: "Discount", amount: "-20.00", sourcePage: 2 }
+        ],
+        notes: ["Totals match."],
+        warnings: []
+      },
+      new Set([id])
+    )
+    expect(result.adjustments.map((charge) => charge.amount)).toEqual(["249.60", "80.00", "6.40", "-20.00"])
+    expect(result.notes).toEqual(["Totals match."])
+    expect(result.warnings).toEqual([])
+    expect(result.items).toHaveLength(1)
+  })
   it("allows a reviewer-added line without inventing its source page or product identity", () => {
     const p = proposal()
     const manual = { ...p.items[0]!, sourcePage: null, selectedVariantId: null, candidateVariantIds: [] }
@@ -229,9 +249,20 @@ describe("provider failures and bounds", () => {
   )
   it("stops before accepting a proposal over the token budget", async () => {
     const body = await toolResponse("finish_import", proposal()).json()
-    body.usage.total_tokens = 150001
+    body.usage.total_tokens = 600001
     const transport = vi.fn<typeof fetch>().mockResolvedValue(Response.json(body))
     await expect(runImportAgent(input(), transport)).rejects.toThrow("token budget")
+  })
+  it("accepts a complete 113-line proposal after batched catalog matching exceeds the old budget", async () => {
+    const large = proposal()
+    large.items = Array.from({ length: 113 }, () => ({ ...large.items[0]! }))
+    const body = await toolResponse("finish_import", large).json()
+    body.usage.total_tokens = 180000
+    const transport = vi.fn<typeof fetch>().mockImplementation(async (_url, request) => {
+      expect(JSON.parse(String(request?.body)).max_tokens).toBe(32000)
+      return Response.json(body)
+    })
+    expect((await runImportAgent(input(), transport)).proposal.items).toHaveLength(113)
   })
   it("bounds repeated lookups even if the model never finishes", async () => {
     const execute = vi.fn<() => Promise<unknown>>().mockResolvedValue([])

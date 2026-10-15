@@ -76,7 +76,8 @@ export function OnboardingWizard({
   kind: settled,
   initial,
   invitedBy,
-  account
+  account,
+  accountEmail = ""
 }: {
   steps: WizardStep[]
   finish: WizardFinish
@@ -87,6 +88,7 @@ export function OnboardingWizard({
   invitedBy: string | null
   // The corner across from the logo: who's signed in and a way out.
   account: React.ReactNode
+  accountEmail?: string
 }) {
   const t = useTranslations("onboarding")
   const router = useRouter()
@@ -95,7 +97,13 @@ export function OnboardingWizard({
   const formErrorMap = useFormErrorMap()
   const form = useForm<WizardValues, unknown, z.output<typeof wizardSchema>>({
     resolver: zodResolver(wizardSchema, { error: formErrorMap }),
-    defaultValues: initial,
+    defaultValues: {
+      ...initial,
+      address: {
+        ...initial.address,
+        address: { ...initial.address.address, email: initial.address.address.email || accountEmail }
+      }
+    },
     mode: "onTouched"
   })
   const [index, setIndex] = useState(0)

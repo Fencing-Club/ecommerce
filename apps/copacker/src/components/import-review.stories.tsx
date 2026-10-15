@@ -92,8 +92,16 @@ export const Review = meta.story({
     await expect(first.getByText("Canvas tote bag")).toBeVisible()
     await expect(first.getByText("Natural")).toBeVisible()
     await expect(first.getByText("TOTE-001")).toBeVisible()
-    await expect(first.getByText("SKU LM-TOTE-001, 240 pcs at 4.25, page 1")).toBeVisible()
-    await expect(first.getByText("SKU matches the supplier SKU")).toBeVisible()
+    await expect(first.queryByText("SKU matches the supplier SKU")).toBeNull()
+    await userEvent.click(first.getByRole("button", { name: "More for line 1" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Source details" }))
+    const details = within(await screen.findByRole("dialog", { name: "Source details" }))
+    await waitFor(() => expect(details.getByText("SKU LM-TOTE-001, 240 pcs at 4.25, page 1")).toBeVisible())
+    await expect(details.getByText("SKU matches the supplier SKU")).toBeVisible()
+    await userEvent.click(details.getByRole("button", { name: "Close" }))
+    await waitFor(() => expect(first.getByRole("button", { name: "More for line 1" })).toHaveFocus())
+    await expect(first.getByRole("textbox", { name: "Price per unit on line 1" })).toHaveAccessibleDescription("USD")
+    await expect(first.getByRole("textbox", { name: "Line total on line 1" }).parentElement).toHaveTextContent("$")
 
     const second = line(canvas, 2)
     await expect(second.getByText("No matching product")).toBeVisible()
@@ -125,14 +133,15 @@ export const SaveDraft = meta.story({
     await expect(supplier).toHaveAttribute("aria-invalid", "true")
     await expect(supplier).toHaveAccessibleDescription("Choose a supplier")
     const requiredBy = canvas.getByLabelText(/Required by/)
-    await expect(requiredBy).toHaveAttribute("aria-invalid", "true")
-    await expect(requiredBy).toHaveAccessibleDescription("Fill in this field")
+    await expect(requiredBy).not.toBeRequired()
+    await expect(requiredBy).not.toHaveAttribute("aria-invalid", "true")
     await expect(canvas.getByRole("textbox", { name: /Reference number/ })).toHaveAttribute("aria-invalid", "false")
     await expect(saved).not.toHaveBeenCalled()
 
     await fillDetails(canvas)
     await expect(supplier).toHaveAttribute("aria-invalid", "false")
     await expect(canvas.queryByText("Fill in this field")).toBeNull()
+    await userEvent.clear(requiredBy)
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
     await expect(corrected).toHaveBeenCalledWith({ revision: 3, proposal: importProposal })
@@ -140,7 +149,6 @@ export const SaveDraft = meta.story({
       revision: 4,
       supplierId,
       reference: "LM-2026-118",
-      dueDate: "2026-11-01",
       reviewed: true,
       destination: "amazon"
     })
@@ -194,7 +202,7 @@ export const FindProduct = meta.story({
 
     const second = line(canvas, 2)
     await expect(second.getByText("Waffle towel")).toBeVisible()
-    await expect(second.getByText("Selected during review")).toBeVisible()
+    await expect(second.queryByText("Selected during review")).toBeNull()
     await expect(canvas.queryByRole("textbox", { name: "Find a product for line 2" })).toBeNull()
     // The menu now offers to change it.
     await userEvent.click(second.getByRole("button", { name: "More for line 2" }))
@@ -232,7 +240,7 @@ export const AddAndRemoveLines = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add line" }))
     await expect(canvas.getByRole("textbox", { name: "Find a product for line 3" })).toHaveValue("")
-    await expect(line(canvas, 3).getByText("Added during review")).toBeVisible()
+    await expect(line(canvas, 3).queryByText("Added during review")).toBeNull()
     await fillDetails(canvas)
     // Its empty cells are marked, the first focused, until they're filled in.
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
@@ -299,5 +307,33 @@ export const NoCurrency = meta.story({
     await userEvent.click(canvas.getByRole("combobox", { name: "Currency" }))
     await userEvent.click(await screen.findByRole("option", { name: "Euro (EUR €)" }))
     await expect(await canvas.findByText("€1,975.00")).toBeVisible()
+    for (const name of ["Price per unit on line 1", "Line total on line 1", "Amount of charge 1", "Document total"]) {
+      const input = canvas.getByRole("textbox", { name })
+      await expect(input).toHaveAccessibleDescription("EUR")
+      await expect(input.parentElement).toHaveTextContent("€")
+    }
+  }
+})
+
+export const NoSuppliers = meta.story({
+  args: { suppliers: [] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("combobox", { name: "Supplier" })).toBeDisabled()
+    await expect(canvas.getByText("No suppliers in this workspace yet. Add one to continue.")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Add supplier" }))
+    const dialog = within(await screen.findByRole("dialog"))
+    await waitFor(() => expect(dialog.getByRole("textbox", { name: /company/i })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await expect(canvas.getByRole("textbox", { name: /Reference number/ })).toHaveValue("LM-2026-118")
+  }
+})
+
+export const ImportNotes = meta.story({
+  args: { initialProposal: { ...importProposal, notes: ["Product totals and charges match the document total."] } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("The document has no ship-to address")).toBeVisible()
+    await expect(canvas.getByText("Product totals and charges match the document total.")).not.toBeVisible()
+    await userEvent.click(canvas.getByText("Import notes"))
+    await expect(canvas.getByText("Product totals and charges match the document total.")).toBeVisible()
   }
 })

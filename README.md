@@ -14,7 +14,7 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 - `packages/shopify-emails` and `packages/shopify-content`: the supporting Shopify toolkits.
 - `packages/typescript-config` and `packages/oxlint-config`: shared engineering configuration.
 
-Use Node 24+ and pnpm 11. Run `pnpm install`, `pnpm dev`, and `pnpm verify` from this directory. `pnpm build` builds all
+Use Node 24+ and pnpm 12. Run `pnpm install`, `pnpm dev`, and `pnpm verify` from this directory. `pnpm build` builds all
 applicable packages. [Setup](docs/setup.md) covers the registry; Copacker's releases and credentials are in
 [its operations guide](apps/copacker/docs/operations.md).
 

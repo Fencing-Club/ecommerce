@@ -4,7 +4,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 [engineering docs](../../../docs/README.md).
 
 - [Product rules](domain.md)
-- [API: routes and actions](api-contract.md)
+- [API: routes, actions and document imports](api-contract.md)
 - [Amazon inbound shipments: AWD orders and FBA inbound plans](amazon-inbound.md)
 - [Sales demand integration contract](sales-demand.md)
 - [Overview page](overview.md)

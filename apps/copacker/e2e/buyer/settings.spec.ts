@@ -233,10 +233,11 @@ test("adds a delivery address, edits it and removes it", async ({ page }) => {
   await dialog.getByRole("textbox", { name: "Street address" }).fill("200 Dock Road")
   await dialog.getByRole("textbox", { name: "Address line 2" }).fill("Door 4")
   await dialog.getByRole("textbox", { name: "City" }).fill("Portland")
-  await dialog.getByRole("textbox", { name: "State or province" }).fill("OR")
   await dialog.getByRole("textbox", { name: "Postal code" }).fill("97201")
   await dialog.getByRole("combobox", { name: "Country" }).click()
   await page.getByRole("option", { name: "United States", exact: true }).click()
+  await dialog.getByRole("combobox", { name: "State or province" }).click()
+  await page.getByRole("option", { name: "Oregon", exact: true }).click()
   await dialog.getByRole("button", { name: "Save address" }).click()
   await expect(dialog).toBeHidden()
 

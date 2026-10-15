@@ -1,4 +1,4 @@
-import type { PackingDraft } from "@repo/aisle"
+import type { OrderInput, PackingDraft } from "@repo/aisle"
 import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
@@ -56,6 +56,42 @@ const meta = preview.meta({
   },
   beforeEach: ({ msw }) => {
     msw.use(packingActions({ canSubmit: true, requiresApproval: false, issues: [] }))
+  }
+})
+
+export const LinkExistingAwd = meta.story({
+  args: { linkedAmazonShipmentId: null },
+  beforeEach: ({ msw }) => {
+    msw.use(actionHandler(actions, (body) => HttpResponse.json({ revision: Number(body.data.revision) + 1 })))
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Add carton" }))
+    const carton = canvas.getByRole("textbox", { name: "Carton number" })
+    await userEvent.type(carton, "A1")
+    await userEvent.type(canvas.getByRole("textbox", { name: "AWD shipment ID" }), "star-example")
+    await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
+    await expect(await canvas.findByText(/Linked to STAR-EXAMPLE/)).toBeVisible()
+    await expect(carton).toHaveValue("A1")
+    await expect(actions).toHaveBeenNthCalledWith(1, {
+      action: "shipment.save",
+      data: expect.objectContaining({
+        revision: 1,
+        draft: expect.objectContaining({
+          cartons: [{ cartonId: "A1", items: [{ itemId: tote!.id }] }]
+        })
+      })
+    })
+    await expect(actions).toHaveBeenNthCalledWith(2, {
+      action: "shipment.linkExisting",
+      data: { id: shipment.id, revision: 2, amazonShipmentId: "STAR-EXAMPLE" }
+    })
+    await userEvent.click(canvas.getByRole("button", { name: "Remove link" }))
+    await expect(await canvas.findByRole("textbox", { name: "AWD shipment ID" })).toBeVisible()
+    await expect(carton).toHaveValue("A1")
+    await expect(actions).toHaveBeenNthCalledWith(4, {
+      action: "shipment.linkExisting",
+      data: { id: shipment.id, revision: 4, amazonShipmentId: null }
+    })
   }
 })
 
@@ -161,6 +197,75 @@ export const Cartons = meta.story({
     await expect(canvas.getByText("80 of 100")).not.toHaveClass("text-destructive")
     // With several products, each carton says which it holds.
     await expect(canvas.getAllByRole("combobox", { name: "Product" })).toHaveLength(2)
+  }
+})
+
+const mixedDraft: PackingDraft = {
+  ...draft,
+  cartons: [
+    {
+      ...draft.cartons![0]!,
+      items: [
+        { itemId: tote!.id, pieces: 14 },
+        { itemId: apron!.id, pieces: 12 }
+      ]
+    }
+  ]
+}
+const fbaOrder: OrderInput = {
+  ...order,
+  destination: "amazon",
+  items: order.items.map((item) => ({ ...item, amazonNetwork: "fba" }))
+}
+
+// Reopening and saving a mixed carton must preserve every size, including when its carton is copied or removed.
+export const MixedCarton = meta.story({
+  args: { order: fbaOrder, initial: mixedDraft, invoice, addresses: [savedAddress] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("combobox", { name: "Product" })).toHaveLength(2)
+    await expect(canvas.getByText("1 carton, 26 units")).toBeVisible()
+    await expect(canvas.getByText("12 of 120")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Add product to carton" }))
+    const quantities = canvas.getAllByRole("spinbutton", { name: "Units" })
+    await userEvent.type(quantities[2]!, "10")
+    await expect(canvas.getByText("1 carton, 36 units")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Duplicate carton C1" }))
+    await expect(canvas.getByText("2 cartons, 72 units")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Remove carton C1" }))
+    await expect(canvas.getByText("1 carton, 36 units")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Remove product 3 from carton" }))
+    await expect(canvas.getByText("1 carton, 26 units")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
+    await expect(await canvas.findByText("Draft saved")).toBeVisible()
+    await expect(actions).toHaveBeenLastCalledWith({
+      action: "shipment.save",
+      data: expect.objectContaining({
+        draft: expect.objectContaining({
+          cartons: [
+            expect.objectContaining({
+              items: [
+                { itemId: tote!.id, pieces: 14 },
+                { itemId: apron!.id, pieces: 12 }
+              ]
+            })
+          ]
+        })
+      })
+    })
+  }
+})
+
+export const AwdCartons = meta.story({
+  args: {
+    order: { ...fbaOrder, items: fbaOrder.items.map((item) => ({ ...item, amazonNetwork: "awd_us" })) },
+    initial: draft,
+    invoice,
+    addresses: [savedAddress]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole("combobox", { name: "Product" })).toHaveLength(2)
+    await expect(canvas.queryByRole("button", { name: "Add product to carton" })).toBeNull()
+    await expect(canvas.getByText("2 cartons, 80 units")).toBeVisible()
   }
 })
 

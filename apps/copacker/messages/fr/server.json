@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku} : donnez à tous les cartons le même contenu, les mêmes dimensions et le même poids, ou répartissez-les en expéditions séparées",
       "overQuantity": "{sku} : les cartons dépassent la quantité restante du bon de commande",
       "unknownChange": "Les modifications de facture doivent porter sur des articles distincts du bon de commande"
-    }
+    },
+    "networkMismatch": "Emballez uniquement les produits du réseau Amazon de cet envoi."
   },
   "workflow": {
     "arrived": "Les marchandises sont arrivées",

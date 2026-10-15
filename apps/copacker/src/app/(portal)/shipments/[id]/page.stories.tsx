@@ -87,6 +87,9 @@ async function ShipmentPage({
   const seesOrder = can(s, "orders")
   const prices = can(s, "prices")
   const id = shipment.id
+  const packingOrder = shipment.amazonNetwork
+    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    : order.data
   const snapshot = shipment.snapshot ?? order.data
   const editable =
     editsShipments &&
@@ -210,13 +213,16 @@ async function ShipmentPage({
         <PackingForm
           orderId={order.id}
           shipmentId={id}
+          linkedAmazonShipmentId={
+            isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
+          }
           key={`${id}:${order.revision}`}
           revision={shipment.revision}
           orderRevision={order.revision}
           availablePieces={Object.fromEntries(
             order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
           )}
-          order={prices ? order.data : unpricedOrder(order.data)}
+          order={prices ? packingOrder : unpricedOrder(packingOrder)}
           initial={
             prices
               ? (shipment.packingDraft ?? shipment.packing)

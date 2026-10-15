@@ -73,185 +73,171 @@ export function ImportIntake() {
   const items = imports.data?.items ?? []
   const listError = imports.isError ? errorMessage(imports.error) : changeError
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="flex flex-col items-start gap-4"
-            onSubmit={async (event) => {
-              event.preventDefault()
-              if (!file) {
-                return
-              }
+    <Card className="@container gap-0 overflow-hidden py-0">
+      <CardHeader className="px-4 pt-4">
+        <CardTitle>{t("title")}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <form
+          className="flex flex-col items-start gap-4"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            if (!file) {
+              return
+            }
+            setError(null)
+            const body = new FormData()
+            body.set("file", file)
+            try {
+              await start(body).unwrap()
+              setFile(null)
+              await imports.refetch()
+            } catch (failure) {
+              setError(errorMessage(failure))
+            }
+          }}
+        >
+          <FileDropzone
+            accept={pdfFiles}
+            maxBytes={maxBytes}
+            hint={t("hint")}
+            file={file}
+            onFileChange={(next) => {
+              setFile(next)
               setError(null)
-              const body = new FormData()
-              body.set("file", file)
-              try {
-                await start(body).unwrap()
-                setFile(null)
-                await imports.refetch()
-              } catch (failure) {
-                setError(errorMessage(failure))
-              }
             }}
-          >
-            <FileDropzone
-              accept={pdfFiles}
-              maxBytes={maxBytes}
-              hint={t("hint")}
-              file={file}
-              onFileChange={(next) => {
-                setFile(next)
-                setError(null)
-              }}
-              disabled={upload.isLoading}
-              error={error ?? undefined}
-            />
-            <SubmitButton type="submit" pending={upload.isLoading} disabled={!file}>
-              {t("import")}
-            </SubmitButton>
-          </form>
-        </CardContent>
-      </Card>
-      <Card className="@container gap-0 overflow-hidden py-0">
-        <CardHeader className="border-b p-4">
-          <CardTitle>{t("imports")}</CardTitle>
-        </CardHeader>
-        {listError && (
-          <div className="border-b p-4">
-            <FormError message={listError} />
-          </div>
-        )}
-        {imports.isLoading && <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("loading")}</p>}
-        {imports.isSuccess && !items.length && (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>
-        )}
-        {items.length > 0 && (
-          <Table framed={false} className={edgeTable}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("columns.file")}</TableHead>
-                <TableHead className="hidden @xl:table-cell">{t("columns.uploaded")}</TableHead>
-                <TableHead>{t("columns.status")}</TableHead>
-                <TableHead>
-                  <span className="sr-only">{t("columns.actions")}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => {
-                const status: { label: string; tone: StatusTone } = isKnownStatus(item.status)
-                  ? { label: t(`statuses.${item.status}`), tone: statuses[item.status] }
-                  : { label: item.status, tone: "neutral" }
-                // A review opens the review page; a saved import, its draft purchase order.
-                const href = ["review", "saved"].includes(item.status) ? `/orders/import/${item.id}` : null
-                const cells = (
-                  <>
-                    <TableCell className="w-full max-w-0">
-                      {href ? (
-                        <Link href={href} className="block truncate font-medium hover:underline">
-                          {fileName(item.filename, { title: item.filename })}
-                        </Link>
-                      ) : (
-                        <span className="block truncate font-medium">
-                          {fileName(item.filename, { title: item.filename })}
-                        </span>
-                      )}
-                      <span className="block text-xs text-muted-foreground @xl:hidden">
-                        {formatDate(item.createdAt, locale, timeZone)}
+            disabled={upload.isLoading}
+            error={error ?? undefined}
+          />
+          <SubmitButton className="self-end" type="submit" pending={upload.isLoading} disabled={!file}>
+            {t("import")}
+          </SubmitButton>
+        </form>
+      </CardContent>
+      {listError && (
+        <div className="border-t p-4">
+          <FormError message={listError} />
+        </div>
+      )}
+      {imports.isLoading && <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("loading")}</p>}
+      {items.length > 0 && (
+        <Table aria-label={t("imports")} framed={false} className={edgeTable}>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("columns.file")}</TableHead>
+              <TableHead className="hidden @xl:table-cell">{t("columns.uploaded")}</TableHead>
+              <TableHead>{t("columns.status")}</TableHead>
+              <TableHead>
+                <span className="sr-only">{t("columns.actions")}</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => {
+              const status: { label: string; tone: StatusTone } = isKnownStatus(item.status)
+                ? { label: t(`statuses.${item.status}`), tone: statuses[item.status] }
+                : { label: item.status, tone: "neutral" }
+              // A review opens the review page; a saved import, its draft purchase order.
+              const href = ["review", "saved"].includes(item.status) ? `/orders/import/${item.id}` : null
+              const cells = (
+                <>
+                  <TableCell className="w-full max-w-0">
+                    {href ? (
+                      <Link href={href} className="block truncate font-medium hover:underline">
+                        {fileName(item.filename, { title: item.filename })}
+                      </Link>
+                    ) : (
+                      <span className="block truncate font-medium">
+                        {fileName(item.filename, { title: item.filename })}
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground @xl:table-cell">
+                    )}
+                    <span className="block text-xs text-muted-foreground @xl:hidden">
                       {formatDate(item.createdAt, locale, timeZone)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                        {href && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            nativeButton={false}
-                            render={<Link href={href} />}
-                            className="hidden @md:inline-flex"
-                          >
-                            {item.status === "saved" ? t("openDraft") : t("review")}
-                          </Button>
-                        )}
-                        {/* On a narrow card, Retry is only in the row's menu, so the file's name keeps its room. */}
-                        {item.status === "failed" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={changing.isLoading}
-                            onClick={() => update(item.id, "POST")}
-                            className="hidden @md:inline-flex"
-                          >
-                            {t("retry")}
-                          </Button>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground @xl:table-cell">
+                    {formatDate(item.createdAt, locale, timeZone)}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                      {href && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          nativeButton={false}
+                          render={<Link href={href} />}
+                          className="hidden @md:inline-flex"
+                        >
+                          {item.status === "saved" ? t("openDraft") : t("review")}
+                        </Button>
+                      )}
+                      {/* On a narrow card, Retry is only in the row's menu, so the file's name keeps its room. */}
+                      {item.status === "failed" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={changing.isLoading}
+                          onClick={() => update(item.id, "POST")}
+                          className="hidden @md:inline-flex"
+                        >
+                          {t("retry")}
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button variant="ghost" size="icon-sm" aria-label={t("moreFor", { file: item.filename })} />
+                          }
+                        >
+                          <Ellipsis />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem
                             render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={t("moreFor", { file: item.filename })}
+                              <a
+                                href={`/api/imports/${item.id}/source`}
+                                target="_blank"
+                                rel="noreferrer"
+                                aria-label={t("viewPdf")}
                               />
                             }
                           >
-                            <Ellipsis />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem
-                              render={
-                                <a
-                                  href={`/api/imports/${item.id}/source`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  aria-label={t("viewPdf")}
-                                />
-                              }
-                            >
-                              {t("viewPdf")}
+                            {t("viewPdf")}
+                          </DropdownMenuItem>
+                          {item.status === "failed" && (
+                            <DropdownMenuItem disabled={changing.isLoading} onClick={() => update(item.id, "POST")}>
+                              {t("retry")}
                             </DropdownMenuItem>
-                            {item.status === "failed" && (
-                              <DropdownMenuItem disabled={changing.isLoading} onClick={() => update(item.id, "POST")}>
-                                {t("retry")}
-                              </DropdownMenuItem>
-                            )}
-                            {!["saved", "cancelled"].includes(item.status) && (
-                              <DropdownMenuItem
-                                variant="destructive"
-                                disabled={changing.isLoading}
-                                onClick={() => update(item.id, "DELETE")}
-                              >
-                                {t("cancelImport")}
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </>
-                )
-                return href ? (
-                  <LinkRow key={item.id} href={href}>
-                    {cells}
-                  </LinkRow>
-                ) : (
-                  <TableRow key={item.id}>{cells}</TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
-    </>
+                          )}
+                          {!["saved", "cancelled"].includes(item.status) && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={changing.isLoading}
+                              onClick={() => update(item.id, "DELETE")}
+                            >
+                              {t("cancelImport")}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </>
+              )
+              return href ? (
+                <LinkRow key={item.id} href={href}>
+                  {cells}
+                </LinkRow>
+              ) : (
+                <TableRow key={item.id}>{cells}</TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </Card>
   )
 }

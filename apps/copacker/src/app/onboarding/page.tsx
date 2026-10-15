@@ -68,6 +68,7 @@ export default async function Onboarding({
           initial={blank}
           invitedBy={invitation.from}
           account={account}
+          accountEmail={user.email}
         />
       )
     }
@@ -84,6 +85,7 @@ export default async function Onboarding({
         }}
         invitedBy={invitation.from}
         account={account}
+        accountEmail={user.email}
       />
     )
   }
@@ -97,6 +99,7 @@ export default async function Onboarding({
         initial={blank}
         invitedBy={null}
         account={account}
+        accountEmail={user.email}
       />
     )
   }
@@ -113,6 +116,7 @@ export default async function Onboarding({
         initial={blank}
         invitedBy={null}
         account={account}
+        accountEmail={user.email}
       />
     )
   }

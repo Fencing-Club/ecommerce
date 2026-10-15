@@ -73,6 +73,8 @@
     "separator": ", "
   },
   "address": {
+    "findAddress": "पता खोजें",
+    "lookupUnavailable": "पते की खोज उपलब्ध नहीं है। नीचे पता दर्ज करें।",
     "country": "देश",
     "chooseCountry": "देश चुनें",
     "contactName": "संपर्क व्यक्ति का नाम",

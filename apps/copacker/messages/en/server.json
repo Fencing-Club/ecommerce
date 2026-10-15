@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku}: give every carton the same contents, dimensions, and weight, or split them into separate shipments",
       "overQuantity": "{sku}: cartons exceed the quantity remaining on the purchase order",
       "unknownChange": "Invoice changes must reference unique items on the purchase order"
-    }
+    },
+    "networkMismatch": "Pack only products assigned to this shipment’s Amazon network."
   },
   "workflow": {
     "arrived": "The goods have arrived",

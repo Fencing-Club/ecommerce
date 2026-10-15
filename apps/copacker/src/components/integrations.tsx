@@ -29,6 +29,7 @@ import {
   SheetTrigger
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { AmazonAdsIndicator } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
@@ -194,7 +195,7 @@ function Connected({
         </StatusBadge>
       }
       footer={
-        <span className="flex min-w-0 flex-col gap-2">
+        <span className="flex w-full min-w-0 flex-col gap-2">
           <span className="truncate text-muted-foreground">{connection.account}</span>
           {store === "amazon" && (
             <span className="flex flex-col gap-1.5">
@@ -216,6 +217,7 @@ function Connected({
             </span>
           )}
           <StoreSync store={store} />
+          {store === "amazon" && <AmazonAdsIndicator admin={admin} />}
         </span>
       }
     />

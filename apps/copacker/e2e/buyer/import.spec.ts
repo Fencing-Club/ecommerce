@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 test("starts with no imports and Import disabled", async ({ page }) => {
   await expect(page.getByText("Up to 10 MB and 50 pages")).toBeVisible()
   await expect(page.getByRole("button", { name: "Import" })).toBeDisabled()
-  await expect(page.getByText("No imports yet")).toBeVisible()
+  await expect(page.getByRole("table")).toHaveCount(0)
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Purchase orders" })
   ).toHaveAttribute("href", "/orders")
@@ -52,5 +52,5 @@ test("takes a PDF and shows what the server says about it", async ({ page }) => 
   // Locally there's no language model to read it, so the import is refused with the server's message.
   await importButton.click()
   await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible()
-  await expect(page.getByText("No imports yet")).toBeVisible()
+  await expect(page.getByRole("table")).toHaveCount(0)
 })

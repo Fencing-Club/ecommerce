@@ -71,8 +71,6 @@ For building command-line tools.
 - **the-new-css-reset** — CSS reset.
 - **@fluentui/react-components** — component library (Fluent UI v9) · **@fluentui/react-icons** — icons for
   Fluent-based apps and product surfaces.
-- **@1js/fluentui-rhf-inputs** — controlled Fluent UI v9 inputs for React Hook Form on Fluent surfaces.
-- **@1js/fluentui-modal-manager** — implicit and awaitable modals for Fluent surfaces.
 - **@fluentui/react-datepicker-compat** + **@fluentui/react-timepicker-compat** — date and time inputs for Fluent
   surfaces.
 - **recharts** — charts / data visualization; **@fluentui/react-charting** on Fluent surfaces.

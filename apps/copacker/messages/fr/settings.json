@@ -233,16 +233,18 @@
   },
   "amazonAds": {
     "title": "Amazon Ads",
-    "description": "Dépenses quotidiennes Sponsored Products, Brands et Display. Les périodes entièrement couvertes utilisent les dépenses publicitaires à la place des paiements Amazon. Les autres utilisent les paiements comptabilisés. Les rapports couvrent jusqu’à 90 jours et peuvent être ajustés par Amazon.",
-    "unavailable": "La configuration Amazon Ads est incomplète.",
+    "description": "Importez les dépenses publicitaires quotidiennes.",
+    "unavailable": "Configuration Ads requise.",
     "error": "Impossible de mettre à jour Amazon Ads. Réessayez.",
     "syncing": "Synchronisation des dépenses…",
-    "failed": "Certains rapports ont échoué. Relancez la synchronisation ou reconnectez le compte.",
+    "failed": "Échec de synchronisation. Réessayez ou reconnectez-vous.",
     "connected": "Connecté",
     "notConnected": "Non connecté",
     "reconnect": "Reconnecter Ads",
     "connect": "Connecter Amazon Ads",
     "sync": "Synchroniser les dépenses",
-    "disconnect": "Déconnecter Ads"
+    "disconnect": "Déconnecter Ads",
+    "checking": "Vérification…",
+    "statusUnavailable": "Statut indisponible"
   }
 }

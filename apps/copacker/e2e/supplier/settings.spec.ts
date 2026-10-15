@@ -86,10 +86,11 @@ test("adds, edits and removes a pickup address", async ({ page }) => {
   await dialog.getByRole("textbox", { name: "Phone number" }).fill("+1 206 555 0142")
   await dialog.getByRole("textbox", { name: "Street address" }).fill("42 Pier Road")
   await dialog.getByRole("textbox", { name: "City" }).fill("Tacoma")
-  await dialog.getByRole("textbox", { name: "State or province" }).fill("WA")
   await dialog.getByRole("textbox", { name: "Postal code" }).fill("98402")
   await dialog.getByRole("combobox", { name: "Country" }).click()
   await page.getByRole("option", { name: "United States", exact: true }).click()
+  await dialog.getByRole("combobox", { name: "State or province" }).click()
+  await page.getByRole("option", { name: "Washington", exact: true }).click()
   await dialog.getByRole("button", { name: "Save address" }).click()
   await expect(dialog).toBeHidden()
 

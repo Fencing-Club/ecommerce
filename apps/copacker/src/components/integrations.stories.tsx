@@ -1,3 +1,4 @@
+import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import {
@@ -10,6 +11,7 @@ import {
   stockSync,
   storeSyncHandlers
 } from "@/stories/fixtures/logistics"
+import { AmazonAdsSettings } from "./amazon-ads"
 import { Integrations } from "./integrations"
 
 const sent: ActionRequest[] = []
@@ -48,6 +50,33 @@ const meta = preview.meta({
     }
     window.addEventListener("submit", submitted)
     return () => window.removeEventListener("submit", submitted)
+  }
+})
+
+export const AmazonAdsNotConnected = meta.story({
+  args: { amazon, amazonSettings: <AmazonAdsSettings available /> },
+  play: async ({ canvas }) => {
+    const card = canvas.getByRole("button", { name: "Amazon settings" })
+    await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
+    await expect(await within(card).findByText("Not connected")).toBeVisible()
+    await userEvent.click(card)
+    const panel = await screen.findByRole("dialog", { name: "Amazon" })
+    await waitFor(() => expect(within(panel).getByRole("link", { name: "Connect Amazon Ads" })).toBeVisible())
+  }
+})
+
+export const AmazonAdsConnected = meta.story({
+  args: { amazon },
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/connections/amazon-ads", () =>
+        HttpResponse.json({ connected: true, active: false, failed: false })
+      )
+    ),
+  play: async ({ canvas }) => {
+    const card = canvas.getByRole("button", { name: "Amazon settings" })
+    await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
+    await waitFor(() => expect(within(card).getAllByText("Connected")).toHaveLength(2))
   }
 })
 

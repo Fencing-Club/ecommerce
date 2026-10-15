@@ -131,6 +131,15 @@
       "awdLabel": "现有 Amazon AWD 订单 ID",
       "awdInvalid": "请输入以 STAR- 开头的 Amazon 订单 ID",
       "fbaInvalid": "请输入以 wf 开头的入库计划 ID"
+    },
+    "linkExisting": {
+      "title": "使用现有 AWD 货件",
+      "description": "输入其 STAR 编号。Copacker 将核对箱子并获取标签。",
+      "linked": "已关联 {shipmentId}。提交装箱信息后将获取其标签。",
+      "unlink": "取消关联",
+      "label": "AWD 货件编号",
+      "submit": "关联货件",
+      "invalid": "请输入以 STAR- 开头的货件编号"
     }
   },
   "forward": {

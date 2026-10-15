@@ -121,7 +121,12 @@
     "charges": "چارجز",
     "documentTotal": "دستاویز کا کل",
     "overDocumentTotal": "دستاویز کے کل سے {amount} زیادہ",
-    "underDocumentTotal": "دستاویز کے کل سے {amount} کم"
+    "underDocumentTotal": "دستاویز کے کل سے {amount} کم",
+    "sourceDetails": "ماخذ کی تفصیلات",
+    "matchDetails": "مطابقت کی تفصیلات",
+    "importNotes": "درآمد کے نوٹس",
+    "noSuppliers": "اس ورک اسپیس میں ابھی کوئی سپلائر نہیں ہے۔ جاری رکھنے کے لیے ایک شامل کریں۔",
+    "addSupplier": "سپلائر شامل کریں"
   },
   "builder": {
     "newTitle": "نیا خریداری آرڈر",
@@ -277,7 +282,9 @@
       "forwarderShipped": "{forwarder} نے سامان بھیج دیا: {tracking}",
       "packingReady": "پیکنگ جمع کرائی گئی؛ بھیجنے کے لیے تیار",
       "invoiceEntered": "خریداری آرڈر میں تبدیلیوں کے ساتھ انوائس درج کی گئی",
-      "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں"
+      "invoiceChangesSubmitted": "سپلائر نے انوائس کی تبدیلیاں منظوری کے لیے جمع کرائیں",
+      "existingAwdLinked": "موجودہ AWD شپمنٹ {shipmentId} منسلک کر دی گئی",
+      "existingAwdUnlinked": "موجودہ AWD شپمنٹ کا لنک ہٹا دیا گیا"
     }
   },
   "actions": {
@@ -330,7 +337,7 @@
     },
     "statuses": {
       "queued": "انتظار میں",
-      "running": "پڑھا جا رہا ہے",
+      "running": "پروسیسنگ جاری ہے",
       "review": "جائزے کے لیے تیار",
       "failed": "ناکام",
       "cancelled": "منسوخ",
@@ -393,7 +400,9 @@
     "addAddress": "پتہ شامل کریں",
     "pickupAddress": "پک اپ کا پتہ",
     "otherAddress": "دوسرا پتہ",
-    "readyForPickup": "پک اپ کے لیے تیار"
+    "readyForPickup": "پک اپ کے لیے تیار",
+    "addCartonProduct": "کارٹن میں پروڈکٹ شامل کریں",
+    "removeCartonProduct": "کارٹن سے پروڈکٹ {number} ہٹائیں"
   },
   "paymentTerms": {
     "net7": "Net 7",

@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "Die Warnetiketten konnten nicht erstellt werden. Versuchen Sie es erneut.",
   "workbookNoSheets": "Die Arbeitsmappe enthält keine Tabellenblätter",
   "workspaceAccessDenied": "Sie haben keinen Zugriff auf diesen Workspace",
-  "wrongCode": "Dieser Code ist nicht korrekt. Prüfen Sie die E-Mail und versuchen Sie es erneut."
+  "wrongCode": "Dieser Code ist nicht korrekt. Prüfen Sie die E-Mail und versuchen Sie es erneut.",
+  "awdCartonsDiffer": "Kartons weichen von Amazon ab. Produkte, Mengen, Maße und Gewichte prüfen.",
+  "awdShipmentAlreadyShipped": "Eine noch nicht versendete AWD-Sendung wählen.",
+  "awdOriginDiffers": "Die Abholadresse weicht von Amazon ab. Straße, Zusatz, Postleitzahl und Land prüfen.",
+  "linkAwdOnly": "Nur ein AWD-Packentwurf kann eine vorhandene AWD-Sendung verknüpfen.",
+  "awdProductsDiffer": "Die Amazon-Sendung enthält andere Produkte oder größere Mengen als dieser AWD-Auftrag.",
+  "awdAlreadyLinked": "Diese Amazon-Sendung ist bereits mit einer Bestellung verknüpft."
 }

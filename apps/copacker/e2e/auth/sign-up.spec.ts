@@ -135,7 +135,8 @@ test("a new account signs up, gets started as a buyer, and deletes itself", asyn
 
     await main.getByLabel("Street address").fill("200 Signup Way")
     await main.getByLabel("City").fill("Portland")
-    await main.getByLabel("State or province").fill("OR")
+    await main.getByRole("combobox", { name: "State or province" }).click()
+    await page.getByRole("option", { name: "Oregon", exact: true }).click()
     await main.getByLabel("Postal code").fill("97201")
     await main.getByRole("button", { name: "Create workspace" }).click()
 

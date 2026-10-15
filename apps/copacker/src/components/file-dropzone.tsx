@@ -7,9 +7,9 @@
 //   const [file, setFile] = useState<File | null>(null)
 //   <FileDropzone label="Catalog CSV" accept={{ "text/csv": [".csv"] }} maxBytes={5 * 1024 * 1024} file={file} onFileChange={setFile} />
 //
-// Dropping, pasting and the file picker come from react-dropzone, which also checks each file's type and size.
+// UploadCN handles dropping, pasting and validation; files stay local until the parent submits its form.
 //
-// - accept: the types to take, as react-dropzone's map of media types to extensions, such as `pdfFiles`.
+// - accept: the media types and extensions to take, such as `pdfFiles`.
 // - maxBytes: the largest file to take. The zone shows it, unless `hint` says something else.
 // - label: shown above the zone. Leave it out when a card title already names the file.
 // - name: submits the file with a surrounding native form. `id` goes on the zone's button.
@@ -20,10 +20,10 @@
 // - ref: the button that chooses the next file, the zone or Replace, such as for a form to focus when it's required.
 
 import { useMergedRef } from "@mantine/hooks"
+import { useDropzone, useFileValidation, usePasteFiles } from "@uploadcn/react"
 import { FileText, UploadCloud, X } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useId, useRef, useState } from "react"
-import { type Accept, ErrorCode, type FileRejection, useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { fileName } from "./common"
@@ -39,6 +39,8 @@ function fileSize(bytes: number, locale: string) {
       )
 }
 
+type Accept = Record<string, string[]>
+
 export const pdfFiles: Accept = { "application/pdf": [".pdf"] }
 
 // What the prompt and errors call the file: a PDF or CSV when that's all the zone takes, or just a file. The messages
@@ -53,15 +55,14 @@ function typeName(accept: Accept) {
 // Why a dropped, pasted or chosen file was turned down, in the zone's words.
 function rejection(
   t: ReturnType<typeof useTranslations<"common.fileDropzone">>,
-  rejected: FileRejection,
+  codes: Set<string>,
   type: string,
   size: string
 ) {
-  const codes = new Set(rejected.errors.map((error) => error.code))
-  if (codes.has(ErrorCode.FileInvalidType)) {
+  if (codes.has("file-invalid-type")) {
     return t("wrongType", { type })
   }
-  if (codes.has(ErrorCode.FileTooLarge)) {
+  if (codes.has("file-too-large")) {
     return t("tooLarge", { type, size })
   }
   return t("oneFile", { type })
@@ -120,32 +121,39 @@ export function FileDropzone({
   const flagged = Boolean(message) || invalid
   // The zone's own button and Replace open the picker, so the dropzone itself only takes drops and pastes. A chosen
   // file takes neither until it's removed.
-  const { getRootProps, getInputProps, isDragActive, open, rootRef, inputRef } = useDropzone({
-    accept,
-    maxSize: maxBytes,
-    multiple: false,
-    disabled,
-    noClick: true,
-    noKeyboard: true,
-    noDrag: Boolean(file),
-    noPaste: Boolean(file),
-    // Several files at once take none, rather than whichever came first: react-dropzone would keep the first and turn
-    // down the rest.
-    onDrop: (accepted, rejected) => {
-      const [next] = accepted
-      if (accepted.length + rejected.length > 1) {
-        setProblem(t("oneFile", { type }))
-      } else if (next) {
-        setProblem("")
-        refocus.current = "row"
-        onFileChange(next)
-      } else if (rejected[0]) {
-        setProblem(rejection(t, rejected[0], type, largest))
-      }
+  const inputRef = useRef<HTMLInputElement>(null)
+  const pasteTarget = useRef<HTMLDivElement>(null)
+  const acceptedTypes = Object.entries(accept).flatMap(([mime, extensions]) => [mime, ...extensions])
+  const { validate } = useFileValidation({ accept: acceptedTypes, maxSize: maxBytes, maxFiles: 1 })
+  async function choose(files: File[]) {
+    if (disabled || file || !files.length) {
+      return
     }
+    // A multi-file drop must never silently choose one of the documents.
+    if (files.length > 1) {
+      setProblem(t("oneFile", { type }))
+      return
+    }
+    const { accepted, rejected } = await validate(files)
+    const [next] = accepted
+    if (next) {
+      setProblem("")
+      refocus.current = "row"
+      onFileChange(next)
+    } else if (rejected[0]) {
+      setProblem(rejection(t, new Set(rejected[0].issues.map((issue) => issue.code)), type, largest))
+    }
+  }
+  const { handlers, isDragging: isDragActive } = useDropzone({
+    accept: acceptedTypes,
+    // Let our validation report a multi-file drop instead of the hook discarding it silently.
+    multiple: true,
+    disabled: disabled || Boolean(file),
+    onDrop: choose
   })
-  const zoneRef = useMergedRef(zone, ref, rootRef)
-  const rowRef = useMergedRef(row, rootRef)
+  usePasteFiles({ target: pasteTarget, enabled: !disabled && !file, onPaste: choose })
+  const open = () => inputRef.current?.click()
+  const zoneRef = useMergedRef(zone, ref)
   const replaceRef = useMergedRef(zone, ref)
 
   // The hidden input holds the file the parent keeps, so a native form submits it and choosing the same file again
@@ -180,19 +188,30 @@ export function FileDropzone({
   }
 
   return (
-    <Field data-invalid={flagged} data-disabled={disabled}>
+    <Field ref={pasteTarget} data-invalid={flagged} data-disabled={disabled}>
       {label && (
         <FieldLabel id={`${zoneId}-label`} htmlFor={zoneId}>
           {label}
         </FieldLabel>
       )}
-      <input {...getInputProps({ name })} />
+      <input
+        ref={inputRef}
+        type="file"
+        name={name}
+        accept={acceptedTypes.join(",")}
+        disabled={disabled}
+        hidden
+        onChange={(event) => {
+          void choose(Array.from(event.currentTarget.files ?? []))
+          event.currentTarget.value = ""
+        }}
+      />
       {file || current ? (
         // Takes focus when the file is chosen, so keyboard and screen reader users land on it rather than the page. One
         // row for the chosen and the stored file, so focus stays when an uploaded file becomes the stored one.
         <div
-          {...getRootProps()}
-          ref={rowRef}
+          {...handlers}
+          ref={row}
           tabIndex={-1}
           data-invalid={flagged || undefined}
           data-dragging={isDragActive || undefined}
@@ -257,7 +276,7 @@ export function FileDropzone({
       ) : (
         // A button rather than the input itself, so the zone takes focus, clicks and drops alike.
         <button
-          {...getRootProps({ role: "button" })}
+          {...handlers}
           ref={zoneRef}
           type="button"
           id={zoneId}

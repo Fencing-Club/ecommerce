@@ -73,6 +73,8 @@
     "separator": "，"
   },
   "address": {
+    "findAddress": "查找地址",
+    "lookupUnavailable": "地址搜索暂不可用。请在下方输入地址。",
     "country": "国家/地区",
     "chooseCountry": "选择国家/地区",
     "contactName": "联系人",
