@@ -100,7 +100,8 @@ function AddressLookup({ path }: { path: string }) {
     <div className="sm:col-span-2">
       <Script
         id="google-places"
-        src={`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&loading=async&v=weekly`}
+        // Next's onReady follows the script load event. Google's loading=async requires its own callback instead.
+        src={`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly`}
         onReady={() => {
           void createPlaceSearch()
             .then((lookup) => {
