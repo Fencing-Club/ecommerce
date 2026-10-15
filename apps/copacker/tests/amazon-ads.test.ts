@@ -89,6 +89,9 @@ beforeEach(async () => {
   vi.stubEnv("TOKEN_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"))
   vi.stubEnv("AMAZON_ADS_CLIENT_ID", "ads-client")
   vi.stubEnv("AMAZON_ADS_CLIENT_SECRET", "ads-secret")
+  vi.stubEnv("AMAZON_ADS_RELAY_URL", "")
+  vi.stubEnv("AMAZON_ADS_RELAY_SECRET", "")
+  vi.stubEnv("AMAZON_ADS_RELAY_ORIGINS", "")
   fetchMock.mockReset()
   vi.stubGlobal("fetch", fetchMock)
   await pg.exec("TRUNCATE organizations CASCADE; TRUNCATE jobs")
@@ -111,6 +114,44 @@ async function connect() {
   })
 }
 describe("Amazon Ads authorization and transport", () => {
+  it.each(["https://ads-fix-1234abcd.local.copacker.ai", "https://pr-42.preview.copacker.ai"])(
+    "relays consent to %s without a relay session or database, then enforces the original user and replay checks",
+    async (origin) => {
+      const relay = "https://staging.copacker.ai"
+      const path = "/api/connections/amazon-ads"
+      vi.stubEnv("APP_URL", origin)
+      vi.stubEnv("AMAZON_ADS_RELAY_URL", relay + path)
+      vi.stubEnv("AMAZON_ADS_RELAY_SECRET", Buffer.alloc(32, 9).toString("base64"))
+      vi.stubEnv("AMAZON_ADS_RELAY_ORIGINS", "https://*.local.copacker.ai,https://pr-*.preview.copacker.ai")
+      const start = new URL((await GET(new Request(origin + path))).headers.get("location")!)
+      expect(start.searchParams.get("redirect_uri")).toBe(relay + path)
+      const state = start.searchParams.get("state")!
+      vi.stubEnv("APP_URL", relay)
+      context.role = "member"
+      context.database = null
+      const response = await GET(new Request(`${relay}${path}?state=${state}&code=code`))
+      expect(response.status).toBe(302)
+      const callback = new Request(response.headers.get("location")!)
+      expect(callback.url.startsWith(origin + path)).toBe(true)
+      expect(fetchMock).not.toHaveBeenCalled()
+      context.database = database
+      context.role = "owner"
+      vi.stubEnv("APP_URL", origin)
+      context.userId = "wrong-user"
+      expect((await GET(callback)).status).toBe(400)
+      context.userId = "user-1"
+      fetchMock.mockImplementation(async (url) => {
+        if (String(url).includes("auth/o2")) {
+          return Response.json({ access_token: "access", refresh_token: "refresh" })
+        }
+        return String(url).includes("adsAccounts") ? accountsResponse() : Response.json([profile])
+      })
+      expect((await GET(callback)).headers.get("location")).toBe(`${origin}/settings#integrations`)
+      expect(new URLSearchParams(String(fetchMock.mock.calls[0]![1]?.body)).get("redirect_uri")).toBe(relay + path)
+      expect((await GET(callback)).status).toBe(400)
+      expect(await adsStatus(orgId)).toMatchObject({ connected: true, active: true })
+    }
+  )
   it("binds consent to the initiating user and consumes the state once", async () => {
     const start = await GET(new Request("https://copacker.ai/api/connections/amazon-ads"))
     const target = new URL(start.headers.get("location")!)
