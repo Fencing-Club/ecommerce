@@ -87,3 +87,10 @@ needs room past the line too.
 
 Add it to `locales` and `localeNames` in `src/i18n/locales.ts`, copy `messages/en` to `messages/<locale>`, and translate
 every file.
+
+## Fonts during the Start migration
+
+`src/styles/document-fonts.ts` supplies the same self-hosted Geist/Geist Mono subsets, fallback metrics, language-specific
+faces and preload URLs to the Next document and Start fixture. The font files are checked in, so these document fonts
+no longer require a Google Fonts request at build time. The Geist license is alongside the files. The marketing
+planner's separate Caveat font still uses Next and will move with that screen.

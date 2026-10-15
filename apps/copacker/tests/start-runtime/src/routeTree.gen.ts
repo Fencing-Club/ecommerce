@@ -12,9 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CallbackRouteImport } from './routes/callback'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LocalizationRouteImport } from './routes/localization'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProbeRouteImport } from './routes/probe'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
+import { Route as ApiActionRouteImport } from './routes/api.action'
 import { Route as LoginProviderRouteImport } from './routes/login.$provider'
 
 const IndexRoute = IndexRouteImport.update({
@@ -32,9 +38,19 @@ const CallbackRoute = CallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocalizationRoute = LocalizationRouteImport.update({
   id: '/localization',
   path: '/localization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProbeRoute = ProbeRouteImport.update({
@@ -42,33 +58,65 @@ const ProbeRoute = ProbeRouteImport.update({
   path: '/probe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkspaceRoute = WorkspaceRouteImport.update({
   id: '/workspace',
   path: '/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginProviderRoute = LoginProviderRouteImport.update({
-  id: '/login/$provider',
-  path: '/login/$provider',
+const ApiActionRoute = ApiActionRouteImport.update({
+  id: '/api/action',
+  path: '/api/action',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoginProviderRoute = LoginProviderRouteImport.update({
+  id: '/$provider',
+  path: '/$provider',
+  getParentRoute: () => LoginRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
+  '/login': typeof LoginRouteWithChildren
   '/probe': typeof ProbeRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
+  '/api/action': typeof ApiActionRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
+  '/login': typeof LoginRouteWithChildren
   '/probe': typeof ProbeRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
+  '/api/action': typeof ApiActionRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesById {
@@ -76,9 +124,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/callback': typeof CallbackRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
+  '/login': typeof LoginRouteWithChildren
   '/probe': typeof ProbeRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
+  '/api/action': typeof ApiActionRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRouteTypes {
@@ -87,27 +141,45 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/callback'
+    | '/forgot-password'
     | '/localization'
+    | '/login'
     | '/probe'
+    | '/reset-password'
+    | '/signup'
+    | '/verify-email'
     | '/workspace'
+    | '/api/action'
     | '/login/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/callback'
+    | '/forgot-password'
     | '/localization'
+    | '/login'
     | '/probe'
+    | '/reset-password'
+    | '/signup'
+    | '/verify-email'
     | '/workspace'
+    | '/api/action'
     | '/login/$provider'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/callback'
+    | '/forgot-password'
     | '/localization'
+    | '/login'
     | '/probe'
+    | '/reset-password'
+    | '/signup'
+    | '/verify-email'
     | '/workspace'
+    | '/api/action'
     | '/login/$provider'
   fileRoutesById: FileRoutesById
 }
@@ -115,10 +187,15 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   CallbackRoute: typeof CallbackRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LocalizationRoute: typeof LocalizationRoute
+  LoginRoute: typeof LoginRouteWithChildren
   ProbeRoute: typeof ProbeRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SignupRoute: typeof SignupRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   WorkspaceRoute: typeof WorkspaceRoute
-  LoginProviderRoute: typeof LoginProviderRoute
+  ApiActionRoute: typeof ApiActionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -144,11 +221,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/localization': {
       id: '/localization'
       path: '/localization'
       fullPath: '/localization'
       preLoaderRoute: typeof LocalizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/probe': {
@@ -158,6 +249,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProbeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workspace': {
       id: '/workspace'
       path: '/workspace'
@@ -165,24 +277,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/action': {
+      id: '/api/action'
+      path: '/api/action'
+      fullPath: '/api/action'
+      preLoaderRoute: typeof ApiActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/$provider': {
       id: '/login/$provider'
-      path: '/login/$provider'
+      path: '/$provider'
       fullPath: '/login/$provider'
       preLoaderRoute: typeof LoginProviderRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof LoginRoute
     }
   }
 }
+
+interface LoginRouteChildren {
+  LoginProviderRoute: typeof LoginProviderRoute
+}
+
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginProviderRoute: LoginProviderRoute,
+}
+
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   CallbackRoute: CallbackRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LocalizationRoute: LocalizationRoute,
+  LoginRoute: LoginRouteWithChildren,
   ProbeRoute: ProbeRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SignupRoute: SignupRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   WorkspaceRoute: WorkspaceRoute,
-  LoginProviderRoute: LoginProviderRoute,
+  ApiActionRoute: ApiActionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

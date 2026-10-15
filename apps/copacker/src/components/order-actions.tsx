@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { FormError } from "./actions"
 
 // Opened from the PO's actions menu.
 type Controlled = { id: string; reference: string; open: boolean; onOpenChange: (open: boolean) => void }

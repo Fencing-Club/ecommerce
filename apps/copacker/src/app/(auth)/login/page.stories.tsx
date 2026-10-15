@@ -1,47 +1,23 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { CircleAlert } from "lucide-react"
-import { getTranslations } from "next-intl/server"
 import { expect, userEvent, waitFor, within } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthPage, AuthShell, AuthSwitch } from "@/components/auth/auth-shell"
-import { SignInForm } from "@/components/auth/sign-in-form"
-import { SocialSignIn } from "@/components/auth/social-sign-in"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
-import { serverStory } from "@/stories/server"
 
 const actions = actionRecorder()
 
-// The sign-in page (page.tsx) in the auth layout, for someone signed out. `next` is the query's page to return to,
-// as returnPath reads it ("/" when there's none or it's not a page of the app); signed in, the page redirects there
-// instead. The layout's AppProviders is the story frame's own providers.
-async function Login({ next, email, error }: { next: string; email?: string; error?: string }) {
-  const onward = next === "/" ? "" : `?${new URLSearchParams({ next })}`
-  const t = await getTranslations("auth")
+function Login({ next, email, error }: { next: string; email?: string; error?: string }) {
   return (
     <AuthShell>
-      <AuthPage title={t("login.heading")}>
-        {error && (
-          <Alert variant="destructive">
-            <CircleAlert />
-            <AlertDescription>{t("login.failed")}</AlertDescription>
-          </Alert>
-        )}
-        <div className="flex flex-col gap-6">
-          <SocialSignIn next={next} />
-          <SignInForm next={next} email={email} />
-        </div>
-        <AuthSwitch prompt={t("switch.newToCopacker")} href={`/signup${onward}`}>
-          {t("switch.createAccount")}
-        </AuthSwitch>
-      </AuthPage>
+      <AuthScreen page={{ kind: "login", next, email, failed: Boolean(error) }} />
     </AuthShell>
   )
 }
 
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Sign in",
-  ...serverStory(Login),
+  component: Login,
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/login" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
@@ -64,7 +40,7 @@ export const Default = meta.story({
     await userEvent.type(main.getByLabelText("Email"), "alex@example.com")
     await userEvent.type(main.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(main.getByRole("button", { name: "Sign in" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/"))
     await expect(actions.sent[0]?.data).toEqual({
       email: "alex@example.com",
       password: "correct horse battery",
@@ -99,7 +75,7 @@ export const ReturnsToPage = meta.story({
     await userEvent.type(canvas.getByLabelText("Email"), "alex@example.com")
     await userEvent.type(canvas.getByLabelText("Password"), "correct horse battery")
     await userEvent.click(canvas.getByRole("button", { name: "Sign in" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders/new"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders/new"))
     await expect(actions.sent[0]?.data).toMatchObject({ next: "/orders/new" })
   }
 })

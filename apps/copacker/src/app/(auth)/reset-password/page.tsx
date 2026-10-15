@@ -1,36 +1,29 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
-import Link from "next/link"
-import { AuthPage } from "@/components/auth/auth-shell"
-import { ResetPasswordForm } from "@/components/auth/password-reset"
-import { Button } from "@/components/ui/button"
+import { redirect } from "next/navigation"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { authSearch, authTitle } from "@/lib/auth-pages"
+import { signedInUser, signInRequest } from "@/server/auth"
+import { loadAuthPage } from "@/server/auth-pages"
 import { withRequest } from "@/server/next-request"
 
+export const dynamic = "force-dynamic"
 export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
-  return { title: t("resetPassword.title") }
+  return { title: t(authTitle["reset-password"]) }
 })
 
-// Where the reset email's link lands, with its token. WorkOS's Password reset URL setting points here.
-export default withRequest(async function ResetPassword({
+export default withRequest(async function Page({
   searchParams
 }: {
-  searchParams: Promise<{ token?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { token } = await searchParams
-  const t = await getTranslations("auth.resetPassword")
-  if (!token) {
-    return (
-      <AuthPage title={t("incompleteTitle")} description={t("incompleteDescription")}>
-        <Button className="h-10 w-full" nativeButton={false} render={<Link href="/forgot-password" />}>
-          {t("sendNewLink")}
-        </Button>
-      </AuthPage>
-    )
+  const result = await loadAuthPage("reset-password", authSearch.parse(await searchParams), {
+    signedIn: async () => Boolean(await signedInUser()),
+    signInRequest
+  })
+  if ("redirect" in result) {
+    redirect(result.redirect)
   }
-  return (
-    <AuthPage title={t("title")}>
-      <ResetPasswordForm token={token} />
-    </AuthPage>
-  )
+  return <AuthScreen page={result.page} />
 })

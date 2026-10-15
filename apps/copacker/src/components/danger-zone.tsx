@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -20,7 +21,6 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { FormError } from "./actions"
 
 // The kinds of workspace, each of which says what deleting it takes with it. The purchase orders are the buyer's, so a
 // supplier's or forwarder's buyers keep theirs.

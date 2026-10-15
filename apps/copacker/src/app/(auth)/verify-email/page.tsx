@@ -1,43 +1,29 @@
 import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { redirect } from "next/navigation"
-import { AuthPage, AuthSwitch } from "@/components/auth/auth-shell"
-import { VerifyEmailForm } from "@/components/auth/verify-email-form"
-import { signInRequest } from "@/server/auth"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { authSearch, authTitle } from "@/lib/auth-pages"
+import { signedInUser, signInRequest } from "@/server/auth"
+import { loadAuthPage } from "@/server/auth-pages"
 import { withRequest } from "@/server/next-request"
-import { pendingVerification } from "@/server/sign-in"
-
-export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("auth")
-  return { title: t("verifyEmail.title") }
-})
-
-// Bold text inside a translated sentence, such as an email address.
-function strong(chunks: React.ReactNode) {
-  return <span className="font-medium text-foreground">{chunks}</span>
-}
 
 export const dynamic = "force-dynamic"
-
-// After signing up, or signing in to an account whose email isn't confirmed yet: the code WorkOS emailed.
-export default withRequest(async function VerifyEmail() {
-  const pending = pendingVerification(await signInRequest())
-  if (!pending) {
-    redirect("/login")
-  }
+export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth")
-  return (
-    <AuthPage
-      title={t("verifyEmail.title")}
-      description={t.rich("verifyEmail.description", {
-        email: pending.email,
-        strong
-      })}
-    >
-      <VerifyEmailForm />
-      <AuthSwitch prompt={t("verifyEmail.wrongEmail")} href="/signup">
-        {t("verifyEmail.startAgain")}
-      </AuthSwitch>
-    </AuthPage>
-  )
+  return { title: t(authTitle["verify-email"]) }
+})
+
+export default withRequest(async function Page({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const result = await loadAuthPage("verify-email", authSearch.parse(await searchParams), {
+    signedIn: async () => Boolean(await signedInUser()),
+    signInRequest
+  })
+  if ("redirect" in result) {
+    redirect(result.redirect)
+  }
+  return <AuthScreen page={result.page} />
 })

@@ -1,10 +1,8 @@
-import Link from "next/link"
 import { ProductShowcase } from "./product-showcase"
 import { BrandMark } from "./stage"
 
-// Sign-in, sign-up and the steps around them: the product on the left, the form in a quiet column on the right. The
-// layout stays put between those pages; only the form column changes. Phones get the form alone, under the logo that
-// the product panel otherwise carries.
+// Sign-in, sign-up and the steps around them: the product on the left, the form in a quiet column on the right.
+// Phones get the form alone, under the logo that the product panel otherwise carries.
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-svh bg-background lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
@@ -47,12 +45,12 @@ export function AuthSwitch({ prompt, href, children }: { prompt: string; href: s
   return (
     <p className="text-center text-sm text-muted-foreground">
       {prompt}{" "}
-      <Link
+      <a
         href={href}
         className="font-medium text-foreground underline-offset-4 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {children}
-      </Link>
+      </a>
     </p>
   )
 }

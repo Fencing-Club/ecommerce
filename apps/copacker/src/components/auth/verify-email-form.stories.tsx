@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { actionRecorder, errors, failWith, redirectTo } from "@/stories/fixtures/auth"
 import { VerifyEmailForm } from "./verify-email-form"
@@ -29,7 +29,7 @@ const meta = preview.meta({
 export const SendsWhenComplete = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Verification code"), "123456")
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/onboarding"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/onboarding"))
     await expect(actions.sent).toEqual([{ action: "auth.verifyEmail", data: { code: "123456" } }])
     await expect(canvas.getByRole("button", { name: "Verify email" })).toBeDisabled()
   }
@@ -55,7 +55,7 @@ export const WrongCode = meta.story({
     await expect(await canvas.findByText(errors.wrongCode)).toBeVisible()
     await waitFor(() => expect(input).toHaveValue(""))
     await expect(input).toHaveFocus()
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(finishSignIn).not.toHaveBeenCalled()
     // The next code goes out as the last did.
     await userEvent.type(input, "111111")
     await waitFor(() => expect(actions.sent).toHaveLength(2))

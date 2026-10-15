@@ -6,6 +6,7 @@ import { useId, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,7 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
 import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
-import { ActionForm, FormError } from "./actions"
+import { ActionForm } from "./actions"
 import { FormInput } from "./form-controls"
 import { SelectControl } from "./form-select"
 

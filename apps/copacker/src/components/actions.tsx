@@ -1,45 +1,16 @@
 "use client"
 
-import { AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { type FieldValues, FormProvider, type UseFormReturn } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
-import { useErrorMessage, useMessageText } from "@/hooks/use-error-text"
+import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { sx } from "@/styles/sprinkles.css"
-
-// A form's error, such as the server's. A message that is a full key shows in the person's language.
-export function FormError({ message }: { message?: string }) {
-  const text = useMessageText()
-  if (!message) {
-    return null
-  }
-  return (
-    <Alert variant="destructive">
-      <AlertCircle />
-      <AlertDescription className={sx({ whiteSpace: "pre-line" })}>{text(message)}</AlertDescription>
-    </Alert>
-  )
-}
-
-export function SubmitButton({
-  pending,
-  children,
-  ...props
-}: React.ComponentProps<typeof Button> & { pending: boolean }) {
-  return (
-    <Button {...props} disabled={pending || props.disabled} aria-busy={pending}>
-      {pending && <Spinner data-icon="inline-start" />}
-      {children}
-    </Button>
-  )
-}
 
 export function ActionButton({
   action,

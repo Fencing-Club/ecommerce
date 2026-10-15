@@ -2,10 +2,10 @@
 
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
-import { FormError, SubmitButton } from "@/components/actions"
 import { FormInput } from "@/components/form-controls"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useAuthForm } from "@/hooks/use-auth-form"
 import { signUpSchema } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
 import { PasswordField } from "./password-field"
@@ -25,7 +25,7 @@ export function SignUpForm({
   invitation?: string
 }) {
   const t = useTranslations("auth")
-  const { form, submit } = useActionForm({
+  const { form, submit } = useAuthForm({
     schema: signUpSchema,
     action: "auth.signUp",
     defaultValues: { email, password: "" },

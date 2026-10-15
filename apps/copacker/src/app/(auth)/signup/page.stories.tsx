@@ -1,19 +1,13 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
 import { expect, userEvent, waitFor, within } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthPage, AuthShell, AuthSwitch } from "@/components/auth/auth-shell"
-import { SignUpForm } from "@/components/auth/sign-up-form"
-import { SocialSignIn } from "@/components/auth/social-sign-in"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
-import { serverStory } from "@/stories/server"
 
 const actions = actionRecorder()
 
-// The sign-up page (page.tsx) in the auth layout, for someone signed out. `next` is the query's page to return to, as
-// returnPath reads it; signed in, the page redirects there instead. `invited` is the address a WorkOS invitation's
-// `invitation` token is for, as invitedEmail finds it. The layout's AppProviders is the story frame's own providers.
-async function SignUp({
+function SignUp({
   next,
   email,
   invited,
@@ -24,32 +18,18 @@ async function SignUp({
   invited?: string
   invitation?: string
 }) {
-  const onward = next === "/" ? "" : `?${new URLSearchParams({ next })}`
-  const t = await getTranslations("auth")
   return (
     <AuthShell>
-      <AuthPage title={t("signup.title")}>
-        <div className="flex flex-col gap-6">
-          {invited && invitation ? (
-            <SignUpForm next={next} email={invited} locked invitation={invitation} />
-          ) : (
-            <>
-              <SocialSignIn next={next} />
-              <SignUpForm next={next} email={email} />
-            </>
-          )}
-        </div>
-        <AuthSwitch prompt={t("switch.haveAccount")} href={`/login${onward}`}>
-          {t("switch.signIn")}
-        </AuthSwitch>
-      </AuthPage>
+      <AuthScreen
+        page={{ kind: "signup", next, email: invited ?? email, invitation: invited ? invitation : undefined }}
+      />
     </AuthShell>
   )
 }
 
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Sign up",
-  ...serverStory(SignUp),
+  component: SignUp,
   parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/signup" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
@@ -73,7 +53,7 @@ export const Default = meta.story({
     await userEvent.type(main.getByLabelText("Password"), "a long enough password")
     await userEvent.click(main.getByRole("button", { name: "Create account" }))
     // A code to the email confirms it next.
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/verify-email"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/verify-email"))
     await expect(actions.sent).toEqual([
       { action: "auth.signUp", data: { email: "alex@example.com", password: "a long enough password", next: "/" } }
     ])

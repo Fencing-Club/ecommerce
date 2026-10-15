@@ -7,6 +7,7 @@ import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,7 +22,6 @@ import {
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import { FormError } from "./actions"
 import { FormInput, FormNumber } from "./form-controls"
 import { SupplierForm } from "./settings-forms"
 import { sx } from "@/styles/sprinkles.css"

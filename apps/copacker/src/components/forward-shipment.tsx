@@ -4,6 +4,7 @@ import { useState } from "react"
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
-import { FormError, SubmitButton } from "./actions"
 import { FormInput, FormMoney } from "./form-controls"
 
 const schema = z.object({

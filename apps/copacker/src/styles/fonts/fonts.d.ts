@@ -1,4 +1,4 @@
-// A font file imported from code is its URL (Turbopack's static assets).
+// Both build systems turn imported font files into their served asset URLs.
 declare module "*.woff2" {
   const url: string
   export default url

@@ -1,12 +1,21 @@
-import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router"
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router"
 import { IntlProvider } from "use-intl"
+import { ThemeScript } from "@/components/theme-provider"
+import { direction } from "@/i18n/locales"
+import { documentFonts } from "@/styles/document-fonts"
+import { readDocument } from "../document.functions"
+import { skipLink } from "@/app/layout.css"
+import "@/styles/global.css"
+import "@/app/globals.css"
 
 export const Route = createRootRoute({
+  loader: () => readDocument(),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "referrer", content: "same-origin" },
       { title: "Copacker migration compatibility" }
     ]
   }),
@@ -14,19 +23,23 @@ export const Route = createRootRoute({
 })
 
 function RuntimeDocument() {
-  const location = useLocation()
-  const locale = new URLSearchParams(location.searchStr).get("lang") === "ur" ? "ur" : "en"
+  const config = Route.useLoaderData()
+  const fonts = documentFonts(config.locale)
   return (
-    <html lang={locale} dir={locale === "ur" ? "rtl" : "ltr"}>
+    <html lang={config.locale} dir={direction(config.locale)} style={fonts.style} suppressHydrationWarning>
       <head>
         <HeadContent />
+        <style>{fonts.css}</style>
+        {fonts.preload.map((href) => (
+          <link key={href} rel="preload" as="font" type="font/woff2" crossOrigin="" href={href} />
+        ))}
       </head>
       <body>
-        <IntlProvider
-          locale={locale}
-          timeZone="UTC"
-          messages={{ common: { appDescription: locale === "ur" ? "منتقلی کی جانچ" : "Migration compatibility" } }}
-        >
+        <ThemeScript />
+        <a className={skipLink} href="#main-content">
+          {config.messages.common.skipToContent}
+        </a>
+        <IntlProvider {...config}>
           <NuqsAdapter>
             <Outlet />
           </NuqsAdapter>

@@ -98,6 +98,71 @@ try {
     assert(!callback.headers.getSetCookie().some((cookie) => cookie.startsWith("migration-session=")))
   }
 
+  for (const [path, title] of [
+    ["/login?next=%2Forders%3Ftab%3Dopen&email=alex%40example.net", "Sign in to Copacker"],
+    ["/signup", "Create your account"],
+    ["/forgot-password?email=alex%40example.net", "Reset your password"],
+    ["/reset-password", "This link is incomplete"],
+    ["/reset-password?token=synthetic-reset", "Choose a new password"]
+  ]) {
+    const response = await request(path!)
+    assert.equal(response.status, 200, `Auth page ${path}`)
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/)
+    const markup = await response.text()
+    assert(markup.includes(title!), `Missing auth heading for ${path}`)
+    assert(markup.includes('id="main-content"') && markup.includes('href="#main-content"'))
+    assert(
+      !markup.includes("sk_test_") &&
+        !markup.includes("refreshToken") &&
+        !markup.includes("pending_authentication_token")
+    )
+  }
+  const expiredVerification = await request("/verify-email?email=spoof%40example.net", {
+    redirect: "manual",
+    headers: { Cookie: "copacker-verify=tampered" }
+  })
+  assert.equal(expiredVerification.status, 307)
+  assert.equal(expiredVerification.headers.get("Location"), "/login")
+  for (const headers of [new Headers(), new Headers({ Origin: "https://foreign.example" })]) {
+    // Windows preview can reset its next proxy socket after an unread body is rejected.
+    // Exercise that body-carrying rejection on the deployed runtime; local checks still assert the CSRF gate.
+    const denied = await request("/api/action", { method: "POST", headers, body: remote ? "{}" : undefined })
+    assert.equal(denied.status, 403, await denied.text())
+    assert.equal(denied.headers.getSetCookie().length, 0)
+  }
+  for (const method of ["GET", "HEAD", "PUT", "DELETE"]) {
+    const unsupported = await request("/api/action", { method, headers: { Origin: origin } })
+    assert.equal(unsupported.status, 405)
+    assert.equal(unsupported.headers.get("Allow"), "OPTIONS, POST")
+  }
+  const options = await request("/api/action", { method: "OPTIONS" })
+  assert.equal(options.status, 204)
+  assert.equal(options.headers.get("Allow"), "OPTIONS, POST")
+  const unknownAction = await request("/api/action", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "workspace.delete", data: {} })
+  })
+  assert.equal(unknownAction.status, 404, "The auth fixture must not expose portal mutations")
+  for (const locale of ["en", "ur"] as const) {
+    const messages = await loadMessages(locale)
+    const localizedPage = await request("/login", { headers: { "Accept-Language": locale } })
+    const markup = await localizedPage.text()
+    assert.equal(localizedPage.status, 200)
+    assert(markup.includes(`<html lang="${locale}" dir="${direction(locale)}"`))
+    assert(markup.includes(messages.auth.login.heading))
+    const validation = await request("/api/action", {
+      method: "POST",
+      headers: { Origin: origin, "Accept-Language": locale, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "auth.signIn", data: { email: "invalid", password: "" } })
+    })
+    assert.equal(validation.status, 400)
+    assert.deepEqual(await validation.json(), {
+      error: `${messages.auth.validation.enterEmail}\n${messages.auth.validation.enterPassword}`
+    })
+    assert.equal(validation.headers.getSetCookie().length, 0)
+  }
+
   const workspace = await request("/workspace", { method: "POST", headers: { Origin: origin } })
   assert.equal(workspace.status, 401, "Workspace queries require a validated session")
 
@@ -170,7 +235,7 @@ try {
     })
   )
   process.stdout.write(
-    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
+    "Start/Workers runtime passed: SSR, auth screens/actions, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
   )
 } finally {
   await server?.close()

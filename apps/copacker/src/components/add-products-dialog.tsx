@@ -3,6 +3,7 @@
 import { Search } from "lucide-react"
 import { useEffect, useId, useMemo, useState } from "react"
 import { useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -17,7 +18,6 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import type { CatalogProduct } from "@/lib/api"
-import { FormError } from "./actions"
 
 type Level = { locationId: string; available: number | null }
 type Variant = {

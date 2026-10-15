@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +29,7 @@ import {
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
-import { ActionForm, FormError } from "./actions"
+import { ActionForm } from "./actions"
 import { FormInput } from "./form-controls"
 
 const addSchema = z.object({

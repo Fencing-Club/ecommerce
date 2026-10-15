@@ -10,7 +10,11 @@ import Next APIs. The current app supplies that request from `server/auth.ts`; t
 from `server/auth-session.ts`. Both call the same password, verification, organization-selection, reset and OAuth logic.
 Only the pending email address is returned to the verification page; its authentication token and redirect stay in the
 encrypted cookie. Start takes the client address from Cloudflare's `CF-Connecting-IP`, not a supplied forwarding chain.
-This preparation does not move the app's sign-in screens off Next yet. See the
+The five password/verification/recovery screens now share `AuthScreen` and `loadAuthPage` between Next and the protected
+Start fixture. Their forms have no Next imports; successful authentication opens a fresh document to discard the old
+session's route and API caches, including when WorkOS returns an external SSO URL. Recovery confirmation stays on the
+page. The Start routes preserve `/api/action` for the six auth operations, validate server input and enforce CSRF before
+executing an operation. Next still serves the main application. See the
 [compatibility evidence](specs/platform-migration/compatibility.md) for deployed checks and remaining provider flows.
 
 ## Ways in

@@ -75,12 +75,12 @@ The real partners/product-import consumers still need their complete acceptance 
 ## Verified checks
 
 The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
-unit/Storybook tests with coverage, including 2,289 Copacker tests across 282 files after request localization was added.
+unit/Storybook tests with coverage, including 2,307 Copacker tests across 285 files after the auth routes were added.
 This verifies the current
 compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
 gate V01.
 
-The current Next production build also passed after the page-data and custom sign-in changes. Integrated-browser
+The current Next production build also passed after the shared auth screens and document fonts changed. Integrated-browser
 checks covered buyer desktop/mobile layouts, date/channel controls by keyboard, a member without stores/admin setup, and the
 Urdu supplier overview without horizontal overflow. The Urdu case now has an automated story. An extra live production
 Next smoke-server launch was rejected by automatic approval review without a reason, so that additional check remains
@@ -141,6 +141,43 @@ These fixture checks establish adapter feasibility, not completion of the actual
 The first immediate remote run encountered Cloudflare's deployment-propagation 404 on a later request; the run after
 propagation passed. The runner does not hide failed assertions behind retries.
 
+## Auth page route conversion
+
+Five real Start routes now render the canonical auth UI: login, signup, verify-email, forgot-password and reset-password.
+The Next routes use the same page loader and rendering component. Request-only redirects stay in the loaders; the
+verification response contains the email only, and invitation email comes from WorkOS rather than the query string.
+The fixture retains the six auth operations at /api/action with the production action registry, input validation,
+request-local database scope and localized errors. Unsupported methods explicitly return 405 with Allow: OPTIONS, POST;
+OPTIONS returns 204. Without the method handlers Start would fall through to HTML. Vite's automatic CORS handling is
+disabled so the Worker owns preflight responses. Other application actions are unavailable in the fixture.
+
+Form feedback and the validated submission lifecycle no longer import a router. Auth success opens a fresh document
+(including external SSO), while the portal's existing forms retain their current refresh behavior until portal routing
+moves. Auth-page links use document navigation. Tests and stories render the canonical UI rather than copied page JSX.
+The root documents now share local Geist/Geist Mono files and language-specific font definitions; the separate marketing
+Caveat font remains on Next.
+
+Focused checks cover safe return paths, setup and signed-in redirects, invitation email locking, expired verification,
+recovery without a session, server/client validation and form error recovery. Integrated-browser acceptance on the
+Start Workers preview covered desktop and 390-pixel mobile forms, keyboard recovery links, carried email, sign-up
+validation and incomplete reset links. No horizontal overflow or browser errors were observed in those checks.
+Runtime HTTP checks additionally cover English/Urdu SSR, private cache headers, no token leakage, localized invalid
+credentials input, missing/foreign-origin rejection and unsupported methods.
+
+The deployed checks passed again with body-carrying cross-origin requests and real WorkOS test-account password login
+through /api/action. Authenticated login/signup routes redirect to a safe local return path. JWT validation, refreshed
+session persistence, replacement login, logout precedence and revoked refresh also passed on this deployment.
+
+On Windows, rejecting an unread POST body in the local Vite/workerd preview caused its following request to fail inside
+Miniflare's HTTP proxy with ECONNRESET. The behavior reproduced independently of the auth handler on the existing probe,
+on Node 24 and 26. This resembles the [upstream unconsumed-body report](https://github.com/cloudflare/workers-sdk/issues/15709);
+the exact underlying cause is not established. Local CSRF checks therefore send no body; the deployed checks send bodies
+and keep normal connections. No assertion retries or production request-draining workaround were added.
+
+These routes run in the protected compatibility Worker, not the application's production entrypoint. Complete provider
+OAuth, email delivery/verification/reset, invitation/onboarding, maintenance, portal navigation and private downloads
+remain required before cutover.
+
 ## Staging database and certificate
 
 Railway Postgres stays authoritative. The user supplied staging credentials in ignored `apps/copacker/.env.staging`.
@@ -160,7 +197,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive | `copacker-staging`, ID `0a74043480fe42a6acdbf46b9572ef58` |
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
-| Tested Worker version | `43d38445-2856-43db-b174-99272e81f800` |
+| Tested Worker version | `e7212ba0-df0e-408f-b4e9-76fc80ef82e2` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,

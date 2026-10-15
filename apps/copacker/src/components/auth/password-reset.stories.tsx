@@ -1,5 +1,5 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
 import { ForgotPassword, ResetPasswordForm } from "./password-reset"
@@ -83,7 +83,7 @@ export const Reset = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Show password" }))
     await expect(password).toHaveAttribute("type", "text")
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/orders"))
     await expect(actions.sent).toEqual([
       { action: "auth.resetPassword", data: { password: "too short no longer", token } }
     ])
@@ -99,7 +99,7 @@ export const ResetLinkExpired = meta.story({
     await userEvent.type(canvas.getByLabelText("New password"), "a brand new password")
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
     await expect(await canvas.findByRole("alert")).toHaveTextContent(errors.linkExpired)
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(finishSignIn).not.toHaveBeenCalled()
     await expect(canvas.getByRole("button", { name: "Save and sign in" })).toBeEnabled()
   }
 })

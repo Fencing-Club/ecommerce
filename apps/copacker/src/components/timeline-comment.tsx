@@ -3,9 +3,9 @@
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/useActionForm"
-import { FormError, SubmitButton } from "./actions"
 
 const schema = z.object({ message: z.string().trim().min(1, "orders.timeline.comment.required").max(4000) })
 

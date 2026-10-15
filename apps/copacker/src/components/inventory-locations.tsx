@@ -5,6 +5,7 @@ import { MapPin } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -22,7 +23,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
-import { FormError } from "./actions"
 
 type LocationSetting = {
   locationId: string

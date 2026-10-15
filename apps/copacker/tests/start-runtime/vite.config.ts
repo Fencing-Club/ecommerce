@@ -7,6 +7,9 @@ import { workerStyles } from "../../scripts/vite-vanilla-extract.ts"
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
+  // Let the Worker own OPTIONS and origin policy instead of Vite's automatic preflight response.
+  server: { cors: false },
+  preview: { cors: false },
   resolve: { alias: { "@": fileURLToPath(new URL("../../src", import.meta.url)) } },
   plugins: [
     workerStyles(),

@@ -16,7 +16,6 @@ import {
 } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { locales } from "@/i18n/locales"
-import type { ActionResult } from "@/lib/api"
 import { contactKinds, contactKindsFor } from "@/lib/contacts"
 import { isTimeZone } from "@/lib/time-zone"
 import { eventMessage } from "@/lib/timeline-events"
@@ -62,15 +61,7 @@ import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { token, hash, isAppOrigin } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
-import {
-  requestPasswordReset,
-  resendCode,
-  resetPassword,
-  signIn,
-  signUp,
-  verifyEmail,
-  type SignInRequest
-} from "@/server/sign-in"
+import { signInActions } from "@/server/sign-in-actions"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 import {
@@ -85,14 +76,6 @@ import { serverText } from "@/server/text"
 import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
-const signInActions = new Map<string, (request: SignInRequest, data: unknown) => Promise<ActionResult>>([
-  ["auth.signIn", signIn],
-  ["auth.signUp", signUp],
-  ["auth.verifyEmail", verifyEmail],
-  ["auth.resendCode", resendCode],
-  ["auth.forgotPassword", requestPasswordReset],
-  ["auth.resetPassword", resetPassword]
-])
 export const POST = withRequest(async function POST(request: Request) {
   if (!isAppOrigin(request.headers.get("origin"))) {
     return errorResponse("invalidOrigin", 403)

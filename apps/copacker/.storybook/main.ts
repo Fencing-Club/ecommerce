@@ -37,6 +37,7 @@ const config: StorybookConfig = {
         // The server's side of what server components use: messages from the story's language, a database that
         // answers with each story's rows, and ClientMessages, which the marketing pages render inside sync components.
         alias: [
+          { find: /^@\/lib\/auth-navigation$/, replacement: mock("auth-navigation.ts") },
           { find: /^next-intl\/server$/, replacement: mock("next-intl-server.ts") },
           { find: /^@\/server\/localization$/, replacement: mock("localization.ts") },
           { find: /^@\/server\/next-request$/, replacement: mock("next-request.ts") },

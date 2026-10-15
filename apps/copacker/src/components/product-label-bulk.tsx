@@ -4,6 +4,7 @@ import { ChevronDown, Download, Search, Tags } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
+import { FormError } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,7 +15,6 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { type ProductLabel, productLabels } from "@/lib/product-label"
-import { FormError } from "./actions"
 
 type Choice = { productId: string; title: string; variations: number; productLabel: ProductLabel }
 

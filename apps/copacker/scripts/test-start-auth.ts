@@ -69,7 +69,12 @@ async function expectIdentity(response: Response, expected: string | null) {
 
 try {
   await expectIdentity(await request("GET"), null)
-  const login = await request("POST", undefined, JSON.stringify({ email, password }))
+  const login = await request(
+    "POST",
+    undefined,
+    JSON.stringify({ action: "auth.signIn", data: { email, password } }),
+    "/api/action"
+  )
   assert(login.status === 200, `WorkOS test-account login failed with HTTP ${login.status}`)
   assert.deepEqual(await login.json(), { redirect: "/" }, "The custom sign-in flow preserves its redirect")
   const initialCookie = cookieFrom(login)
@@ -77,6 +82,13 @@ try {
   const user = initial.user.id
   await expectIdentity(await request("GET", initialCookie), user)
   await expectIdentity(await request("GET", "migration-session=tampered"), null)
+
+  const signedInPage = await request("GET", initialCookie, undefined, "/login?next=%2Forders%3Ftab%3Dopen")
+  assert.equal(signedInPage.status, 307)
+  assert.equal(signedInPage.headers.get("Location"), "/orders?tab=open")
+  const signedInSignUp = await request("GET", initialCookie, undefined, "/signup?next=https%3A%2F%2Fforeign.example")
+  assert.equal(signedInSignUp.status, 307)
+  assert.equal(signedInSignUp.headers.get("Location"), "/")
 
   const anonymousWorkspace = await request("POST", undefined, undefined, "/workspace")
   assert.equal(anonymousWorkspace.status, 401, "Workspace queries require a validated session")
