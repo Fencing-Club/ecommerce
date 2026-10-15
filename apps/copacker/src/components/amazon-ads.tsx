@@ -48,6 +48,23 @@ export function AmazonAdsCard({
       </StatusBadge>
     )
   }
+  const clickable = cn(
+    className,
+    "cursor-pointer transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+  )
+  let footer: React.ReactNode = null
+  if (!sellerConnected) {
+    footer = <span className="text-sm text-muted-foreground">{t("requiresStore")}</span>
+  } else if (!available) {
+    footer = <span className="text-sm text-muted-foreground">{t("unavailable")}</span>
+  } else if (admin && data && !isError) {
+    footer = (
+      <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium">
+        {integrations(data.connected ? "manage" : "connect")}
+        <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+      </span>
+    )
+  }
   const body = (
     <>
       <span className="flex w-full items-start justify-between gap-3">
@@ -58,30 +75,22 @@ export function AmazonAdsCard({
         <span className="font-medium">{t("title")}</span>
         <span className="text-sm text-muted-foreground">{t("summary")}</span>
       </span>
-      {!sellerConnected ? (
-        <span className="text-sm text-muted-foreground">{t("requiresStore")}</span>
-      ) : (
-        admin && (
-          <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium">
-            {integrations(data?.connected ? "manage" : "connect")}
-            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
-          </span>
-        )
-      )}
+      {footer}
     </>
   )
-  if (!admin || !sellerConnected) {
+  if (!admin || !sellerConnected || !available || !data || isError) {
     return <div className={className}>{body}</div>
+  }
+  if (!data.connected) {
+    return (
+      <a className={clickable} href="/api/connections/amazon-ads" aria-label={t("connect")}>
+        {body}
+      </a>
+    )
   }
   return (
     <Sheet>
-      <SheetTrigger
-        className={cn(
-          className,
-          "cursor-pointer transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        )}
-        aria-label={integrations("storeSettings", { store: t("title") })}
-      >
+      <SheetTrigger className={clickable} aria-label={integrations("storeSettings", { store: t("title") })}>
         {body}
       </SheetTrigger>
       <SheetContent className="sm:max-w-md">
