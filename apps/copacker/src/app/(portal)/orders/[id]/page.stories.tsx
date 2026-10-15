@@ -1,12 +1,4 @@
-import {
-  amazonNetworkNames,
-  itemTotal,
-  money,
-  orderCharges,
-  type OrderItem,
-  orderTotal,
-  supplierChargeTotal
-} from "@repo/aisle"
+import { amazonNetworkNames, itemTotal, money, orderCharges, type OrderItem, orderTotal } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
 import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import {
@@ -399,12 +391,6 @@ async function OrderPage(args: Args) {
                           {prices && (
                             <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
                               {money(itemTotal(item), currency, locale)}
-                              {item.supplierCharges?.map((charge, index) => (
-                                <p key={index} className="mt-1 text-xs text-muted-foreground">
-                                  {knownName(adjustmentKeys, charge.description, t)}{" "}
-                                  {money(supplierChargeTotal(item, charge), currency, locale)}
-                                </p>
-                              ))}
                             </TableCell>
                           )}
                           <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">

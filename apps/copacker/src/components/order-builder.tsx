@@ -637,12 +637,6 @@ export function OrderBuilder({
                                 </td>
                                 <td className="px-2 py-3.5 text-end tabular-nums">
                                   {money(item ? itemTotal(item) : 0, currency)}
-                                  {item?.supplierCharges?.map((charge, chargeIndex) => (
-                                    <p key={chargeIndex} className="mt-1 text-xs text-muted-foreground">
-                                      {knownName(adjustmentKeys, charge.description, t)}{" "}
-                                      {money(supplierChargeTotal(item, charge), currency)}
-                                    </p>
-                                  ))}
                                 </td>
                                 <td className="py-2 pe-2">
                                   <div className="flex justify-end">

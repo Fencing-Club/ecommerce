@@ -415,13 +415,19 @@ export const SupplierPackingCosts = meta.story({
     await expect(dialog.getByRole("combobox", { name: "Charge basis" })).toHaveTextContent("Per pack")
     await replace(dialog.getByRole("spinbutton", { name: "Rate" }), "0.26")
     await expect(dialog.getByText("$31.20")).toBeVisible()
+    await userEvent.click(dialog.getByRole("button", { name: "Add expense" }))
+    await userEvent.click(dialog.getAllByRole("combobox", { name: "Expense type" })[1]!)
+    await userEvent.click(await screen.findByRole("option", { name: "Labeling" }))
+    await userEvent.click(dialog.getAllByRole("combobox", { name: "Charge basis" })[1]!)
+    await userEvent.click(await screen.findByRole("option", { name: "Flat amount" }))
+    await replace(dialog.getAllByRole("spinbutton", { name: "Rate" })[1]!, "10")
     await userEvent.click(dialog.getByRole("button", { name: "Done" }))
-    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,051.20")
+    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,061.20")
     await replace(canvas.getByRole("spinbutton", { name: "Quantity of Canvas tote bag" }), "242")
-    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,059.96")
+    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,069.96")
     await userEvent.click(canvas.getByRole("checkbox", { name: /^Select Canvas tote bag/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Move to AWD US" }))
-    await expect(canvas.getByRole("button", { name: /AWD US shipment/ })).toHaveTextContent("$1,059.96")
+    await expect(canvas.getByRole("button", { name: /AWD US shipment/ })).toHaveTextContent("$1,069.96")
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-PACKING")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
@@ -432,7 +438,10 @@ export const SupplierPackingCosts = meta.story({
             expect.objectContaining({
               pieces: 242,
               amazonNetwork: "awd_us",
-              supplierCharges: [{ description: "Packing", amount: 26, basis: "pack" }]
+              supplierCharges: [
+                { description: "Packing", amount: 26, basis: "pack" },
+                { description: "Labeling", amount: 1000, basis: "flat" }
+              ]
             })
           ]
         })
