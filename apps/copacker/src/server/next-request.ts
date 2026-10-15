@@ -1,4 +1,6 @@
 import { getLocale, getMessages, getTimeZone } from "next-intl/server"
+import { notFound } from "next/navigation"
+import { NotFoundError } from "@/i18n/errors"
 import { withLocalization } from "@/server/localization"
 
 // The remaining Next entry points supply their request configuration to framework-independent business code.
@@ -14,6 +16,15 @@ export function withRequest<Args extends unknown[], Result>(handler: (...args: A
           return undefined
         }
       },
-      () => handler(...args)
+      async () => {
+        try {
+          return await handler(...args)
+        } catch (error) {
+          if (error instanceof NotFoundError) {
+            notFound()
+          }
+          throw error
+        }
+      }
     )
 }

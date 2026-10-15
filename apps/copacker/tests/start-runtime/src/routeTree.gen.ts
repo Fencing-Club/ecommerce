@@ -15,6 +15,7 @@ import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LocalizationRouteImport } from './routes/localization'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivateDocumentRouteImport } from './routes/private-document'
 import { Route as ProbeRouteImport } from './routes/probe'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -51,6 +52,11 @@ const LocalizationRoute = LocalizationRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateDocumentRoute = PrivateDocumentRouteImport.update({
+  id: '/private-document',
+  path: '/private-document',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProbeRoute = ProbeRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/private-document'
     | '/probe'
     | '/reset-password'
     | '/signup'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/private-document'
     | '/probe'
     | '/reset-password'
     | '/signup'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/private-document'
     | '/probe'
     | '/reset-password'
     | '/signup'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LocalizationRoute: typeof LocalizationRoute
   LoginRoute: typeof LoginRouteWithChildren
+  PrivateDocumentRoute: typeof PrivateDocumentRoute
   ProbeRoute: typeof ProbeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/private-document': {
+      id: '/private-document'
+      path: '/private-document'
+      fullPath: '/private-document'
+      preLoaderRoute: typeof PrivateDocumentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/probe': {
@@ -311,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LocalizationRoute: LocalizationRoute,
   LoginRoute: LoginRouteWithChildren,
+  PrivateDocumentRoute: PrivateDocumentRoute,
   ProbeRoute: ProbeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,

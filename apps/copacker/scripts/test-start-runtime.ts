@@ -166,6 +166,21 @@ try {
   const workspace = await request("/workspace", { method: "POST", headers: { Origin: origin } })
   assert.equal(workspace.status, 401, "Workspace queries require a validated session")
 
+  const privateDocument = await request("/private-document?case=supplier", {
+    method: "POST",
+    headers: { Origin: origin }
+  })
+  assert.equal(privateDocument.status, 401, "Private downloads require validated authentication")
+  const storage = await request("/probe?kind=storage", { method: "POST", headers: { Origin: origin } })
+  assert.equal(storage.status, 200, await storage.clone().text())
+  assert.deepEqual(await storage.json(), {
+    privateStorage: true,
+    metadata: true,
+    streamed: true,
+    processor: true,
+    deleted: true
+  })
+
   // Each invocation must keep its own language and time zone while all nine catalogs load concurrently.
   await Promise.all(
     locales.flatMap((locale) =>
@@ -235,7 +250,7 @@ try {
     })
   )
   process.stdout.write(
-    "Start/Workers runtime passed: SSR, auth screens/actions, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
+    "Start/Workers runtime passed: SSR, auth screens/actions, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, private R2 storage, PDF, crypto and concurrent PostgreSQL.\n"
   )
 } finally {
   await server?.close()

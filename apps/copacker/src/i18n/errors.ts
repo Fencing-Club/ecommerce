@@ -19,3 +19,10 @@ export class LocalizedError extends Error {
 
 // A role or page grant does not allow this operation. Kept independent of request-local translation helpers.
 export class AccessError extends LocalizedError {}
+
+// Domain lookups report absence without choosing a framework's response or serializing private record details.
+export class NotFoundError extends Error {
+  constructor() {
+    super("not found")
+  }
+}

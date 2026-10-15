@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
       env: {
         APP_URL: bindings.text(origin),
         PROBE_MODE: bindings.text(mode === "staging" ? "staging" : "local"),
+        DOCUMENTS: bindings.r2({ name: "copacker-staging-private" }),
         PROBE_ACCESS_TOKEN: mode === "staging" ? bindings.secret() : bindings.text("local-fixture-not-a-secret"),
         HYPERDRIVE: bindings.hyperdrive({
           id: "0a74043480fe42a6acdbf46b9572ef58",

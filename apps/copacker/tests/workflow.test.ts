@@ -78,12 +78,13 @@ vi.mock("../src/server/product-fields", async (original) => ({
 }))
 const storage = vi.hoisted(() => ({
   putFile: vi.fn<(...args: never[]) => Promise<void>>(),
-  getFile: vi.fn<(...args: never[]) => Promise<Uint8Array>>()
+  getFile: vi.fn<(key: string) => Promise<Uint8Array>>()
 }))
 vi.mock("../src/server/storage", async (original) => ({
   ...(await original<typeof import("../src/server/storage")>()),
   putFile: storage.putFile,
-  getFile: storage.getFile
+  getFile: storage.getFile,
+  readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
 // Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
 vi.mock("@repo/aisle/documents", async (original) => {
@@ -2537,9 +2538,13 @@ describe("document upload and packet release", () => {
   })
   it("downloads an unchanged authorized document without caching", async () => {
     const prepared = await preparation()
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     storage.getFile.mockResolvedValue(new Uint8Array([1, 2, 3]))
     context.actor = supplier
     const result = await downloadDocument(new Request("http://localhost"), {
@@ -2561,9 +2566,13 @@ describe("document upload and packet release", () => {
   })
   it("withholds document bytes when workspace membership is removed during storage access", async () => {
     const prepared = await preparation()
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     context.actor = supplier
     storage.getFile.mockImplementation(async () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
@@ -2727,9 +2736,13 @@ describe("document upload and packet release", () => {
     storage.getFile.mockResolvedValue(bytes)
     const packet = () =>
       downloadPacket(new Request("http://localhost"), { params: Promise.resolve({ id: prepared.id }) })
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     // The product label is made from the product now; Shopify has no country of origin for it.
     provider.shopifyFor.mockResolvedValue({ variants: async () => [] })
     const downloaded = await packet()
@@ -2836,9 +2849,13 @@ describe("PO to a released Amazon shipment", () => {
     })
     await database.update(tables.orders).set({ status: "draft", data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     const stored = new Map<string, Uint8Array>()
     storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
       stored.set(key, bytes)
@@ -3004,9 +3021,13 @@ describe("PO to the buyer's own location", () => {
     })
     await database.update(tables.orders).set({ status: "draft", data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     stored.clear()
     storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
       stored.set(key, bytes)

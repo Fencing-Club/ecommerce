@@ -25,6 +25,11 @@ Private PDF responses (`/api/documents/:id`, `/api/shipments/:id/packet`, `/api/
 workspace membership after the storage read or packet assembly, before returning bytes. Removing a member during a slow
 download stops that response. They are sent `private, no-store` with `Content-Security-Policy: sandbox`.
 
+The single-document endpoint uses `server/document-download.ts` in both framework runtimes. It opens a storage stream,
+then rechecks the document, relationship, label release/revision and current membership's page/price grants before
+returning it. Denial cancels the unread stream. The Node transport closes its S3 client after consumption, cancellation
+or failure; Workers supply an invocation-scoped private R2 binding. PDF processors still materialize bytes explicitly.
+
 The optional Amazon Ads development relay is a narrow exception: `GET /api/connections/amazon-ads` forwards a valid
 signed callback ticket before requiring a session. It never accesses a workspace, exchanges tokens or fetches a
 return URL. The originating app performs all authorization and single-use checks. See [Amazon Ads](amazon-ads.md).

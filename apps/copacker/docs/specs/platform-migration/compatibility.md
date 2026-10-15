@@ -75,12 +75,11 @@ The real partners/product-import consumers still need their complete acceptance 
 ## Verified checks
 
 The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
-unit/Storybook tests with coverage, including 2,307 Copacker tests across 285 files after the auth routes were added.
-This verifies the current
-compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
+unit/Storybook tests with coverage, including 2,333 Copacker tests across 287 files after the private storage boundary was
+added. This verifies the current compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
 gate V01.
 
-The current Next production build also passed after the shared auth screens and document fonts changed. Integrated-browser
+The current Next production build also passed after the private download service and storage transport changed. Integrated-browser
 checks covered buyer desktop/mobile layouts, date/channel controls by keyboard, a member without stores/admin setup, and the
 Urdu supplier overview without horizontal overflow. The Urdu case now has an automated story. An extra live production
 Next smoke-server launch was rejected by automatic approval review without a reason, so that additional check remains
@@ -178,6 +177,39 @@ These routes run in the protected compatibility Worker, not the application's pr
 OAuth, email delivery/verification/reset, invitation/onboarding, maintenance, portal navigation and private downloads
 remain required before cutover.
 
+## Private storage and document download boundary
+
+The single-document download now has a framework-independent service shared by the existing Next endpoint and the
+Start compatibility Worker. Its order lookups report domain not-found errors, which Next maps at its request boundary.
+It preserves buyer/supplier/forwarder access, document-kind restrictions, price grants, release/revision checks and
+attachment/security headers. It also rechecks current membership permissions after opening storage, closing a race
+where membership could survive while the required page or price grant was revoked.
+
+`server/storage.ts` accepts an invocation-scoped storage provider. The retained Node services keep S3 configuration;
+Workers use their native private R2 binding. `readFile` returns a stream for downloads, while existing PDF processors use
+`getFile` for bytes. Denied or withdrawn downloads cancel the pending stream, and the S3 transport closes its client on
+completion, cancellation and failure. This does not convert packet assembly or import-source downloads to streaming.
+
+The new `copacker-staging-private` bucket has no custom domains and its managed r2.dev access is disabled. No production
+documents were copied and the public media bucket was not repurposed. Local tests use the local R2 simulation. Protected
+remote probes write only random `compatibility/` objects and remove each owned key in a finally block; database fixtures
+use transaction-local temporary tables rather than existing application records.
+
+Focused checks cover concurrent storage contexts, Node stream lifetime, withdrawal/cancellation, page/price revocation,
+and existing document workflows. Local Workers checks passed native R2 write/read/delete, content-type/size metadata,
+streamed reads and processor reads. See the [R2 binding contract](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/)
+and [public-access settings](https://developers.cloudflare.com/r2/buckets/public-buckets/).
+
+Authenticated deployed checks passed buyer/supplier/forwarder downloads with valid PDF contents and private attachment
+headers. They rejected foreign workspaces, drafts, hidden document kinds, outdated documents, unreleased labels and
+wrong revisions, plus replacements, withdrawn releases, removed supplier relationships/memberships and revoked
+page/price grants during storage access. Denied responses contained no PDF bytes; English permission messages preserve
+their page names and the Urdu missing-document response uses the request locale. The existing Next workflow suite
+continues exercising the same canonical download service.
+
+Live Node-to-R2 S3 access, full object reconciliation/recovery, maximum-size concurrent workloads and the production
+download route conversion remain pending. This private-bucket proof does not complete the storage migration.
+
 ## Staging database and certificate
 
 Railway Postgres stays authoritative. The user supplied staging credentials in ignored `apps/copacker/.env.staging`.
@@ -197,7 +229,8 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive | `copacker-staging`, ID `0a74043480fe42a6acdbf46b9572ef58` |
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
-| Tested Worker version | `e7212ba0-df0e-408f-b4e9-76fc80ef82e2` |
+| Private R2 binding | `DOCUMENTS`, bucket `copacker-staging-private` in WNAM; managed public access disabled; no custom domains |
+| Tested Worker version | `d5c834c6-cc54-469c-b7cd-4999f9dd40c5` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,
@@ -215,7 +248,7 @@ the old CA. Repeat separately for production; do not assume both environments sh
 
 ## Remaining proof before M0 exit
 
-Remaining custom WorkOS signup/verification/OAuth flows; workspace switching and browser-cache isolation; private R2 download;
+Remaining custom WorkOS signup/verification/OAuth flows; workspace switching and browser-cache isolation; app-level private download acceptance;
 database row locks/token-refresh serialization and reconnect drills; full nuqs browser acceptance in both consumers;
 maximum-size and representative PDF/ZIP/XLSX/AI workloads under concurrency; existing-service baseline and agreed
 release/recovery budgets. The application route conversion, background executors and production cutover are pending.

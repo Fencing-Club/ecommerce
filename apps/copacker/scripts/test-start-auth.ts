@@ -4,7 +4,9 @@ import { readFile } from "node:fs/promises"
 import { parseEnv } from "node:util"
 import { WorkOS } from "@workos-inc/node"
 import { sessionEncryption, type Session } from "@workos/authkit-session"
+import { PDFDocument } from "pdf-lib"
 import { z } from "zod"
+import { loadMessages } from "../src/i18n/messages"
 
 // Explicit remote target only. These credentials belong to the existing test account, never a production account.
 const origin = process.argv[2]
@@ -25,13 +27,14 @@ const sessions = new Set<string>()
 const identity = z.object({ userId: z.string().nullable() })
 const claims = z.object({ sid: z.string() })
 
-function request(method: string, cookie?: string, body?: string, path = "/auth") {
+function request(method: string, cookie?: string, body?: string, path = "/auth", language = "en") {
   return fetch(`${target.origin}${path}`, {
     method,
     redirect: "manual",
     headers: {
       Authorization: `Bearer ${probeToken}`,
       Origin: target.origin,
+      "Accept-Language": language,
       ...(cookie && { Cookie: cookie }),
       ...(body && { "Content-Type": "application/json" })
     },
@@ -103,6 +106,47 @@ try {
     switcherKeys: ["id", "kind", "name"]
   })
 
+  for (const kind of ["buyer", "supplier", "forwarder"]) {
+    const download = await request("POST", initialCookie, undefined, `/private-document?case=${kind}`)
+    assert.equal(download.status, 200, `Private ${kind} download: ${await download.clone().text()}`)
+    assert.equal(download.headers.get("Content-Type"), "application/pdf")
+    assert.equal(download.headers.get("Content-Disposition"), "attachment; filename*=UTF-8''Private%20label.pdf")
+    assert.equal(download.headers.get("Cache-Control"), "private, no-store")
+    assert.equal(download.headers.get("Content-Security-Policy"), "sandbox")
+    assert.equal(download.headers.get("X-Content-Type-Options"), "nosniff")
+    const pdf = await PDFDocument.load(await download.arrayBuffer())
+    assert.equal(pdf.getPageCount(), 1)
+    assert.equal(pdf.getTitle(), "Private document compatibility")
+  }
+  for (const [kind, status] of [
+    ["foreign", 404],
+    ["draft", 404],
+    ["hidden-kind", 404],
+    ["outdated", 404],
+    ["unreleased", 409],
+    ["wrong-revision", 409],
+    ["replaced", 409],
+    ["withdrawn", 409],
+    ["removed-supplier", 404],
+    ["removed-membership", 403],
+    ["revoked-page", 403],
+    ["revoked-prices", 403]
+  ] as const) {
+    const denied = await request("POST", initialCookie, undefined, `/private-document?case=${kind}`)
+    assert.equal(denied.status, status, `Private download must reject ${kind}`)
+    assert(!denied.headers.get("Content-Type")?.includes("application/pdf"))
+    const text = await denied.text()
+    assert(!text.includes("%PDF-"), "Denied responses must not contain private bytes")
+    if (kind === "revoked-page") {
+      assert.equal(text, "Ask an admin for access to Shipments")
+    } else if (kind === "revoked-prices") {
+      assert.equal(text, "Ask an admin for access to prices and costs")
+    }
+  }
+  const urduDownload = await request("POST", initialCookie, undefined, "/private-document?case=outdated", "ur")
+  assert.equal(urduDownload.status, 404)
+  assert.equal(await urduDownload.text(), (await loadMessages("ur")).errors.documentNotFound)
+
   const refresh = await request("GET", await needsRefresh(initial))
   await expectIdentity(refresh, user)
   const refreshedCookie = cookieFrom(refresh)
@@ -136,7 +180,7 @@ try {
   await expectIdentity(rejected, null)
   assert(cookieFrom(rejected) === "migration-session=", "Rejected sessions must clear their cookie")
   process.stdout.write(
-    "Deployed WorkOS test-account checks passed: login, JWT validation, workspace authorization, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
+    "Deployed WorkOS test-account checks passed: login, JWT validation, workspace authorization, private R2 downloads and withdrawal races, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
   )
 } finally {
   for (const sessionId of sessions) {

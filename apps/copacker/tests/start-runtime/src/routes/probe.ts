@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { storageProbe } from "../private-document.server"
 import { databaseProbe, documentProbe, sessionProbe } from "../probes.server"
 
 export const Route = createFileRoute("/probe")({
@@ -12,6 +13,8 @@ export const Route = createFileRoute("/probe")({
             return databaseProbe()
           case "document":
             return documentProbe()
+          case "storage":
+            return storageProbe()
           default:
             return sessionProbe(request)
         }

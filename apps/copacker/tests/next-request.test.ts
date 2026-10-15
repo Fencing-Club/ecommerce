@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest"
 import { GET } from "../src/app/api/products/without-supplier/route"
+import { NotFoundError } from "../src/i18n/errors"
 import { type Locale } from "../src/i18n/locales"
 import { loadMessages, type Messages } from "../src/i18n/messages"
 import { localization, requestLocale } from "../src/server/localization"
@@ -49,4 +50,19 @@ it("retains English fallback when invoked without a Next request", async () => {
     expect(await localization()).toMatchObject({ locale: "en", timeZone: "UTC" })
     expect(await requestLocale()).toBeUndefined()
   })()
+})
+
+it("maps a domain lookup failure to Next's not-found boundary", async () => {
+  await expect(
+    withRequest(async () => {
+      throw new NotFoundError()
+    })()
+  ).rejects.toMatchObject({
+    digest: "NEXT_HTTP_ERROR_FALLBACK;404"
+  })
+  await expect(
+    withRequest(async () => {
+      throw new Error("unrelated")
+    })()
+  ).rejects.toThrow("unrelated")
 })
