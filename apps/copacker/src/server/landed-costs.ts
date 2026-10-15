@@ -1,4 +1,4 @@
-import { orderTotal, type OrderInput } from "@repo/aisle"
+import { itemTotal, orderTotal, type OrderInput } from "@repo/aisle"
 import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -76,7 +76,7 @@ export function landedMarkup(order: Pick<OrderInput, "items" | "adjustments">, l
   if (products <= 0) {
     return null
   }
-  return (orderTotal(order as OrderInput) - products + landedMinor) / products
+  return (orderTotal(order) - products + landedMinor) / products
 }
 
 // Each product's landed markup, from the latest sent PO for it that has landed costs recorded. A PO whose freight
@@ -88,13 +88,18 @@ export function landedMarkups(
   for (const order of list
     .filter((entry) => entry.landedMinor > 0)
     .toSorted((a, b) => b.sentAt.getTime() - a.sentAt.getTime())) {
-    const markup = landedMarkup(order.data, order.landedMinor)
+    // Only shared PO costs are spread across products. A service assigned to a product stays with that product.
+    const markup = landedMarkup(
+      { ...order.data, items: order.data.items.map((item) => ({ ...item, supplierCharges: [] })) },
+      order.landedMinor
+    )
     if (markup === null) {
       continue
     }
     for (const item of order.data.items) {
       if (!markups.has(item.variantId)) {
-        markups.set(item.variantId, markup)
+        const productCost = item.pieces * item.unitPrice
+        markups.set(item.variantId, markup + (productCost > 0 ? (itemTotal(item) - productCost) / productCost : 0))
       }
     }
   }

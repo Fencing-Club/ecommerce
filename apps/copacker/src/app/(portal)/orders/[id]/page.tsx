@@ -1,7 +1,16 @@
-import { amazonNetworkNames, money, type OrderItem, orderTotal } from "@repo/aisle"
+import { amazonNetworkNames, itemTotal, money, orderCharges, type OrderItem, orderTotal } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
 import { desc, eq, inArray } from "drizzle-orm"
-import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
+import {
+  ArrowRight,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Info as InfoIcon,
+  MapPin,
+  Package,
+  Warehouse
+} from "lucide-react"
 import type { Metadata } from "next"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
@@ -17,6 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { db } from "@/db"
@@ -189,6 +199,22 @@ export default async function OrderPage({ params }: Props) {
   const place = (addressId: string | undefined) => places.find((candidate) => candidate.id === addressId)?.name
   // The stop goes by the PO's forwarder and its address there, such as "Yiwu Logistics, Yiwu warehouse": an address the
   // buyer saved for the forwarder, or the forwarder's own once it has joined.
+  const itemGroups =
+    order.data.destination === "amazon"
+      ? (["awd_us", "fba"] as const)
+          .map((network) => ({
+            key: network,
+            label: amazonNetworkNames[network],
+            items: order.data.items.filter((item) => item.amazonNetwork === network)
+          }))
+          .filter((group) => group.items.length > 0)
+      : [
+          {
+            key: "warehouse",
+            label: place(order.data.deliveryId) ?? formatDestination(order.data.destination, common),
+            items: order.data.items
+          }
+        ]
   const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
   // A calendar day, such as the date the PO is required by, the same wherever it's read.
   const day = (value: string) =>
@@ -205,7 +231,7 @@ export default async function OrderPage({ params }: Props) {
   }
 
   return (
-    <>
+    <div className="@container flex flex-col gap-4">
       <PageHeader
         parents={[{ label: s.org.kind === "supplier" ? t("index.supplierTitle") : t("index.title"), href: "/orders" }]}
         title={order.data.reference}
@@ -268,7 +294,7 @@ export default async function OrderPage({ params }: Props) {
         />
       )}
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center gap-1.5 p-3">
@@ -295,88 +321,119 @@ export default async function OrderPage({ params }: Props) {
                 </Button>
               )}
             </div>
-            {/* Too narrow for its columns, as on a phone, each line stacks: the product with its menu, then the supplier
-                SKU, the quantity at its cost and the total. */}
-            <div className="@container border-t">
-              <Table framed={false} className="@max-2xl:block">
-                <TableHeader className="@max-2xl:hidden">
-                  <TableRow>
-                    <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
-                    <TableHead className="w-36">{t("detail.columns.supplierSku")}</TableHead>
-                    <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
-                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.cost")}</TableHead>}
-                    {prices && <TableHead className="w-28 text-end">{t("detail.columns.total")}</TableHead>}
-                    <TableHead className="w-12 pe-3">
-                      <span className="sr-only">{t("detail.columns.actions")}</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="@max-2xl:block">
-                  {order.data.items.map((item) => (
-                    <TableRow
-                      key={item.id}
-                      className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
-                    >
-                      <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
-                        <p className="leading-snug font-medium">{item.name}</p>
-                        {item.variant && item.variant !== "Default Title" && (
-                          <Badge variant="secondary" className="mt-1">
-                            {item.variant}
-                          </Badge>
-                        )}
-                        <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
-                        {itemRequirements(item, order.data.destination, prep)
-                          .map(text.requirement)
-                          .map((line) => (
-                            <p key={line} className="text-xs text-muted-foreground">
-                              {line}
-                            </p>
-                          ))}
-                      </TableCell>
-                      <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
-                        <SupplierSku item={item} notSet={t("detail.notSet")} />
-                      </TableCell>
-                      <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
-                        {item.pieces}
-                        {item.piecesPerSet > 1 && (
-                          <p className="text-xs text-muted-foreground">
-                            {t("detail.perPack", { count: item.piecesPerSet })}
-                          </p>
-                        )}
-                        {remainingFor(item.id) !== item.pieces && (
-                          <p className="text-xs text-muted-foreground">
-                            {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
-                          </p>
-                        )}
-                      </TableCell>
-                      {prices && (
-                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0 @max-2xl:before:content-['×_']">
-                          {money(item.unitPrice, currency, locale)}
-                        </TableCell>
-                      )}
-                      {prices && (
-                        <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
-                          {money(item.pieces * item.unitPrice, currency, locale)}
-                        </TableCell>
-                      )}
-                      <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">
-                        <LineMenu
-                          orderId={id}
-                          itemId={item.id}
-                          name={[item.name, item.variant === "Default Title" ? "" : item.variant]
-                            .filter(Boolean)
-                            .join(" / ")}
-                          label={labelFor(item.id)}
-                          warning={item.suffocationWarning}
-                          editable={order.status === "draft" && buyer && editsOrder}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
           </Card>
+          {itemGroups.map((group) => (
+            <Collapsible key={group.key} defaultOpen render={<Card className="gap-0 overflow-hidden py-0" />}>
+              <CollapsibleTrigger className="group flex min-h-14 items-center gap-2 px-3 py-2 text-start focus-visible:outline-ring">
+                <Package className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <h2 className="font-semibold">{t("builder.shipmentTo", { destination: group.label })}</h2>
+                <span className="ms-auto flex flex-col items-end gap-1 text-end text-sm sm:flex-row sm:items-center sm:gap-4">
+                  <span className="text-muted-foreground">
+                    {t("builder.shipmentCounts", {
+                      count: group.items.length,
+                      pieces: group.items.reduce((sum, item) => sum + item.pieces, 0)
+                    })}
+                  </span>
+                  {prices && (
+                    <span className="font-semibold whitespace-nowrap tabular-nums">
+                      <span className="sr-only">{t("builder.shipmentTotal")} </span>
+                      {money(
+                        group.items.reduce((sum, item) => sum + itemTotal(item), 0),
+                        currency,
+                        locale
+                      )}
+                    </span>
+                  )}
+                </span>
+                <ChevronDown
+                  className="size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-180"
+                  aria-hidden
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent keepMounted>
+                <div className="@container border-t">
+                  <Table framed={false} className="@max-2xl:block">
+                    <TableHeader className="@max-2xl:hidden">
+                      <TableRow>
+                        <TableHead className="ps-3">{t("detail.columns.products")}</TableHead>
+                        <TableHead className="w-36">{t("detail.columns.supplierSku")}</TableHead>
+                        <TableHead className="w-24 text-end">{t("detail.columns.quantity")}</TableHead>
+                        {prices && <TableHead className="w-28 text-end">{t("detail.columns.cost")}</TableHead>}
+                        {prices && <TableHead className="w-28 text-end">{t("detail.columns.total")}</TableHead>}
+                        <TableHead className="w-12 pe-3">
+                          <span className="sr-only">{t("detail.columns.actions")}</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="@max-2xl:block">
+                      {group.items.map((item) => (
+                        <TableRow
+                          key={item.id}
+                          className="align-top @max-2xl:relative @max-2xl:flex @max-2xl:flex-wrap @max-2xl:items-baseline @max-2xl:gap-x-1 @max-2xl:px-3 @max-2xl:py-2.5"
+                        >
+                          <TableCell className="py-2.5 ps-3 align-top whitespace-normal @max-2xl:basis-full @max-2xl:p-0 @max-2xl:pe-16">
+                            <p className="leading-snug font-medium">{item.name}</p>
+                            {item.variant && item.variant !== "Default Title" && (
+                              <Badge variant="secondary" className="mt-1">
+                                {item.variant}
+                              </Badge>
+                            )}
+                            <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
+                            {item.piecesPerSet > 1 && (
+                              <p className="text-xs text-muted-foreground">
+                                {t("detail.perPack", { count: item.piecesPerSet })}
+                              </p>
+                            )}
+                            {itemRequirements(item, order.data.destination, prep)
+                              .filter((requirement) => requirement.code !== "packFor")
+                              .map(text.requirement)
+                              .map((line) => (
+                                <p key={line} className="text-xs text-muted-foreground">
+                                  {line}
+                                </p>
+                              ))}
+                          </TableCell>
+                          <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
+                            <SupplierSku item={item} notSet={t("detail.notSet")} />
+                          </TableCell>
+                          <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0">
+                            {item.pieces}
+                            {remainingFor(item.id) !== item.pieces && (
+                              <p className="text-xs text-muted-foreground">
+                                {t("detail.toShip", { count: remainingFor(item.id) ?? 0 })}
+                              </p>
+                            )}
+                          </TableCell>
+                          {prices && (
+                            <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:p-0 @max-2xl:before:content-['×_']">
+                              {money(item.unitPrice, currency, locale)}
+                            </TableCell>
+                          )}
+                          {prices && (
+                            <TableCell className="py-2.5 text-end align-top tabular-nums @max-2xl:min-w-20 @max-2xl:p-0 @max-2xl:font-medium">
+                              {money(itemTotal(item), currency, locale)}
+                            </TableCell>
+                          )}
+                          <TableCell className="py-1.5 pe-3 text-end align-top @max-2xl:absolute @max-2xl:end-2 @max-2xl:top-1.5 @max-2xl:p-0">
+                            <LineMenu
+                              orderId={id}
+                              itemId={item.id}
+                              name={[item.name, item.variant === "Default Title" ? "" : item.variant]
+                                .filter(Boolean)
+                                .join(" / ")}
+                              label={labelFor(item.id)}
+                              warning={item.suffocationWarning}
+                              editable={order.status === "draft" && buyer && editsOrder}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
 
           {instructions.length > 0 && (
             <Card size="sm">
@@ -489,7 +546,7 @@ export default async function OrderPage({ params }: Props) {
                   <span>{t("detail.variantsAndItems", { variants: order.data.items.length, items: units })}</span>
                   <span className="tabular-nums">{money(subtotal, currency, locale)}</span>
                 </div>
-                {order.data.adjustments?.map((adjustment, index) => (
+                {orderCharges(order.data).map((adjustment, index) => (
                   <div key={index} className="flex justify-between gap-3">
                     <span>{knownName(adjustmentKeys, adjustment.description, t)}</span>
                     <span className="tabular-nums">{money(adjustment.amount, currency, locale)}</span>
@@ -542,7 +599,7 @@ export default async function OrderPage({ params }: Props) {
           )}
         </aside>
       </div>
-    </>
+    </div>
   )
 }
 

@@ -1,5 +1,5 @@
 import { PDFDocument, type PDFFont, StandardFonts, rgb } from "pdf-lib"
-import { money, orderTotal, type OrderInput, type Packing } from "./index"
+import { money, orderCharges, orderTotal, supplierChargeTotal, type OrderInput, type Packing } from "./index"
 import type { CartonLabel } from "./labels"
 import {
   destinationName,
@@ -390,6 +390,10 @@ async function orderPdf(input: {
       item.variant && item.variant !== "Default Title" ? wrap(item.variant, regular, 9.5, descriptionWidth) : []
     const details = [
       `SKU ${item.buyerSku}`,
+      ...(item.supplierCharges ?? []).map(
+        (charge) =>
+          `${charge.description}: ${price(charge.amount)}${charge.basis === "flat" ? " flat" : ` per ${charge.basis}`} (${price(supplierChargeTotal(item, charge))})`
+      ),
       ...itemRequirements(item, order.destination, prep).map(requirementText)
     ].flatMap((value) => wrap(value, regular, 8.5, descriptionWidth))
     const skus = item.components?.length
@@ -430,7 +434,7 @@ async function orderPdf(input: {
   }
 
   // Summary: the subtotal and any charges, then the total under a heavy divider.
-  const adjustments = order.adjustments ?? []
+  const adjustments = orderCharges(order)
   const summary: Array<[string, number]> = adjustments.length
     ? [
         ["Subtotal", order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)],
