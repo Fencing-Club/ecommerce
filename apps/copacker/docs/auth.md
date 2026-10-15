@@ -30,26 +30,32 @@ The [domain and provider inventory](domains.md) is the cross-environment checkli
 Google/Microsoft upstream callbacks, browser API restrictions, and adding or replacing authentication providers.
 Local Portless launchers supply the exact worktree `APP_URL` and callback; never share a parent-domain session cookie.
 
-Local development, staging and production share the WorkOS staging environment. In its dashboard:
+Local development, staging and production intentionally share the WorkOS staging environment (confirmed 2026-10-14).
+Keep this arrangement until a separately planned identity migration; enabling the billing-gated production environment
+is not required for this domain rollout. In its dashboard:
 
 - **Redirects** (Applications → the application → Redirects): `/callback` on every address the app answers on (`APP_URL`
   and each of `APP_ALIAS_URLS`), each of those addresses as a sign-out redirect, `<APP_URL>/login` as the Initiate login
-  URI, and the **Password reset URL** `https://copacker.ai/reset-password`, so WorkOS's own reset email opens Copacker's
-  page too. Sign-in returns to the address it started on, so `staging.copacker.ai` keeps its own session. The **User
+  URI. The shared Initiate login URI is `https://copacker.ai/login`; the dashboard's **Password reset URL** is unset
+  in the 2026-10-14 audit. Copacker generates its own reset links using `APP_URL`. Sign-in returns to the address it
+  started on, so `staging.copacker.ai` keeps its own session. The **User
   invitation URL** is `https://copacker.ai/signup`, so WorkOS's invitations, such as approving a waitlist entry, open
   Copacker's sign-up with `invitation_token`; WorkOS's default, its hosted page, would pass them on to the Initiate
   login URI.
-- **Waitlist** (Authentication → Features): on. It holds the landing page's waitlist ([Landing page](landing-page.md)).
+- **Waitlist** (Authentication → Features): off in the 2026-10-14 audit; this rollout does not change it.
+  The landing page's waitlist is described in [Landing page](landing-page.md).
   WorkOS says it disables the sign-ups it hosts while it's on; whether that stops a first sign-in with Google or
   Microsoft isn't documented. Copacker's own password sign-up creates users with the API key, which the waitlist doesn't
   gate, so `/signup` stays open to anyone with the link.
 - **Password reset email** (Emails → Configuration): off, so only Copacker's goes out, from the verified `copacker.ai`
   in production. Local and staging send from `resend.dev`, so their resets reach only the Resend account's owner.
 - **Authentication:** email and password, and Google and Microsoft OAuth. The shared WorkOS staging environment uses
-  Copacker's own Google OAuth client from the `copacker` Google Cloud project. Microsoft still uses demo credentials.
+  Copacker's own Google OAuth client from the `copacker` Google Cloud project. Google sign-in returned successfully to
+  staging in browser acceptance on 2026-10-14. Microsoft still uses WorkOS's demo credentials.
   Google branding is configured with Copacker's name, cube logo, home page, privacy policy and terms; the Google app
   remains in Testing pending publication and brand verification. Google can display the WorkOS callback domain until
-  branding is verified. A separate production WorkOS environment needs its own provider configuration.
+  branding is verified. A future production identity migration must provision its own
+  provider credentials and preserve existing user and organization associations.
 - **Email verification:** required, which is what makes new accounts confirm their email with a code.
 
 WorkOS sends the verification code emails itself. Copacker's own emails (password resets, invitations, purchase orders)
