@@ -7,18 +7,19 @@ See [local development](development.md) for commands and [operations](operations
 
 ## Environment addresses
 
-All addresses below use HTTPS unless explicitly stated. `<worktree>` is `main` for the primary checkout, otherwise
-the directory slug plus an eight-character hash of its canonical path. `pnpm --filter copacker dev:urls` prints exact
-addresses. Branch changes do not change them. There is deliberately no `app` label before `local.copacker.ai`.
+All addresses below use HTTPS unless explicitly stated. The primary checkout uses `local.copacker.ai`; `<worktree>`
+means a linked checkout's normalized folder name, without a hash. Branch changes do not change addresses.
+`pnpm --filter copacker dev:urls` prints exact addresses. There is no `main` or `app` label for the primary checkout.
+The naming change is implemented in the launcher; external activation is tracked separately below.
 
 | Surface | Development | Staging | Production | Configuration / status |
 | --- | --- | --- | --- | --- |
-| Application and API | `<worktree>.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Local: Portless. Deployed: Railway web service and Cloudflare DNS; existing app domains |
-| Storybook | `<worktree>.stories.local.copacker.ai` | `stories.staging.copacker.ai` | `stories.copacker.ai` | Local: Portless. Deployed: separate `copacker-stories` static service; provisioned with this rollout |
-| E2E target | `<worktree>.e2e.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Dedicated local process; full staging suite; production read-only smoke suite |
+| Application and API | `local.copacker.ai`; `<worktree>.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Local: Portless. Deployed: Railway web service and Cloudflare DNS; existing app domains |
+| Storybook | `stories.local.copacker.ai`; `<worktree>.stories.local.copacker.ai` | `stories.staging.copacker.ai` | `stories.copacker.ai` | Local: Portless. Deployed: separate `copacker-stories` static service; provisioned with this rollout |
+| E2E target | `e2e.local.copacker.ai`; `<worktree>.e2e.local.copacker.ai` | `staging.copacker.ai` | `copacker.ai` | Dedicated local process; full staging suite; production read-only smoke suite |
 | CI E2E target | `http://127.0.0.1:3005` inside each isolated CI job | Not applicable | Not applicable | No public DNS or local CA in CI |
 | Railway application alias | None | `copacker-staging.up.railway.app` | `copacker-production.up.railway.app` | Existing aliases; keep callbacks/origin restrictions while aliases remain usable |
-| Public webhook integration slot | `<slot>.hooks.dev.copacker.ai` | Application origin | Application origin | Development slot is reserved, not provisioned automatically. Requires public tunnel/receiver and explicit owner |
+| Public webhook delivery | Owned tunnel-issued HTTPS URL | Application origin | Application origin | Opt-in public tunnel or receiver forwarding to app paths; no extra local server or default subdomain |
 | WorkOS-to-app callback | App origin + `/callback` | App origin + `/callback` | App origin + `/callback` | Different from Google's callback into WorkOS |
 | Google/Microsoft-to-auth-provider callback | Exact URI shown in WorkOS provider settings | Exact URI shown in WorkOS provider settings | Exact URI shown in WorkOS provider settings | Currently shared WorkOS staging environment; no invented `auth.copacker.ai` hostname |
 | Auth-provider custom domain | None configured in repository | None configured in repository | None configured in repository | If introduced, record provider-issued CNAME, verification records and exact callback URI here |
@@ -31,6 +32,40 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Amazon notifications | Fixtures or owned development SQS resources | Staging SQS | Production SQS | No HTTP webhook hostname |
 | Observability | `us.cloud.langfuse.com` when configured | `LANGFUSE_BASE_URL` | `LANGFUSE_BASE_URL` | Separate project keys; exact deployed endpoints must be read from service configuration |
 
+## Local addresses
+
+| Purpose | Primary checkout | Linked worktree | Required? |
+| --- | --- | --- | --- |
+| App and API | `local.copacker.ai` | `<worktree>.local.copacker.ai` | Yes |
+| Storybook | `stories.local.copacker.ai` | `<worktree>.stories.local.copacker.ai` | When running Storybook |
+| Dedicated E2E server | `e2e.local.copacker.ai` | `<worktree>.e2e.local.copacker.ai` | Copacker currently chooses an independent test server; neither Playwright nor Buildkit requires this domain |
+| App auth callback | `local.copacker.ai/callback` | `<worktree>.local.copacker.ai/callback` | Path on the app; no separate auth server/domain |
+| E2E auth callback | `e2e.local.copacker.ai/callback` | `<worktree>.e2e.local.copacker.ai/callback` | Only when the dedicated E2E server uses live auth |
+| Local webhook handler | `local.copacker.ai/api/webhooks/<provider>` | `<worktree>.local.copacker.ai/api/webhooks/<provider>` | Path on the app; only providers with implemented handlers |
+
+Auth and webhooks do not require additional local servers. Local app origins resolve to loopback, so external webhook
+senders need a public tunnel or receiver outside the loopback namespace. Use a tunnel-issued URL or an owned public
+hostname with its own DNS and TLS; no extra local webhook subdomain is configured. Use one owned tunnel per destination.
+A dedicated E2E process isolates its lifecycle and build output, not its database or storage.
+
+### Primary-checkout activation checklist
+
+| Service | Change | Current status |
+| --- | --- | --- |
+| Launcher and Buildkit | Primary app has no `main` prefix; linked worktrees use readable folder names; collisions fail visibly | Implemented with published `@buildkitgg/dev-domains@0.0.1` |
+| Shared Portless proxy | Suffix `copacker.ai`; explicit names `local`, `stories.local`, `e2e.local` and worktree equivalents | Pending coordinated restart; the active proxy still uses `local.copacker.ai` and is not interrupted |
+| Cloudflare DNS | Add DNS-only A `local.copacker.ai` → `127.0.0.1`, TTL 300; retain `*.local.copacker.ai` | Base record absent when inspected; pending |
+| WorkOS redirects/logout | Add exact primary `https://local.copacker.ai/callback` and logout origin; optional exact E2E equivalents; retain existing entries and production defaults | Read-only inventory verified; no changes saved. Redirect dry-run rejected an existing URI ID and needs dashboard follow-up |
+| Google Maps local key | Include exact `https://local.copacker.ai/*` alongside worktree wildcard; verify API restrictions and optional E2E scope | Pending inspection/update |
+| Google through WorkOS | Keep the existing Google → WorkOS callback | No upstream change; test WorkOS → primary app after activation |
+| Amazon Ads relay | Add exact `https://local.copacker.ai` to `AMAZON_ADS_RELAY_ORIGINS` on the primary app and staging relay; retain the worktree pattern; deploy readable-name validation to the relay | Code updated; environment variables and deployment pending |
+| eBay local RuName | Change accepted URL to `https://local.copacker.ai/api/connections/ebay`, declined URL to `https://local.copacker.ai/settings#integrations` | Existing registration still targets `main.local.copacker.ai`; pending portal update |
+| Other direct OAuth integrations | Register each exact new callback shown by the app before enabling the integration | Per-integration opt-in; no wildcard assumption |
+| Webhooks | Keep app handlers; if enabled, point an owned public tunnel at them and set `WEBHOOK_BASE_URL` | Optional; hosted receiver remains deferred |
+| Database/storage | None for this naming change | Migration and preview resources remain deferred |
+
+The snapshot below records the earlier rollout. It does not certify activation of the newer names above.
+
 ## Verified rollout state (2026-10-14)
 
 | Configuration | Applied or verified | Remaining action |
@@ -42,7 +77,7 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
 | GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
-| Public development hooks | Namespace reserved only; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
+| Public development hooks | No default subdomain; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
 | eBay local OAuth (2026-10-15) | Main checkout RuName `Andrew_Craswell-AndrewCr-Copack-kmslwycva` maps to `https://main.local.copacker.ai/api/connections/ebay`; local `.env` selects it | Each additional worktree needs its own exact callback registration; see [eBay configuration](notifications.md#keys-and-signing-in) |
 | Other integration dashboards | Exact callback changes are specified in the register below | Shopify, Amazon and eBay local callbacks are opt-in per integration worktree; not automatically registered |
 
@@ -141,17 +176,17 @@ requires exact matching. `H` means the public webhook origin. Local `H` must nev
 
 | Service / owner | Setting and exact change | Development | Staging / production | Verification |
 | --- | --- | --- | --- | --- |
-| Portless / workstation | Pin `portless` in Copacker; proxy suffix `local.copacker.ai`, HTTPS port 443, loopback only, strict routes | Run `dev:setup`; trust CA; launcher disables hosts synchronization because wildcard DNS resolves loopback | Not installed in serving containers | `dev:status`, trusted HTTPS, Next and Storybook HMR |
-| DNS / Cloudflare | DNS-only wildcard `*.local.copacker.ai` → `127.0.0.1`, TTL 300; public hooks use the separate `hooks.dev.copacker.ai` namespace; never proxy loopback | Wildcard created 2026-10-14; local hosts entries are an alternative for networks blocking loopback DNS | Keep existing app records; add Storybook CNAME and Railway verification TXT per environment | DNS and Railway domain certificate status |
+| Portless / workstation | Pin `@buildkitgg/dev-domains@0.0.1` in Copacker; configure `dev-domains.config.ts`; proxy suffix `copacker.ai`, HTTPS port 443, loopback only, strict routes | Run `dev:setup`; trust CA; launcher disables hosts synchronization because wildcard DNS resolves loopback | Not installed in serving containers | `dev:status`, trusted HTTPS, Next and Storybook HMR |
+| DNS / Cloudflare | DNS-only base `local.copacker.ai` and wildcard `*.local.copacker.ai` → `127.0.0.1`, TTL 300; never proxy loopback | Wildcard created 2026-10-14; local hosts entries are an alternative for networks blocking loopback DNS | Keep existing app records; add Storybook CNAME and Railway verification TXT per environment | DNS and Railway domain certificate status |
 | TLS / workstation and Railway | Local Portless CA vs publicly trusted Railway certificates | Trust CA in OS and browser; Node child processes receive Portless CA | Public certificates on app and Storybook domains; nested staging Storybook requires certificate coverage | Browser without certificate bypass; HTTPS health request |
 | Web runtime / Railway or launcher | `APP_URL=A`, `APP_ALIAS_URLS` contains only intentional aliases | Launcher overrides stale `.env` origins; no sibling worktree aliases | Web and worker use same environment's canonical origin | Generated email URLs, metadata and origin checks |
 | AuthKit / runtime | `NEXT_PUBLIC_WORKOS_REDIRECT_URI=A/callback`, `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`; no parent-domain cookie | Launcher sets callback and clears `WORKOS_COOKIE_DOMAIN` | Set environment-scoped credentials; audit build-time values as well as runtime | Sign-in round trip and isolated session cookies |
-| WorkOS / dashboard Redirects | Add `https://*.local.copacker.ai/callback`; optional E2E `https://*.e2e.local.copacker.ai/callback`; retain existing exact redirects | Default must be exact, e.g. `https://main.local.copacker.ai/callback`; do not change shared default blindly | Register `A/callback` and each active alias callback | Google/Microsoft/SSO return to starting origin; invalid sibling service callback rejected |
+| WorkOS / dashboard Redirects | Add `https://local.copacker.ai/callback` and `https://*.local.copacker.ai/callback`; optional E2E `https://e2e.local.copacker.ai/callback` and `https://*.e2e.local.copacker.ai/callback`; retain existing exact redirects | Default must be exact, e.g. `https://local.copacker.ai/callback`; do not change shared default blindly | Register `A/callback` and each active alias callback | Google/Microsoft/SSO return to starting origin; invalid sibling service callback rejected |
 | WorkOS / logout and email flows | Register sign-out destinations `A`; configure initiate-login `A/login`, reset `A/reset-password`, invitation `A/signup` | Test wildcard support separately for sign-out; enumerate exact origins if necessary. Application-generated links use launcher's `APP_URL` | Shared initiate-login and invitation settings point to production; dashboard reset URL is unset, and app reset links use APP_URL. Environment split remains deferred | Logout, invitation resume, reset and verification emails |
 | Google OAuth / Google Cloud and WorkOS | Authorized redirect URI is the exact URI copied from WorkOS Google provider settings; client ID/secret are stored in WorkOS | Current shared Google client is in Testing; manage test-user access | Publish/verify branding as appropriate; separate provider credentials when environments split | Google → WorkOS → originating app; no `redirect_uri_mismatch` |
 | Google consent / Google Cloud | Branding homepage/privacy/terms, authorized domains and ownership verification, audience/test users, scopes | Keep test audience explicit; record scope additions | `https://copacker.ai`, `/privacy`, `/terms`; verify controlled domains when required | Consent screen, test-user access and verification status |
 | Google direct OAuth / future integrations | Exact redirect URIs and, if browser OAuth is used, exact authorized JavaScript origins; no wildcard redirects | Preregister a bounded set of integration origins or register each exact worktree | Register exact staging/production and intended aliases | OAuth state/PKCE and matching token-exchange redirect |
-| Google Maps/Places / Google Cloud | Separate `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` per environment; API restrictions: Maps JavaScript API and Places API (New) | Website restrictions `https://*.local.copacker.ai/*`; add origin-only patterns if required by console/browser behavior; test E2E scope only when live APIs needed | `https://staging.copacker.ai/*`, `https://copacker.ai/*` on their respective keys; add exact aliases only when used | Autocomplete works on intended origins; unauthorized origin rejected; billing/quota enabled |
+| Google Maps/Places / Google Cloud | Separate `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` per environment; API restrictions: Maps JavaScript API and Places API (New) | Website restrictions `https://local.copacker.ai/*` and `https://*.local.copacker.ai/*`; add origin-only patterns if required by console/browser behavior; test E2E scope only when live APIs needed | `https://staging.copacker.ai/*`, `https://copacker.ai/*` on their respective keys; add exact aliases only when used | Autocomplete works on intended origins; unauthorized origin rejected; billing/quota enabled |
 | Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker accepts `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` as a build argument and exposes it to the build | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls, without logging keys |
 | Microsoft OAuth / Microsoft and WorkOS | Exact upstream redirect URI supplied by auth provider, credentials, tenant/audience/scopes | Current WorkOS environment uses demo credentials | Own provider app when moving to production auth environment | Microsoft login and tenant restrictions |
 | Shopify / Dev Dashboard | App URL `A`; allowed redirect `A/api/connections/shopify`; scopes; app client ID/secret | Register exact local worktree callbacks in Copacker Dev; no automatic dashboard mutation | Development app for staging, production app for production; `shopify.app.toml` configures production only | Connect and reconnect return to same origin |

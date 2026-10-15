@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs"
+import { fileURLToPath } from "node:url"
+import { playwrightServer } from "@buildkitgg/dev-domains/playwright"
 import { defineConfig, devices } from "@playwright/test"
-import { developmentEnvironment, localAppEnvironment } from "./scripts/dev-environment"
+import { localAppEnvironment } from "./scripts/dev-environment"
 
 // A local run reads the app's .env for WORKOS_API_KEY, which the test account's password is derived from.
 if (existsSync(".env")) {
@@ -12,7 +14,8 @@ if (existsSync(".env")) {
 const deployed = process.env.E2E_BASE_URL
 const port = Number(process.env.E2E_PORT ?? 3005)
 const ci = Boolean(process.env.CI)
-const baseURL = deployed ?? (ci ? `http://127.0.0.1:${port}` : developmentEnvironment().e2e)
+const local = !deployed && !ci ? await playwrightServer("e2e", fileURLToPath(new URL(".", import.meta.url))) : undefined
+const baseURL = deployed ?? local?.use.baseURL ?? `http://127.0.0.1:${port}`
 if (!deployed && !ci) {
   Object.assign(process.env, localAppEnvironment(baseURL))
 }
@@ -45,9 +48,10 @@ export default defineConfig({
   webServer: deployed
     ? undefined
     : {
-        command: ci
-          ? `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`
-          : "node --import tsx scripts/dev.ts e2e",
+        ...local?.webServer,
+        command:
+          local?.webServer.command ??
+          `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`,
         url: `${baseURL}/api/health`,
         reuseExistingServer: false,
         timeout: 180_000,

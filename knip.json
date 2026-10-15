@@ -27,8 +27,7 @@
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "apps/copacker": {
-      "entry": [".storybook/mocks/*.ts", "scripts/local-server.ts"],
-      "ignoreBinaries": ["openssl"],
+      "entry": [".storybook/mocks/*.ts", "dev-domains.config.ts"],
       "ignore": [".storybook/public/**"],
       "ignoreDependencies": ["@repo/oxlint-config"]
     },

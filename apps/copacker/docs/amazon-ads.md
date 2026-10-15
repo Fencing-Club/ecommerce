@@ -25,8 +25,9 @@ Set `AMAZON_ADS_RELAY_ORIGINS` on those apps and staging to a comma-separated li
 The originating app and relay must use the same Amazon Ads client. Production leaves these settings blank and keeps
 its existing direct callback. Partial or invalid relay configuration fails closed.
 
-The two supported patterns are `https://*.local.copacker.ai` (only `main` and the launcher's worktree-slug/path-hash
-labels, never Storybook or E2E) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
+Register `https://local.copacker.ai` explicitly for the primary checkout.
+The two supported patterns are `https://*.local.copacker.ai` (normalized worktree folder labels; excludes the reserved
+`stories` and `e2e` service labels) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
 is a reserved option for future app-preview hosting, not a provisioned DNS namespace. Railway-generated app preview
 origins can instead be enrolled as exact origins by trusted deployment automation and removed on teardown. Never use
 `*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. Current PR previews are Storybook-only;
