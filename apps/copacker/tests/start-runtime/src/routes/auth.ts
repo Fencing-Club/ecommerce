@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
-import { authentication, saveAuthentication, signOut } from "../../../../src/server/auth-session"
-import { workos, workosClientId } from "../../../../src/server/workos"
+import { authentication, signInRequest, signOut } from "../../../../src/server/auth-session"
+import { signIn } from "../../../../src/server/sign-in"
 
 // The enclosing Worker requires the private probe token. This handler exercises real WorkOS test-environment
 // credentials without exposing tokens or modifying an account. It is never part of the application route tree.
@@ -19,9 +19,7 @@ export const Route = createFileRoute("/auth")({
         }
         // Exercise replacement when an incoming session refreshes during a new login.
         await authentication()
-        const result = await workos().userManagement.authenticateWithPassword({ ...input, clientId: workosClientId() })
-        await saveAuthentication(result)
-        return Response.json({ userId: result.user.id })
+        return Response.json(await signIn(signInRequest(), input))
       },
       DELETE: async () =>
         new Response(null, { status: 303, headers: { Location: await signOut("https://copacker.ai") } })

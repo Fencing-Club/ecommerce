@@ -3,13 +3,21 @@ import type { AuthenticationResponse } from "@workos-inc/node"
 import type { AuthResult, AuthService as SessionService, Session } from "@workos/authkit-session"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-const { cookies, readCookie } = vi.hoisted(() => ({
+const { cookies, readCookie, requestHeaders, writeCookie, removeCookie } = vi.hoisted(() => ({
   cookies: new Map<string, string>(),
-  readCookie: vi.fn<(name: string) => string | undefined>()
+  readCookie: vi.fn<(name: string) => string | undefined>(),
+  requestHeaders: vi.fn<() => Headers>(),
+  writeCookie: vi.fn<(...args: unknown[]) => void>(),
+  removeCookie: vi.fn<(...args: unknown[]) => void>()
 }))
 const requestCookies = new AsyncLocalStorage<Map<string, string>>()
 vi.mock("server-only", () => ({}))
-vi.mock("@tanstack/react-start/server", () => ({ getCookie: readCookie }))
+vi.mock("@tanstack/react-start/server", () => ({
+  getCookie: readCookie,
+  getRequestHeaders: requestHeaders,
+  setCookie: writeCookie,
+  deleteCookie: removeCookie
+}))
 vi.mock("next/headers", () => ({
   cookies: async () => ({ set: (name: string, value: string) => cookies.set(name, value) }),
   headers: async () => new Headers()
@@ -43,6 +51,9 @@ beforeEach(() => {
   vi.resetModules()
   cookies.clear()
   readCookie.mockImplementation((name: string) => requestCookies.getStore()?.get(name))
+  requestHeaders.mockReturnValue(new Headers())
+  writeCookie.mockClear()
+  removeCookie.mockClear()
   vi.stubEnv("WORKOS_API_KEY", "sk_test_not_real")
   vi.stubEnv("WORKOS_CLIENT_ID", "client_test")
   vi.stubEnv("WORKOS_COOKIE_PASSWORD", cookiePassword)
@@ -67,6 +78,37 @@ async function respond(handle: () => Promise<Response>, incoming = new Map<strin
 }
 
 describe("AuthKit session migration", () => {
+  it("uses Cloudflare's client address and Start's decoded cookies for custom sign-in", async () => {
+    requestHeaders.mockReturnValue(
+      new Headers({
+        "cf-connecting-ip": "203.0.113.9",
+        "x-forwarded-for": "198.51.100.1",
+        "user-agent": "test-browser"
+      })
+    )
+    const { signInRequest } = await import("../src/server/auth-session")
+    await respond(
+      async () => {
+        const request = signInRequest()
+        expect(request.ipAddress).toBe("203.0.113.9")
+        expect(request.headers.get("user-agent")).toBe("test-browser")
+        expect(request.cookies.get("pending")).toEqual({ value: "decoded+value" })
+        expect(request.cookies.get("missing")).toBeUndefined()
+        request.cookies.delete("pending")
+        expect(removeCookie).toHaveBeenCalledWith("pending", { path: "/" })
+        await request.saveSession(signedIn)
+        return new Response()
+      },
+      new Map([["pending", "decoded+value"]])
+    )
+  })
+
+  it("does not trust a forwarded client address on the Start boundary", async () => {
+    requestHeaders.mockReturnValue(new Headers({ "x-forwarded-for": "198.51.100.1", "x-real-ip": "198.51.100.2" }))
+    const { signInRequest } = await import("../src/server/auth-session")
+    expect(signInRequest().ipAddress).toBeUndefined()
+  })
+
   it("reads an actual Next AuthKit cookie with the public WorkOS session library", async () => {
     const { saveSession } = await import("@workos-inc/authkit-nextjs")
     await saveSession(signedIn, origin)

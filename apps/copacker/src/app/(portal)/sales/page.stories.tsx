@@ -1,24 +1,13 @@
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { SalesOrders } from "@/components/sales-orders"
+import { SalesPageView } from "@/components/sales-page"
 import { salesOrders, syncState } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
 import { member } from "@/stories/workspace"
 
-// A buyer's Orders page (page.tsx). `q` starts the list filtered, such as a header search for an order number, up to
-// the 100 characters the orders API takes. Other workspaces are redirected to Purchase orders.
-async function SalesPage({ q: raw }: { q?: string | string[] }) {
-  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 100)
-  const t = await getTranslations("sales")
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <SalesOrders initialSearch={q} />
-    </>
-  )
+function SalesPage({ q }: { q?: string | string[] }) {
+  return <SalesPageView search={typeof q === "string" ? q.trim().slice(0, 100) : ""} />
 }
 
 // The orders API's queries, in order.

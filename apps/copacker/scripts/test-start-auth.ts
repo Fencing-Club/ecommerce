@@ -71,10 +71,10 @@ try {
   await expectIdentity(await request("GET"), null)
   const login = await request("POST", undefined, JSON.stringify({ email, password }))
   assert(login.status === 200, `WorkOS test-account login failed with HTTP ${login.status}`)
-  const user = identity.parse(await login.json()).userId
-  assert(user, "Login did not return an identity")
+  assert.deepEqual(await login.json(), { redirect: "/" }, "The custom sign-in flow preserves its redirect")
   const initialCookie = cookieFrom(login)
   const initial = await unseal(initialCookie)
+  const user = initial.user.id
   await expectIdentity(await request("GET", initialCookie), user)
   await expectIdentity(await request("GET", "migration-session=tampered"), null)
 
@@ -103,8 +103,11 @@ try {
   assert(steady.headers.getSetCookie().length === 0, "A valid session must not refresh again")
 
   const replacement = await request("POST", await needsRefresh(refreshed), JSON.stringify({ email, password }))
-  await expectIdentity(replacement, user)
+  assert.equal(replacement.status, 200)
+  assert.deepEqual(await replacement.json(), { redirect: "/" })
   const replaced = await unseal(cookieFrom(replacement))
+  assert.equal(replaced.user.id, user)
+  await expectIdentity(await request("GET", cookieFrom(replacement)), user)
   const logout = await request("DELETE", await needsRefresh(replaced))
   assert(logout.status === 303, "Logout must redirect to WorkOS")
   assert(new URL(logout.headers.get("Location")!).hostname === "api.workos.com", "Unexpected logout destination")

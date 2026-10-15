@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server"
 import { redirect } from "next/navigation"
 import { AuthPage, AuthSwitch } from "@/components/auth/auth-shell"
 import { VerifyEmailForm } from "@/components/auth/verify-email-form"
+import { signInRequest } from "@/server/auth"
 import { pendingVerification } from "@/server/sign-in"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic"
 
 // After signing up, or signing in to an account whose email isn't confirmed yet: the code WorkOS emailed.
 export default async function VerifyEmail() {
-  const pending = await pendingVerification()
+  const pending = pendingVerification(await signInRequest())
   if (!pending) {
     redirect("/login")
   }

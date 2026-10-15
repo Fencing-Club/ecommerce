@@ -22,7 +22,7 @@ import { isTimeZone } from "@/lib/time-zone"
 import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
-import { identity, session, setWorkspace } from "@/server/auth"
+import { identity, session, setWorkspace, signInRequest } from "@/server/auth"
 import { requireAccess, requireAdmin, requireBuyer, requireOwner } from "@/server/authorization"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
@@ -60,7 +60,15 @@ import { releaseIssues } from "@/server/readiness"
 import { dayRange } from "@/server/restock-report"
 import { token, hash, isAppOrigin } from "@/server/security"
 import { forwardShipment, shipShipment } from "@/server/shipment-legs"
-import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "@/server/sign-in"
+import {
+  requestPasswordReset,
+  resendCode,
+  resetPassword,
+  signIn,
+  signUp,
+  verifyEmail,
+  type SignInRequest
+} from "@/server/sign-in"
 import { removeSupplierAddress, saveSupplierAddress } from "@/server/supplier-addresses"
 import { removeSupplier, supplierContactSchema, updateSupplier } from "@/server/suppliers"
 import {
@@ -75,7 +83,7 @@ import { requestLocale, serverText } from "@/server/text"
 import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
-const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([
+const signInActions = new Map<string, (request: SignInRequest, data: unknown) => Promise<ActionResult>>([
   ["auth.signIn", signIn],
   ["auth.signUp", signUp],
   ["auth.verifyEmail", verifyEmail],
@@ -92,7 +100,7 @@ export async function POST(request: Request) {
     // Signing in and up, before anyone is signed in.
     const signInAction = signInActions.get(action)
     if (signInAction) {
-      return Response.json(await signInAction(data))
+      return Response.json(await signInAction(await signInRequest(), data))
     }
     // Getting started: signed in, but maybe without a workspace yet.
     if (action === "onboarding.workspace") {

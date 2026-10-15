@@ -1,14 +1,8 @@
-import { Plus } from "lucide-react"
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { InventorySync } from "@/components/inventory-sync"
-import { ProductIndex, type ProductRow } from "@/components/supplier/product-index"
-import { ProductActions } from "@/components/supplier/product-transfer"
-import { Button } from "@/components/ui/button"
+import { ProductsPageView } from "@/components/products-page"
+import type { ProductRow } from "@/components/supplier/product-index"
 import { can, type Permissions } from "@/lib/access"
 import { productsPage, supplierProducts, withoutSupplier } from "@/stories/fixtures/catalog"
 import { daysAgo } from "@/stories/fixtures/orders"
@@ -18,49 +12,26 @@ import { member, owner, type WorkspaceKind } from "@/stories/workspace"
 type Args = {
   kind: WorkspaceKind
   permissions: Permissions
-  // The supplier's products, and the stores a buyer connected.
   products: ProductRow[]
-  providers: string[]
+  providers: Array<"amazon" | "ebay" | "shopify">
   q?: string | string[]
 }
-
-// The Products page (page.tsx): a supplier's own products, or a buyer's stock across their stores.
-async function ProductsPage({ kind, permissions, products, providers, q }: Args) {
-  const t = await getTranslations("products.page")
-  if (kind === "supplier") {
-    return (
-      <>
-        <PageHeader title={t("title")}>
-          <ProductActions />
-          {/* Without products, the empty list offers the first one instead. */}
-          {products.length > 0 && can(permissions, "products", "edit") && (
-            <Button nativeButton={false} render={<Link href="/products/new" />}>
-              <Plus data-icon="inline-start" />
-              {t("addProduct")}
-            </Button>
-          )}
-        </PageHeader>
-        {/* Without prices, the products come without them, as withoutPrices sends them. */}
-        <ProductIndex
-          products={
-            can(permissions, "prices")
-              ? products
-              : products.map((product) => ({
-                  ...product,
-                  variants: product.variants.map((variant) => ({ ...variant, priceMinor: null }))
-                }))
-          }
-        />
-      </>
-    )
-  }
-  const search = typeof q === "string" ? q.trim().slice(0, 200) : ""
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <InventorySync providers={providers} search={search} />
-    </>
-  )
+function ProductsPage({ kind, permissions, products, providers, q }: Args) {
+  const page =
+    kind === "supplier"
+      ? {
+          kind,
+          editable: can(permissions, "products", "edit") && can(permissions, "prices"),
+          products: products.map((product) => ({
+            ...product,
+            variants: product.variants.map((variant) => ({
+              ...variant,
+              priceMinor: can(permissions, "prices") ? variant.priceMinor : null
+            }))
+          }))
+        }
+      : { kind: "buyer" as const, providers, search: typeof q === "string" ? q.trim().slice(0, 200) : "" }
+  return <ProductsPageView page={page} />
 }
 
 const buyer = pageStory("/products", ProductsPage, "buyer")

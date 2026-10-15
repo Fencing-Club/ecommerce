@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { isOAuthProvider } from "@/lib/sign-in"
+import { signInRequest } from "@/server/auth"
 import { authorizationUrl } from "@/server/sign-in"
 
 // "Continue with Google" or Microsoft: off to the provider, with the page to return to and, for an invitation, the
@@ -10,5 +11,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     notFound()
   }
   const query = new URL(request.url).searchParams
-  redirect(await authorizationUrl({ provider }, query.get("next") ?? "/", query.get("email") ?? undefined))
+  redirect(
+    await authorizationUrl(
+      await signInRequest(),
+      { provider },
+      query.get("next") ?? "/",
+      query.get("email") ?? undefined
+    )
+  )
 }

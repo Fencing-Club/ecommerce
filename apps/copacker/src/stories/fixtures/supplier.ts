@@ -160,14 +160,11 @@ const catalogCustomers: CatalogEditorData["customers"] = [
 export const wholesaleCatalog: CatalogEditorData = {
   catalog: {
     id: catalogIds.wholesale,
-    supplierOrgId: workspaces.supplier.id,
     title: "Wholesale 2026",
     status: "active",
     adjustmentBasisPoints: -1000,
     includeNewProducts: true,
-    revision: 3,
-    createdAt: daysAgo(120),
-    updatedAt: daysAgo(4)
+    revision: 3
   },
   products: catalogProducts,
   entries: [

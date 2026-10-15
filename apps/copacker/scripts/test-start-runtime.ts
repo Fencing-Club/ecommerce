@@ -58,6 +58,43 @@ try {
   const missing = await request("/probe", { method: "POST" })
   assert.equal(missing.status, 403)
 
+  const unknownProvider = await request("/login/unknown", { redirect: "manual" })
+  assert.equal(unknownProvider.status, 404)
+  assert.equal(unknownProvider.headers.getSetCookie().length, 0)
+  for (const provider of ["google", "microsoft"]) {
+    const oauth = await request(`/login/${provider}?next=%2Forders%3Ftab%3Dopen`, { redirect: "manual" })
+    assert.equal(oauth.status, 307)
+    const location = new URL(oauth.headers.get("Location")!)
+    assert.equal(location.hostname, "api.workos.com")
+    assert.equal(location.searchParams.get("code_challenge_method"), "S256")
+    assert(location.searchParams.get("state") && location.searchParams.get("code_challenge"))
+    const [cookie] = oauth.headers.getSetCookie()
+    assert(cookie && cookie.startsWith("copacker-oauth=") && /HttpOnly/i.test(cookie) && /SameSite=Lax/i.test(cookie))
+    assert(/Secure/i.test(cookie))
+    assert.equal(
+      location.searchParams.get("redirect_uri"),
+      `${remote ?? "https://tanstack-start.e2e.local.copacker.ai"}/callback`
+    )
+    assert(/Max-Age=600/i.test(cookie) && !/Domain=/i.test(cookie))
+    assert(!cookie.includes(location.searchParams.get("state")!))
+    const rejected = await request("/callback?code=unused&state=forged", {
+      redirect: "manual",
+      headers: { Cookie: cookie.split(";")[0]! }
+    })
+    assert.equal(rejected.status, 307)
+    assert.equal(rejected.headers.get("Location"), "/login?error=oauth")
+    assert(rejected.headers.getSetCookie().some((value) => /^copacker-oauth=;.*Max-Age=0/i.test(value)))
+    assert(!rejected.headers.getSetCookie().some((value) => value.startsWith("migration-session=")))
+  }
+
+  for (const query of ["", "?code=unused&state=forged"]) {
+    const callback = await request(`/callback${query}`, { redirect: "manual" })
+    assert.equal(callback.status, 307)
+    assert.equal(callback.headers.get("Location"), "/login?error=oauth")
+    assert(callback.headers.getSetCookie().some((cookie) => /^copacker-oauth=;.*Max-Age=0/i.test(cookie)))
+    assert(!callback.headers.getSetCookie().some((cookie) => cookie.startsWith("migration-session=")))
+  }
+
   const workspace = await request("/workspace", { method: "POST", headers: { Origin: origin } })
   assert.equal(workspace.status, 401, "Workspace queries require a validated session")
 
@@ -98,7 +135,7 @@ try {
     })
   )
   process.stdout.write(
-    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, CSRF, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
+    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, CSRF, custom OAuth initiation/state rejection, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
   )
 } finally {
   await server?.close()

@@ -1,27 +1,17 @@
-import { getTranslations } from "next-intl/server"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { CustomerIndex } from "@/components/supplier/customers"
+import { CustomersPageView } from "@/components/customers-page"
 import { can, type Permissions } from "@/lib/access"
 import { customerEditor, customerListData } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
 
-// The supplier's Customers page (page.tsx) with the customers and catalogs the database would return.
-async function CustomersPage({ list, permissions }: { list: typeof customerListData; permissions: Permissions }) {
-  const t = await getTranslations("supplier.pages")
-  const { catalogs } = list
-  // Someone who doesn't see prices gets no amounts spent.
-  const customers = can(permissions, "prices")
-    ? list.customers
-    : list.customers.map((customer) => ({ ...customer, spent: [] }))
-  return (
-    <>
-      <PageHeader title={t("customers")} />
-      <CustomerIndex customers={customers} catalogs={catalogs} />
-    </>
-  )
+function CustomersPage({ list, permissions }: { list: typeof customerListData; permissions: Permissions }) {
+  const customers = list.customers.map((customer) => ({
+    ...customer,
+    spent: can(permissions, "prices") ? customer.spent : []
+  }))
+  return <CustomersPageView customers={customers} catalogs={list.catalogs} />
 }
 
 const meta = preview.meta({

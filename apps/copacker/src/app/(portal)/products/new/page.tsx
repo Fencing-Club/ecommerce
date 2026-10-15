@@ -10,5 +10,6 @@ export default async function NewProductPage() {
     redirect("/products")
   }
   requirePage(s, "products", "edit")
+  requirePage(s, "prices")
   return <ProductEditor />
 }

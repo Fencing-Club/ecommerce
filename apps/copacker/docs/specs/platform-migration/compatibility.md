@@ -22,10 +22,28 @@ encryption, JWT verification and refresh. A Start cookie adapter and invocation 
 cookies and give explicit login/logout changes precedence, even if refresh completes later. Each request owns its
 service and pending network work; validated auth is reused only within that request. No SDK internals are copied.
 
+Custom sign-in operations now accept explicit request headers, cookie access and a supported session writer, with no
+Next imports in the canonical flow. Both framework request boundaries call that implementation. The deployed Start
+password probe uses the real application operation, including safe return paths and pending-cookie cleanup. Start
+server routes also exercise Google/Microsoft PKCE initiation and callback state rejection. The verification page DTO
+contains only the email address, not the pending token or saved redirect. Thirty-nine focused authentication tests cover
+the flows, session precedence, cookie attributes, overlapping requests, unregistered hosts and tampered cookies.
+
 The overview now has a server rendering-data loader and ordinary synchronous buyer/supplier views shared by the page
 and stories. Page and price permissions are checked before reads; restricted attention links and admin-only setup are
 removed before serialization. The data boundary preserves store time zone and restock settings and excludes identity
 and organization records. Its Next route wrapper remains until the routing conversion.
+
+Ten more portal routes now use explicit rendering data: catalog list/detail/new, customer list/detail, product
+list/detail, inventory, sales and restock. Seven synchronous page views have separate browser modules and are shared
+with their page stories; the product and catalog editors remain their existing canonical components. The new loaders
+check permissions before reading, omit internal ownership and connection fields, strip unit/volume prices when denied,
+and omit customer order rows without order access. Catalog pages, mutations and downloads explicitly require the
+price grant, including for inconsistent existing memberships. New product creation also checks that grant.
+
+Eighteen new database-backed tests cover those boundaries, invalid/foreign IDs, minimal data, scalar query handling,
+and catalog mutation rejection. They passed with the 207 existing workflow cases. The view and loader preparation does
+not yet replace these routes' Next entry points with Start server functions.
 
 Workspace resolution, profile initialization, membership checks and role/page guards are also framework-independent.
 The existing Next routes call the same canonical functions bundled in the Start Worker. Each operation reads current
@@ -48,15 +66,20 @@ The real partners/product-import consumers still need their complete acceptance 
 ## Verified checks
 
 The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
-unit/Storybook tests with coverage, including 2,232 Copacker tests across 272 files. This verifies the current
+unit/Storybook tests with coverage, including 2,271 Copacker tests across 280 files after the page-data and custom sign-in
+changes. This verifies the current
 compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
 gate V01.
 
-The current Next production build also passed after the localization, overview and workspace changes. Integrated-browser
+The current Next production build also passed after the page-data and custom sign-in changes. Integrated-browser
 checks covered buyer desktop/mobile layouts, date/channel controls by keyboard, a member without stores/admin setup, and the
 Urdu supplier overview without horizontal overflow. The Urdu case now has an automated story. An extra live production
 Next smoke-server launch was rejected by automatic approval review without a reason, so that additional check remains
 pending. Storybook's Vite 8 WebSocket options now use its supplied HTTP server, avoiding another worktree's default port.
+
+The catalog/customer/product/inventory/sales/restock views passed their automated stories. Integrated-browser checks
+covered the canonical customer and product views on desktop and mobile, keyboard tabs and catalog selection, restricted
+member data/actions, and the Urdu customer layout without page overflow. A fresh browser check reported no errors.
 
 `pnpm --filter copacker test:start-runtime` builds and tests the fixture in local workerd against local Postgres.
 The same test script accepts an explicit `--remote <origin>` for the protected staging Worker.
@@ -67,6 +90,8 @@ Passed locally and on the deployed Worker:
 - Urdu language/direction and translated fixture text.
 - Cross-origin and missing-origin POST rejection without setting cookies.
 - AuthKit session storage round trip, host-only HttpOnly cookies, two response cookies and cookie clearing.
+- Custom Google/Microsoft OAuth initiation with PKCE, encrypted ten-minute host-only cookies, unknown-provider rejection,
+  and callback rejection/cleanup for missing or forged state. These checks do not follow the external provider URL.
 - Actual production PDF validation for a synthetic 1,000-page document and token encryption/decryption.
 - Eight overlapping database transactions with connection-local temporary tables and cleanup.
 - Deployed probes reject anonymous requests and require a separately generated bearer secret.
@@ -118,7 +143,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive | `copacker-staging`, ID `0a74043480fe42a6acdbf46b9572ef58` |
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
-| Tested Worker version | `673f9510-532c-4498-9626-8aba7107926d` |
+| Tested Worker version | `6ea7a43e-84ed-457d-902d-063247f2c843` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,

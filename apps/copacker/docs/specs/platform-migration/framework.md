@@ -31,6 +31,11 @@ with real fixtures; do not duplicate page JSX for stories. Keep sibling stories 
 repository convention. Generated route files are generated, not hand-edited; choose commit/ignore behavior explicitly
 and make generation run before type checking in a fresh checkout.
 
+The current preparatory implementation separates the overview and ten additional portal routes from their data
+reads. `server/workspace-pages.ts` supplies permission-filtered data to synchronous views shared with the page stories;
+the existing product and catalog editors remain the canonical detail views. Those routes still have thin Next entry
+points. Their Start route registration, navigation and server-function request boundaries are not yet migrated.
+
 ## Server execution and data boundaries
 
 Start loaders can execute on the server and in the browser. A loader is not a security boundary. Load protected data

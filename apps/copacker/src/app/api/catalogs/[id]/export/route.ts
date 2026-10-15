@@ -12,6 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return errorTextResponse("catalogNotFound", 404)
   }
   requirePage(s, "catalogs")
+  requirePage(s, "prices")
   const list = await priceList(s.org.id, s.org.name, id.data)
   if (!list) {
     return errorTextResponse("catalogNotFound", 404)

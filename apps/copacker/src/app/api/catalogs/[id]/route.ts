@@ -12,6 +12,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const s = await session()
     requireAccess(s, "catalogs", "edit")
+    requireAccess(s, "prices")
     await deleteCatalog(s, z.uuid().parse((await params).id))
     return Response.json({ ok: true })
   } catch (error) {

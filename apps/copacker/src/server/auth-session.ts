@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks"
-import { getCookie } from "@tanstack/react-start/server"
+import { deleteCookie, getCookie, getRequestHeaders, setCookie } from "@tanstack/react-start/server"
 import { WorkOS, type AuthenticationResponse } from "@workos-inc/node"
 import {
   CookieSessionStorage,
@@ -11,6 +11,25 @@ import {
   type Session
 } from "@workos/authkit-session"
 import invariant from "tiny-invariant"
+import type { SignInRequest } from "./sign-in"
+
+export function signInRequest(): SignInRequest {
+  const headers = getRequestHeaders()
+  return {
+    headers,
+    // Cloudflare supplies this header at the edge. Client-supplied forwarded chains are not a trusted client address.
+    ipAddress: headers.get("cf-connecting-ip") ?? undefined,
+    cookies: {
+      get: (name) => {
+        const value = getCookie(name)
+        return value === undefined ? undefined : { value }
+      },
+      set: setCookie,
+      delete: (name) => deleteCookie(name, { path: "/" })
+    },
+    saveSession: saveAuthentication
+  }
+}
 
 class StartSessionStorage extends CookieSessionStorage<Request, Response> {
   async getCookie(_request: Request, name: string) {

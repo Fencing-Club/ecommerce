@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as ProbeRouteImport } from './routes/probe'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
+import { Route as LoginProviderRouteImport } from './routes/login.$provider'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CallbackRoute = CallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProbeRoute = ProbeRouteImport.update({
@@ -34,39 +41,60 @@ const WorkspaceRoute = WorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginProviderRoute = LoginProviderRouteImport.update({
+  id: '/login/$provider',
+  path: '/login/$provider',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/callback': typeof CallbackRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
+  '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/callback': typeof CallbackRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
+  '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/callback': typeof CallbackRoute
   '/probe': typeof ProbeRoute
   '/workspace': typeof WorkspaceRoute
+  '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/probe' | '/workspace'
+  fullPaths:
+    '/' | '/auth' | '/callback' | '/probe' | '/workspace' | '/login/$provider'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/probe' | '/workspace'
-  id: '__root__' | '/' | '/auth' | '/probe' | '/workspace'
+  to: '/' | '/auth' | '/callback' | '/probe' | '/workspace' | '/login/$provider'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/callback'
+    | '/probe'
+    | '/workspace'
+    | '/login/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  CallbackRoute: typeof CallbackRoute
   ProbeRoute: typeof ProbeRoute
   WorkspaceRoute: typeof WorkspaceRoute
+  LoginProviderRoute: typeof LoginProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/callback': {
+      id: '/callback'
+      path: '/callback'
+      fullPath: '/callback'
+      preLoaderRoute: typeof CallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/probe': {
       id: '/probe'
       path: '/probe'
@@ -99,14 +134,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/$provider': {
+      id: '/login/$provider'
+      path: '/login/$provider'
+      fullPath: '/login/$provider'
+      preLoaderRoute: typeof LoginProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  CallbackRoute: CallbackRoute,
   ProbeRoute: ProbeRoute,
   WorkspaceRoute: WorkspaceRoute,
+  LoginProviderRoute: LoginProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

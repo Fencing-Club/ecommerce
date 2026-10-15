@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const s = await session()
     requireAccess(s, "catalogs", "edit")
+    requireAccess(s, "prices")
     return Response.json(await saveCatalog(s, await request.json()))
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "catalogSaveFailed") }, { status: failureStatus(error) })

@@ -1,24 +1,14 @@
 import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { InventoryTable } from "@/components/supplier/inventory"
+import { InventoryPageView } from "@/components/inventory-page"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { supplierInventory } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
 
-// A supplier's Inventory page (page.tsx) with its stock rows and the tab in the URL. A buyer's is redirected to
-// Products.
-async function InventoryPage({ rows, tab }: { rows: InventoryRow[]; tab?: string }) {
-  const t = await getTranslations("inventory.page")
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <InventoryTable rows={rows} initialTab={tab} />
-    </>
-  )
+function InventoryPage({ rows, tab }: { rows: InventoryRow[]; tab?: string }) {
+  return <InventoryPageView rows={rows} tab={tab} />
 }
 
 // The counts each story saved.

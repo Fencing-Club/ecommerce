@@ -102,7 +102,14 @@ export async function catalogEditor(orgId: string, id: string | null) {
   const catalog = id
     ? (
         await db()
-          .select()
+          .select({
+            id: catalogs.id,
+            revision: catalogs.revision,
+            title: catalogs.title,
+            status: catalogs.status,
+            adjustmentBasisPoints: catalogs.adjustmentBasisPoints,
+            includeNewProducts: catalogs.includeNewProducts
+          })
           .from(catalogs)
           .where(and(eq(catalogs.id, id), eq(catalogs.supplierOrgId, orgId)))
       ).at(0)

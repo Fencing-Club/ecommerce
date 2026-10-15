@@ -5,6 +5,14 @@ to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, which `
 sign-out all use. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
 `src/server/invitations.ts`; the pages are the `(auth)` route group, `app/onboarding` and `app/workspaces/new`.
 
+The sign-in operations receive an explicit request with headers, cookie access and a session writer; they no longer
+import Next APIs. The current app supplies that request from `server/auth.ts`; the protected Start fixture supplies it
+from `server/auth-session.ts`. Both call the same password, verification, organization-selection, reset and OAuth logic.
+Only the pending email address is returned to the verification page; its authentication token and redirect stay in the
+encrypted cookie. Start takes the client address from Cloudflare's `CF-Connecting-IP`, not a supplied forwarding chain.
+This preparation does not move the app's sign-in screens off Next yet. See the
+[compatibility evidence](specs/platform-migration/compatibility.md) for deployed checks and remaining provider flows.
+
 ## Ways in
 
 - **Email and password.** Sign-up creates the WorkOS user, then signs in. WorkOS requires a confirmed email, so the

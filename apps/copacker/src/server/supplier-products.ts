@@ -236,14 +236,6 @@ export async function productList(orgId: string) {
   })
 }
 
-// Products for someone who doesn't see prices, without their variants' prices and price breaks.
-export function withoutPrices(list: Awaited<ReturnType<typeof productList>>) {
-  return list.map((product) => ({
-    ...product,
-    variants: product.variants.map((variant) => ({ ...variant, priceMinor: null, priceBreaks: [] }))
-  }))
-}
-
 // A product and its active variants, for its page.
 export async function productDetail(orgId: string, id: string) {
   const [group] = await db()

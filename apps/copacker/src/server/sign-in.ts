@@ -1,5 +1,4 @@
 import { passwordResetEmail } from "@repo/copacker-emails"
-import { saveSession } from "@workos-inc/authkit-nextjs"
 import {
   AuthenticationException,
   type AuthenticationResponse,
@@ -10,7 +9,6 @@ import {
   RateLimitExceededException
 } from "@workos-inc/node"
 import { eq } from "drizzle-orm"
-import { cookies, headers } from "next/headers"
 import { z } from "zod"
 import { db } from "@/db"
 import { organizations, profiles } from "@/db/schema"
@@ -28,13 +26,29 @@ import {
   signUpSchema
 } from "@/lib/sign-in"
 import { sendEmail } from "./email"
-import { appUrl, decrypt, encrypt, returnPath } from "./security"
-import { siteUrl } from "./site"
+import { appUrl, decrypt, encrypt, returnPath, siteUrlFor } from "./security"
 import { workos, workosClientId } from "./workos"
 import { workspaceCookie } from "./workspace-session"
 
 // Copacker's own sign-in pages talk to WorkOS directly: email and password, a code emailed to confirm a new address,
 // password resets, and Google or Microsoft. Every path ends in AuthKit's session cookie, as the hosted pages did.
+
+// The framework owns request headers, response cookies and the supported session writer. The authentication flows
+// stay canonical and never read a process-global request or accept these capabilities from browser input.
+export type SignInRequest = {
+  headers: Headers
+  ipAddress: string | undefined
+  cookies: {
+    get: (name: string) => { value: string } | undefined
+    set: (
+      name: string,
+      value: string,
+      options: { httpOnly: boolean; secure: boolean; sameSite: "lax"; path: string; maxAge: number }
+    ) => void
+    delete: (name: string) => void
+  }
+  saveSession: (response: AuthenticationResponse) => Promise<void>
+}
 
 // A sign-in waiting on the code WorkOS emailed, kept for as long as the code lasts.
 const pendingCookie = "copacker-verify"
@@ -52,8 +66,8 @@ const oauthSchema = z.object({ state: z.string(), verifier: z.string(), next: z.
 
 const tenMinutes = 600
 
-async function seal(name: string, value: unknown) {
-  ;(await cookies()).set(name, encrypt(JSON.stringify(value), name), {
+function seal(request: SignInRequest, name: string, value: unknown) {
+  request.cookies.set(name, encrypt(JSON.stringify(value), name), {
     httpOnly: true,
     secure: appUrl().startsWith("https:"),
     sameSite: "lax",
@@ -62,8 +76,8 @@ async function seal(name: string, value: unknown) {
   })
 }
 
-async function unseal<T>(name: string, schema: z.ZodType<T>) {
-  const value = (await cookies()).get(name)?.value
+function unseal<T>(request: SignInRequest, name: string, schema: z.ZodType<T>) {
+  const value = request.cookies.get(name)?.value
   if (!value) {
     return null
   }
@@ -75,15 +89,14 @@ async function unseal<T>(name: string, schema: z.ZodType<T>) {
 }
 
 // The address and email the verification code went to, for the code page; null once it's used or has expired.
-export async function pendingVerification() {
-  return unseal(pendingCookie, pendingSchema)
+export function pendingVerification(request: SignInRequest) {
+  const pending = unseal(request, pendingCookie, pendingSchema)
+  return pending ? { email: pending.email } : null
 }
 
 // WorkOS's Radar judges each attempt by the person's own address and browser, not the server's.
-async function requestContext() {
-  const list = await headers()
-  const forwarded = list.get("x-forwarded-for")?.split(",")[0]?.trim()
-  return { ipAddress: forwarded || list.get("x-real-ip") || undefined, userAgent: list.get("user-agent") ?? undefined }
+function requestContext(request: SignInRequest) {
+  return { ipAddress: request.ipAddress, userAgent: request.headers.get("user-agent") ?? undefined }
 }
 
 const text = (value: unknown) => (typeof value === "string" ? value : "")
@@ -146,8 +159,8 @@ function explain(error: unknown) {
 
 // The person belongs to one WorkOS organization per workspace, and WorkOS asks which one the session is for. Copacker
 // picks its workspace itself, so the session takes the workspace they had open last, or else the first.
-async function chooseOrganization(choices: ReadonlyArray<{ id: string }>) {
-  const active = z.uuid().safeParse((await cookies()).get(workspaceCookie)?.value)
+async function chooseOrganization(request: SignInRequest, choices: ReadonlyArray<{ id: string }>) {
+  const active = z.uuid().safeParse(request.cookies.get(workspaceCookie)?.value)
   if (active.success) {
     const [row] = await db()
       .select({ workosId: organizations.workosId })
@@ -167,7 +180,11 @@ async function chooseOrganization(choices: ReadonlyArray<{ id: string }>) {
 
 // Saves the session a sign-in produced, or takes it to its next step: the code emailed to a new address, the
 // organization WorkOS asks for, or the company's single sign-on. Returns where to go next.
-async function complete(attempt: () => Promise<AuthenticationResponse>, next: string): Promise<{ redirect: string }> {
+async function complete(
+  request: SignInRequest,
+  attempt: () => Promise<AuthenticationResponse>,
+  next: string
+): Promise<{ redirect: string }> {
   let response: AuthenticationResponse
   try {
     response = await attempt()
@@ -175,7 +192,7 @@ async function complete(attempt: () => Promise<AuthenticationResponse>, next: st
     if (error instanceof AuthenticationException) {
       const pendingAuthenticationToken = error.pendingAuthenticationToken
       if (error.code === "email_verification_required" && pendingAuthenticationToken) {
-        await seal(pendingCookie, {
+        seal(request, pendingCookie, {
           token: pendingAuthenticationToken,
           email: text(error.rawData.email),
           verification: text(error.rawData.email_verification_id) || null,
@@ -184,8 +201,9 @@ async function complete(attempt: () => Promise<AuthenticationResponse>, next: st
         return { redirect: "/verify-email" }
       }
       if (error.code === "organization_selection_required" && pendingAuthenticationToken) {
-        const organizationId = await chooseOrganization(error.rawData.organizations ?? [])
+        const organizationId = await chooseOrganization(request, error.rawData.organizations ?? [])
         return complete(
+          request,
           () =>
             workos().userManagement.authenticateWithOrganizationSelection({
               clientId: workosClientId(),
@@ -198,14 +216,14 @@ async function complete(attempt: () => Promise<AuthenticationResponse>, next: st
       if (error.code === "sso_required") {
         const [connectionId] = z.array(z.string()).catch([]).parse(error.rawData.connection_ids)
         if (connectionId) {
-          return { redirect: await authorizationUrl({ connectionId }, next) }
+          return { redirect: await authorizationUrl(request, { connectionId }, next) }
         }
       }
     }
     throw explain(error)
   }
-  await saveSession(response, appUrl())
-  ;(await cookies()).delete(pendingCookie)
+  await request.saveSession(response)
+  request.cookies.delete(pendingCookie)
   return { redirect: next }
 }
 
@@ -215,10 +233,11 @@ const next = z
   .optional()
   .transform((value) => returnPath(value, "/"))
 
-export async function signIn(raw: unknown) {
+export async function signIn(request: SignInRequest, raw: unknown) {
   const input = signInSchema.extend({ next }).parse(raw)
-  const context = await requestContext()
+  const context = requestContext(request)
   return complete(
+    request,
     () =>
       workos().userManagement.authenticateWithPassword({
         clientId: workosClientId(),
@@ -240,15 +259,16 @@ export async function invitedEmail(token: string) {
 
 // Creates the account, then signs in, which emails a code to confirm the address. Signing in with a WorkOS invitation's
 // token accepts it, which confirms the address instead.
-export async function signUp(raw: unknown) {
+export async function signUp(request: SignInRequest, raw: unknown) {
   const input = signUpSchema.extend({ next, invitation: z.string().max(200).optional() }).parse(raw)
-  const context = await requestContext()
+  const context = requestContext(request)
   try {
     await workos().userManagement.createUser({ email: input.email, password: input.password, ...context })
   } catch (error) {
     throw explain(error)
   }
   return complete(
+    request,
     () =>
       workos().userManagement.authenticateWithPassword({
         clientId: workosClientId(),
@@ -261,14 +281,15 @@ export async function signUp(raw: unknown) {
   )
 }
 
-export async function verifyEmail(raw: unknown) {
+export async function verifyEmail(request: SignInRequest, raw: unknown) {
   const { code } = codeSchema.parse(raw)
-  const pending = await pendingVerification()
+  const pending = unseal(request, pendingCookie, pendingSchema)
   if (!pending) {
     throw new LocalizedError("codeExpired")
   }
-  const context = await requestContext()
+  const context = requestContext(request)
   return complete(
+    request,
     () =>
       workos().userManagement.authenticateWithEmailVerification({
         clientId: workosClientId(),
@@ -281,8 +302,8 @@ export async function verifyEmail(raw: unknown) {
 }
 
 // Emails a new code for the sign-in that's waiting on one.
-export async function resendCode() {
-  const pending = await pendingVerification()
+export async function resendCode(request: SignInRequest) {
+  const pending = unseal(request, pendingCookie, pendingSchema)
   if (!pending?.verification) {
     throw new LocalizedError("codeExpired")
   }
@@ -298,7 +319,7 @@ export async function resendCode() {
 // Emails a link to Copacker's own reset page. Whether the email has an account isn't revealed: the reply is the same
 // either way. WorkOS sends its own reset email too until it's turned off in its dashboard, so a failure to send this
 // one is logged rather than shown.
-export async function requestPasswordReset(raw: unknown) {
+export async function requestPasswordReset(request: SignInRequest, raw: unknown) {
   const input = forgotPasswordSchema.parse(raw)
   let reset: PasswordReset
   try {
@@ -309,14 +330,14 @@ export async function requestPasswordReset(raw: unknown) {
     }
     throw explain(error)
   }
-  const link = `${await siteUrl()}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
+  const link = `${siteUrlFor(request.headers)}/reset-password?${new URLSearchParams({ token: reset.passwordResetToken })}`
   try {
     // In the language the person chose in Settings, or else their computer's, from the request.
     const [profile] = await db()
       .select({ locale: profiles.locale })
       .from(profiles)
       .where(eq(profiles.userId, reset.userId))
-    const lang = isLocale(profile?.locale) ? profile.locale : negotiateLocale((await headers()).get("accept-language"))
+    const lang = isLocale(profile?.locale) ? profile.locale : negotiateLocale(request.headers.get("accept-language"))
     const t = await translatorFor(lang)
     // How long the link lasts, from WorkOS's expiry: minutes, or hours for an hour or more.
     const minutes = Math.max(1, Math.round((Date.parse(reset.expiresAt) - Date.now()) / 60000))
@@ -354,7 +375,7 @@ export async function requestPasswordReset(raw: unknown) {
 }
 
 // Sets the new password and signs straight in with it.
-export async function resetPassword(raw: unknown) {
+export async function resetPassword(request: SignInRequest, raw: unknown) {
   const input = resetPasswordSchema.extend({ token: z.string().min(1).max(512) }).parse(raw)
   let resetEmail: string
   try {
@@ -363,8 +384,9 @@ export async function resetPassword(raw: unknown) {
   } catch (error) {
     throw explain(error)
   }
-  const context = await requestContext()
+  const context = requestContext(request)
   return complete(
+    request,
     () =>
       workos().userManagement.authenticateWithPassword({
         clientId: workosClientId(),
@@ -382,40 +404,37 @@ export async function hasAccount(address: string) {
   return data.length > 0
 }
 
-// WorkOS returns to the address sign-in started on, so its session cookie lands there.
-async function redirectUri() {
-  return `${await siteUrl()}/callback`
-}
-
 // Starts an OAuth round trip, with Google or Microsoft or the company's single sign-on, and returns the address to
 // send the person to. WorkOS brings them back to /callback.
 export async function authorizationUrl(
+  request: SignInRequest,
   via: { provider: OAuthProvider } | { connectionId: string },
   destination: string,
   loginHint?: string
 ) {
   const { url, state, codeVerifier } = await workos().userManagement.getAuthorizationUrlWithPKCE({
     clientId: workosClientId(),
-    redirectUri: await redirectUri(),
+    redirectUri: `${siteUrlFor(request.headers)}/callback`,
     ...("provider" in via ? { provider: oauthProviders[via.provider].provider } : { connectionId: via.connectionId }),
     ...(loginHint && { loginHint })
   })
-  await seal(oauthCookie, { state, verifier: codeVerifier, next: returnPath(destination, "/") })
+  seal(request, oauthCookie, { state, verifier: codeVerifier, next: returnPath(destination, "/") })
   return url
 }
 
 // Finishes an OAuth round trip. Returns where to go: the page sign-in was for, the code page, or back to sign in with
 // an error.
-export async function finishOAuth(params: URLSearchParams) {
-  const saved = await unseal(oauthCookie, oauthSchema)
-  ;(await cookies()).delete(oauthCookie)
+export async function finishOAuth(request: SignInRequest, params: URLSearchParams) {
+  const saved = unseal(request, oauthCookie, oauthSchema)
+  request.cookies.delete(oauthCookie)
   const code = params.get("code")
   if (!saved || !code || params.get("state") !== saved.state) {
     return "/login?error=oauth"
   }
-  const context = await requestContext()
+  const context = requestContext(request)
   try {
     const { redirect } = await complete(
+      request,
       () =>
         workos().userManagement.authenticateWithCode({
           clientId: workosClientId(),

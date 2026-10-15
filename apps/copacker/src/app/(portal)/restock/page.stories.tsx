@@ -1,25 +1,14 @@
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { RestockReport } from "@/components/restock-report"
+import { RestockPageView } from "@/components/restock-page"
 import { restockSettings } from "@/server/restock-report"
 import { restockChannels, restockReport, suppliers } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
 
 type Org = { restockSalesDays: number | null; restockLeadTimeDays: number | null }
-
-// A buyer's Restock page (page.tsx), starting from the workspace's sales period and lead time. Other workspaces are
-// redirected to Purchase orders.
-async function RestockPage({ org }: { org: Org }) {
-  const t = await getTranslations("restock")
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <RestockReport settings={restockSettings(org)} />
-    </>
-  )
+function RestockPage({ org }: { org: Org }) {
+  return <RestockPageView settings={restockSettings(org)} />
 }
 
 // The plans each story asked for.
