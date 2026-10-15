@@ -1013,7 +1013,7 @@ function LineMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={packing} onOpenChange={setPacking}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("builder.packingDetails")}</DialogTitle>
             <DialogDescription>{name}</DialogDescription>
@@ -1075,56 +1075,59 @@ function SupplierCharges({ index }: { index: number }) {
         </Button>
       </div>
       {charges.fields.map((charge, chargeIndex) => (
-        <div key={charge.key} className="flex flex-col gap-3 rounded-md border p-3">
-          <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <FormSelect
-                name={`items.${index}.supplierCharges.${chargeIndex}.description`}
-                label={t("builder.expenseType")}
-                options={types}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("builder.removeSupplierCharge")}
-              onClick={() => charges.remove(chargeIndex)}
-            >
-              <X />
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 items-end gap-3">
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{t("builder.rate")}</span>
-              <CellNumber
-                name={`items.${index}.supplierCharges.${chargeIndex}.amount`}
-                label={t("builder.rate")}
-                min={0}
-                step={0.01}
-                scale={100}
-                prefix={currencySymbol(currency, locale)}
-              />
-            </div>
-            <FormSelect
-              name={`items.${index}.supplierCharges.${chargeIndex}.basis`}
-              label={t("builder.chargeBasis")}
-              options={[
-                { value: "pack", label: t("builder.perPack") },
-                { value: "piece", label: t("builder.perPiece") },
-                { value: "flat", label: t("builder.flatAmount") }
-              ]}
+        <div
+          key={charge.key}
+          className={cn(
+            "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-end gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto_2rem]",
+            chargeIndex > 0 && "border-t pt-3 sm:[&_[data-slot=field-label]]:sr-only"
+          )}
+        >
+          <FormSelect
+            name={`items.${index}.supplierCharges.${chargeIndex}.description`}
+            label={t("builder.expenseType")}
+            className="col-span-2 min-w-0 gap-1.5 sm:col-span-1"
+            options={types}
+          />
+          <div className="row-start-2 flex min-w-0 flex-col gap-1.5 sm:row-start-auto">
+            <span className={cn("text-sm font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("builder.rate")}</span>
+            <CellNumber
+              name={`items.${index}.supplierCharges.${chargeIndex}.amount`}
+              label={t("builder.rate")}
+              min={0}
+              step={0.01}
+              scale={100}
+              prefix={currencySymbol(currency, locale)}
             />
           </div>
-          <div className="flex justify-between gap-3 text-sm">
-            <span>{t("detail.columns.total")}</span>
-            <span className="tabular-nums">
+          <FormSelect
+            name={`items.${index}.supplierCharges.${chargeIndex}.basis`}
+            label={t("builder.chargeBasis")}
+            className="col-span-2 col-start-2 row-start-2 min-w-0 gap-1.5 sm:col-span-1 sm:col-start-auto sm:row-start-auto"
+            options={[
+              { value: "pack", label: t("builder.perPack") },
+              { value: "piece", label: t("builder.perPiece") },
+              { value: "flat", label: t("builder.flatAmount") }
+            ]}
+          />
+          <div className="col-span-3 flex items-center justify-between gap-1.5 text-sm sm:col-span-1 sm:min-w-20 sm:flex-col sm:items-end">
+            <span className={cn("font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("detail.columns.total")}</span>
+            <span className="flex h-9 items-center tabular-nums">
               {money(
                 item.supplierCharges?.[chargeIndex] ? supplierChargeTotal(item, item.supplierCharges[chargeIndex]) : 0,
                 currency
               )}
             </span>
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="col-start-3 row-start-1 mb-0.5 sm:col-start-5 sm:row-start-auto"
+            aria-label={t("builder.removeSupplierCharge")}
+            onClick={() => charges.remove(chargeIndex)}
+          >
+            <X />
+          </Button>
         </div>
       ))}
     </div>
