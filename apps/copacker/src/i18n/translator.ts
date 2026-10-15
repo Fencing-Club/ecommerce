@@ -1,4 +1,4 @@
-import { createTranslator } from "next-intl"
+import { createTranslator } from "use-intl"
 import { defaultLocale, isLocale, type Locale } from "./locales"
 import { loadMessages } from "./messages"
 

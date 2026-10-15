@@ -2,10 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { FormProvider, type Path, useForm, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/actions"
 import { BrandMark, Stage } from "@/components/auth/stage"

@@ -1,10 +1,10 @@
 "use client"
 
 import { Ellipsis, Mail, UserPlus } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import {
   AlertDialog,

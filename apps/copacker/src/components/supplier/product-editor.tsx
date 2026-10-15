@@ -1,9 +1,9 @@
 "use client"
 
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { fileName, PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"

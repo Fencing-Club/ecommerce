@@ -1,6 +1,6 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "use-intl"
 import { Spinner } from "@/components/ui/spinner"
 
 // When a sync last finished, as "Synced Sep 27, 12:00 AM", with the full date on hover.

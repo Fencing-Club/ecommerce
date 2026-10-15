@@ -1,11 +1,11 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { useLocale, useTranslations } from "next-intl"
 import Script from "next/script"
 import { useEffect, useId, useRef, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
 import { objectEntries } from "ts-extras"
+import { useLocale, useTranslations } from "use-intl"
 import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { addressRegions } from "@/lib/address-regions"
 import { countriesIn } from "@/lib/countries"

@@ -1,8 +1,8 @@
 "use client"
 
 import { Play } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { whenPageIdle } from "./use-page-idle"

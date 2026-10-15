@@ -1,8 +1,8 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { FormProvider, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/actions"
 import { FormInput } from "@/components/form-controls"
 import { FieldGroup } from "@/components/ui/field"

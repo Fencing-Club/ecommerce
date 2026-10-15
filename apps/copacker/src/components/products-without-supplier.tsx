@@ -1,7 +1,7 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { IssuePanel } from "@/components/inventory-products"
 import { ProductImage } from "@/components/product-details"

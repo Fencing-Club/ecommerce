@@ -2,10 +2,10 @@
 
 import { commonPaymentTerms } from "@repo/aisle"
 import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { PageHeader, StatusBadge } from "@/components/common"
 import { DateInput } from "@/components/form-controls"
 import { SelectControl } from "@/components/form-select"

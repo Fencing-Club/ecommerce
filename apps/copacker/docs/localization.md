@@ -1,7 +1,9 @@
 # Localization
 
-Copacker is translated with [next-intl](https://next-intl.dev), without locale prefixes in URLs. English is the source
-language. Translations are written by hand (or with an AI assistant) into JSON files; no translation service is called.
+Copacker uses the standalone [use-intl core](https://next-intl.dev/docs/environments/core-library) for client hooks,
+shared translators and Storybook. The current Next request/Server Component integration still uses next-intl until
+the Start route conversion. URLs have no locale prefixes. English is the source language. Translations live in JSON
+files; no translation service is called.
 
 ## Which language a page renders in
 
@@ -46,7 +48,7 @@ needs room past the line too.
 ## In code
 
 - Server components, `generateMetadata`, route handlers: `const t = await getTranslations("orders")`.
-- Client components: `const t = useTranslations("orders")`.
+- Client components: `const t = useTranslations("orders")`, imported from `use-intl`.
 - Page titles: replace `export const metadata` with `generateMetadata` that calls `getTranslations`.
 - Numbers, dates and currency: use `useFormatter()`/`getFormatter()`, or pass `useLocale()`/`getLocale()` to `Intl` and
   to `toLocaleString`, keeping any explicit `timeZone` option. Never hard-code `"en-US"` for display.

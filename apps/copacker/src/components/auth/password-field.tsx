@@ -1,9 +1,9 @@
 "use client"
 
 import { Check, Eye, EyeOff } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
 import { useController, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
 import { passwordMinimum } from "@/lib/sign-in"

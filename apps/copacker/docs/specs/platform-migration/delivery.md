@@ -1,6 +1,7 @@
 # Tasks, milestones and delivery plan
 
-Part of the [migration specification](README.md). M0 and the invocation-scoped database portion of M1 are in progress;
+Part of the [migration specification](README.md). M0, the request-context portions of M1 and frontend preparation in M3
+are in progress;
 no checkbox below is fully complete. See [compatibility evidence](compatibility.md) for verified substeps and remaining
 work. This document does not create issues or schedule releases.
 The web can ship on Start before the background-worker migration finishes.
@@ -216,7 +217,7 @@ ordering, pause and rollback rules in [cutover.md](cutover.md) apply to every tr
 | ID | Decision/evidence required | Default or boundary | Needed by |
 | --- | --- | --- | --- |
 | D01 | Supported Start/Cloudflare/WorkOS/Vite versions and custom session API | Official integration, ordinary SSR; no unsupported session internals | M0 exit |
-| D02 | Localization dependency agreement | Propose `use-intl`, preserving catalogs/behavior; review preferred-stack exception | M3-03 |
+| D02 | Localization dependency agreement | Selected `use-intl` 4.14.9 in the authorized implementation; preserve catalogs/behavior | M3-03 |
 | D03 | nuqs compatibility result | Keep trial adapter if all checks pass; focused Router search fallback if it fails | M3-06 |
 | D04 | Railway connectivity/CA/account capability and connection budget | Verified TLS, query cache off, existing databases retained | M1-02 |
 | D05 | Document executor and concurrency limits | Preserve 32 MiB/1,000-page behavior; scoped processor if necessary | M3/M4 document work |

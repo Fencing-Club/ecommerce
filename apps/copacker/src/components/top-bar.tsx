@@ -1,8 +1,8 @@
 "use client"
 
 import { Menu } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"
 import { useSidebar } from "@/components/ui/sidebar"
 import { CreateMenu } from "./create-menu"

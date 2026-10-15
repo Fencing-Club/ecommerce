@@ -16,9 +16,22 @@ const config: StorybookConfig = {
   core: { disableTelemetry: true, ...(localHost && { allowedHosts: [localHost] }) },
   // The mock service worker lives with Storybook, so the app never serves it.
   staticDirs: ["../public", "./public"],
-  viteFinal: (vite) =>
-    mergeConfig(vite, {
-      ...(localHost && { server: { allowedHosts: [localHost] } }),
+  viteFinal: (vite) => {
+    const hmr = vite.server?.hmr
+    return mergeConfig(vite, {
+      server: {
+        ...(localHost && { allowedHosts: [localHost] }),
+        // Storybook supplies its HTTP server through the older HMR options. Pass it to Vite 8's WebSocket options
+        // explicitly so concurrent worktrees share their own HTTP port instead of competing for Vite's default port.
+        ...(typeof hmr === "object" &&
+          hmr.server && {
+            ws: {
+              server: hmr.server,
+              port: hmr.port,
+              ...(localHost && { host: localHost, protocol: "wss", clientPort: 443 })
+            }
+          })
+      },
       plugins: [vanillaExtractPlugin()],
       resolve: {
         // The server's side of what server components use: messages from the story's language, a database that
@@ -42,6 +55,7 @@ const config: StorybookConfig = {
         ]
       }
     })
+  }
 }
 
 export default config

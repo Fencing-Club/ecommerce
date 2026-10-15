@@ -1,8 +1,8 @@
 "use client"
 
 import { Search } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useEffect, useId, useMemo, useState } from "react"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {

@@ -15,8 +15,8 @@ import {
   Users,
   Warehouse
 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useWatch } from "react-hook-form"
+import { useLocale, useTranslations } from "use-intl"
 import type { Messages } from "@/i18n/messages"
 import { isPosition, positionKeys, type WorkspaceKind } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"

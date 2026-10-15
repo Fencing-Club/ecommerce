@@ -1,9 +1,9 @@
 "use client"
 
 import { Factory, Ship, Store } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
 import { objectKeys } from "ts-extras"
+import { useTranslations } from "use-intl"
 import { AddressFields } from "@/components/address-fields"
 import { FormInput } from "@/components/form-controls"
 import { FormSelect } from "@/components/form-select"

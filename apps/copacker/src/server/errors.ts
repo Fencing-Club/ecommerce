@@ -1,5 +1,5 @@
-import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
 import { getTranslations } from "next-intl/server"
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
 import { type ErrorKey, LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"

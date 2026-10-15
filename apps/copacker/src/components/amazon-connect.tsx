@@ -1,7 +1,7 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
 import { useId, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

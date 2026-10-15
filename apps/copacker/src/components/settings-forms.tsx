@@ -2,7 +2,6 @@
 
 import { type Address, addressSchema } from "@repo/aisle"
 import { Check } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useId, useSyncExternalStore } from "react"
 import {
   type FieldValues,
@@ -12,6 +11,7 @@ import {
   useFormState,
   useWatch
 } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"

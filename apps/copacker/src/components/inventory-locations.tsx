@@ -2,9 +2,9 @@
 
 import type { ShopifyLocationKind } from "@repo/aisle/shopify"
 import { MapPin } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {

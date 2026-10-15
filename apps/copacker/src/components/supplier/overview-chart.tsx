@@ -1,7 +1,7 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
 import { Bar, CartesianGrid, ComposedChart, Line, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
+import { useLocale, useTranslations } from "use-intl"
 import { useMoney } from "@/hooks/use-money"
 import type { Comparison } from "@/lib/date-range"
 import { compactMoney } from "@/lib/format"

@@ -1,9 +1,9 @@
 "use client"
 
 import { ChevronDown, Download, Ellipsis, Pencil, SlidersHorizontal, Trash2 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
 import {
   AlertDialog,

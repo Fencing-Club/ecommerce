@@ -2,9 +2,9 @@
 
 import { useMediaQuery, useReducedMotion } from "@mantine/hooks"
 import { Check, GlassWater } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { Caveat } from "next/font/google"
 import { useEffect, useRef, useState } from "react"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"

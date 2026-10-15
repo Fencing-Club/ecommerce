@@ -1,8 +1,8 @@
 "use client"
 
 import { CircleCheck } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useId, useRef } from "react"
+import { useTranslations } from "use-intl"
 import { StatusBadge } from "./common"
 import { StoreLogo } from "./store-logos"
 import { Button } from "./ui/button"

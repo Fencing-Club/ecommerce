@@ -1,9 +1,9 @@
 "use client"
 
 import { useInterval } from "@mantine/hooks"
-import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/actions"
 import { Button } from "@/components/ui/button"
 import { useErrorMessage } from "@/hooks/use-error-text"

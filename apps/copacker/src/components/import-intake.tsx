@@ -1,9 +1,9 @@
 "use client"
 
 import { Ellipsis } from "lucide-react"
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { LinkRow } from "@/components/link-row"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

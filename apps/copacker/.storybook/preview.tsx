@@ -2,11 +2,11 @@ import addonA11y from "@storybook/addon-a11y"
 import { definePreview } from "@storybook/nextjs-vite"
 import addonMsw from "msw-storybook-addon"
 import { setupWorker } from "msw/browser"
-import { NextIntlClientProvider } from "next-intl"
 import { NuqsTestingAdapter } from "nuqs/adapters/testing"
 import { useEffect } from "react"
 import { configure } from "storybook/test"
 import { INITIAL_VIEWPORTS } from "storybook/viewport"
+import { IntlProvider } from "use-intl"
 import { AccessProvider } from "@/components/access"
 import { Providers } from "@/components/providers"
 import { direction, localeNames, locales, type Locale } from "@/i18n/locales"
@@ -63,13 +63,13 @@ function StoryFrame({
     document.documentElement.dir = direction(locale)
   }, [locale])
   return (
-    <NextIntlClientProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
+    <IntlProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
       <Providers>
         <NuqsTestingAdapter searchParams={query} hasMemory>
           <AccessProvider permissions={permissions}>{children}</AccessProvider>
         </NuqsTestingAdapter>
       </Providers>
-    </NextIntlClientProvider>
+    </IntlProvider>
   )
 }
 

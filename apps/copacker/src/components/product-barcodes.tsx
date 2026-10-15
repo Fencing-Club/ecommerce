@@ -1,8 +1,8 @@
 "use client"
 
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRef, useState } from "react"
+import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"

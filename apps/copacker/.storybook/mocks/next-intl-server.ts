@@ -1,4 +1,4 @@
-import { createFormatter, createTranslator } from "next-intl"
+import { createFormatter, createTranslator } from "use-intl"
 import { storyIntl } from "../intl"
 
 // next-intl/server for the browser: what a server component reads during a request, answered from the story's

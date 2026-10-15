@@ -1,9 +1,9 @@
 "use client"
 
 import { Pencil, Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import {
   AlertDialog,

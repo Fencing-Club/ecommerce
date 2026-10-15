@@ -1,10 +1,10 @@
 "use client"
 
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

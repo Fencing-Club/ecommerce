@@ -2,11 +2,11 @@
 
 import type { CatalogVariant } from "@repo/aisle/shopify"
 import { Ellipsis, FileText, Plus, Search, Trash2, X } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { Fragment, useId, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { arrayIncludes, objectKeys } from "ts-extras"
+import { useLocale, useTranslations } from "use-intl"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useMoney } from "@/hooks/use-money"
 import { api } from "@/lib/api"

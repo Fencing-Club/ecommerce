@@ -1,8 +1,8 @@
 "use client"
 
 import { Check, FileText, GlassWater, Ship } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"
 import type { Place, World } from "./journey-world"

@@ -1,8 +1,8 @@
 "use client"
 
-import { useFormatter, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import {
   AlertDialog,
   AlertDialogCancel,

@@ -1,9 +1,9 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"

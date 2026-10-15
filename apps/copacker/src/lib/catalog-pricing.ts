@@ -1,4 +1,4 @@
-import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
 import supplier from "../../messages/en/supplier.json"
 

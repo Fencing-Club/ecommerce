@@ -1,10 +1,11 @@
+import { getCookie } from "@tanstack/react-start/server"
 import type { AuthenticationResponse } from "@workos-inc/node"
-import { getAuthkit } from "@workos/authkit-tanstack-react-start"
+import { getConfig, sessionEncryption, type Session } from "@workos/authkit-session"
 import { env } from "cloudflare:workers"
 import { sql } from "drizzle-orm"
 import { PDFDocument } from "pdf-lib"
 import { db, withDatabase } from "../../../src/db"
-import { saveAuthentication } from "../../../src/server/auth-session"
+import { clearAuthentication, saveAuthentication } from "../../../src/server/auth-session"
 import { decrypt, encrypt } from "../../../src/server/security"
 import { validatePdf } from "../../../src/server/storage"
 
@@ -31,18 +32,20 @@ export const authentication: AuthenticationResponse = {
 }
 
 export async function sessionProbe(request: Request) {
-  const service = await getAuthkit()
   if (request.method === "POST") {
-    const { response } = await saveAuthentication(authentication)
-    const headers = new Headers(response?.headers)
+    await saveAuthentication(authentication)
+    const headers = new Headers()
     headers.append("Set-Cookie", "migration-second=present; Path=/; HttpOnly; SameSite=Lax")
     return Response.json({ saved: true }, { headers })
   }
   if (request.method === "DELETE") {
-    const { response } = await service.clearSession(new Response(null, { status: 204 }))
-    return response ?? new Response(null, { status: 500 })
+    await clearAuthentication()
+    return new Response(null, { status: 204 })
   }
-  const session = await service.getSession(request)
+  const cookie = getCookie(getConfig("cookieName"))
+  const session = cookie
+    ? await sessionEncryption.unsealData<Session>(cookie, { password: getConfig("cookiePassword") })
+    : null
   // A codec/storage probe, not authentication: dummy access tokens are deliberately never accepted by withAuth.
   return Response.json({ userId: session?.user.id ?? null })
 }

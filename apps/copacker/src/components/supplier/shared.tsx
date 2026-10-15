@@ -2,7 +2,7 @@
 
 import { useWindowEvent } from "@mantine/hooks"
 import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { StatusBadge as ToneBadge, type StatusTone } from "@/components/common"
 import { StatCard } from "@/components/stat-card"
 import { Button } from "@/components/ui/button"

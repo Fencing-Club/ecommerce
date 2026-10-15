@@ -1,8 +1,8 @@
 "use client"
 
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"

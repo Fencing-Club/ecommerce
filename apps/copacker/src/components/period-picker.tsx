@@ -2,9 +2,9 @@
 
 import { Popover } from "@base-ui/react/popover"
 import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import {
   type Comparison,

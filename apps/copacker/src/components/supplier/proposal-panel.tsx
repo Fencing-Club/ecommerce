@@ -1,10 +1,10 @@
 "use client"
 
 import { ArrowRight } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { StatusBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"

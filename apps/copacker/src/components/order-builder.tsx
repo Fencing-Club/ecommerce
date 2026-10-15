@@ -9,11 +9,11 @@ import {
   orderInputSchema
 } from "@repo/aisle"
 import { ArrowRight, Building2, Download, Ellipsis, MapPin, Package, Plus, Warehouse, X } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { PageHeader, WarningNote } from "@/components/common"
 import { Badge } from "@/components/ui/badge"

@@ -1,7 +1,6 @@
 import { expect, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { buyerOverview, setupSteps, unconnectedOverview } from "@/stories/fixtures/overview"
-import { serverStory } from "@/stories/server"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "./overview"
 
 const noSales = buyerOverview.sales.daily.map((day) => ({ ...day, amazon: null, shopify: null }))
@@ -108,7 +107,7 @@ export const SetupUnfinished = meta.story({
 
 // The period and channel pickers beside the title, once the overview's data has loaded.
 export const Filters = meta.story({
-  ...serverStory(({ data }) => <OverviewFilters data={Promise.resolve(data)} />),
+  render: ({ data }) => <OverviewFilters data={data} />,
   parameters: { layout: "padded", nextjs: { navigation: { pathname: "/overview" } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /Last 30 days/ })).toBeVisible()
@@ -118,7 +117,7 @@ export const Filters = meta.story({
 
 // One channel has nothing to choose between.
 export const FiltersOneChannel = meta.story({
-  ...serverStory(({ data }) => <OverviewFilters data={Promise.resolve(data)} />),
+  render: ({ data }) => <OverviewFilters data={data} />,
   args: { data: { ...buyerOverview, channels: [{ key: "amazon", label: "Amazon" }] } },
   parameters: { layout: "padded" },
   play: async ({ canvas }) => {
@@ -129,7 +128,7 @@ export const FiltersOneChannel = meta.story({
 
 // Without a connected store there's nothing to filter.
 export const FiltersWithoutStores = meta.story({
-  ...serverStory(({ data }) => <OverviewFilters data={Promise.resolve(data)} />),
+  render: ({ data }) => <OverviewFilters data={data} />,
   args: { data: unconnectedOverview },
   parameters: { layout: "padded" },
   play: async ({ canvas }) => {

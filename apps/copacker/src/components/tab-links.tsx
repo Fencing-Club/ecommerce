@@ -1,8 +1,8 @@
 "use client"
 
-import { useLocale } from "next-intl"
 import Link from "next/link"
 import { useEffect, useRef } from "react"
+import { useLocale } from "use-intl"
 import { cn } from "@/lib/utils"
 
 type Tab = {

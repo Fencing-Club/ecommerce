@@ -1,10 +1,10 @@
 import { withAuth } from "@workos-inc/authkit-nextjs"
 import { and, eq } from "drizzle-orm"
 import type { Metadata } from "next"
-import type { MessageKeys, NestedKeyOf } from "next-intl"
 import { getTranslations } from "next-intl/server"
 import { cookies, headers } from "next/headers"
 import { forbidden, redirect } from "next/navigation"
+import type { MessageKeys, NestedKeyOf } from "use-intl"
 import { db } from "@/db"
 import { memberships, organizations, profiles } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
@@ -98,7 +98,7 @@ export async function profileFor(user: { id: string; firstName?: string | null; 
     .returning()
   return created ?? { userId: user.id, firstName, lastName, updatedAt: new Date() }
 }
-export function requireBuyer(s: Session) {
+export function requireBuyer(s: { org: Pick<Session["org"], "kind"> }) {
   if (s.org.kind !== "buyer") {
     throw new LocalizedError("buyerWorkspaceRequired")
   }

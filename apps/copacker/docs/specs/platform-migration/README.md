@@ -116,8 +116,10 @@ No `use server` declarations were found: many mutations already use HTTP endpoin
 | Caching and maintenance | Audit `unstable_cache`; replace process-based WorkOS flag polling with a bounded request-compatible approach |
 | Test and dev tooling | Update Next-specific Storybook setup/mocks, Playwright launch/build paths, Portless and health checks |
 
-WorkOS publishes a Start SDK, so an identity-provider migration is unnecessary. Its fit for Copacker's custom login
-and session flows still needs proving. Source: [WorkOS Start SDK](https://github.com/workos/authkit-tanstack-start).
+WorkOS remains the identity provider. The Start SDK trial found a session-cookie ordering conflict; the implementation
+uses WorkOS's public session toolkit with request-scoped handling. Deployed login/refresh/logout checks passed; the
+remaining custom flows still need app-level acceptance. See [compatibility evidence](compatibility.md) and the
+[WorkOS session toolkit](https://github.com/workos/authkit-session).
 
 ## The difficult part: background execution and documents
 

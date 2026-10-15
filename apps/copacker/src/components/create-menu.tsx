@@ -1,8 +1,8 @@
 "use client"
 
 import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen, type LucideIcon } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { usePermissions } from "@/components/access"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { type Area, can } from "@/lib/access"

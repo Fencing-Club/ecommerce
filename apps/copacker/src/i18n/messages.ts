@@ -1,5 +1,5 @@
-import type { AbstractIntlMessages } from "next-intl"
 import { objectKeys } from "ts-extras"
+import type { AbstractIntlMessages } from "use-intl"
 import auth from "../../messages/en/auth.json"
 import common from "../../messages/en/common.json"
 import emails from "../../messages/en/emails.json"

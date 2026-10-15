@@ -116,10 +116,10 @@ Test hostile sibling subdomains, missing/forged Origin, callback replay and cros
 
 ## Localization and query strings
 
-The proposed replacement for Next-specific localization is `use-intl`, the standalone core used by next-intl. It
-preserves the familiar provider/hooks/ICU model while request resolution and server translators become explicit. This
-is a proposed dependency decision, not an installed library; record agreement with the preferred-stack policy before
-adding it. Reusing an API name does not guarantee all server helpers are interchangeable. Source:
+The selected replacement for Next-specific localization is `use-intl`, the standalone core used by next-intl. The
+authorized implementation pins 4.14.9; see [compatibility evidence](compatibility.md). It preserves the familiar
+provider/hooks/ICU model while request resolution and server translators become explicit. Reusing an API name does
+not guarantee all server helpers are interchangeable. Source:
 [next-intl core library](https://next-intl.dev/docs/environments/core-library).
 
 Retain all nine locales, English fallback, typed keys, ICU argument validation, rich messages and localized errors.

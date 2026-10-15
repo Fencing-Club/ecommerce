@@ -1,7 +1,7 @@
 "use client"
 
-import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useActionForm } from "@/hooks/useActionForm"

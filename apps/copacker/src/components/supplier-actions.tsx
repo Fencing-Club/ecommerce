@@ -2,10 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {

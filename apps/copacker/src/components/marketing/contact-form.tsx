@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, Check, Handshake, LifeBuoy, MessageCircle, Newspaper, Presentation, Rocket } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 import { Controller, FormProvider, useForm } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import type { z } from "zod"
 import { FormInput, FormTextarea } from "@/components/form-controls"
 import { Button } from "@/components/ui/button"

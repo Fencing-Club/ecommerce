@@ -14,9 +14,9 @@ import {
   TriangleAlert,
   X
 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"

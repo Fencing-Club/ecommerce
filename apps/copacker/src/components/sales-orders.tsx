@@ -2,9 +2,9 @@
 
 import { useDebouncedValue } from "@mantine/hooks"
 import { ChevronLeft, ChevronRight, ShoppingBag, ExternalLink, Repeat, Search } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"

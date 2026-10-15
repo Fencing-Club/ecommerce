@@ -1,9 +1,9 @@
 "use client"
 
 import { Tags } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
+import { useTranslations } from "use-intl"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

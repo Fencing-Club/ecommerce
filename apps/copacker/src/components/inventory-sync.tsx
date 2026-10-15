@@ -1,8 +1,8 @@
 "use client"
 
 import { CircleAlert, Package } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { useIsAdmin } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { InventoryProducts, ProductsSkeleton } from "@/components/inventory-products"

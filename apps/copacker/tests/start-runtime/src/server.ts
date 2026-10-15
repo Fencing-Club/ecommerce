@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto"
 import handler from "@tanstack/react-start/server-entry"
+import { withAuthentication } from "../../../src/server/auth-session"
 
 export default {
   async fetch(request, env) {
@@ -18,7 +19,7 @@ export default {
         return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } })
       }
     }
-    const response = await handler.fetch(request)
+    const response = await withAuthentication(request, () => handler.fetch(request))
     const headers = new Headers(response.headers)
     headers.set("Cache-Control", "private, no-store")
     headers.set("X-Robots-Tag", "noindex, nofollow")

@@ -1,9 +1,9 @@
 "use client"
 
 import { Ellipsis, Plus, Trash2 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"

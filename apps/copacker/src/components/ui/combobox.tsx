@@ -2,8 +2,8 @@
 
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
-import { useTranslations } from "next-intl"
 import * as React from "react"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"

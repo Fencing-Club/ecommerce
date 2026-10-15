@@ -1,8 +1,8 @@
 "use client"
 
 import { Store } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Every channel together, which the URL leaves out.

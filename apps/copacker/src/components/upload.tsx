@@ -1,9 +1,9 @@
 "use client"
 
 import { CheckCircle2 } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"

@@ -19,11 +19,11 @@ import {
   Warehouse,
   X
 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { Status, StatusBadge, WarningNote } from "@/components/common"
 import { Alert, AlertTitle } from "@/components/ui/alert"

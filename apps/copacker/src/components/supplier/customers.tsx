@@ -1,9 +1,9 @@
 "use client"
 
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { LinkRow } from "@/components/link-row"

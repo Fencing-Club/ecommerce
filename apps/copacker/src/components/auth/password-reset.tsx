@@ -1,10 +1,10 @@
 "use client"
 
 import { MailCheck } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/actions"
 import { FormInput } from "@/components/form-controls"
 import { Button } from "@/components/ui/button"

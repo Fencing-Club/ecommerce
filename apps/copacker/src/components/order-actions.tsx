@@ -1,9 +1,9 @@
 "use client"
 
 import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import {
   AlertDialog,

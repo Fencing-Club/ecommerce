@@ -373,8 +373,8 @@ export function OverviewDashboard({ data }: { data: Overview }) {
 }
 
 // The period and channel every card covers, in the page header once the overview has loaded.
-export async function OverviewFilters({ data }: { data: Promise<Overview> }) {
-  const { connected, period, channels, channel } = await data
+export function OverviewFilters({ data }: { data: Overview }) {
+  const { connected, period, channels, channel } = data
   if (!connected.length) {
     return null
   }

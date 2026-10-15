@@ -1,8 +1,8 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState } from "@/components/common"
 import { Input } from "@/components/ui/input"

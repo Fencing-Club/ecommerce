@@ -1,8 +1,8 @@
 "use client"
 
 import { ChevronDown } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { FormProvider } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"

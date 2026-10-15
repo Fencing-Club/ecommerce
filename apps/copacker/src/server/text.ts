@@ -1,5 +1,5 @@
-import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
 import { getLocale, getTranslations } from "next-intl/server"
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { english, type Messages } from "@/i18n/messages"
 import { englishPricing, type PricingText } from "@/lib/catalog-pricing"
 

@@ -1,4 +1,4 @@
-import { createTranslator, type MessageKeys, type NestedKeyOf } from "next-intl"
+import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import type { z } from "zod"
 import type { Messages } from "@/i18n/messages"
 import validation from "../../messages/en/validation.json"

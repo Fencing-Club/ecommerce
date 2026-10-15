@@ -1,8 +1,8 @@
 "use client"
 
 import { CircleAlert } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"

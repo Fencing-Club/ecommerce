@@ -1,10 +1,10 @@
 "use client"
 
 import { CheckCircle2, ChevronDown, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Plus, Send } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"

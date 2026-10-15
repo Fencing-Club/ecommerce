@@ -1,9 +1,9 @@
 "use client"
 
 import { PanelLeft } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTranslations } from "use-intl"
 import {
   Sidebar,
   SidebarContent,

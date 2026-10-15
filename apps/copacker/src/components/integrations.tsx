@@ -2,8 +2,8 @@
 
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
 import { ArrowRight, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
+import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"

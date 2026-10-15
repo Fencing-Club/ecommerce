@@ -1,8 +1,8 @@
 "use client"
 
 import { ArrowRight, CircleCheck, CircleDashed, Unplug, Wallet } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"

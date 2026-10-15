@@ -1,4 +1,4 @@
-import { createTranslator } from "next-intl"
+import { createTranslator } from "use-intl"
 import { english, type Messages } from "./messages"
 
 export type ErrorKey = keyof Messages["errors"] & string

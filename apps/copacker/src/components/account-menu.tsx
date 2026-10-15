@@ -1,9 +1,9 @@
 "use client"
 
 import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
-import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useId } from "react"
+import { useTranslations } from "use-intl"
 import { useTheme } from "@/components/theme-provider"
 import {
   DropdownMenu,

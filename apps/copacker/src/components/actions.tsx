@@ -1,10 +1,10 @@
 "use client"
 
 import { AlertCircle } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { type FieldValues, FormProvider, type UseFormReturn } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { DialogClose, DialogFooter } from "@/components/ui/dialog"

@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type Address, type OrderInput, type PackingDraft, packingSchema } from "@repo/aisle"
 import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
@@ -16,6 +15,7 @@ import {
   useWatch
 } from "react-hook-form"
 import { objectKeys } from "ts-extras"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
 import { Button } from "@/components/ui/button"
