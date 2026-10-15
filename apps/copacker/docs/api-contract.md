@@ -111,6 +111,11 @@ kept with that partner and change through the partner's commands.
 | monthlyCost.create, monthlyCost.delete | cost fields, or id | Buyer admin; costs paid monthly that no platform reports |
 | job.retry | id | Buyer admin. A failed email or Shopify job for an accessible PO |
 
+`OrderInput.items[].supplierCharges` optionally records product-specific supplier services. Each entry contains
+`description`, `amount` (a nonnegative integer rate in currency minor units), and `basis` (`piece`, `pack`, or `flat`).
+Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from product unit prices and PO-level
+`adjustments`; totals include each charge once. See [supplier service costs](../../../packages/aisle/docs/README.md).
+
 ### Shipments
 
 | Action | Data | Permission / result |

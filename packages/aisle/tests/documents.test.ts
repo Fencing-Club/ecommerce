@@ -42,6 +42,19 @@ const pdfText = async (bytes: Uint8Array) =>
   (await readLabelPdfPages(bytes)).pages.flatMap((page) => page.items).join("\n")
 
 describe("purchase order PDF", () => {
+  it("prints supplier service rates and includes them once in the total", async () => {
+    const base = order(1)
+    const data: OrderInput = {
+      ...base,
+      items: [
+        { ...base.items[0]!, piecesPerSet: 2, supplierCharges: [{ description: "Packing", amount: 26, basis: "pack" }] }
+      ]
+    }
+    const text = (await pdfText(await purchaseOrderPdf({ order: data, revision: 1, ...parties }))).replace(/\s+/g, " ")
+    expect(text).toContain("Packing: $0.26 per pack ($0.52)")
+    expect(text).toContain("$364.52")
+  })
+
   it("fits a short PO on one page", async () => {
     const pdf = await PDFDocument.load(await purchaseOrderPdf({ order: order(5), revision: 1, ...parties }))
     expect(pdf.getPageCount()).toBe(1)

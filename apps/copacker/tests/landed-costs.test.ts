@@ -11,6 +11,18 @@ function order(items: { variantId: string; pieces: number; unitPrice: number }[]
 }
 
 describe("landed markups", () => {
+  it("keeps product service costs off unrelated products", () => {
+    const data = order([
+      { variantId: "a", pieces: 100, unitPrice: 1000 },
+      { variantId: "b", pieces: 100, unitPrice: 1000 }
+    ])
+    data.items[0]!.supplierCharges = [{ description: "Packing", amount: 100, basis: "piece" }]
+    const markups = landedMarkups([{ data, landedMinor: 20000, sentAt: new Date("2026-10-14") }])
+    expect(markups.get("a")).toBe(0.2)
+    expect(markups.get("b")).toBe(0.1)
+    expect(landedMarkup(data, 20000)).toBe(0.15)
+  })
+
   it("adds landed costs and PO charges as a share of the products' price", () => {
     // $1,000 of products, a $50 supplier charge and $150 of freight: 20% more to land.
     expect(landedMarkup(order([{ variantId: "a", pieces: 100, unitPrice: 1000 }], 5000), 15000)).toBe(0.2)
