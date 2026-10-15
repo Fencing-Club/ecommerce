@@ -57,6 +57,9 @@ const filled: Address = {
 
 export const Empty = meta.story({
   play: async ({ canvas, args }) => {
+    // Fixture previews have no Maps key. Manual entry must remain usable while the live SDK loads or is unavailable.
+    await expect(canvas.getByLabelText(/Street address/)).toBeEnabled()
+    await expect(canvas.getByLabelText(/City/)).toBeEnabled()
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
     // Each required field says so; the optional ones don't.
     await waitFor(() => expect(canvas.getAllByText("Fill in this field")).toHaveLength(5))
