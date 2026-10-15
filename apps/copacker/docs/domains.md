@@ -38,7 +38,7 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Local DNS | DNS-only `*.local.copacker.ai` A `127.0.0.1`, TTL 300; superseded loopback `*.dev.copacker.ai` removed | Each workstation runs `dev:setup` to trust its own CA |
 | WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered; CI callback `http://127.0.0.1:3005/callback` and logout origin `http://127.0.0.1:3005` registered after the real logout test exposed fallback to production | Existing production defaults and seven prior entries retained; user confirmed shared staging identity environment remains intentional. Defer identity separation to its own migration |
 | Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local Google sign-in reaches account selection; password sign-in and logout return to the exact local origin in E2E acceptance | No upstream callback change required for local rename; full Google sign-in returned to staging onboarding and sign-out completed in browser acceptance |
-| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | The current key is shared across environments; separate keys remain planned |
+| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | Three restricted replacement keys are configured and verified below; shared key retained during local-checkout cutover |
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
 | GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
@@ -47,26 +47,31 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 
 The initial Storybook deployments use each environment's currently deployed application source: staging
 `c651bdcd16d6fadb198b86041cd3e2cd04d8dec6`, production `a09712165d84fa3340d2c80aa2e7bafc0a382917`,
-plus the static hosting files from this rollout. Subsequent releases build app and Storybook from the same release.
+plus the static hosting files from this rollout. Subsequent releases build app and Storybook from the same release. The first full promotion passed staging E2E and production smoke checks; both apps and both Storybooks reported `cdef1f935b1d12e068c73ff0444c869046db2710`.
 
 ## Maps key separation
 
-Three replacement keys are approved with the restrictions below. Creation is pending activation of Maps JavaScript
-API: the Google Cloud API Library showed it disabled on 2026-10-14, and the key creation form therefore omitted it.
-Places API (New) is enabled. Enable Maps JavaScript API after the required terms approval, then create each key with
-both API restrictions and the website restrictions below. Keep the existing shared key until replacements are verified.
+Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript API in Google Cloud project
+`copacker`. Each permits only Maps JavaScript API and Places API (New), with these website restrictions:
 
-| Key name | Allowed website referrers | Configuration destination |
+| Key name / resource ID | Allowed website referrers | Configuration destination |
 | --- | --- | --- |
-| Copacker Maps Local | `https://*.local.copacker.ai/*`, `http://localhost:3000/*`, `http://localhost:3001/*`, `http://localhost:3010/*` | Local ignored `.env`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
-| Copacker Maps Staging | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | Staging Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
-| Copacker Maps Production | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | Production Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
+| Copacker Maps Local / `f2ae7042-d129-4240-8a95-941b9aaffed8` | `https://*.local.copacker.ai/*`, `http://localhost:3000/*`, `http://localhost:3001/*`, `http://localhost:3010/*` | Primary checkout's ignored `.env`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`; refresh other checkouts from this local key |
+| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | Staging Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
+| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | Production Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
 
-Set the hosted variables before rebuilding the web image. Do not add these keys to workers or fixture Storybook
-previews. Docker build wiring is included here; the address-autocomplete UI is separate work and is not present in
-this release. Before retiring the old key, verify live Maps/Places requests from intended origins, rejection from an
-unauthorized origin, and that all active local checkouts have refreshed their ignored environment configuration.
-Record replacement key resource IDs here, never key values.
+Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
+through Docker's build argument. Do not add these keys to workers or fixture Storybook previews. The
+address-autocomplete UI is separate work and is not present in this release.
+
+Acceptance: Places Autocomplete (New) returned HTTP 200 with suggestions for each key's intended referrer
+(`main.local.copacker.ai`, `staging.copacker.ai`, `copacker.ai`). All three returned HTTP 403 with
+`API_KEY_HTTP_REFERRER_BLOCKED` for `https://example.org/`. These are API restriction checks, not a substitute for
+browser acceptance of the future autocomplete UI. Railway variable values were compared without logging secrets.
+
+The previous shared key (`829033b6-204a-48a7-9e52-fda3b6226976`) remains active. Retire it only after active local
+checkouts refresh their ignored environment configuration and the consuming UI passes browser acceptance.
+Never record key values in Git or documentation.
 
 ## Webhook acceptance (2026-10-14)
 
