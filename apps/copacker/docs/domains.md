@@ -42,6 +42,7 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
 | Public development hooks | Namespace reserved only; loopback is rejected as an eBay notification destination | Create an owned tunnel/receiver and dedicated provider resources before setting `WEBHOOK_BASE_URL` |
+| eBay local OAuth (2026-10-15) | Main checkout RuName `Andrew_Craswell-AndrewCr-Copack-kmslwycva` maps to `https://main.local.copacker.ai/api/connections/ebay`; local `.env` selects it | Each additional worktree needs its own exact callback registration; see [eBay configuration](notifications.md#keys-and-signing-in) |
 | Other integration dashboards | Exact callback changes are specified in the register below | Shopify, Amazon and eBay local callbacks are opt-in per integration worktree; not automatically registered |
 
 The initial Storybook deployments use each environment's currently deployed application source: staging

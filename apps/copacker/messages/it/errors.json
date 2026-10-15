@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "Questo fornitore è stato rimosso. Scegline un altro o aggiungilo di nuovo.",
   "supplierWorkspaceRequired": "Passa a un workspace fornitore",
   "syncAmazonBeforeRestock": "Sincronizza Amazon nella pagina Prodotti prima di riassortire Amazon",
-  "syncOrdersFirst": "Sincronizza prima gli ordini {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} nella pagina Ordini",
+  "syncOrdersFirst": "Sincronizza prima gli ordini {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} nelle Impostazioni",
   "tooManyAttempts": "Troppi tentativi. Riprova tra un minuto.",
   "tooManyLabelVariations": "Scegli meno prodotti. Un download contiene fino a 1.000 varianti.",
   "tooManyMessages": "Troppi messaggi. Riprova tra qualche minuto.",

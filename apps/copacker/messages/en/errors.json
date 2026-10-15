@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "This supplier was removed. Choose another supplier or add them again.",
   "supplierWorkspaceRequired": "Switch to a supplier workspace",
   "syncAmazonBeforeRestock": "Sync Amazon on the Products page before restocking Amazon",
-  "syncOrdersFirst": "Sync {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} orders on the Orders page first",
+  "syncOrdersFirst": "Sync {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} orders in Settings first",
   "tooManyAttempts": "Too many attempts. Try again in a minute.",
   "tooManyLabelVariations": "Choose fewer products. One download holds up to 1,000 variations.",
   "tooManyMessages": "Too many messages. Try again in a few minutes.",

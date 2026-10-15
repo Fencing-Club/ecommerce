@@ -1,5 +1,6 @@
 "use client"
 
+import { Unplug } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -53,10 +54,11 @@ export function DisconnectButton({ provider, account }: { provider: "shopify" | 
         render={
           <Button
             variant="ghost"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive aria-expanded:bg-destructive/10 aria-expanded:text-destructive dark:hover:bg-destructive/20"
+            className="h-11 text-muted-foreground sm:h-[34px] hover:bg-destructive/10 hover:text-destructive aria-expanded:bg-destructive/10 aria-expanded:text-destructive dark:hover:bg-destructive/20"
           />
         }
       >
+        <Unplug className="size-4" aria-hidden />
         {t("disconnect")}
       </AlertDialogTrigger>
       <AlertDialogContent>

@@ -135,7 +135,25 @@
     },
     "storeGroup": "Negozi",
     "advertisingGroup": "Pubblicità",
-    "manage": "Gestisci"
+    "manage": "Gestisci",
+    "marketplaceCount": "{count, plural, one {# marketplace} other {# marketplace}}",
+    "panel": {
+      "syncTitle": "Sincronizzazione",
+      "preferencesTitle": "Preferenze di importazione",
+      "syncAction": "Sincronizza {label}",
+      "queuedHint": "In attesa di avvio.",
+      "syncingHint": "Gli aggiornamenti continuano dopo la chiusura della finestra.",
+      "status": {
+        "queued": "In coda",
+        "syncing": "Sincronizzazione",
+        "synced": "Sincronizzato",
+        "failed": "Richiede attenzione",
+        "idle": "Non sincronizzato",
+        "loading": "Verifica in corso",
+        "unavailable": "Stato non disponibile",
+        "scheduled": "Sincronizzazione giornaliera attiva"
+      }
+    }
   },
   "excludedTags": {
     "title": "Tag degli ordini esclusi",
@@ -250,6 +268,11 @@
     "checking": "Verifica…",
     "statusUnavailable": "Stato non disponibile",
     "summary": "Spesa pubblicitaria",
-    "requiresStore": "Collega prima il tuo negozio Amazon."
+    "requiresStore": "Collega prima il tuo negozio Amazon.",
+    "ready": "Sincronizzazione giornaliera attiva",
+    "spendTitle": "Spesa pubblicitaria",
+    "connectionTitle": "Connessione",
+    "disconnectTitle": "Disconnettere Amazon Ads?",
+    "disconnectDescription": "Le nuove spese pubblicitarie non verranno più sincronizzate. Le spese già importate saranno conservate."
   }
 }

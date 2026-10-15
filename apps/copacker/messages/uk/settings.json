@@ -135,7 +135,25 @@
     },
     "storeGroup": "Магазини",
     "advertisingGroup": "Реклама",
-    "manage": "Керувати"
+    "manage": "Керувати",
+    "marketplaceCount": "{count, plural, one {# маркетплейс} few {# маркетплейси} many {# маркетплейсів} other {# маркетплейсу}}",
+    "panel": {
+      "syncTitle": "Синхронізація даних",
+      "preferencesTitle": "Налаштування імпорту",
+      "syncAction": "Синхронізувати {label}",
+      "queuedHint": "Очікування запуску.",
+      "syncingHint": "Оновлення триватимуть після закриття цього вікна.",
+      "status": {
+        "queued": "У черзі",
+        "syncing": "Синхронізація",
+        "synced": "Синхронізовано",
+        "failed": "Потребує уваги",
+        "idle": "Не синхронізовано",
+        "loading": "Перевірка",
+        "unavailable": "Статус недоступний",
+        "scheduled": "Щоденну синхронізацію ввімкнено"
+      }
+    }
   },
   "excludedTags": {
     "title": "Виключені теги замовлень",
@@ -250,6 +268,11 @@
     "checking": "Перевірка…",
     "statusUnavailable": "Статус недоступний",
     "summary": "Витрати на рекламу",
-    "requiresStore": "Спочатку підключіть свій магазин Amazon."
+    "requiresStore": "Спочатку підключіть свій магазин Amazon.",
+    "ready": "Щоденну синхронізацію ввімкнено",
+    "spendTitle": "Витрати на рекламу",
+    "connectionTitle": "Підключення",
+    "disconnectTitle": "Відключити Amazon Ads?",
+    "disconnectDescription": "Нові витрати на рекламу більше не синхронізуватимуться. Раніше імпортовані витрати буде збережено."
   }
 }

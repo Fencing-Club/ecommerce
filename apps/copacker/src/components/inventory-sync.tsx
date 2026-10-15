@@ -1,6 +1,6 @@
 "use client"
 
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, Package } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useIsAdmin } from "@/components/access"
@@ -13,8 +13,8 @@ import { Card } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
-import { DetailRow } from "./inventory-locations"
-import { SyncedAt, SyncMenu } from "./sync-menu"
+import { IntegrationSyncCard, type IntegrationSyncState } from "./integration-sync-card"
+import { SyncedAt } from "./sync-status"
 
 type Selection = { source: "shopify" | "awd" | "fba"; marketplaceId?: string }
 type StockStatus = {
@@ -83,6 +83,7 @@ function sourceState(statuses: Status[]) {
   const observed = data.map((item) => item?.observedAt ?? null)
   return {
     active,
+    queued: active && !data.some((item) => item?.refresh.status === "running"),
     problem: failed && !active ? failure(failed.refresh.errorCode) : null,
     observedAt: observed.every((value) => value !== null) ? observed.toSorted()[0]! : null,
     externalAccountId: data.find((item) => item?.externalAccountId)?.externalAccountId ?? null,
@@ -102,6 +103,7 @@ export function useStockSync(provider: Source["provider"]) {
 // A store's inventory sync in its Settings: when it last synced or what went wrong, with Sync now and Reconnect.
 export function InventorySyncRow({ provider }: { provider: Source["provider"] }) {
   const t = useTranslations("inventory.sync")
+  const panel = useTranslations("settings.integrations.panel")
   const errorMessage = useErrorMessage()
   const source = sources.find((item) => item.provider === provider)!
   const selections: readonly Selection[] = source.selections
@@ -121,18 +123,25 @@ export function InventorySyncRow({ provider }: { provider: Source["provider"] })
       // RTK Query retains the failure for the inline message.
     }
   }
+  let syncState: IntegrationSyncState = "idle"
   let text: React.ReactNode = t("notSynced")
   if (syncing) {
-    text = t("syncing")
+    syncState = state.queued ? "queued" : "syncing"
+    text = panel(state.queued ? "queuedHint" : "syncingHint")
   } else if (mutation.isError) {
+    syncState = "failed"
     text = <span className="text-destructive">{errorMessage(mutation.error, t("startFailed"))}</span>
   } else if (state.problem) {
+    syncState = "failed"
     text = <span className="text-destructive">{t(`failures.${state.problem.reason}`)}</span>
   } else if (state.loading) {
+    syncState = "loading"
     text = t("loading")
   } else if (state.unavailable) {
-    text = t("statusUnavailable")
+    syncState = "unavailable"
+    text = undefined
   } else if (state.observedAt) {
+    syncState = "synced"
     text = <SyncedAt at={state.observedAt} />
   }
   let reconnect: string | null = null
@@ -143,19 +152,16 @@ export function InventorySyncRow({ provider }: { provider: Source["provider"] })
         : "/api/connections/amazon"
   }
   return (
-    <DetailRow
+    <IntegrationSyncCard
       title={t("title")}
-      action={
-        <SyncMenu
-          label={t("sourceInventory", { source: source.title })}
-          syncing={syncing || state.loading || !state.externalAccountId}
-          onSync={() => void startSync()}
-          reconnect={reconnect}
-        />
-      }
-    >
-      <span aria-live="polite">{text}</span>
-    </DetailRow>
+      label={t("sourceInventory", { source: source.title })}
+      icon={<Package />}
+      status={syncState}
+      detail={text}
+      onSync={() => void startSync()}
+      disabled={syncing || state.loading || state.unavailable || !state.externalAccountId}
+      reconnect={reconnect}
+    />
   )
 }
 

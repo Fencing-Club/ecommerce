@@ -265,11 +265,11 @@ test("adds a delivery address, edits it and removes it", async ({ page }) => {
 
 test("shows Shopify connected and edits its excluded order tags", async ({ page }) => {
   const integrations = section(page, "Integrations")
-  const shopify = integrations.getByRole("button", { name: "Shopify settings" })
+  const shopify = integrations.getByRole("article", { name: "Shopify" })
   await expect(shopify).toContainText("Connected")
   await expect(shopify).toContainText("copacker-demo.myshopify.com")
   // Default private authorization never sends credentials to Amazon until the form is submitted.
-  await integrations.getByRole("button", { name: /^Amazon .*Connect$/ }).click()
+  await integrations.getByRole("button", { name: "Connect Amazon", exact: true }).click()
   const amazonDialog = page.getByRole("dialog", { name: "Connect Amazon" })
   await expect(amazonDialog.getByLabel(/^Refresh token/)).toHaveAttribute("type", "password")
   await expect(amazonDialog.getByRole("combobox", { name: "Marketplace" })).toContainText("United States")
@@ -280,7 +280,7 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
     await expect(integrations.getByText("Coming soon")).toBeVisible()
   }
 
-  await shopify.click()
+  await shopify.getByRole("button", { name: "Manage Shopify" }).click()
   const sheet = page.getByRole("dialog", { name: "Shopify" })
   await expect(sheet.getByText("copacker-demo.myshopify.com")).toBeVisible()
   await expect(sheet.getByRole("button", { name: "Disconnect" })).toBeVisible()

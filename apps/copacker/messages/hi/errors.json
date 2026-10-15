@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "यह सप्लायर हटा दिया गया। कोई दूसरा सप्लायर चुनें या इसे फिर से जोड़ें।",
   "supplierWorkspaceRequired": "सप्लायर वर्कस्पेस पर जाएं",
   "syncAmazonBeforeRestock": "Amazon रीस्टॉक करने से पहले प्रोडक्ट पेज पर Amazon सिंक करें",
-  "syncOrdersFirst": "पहले ऑर्डर पेज पर {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} के ऑर्डर सिंक करें",
+  "syncOrdersFirst": "पहले सेटिंग्स में {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} के ऑर्डर सिंक करें",
   "tooManyAttempts": "बहुत ज़्यादा कोशिशें हो गईं। एक मिनट बाद फिर से कोशिश करें।",
   "tooManyLabelVariations": "कम प्रोडक्ट चुनें। एक डाउनलोड में ज़्यादा से ज़्यादा 1,000 वैरिएंट आ सकते हैं।",
   "tooManyMessages": "बहुत ज़्यादा मैसेज हो गए। कुछ मिनट बाद फिर से कोशिश करें।",

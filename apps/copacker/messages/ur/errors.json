@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "یہ سپلائر ہٹا دیا گیا ہے۔ کوئی اور سپلائر منتخب کریں یا انہیں دوبارہ شامل کریں۔",
   "supplierWorkspaceRequired": "سپلائر ورک اسپیس پر جائیں",
   "syncAmazonBeforeRestock": "Amazon کو ری اسٹاک کرنے سے پہلے پروڈکٹس کے صفحے پر Amazon سنک کریں",
-  "syncOrdersFirst": "پہلے آرڈرز کے صفحے پر {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} آرڈرز سنک کریں",
+  "syncOrdersFirst": "پہلے ترتیبات میں {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} آرڈرز سنک کریں",
   "tooManyAttempts": "بہت زیادہ کوششیں۔ ایک منٹ بعد دوبارہ کوشش کریں۔",
   "tooManyLabelVariations": "کم پروڈکٹس منتخب کریں۔ ایک ڈاؤن لوڈ میں زیادہ سے زیادہ 1,000 ویریئنٹس آ سکتے ہیں۔",
   "tooManyMessages": "بہت زیادہ پیغامات۔ چند منٹ بعد دوبارہ کوشش کریں۔",

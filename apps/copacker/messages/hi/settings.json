@@ -135,7 +135,25 @@
     },
     "storeGroup": "स्टोर",
     "advertisingGroup": "विज्ञापन",
-    "manage": "प्रबंधित करें"
+    "manage": "प्रबंधित करें",
+    "marketplaceCount": "{count} मार्केटप्लेस",
+    "panel": {
+      "syncTitle": "डेटा सिंक",
+      "preferencesTitle": "आयात प्राथमिकताएँ",
+      "syncAction": "{label} सिंक करें",
+      "queuedHint": "शुरू होने की प्रतीक्षा में।",
+      "syncingHint": "यह विंडो बंद करने के बाद भी अपडेट जारी रहेंगे।",
+      "status": {
+        "queued": "कतार में",
+        "syncing": "सिंक हो रहा है",
+        "synced": "सिंक हो गया",
+        "failed": "ध्यान दें",
+        "idle": "सिंक नहीं हुआ",
+        "loading": "जाँच हो रही है",
+        "unavailable": "स्थिति उपलब्ध नहीं",
+        "scheduled": "दैनिक सिंक चालू है"
+      }
+    }
   },
   "excludedTags": {
     "title": "बाहर रखे गए ऑर्डर टैग",
@@ -250,6 +268,11 @@
     "checking": "जाँच जारी है…",
     "statusUnavailable": "स्थिति उपलब्ध नहीं",
     "summary": "विज्ञापन खर्च",
-    "requiresStore": "पहले अपना Amazon स्टोर कनेक्ट करें।"
+    "requiresStore": "पहले अपना Amazon स्टोर कनेक्ट करें।",
+    "ready": "दैनिक सिंक चालू है",
+    "spendTitle": "विज्ञापन खर्च",
+    "connectionTitle": "कनेक्शन",
+    "disconnectTitle": "Amazon Ads डिस्कनेक्ट करें?",
+    "disconnectDescription": "नए विज्ञापन खर्च का सिंक बंद हो जाएगा। पहले से आयात किए गए खर्च बने रहेंगे।"
   }
 }

@@ -103,8 +103,8 @@ notification of a new order starts another, and the daily reconciliation reads t
 - The eBay Developers Program account (`acraswell00`) has one production keyset, "Copacker" (App ID
   `AndrewCr-Copacker-PRD-bc60a5fe0-8ce7ab14`). eBay allows one production keyset per account without a support ticket,
   so local development shares its keys. A refresh token works from any environment with the same keys. eBay only returns
-  sign-in to an HTTPS address, so a seller connects through a deployed environment; local development can't complete
-  sign-in on `http://localhost`.
+  sign-in to an HTTPS address. Local sign-in uses the trusted Portless domain and a dedicated RuName; it cannot use
+  `http://localhost` or a deployed environment's RuName.
 - Copacker needs `EBAY_CLIENT_ID` (App ID), `EBAY_CLIENT_SECRET` (Cert ID) and `EBAY_RU_NAME` (the redirect URL
   name). Without all three, Settings shows eBay as coming soon.
 - Each environment has its own RuName on the one keyset:
@@ -112,8 +112,15 @@ notification of a new order starts another, and the daily reconciliation reads t
     `https://copacker.ai/api/connections/ebay`, declined to `https://copacker.ai/settings#integrations`.
   - Staging: `Andrew_Craswell-AndrewCr-Copack-vwdjyakxd`, returning to
     `https://staging.copacker.ai/api/connections/ebay`, declined to `https://staging.copacker.ai/settings#integrations`.
+  - Main local checkout: `Andrew_Craswell-AndrewCr-Copack-kmslwycva` (display title Copacker Local), returning to
+    `https://main.local.copacker.ai/api/connections/ebay`, declined to
+    `https://main.local.copacker.ai/settings#integrations`. Registered October 15, 2026. Local `.env` uses this RuName.
+    A worktree needs its own RuName with the exact origin printed by `dev:urls`; these registrations do not use wildcards.
   The portal's "OAuth Enabled" choice (one RuName at a time) only picks the RuName its own token tool uses; eBay's
   sign-in accepts any of the keyset's RuNames. Production's stays selected.
+- Changing `APP_URL` does not override the callback stored against an eBay RuName. Using production's RuName locally
+  sends the response to production, where the local connection request cannot be found. Set the matching `EBAY_RU_NAME`,
+  restart the local server, then start a fresh connection from Settings.
 - Staging has the keys and its RuName but not `EBAY_VERIFICATION_TOKEN` or `EBAY_EVENT_BUS`, so it never registers a
   destination or subscribes: notifications go to production only, and staging's orders come from Sync now and the
   daily reconciliation. Sign-in asks for `sell.fulfillment.readonly` (orders),
