@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"
 import type { Place, World } from "./journey-world"
 import { through } from "./scroll"
-import { quiet } from "./site"
+import { quiet } from "./site-styles"
 
 // One purchase order's trip from the supplier's factory, through customs, to Amazon and the seller's own warehouse,
 // played by scroll over a 3D diorama (./journey-world). The section is tall and its view is pinned, so scrolling moves

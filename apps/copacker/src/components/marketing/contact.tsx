@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils"
 import { ContactForm } from "./contact-form"
 import { DotField } from "./dot-field"
 import { Film } from "./film"
-import { JoinWaitlist, lift, lit, rise, Site, stage } from "./site"
+import { JoinWaitlist, Site } from "./site"
+import { lift, lit, rise, stage } from "./site-styles"
 import "./stylesheet"
 
 // The contact page, in the home page's language: a dark stage with the settled field of points, and the form set across

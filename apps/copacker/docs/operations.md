@@ -66,11 +66,14 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 - The flag is created once, in the dashboard (Create feature flag, slug `maintenance`). WorkOS creates flags in every
   environment, each with its own setting. **Some** takes no one down: Copacker reads the flag for everyone at once.
-- The page skips sign-in and the database, so it works while Postgres is down. If WorkOS can't be reached, Copacker
-  stays up.
+- The page skips sign-in and the database, so it works while Postgres is down. The flag lookup uses WorkOS's public
+  feature-flag API with a two-second deadline and a ten-second cache. No background poller runs in the web process.
+  If WorkOS cannot be reached on a cold process, Copacker stays up; after a successful read it retains that setting
+  during an outage and retries on the next request after ten seconds. A deleted flag means maintenance is off.
 - `/maintenance` is a 404 while Copacker is up. The worker keeps running; stop it in Railway if the work needs it idle.
-- The rules are in `apps/copacker/src/server/maintenance.ts`. `next.config.ts` shows the page for requests the proxy
-  marks, since a rewrite from the proxy itself leaves the app when the server's hostname is 127.0.0.1.
+- The rules are in `apps/copacker/src/server/maintenance.ts`. The current Next boundary is `server/next-maintenance.ts`;
+  `next.config.ts` shows the page for requests the proxy marks. The Start migration uses invocation context and Router
+  rewriting before authentication, with the same screen and API policy. See the [migration evidence](specs/platform-migration/compatibility.md).
 
 ## Releases
 

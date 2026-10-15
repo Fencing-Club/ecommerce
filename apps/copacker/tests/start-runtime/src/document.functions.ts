@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestUrl } from "@tanstack/react-start/server"
 import { localization, resolveLocalization } from "@/server/localization"
+import { maintenanceActive } from "@/server/maintenance"
 
 export const readDocument = createServerFn().handler(async () => {
   const resolved = await localization()
@@ -15,5 +16,5 @@ export const readDocument = createServerFn().handler(async () => {
     timeZone,
     messages: { auth, common, validation }
   } = config
-  return { locale, timeZone, messages: { auth, common, validation } }
+  return { locale, timeZone, messages: { auth, common, validation }, maintenance: maintenanceActive() }
 })

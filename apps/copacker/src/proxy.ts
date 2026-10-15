@@ -1,6 +1,7 @@
 import { authkitProxy } from "@workos-inc/authkit-nextjs"
 import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server"
-import { closedForMaintenance, maintenanceResponse, underMaintenance } from "@/server/maintenance"
+import { closedForMaintenance, underMaintenance } from "@/server/maintenance"
+import { maintenanceResponse } from "@/server/next-maintenance"
 import { resumeCookie, returnPath, siteUrlFor } from "@/server/security"
 const auth = authkitProxy()
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {

@@ -75,11 +75,11 @@ The real partners/product-import consumers still need their complete acceptance 
 ## Verified checks
 
 The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
-unit/Storybook tests with coverage, including 2,333 Copacker tests across 287 files after the private storage boundary was
-added. This verifies the current compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
+unit/Storybook tests with coverage, including 2,348 Copacker tests across 287 files after private storage and maintenance
+were migrated. This verifies the current compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
 gate V01.
 
-The current Next production build also passed after the private download service and storage transport changed. Integrated-browser
+The current Next production build also passed after the private download and maintenance boundaries changed. Integrated-browser
 checks covered buyer desktop/mobile layouts, date/channel controls by keyboard, a member without stores/admin setup, and the
 Urdu supplier overview without horizontal overflow. The Urdu case now has an automated story. An extra live production
 Next smoke-server launch was rejected by automatic approval review without a reason, so that additional check remains
@@ -174,8 +174,39 @@ the exact underlying cause is not established. Local CSRF checks therefore send 
 and keep normal connections. No assertion retries or production request-draining workaround were added.
 
 These routes run in the protected compatibility Worker, not the application's production entrypoint. Complete provider
-OAuth, email delivery/verification/reset, invitation/onboarding, maintenance, portal navigation and private downloads
+OAuth, email delivery/verification/reset, invitation/onboarding, portal navigation and app-level private downloads
 remain required before cutover.
+
+## Maintenance request boundary
+
+The canonical maintenance lookup now uses WorkOS's [public flag API](https://workos.com/docs/reference/feature-flags/flag)
+with a two-second deadline covering headers and body, no retries, and a ten-second cache of completed global values.
+It preserves no-context evaluation: both `enabled` and `default_value` must be true, so targeted "Some" rules do not
+close the service. A cold failure leaves the service available; a warm failure retains the last known setting. Deleted
+flags turn maintenance off. Each overlapping request owns its fetch, later observations win, and no process poller or
+pending request promise is shared between Worker invocations. Credential changes discard the previous environment's
+snapshot. Provider error bodies and credentials are not logged.
+
+The Next proxy uses the same policy through its remaining rewrite boundary. Start handles maintenance before creating
+an authentication context or reading the database. HTML and HEAD requests return 503 with Retry-After and no-store;
+API calls and Start server functions receive translated JSON. Visitor home, marketing/forms, health, polling and static
+assets remain exempt. Internal invocation state controls the maintenance route; a caller-supplied maintenance header
+cannot activate it. The canonical screen uses standalone translations and ordinary document links, with marketing
+style constants separated from Next components.
+
+The Start router uses [bidirectional URL rewriting](https://tanstack.com/router/latest/docs/guide/url-rewrites) to render
+the maintenance route while retaining the requested address. Integrated-browser acceptance found that rewriting the
+Request itself broke hydration, and an input-only rewrite triggered a canonical redirect. The final mapping preserves
+the same public URL on server and client. English desktop and Urdu 390-pixel mobile acceptance passed, with keyboard
+access to contact, no horizontal overflow, and no errors in the fresh browser tab. Turning off the local fixture flag
+automatically reloaded the original login URL, including its return-path query. An Urdu story covers the shared screen.
+
+Twenty-two unit cases cover the cache/deadline/outage policy, concurrent observations, environment changes, route and
+cookie matching, translated errors, HEAD, invocation isolation and URL round trips. Local and deployed HTTP checks
+passed English/Urdu HTML, API/server-function denial, polling, visitor exemption and forged-header rejection. A read-only
+WorkOS SDK lookup matched the deployed poll endpoint. Fixture-only forcing remains behind its bearer gate; no live
+WorkOS flag was changed. The first request sequence immediately after deployment returned a transient 404; direct checks
+after propagation and the subsequent complete run passed without assertion retries.
 
 ## Private storage and document download boundary
 
@@ -230,7 +261,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
 | Private R2 binding | `DOCUMENTS`, bucket `copacker-staging-private` in WNAM; managed public access disabled; no custom domains |
-| Tested Worker version | `d5c834c6-cc54-469c-b7cd-4999f9dd40c5` |
+| Tested Worker version | `d607f3d9-ccf1-4f9d-adcf-351c142f4530` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,

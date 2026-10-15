@@ -1,9 +1,10 @@
+"use client"
+
 import { Wrench } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { DotField } from "@/components/marketing/dot-field"
-import { lift, lit, rise, stage } from "@/components/marketing/site"
+import { lift, lit, rise, stage } from "@/components/marketing/site-styles"
 import { ReloadWhenBack } from "@/components/reload-when-back"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -46,9 +47,9 @@ export function Maintenance() {
         <div className="absolute inset-x-0 bottom-0 h-3/5 bg-[radial-gradient(ellipse_55%_70%_at_50%_100%,rgb(255_122_46/0.26),rgb(255_122_46/0.07)_55%,transparent)]" />
       </div>
       <header className="flex h-16 shrink-0 items-center px-6">
-        <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <a href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark />
-        </Link>
+        </a>
       </header>
       <main id="main-content" className="flex flex-1 flex-col items-center justify-center px-6 pt-6 pb-24 text-center">
         <Emblem />
@@ -92,7 +93,7 @@ export function Maintenance() {
             className={cn("mt-10 h-11 rounded-xl px-5 text-[0.9375rem]", rise)}
             style={{ animationDelay: "480ms" }}
             nativeButton={false}
-            render={<Link href="/contact" />}
+            render={<a href="/contact" aria-label={t("contact")} />}
           >
             {t("contact")}
           </Button>

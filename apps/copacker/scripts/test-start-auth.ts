@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { createHmac } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { parseEnv } from "node:util"
-import { WorkOS } from "@workos-inc/node"
+import { NotFoundException, WorkOS } from "@workos-inc/node"
 import { sessionEncryption, type Session } from "@workos/authkit-session"
 import { PDFDocument } from "pdf-lib"
 import { z } from "zod"
@@ -71,6 +71,18 @@ async function expectIdentity(response: Response, expected: string | null) {
 }
 
 try {
+  const flag = await workos.featureFlags.getFeatureFlag("maintenance").catch((error: unknown) => {
+    if (error instanceof NotFoundException) {
+      return null
+    }
+    throw error
+  })
+  const maintenance = await fetch(`${target.origin}/api/maintenance`, {
+    headers: { Authorization: `Bearer ${probeToken}`, "x-probe-maintenance": "live" },
+    signal: AbortSignal.timeout(30_000)
+  })
+  assert.equal(maintenance.status, 200)
+  assert.deepEqual(await maintenance.json(), { active: Boolean(flag?.enabled && flag.defaultValue) })
   await expectIdentity(await request("GET"), null)
   const login = await request(
     "POST",
@@ -180,7 +192,7 @@ try {
   await expectIdentity(rejected, null)
   assert(cookieFrom(rejected) === "migration-session=", "Rejected sessions must clear their cookie")
   process.stdout.write(
-    "Deployed WorkOS test-account checks passed: login, JWT validation, workspace authorization, private R2 downloads and withdrawal races, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
+    "Deployed WorkOS test-account checks passed: maintenance flag parity, login, JWT validation, workspace authorization, private R2 downloads and withdrawal races, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
   )
 } finally {
   for (const sessionId of sessions) {

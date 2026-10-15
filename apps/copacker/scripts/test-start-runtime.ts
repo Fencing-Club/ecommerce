@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url"
 import { parseEnv } from "node:util"
 import { createFormatter, createTranslator } from "use-intl"
 import { createBuilder, preview } from "vite"
+import { z } from "zod"
 import { direction, locales } from "../src/i18n/locales"
 import { loadMessages } from "../src/i18n/messages"
 
@@ -54,6 +55,53 @@ try {
   const invalidHtml = await invalid.text()
   assert(/data-testid="partner">closed</.test(invalidHtml), "Invalid partner selection must close the sheet")
   assert(/data-testid="import">closed</.test(invalidHtml), "Invalid import selection must close the dialog")
+
+  const maintenanceHeaders = { "x-probe-maintenance": "on", Cookie: "migration-session=invalid" }
+  for (const locale of ["en", "ur"] as const) {
+    const messages = await loadMessages(locale)
+    const unavailable = await request("/orders/unknown?private=not-in-markup", {
+      headers: { ...maintenanceHeaders, "Accept-Language": locale }
+    })
+    assert.equal(unavailable.status, 503)
+    assert.equal(unavailable.headers.get("Retry-After"), "120")
+    assert.match(unavailable.headers.get("Cache-Control") ?? "", /no-store/)
+    assert.equal(unavailable.headers.getSetCookie().length, 0, "Maintenance must skip session validation/refresh")
+    assert.equal(unavailable.headers.get("Location"), null)
+    const markup = await unavailable.text()
+    assert(markup.includes(`<html lang="${locale}" dir="${direction(locale)}"`))
+    assert(markup.includes('data-maintenance="true"'))
+    assert(markup.includes(messages.common.pages.maintenance.text))
+    assert(!markup.includes("not-in-markup"))
+    const api = await request("/api/action", {
+      method: "POST",
+      headers: { ...maintenanceHeaders, "Accept-Language": locale }
+    })
+    assert.equal(api.status, 503)
+    assert.deepEqual(await api.json(), { error: messages.errors.underMaintenance })
+  }
+  const unavailableHead = await request("/orders", { method: "HEAD", headers: maintenanceHeaders })
+  assert.equal(unavailableHead.status, 503)
+  assert.equal(await unavailableHead.text(), "")
+  const serverFn = await request("/_serverFn/unknown", { headers: maintenanceHeaders })
+  assert.equal(serverFn.status, 503)
+  assert.match(serverFn.headers.get("content-type") ?? "", /application\/json/)
+  await serverFn.body?.cancel()
+  const poll = await request("/api/maintenance", { headers: maintenanceHeaders })
+  assert.equal(poll.status, 200)
+  assert.deepEqual(await poll.json(), { active: true })
+  const recovered = await request("/api/maintenance")
+  assert.deepEqual(await recovered.json(), { active: false })
+  const forged = await request("/maintenance", { headers: { "x-copacker-maintenance": "1" } })
+  assert.equal(forged.status, 404, "The maintenance page must require internal context")
+  await forged.body?.cancel()
+  const visitor = await request("/", { headers: { "x-probe-maintenance": "on" } })
+  assert.equal(visitor.status, 200, "Maintenance must keep the visitor home available")
+  await visitor.body?.cancel()
+  if (remote) {
+    const liveFlag = await request("/api/maintenance", { headers: { "x-probe-maintenance": "live" } })
+    assert.equal(liveFlag.status, 200)
+    z.object({ active: z.boolean() }).parse(await liveFlag.json())
+  }
 
   const foreign = await request("/probe", { method: "POST", headers: { Origin: "https://foreign.example" } })
   assert.equal(foreign.status, 403)
@@ -250,7 +298,7 @@ try {
     })
   )
   process.stdout.write(
-    "Start/Workers runtime passed: SSR, auth screens/actions, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, private R2 storage, PDF, crypto and concurrent PostgreSQL.\n"
+    "Start/Workers runtime passed: SSR, auth screens/actions, maintenance responses, RTL, nuqs direct links, concurrent localization in all nine languages, CSRF, custom OAuth initiation/state rejection, session storage, cookies, private R2 storage, PDF, crypto and concurrent PostgreSQL.\n"
   )
 } finally {
   await server?.close()

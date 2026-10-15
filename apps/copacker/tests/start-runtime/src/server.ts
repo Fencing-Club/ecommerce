@@ -4,6 +4,8 @@ import handler from "@tanstack/react-start/server-entry"
 import { timeZoneCookie } from "../../../src/lib/time-zone"
 import { withAuthentication } from "../../../src/server/auth-session"
 import { resolveLocalization, withLocalization } from "../../../src/server/localization"
+import { closedForMaintenance, underMaintenance } from "../../../src/server/maintenance"
+import { maintenanceResponse } from "../../../src/server/start-maintenance"
 
 export default {
   async fetch(request, env) {
@@ -24,13 +26,20 @@ export default {
     }
     // The probe follows browser preferences. Production routes must also supply the authenticated profile's locale.
     // Cookie access is deferred until a Start handler has established its request event.
+    // Force only the isolated fixture for acceptance. "live" reads the test environment's real flag without changing
+    // it; ordinary probes stay independent of that dashboard setting. No production entry point accepts this header.
+    const mode = request.headers.get("x-probe-maintenance")
+    const active = mode === "live" ? await underMaintenance() : mode === "on"
     const response = await withLocalization(
       () =>
         resolveLocalization({
           acceptLanguage: request.headers.get("accept-language"),
           timeZone: getCookie(timeZoneCookie)
         }),
-      () => withAuthentication(request, () => handler.fetch(request))
+      () =>
+        active && closedForMaintenance(request)
+          ? maintenanceResponse(request, (rewritten) => handler.fetch(rewritten))
+          : withAuthentication(request, () => handler.fetch(request))
     )
     const headers = new Headers(response.headers)
     headers.set("Cache-Control", "private, no-store")

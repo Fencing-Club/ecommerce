@@ -15,6 +15,7 @@ import { Route as CallbackRouteImport } from './routes/callback'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LocalizationRouteImport } from './routes/localization'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MaintenanceRouteImport } from './routes/maintenance'
 import { Route as PrivateDocumentRouteImport } from './routes/private-document'
 import { Route as ProbeRouteImport } from './routes/probe'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -22,6 +23,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as ApiActionRouteImport } from './routes/api.action'
+import { Route as ApiMaintenanceRouteImport } from './routes/api.maintenance'
 import { Route as LoginProviderRouteImport } from './routes/login.$provider'
 
 const IndexRoute = IndexRouteImport.update({
@@ -52,6 +54,11 @@ const LocalizationRoute = LocalizationRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintenanceRoute = MaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivateDocumentRoute = PrivateDocumentRouteImport.update({
@@ -89,6 +96,11 @@ const ApiActionRoute = ApiActionRouteImport.update({
   path: '/api/action',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMaintenanceRoute = ApiMaintenanceRouteImport.update({
+  id: '/api/maintenance',
+  path: '/api/maintenance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginProviderRoute = LoginProviderRouteImport.update({
   id: '/$provider',
   path: '/$provider',
@@ -102,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/maintenance': typeof MaintenanceRoute
   '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -109,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
   '/api/action': typeof ApiActionRoute
+  '/api/maintenance': typeof ApiMaintenanceRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesByTo {
@@ -118,6 +132,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/maintenance': typeof MaintenanceRoute
   '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -125,6 +140,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
   '/api/action': typeof ApiActionRoute
+  '/api/maintenance': typeof ApiMaintenanceRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRoutesById {
@@ -135,6 +151,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/localization': typeof LocalizationRoute
   '/login': typeof LoginRouteWithChildren
+  '/maintenance': typeof MaintenanceRoute
   '/private-document': typeof PrivateDocumentRoute
   '/probe': typeof ProbeRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -142,6 +159,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/workspace': typeof WorkspaceRoute
   '/api/action': typeof ApiActionRoute
+  '/api/maintenance': typeof ApiMaintenanceRoute
   '/login/$provider': typeof LoginProviderRoute
 }
 export interface FileRouteTypes {
@@ -153,6 +171,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/maintenance'
     | '/private-document'
     | '/probe'
     | '/reset-password'
@@ -160,6 +179,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/workspace'
     | '/api/action'
+    | '/api/maintenance'
     | '/login/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -169,6 +189,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/maintenance'
     | '/private-document'
     | '/probe'
     | '/reset-password'
@@ -176,6 +197,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/workspace'
     | '/api/action'
+    | '/api/maintenance'
     | '/login/$provider'
   id:
     | '__root__'
@@ -185,6 +207,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/localization'
     | '/login'
+    | '/maintenance'
     | '/private-document'
     | '/probe'
     | '/reset-password'
@@ -192,6 +215,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/workspace'
     | '/api/action'
+    | '/api/maintenance'
     | '/login/$provider'
   fileRoutesById: FileRoutesById
 }
@@ -202,6 +226,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LocalizationRoute: typeof LocalizationRoute
   LoginRoute: typeof LoginRouteWithChildren
+  MaintenanceRoute: typeof MaintenanceRoute
   PrivateDocumentRoute: typeof PrivateDocumentRoute
   ProbeRoute: typeof ProbeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -209,6 +234,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   WorkspaceRoute: typeof WorkspaceRoute
   ApiActionRoute: typeof ApiActionRoute
+  ApiMaintenanceRoute: typeof ApiMaintenanceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -253,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maintenance': {
+      id: '/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof MaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/private-document': {
@@ -304,6 +337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiActionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/maintenance': {
+      id: '/api/maintenance'
+      path: '/api/maintenance'
+      fullPath: '/api/maintenance'
+      preLoaderRoute: typeof ApiMaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/$provider': {
       id: '/login/$provider'
       path: '/$provider'
@@ -331,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LocalizationRoute: LocalizationRoute,
   LoginRoute: LoginRouteWithChildren,
+  MaintenanceRoute: MaintenanceRoute,
   PrivateDocumentRoute: PrivateDocumentRoute,
   ProbeRoute: ProbeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -338,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   WorkspaceRoute: WorkspaceRoute,
   ApiActionRoute: ApiActionRoute,
+  ApiMaintenanceRoute: ApiMaintenanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

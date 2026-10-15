@@ -3,7 +3,8 @@ import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { quiet, Site } from "./site"
+import { Site } from "./site"
+import { quiet } from "./site-styles"
 import "./stylesheet"
 
 // The unsubscribe page: one question and one button, then the answer. It sits on the marketing site's paper.

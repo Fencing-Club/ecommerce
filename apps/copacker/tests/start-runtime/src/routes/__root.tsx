@@ -23,10 +23,16 @@ export const Route = createRootRoute({
 })
 
 function RuntimeDocument() {
-  const config = Route.useLoaderData()
+  const { maintenance, ...config } = Route.useLoaderData()
   const fonts = documentFonts(config.locale)
   return (
-    <html lang={config.locale} dir={direction(config.locale)} style={fonts.style} suppressHydrationWarning>
+    <html
+      lang={config.locale}
+      dir={direction(config.locale)}
+      style={fonts.style}
+      data-maintenance={maintenance || undefined}
+      suppressHydrationWarning
+    >
       <head>
         <HeadContent />
         <style>{fonts.css}</style>
