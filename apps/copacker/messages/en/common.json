@@ -73,6 +73,8 @@
     "separator": ", "
   },
   "address": {
+    "findAddress": "Find an address",
+    "lookupUnavailable": "Address search is unavailable. Enter the address below.",
     "country": "Country",
     "chooseCountry": "Choose a country",
     "contactName": "Contact name",

@@ -126,6 +126,7 @@ kept with that partner and change through the partner's commands.
 | shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit, prices. Approves the invoice's changes as the PO's next revision, saves supplier SKUs, and with updateCost writes unit costs to Shopify |
 | shipment.correct | id, reason | Shipments: Edit. Moves the shipment to correction and outdates its documents |
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
+| shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
 | shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
@@ -308,7 +309,7 @@ Avoid wording implying Amazon has agreed to the requested date.
 
 ## Resumable packing
 
-Submitting a PO creates its first packing draft, so the supplier can enter packing at once. `shipment.create` resumes
+Submitting a PO creates one packing draft per Amazon network (one for a warehouse PO), so the supplier can enter packing at once. `shipment.create` resumes
 the editable draft; it creates another shipment only when there is none and unassigned PO quantity remains. Submitted
 shipments reserve quantities; saved drafts don't.
 
@@ -501,6 +502,17 @@ changes the same way.
 
 ## AI document imports
 
+The intake page keeps the PDF attachment, Import action and previous imports in one card. UploadCN handles file
+selection, drops, pasting and validation. Selecting a PDF only stages it locally: the buyer can remove it before
+clicking Import. Upload failures keep the attachment for another attempt. Worker status `running` displays as
+"Processing".
+
+The review keeps source descriptions and matching explanations behind each line's **Source details** action. Money
+inputs show a prefix derived from the order currency and the reader's locale. Empty supplier lists explain how to add
+a supplier without leaving the review. Optional `notes` preserve informational context; `warnings` are reserved for
+unresolved issues needing buyer action. The importer includes non-product charges in `adjustments`, using the printed
+charge total, negative discounts and source pages, without double-counting subtotals or included taxes.
+
 Buyer routes (Orders: Edit) that bind every record and store lookup to the active workspace:
 
 - `POST /api/imports`: multipart `file` PDF, up to 10 MB and 50 pages; returns `202 {id, status: "queued"}` once the
@@ -518,7 +530,7 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
 - `DELETE /api/imports/:id`: cancels by advancing the revision; the source is kept. Saved imports can't be cancelled.
 - `POST /api/imports/:id`: retries a failed import with a fresh revision and job; 409 otherwise.
 - `POST /api/imports/:id/save` `{revision, reviewed: true, supplierId, destination, deliveryId?, via?, reference,
-  dueDate, notes?}`: returns `{id, redirect: "/orders/:id"}`. Every row needs a resolved variant, whole-piece
+  dueDate?, notes?}`: returns `{id, redirect: "/orders/:id"}`. Every row needs a resolved variant, whole-piece
   quantities, a valid set conversion and prices representable in minor units; known totals must reconcile. The server
   re-fetches Shopify and Amazon identities and rejects changed store connections. The import and the new draft PO are
   linked in one transaction; saving again returns the same PO. Saving sends no email and creates no Amazon shipment.
@@ -526,6 +538,11 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
 The proposal schema is `src/server/import-proposal.ts`. It keeps source units and prices, product candidates, unresolved
 values and non-product charges. Source SKU stays extraction evidence; it never replaces the canonical buyer or supplier
 SKU. Processing runs in the worker with the prompt's `production` label.
+
+Catalog search accepts up to 50 SKU or description queries per call and returns compact identity matches, with full
+variant details fetched only when needed. This avoids one model round trip per line on large orders. The model has
+32,000 output tokens for proposals of up to 150 lines, a cumulative 600,000-token budget and an eight-minute deadline.
+Catalog access remains read-only and scoped to the import's pinned store; candidates must have been returned by a tool.
 
 Each import attempt sends Langfuse a root observation and bounded generation and catalog-tool child observations.
 Children carry only timing, fixed operation names and status; document content, model responses, tool arguments and

@@ -121,7 +121,12 @@
     "charges": "Gebühren",
     "documentTotal": "Dokumentsumme",
     "overDocumentTotal": "{amount} über der Dokumentsumme",
-    "underDocumentTotal": "{amount} unter der Dokumentsumme"
+    "underDocumentTotal": "{amount} unter der Dokumentsumme",
+    "sourceDetails": "Quelldetails",
+    "matchDetails": "Zuordnungsdetails",
+    "importNotes": "Importnotizen",
+    "noSuppliers": "In diesem Arbeitsbereich gibt es noch keine Lieferanten. Fügen Sie einen hinzu, um fortzufahren.",
+    "addSupplier": "Lieferant hinzufügen"
   },
   "builder": {
     "newTitle": "Neue Bestellung",
@@ -277,7 +282,9 @@
       "forwarderShipped": "{forwarder} hat die Ware versendet: {tracking}",
       "packingReady": "Packliste gesendet; versandbereit",
       "invoiceEntered": "Rechnung mit Änderungen an der Bestellung erfasst",
-      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet"
+      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet",
+      "existingAwdLinked": "Vorhandene AWD-Sendung {shipmentId} verknüpft",
+      "existingAwdUnlinked": "Verknüpfung zur vorhandenen AWD-Sendung entfernt"
     }
   },
   "actions": {
@@ -330,7 +337,7 @@
     },
     "statuses": {
       "queued": "Wartet",
-      "running": "Wird gelesen",
+      "running": "Wird verarbeitet",
       "review": "Bereit zur Prüfung",
       "failed": "Fehlgeschlagen",
       "cancelled": "Abgebrochen",
@@ -393,7 +400,9 @@
     "addAddress": "Adresse hinzufügen",
     "pickupAddress": "Abholadresse",
     "otherAddress": "Andere Adresse",
-    "readyForPickup": "Abholbereit"
+    "readyForPickup": "Abholbereit",
+    "addCartonProduct": "Produkt zum Karton hinzufügen",
+    "removeCartonProduct": "Produkt {number} aus dem Karton entfernen"
   },
   "paymentTerms": {
     "net7": "7 Tage netto",

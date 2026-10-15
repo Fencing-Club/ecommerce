@@ -29,6 +29,7 @@ const provider = vi.hoisted(() => ({
     eligibility: vi.fn<(...args: never[]) => Promise<unknown>>(),
     create: vi.fn<(...args: never[]) => Promise<unknown>>(),
     order: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    awdInboundShipment: vi.fn<(...args: never[]) => Promise<unknown>>(),
     confirm: vi.fn<(...args: never[]) => Promise<unknown>>(),
     labels: vi.fn<(...args: never[]) => Promise<unknown>>(),
     listings: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -135,6 +136,8 @@ import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
 import { profileFor } from "../src/server/auth"
+import { linkExistingAwd } from "../src/server/awd-link"
+import { checkLinkedAwd } from "../src/server/awd-packing"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
 import { startFirstSync } from "../src/server/first-sync"
 import {
@@ -1721,12 +1724,14 @@ describe("Postgres workflow and authorization", () => {
       objectKey: `private/${id}`,
       filename: "invoice.pdf",
       shopifyDomain: "test.myshopify.com",
-      status: "failed"
+      status: "failed",
+      promptVersion: 1
     })
     const params = { params: Promise.resolve({ id }) }
     const origin = process.env.APP_URL ?? "http://localhost:3000"
     const request = () => new Request(`${origin}/api/imports/${id}`, { method: "POST", headers: { origin } })
     expect((await retryImport(request(), params)).status).toBe(202)
+    expect((await database.select().from(tables.poImports))[0]?.promptVersion).toBeNull()
     expect((await retryImport(request(), params)).status).toBe(409)
     expect(await database.select().from(tables.jobs)).toHaveLength(1)
     expect((await cancelImport(request(), params)).status).toBe(200)
@@ -1927,6 +1932,104 @@ async function post(name: string, data: Record<string, unknown>) {
     })
   )
 }
+
+describe("linking existing AWD shipments", () => {
+  beforeEach(orderConnections)
+
+  async function linkedDraft() {
+    const draft = await preparation()
+    await database.update(tables.shipments).set({ amazonNetwork: "awd_us" }).where(eq(tables.shipments.id, draft.id))
+    const request = buildAwdRequest(orderData, draft.packing, "created-outside-copacker")
+    const remote = {
+      shipmentId: "STAR-EXTERNAL",
+      orderId: "existing-order",
+      shipmentStatus: "CREATED",
+      originAddress: request.originAddress,
+      destinationAddress: { countryCode: "US", postalCode: "92344" },
+      shipmentContainerQuantities: request.packagesToInbound
+    }
+    provider.api.awdInboundShipment.mockResolvedValue(remote)
+    return { ...draft, remote }
+  }
+
+  it("links an external shipment and retrieves labels without create, eligibility or confirmation", async () => {
+    const draft = await linkedDraft()
+    await linkExistingAwd(buyer, draft.id, 1, "star-external")
+    await submitPacking(supplier, draft.id, draft.packing, 2)
+    provider.api.labels.mockResolvedValue({ labelStatus: "GENERATING" })
+    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
+      "labels are generating"
+    )
+    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
+      "labels are generating"
+    )
+    expect(provider.api.labels).toHaveBeenCalledWith("STAR-EXTERNAL")
+    expect(provider.api.create).not.toHaveBeenCalled()
+    expect(provider.api.eligibility).not.toHaveBeenCalled()
+    expect(provider.api.confirm).not.toHaveBeenCalled()
+    expect(provider.api.prepDetails).not.toHaveBeenCalled()
+    const [row] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
+    expect(row).toMatchObject({
+      linkedAmazonShipmentId: "STAR-EXTERNAL",
+      amazonOrderId: "existing-order",
+      amazonShipmentId: "STAR-EXTERNAL"
+    })
+  })
+
+  it("rejects suppliers, another workspace, stale revisions and duplicate links", async () => {
+    const draft = await linkedDraft()
+    await expect(linkExistingAwd(supplier, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow(/buyer|Buyer|Forbidden/)
+    await expect(linkExistingAwd(actor("buyer", otherId), draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow(
+      /404|not.found/i
+    )
+    await expect(linkExistingAwd(buyer, draft.id, 2, "STAR-EXTERNAL")).rejects.toThrow("changed")
+    await linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")
+    const second = await linkedDraft()
+    await expect(linkExistingAwd(buyer, second.id, 1, "STAR-EXTERNAL")).rejects.toThrow("already linked")
+    await linkExistingAwd(buyer, draft.id, 2, null)
+    await expect(linkExistingAwd(buyer, second.id, 1, "STAR-EXTERNAL")).resolves.toEqual({ revision: 2 })
+  })
+
+  it("rejects shipped shipments and SKU or carton discrepancies", async () => {
+    const draft = await linkedDraft()
+    provider.api.awdInboundShipment.mockResolvedValue({ ...draft.remote, shipmentStatus: "CANCELLED" })
+    await expect(linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow("has not shipped")
+    const different = structuredClone(draft.remote)
+    different.shipmentContainerQuantities[0]!.distributionPackage.contents.products[0]!.sku = "other-sku"
+    provider.api.awdInboundShipment.mockResolvedValue(different)
+    await expect(linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow("outside this AWD order")
+    expect(() => checkLinkedAwd(different, orderData, draft.packing)).toThrow("Cartons differ")
+    const overweight = structuredClone(draft.remote)
+    overweight.shipmentContainerQuantities[0]!.distributionPackage.measurements.weight.weight++
+    expect(() => checkLinkedAwd(overweight, orderData, draft.packing)).toThrow("Cartons differ")
+    expect(() =>
+      checkLinkedAwd(
+        { ...draft.remote, originAddress: { ...draft.remote.originAddress, postalCode: "other" } },
+        orderData,
+        draft.packing
+      )
+    ).toThrow("pickup address differs")
+    expect(() => checkLinkedAwd(draft.remote, orderData, draft.packing)).not.toThrow()
+  })
+
+  it("keeps the link through corrections and never cancels the external Amazon order", async () => {
+    const draft = await linkedDraft()
+    await linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")
+    await database
+      .update(tables.shipments)
+      .set({ status: "waiting_labels", operation: "complete", amazonOrderId: "existing-order", packing: draft.packing })
+      .where(eq(tables.shipments.id, draft.id))
+    await correctShipment(buyer, draft.id, "Fix the local packing")
+    const [row] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
+    expect(row).toMatchObject({
+      status: "correction",
+      operation: "none",
+      linkedAmazonShipmentId: "STAR-EXTERNAL",
+      amazonOrderId: null
+    })
+    expect(provider.api.cancel).not.toHaveBeenCalled()
+  })
+})
 
 describe("durable shipment worker recovery", () => {
   it("resumes confirmation polling without creating a second Amazon order", async () => {
@@ -3601,7 +3704,13 @@ describe("PO to a released FBA shipment", () => {
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    // An already-saved draft from before drafts were assigned a network at PO submission.
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, orderId))
+    const [draft] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: data })
+      .returning()
+    const shipmentId = draft!.id
     const invoice = await uploadPdf("invoice", shipmentId)
     const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
     const packing = packingSchema.parse({
@@ -3681,7 +3790,13 @@ describe("PO to a released FBA shipment", () => {
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    // An already-saved draft from before drafts were assigned a network at PO submission.
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, orderId))
+    const [draft] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: data })
+      .returning()
+    const shipmentId = draft!.id
     const invoice = await uploadPdf("invoice", shipmentId)
     const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
     const packing = packingSchema.parse({
@@ -3780,6 +3895,24 @@ describe("PO to a released FBA shipment", () => {
 })
 
 describe("fluid packing handoff", () => {
+  it("starts independent AWD and FBA drafts and prevents packing a product into the wrong network", async () => {
+    const fbaItem = { ...orderData.items[0]!, id: randomUUID(), buyerSku: "foil-fba", amazonNetwork: "fba" as const }
+    const data = { ...orderData, items: [...orderData.items, fbaItem] }
+    await database.update(tables.orders).set({ status: "draft", data })
+    await submitOrder(buyer, orderId, 1)
+    const drafts = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
+    expect(drafts.map((row) => row.amazonNetwork).sort()).toEqual(["awd_us", "fba"])
+    const awd = drafts.find((row) => row.amazonNetwork === "awd_us")!
+    const prepared = await preparation()
+    const wrong = {
+      ...prepared.packing,
+      cartons: prepared.packing.cartons.map((carton) => ({ ...carton, items: [{ itemId: fbaItem.id, pieces: 160 }] }))
+    }
+    await expect(submitPacking(supplier, awd.id, wrong, 1)).rejects.toThrow(
+      "Pack only products assigned to this shipment"
+    )
+    expect(provider.api.create).not.toHaveBeenCalled()
+  })
   it("starts a packing draft with PO submission and resumes it on repeated create", async () => {
     await database.update(tables.orders).set({ status: "draft" })
     const submitted = await submitOrder(buyer, orderId, 1)
@@ -4036,7 +4169,7 @@ describe("import worker", () => {
   it("uses pinned tenant accounts and supplier SKU matching, retaining prompt version and usage", async () => {
     const t = await setup()
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "supplier-1" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1"] }))
       .mockResolvedValueOnce(call("get_shopify_variants", { ids: [orderData.items[0]!.variantId] }))
       .mockResolvedValueOnce(call("search_amazon_listings", { skus: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
@@ -4050,12 +4183,34 @@ describe("import worker", () => {
   })
   it("rejects model attempts to choose another account before a catalog call", async () => {
     const t = await setup()
-    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { query: "cord", orgId: otherId }))
+    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"], orgId: otherId }))
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow(
       "Unrecognized key"
     )
     expect(t.catalogPage).not.toHaveBeenCalled()
     expect(await t.record()).toMatchObject({ status: "failed", proposal: null })
+  })
+  it("matches multiple document SKUs in one lookup without repeating full catalog records", async () => {
+    const t = await setup()
+    t.fetcher
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1", "foil-2", "missing"] }))
+      .mockImplementationOnce(async (_url, init) => {
+        const sent = JSON.parse(String(init?.body))
+        const result = JSON.parse(sent.messages.at(-1).content)
+        expect(result.searches.map((search: { results: unknown[] }) => search.results.length)).toEqual([1, 1, 0])
+        expect(result.searches[0].results[0]).toMatchObject({
+          id: orderData.items[0]!.variantId,
+          sku: "foil-2",
+          supplierSku: "supplier-1",
+          product: "Foil cord",
+          variant: "Two-pack"
+        })
+        expect(result.searches[0].results[0]).not.toHaveProperty("inventoryItem")
+        return call("finish_import", t.proposal)
+      })
+    await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
+    expect(t.catalogPage).toHaveBeenCalledTimes(1)
+    expect(await t.record()).toMatchObject({ status: "review" })
   })
   it("does not resurrect a cancelled import when a provider response arrives late", async () => {
     const t = await setup()
@@ -4064,7 +4219,7 @@ describe("import worker", () => {
         .update(tables.poImports)
         .set({ status: "cancelled", revision: 2 })
         .where(eq(tables.poImports.id, t.id))
-      return call("search_shopify_products", { query: "cord" })
+      return call("search_shopify_products", { queries: ["cord"] })
     })
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("cancelled")
     expect(await t.record()).toMatchObject({ status: "cancelled", revision: 2, proposal: null })
@@ -4076,7 +4231,7 @@ describe("import worker", () => {
     expect(t.fetcher).not.toHaveBeenCalled()
     await database.update(tables.poImports).set({ promptVersion: 7 }).where(eq(tables.poImports.id, t.id))
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "foil-2" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
     await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
     expect(t.fetcher.mock.calls[0]![0]).toBe(
@@ -4087,7 +4242,7 @@ describe("import worker", () => {
   it("fails a stalled catalog cursor instead of looping or accepting incomplete identities", async () => {
     const t = await setup()
     t.catalogPage.mockResolvedValue({ nodes: [], pageInfo: { hasNextPage: true, endCursor: null } })
-    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { query: "cord" }))
+    t.fetcher.mockResolvedValueOnce(call("search_shopify_products", { queries: ["cord"] }))
     await expect(importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())).rejects.toThrow("pagination")
     expect(t.catalogPage).toHaveBeenCalledTimes(1)
     expect(await t.record()).toMatchObject({ status: "failed", proposal: null })
@@ -4110,12 +4265,12 @@ describe("import worker", () => {
       pageInfo: { hasNextPage: false, endCursor: null }
     })
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "supplier-1" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["supplier-1"] }))
       .mockImplementationOnce(async (_url, init) => {
         const sent = JSON.parse(String(init?.body))
         const results = JSON.parse(sent.messages.at(-1).content)
-        expect(results.results.slice(0, 2).map((v: { id: string }) => v.id)).toEqual(exact.map((v) => v.id))
-        expect(results.matchesTruncated).toBe(true)
+        expect(results.searches[0].results.slice(0, 2).map((v: { id: string }) => v.id)).toEqual(exact.map((v) => v.id))
+        expect(results.searches[0].matchesTruncated).toBe(true)
         expect(results.catalogComplete).toBe(true)
         return call("finish_import", t.proposal)
       })
@@ -4147,7 +4302,7 @@ describe("import worker", () => {
       pageInfo: { hasNextPage: true, endCursor: `page-${++page}` }
     }))
     t.fetcher
-      .mockResolvedValueOnce(call("search_shopify_products", { query: "foil-2" }))
+      .mockResolvedValueOnce(call("search_shopify_products", { queries: ["foil-2"] }))
       .mockResolvedValueOnce(call("finish_import", t.proposal))
     await importJob({ id: t.id, revision: 1 }, async () => Promise.resolve())
     expect(t.catalogPage).toHaveBeenCalledTimes(5)

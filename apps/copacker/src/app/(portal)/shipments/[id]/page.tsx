@@ -58,6 +58,9 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
   const step = workflow.shipments.find((row) => row.id === id)!
   const reserved = reservedPieces(await db().select().from(shipments).where(eq(shipments.orderId, order.id)), id)
   const snapshot = shipment.snapshot ?? order.data
+  const packingOrder = shipment.amazonNetwork
+    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    : order.data
   const [docs, addresses] = await Promise.all([
     db()
       .select()
@@ -199,13 +202,16 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
         <PackingForm
           orderId={order.id}
           shipmentId={id}
+          linkedAmazonShipmentId={
+            isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
+          }
           key={`${id}:${order.revision}`}
           revision={shipment.revision}
           orderRevision={order.revision}
           availablePieces={Object.fromEntries(
             order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
           )}
-          order={prices ? order.data : unpricedOrder(order.data)}
+          order={prices ? packingOrder : unpricedOrder(packingOrder)}
           initial={
             prices
               ? (shipment.packingDraft ?? shipment.packing)

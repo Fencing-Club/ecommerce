@@ -174,6 +174,7 @@ catalogs:
 overrides:
   react: 19.2.7
   react-dom: 19.2.7
+  react-is: 19.2.7
 
 importers:
 
@@ -230,6 +231,9 @@ importers:
       '@repo/copacker-emails':
         specifier: workspace:*
         version: link:../../packages/copacker-emails
+      '@uploadcn/react':
+        specifier: 0.1.1
+        version: 0.1.1(react@19.2.7)
       '@vanilla-extract/css':
         specifier: ^1.21.2
         version: 1.21.2
@@ -257,6 +261,9 @@ importers:
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
+      libphonenumber-js:
+        specifier: ^1.13.15
+        version: 1.13.15
       lucide-react:
         specifier: 1.31.0
         version: 1.31.0(react@19.2.7)
@@ -292,7 +299,7 @@ importers:
         version: 9.3.0(@types/react@19.3.0)(react@19.2.7)(redux@5.0.1)
       recharts:
         specifier: ^3.10.1
-        version: 3.10.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@17.0.2)(react@19.2.7)(redux@5.0.1)
+        version: 3.10.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)
       shadcn:
         specifier: ^4.21.0
         version: 4.21.0(supports-color@8.1.1)(typescript@7.0.1-rc)
@@ -4602,6 +4609,19 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@uploadcn/core@0.1.1':
+    resolution: {integrity: sha512-LItZKguZ8w+pjY46nehTKJgarHzE6tQG6fGBc55VTpohATn/cfWd3uldqo1faDtiJIZz2BzxHlvjZcFEqdke3w==}
+    peerDependencies:
+      tus-js-client: ^4.0.0
+    peerDependenciesMeta:
+      tus-js-client:
+        optional: true
+
+  '@uploadcn/react@0.1.1':
+    resolution: {integrity: sha512-OjSYLqSbZ2f9aR1QK+zIwbHcjdaYItZTZKw5eeUnOQ30WqkJEWjYKcwaKB6AYxdwOv1TzJhuisBwBM6BqMueZQ==}
+    peerDependencies:
+      react: 19.2.7
+
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2':
     resolution: {integrity: sha512-MeDWGICAF9zA/OZLOKwhoRlsUW+fiMwnfuOAqFVohL31Agj7Q/RBWAYweqjHLgFBCsdnr6XIfwjJnmb2znEWxw==}
 
@@ -6344,6 +6364,9 @@ packages:
   lefthook@2.1.14:
     resolution: {integrity: sha512-Y9TL1dmpRlIdSp73SJ6bb+xAZ4s2SinGTK3pgC9PRWMSjMr2iOfowPGnlSOfAo5fu6S5rdiItsQDxeLEWCGk4g==}
 
+  libphonenumber-js@1.13.15:
+    resolution: {integrity: sha512-AHdhEQeDFEJ4GKDAQ9AwxChy+v2kUILUB3TGQRpkXMkWePjXTU/WQEzWVQoIx/Gz8fE73Wr5SEuZCy2vk8jrMQ==}
+
   lie@3.3.0:
     resolution: {integrity: sha1-3Pgt7lRfRgdNryAMfBxaCOD0D2o=}
 
@@ -7395,8 +7418,8 @@ packages:
     peerDependencies:
       react: 19.2.7
 
-  react-is@17.0.2:
-    resolution: {integrity: sha1-5pHUqOnHiTZWVVOas3J2Kw77VPA=}
+  react-is@19.2.7:
+    resolution: {integrity: sha512-kZFnouyVv7eP/Phmrlo9FK+zcAdriZJvzxXHF1Sl1P377WSGe2G/JxVolhTrB/jeV47lKImhNUsijjHAAbcl/A==}
 
   react-redux@9.3.0:
     resolution: {integrity: sha1-owETu22VwKcV1U3aQwjUUPymzgk=}
@@ -11637,6 +11660,15 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.1-rc':
     optional: true
 
+  '@uploadcn/core@0.1.1': {}
+
+  '@uploadcn/react@0.1.1(react@19.2.7)':
+    dependencies:
+      '@uploadcn/core': 0.1.1
+      react: 19.2.7
+    transitivePeerDependencies:
+      - tus-js-client
+
   '@vanilla-extract/babel-plugin-debug-ids@1.2.2(supports-color@8.1.1)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
@@ -13553,6 +13585,8 @@ snapshots:
       lefthook-windows-arm64: 2.1.14
       lefthook-windows-x64: 2.1.14
 
+  libphonenumber-js@1.13.15: {}
+
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -14536,7 +14570,7 @@ snapshots:
     dependencies:
       ansi-regex: 5.0.1
       ansi-styles: 5.2.0
-      react-is: 17.0.2
+      react-is: 19.2.7
 
   pretty-ms@9.3.1:
     dependencies:
@@ -14649,7 +14683,7 @@ snapshots:
     dependencies:
       react: 19.2.7
 
-  react-is@17.0.2: {}
+  react-is@19.2.7: {}
 
   react-redux@9.3.0(@types/react@19.3.0)(react@19.2.7)(redux@5.0.1):
     dependencies:
@@ -14726,7 +14760,7 @@ snapshots:
       tiny-invariant: 1.3.3
       tslib: 2.8.1
 
-  recharts@3.10.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@17.0.2)(react@19.2.7)(redux@5.0.1):
+  recharts@3.10.1(@types/react@19.3.0)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1):
     dependencies:
       '@reduxjs/toolkit': 2.12.0(react-redux@9.3.0(@types/react@19.3.0)(react@19.2.7)(redux@5.0.1))(react@19.2.7)
       clsx: 2.1.1
@@ -14736,7 +14770,7 @@ snapshots:
       immer: 11.1.18
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
-      react-is: 17.0.2
+      react-is: 19.2.7
       react-redux: 9.3.0(@types/react@19.3.0)(react@19.2.7)(redux@5.0.1)
       reselect: 5.2.0
       tiny-invariant: 1.3.3

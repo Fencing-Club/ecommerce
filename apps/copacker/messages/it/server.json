@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku}: assegna a ogni cartone lo stesso contenuto, le stesse dimensioni e lo stesso peso, oppure dividili in spedizioni separate",
       "overQuantity": "{sku}: i cartoni superano la quantità residua dell’ordine di acquisto",
       "unknownChange": "Le modifiche alla fattura devono riferirsi ad articoli univoci dell’ordine di acquisto"
-    }
+    },
+    "networkMismatch": "Imballa solo prodotti assegnati alla rete Amazon di questa spedizione."
   },
   "workflow": {
     "arrived": "La merce è arrivata",

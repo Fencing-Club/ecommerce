@@ -49,10 +49,11 @@ test("a buyer sends a purchase order to a supplier off Copacker and enters its s
     await page.getByLabel("Phone number").fill("+1 503 555 0199")
     await page.getByLabel("Street address").fill("200 Factory Road")
     await page.getByLabel("City").fill("Portland")
-    await page.getByLabel("State or province").fill("OR")
     await page.getByLabel("Postal code").fill("97201")
     await page.getByRole("combobox", { name: "Country" }).click()
     await page.getByRole("option", { name: "United States", exact: true }).click()
+    await page.getByRole("combobox", { name: "State or province" }).click()
+    await page.getByRole("option", { name: "Oregon", exact: true }).click()
   })
 
   await test.step("enter the cartons and the supplier's invoice", async () => {

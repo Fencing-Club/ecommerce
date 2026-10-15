@@ -50,7 +50,7 @@ export const Syncing = meta.story({
 export const Unavailable = meta.story({
   args: { available: false },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("Amazon Ads setup is not complete.")).toBeVisible()
+    await expect(canvas.getByText("Ads setup required.")).toBeVisible()
   }
 })
 export const Failed = meta.story({
@@ -59,8 +59,6 @@ export const Failed = meta.story({
       http.get("/api/connections/amazon-ads", () => HttpResponse.json({ connected: true, active: false, failed: true }))
     ),
   play: async ({ canvas }) => {
-    await expect(
-      await canvas.findByText("Some reports failed. Try syncing again, or reconnect to renew access.")
-    ).toBeVisible()
+    await expect(await canvas.findByText("Sync failed. Retry or reconnect.")).toBeVisible()
   }
 })

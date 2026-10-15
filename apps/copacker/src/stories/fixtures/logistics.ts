@@ -143,6 +143,7 @@ export function shipmentRow(overrides: Partial<ShipmentRow> = {}): ShipmentRow {
     packingDraft: null,
     snapshot: null,
     amazonNetwork: null,
+    linkedAmazonShipmentId: null,
     amazonOrderId: null,
     amazonShipmentId: null,
     operation: "none",
@@ -387,6 +388,9 @@ export function storeSyncHandlers({
   locations?: typeof inventoryLocations
 } = {}) {
   return [
+    http.get("/api/connections/amazon-ads", () =>
+      HttpResponse.json({ connected: false, active: false, failed: false })
+    ),
     http.get("/api/sales", () => HttpResponse.json({ sources: sales })),
     http.get("/api/inventory", ({ request }) => {
       const source = new URL(request.url).searchParams.get("source")

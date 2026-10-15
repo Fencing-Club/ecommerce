@@ -1,6 +1,6 @@
 import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { delay, http, HttpResponse } from "msw"
-import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fireEvent, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { importId, importList } from "@/stories/fixtures/purchase-orders"
 import urdu from "../../messages/ur/orders.json"
@@ -44,7 +44,7 @@ export const Imports = meta.story({
       await expect(canvas.getByText(file)).toHaveAttribute("dir", "ltr")
       await expect(canvas.getByText(file)).toHaveAttribute("title", file)
     }
-    for (const status of ["Waiting", "Reading", "Ready for review", "Failed", "Canceled", "Saved as draft"]) {
+    for (const status of ["Waiting", "Processing", "Ready for review", "Failed", "Canceled", "Saved as draft"]) {
       await expect(canvas.getByText(status)).toBeVisible()
     }
     // A review opens its review page, and a saved import its draft.
@@ -118,6 +118,7 @@ export const Upload = meta.story({
     const input = canvasElement.querySelector<HTMLInputElement>("input[type=file]")!
     await userEvent.upload(input, new File(["%PDF-1.7"], "juniper-po.pdf", { type: "application/pdf" }))
     await expect(canvas.getByText("juniper-po.pdf")).toBeVisible()
+    await expect(started).not.toHaveBeenCalled()
     await userEvent.click(start)
     await waitFor(() => expect(started).toHaveBeenCalledWith("juniper-po.pdf"))
     // The dropzone clears for the next file, and the list reloads with the new import.
@@ -149,8 +150,29 @@ export const Empty = meta.story({
     msw.use(http.get("/api/imports", () => HttpResponse.json({ items: [] })))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("No imports yet")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: /Drop a PDF or browse/ })).toBeVisible()
     await expect(canvas.queryByRole("table")).toBeNull()
+  }
+})
+
+export const AttachBeforeImport = meta.story({
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByText("lotus-po-118.pdf")
+    const zone = canvas.getByRole("button", { name: /Drop a PDF or browse/ })
+    const card = zone.closest('[data-slot="card"]')
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(new File(["%PDF-1.7"], "supplier-order.pdf", { type: "application/pdf" }))
+    fireEvent(zone, new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }))
+    const attached = await canvas.findByText("supplier-order.pdf")
+    await expect(attached.closest('[data-slot="card"]')).toBe(card)
+    await expect(canvas.getByRole("table").closest('[data-slot="card"]')).toBe(card)
+    await expect(canvasElement.querySelectorAll('[data-slot="card"]')).toHaveLength(1)
+    await expect(started).not.toHaveBeenCalled()
+    await expect(canvas.getByRole("button", { name: /^Import$/ })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Remove supplier-order.pdf" }))
+    await expect(canvas.queryByText("supplier-order.pdf")).toBeNull()
+    await expect(canvas.getByRole("button", { name: /^Import$/ })).toBeDisabled()
+    await expect(started).not.toHaveBeenCalled()
   }
 })
 

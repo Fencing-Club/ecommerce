@@ -67,7 +67,7 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
     let cursor: string | null = null,
       complete = false,
       pages = 0
-    const searchArgs = z.object({ query: z.string().trim().min(1).max(255) }).strict()
+    const searchArgs = z.object({ queries: z.array(z.string().trim().min(1).max(255)).min(1).max(50) }).strict()
     const variantsArgs = z
       .object({
         ids: z
@@ -81,10 +81,10 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
       {
         name: "search_shopify_products",
         description:
-          "Search buyer SKU, supplier SKU and product/variation text. Each call advances catalog coverage by up to five pages. Repeat while catalogComplete is false to find further matches.",
+          "Search up to 50 buyer SKUs, supplier SKUs or product/variation phrases together. Batch the document's SKUs instead of searching one line per call. Each call advances catalog coverage by up to five pages. Repeat while catalogComplete is false to find further matches. Use get_shopify_variants only for missing bundle or price details.",
         parameters: z.toJSONSchema(searchArgs),
         execute: async (raw) => {
-          const { query } = searchArgs.parse(raw)
+          const { queries } = searchArgs.parse(raw)
           for (let i = 0; i < 5 && !complete; i++) {
             await assertActive()
             if (pages >= 100) {
@@ -103,10 +103,23 @@ export async function importJob(payload: Record<string, unknown>, assertOwned: (
             }
             cursor = page.pageInfo.endCursor
           }
-          const matches = catalogMatches(catalog.values(), query)
-          const results = matches.slice(0, 30)
-          results.forEach((v) => knownVariants.add(v.id))
-          return { results, catalogComplete: complete, matchesTruncated: matches.length > 30, scanned: catalog.size }
+          const searches = queries.map((query) => {
+            const matches = catalogMatches(catalog.values(), query)
+            const results = matches.slice(0, 10).map((variant) => {
+              knownVariants.add(variant.id)
+              // Search needs identity, not every inventory and bundle field repeated in every model turn.
+              return {
+                id: variant.id,
+                sku: variant.sku,
+                supplierSku: variant.supplierSku?.value ?? null,
+                product: variant.product.title,
+                variant: variant.title,
+                requiresComponents: variant.requiresComponents
+              }
+            })
+            return { query, results, matchesTruncated: matches.length > 10 }
+          })
+          return { searches, catalogComplete: complete, scanned: catalog.size }
         }
       },
       {

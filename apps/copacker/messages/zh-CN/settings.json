@@ -233,16 +233,18 @@
   },
   "amazonAds": {
     "title": "Amazon Ads",
-    "description": "Sponsored Products、Brands 和 Display 的每日支出。完整报告期间使用广告支出代替亚马逊付款，其他期间使用已入账付款。报告最多涵盖 90 天，并可能随亚马逊调整而变化。",
-    "unavailable": "Amazon Ads 设置尚未完成。",
+    "description": "导入每日广告支出。",
+    "unavailable": "需要设置 Ads。",
     "error": "无法更新 Amazon Ads，请重试。",
     "syncing": "正在同步广告支出…",
-    "failed": "部分报告失败。请重新同步，或重新连接以续期授权。",
+    "failed": "同步失败。请重试或重新连接。",
     "connected": "已连接",
     "notConnected": "未连接",
     "reconnect": "重新连接 Ads",
     "connect": "连接 Amazon Ads",
     "sync": "同步广告支出",
-    "disconnect": "断开 Ads"
+    "disconnect": "断开 Ads",
+    "checking": "检查中…",
+    "statusUnavailable": "状态不可用"
   }
 }

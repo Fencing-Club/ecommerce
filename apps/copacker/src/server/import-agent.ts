@@ -107,10 +107,11 @@ export async function runImportAgent(
             tools,
             tool_choice: "auto",
             parallel_tool_calls: false,
-            max_tokens: 12000,
+            // The supported 150-line proposal can exceed 12k output tokens even without catalog lookups.
+            max_tokens: 32000,
             plugins: [{ id: "file-parser", pdf: { engine: "native" } }]
           }),
-          signal: AbortSignal.any([signal, AbortSignal.timeout(90000)])
+          signal: AbortSignal.any([signal, AbortSignal.timeout(180000)])
         })
         if (!response.ok) {
           throw new Error(`OpenRouter request failed (${response.status})`)
@@ -130,7 +131,7 @@ export async function runImportAgent(
     if (["length", "content_filter"].includes(result.choices[0]!.finish_reason ?? "")) {
       throw new Error("The provider returned an incomplete import response")
     }
-    if (tokens > 150000) {
+    if (tokens > 600000) {
       throw new Error("Import token budget reached; use a smaller document")
     }
     const message = result.choices[0]!.message

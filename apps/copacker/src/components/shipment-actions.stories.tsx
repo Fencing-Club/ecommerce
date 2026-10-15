@@ -1,10 +1,17 @@
 import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
-import { ApproveInvoice, CorrectionForm, ReconcileShipment, ReleaseLabels } from "./shipment-actions"
+import {
+  ApproveInvoice,
+  CorrectionForm,
+  ReconcileShipment,
+  ReleaseLabels,
+  LinkExistingShipment
+} from "./shipment-actions"
 
 const sent: ActionRequest[] = []
+const linked = fn(async (_shipmentId: string | null) => undefined)
 
 const meta = preview.meta({
   component: ApproveInvoice,
@@ -12,6 +19,31 @@ const meta = preview.meta({
   beforeEach: ({ msw }) => {
     sent.length = 0
     msw.use(recordActions(sent))
+  }
+})
+
+export const LinkExistingAwd = meta.story({
+  render: () => <LinkExistingShipment onLink={linked} linkedId={null} />,
+  play: async ({ canvas }) => {
+    const field = canvas.getByRole("textbox", { name: "AWD shipment ID" })
+    await userEvent.type(field, "invalid")
+    await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
+    await expect(await canvas.findByText("Enter a shipment ID starting with STAR-")).toBeVisible()
+    await expect(sent).toHaveLength(0)
+    await userEvent.clear(field)
+    await userEvent.type(field, "star-example")
+    await userEvent.click(canvas.getByRole("button", { name: "Link shipment" }))
+    await waitFor(() => expect(linked).toHaveBeenCalledWith("STAR-EXAMPLE"))
+  }
+})
+
+export const ExistingAwdLinked = meta.story({
+  render: () => <LinkExistingShipment onLink={linked} linkedId="STAR-EXAMPLE" />,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/Linked to STAR-EXAMPLE/)).toBeVisible()
+    await expect(canvas.queryByRole("textbox")).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Remove link" }))
+    await waitFor(() => expect(linked).toHaveBeenCalledWith(null))
   }
 })
 

@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku}: Geben Sie allen Kartons denselben Inhalt, dieselben Maße und dasselbe Gewicht, oder teilen Sie sie auf getrennte Sendungen auf",
       "overQuantity": "{sku}: Die Kartons überschreiten die verbleibende Menge der Bestellung",
       "unknownChange": "Rechnungsänderungen müssen sich auf eindeutige Positionen der Bestellung beziehen"
-    }
+    },
+    "networkMismatch": "Nur Produkte für das Amazon-Netzwerk dieser Sendung einpacken."
   },
   "workflow": {
     "arrived": "Die Waren sind angekommen",

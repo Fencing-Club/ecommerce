@@ -73,6 +73,8 @@
     "separator": ", "
   },
   "address": {
+    "findAddress": "Знайти адресу",
+    "lookupUnavailable": "Пошук адрес недоступний. Введіть адресу нижче.",
     "country": "Країна",
     "chooseCountry": "Виберіть країну",
     "contactName": "Контактна особа",

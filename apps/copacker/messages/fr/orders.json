@@ -121,7 +121,12 @@
     "charges": "Frais",
     "documentTotal": "Total du document",
     "overDocumentTotal": "{amount} au-dessus du total du document",
-    "underDocumentTotal": "{amount} en dessous du total du document"
+    "underDocumentTotal": "{amount} en dessous du total du document",
+    "sourceDetails": "Détails du document",
+    "matchDetails": "Détails de la correspondance",
+    "importNotes": "Notes d’importation",
+    "noSuppliers": "Cet espace de travail ne contient aucun fournisseur. Ajoutez-en un pour continuer.",
+    "addSupplier": "Ajouter un fournisseur"
   },
   "builder": {
     "newTitle": "Nouveau bon de commande",
@@ -277,7 +282,9 @@
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
-      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation"
+      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
+      "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",
+      "existingAwdUnlinked": "Lien vers l’envoi AWD existant supprimé"
     }
   },
   "actions": {
@@ -330,7 +337,7 @@
     },
     "statuses": {
       "queued": "En attente",
-      "running": "Lecture",
+      "running": "Traitement en cours",
       "review": "Prêt à vérifier",
       "failed": "Échec",
       "cancelled": "Annulé",
@@ -393,7 +400,9 @@
     "addAddress": "Ajouter une adresse",
     "pickupAddress": "Adresse d’enlèvement",
     "otherAddress": "Autre adresse",
-    "readyForPickup": "Prêt pour l’enlèvement"
+    "readyForPickup": "Prêt pour l’enlèvement",
+    "addCartonProduct": "Ajouter un produit au carton",
+    "removeCartonProduct": "Retirer le produit {number} du carton"
   },
   "paymentTerms": {
     "net7": "7 jours net",

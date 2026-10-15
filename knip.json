@@ -4,9 +4,6 @@
   "ignore": ["beachball.config.js"],
   "tags": ["-vendored"],
   "workspaces": {
-    ".": {
-      "ignoreBinaries": ["ado-npm-auth"]
-    },
     "packages/fc-theme": {
       "entry": ["assets/*.js"],
       "ignore": ["assets/vendor-scripts-v11.js"]

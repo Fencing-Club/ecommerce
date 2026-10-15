@@ -233,16 +233,18 @@
   },
   "amazonAds": {
     "title": "Amazon Ads",
-    "description": "Gasto diario de Sponsored Products, Brands y Display. Los periodos con informes completos usan el gasto publicitario en lugar de los pagos de Amazon. Los demás usan los pagos registrados. Los informes cubren hasta 90 días y pueden cambiar con los ajustes de Amazon.",
-    "unavailable": "La configuración de Amazon Ads está incompleta.",
+    "description": "Importa el gasto publicitario diario.",
+    "unavailable": "Configura Ads para continuar.",
     "error": "No se pudo actualizar Amazon Ads. Inténtalo de nuevo.",
     "syncing": "Sincronizando gastos…",
-    "failed": "Algunos informes fallaron. Vuelve a sincronizar o conecta la cuenta de nuevo.",
+    "failed": "Falló la sincronización. Reintenta o reconecta.",
     "connected": "Conectado",
     "notConnected": "Sin conectar",
     "reconnect": "Reconectar Ads",
     "connect": "Conectar Amazon Ads",
     "sync": "Sincronizar gastos",
-    "disconnect": "Desconectar Ads"
+    "disconnect": "Desconectar Ads",
+    "checking": "Consultando…",
+    "statusUnavailable": "Estado no disponible"
   }
 }

@@ -73,6 +73,8 @@
     "separator": "، "
   },
   "address": {
+    "findAddress": "پتہ تلاش کریں",
+    "lookupUnavailable": "پتے کی تلاش دستیاب نہیں ہے۔ نیچے پتہ درج کریں۔",
     "country": "ملک",
     "chooseCountry": "ملک منتخب کریں",
     "contactName": "رابطے کا نام",

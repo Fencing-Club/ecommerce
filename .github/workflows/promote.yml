@@ -39,8 +39,6 @@ jobs:
       # Production holds real data, so only the read-only, signed-out specs run against it.
       - run: npm install --global pnpm@12.10.1
       - run: pnpm install --frozen-lockfile
-        env:
-          PNPM_CONFIG_REGISTRY: https://registry.npmjs.org/
       - run: pnpm --filter copacker exec playwright install --with-deps chromium
       - run: pnpm --filter copacker test:e2e --grep @smoke
         env:

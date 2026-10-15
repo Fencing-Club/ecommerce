@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { positionKeys, type WorkspaceKind } from "@/lib/onboarding"
+import { formatPhone } from "@/lib/phone"
 
 // Getting started's steps, in the order they come. Which ones a person sees depends on how they arrived.
 export type WizardStep = "about" | "role" | "company" | "address"
@@ -136,7 +137,15 @@ export function CompanyFields({ kind }: { kind: WorkspaceKind | "" }) {
         placeholder={t("websitePlaceholder")}
       />
       {/* Buyers see a supplier's phone number; nobody sees a buyer's or a forwarder's. */}
-      {kind === "supplier" && <FormInput name="company.phone" label={t("phone")} type="tel" autoComplete="tel" />}
+      {kind === "supplier" && (
+        <FormInput
+          name="company.phone"
+          label={t("phone")}
+          type="tel"
+          autoComplete="tel"
+          normalizeOnBlur={formatPhone}
+        />
+      )}
     </div>
   )
 }

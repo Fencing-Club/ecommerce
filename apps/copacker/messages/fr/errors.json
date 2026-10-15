@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "Impossible de créer les étiquettes d’avertissement. Réessayez.",
   "workbookNoSheets": "Le classeur ne contient aucune feuille",
   "workspaceAccessDenied": "Vous n’avez pas accès à cet espace de travail",
-  "wrongCode": "Ce code est incorrect. Vérifiez l’e-mail et réessayez."
+  "wrongCode": "Ce code est incorrect. Vérifiez l’e-mail et réessayez.",
+  "awdCartonsDiffer": "Les cartons diffèrent d’Amazon. Vérifiez produits, quantités, dimensions et poids.",
+  "awdShipmentAlreadyShipped": "Choisissez un envoi AWD qui n’a pas encore été expédié.",
+  "awdOriginDiffers": "L’adresse d’enlèvement diffère d’Amazon. Vérifiez rue, complément, code postal et pays.",
+  "linkAwdOnly": "Seul un brouillon de colisage AWD peut être lié à un envoi AWD existant.",
+  "awdProductsDiffer": "L’envoi Amazon contient des produits ou des quantités hors de cette commande AWD.",
+  "awdAlreadyLinked": "Cet envoi Amazon est déjà lié à un bon de commande."
 }

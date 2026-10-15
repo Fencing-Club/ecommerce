@@ -121,7 +121,12 @@
     "charges": "费用",
     "documentTotal": "单据合计",
     "overDocumentTotal": "超出单据合计 {amount}",
-    "underDocumentTotal": "低于单据合计 {amount}"
+    "underDocumentTotal": "低于单据合计 {amount}",
+    "sourceDetails": "来源详情",
+    "matchDetails": "匹配详情",
+    "importNotes": "导入备注",
+    "noSuppliers": "此工作区尚无供应商。请添加供应商以继续。",
+    "addSupplier": "添加供应商"
   },
   "builder": {
     "newTitle": "新建采购订单",
@@ -277,7 +282,9 @@
       "forwarderShipped": "{forwarder} 已发货：{tracking}",
       "packingReady": "已提交装箱信息；可以发货",
       "invoiceEntered": "已录入发票，其中包含对采购订单的修改",
-      "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批"
+      "invoiceChangesSubmitted": "供应商已提交发票修改，等待审批",
+      "existingAwdLinked": "已关联现有 AWD 货件 {shipmentId}",
+      "existingAwdUnlinked": "已取消现有 AWD 货件关联"
     }
   },
   "actions": {
@@ -330,7 +337,7 @@
     },
     "statuses": {
       "queued": "等待中",
-      "running": "读取中",
+      "running": "处理中",
       "review": "待核对",
       "failed": "失败",
       "cancelled": "已取消",
@@ -393,7 +400,9 @@
     "addAddress": "添加地址",
     "pickupAddress": "提货地址",
     "otherAddress": "其他地址",
-    "readyForPickup": "可提货日期"
+    "readyForPickup": "可提货日期",
+    "addCartonProduct": "向纸箱添加商品",
+    "removeCartonProduct": "从纸箱移除商品 {number}"
   },
   "paymentTerms": {
     "net7": "7 天账期",

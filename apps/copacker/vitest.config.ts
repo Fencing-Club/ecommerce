@@ -19,7 +19,14 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: "unit", environment: "node", include: ["tests/**/*.test.ts"], sequence: { groupOrder: 0 } }
+        test: {
+          name: "unit",
+          environment: "node",
+          // Request fixtures use this origin, independently of the developer's local app port.
+          env: { APP_URL: "http://localhost:3000", APP_ALIAS_URLS: "" },
+          include: ["tests/**/*.test.ts"],
+          sequence: { groupOrder: 0 }
+        }
       },
       // Every story renders in Chromium and runs its play function, after the unit tests: run side by side, the browser
       // starves the unit tests' databases and their setup times out.

@@ -64,10 +64,11 @@ export const Add = meta.story({
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Contact name" }), "Jordan Lee")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Street address" }), "2400 NW Front Ave")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "City" }), "Portland")
-    await userEvent.type(within(dialog).getByRole("textbox", { name: "State or province" }), "OR")
     await userEvent.type(within(dialog).getByRole("textbox", { name: "Postal code" }), "97209")
     await userEvent.click(within(dialog).getByRole("combobox", { name: "Country" }))
     await userEvent.click(await screen.findByRole("option", { name: "United States" }))
+    await userEvent.click(within(dialog).getByRole("combobox", { name: "State or province" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Oregon" }))
     await userEvent.click(within(dialog).getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(sent).toHaveLength(1))
     await expect(sent[0]).toEqual({

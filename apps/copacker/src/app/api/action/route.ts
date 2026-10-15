@@ -32,6 +32,7 @@ import {
   requireOwner,
   setWorkspace
 } from "@/server/auth"
+import { linkExistingAwd } from "@/server/awd-link"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { deleteAccount, deleteWorkspace } from "@/server/deletion"
@@ -462,6 +463,10 @@ export async function POST(request: Request) {
       const shipment = await newShipment(s, id())
       return Response.json({ redirect: `/shipments/${shipment.id}` })
     }
+    if (action === "shipment.linkExisting") {
+      requireAccess(s, "shipments", "edit")
+      return Response.json(await linkExistingAwd(s, id(), revision(), data.amazonShipmentId))
+    }
     if (action === "shipment.save") {
       requireAccess(s, "shipments", "edit")
       return Response.json(
@@ -574,7 +579,7 @@ export async function POST(request: Request) {
       requireBuyer(s)
       requireAccess(s, "shipments", "edit")
       const [shipment] = await db().select().from(shipments).where(eq(shipments.id, id()))
-      if (!shipment?.amazonOrderId || shipment.status !== "correction") {
+      if (!shipment?.amazonOrderId || shipment.linkedAmazonShipmentId || shipment.status !== "correction") {
         throw new LocalizedError("amazonShipmentNotInCorrection")
       }
       const { order } = await accessibleOrder(s, shipment.orderId)

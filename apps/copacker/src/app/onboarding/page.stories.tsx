@@ -56,6 +56,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
           initial={blank}
           invitedBy={invite.from}
           account={account}
+          accountEmail={user.email}
         />
       )
     }
@@ -72,6 +73,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
         }}
         invitedBy={invite.from}
         account={account}
+        accountEmail={user.email}
       />
     )
   }
@@ -85,6 +87,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
         initial={blank}
         invitedBy={null}
         account={account}
+        accountEmail={user.email}
       />
     )
   }
@@ -98,6 +101,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
       initial={blank}
       invitedBy={null}
       account={account}
+      accountEmail={user.email}
     />
   )
 }

@@ -21,11 +21,11 @@ export async function GET(request: Request) {
   }
   const s = await session()
   requireBuyer(s)
-  requireAdmin(s)
   const url = new URL(request.url)
   if (url.searchParams.has("status")) {
     return Response.json(await adsStatus(s.org.id), { headers: { "Cache-Control": "private, no-store" } })
   }
+  requireAdmin(s)
   const settings = `${site}/settings#integrations`
   const app = amazonAdsApp()
   if (!app) {

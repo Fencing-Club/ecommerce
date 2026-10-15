@@ -72,12 +72,13 @@ export const FillIn = meta.story({
     await userEvent.type(canvas.getByLabelText(/Contact name/), "Alex Rivera")
     await userEvent.type(canvas.getByLabelText(/Street address/), "400 Pier Avenue")
     await userEvent.type(canvas.getByLabelText(/City/), "Oakland")
-    await userEvent.type(canvas.getByLabelText(/State or province/), "CA")
     await userEvent.type(canvas.getByLabelText(/Postal code/), "94607")
     const country = canvas.getByRole("combobox", { name: /Country/ })
     await expect(country).toHaveTextContent("Choose a country")
     await userEvent.click(country)
     await userEvent.click(await screen.findByRole("option", { name: "United States" }))
+    await userEvent.click(canvas.getByRole("combobox", { name: /State or province/ }))
+    await userEvent.click(await screen.findByRole("option", { name: "California" }))
     await expect(country).toHaveTextContent("United States")
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
     await waitFor(() => expect(args.onSubmit).toHaveBeenCalledOnce())
@@ -113,6 +114,35 @@ export const Filled = meta.story({
   }
 })
 
+export const InternationalPhone = meta.story({
+  args: { address: { ...filled, countryCode: "US", phoneNumber: "" } },
+  play: async ({ canvas }) => {
+    const phone = canvas.getByLabelText(/Phone number/)
+    await userEvent.type(phone, "4252602501")
+    await userEvent.tab()
+    await expect(phone).toHaveValue("+1 (425) 260-2501")
+    await userEvent.clear(phone)
+    await userEvent.type(phone, "+442071838750")
+    await userEvent.tab()
+    await expect(phone).toHaveValue("+44 20 7183 8750")
+  }
+})
+
+export const RegionsFollowCountry = meta.story({
+  args: { address: { ...filled, countryCode: "US", stateOrRegion: "CA" } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("combobox", { name: /State or province/ })).toHaveTextContent("California")
+    await userEvent.click(canvas.getByRole("combobox", { name: /Country/ }))
+    await userEvent.click(await screen.findByRole("option", { name: "Canada" }))
+    const region = canvas.getByRole("combobox", { name: /State or province/ })
+    await expect(region).not.toHaveTextContent("California")
+    await userEvent.click(region)
+    await expect(screen.queryByRole("option", { name: "California" })).toBeNull()
+    await userEvent.click(await screen.findByRole("option", { name: "Ontario" }))
+    await expect(region).toHaveTextContent("Ontario")
+  }
+})
+
 // An address saved before the country menu may hold a code the list lacks; it shows as saved until changed.
 export const UnlistedCountryCode = meta.story({
   args: { address: { ...filled, countryCode: "UK" } },
@@ -128,6 +158,7 @@ export const UnlistedCountryCode = meta.story({
     await userEvent.click(country)
     await userEvent.click(await screen.findByRole("option", { name: "United Kingdom" }))
     await expect(country).toHaveTextContent("United Kingdom")
+    await userEvent.type(canvas.getByLabelText(/State or province/), "Zhejiang")
     await userEvent.click(canvas.getByRole("button", { name: "Save address" }))
     await waitFor(() =>
       expect(args.onSubmit).toHaveBeenCalledWith({ address: { ...filled, countryCode: "GB" } }, expect.anything())

@@ -28,7 +28,12 @@ export const importProposalSchema = z
             piecesPerSet: z.number().int().positive().max(1000).nullable(),
             pricePerPiece: money,
             reason: z.string().max(1000),
-            warnings: z.array(z.string().max(1000)).max(20)
+            warnings: z
+              .array(z.string().max(1000))
+              .max(20)
+              .describe(
+                "Only unresolved problems requiring a specific buyer correction. Empty for a confident match. Put match evidence in reason."
+              )
           })
           .strict()
       )
@@ -44,9 +49,22 @@ export const importProposalSchema = z
           })
           .strict()
       )
-      .max(50),
+      .max(50)
+      .describe(
+        "Every separately priced non-product charge: packing, freight, tax, duties, fees and negative discounts. Preserve the charge total and source page; do not omit charges or count subtotals twice."
+      ),
     documentTotal: money,
-    warnings: z.array(z.string().max(1000)).max(50)
+    warnings: z
+      .array(z.string().max(1000))
+      .max(50)
+      .describe(
+        "Only unresolved discrepancies or ambiguities that need buyer action before saving. No success messages, supplier summaries, matching totals or routine shipment reminders."
+      ),
+    notes: z
+      .array(z.string().max(1000))
+      .max(50)
+      .optional()
+      .describe("Informational document notes and extraction context, separate from actionable warnings.")
   })
   .strict()
 export type ImportProposal = z.infer<typeof importProposalSchema>

@@ -68,8 +68,9 @@ export function FormInput({
   className,
   type,
   urlPrefix = false,
+  normalizeOnBlur,
   ...props
-}: FormFieldProps & { urlPrefix?: boolean } & Omit<
+}: FormFieldProps & { urlPrefix?: boolean; normalizeOnBlur?: (value: string) => string } & Omit<
     React.ComponentProps<typeof Input>,
     "name" | "value" | "defaultValue" | "onChange"
   >) {
@@ -86,7 +87,13 @@ export function FormInput({
     ref,
     value: fieldValue ?? "",
     onChange,
-    onBlur,
+    onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+      if (normalizeOnBlur) {
+        onChange(normalizeOnBlur(event.currentTarget.value))
+      }
+      onBlur()
+      props.onBlur?.(event)
+    },
     "aria-invalid": fieldState.invalid,
     "aria-describedby": fieldState.invalid ? `${id}-error` : undefined
   }

@@ -1,7 +1,9 @@
 # Amazon Ads expense reporting
 
 Amazon Ads is authorized separately from SP-API. A buyer owner or admin connects it under Settings > Amazon > Amazon
-Ads. The connected seller must already exist. OAuth state is single-use, expires after ten minutes, and is bound to
+Ads. The Amazon integration card also shows whether Ads is connected; opening the card exposes the connect controls.
+Workspace members can read this status, while only owners and admins can change the connection.
+The connected seller must already exist. OAuth state is single-use, expires after ten minutes, and is bound to
 the workspace, user and seller. Only North American seller profiles matching that seller ID are imported; vendor,
 agency and unrelated seller profiles are excluded. Refresh tokens are encrypted with workspace-specific associated
 data. Reconnecting replaces the authorization generation so old jobs cannot write through it.
