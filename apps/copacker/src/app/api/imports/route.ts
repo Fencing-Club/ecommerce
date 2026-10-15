@@ -6,6 +6,7 @@ import { connections, jobs, poImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { session, requireBuyer, requirePage } from "@/server/auth"
 import { errorResponse, failureMessage } from "@/server/errors"
+import { withJobWake } from "@/server/job-delivery"
 import { isAppOrigin } from "@/server/security"
 import { putFile, validatePdf } from "@/server/storage"
 
@@ -66,19 +67,21 @@ export async function POST(request: Request) {
       objectKey = `${s.org.id}/imports/${id}/source.pdf`
     // Publish the import and job together only after its source exists.
     await putFile(objectKey, bytes)
-    await db().transaction(async (tx) => {
-      await tx.insert(poImports).values({
-        id,
-        orgId: s.org.id,
-        createdBy: s.user.id,
-        objectKey,
-        filename: file.name.slice(0, 255),
-        shopifyDomain: shop.externalId,
-        amazonSellerId: amazon?.externalId,
-        status: "queued"
+    await withJobWake(
+      db().transaction(async (tx) => {
+        await tx.insert(poImports).values({
+          id,
+          orgId: s.org.id,
+          createdBy: s.user.id,
+          objectKey,
+          filename: file.name.slice(0, 255),
+          shopifyDomain: shop.externalId,
+          amazonSellerId: amazon?.externalId,
+          status: "queued"
+        })
+        await tx.insert(jobs).values({ key: `import:${id}:1`, kind: "import", payload: { id, revision: 1 } })
       })
-      await tx.insert(jobs).values({ key: `import:${id}:1`, kind: "import", payload: { id, revision: 1 } })
-    })
+    )
     return Response.json({ id, status: "queued" }, { status: 202 })
   } catch (error) {
     return Response.json({ error: await failureMessage(error, "importNotStarted") }, { status: 400 })

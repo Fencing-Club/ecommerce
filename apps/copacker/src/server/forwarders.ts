@@ -6,6 +6,7 @@ import { db, type Transaction } from "@/db"
 import { contacts, forwarders, jobs, memberships, orderRevisions, orders, organizations, shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
+import { withJobWake } from "@/server/job-delivery"
 import { hash, token } from "./security"
 import { requestLocale } from "./text"
 
@@ -100,18 +101,20 @@ export async function forwarderAddress(
 
 async function queueInvite(forwarderId: string, email: string, buyerName: string) {
   const invitation = token()
-  await db().transaction(async (tx) => {
-    await tx
-      .update(forwarders)
-      .set({ email, invitationHash: hash(invitation), expiresAt: new Date(Date.now() + week) })
-      .where(eq(forwarders.id, forwarderId))
-    // Each send is its own job, whose key doubles as the email provider's idempotency key.
-    await tx.insert(jobs).values({
-      key: `forwarder-invite:${forwarderId}:${randomUUID()}`,
-      kind: "email",
-      payload: { type: "forwarder", to: email, name: buyerName, invitation, locale: await requestLocale() }
+  await withJobWake(
+    db().transaction(async (tx) => {
+      await tx
+        .update(forwarders)
+        .set({ email, invitationHash: hash(invitation), expiresAt: new Date(Date.now() + week) })
+        .where(eq(forwarders.id, forwarderId))
+      // Each send is its own job, whose key doubles as the email provider's idempotency key.
+      await tx.insert(jobs).values({
+        key: `forwarder-invite:${forwarderId}:${randomUUID()}`,
+        kind: "email",
+        payload: { type: "forwarder", to: email, name: buyerName, invitation, locale: await requestLocale() }
+      })
     })
-  })
+  )
 }
 
 // Adds a forwarder, or restores one the buyer removed. With an email, it's invited to join.

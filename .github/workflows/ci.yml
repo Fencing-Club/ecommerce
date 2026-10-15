@@ -199,6 +199,48 @@ jobs:
           # The report folders start with a dot, which upload-artifact skips unless told otherwise.
           include-hidden-files: true
 
+  preview:
+    needs: [changes, verify, stories, e2e]
+    if: >-
+      github.event_name == 'pull_request' && needs.changes.outputs.copacker == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: copacker-previews
+      cancel-in-progress: false
+    environment:
+      name: preview-${{ github.event.pull_request.number }}
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PREVIEW_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
+      NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+      NEON_ROLE_NAME: ${{ vars.NEON_ROLE_NAME }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PREVIEW_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_PREVIEW_ENVIRONMENT_ID: ${{ vars.RAILWAY_PREVIEW_ENVIRONMENT_ID }}
+      COPACKER_PREVIEW_CONFIG: ${{ secrets.COPACKER_PREVIEW_CONFIG }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1 @railway/cli@5.68.0
+      - run: pnpm install --frozen-lockfile
+      - id: deploy
+        run: pnpm --filter copacker preview:deploy
+      - run: pnpm --filter copacker exec playwright install --with-deps chromium
+      - run: pnpm --filter copacker test:e2e --grep @smoke
+        env:
+          E2E_BASE_URL: ${{ steps.deploy.outputs.url }}
+
   deploy-staging:
     needs: [changes, verify, stories, e2e]
     if: github.event_name == 'push' && needs.changes.outputs.copacker == 'true'
@@ -238,6 +280,12 @@ jobs:
       - if: steps.tip.outputs.latest == 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.tip.outputs.latest == 'true'
+        name: Deploy Cloudflare scheduler
+        run: pnpm --filter copacker-scheduler exec cf deploy
+        env:
+          COPACKER_ENVIRONMENT: staging
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - if: steps.tip.outputs.latest == 'true'
         run: pnpm --filter copacker exec playwright install --with-deps chromium
       - if: steps.tip.outputs.latest == 'true'
         run: pnpm --filter copacker test:e2e
@@ -259,7 +307,7 @@ jobs:
   # affect it counts as passed. It's the check to require in branch protection.
   ci-ok:
     if: always()
-    needs: [changes, verify, stories, e2e, deploy-staging]
+    needs: [changes, verify, stories, e2e, preview, deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - run: |

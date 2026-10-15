@@ -2,8 +2,10 @@ import { setTimeout as wait } from "node:timers/promises"
 import { SQSClient } from "@aws-sdk/client-sqs"
 import { pollAmazonNotifications } from "./amazon-notifications"
 import { pollEbayEvents } from "./ebay-events"
+import { acknowledgeJobSignal, jobDeliveryConfigured, jobSignal, receiveJobSignals, signalJobs } from "./job-delivery"
+import { drainPendingJobs } from "./job-runner"
 import { logLine } from "./log"
-import { runNextJob } from "./queue"
+import { nextJobDelay, runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
 import { pollShopifyEvents } from "./shopify-webhooks"
 import { type NotificationQueue, sqsQueue } from "./sqs"
@@ -49,34 +51,48 @@ const readQueues = [amazonQueueUrl && "amazon", shopifyQueueUrl && "shopify", eb
 // Jobs run in several loops, so a long job (a year of Amazon orders) doesn't hold up the rest. Each claim skips jobs
 // another loop holds, and each sync guards against a second run for the same workspace and source.
 const jobLoops = 3
+async function drainJobs() {
+  await drainPendingJobs({ runNext: runNextJob, nextDelay: nextJobDelay, signal: signalJobs, stopped: () => stopped })
+}
 async function runJobs() {
+  if (!jobDeliveryConfigured() && process.env.NODE_ENV === "production") {
+    throw new Error("Production workers require Cloudflare job delivery configuration")
+  }
+  // One recovery pass on startup handles a worker replacement without an idle database polling loop.
+  await drainJobs()
   while (!stopped) {
     try {
-      const worked = await runNextJob()
-      if (!worked) {
+      if (!jobDeliveryConfigured()) {
+        // Local Docker development has no hosted queue or scheduler.
+        await queueReconciliation()
+        await drainJobs()
         await wait(2000)
+        continue
+      }
+      const received = await receiveJobSignals()
+      for (const message of received) {
+        const body: unknown = typeof message.body === "string" ? JSON.parse(message.body) : message.body
+        const signal = jobSignal.parse(body)
+        if (signal.kind === "reconcile") {
+          await queueReconciliation()
+        }
+        await drainJobs()
+        await acknowledgeJobSignal(message.lease_id)
+      }
+      if (!received.length) {
+        // Cloudflare HTTP pull is short polling. Empty requests never touch Postgres.
+        await wait(5000)
       }
     } catch {
-      console.error("Worker database unavailable; retrying shortly")
+      console.error("Job delivery or processing unavailable; retrying shortly")
       await wait(10000)
     }
-  }
-}
-async function scheduleReconciliation() {
-  while (!stopped) {
-    try {
-      await queueReconciliation()
-    } catch {
-      console.error("Worker database unavailable; retrying shortly")
-    }
-    await wait(10 * 60000, undefined, { ref: false })
   }
 }
 logLine(
   `Worker started with ${jobLoops} job loops${readQueues.length ? `, reading the ${readQueues.join(", ")} queues` : ""}`
 )
-void scheduleReconciliation()
-await Promise.all(Array.from({ length: jobLoops }, () => runJobs()))
+await runJobs()
 // A message being handled when the worker stops is received again later, since it is only removed once handled.
 await Promise.race([queueReaders, wait(25000)])
 process.exit(0)

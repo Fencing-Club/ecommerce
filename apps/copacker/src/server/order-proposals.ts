@@ -16,6 +16,7 @@ import {
 } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
+import { withJobWake } from "@/server/job-delivery"
 import { accessibleOrder } from "./access"
 import { requireBuyer, requireSupplier, type Session } from "./auth"
 import { customerProducts } from "./catalogs"
@@ -350,52 +351,54 @@ export async function approveProposal(s: Session, proposalId: string) {
   })
   const next = applied(order.data, proposal.data)
   const prepared = await prepareOrder(s, { ...next, items: [...next.items, ...newItems] })
-  const result = await db().transaction(async (tx) => {
-    const { proposal: current, order: locked, supplier } = await pendingFor(tx, s, proposalId)
-    if (
-      locked.revision !== current.baseRevision ||
-      locked.status !== "submitted" ||
-      !(await changeable(tx, locked.id))
-    ) {
-      throw new LocalizedError("orderChangedSinceProposal")
-    }
-    await checkOrder(tx, s, prepared, { stock: false })
-    const revision = locked.revision + 1
-    const data = prepared.input
-    await tx
-      .insert(orderRevisions)
-      .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "approvedSupplierChanges" })
-    await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, locked.id))
-    const open = await tx
-      .update(shipments)
-      .set({ snapshot: data, orderRevision: revision, updatedAt: new Date() })
-      .where(and(eq(shipments.orderId, locked.id), eq(shipments.status, "packing")))
-      .returning({ id: shipments.id })
-    await tx
-      .update(documents)
-      .set({ outdated: 1 })
-      .where(and(eq(documents.orderId, locked.id), inArray(documents.kind, ["purchase_order", "invoice"])))
-    await tx
-      .update(orderProposals)
-      .set({ status: "approved", decidedBy: s.user.id, decidedAt: new Date() })
-      .where(eq(orderProposals.id, proposalId))
-    if (supplier.supplierOrgId && supplier.email) {
+  const result = await withJobWake(
+    db().transaction(async (tx) => {
+      const { proposal: current, order: locked, supplier } = await pendingFor(tx, s, proposalId)
+      if (
+        locked.revision !== current.baseRevision ||
+        locked.status !== "submitted" ||
+        !(await changeable(tx, locked.id))
+      ) {
+        throw new LocalizedError("orderChangedSinceProposal")
+      }
+      await checkOrder(tx, s, prepared, { stock: false })
+      const revision = locked.revision + 1
+      const data = prepared.input
       await tx
-        .insert(jobs)
-        .values({
-          key: `po:${locked.id}:${revision}`,
-          kind: "email",
-          payload: { type: "po", orderId: locked.id, revision, to: supplier.email }
-        })
-        .onConflictDoNothing()
-    }
-    await tx.insert(events).values({
-      orderId: locked.id,
-      actor: s.user.id,
-      ...eventMessage({ key: "supplierChangesApproved", values: { revision } })
+        .insert(orderRevisions)
+        .values({ orderId: locked.id, revision, data, actor: s.user.id, reason: "approvedSupplierChanges" })
+      await tx.update(orders).set({ data, revision, updatedAt: new Date() }).where(eq(orders.id, locked.id))
+      const open = await tx
+        .update(shipments)
+        .set({ snapshot: data, orderRevision: revision, updatedAt: new Date() })
+        .where(and(eq(shipments.orderId, locked.id), eq(shipments.status, "packing")))
+        .returning({ id: shipments.id })
+      await tx
+        .update(documents)
+        .set({ outdated: 1 })
+        .where(and(eq(documents.orderId, locked.id), inArray(documents.kind, ["purchase_order", "invoice"])))
+      await tx
+        .update(orderProposals)
+        .set({ status: "approved", decidedBy: s.user.id, decidedAt: new Date() })
+        .where(eq(orderProposals.id, proposalId))
+      if (supplier.supplierOrgId && supplier.email) {
+        await tx
+          .insert(jobs)
+          .values({
+            key: `po:${locked.id}:${revision}`,
+            kind: "email",
+            payload: { type: "po", orderId: locked.id, revision, to: supplier.email }
+          })
+          .onConflictDoNothing()
+      }
+      await tx.insert(events).values({
+        orderId: locked.id,
+        actor: s.user.id,
+        ...eventMessage({ key: "supplierChangesApproved", values: { revision } })
+      })
+      return { orderId: locked.id, revision, shipmentIds: open.map((row) => row.id) }
     })
-    return { orderId: locked.id, revision, shipmentIds: open.map((row) => row.id) }
-  })
+  )
   // The documents are made again if storage fails, when they're next needed.
   try {
     await generatePo(result.orderId, result.revision)

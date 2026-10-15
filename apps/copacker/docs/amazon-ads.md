@@ -30,8 +30,8 @@ The two supported patterns are `https://*.local.copacker.ai` (normalized worktre
 `stories` and `e2e` service labels) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
 is a reserved option for future app-preview hosting, not a provisioned DNS namespace. Railway-generated app preview
 origins can instead be enrolled as exact origins by trusted deployment automation and removed on teardown. Never use
-`*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. Current PR previews are Storybook-only;
-data-backed app previews remain deferred until isolated database/storage provisioning exists.
+`*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. Data-backed PR previews now have isolated Neon databases and document buckets, but omit commerce credentials
+and do not participate in the Ads relay by default. See [Neon previews](neon.md).
 
 Amazon sees one fixed callback. The originating app stores a hash of a signed ticket with its exact HTTPS origin,
 nonce, callback and ten-minute expiry. Staging verifies its signature, expiry and destination allowlist before

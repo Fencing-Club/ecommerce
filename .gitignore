@@ -26,3 +26,6 @@ Thumbs.db
 
 # Private order data used for local email previews.
 **/.fixtures/
+.neon
+.cloudflare/
+.wrangler/

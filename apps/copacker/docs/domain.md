@@ -44,7 +44,7 @@ it ([Amazon inbound shipments](amazon-inbound.md)).
 ## Architecture
 
 - Next.js App Router with shadcn/ui; every read and write is authorized on the server.
-- Postgres on Railway with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
+- Postgres on Neon with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
 - One private Railway bucket for every uploaded and generated document, downloaded only through authorized routes.
 - Store credentials are encrypted per workspace; OAuth state is single-use and expires; supplier invitations match the
   exact email.

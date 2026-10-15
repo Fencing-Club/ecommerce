@@ -6,6 +6,7 @@ import { session, requireBuyer, requirePage } from "@/server/auth"
 import { shopifyFor } from "@/server/connections"
 import { errorResponse } from "@/server/errors"
 import { importProposalSchema } from "@/server/import-proposal"
+import { withJobWake } from "@/server/job-delivery"
 import { isAppOrigin } from "@/server/security"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -141,24 +142,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!z.uuid().safeParse(id).success) {
     return errorResponse("importNotFound", 404)
   }
-  const retried = await db().transaction(async (tx) => {
-    const [row] = await tx
-      .select()
-      .from(poImports)
-      .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
-      .for("update")
-    if (!row || row.status !== "failed") {
-      return null
-    }
-    const revision = row.revision + 1
-    await tx
-      .update(poImports)
-      // A buyer retry is a new attempt and should pick up a corrected production prompt. Worker retries within
-      // that attempt still use the version pinned by importJob.
-      .set({ status: "queued", error: null, promptVersion: null, revision, updatedAt: new Date() })
-      .where(eq(poImports.id, id))
-    await tx.insert(jobs).values({ key: `import:${id}:${revision}`, kind: "import", payload: { id, revision } })
-    return { id, revision, status: "queued" }
-  })
+  const retried = await withJobWake(
+    db().transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(poImports)
+        .where(and(eq(poImports.id, id), eq(poImports.orgId, s.org.id)))
+        .for("update")
+      if (!row || row.status !== "failed") {
+        return null
+      }
+      const revision = row.revision + 1
+      await tx
+        .update(poImports)
+        // A buyer retry is a new attempt and should pick up a corrected production prompt. Worker retries within
+        // that attempt still use the version pinned by importJob.
+        .set({ status: "queued", error: null, promptVersion: null, revision, updatedAt: new Date() })
+        .where(eq(poImports.id, id))
+      await tx.insert(jobs).values({ key: `import:${id}:${revision}`, kind: "import", payload: { id, revision } })
+      return { id, revision, status: "queued" }
+    })
+  )
   return retried ? Response.json(retried, { status: 202 }) : errorResponse("onlyFailedImportsRetry", 409)
 }
