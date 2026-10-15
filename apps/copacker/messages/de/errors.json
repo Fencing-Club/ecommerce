@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "Dieser Lieferant wurde entfernt. Wählen Sie einen anderen Lieferanten oder fügen Sie ihn erneut hinzu.",
   "supplierWorkspaceRequired": "Wechseln Sie zu einem Lieferanten-Workspace",
   "syncAmazonBeforeRestock": "Synchronisieren Sie Amazon auf der Seite Produkte, bevor Sie Nachschub für Amazon planen",
-  "syncOrdersFirst": "Synchronisieren Sie zuerst die {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}}-Aufträge auf der Seite Aufträge",
+  "syncOrdersFirst": "Synchronisieren Sie zuerst die {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}}-Aufträge in den Einstellungen",
   "tooManyAttempts": "Zu viele Versuche. Versuchen Sie es in einer Minute erneut.",
   "tooManyLabelVariations": "Wählen Sie weniger Produkte. Ein Download umfasst bis zu 1.000 Varianten.",
   "tooManyMessages": "Zu viele Nachrichten. Versuchen Sie es in ein paar Minuten erneut.",

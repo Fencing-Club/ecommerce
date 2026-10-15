@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "此供应商已被移除。请选择其他供应商，或重新添加。",
   "supplierWorkspaceRequired": "请切换到供应商工作区",
   "syncAmazonBeforeRestock": "为 Amazon 补货前，请先在“产品”页面同步 Amazon",
-  "syncOrdersFirst": "请先在“订单”页面同步 {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} 订单",
+  "syncOrdersFirst": "请先在“设置”中同步 {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} 订单",
   "tooManyAttempts": "尝试次数过多。请稍后再试。",
   "tooManyLabelVariations": "请减少所选产品。每次下载最多包含 1,000 个变体。",
   "tooManyMessages": "消息过多。请几分钟后再试。",

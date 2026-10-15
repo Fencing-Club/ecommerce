@@ -1084,14 +1084,15 @@ export async function restockDemand(orgId: string, providers: string[], days: nu
         gapReasons: summarizeDemandGaps(result.gaps)
       })
     } catch (error) {
-      console.error(JSON.stringify({ event: "sales_read_failed", source, orgId, error: describeError(error) }))
+      const needsSetup = error instanceof SalesSyncError || error instanceof ReconnectRequiredError
+      // Missing history and account setup are expected availability states, already surfaced to the buyer.
+      if (!needsSetup) {
+        console.error(JSON.stringify({ event: "sales_read_failed", source, orgId, error: describeError(error) }))
+      }
       sources.push({
         source,
         // Setup problems say what to do; anything else is logged and summarized.
-        error:
-          error instanceof SalesSyncError || error instanceof ReconnectRequiredError
-            ? error.message
-            : "Sales couldn't be read. Try again.",
+        error: needsSetup ? error.message : "Sales couldn't be read. Try again.",
         window: null,
         saleDays: new Map<string, Set<string>>(),
         gapUnits: 0,

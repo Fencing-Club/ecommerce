@@ -135,7 +135,25 @@
     },
     "storeGroup": "Boutiques",
     "advertisingGroup": "Publicité",
-    "manage": "Gérer"
+    "manage": "Gérer",
+    "marketplaceCount": "{count, plural, one {# marketplace} other {# marketplaces}}",
+    "panel": {
+      "syncTitle": "Synchronisation",
+      "preferencesTitle": "Préférences d’importation",
+      "syncAction": "Synchroniser {label}",
+      "queuedHint": "En attente de démarrage.",
+      "syncingHint": "Les mises à jour continuent après la fermeture de cette fenêtre.",
+      "status": {
+        "queued": "En attente",
+        "syncing": "Synchronisation",
+        "synced": "Synchronisé",
+        "failed": "Action requise",
+        "idle": "Non synchronisé",
+        "loading": "Vérification",
+        "unavailable": "Statut indisponible",
+        "scheduled": "Synchronisation quotidienne activée"
+      }
+    }
   },
   "excludedTags": {
     "title": "Tags de commande exclus",
@@ -250,6 +268,11 @@
     "checking": "Vérification…",
     "statusUnavailable": "Statut indisponible",
     "summary": "Dépenses publicitaires",
-    "requiresStore": "Connectez d’abord votre boutique Amazon."
+    "requiresStore": "Connectez d’abord votre boutique Amazon.",
+    "ready": "Synchronisation quotidienne activée",
+    "spendTitle": "Dépenses publicitaires",
+    "connectionTitle": "Connexion",
+    "disconnectTitle": "Déconnecter Amazon Ads ?",
+    "disconnectDescription": "Les nouvelles dépenses publicitaires ne seront plus synchronisées. Les dépenses déjà importées seront conservées."
   }
 }

@@ -135,7 +135,25 @@
     },
     "storeGroup": "اسٹورز",
     "advertisingGroup": "اشتہارات",
-    "manage": "انتظام کریں"
+    "manage": "انتظام کریں",
+    "marketplaceCount": "{count} مارکیٹ پلیس",
+    "panel": {
+      "syncTitle": "ڈیٹا کی مطابقت پذیری",
+      "preferencesTitle": "درآمد کی ترجیحات",
+      "syncAction": "{label} سنک کریں",
+      "queuedHint": "شروع ہونے کا انتظار ہے۔",
+      "syncingHint": "یہ ونڈو بند کرنے کے بعد بھی اپ ڈیٹس جاری رہیں گی۔",
+      "status": {
+        "queued": "قطار میں",
+        "syncing": "سنک ہو رہا ہے",
+        "synced": "سنک ہو گیا",
+        "failed": "توجہ درکار ہے",
+        "idle": "سنک نہیں ہوا",
+        "loading": "جانچ جاری ہے",
+        "unavailable": "حیثیت دستیاب نہیں",
+        "scheduled": "روزانہ سنک فعال ہے"
+      }
+    }
   },
   "excludedTags": {
     "title": "خارج شدہ آرڈر ٹیگز",
@@ -250,6 +268,11 @@
     "checking": "جانچ جاری ہے…",
     "statusUnavailable": "حیثیت دستیاب نہیں",
     "summary": "اشتہارات کے اخراجات",
-    "requiresStore": "پہلے اپنا Amazon اسٹور منسلک کریں۔"
+    "requiresStore": "پہلے اپنا Amazon اسٹور منسلک کریں۔",
+    "ready": "روزانہ کی ہم وقت سازی فعال ہے",
+    "spendTitle": "اشتہاری اخراجات",
+    "connectionTitle": "کنکشن",
+    "disconnectTitle": "Amazon Ads منقطع کریں؟",
+    "disconnectDescription": "نئے اشتہاری اخراجات کی ہم وقت سازی رک جائے گی۔ پہلے سے درآمد شدہ اخراجات محفوظ رہیں گے۔"
   }
 }

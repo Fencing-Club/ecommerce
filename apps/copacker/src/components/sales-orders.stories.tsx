@@ -3,7 +3,7 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { salesOrders, syncState } from "@/stories/fixtures/catalog"
 import { member } from "@/stories/workspace"
-import { SalesOrders } from "./sales-orders"
+import { OrdersSyncRow, SalesOrders } from "./sales-orders"
 
 const bothSources = { sources: [syncState("shopify"), syncState("amazon")] }
 
@@ -29,6 +29,54 @@ const meta = preview.meta({
       http.get("/api/sales", () => HttpResponse.json(bothSources)),
       ordersApi(() => ({ orders: salesOrders, total: salesOrders.length }))
     )
+  }
+})
+
+export const SyncSettings = meta.story({
+  render: () => <OrdersSyncRow source="amazon" />,
+  beforeEach: ({ msw }) => {
+    let queued = false
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({ sources: [syncState("amazon", { status: queued ? "queued" : "idle", progress: 0 })] })
+      ),
+      http.post("/api/sales/sync", async ({ request }) => {
+        await expect(await request.json()).toEqual({ source: "amazon" })
+        queued = true
+        return HttpResponse.json({ status: "queued" })
+      })
+    )
+  },
+  play: async ({ canvas }) => {
+    const sync = await canvas.findByRole("button", { name: "Sync Amazon orders" })
+    await waitFor(() => expect(sync).toBeEnabled())
+    await userEvent.click(sync)
+    await expect(await canvas.findByText("Queued")).toBeVisible()
+    await expect(sync).toBeDisabled()
+    await expect(canvas.queryByRole("progressbar")).toBeNull()
+  }
+})
+
+export const SyncSettingsFailed = meta.story({
+  render: () => <OrdersSyncRow source="amazon" />,
+  beforeEach: ({ msw }) =>
+    msw.use(
+      http.get("/api/sales", () =>
+        HttpResponse.json({ sources: [syncState("amazon", { status: "failed", errorCode: "reconnect" })] })
+      )
+    ),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Needs attention")).toBeVisible()
+    await expect(canvas.getByRole("link", { name: "Reconnect" })).toHaveAttribute("href", "/api/connections/amazon")
+  }
+})
+
+export const SyncSettingsUnavailable = meta.story({
+  render: () => <OrdersSyncRow source="amazon" />,
+  beforeEach: ({ msw }) => msw.use(http.get("/api/sales", () => new HttpResponse(null, { status: 500 }))),
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Sync Amazon orders" })).toBeDisabled())
+    await expect(await canvas.findByText("Status unavailable", { selector: "span" })).toBeVisible()
   }
 })
 

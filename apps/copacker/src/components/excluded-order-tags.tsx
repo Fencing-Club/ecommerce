@@ -1,5 +1,6 @@
 "use client"
 
+import { Tags } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
@@ -37,6 +38,7 @@ export function ExcludedOrderTags({
   const t = useTranslations("settings.excludedTags")
   return (
     <DetailRow
+      icon={<Tags />}
       title={
         <>
           {t("title")}
@@ -97,7 +99,9 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
         setOpen(next)
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("editLabel")} />}>
+      <DialogTrigger
+        render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+      >
         {t("edit")}
       </DialogTrigger>
       {/* Typing goes straight into the tags, not to the first chip's remove button. */}

@@ -1,5 +1,5 @@
 import { delay, http, HttpResponse } from "msw"
-import { expect, screen, userEvent, waitFor } from "storybook/test"
+import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { amazonAccount, shopifyAccount, stockSync, storeSyncHandlers } from "@/stories/fixtures/logistics"
 import { member } from "@/stories/workspace"
@@ -150,10 +150,9 @@ export const ShopifyRow = meta.story({
   render: () => <InventorySyncRow provider="shopify" />,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Inventory" })).toBeVisible()
-    await expect(await canvas.findByText(/^Synced/)).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: "Shopify inventory actions" }))
-    await expect(screen.queryByRole("menuitem", { name: "Reconnect" })).toBeNull()
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Sync now" }))
+    await expect(await canvas.findByText(/./, { selector: "time" })).toBeVisible()
+    await expect(canvas.queryByRole("link", { name: "Reconnect" })).toBeNull()
+    await userEvent.click(canvas.getByRole("button", { name: "Sync Shopify inventory" }))
     await waitFor(() => expect(started).toEqual([{ source: "shopify" }]))
   }
 })
@@ -162,9 +161,8 @@ export const ShopifyRow = meta.story({
 export const AmazonRow = meta.story({
   render: () => <InventorySyncRow provider="amazon" />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/^Synced/)).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: "Amazon inventory actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Sync now" }))
+    await expect(await canvas.findByText(/./, { selector: "time" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Sync Amazon inventory" }))
     await waitFor(() => expect(started).toHaveLength(2))
     await expect(started).toEqual([{ source: "fba", marketplaceId: "ATVPDKIKX0DER" }, { source: "awd" }])
   }
@@ -182,8 +180,7 @@ export const RowReconnect = meta.story({
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Needs access to location names")).toHaveClass("text-destructive")
-    await userEvent.click(canvas.getByRole("button", { name: "Shopify inventory actions" }))
-    await expect(await screen.findByRole("menuitem", { name: "Reconnect" })).toHaveAttribute(
+    await expect(await canvas.findByRole("link", { name: "Reconnect" })).toHaveAttribute(
       "href",
       `/api/connections/shopify?shop=${shopifyAccount}`
     )
@@ -196,9 +193,8 @@ export const RowSyncing = meta.story({
     msw.use(...storeSyncHandlers({ stock: { shopify: stockSync({ refresh: { status: "queued", errorCode: null } }) } }))
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Syncing…")).toBeVisible()
-    await userEvent.click(canvas.getByRole("button", { name: "Shopify inventory actions" }))
-    await expect(await screen.findByRole("menuitem", { name: "Syncing…" })).toHaveAttribute("aria-disabled", "true")
+    await expect(await canvas.findByText("Queued")).toBeVisible()
+    await expect(canvas.getByRole("button", { name: "Sync Shopify inventory" })).toBeDisabled()
   }
 })
 
@@ -212,9 +208,8 @@ export const RowStartFails = meta.story({
     )
   },
   play: async ({ canvas }) => {
-    await canvas.findByText(/^Synced/)
-    await userEvent.click(canvas.getByRole("button", { name: "Shopify inventory actions" }))
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Sync now" }))
+    await canvas.findByText(/./, { selector: "time" })
+    await userEvent.click(canvas.getByRole("button", { name: "Sync Shopify inventory" }))
     await expect(await canvas.findByText("A sync already started a minute ago.")).toHaveClass("text-destructive")
   }
 })
