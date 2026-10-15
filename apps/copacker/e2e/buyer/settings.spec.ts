@@ -311,10 +311,9 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   await locations.getByRole("button", { name: "Cancel" }).click()
   await expect(locations).toBeHidden()
 
-  // Sync now is in the orders row's menu. Locally it only queues a job that never runs, so it isn't clicked.
-  await sheet.getByRole("button", { name: "Shopify orders actions" }).click()
-  await expect(page.getByRole("menuitem", { name: /^(Sync now|Syncing…)$/ })).toBeVisible()
-  await page.keyboard.press("Escape")
+  // Sync is directly available on each card. Locally it only queues a job, so it isn't clicked.
+  await expect(sheet.getByRole("button", { name: "Sync Shopify orders", exact: true })).toBeVisible()
+  await expect(sheet.getByRole("button", { name: "Sync Shopify inventory", exact: true })).toBeVisible()
 })
 
 test("keeps Delete workspace disabled until the name is typed", async ({ page }) => {
