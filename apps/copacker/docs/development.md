@@ -37,6 +37,13 @@ Portless. Host-only cookies keep worktree sessions separate. Keep the existing e
   them. Portless isolates addresses, not data. The default Docker database remains shared unless explicitly separated.
 - Do not copy staging/production queue URLs into local `.env`. Local HTTPS does not make a webhook publicly reachable.
 
+## Amazon Ads authorization
+
+Use the [shared staging callback](amazon-ads.md#shared-development-callback) for live Amazon Ads development. Each
+worktree keeps its own app origin and session; its signed state tells the relay where to return. Do not register
+localhost ports or rewrite the worktree's `APP_URL` to the shared callback origin. Configure the relay on staging
+before enabling its variables locally. Storybook previews use mocks and never receive relay or provider secrets.
+
 ## E2E
 
 Local Playwright owns a dedicated `<worktree>.e2e.local.copacker.ai` server and never reuses an existing server. Build it

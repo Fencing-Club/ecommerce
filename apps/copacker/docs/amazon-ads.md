@@ -16,6 +16,37 @@ with Amazon security profile approved for `advertising::campaign_management`, no
 return URL registered. No JavaScript origin is needed for the server-side authorization-code flow. Never commit tokens
 or secrets. Amazon's scope permits campaign management, but Copacker only reads profiles and creates/downloads reports.
 
+## Shared development callback
+
+Local worktrees and trusted data-backed app previews can use the already registered staging callback:
+`https://staging.copacker.ai/api/connections/amazon-ads`. Set `AMAZON_ADS_RELAY_URL` to that exact URL and
+`AMAZON_ADS_RELAY_SECRET` to the same separately generated 32-byte base64 secret on staging and participating apps.
+Set `AMAZON_ADS_RELAY_ORIGINS` on those apps and staging to a comma-separated list of permitted HTTPS origins.
+The originating app and relay must use the same Amazon Ads client. Production leaves these settings blank and keeps
+its existing direct callback. Partial or invalid relay configuration fails closed.
+
+The two supported patterns are `https://*.local.copacker.ai` (only `main` and the launcher's worktree-slug/path-hash
+labels, never Storybook or E2E) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
+is a reserved option for future app-preview hosting, not a provisioned DNS namespace. Railway-generated app preview
+origins can instead be enrolled as exact origins by trusted deployment automation and removed on teardown. Never use
+`*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. Current PR previews are Storybook-only;
+data-backed app previews remain deferred until isolated database/storage provisioning exists.
+
+Amazon sees one fixed callback. The originating app stores a hash of a signed ticket with its exact HTTPS origin,
+nonce, callback and ten-minute expiry. Staging verifies its signature, expiry and destination allowlist before
+forwarding only the state and code or denial through the browser. It needs no originating session or database, does
+not exchange the code, and never stores the grant. Responses are non-cacheable and suppress the Referer header.
+The originating app verifies the exact return origin and its existing single-use user/workspace/seller state, then
+exchanges the code using the same staging redirect URI. Its host-only cookies and database remain isolated. No
+server fetch to loopback or preview addresses is involved. Replays fail at the originating app; deny/cancel follows
+the same relay. Normal staging connections continue directly.
+
+Rollout: deploy the relay-aware handler to staging before setting these variables on development clients. Register
+only the shared staging callback with Amazon (already present), launch local apps with `pnpm dev` through Portless,
+and verify consent and denial return to the starting worktree. Do not add port-based localhost callbacks or change
+`APP_URL` to staging. A relay under maintenance or unavailable stops authorization; it never falls back to a different
+callback. Rotate the relay secret on every participating app if a trusted preview is compromised.
+
 ## Import and expense calculation
 
 Connection, Sync ad spend and daily reconciliation queue durable `amazon-ads` jobs. Each reads a rolling 90-day window
