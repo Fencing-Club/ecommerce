@@ -44,8 +44,8 @@ The naming change is implemented in the launcher; external activation is tracked
 | Local webhook handler | `local.copacker.ai/api/webhooks/<provider>` | `<worktree>.local.copacker.ai/api/webhooks/<provider>` | Path on the app; only providers with implemented handlers |
 
 Auth and webhooks do not require additional local servers. Local app origins resolve to loopback, so external webhook
-senders need a public tunnel or receiver. Custom hook hostnames require explicit public DNS and TLS overriding the
-loopback wildcard; no hook DNS or hosted receiver is provisioned by this change. Use one owned tunnel per destination.
+senders need a public tunnel or receiver outside the loopback namespace. Use a tunnel-issued URL or an owned public
+hostname with its own DNS and TLS; no extra local webhook subdomain is configured. Use one owned tunnel per destination.
 A dedicated E2E process isolates its lifecycle and build output, not its database or storage.
 
 ### Primary-checkout activation checklist
