@@ -3,15 +3,15 @@ import { adsOAuthCallback, relayAdsOAuth, startAdsOAuth } from "../src/server/am
 
 const relay = "https://staging.copacker.ai"
 const path = "/api/connections/amazon-ads"
-const local = "https://main.local.copacker.ai"
-const worktree = "https://ads-fix-1234abcd.local.copacker.ai"
+const local = "https://local.copacker.ai"
+const worktree = "https://ads-fix.local.copacker.ai"
 const preview = "https://pr-42.preview.copacker.ai"
 beforeEach(() => {
   vi.stubEnv("AMAZON_ADS_RELAY_URL", relay + path)
   vi.stubEnv("AMAZON_ADS_RELAY_SECRET", Buffer.alloc(32, 4).toString("base64"))
   vi.stubEnv(
     "AMAZON_ADS_RELAY_ORIGINS",
-    "https://*.local.copacker.ai,https://pr-*.preview.copacker.ai,https://owned-preview.up.railway.app"
+    "https://local.copacker.ai,https://*.local.copacker.ai,https://pr-*.preview.copacker.ai,https://owned-preview.up.railway.app"
   )
 })
 afterEach(() => {
@@ -57,19 +57,26 @@ describe("shared Amazon Ads callback", () => {
   })
   it.each([
     "https://evil.example",
-    "https://main.local.copacker.ai.evil.example",
-    "https://main.stories.local.copacker.ai",
-    "https://main.e2e.local.copacker.ai",
-    "http://main.local.copacker.ai",
-    "https://main.local.copacker.ai:3000",
-    "https://main.local.copacker.ai/",
-    "https://user@main.local.copacker.ai",
+    "https://local.copacker.ai.evil.example",
+    "https://stories.local.copacker.ai",
+    "https://e2e.local.copacker.ai",
+    "https://feature.stories.local.copacker.ai",
+    "https://feature.e2e.local.copacker.ai",
+    "http://local.copacker.ai",
+    "https://local.copacker.ai:3000",
+    "https://local.copacker.ai/",
+    "https://user@local.copacker.ai",
     "https://random.up.railway.app",
     "https://pr-42.stories.preview.copacker.ai",
     "https://pr-0.preview.copacker.ai",
     "https://copacker.ai"
   ])("rejects untrusted or non-app origins %s", (origin) => {
     expect(() => startAdsOAuth(origin)).toThrow(/Invalid|Origin|Wrong|Expired|Duplicate|relay|configuration/)
+  })
+  it("requires the primary origin explicitly rather than expanding the worktree wildcard", () => {
+    vi.stubEnv("AMAZON_ADS_RELAY_ORIGINS", "https://*.local.copacker.ai")
+    expect(() => startAdsOAuth(local)).toThrow("Origin is not enabled")
+    expect(startAdsOAuth(worktree).callback).toBe(relay + path)
   })
   it("rejects tampering, wrong origin and changed relay settings", () => {
     const { state } = startAdsOAuth(local)

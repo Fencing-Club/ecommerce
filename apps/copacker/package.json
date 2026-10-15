@@ -11,8 +11,8 @@
     ]
   },
   "scripts": {
-    "dev": "node --import tsx scripts/dev.ts app",
-    "storybook": "node --import tsx scripts/dev.ts stories",
+    "dev": "dev-domains run app",
+    "storybook": "dev-domains run stories",
     "build-storybook": "storybook build",
     "build": "next build",
     "lint": "oxlint --max-warnings=0",
@@ -30,9 +30,10 @@
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts",
-    "dev:setup": "node --import tsx scripts/dev.ts setup",
-    "dev:urls": "node --import tsx scripts/dev.ts urls",
-    "dev:status": "node --import tsx scripts/dev.ts status",
+    "dev:setup": "dev-domains setup",
+    "dev:urls": "dev-domains urls",
+    "dev:status": "dev-domains status",
+    "dev:doctor": "dev-domains doctor",
     "build:e2e": "node --import tsx scripts/dev.ts build-e2e",
     "worker:dev": "node --import tsx scripts/dev.ts worker"
   },
@@ -80,6 +81,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@buildkitgg/dev-domains": "0.0.1",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@repo/oxlint-config": "workspace:*",
@@ -103,7 +105,6 @@
     "msw": "^2.15.0",
     "msw-storybook-addon": "^3.0.3",
     "playwright": "1.63.0",
-    "portless": "0.15.8",
     "storybook": "10.6.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.0",

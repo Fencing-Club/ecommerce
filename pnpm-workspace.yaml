@@ -20,3 +20,5 @@ allowBuilds:
   "@swc/core": true
   "@parcel/watcher": false
   msw: false
+minimumReleaseAgeExclude:
+  - "@buildkitgg/dev-domains@0.0.1"

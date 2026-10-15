@@ -15,12 +15,13 @@ export function hasPublicEbayEndpoint() {
     return false
   }
   const url = new URL(ebayEndpoint())
+  const isLocal = url.hostname === "local.copacker.ai" || url.hostname.endsWith(".local.copacker.ai")
   return (
     url.protocol === "https:" &&
     !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) &&
     !url.hostname.endsWith(".localhost") &&
-    !url.hostname.endsWith(".local.copacker.ai") &&
-    (!url.hostname.endsWith(".dev.copacker.ai") || url.hostname.endsWith(".hooks.dev.copacker.ai"))
+    !isLocal &&
+    !url.hostname.endsWith(".dev.copacker.ai")
   )
 }
 
