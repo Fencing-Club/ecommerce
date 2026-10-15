@@ -36,9 +36,9 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 | Configuration | Applied or verified | Remaining action |
 | --- | --- | --- |
 | Local DNS | DNS-only `*.local.copacker.ai` A `127.0.0.1`, TTL 300; superseded loopback `*.dev.copacker.ai` removed | Each workstation runs `dev:setup` to trust its own CA |
-| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered; CI callback `http://127.0.0.1:3005/callback` and logout origin `http://127.0.0.1:3005` registered after the real logout test exposed fallback to production | Existing production defaults and seven prior entries retained; separate identity environments require their own migration |
-| Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local Google sign-in reaches account selection; password sign-in and logout return to the exact local origin in E2E acceptance | No upstream callback change required for local rename; Google account consent/return still needs interactive verification |
-| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | The current key is shared across environments; separate keys remain planned |
+| WorkOS | Shared staging environment `environment_01M4WPTJSA2ZFN09BWQV4TRCBM`, client `client_01M4WPTK4JK0HKFZA7ZSMQBVYD`; callback and logout patterns for `*.local.copacker.ai` and `*.e2e.local.copacker.ai` registered; CI callback `http://127.0.0.1:3005/callback` and logout origin `http://127.0.0.1:3005` registered after the real logout test exposed fallback to production | Existing production defaults and seven prior entries retained; user confirmed shared staging identity environment remains intentional. Defer identity separation to its own migration |
+| Google through WorkOS | Exact upstream callback `https://auth.workos.com/sso/oauth/google/ZJwDwrWpf95iyqVRUkav8qCXh/callback`; client `924102076286-9r1dtjbjfcqa5voasq6dltct4bmg5mq2.apps.googleusercontent.com`; local Google sign-in reaches account selection; password sign-in and logout return to the exact local origin in E2E acceptance | No upstream callback change required for local rename; full Google sign-in returned to staging onboarding and sign-out completed in browser acceptance |
+| Google Maps restrictions | Saved and verified `https://*.local.copacker.ai/*`; existing seven website restrictions and Maps JavaScript API / Places API (New) restrictions preserved | Three restricted replacement keys are configured and verified below; shared key retained during local-checkout cutover |
 | Railway Storybook | Service `58c521b0-9266-4ea4-94e1-c35066b13903` (`copacker-stories`) in project `d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`; Docker build, port 8080, `/health` configured | Both deployments successful; HTTPS health metadata matches deployed app commits; browser manager and preview checked |
 | Storybook DNS | DNS-only staging CNAME `g96mxser.up.railway.app`; production CNAME `8sryyhn2.up.railway.app`; Railway-issued verification TXT records created | Railway manages public certificates |
 | GitHub merge enforcement | CI publishes the aggregate `ci-ok` check | The current private-repository plan rejects branch-protection access; require `ci-ok` in branch protection after a plan upgrade. Until then, check it before merging |
@@ -47,7 +47,40 @@ addresses. Branch changes do not change them. There is deliberately no `app` lab
 
 The initial Storybook deployments use each environment's currently deployed application source: staging
 `c651bdcd16d6fadb198b86041cd3e2cd04d8dec6`, production `a09712165d84fa3340d2c80aa2e7bafc0a382917`,
-plus the static hosting files from this rollout. Subsequent releases build app and Storybook from the same release.
+plus the static hosting files from this rollout. Subsequent releases build app and Storybook from the same release. The first full promotion passed staging E2E and production smoke checks; both apps and both Storybooks reported `cdef1f935b1d12e068c73ff0444c869046db2710`.
+
+## Maps key separation
+
+Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript API in Google Cloud project
+`copacker`. Each permits only Maps JavaScript API and Places API (New), with these website restrictions:
+
+| Key name / resource ID | Allowed website referrers | Configuration destination |
+| --- | --- | --- |
+| Copacker Maps Local / `f2ae7042-d129-4240-8a95-941b9aaffed8` | `https://*.local.copacker.ai/*`, `http://localhost:3000/*`, `http://localhost:3001/*`, `http://localhost:3010/*` | Primary checkout's ignored `.env`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`; refresh other checkouts from this local key |
+| Copacker Maps Staging / `3d77cae0-0fa1-45ec-b7bc-b497e78e29e2` | `https://staging.copacker.ai/*`, `https://copacker-staging.up.railway.app/*` | Staging Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
+| Copacker Maps Production / `a27495ad-bfea-47f8-9039-035aafe04285` | `https://copacker.ai/*`, `https://copacker-production.up.railway.app/*` | Production Railway web service: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
+
+Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
+through Docker's build argument. Do not add these keys to workers or fixture Storybook previews. The
+address-autocomplete UI is separate work and is not present in this release.
+
+Acceptance: Places Autocomplete (New) returned HTTP 200 with suggestions for each key's intended referrer
+(`main.local.copacker.ai`, `staging.copacker.ai`, `copacker.ai`). All three returned HTTP 403 with
+`API_KEY_HTTP_REFERRER_BLOCKED` for `https://example.org/`. These are API restriction checks, not a substitute for
+browser acceptance of the future autocomplete UI. Railway variable values were compared without logging secrets.
+
+The previous shared key (`829033b6-204a-48a7-9e52-fda3b6226976`) remains active. Retire it only after active local
+checkouts refresh their ignored environment configuration and the consuming UI passes browser acceptance.
+Never record key values in Git or documentation.
+
+## Webhook acceptance (2026-10-14)
+
+Production eBay challenge verification matched the expected SHA-256 response using the configured token and exact
+canonical endpoint. Unsigned notification requests were rejected with HTTP 412 in staging and production before
+queue forwarding. Staging challenge verification returns HTTP 503 because notifications are not configured there.
+WorkOS has no registered webhook endpoints or implemented handler; Shopify and Amazon use queues. No additional
+public webhook endpoint is needed for fixture UX previews. Provision an owned local tunnel only for a specific
+live integration task; never reuse another project's tunnel.
 
 ## Pull request previews
 
@@ -106,12 +139,12 @@ requires exact matching. `H` means the public webhook origin. Local `H` must nev
 | Web runtime / Railway or launcher | `APP_URL=A`, `APP_ALIAS_URLS` contains only intentional aliases | Launcher overrides stale `.env` origins; no sibling worktree aliases | Web and worker use same environment's canonical origin | Generated email URLs, metadata and origin checks |
 | AuthKit / runtime | `NEXT_PUBLIC_WORKOS_REDIRECT_URI=A/callback`, `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`; no parent-domain cookie | Launcher sets callback and clears `WORKOS_COOKIE_DOMAIN` | Set environment-scoped credentials; audit build-time values as well as runtime | Sign-in round trip and isolated session cookies |
 | WorkOS / dashboard Redirects | Add `https://*.local.copacker.ai/callback`; optional E2E `https://*.e2e.local.copacker.ai/callback`; retain existing exact redirects | Default must be exact, e.g. `https://main.local.copacker.ai/callback`; do not change shared default blindly | Register `A/callback` and each active alias callback | Google/Microsoft/SSO return to starting origin; invalid sibling service callback rejected |
-| WorkOS / logout and email flows | Register sign-out destinations `A`; configure initiate-login `A/login`, reset `A/reset-password`, invitation `A/signup` | Test wildcard support separately for sign-out; enumerate exact origins if necessary. Application-generated links use launcher's `APP_URL` | Existing shared environment's reset/invitation settings point to production; environment split is a separate identity migration | Logout, invitation resume, reset and verification emails |
+| WorkOS / logout and email flows | Register sign-out destinations `A`; configure initiate-login `A/login`, reset `A/reset-password`, invitation `A/signup` | Test wildcard support separately for sign-out; enumerate exact origins if necessary. Application-generated links use launcher's `APP_URL` | Shared initiate-login and invitation settings point to production; dashboard reset URL is unset, and app reset links use APP_URL. Environment split remains deferred | Logout, invitation resume, reset and verification emails |
 | Google OAuth / Google Cloud and WorkOS | Authorized redirect URI is the exact URI copied from WorkOS Google provider settings; client ID/secret are stored in WorkOS | Current shared Google client is in Testing; manage test-user access | Publish/verify branding as appropriate; separate provider credentials when environments split | Google → WorkOS → originating app; no `redirect_uri_mismatch` |
 | Google consent / Google Cloud | Branding homepage/privacy/terms, authorized domains and ownership verification, audience/test users, scopes | Keep test audience explicit; record scope additions | `https://copacker.ai`, `/privacy`, `/terms`; verify controlled domains when required | Consent screen, test-user access and verification status |
 | Google direct OAuth / future integrations | Exact redirect URIs and, if browser OAuth is used, exact authorized JavaScript origins; no wildcard redirects | Preregister a bounded set of integration origins or register each exact worktree | Register exact staging/production and intended aliases | OAuth state/PKCE and matching token-exchange redirect |
 | Google Maps/Places / Google Cloud | Separate `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` per environment; API restrictions: Maps JavaScript API and Places API (New) | Website restrictions `https://*.local.copacker.ai/*`; add origin-only patterns if required by console/browser behavior; test E2E scope only when live APIs needed | `https://staging.copacker.ai/*`, `https://copacker.ai/*` on their respective keys; add exact aliases only when used | Autocomplete works on intended origins; unauthorized origin rejected; billing/quota enabled |
-| Google Maps/Places / build pipeline | Browser key must exist before `next build`; `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` Docker build-argument wiring belongs to the separate address-autocomplete change and is not included in this rollout | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls, without logging keys |
+| Google Maps/Places / build pipeline | Browser key must exist before `next build`; Docker accepts `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` as a build argument and exposes it to the build | Loaded from local `.env` | Railway web service build variable per environment; rebuild after key changes | Inspect browser network for successful Places calls when the address-autocomplete feature ships, without logging keys |
 | Microsoft OAuth / Microsoft and WorkOS | Exact upstream redirect URI supplied by auth provider, credentials, tenant/audience/scopes | Current WorkOS environment uses demo credentials | Own provider app when moving to production auth environment | Microsoft login and tenant restrictions |
 | Shopify / Dev Dashboard | App URL `A`; allowed redirect `A/api/connections/shopify`; scopes; app client ID/secret | Register exact local worktree callbacks in Copacker Dev; no automatic dashboard mutation | Development app for staging, production app for production; `shopify.app.toml` configures production only | Connect and reconnect return to same origin |
 | Amazon SP-API / Solution Provider Portal | Exact callback `A/api/connections/amazon`; `AMAZON_APPLICATION_ID`, client credentials, draft setting | Self-authorization remains available; register exact local HTTPS callback if exercising public OAuth | Separate Aisle Dev / Aisle configuration | Seller consent, state and token exchange |
