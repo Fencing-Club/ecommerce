@@ -5,7 +5,7 @@ import { db, type Transaction } from "@/db"
 import { documents, events, forwarders, landedCosts, orders, shipments, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
-import type { Session } from "./auth"
+import type { Session } from "./workspace-session"
 
 // The forwarder a PO's goods pass through, if any: its stop on the way to Amazon or the buyer's location. Its leg comes
 // after the supplier's: the forwarder ships the goods on once they've arrived.

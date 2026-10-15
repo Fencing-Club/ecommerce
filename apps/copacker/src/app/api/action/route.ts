@@ -22,16 +22,8 @@ import { isTimeZone } from "@/lib/time-zone"
 import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "@/server/access"
 import { queueAmazonSubscription } from "@/server/amazon-notifications"
-import {
-  identity,
-  session,
-  requireAccess,
-  requireAdmin,
-  requireBuyer,
-  requireMembership,
-  requireOwner,
-  setWorkspace
-} from "@/server/auth"
+import { identity, session, setWorkspace } from "@/server/auth"
+import { requireAccess, requireAdmin, requireBuyer, requireOwner } from "@/server/authorization"
 import { addComment } from "@/server/comments"
 import { amazonFor, disconnect, connectAmazonSelfAuthorized } from "@/server/connections"
 import { deleteAccount, deleteWorkspace } from "@/server/deletion"
@@ -80,6 +72,7 @@ import {
   transferOwnership
 } from "@/server/team"
 import { requestLocale, serverText } from "@/server/text"
+import { requireMembership } from "@/server/workspace-session"
 
 const inputSchema = z.object({ action: z.string(), data: z.record(z.string(), z.unknown()) })
 const signInActions = new Map<string, (data: unknown) => Promise<ActionResult>>([

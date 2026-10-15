@@ -1,5 +1,7 @@
-import { requireAccess, session } from "@/server/auth"
-import { AccessError, errorResponse, failureMessage } from "@/server/errors"
+import { AccessError } from "@/i18n/errors"
+import { session } from "@/server/auth"
+import { requireAccess } from "@/server/authorization"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"
 import { saveProduct } from "@/server/supplier-products"
 

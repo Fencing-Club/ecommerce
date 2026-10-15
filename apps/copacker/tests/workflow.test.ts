@@ -16,7 +16,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const provider = vi.hoisted(() => ({
   amazonFor: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -134,7 +134,6 @@ import { GET as downloadPo } from "../src/app/api/orders/[id]/po/route"
 import { GET as getCoverage } from "../src/app/api/orders/summary/route"
 import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
-import { profileFor } from "../src/server/auth"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
 import { startFirstSync } from "../src/server/first-sync"
 import {
@@ -200,6 +199,7 @@ import { saveSupplierAddress, supplierPickupAddresses } from "../src/server/supp
 import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
+import { profileFor } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),

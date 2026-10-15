@@ -1,6 +1,8 @@
 import { ZodError } from "zod"
-import { requireAdmin, session } from "@/server/auth"
-import { AccessError, errorResponse, failureMessage } from "@/server/errors"
+import { AccessError } from "@/i18n/errors"
+import { session } from "@/server/auth"
+import { requireAdmin } from "@/server/authorization"
+import { errorResponse, failureMessage } from "@/server/errors"
 import { LocationSettingsError, readLocationMappings, saveLocationMapping } from "@/server/inventory-location-settings"
 
 const headers = { "Cache-Control": "private, no-store" }

@@ -27,6 +27,11 @@ and stories. Page and price permissions are checked before reads; restricted att
 removed before serialization. The data boundary preserves store time zone and restock settings and excludes identity
 and organization records. Its Next route wrapper remains until the routing conversion.
 
+Workspace resolution, profile initialization, membership checks and role/page guards are also framework-independent.
+The existing Next routes call the same canonical functions bundled in the Start Worker. Each operation reads current
+memberships; workspace cookies cannot grant access, fallback selection is deterministic, and the switcher receives
+only ID/name/kind. Concurrent profile creation reads the winning saved profile rather than manufacturing a result.
+
 The fixture uses a fresh router per request and ordinary SSR/server functions. Import protection fails the build on
 server/client boundary violations. Vanilla-extract's three automatically externalized compiler modules are bundled in
 the Worker environment, as required by the Cloudflare Vite plugin; unrelated externals remain prohibited. See the
@@ -42,9 +47,16 @@ The real partners/product-import consumers still need their complete acceptance 
 
 ## Verified checks
 
-The full repository `pnpm verify` passed on October 15: formatting, lint, both TypeScript projects, unused-dependency
-analysis and unit/Storybook tests with coverage. This verifies the current compatibility foundation alongside the
-existing Next application; it does not satisfy the completed-migration release gate V01.
+The full repository `pnpm verify` passed: formatting, lint, both TypeScript projects, unused-dependency analysis and
+unit/Storybook tests with coverage, including 2,232 Copacker tests across 272 files. This verifies the current
+compatibility foundation alongside the existing Next application; it does not satisfy the completed-migration release
+gate V01.
+
+The current Next production build also passed after the localization, overview and workspace changes. Integrated-browser
+checks covered buyer desktop/mobile layouts, date/channel controls by keyboard, a member without stores/admin setup, and the
+Urdu supplier overview without horizontal overflow. The Urdu case now has an automated story. An extra live production
+Next smoke-server launch was rejected by automatic approval review without a reason, so that additional check remains
+pending. Storybook's Vite 8 WebSocket options now use its supplied HTTP server, avoiding another worktree's default port.
 
 `pnpm --filter copacker test:start-runtime` builds and tests the fixture in local workerd against local Postgres.
 The same test script accepts an explicit `--remote <origin>` for the protected staging Worker.
@@ -73,6 +85,13 @@ the sessions created by that run; no account is created or reset and no emails a
 is persisted and accepted on the next request rather than assuming the token must change every time. Full custom
 signup/verification/OAuth/organization flows still need app-level acceptance.
 
+The authenticated deployed run also exercised workspace resolution through Hyperdrive using the production schema's
+shape in transaction-local temporary tables. It rejected unauthenticated access and a foreign workspace selection,
+enforced read-only grants, observed permission updates and removed revoked membership. Existing staging application
+records were neither read nor changed by that probe. Twelve database-backed unit cases cover those behaviors, concurrent
+callers, empty memberships, invalid IDs, minimal switcher data and competing profile creation. App-level workspace
+switching, cross-tab behavior and browser cache isolation remain pending.
+
 The integrated-browser fixture passed invalid-value fallback, both query controls, preservation of unrelated search
 keys, refresh, back/forward navigation and keyboard activation. Desktop and 390-pixel mobile RTL layouts were inspected.
 These fixture checks establish adapter feasibility, not completion of the actual partners/product-import screens.
@@ -99,7 +118,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive | `copacker-staging`, ID `0a74043480fe42a6acdbf46b9572ef58` |
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
-| Tested Worker version | `cbda7757-0284-4a42-9f63-f6f69a612cae` |
+| Tested Worker version | `673f9510-532c-4498-9626-8aba7107926d` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,
@@ -117,7 +136,7 @@ the old CA. Repeat separately for production; do not assume both environments sh
 
 ## Remaining proof before M0 exit
 
-Remaining custom WorkOS signup/verification/OAuth flows; workspace/role isolation; private R2 download;
+Remaining custom WorkOS signup/verification/OAuth flows; workspace switching and browser-cache isolation; private R2 download;
 database row locks/token-refresh serialization and reconnect drills; full nuqs browser acceptance in both consumers;
 maximum-size and representative PDF/ZIP/XLSX/AI workloads under concurrency; existing-service baseline and agreed
 release/recovery budgets. The application route conversion, background executors and production cutover are pending.

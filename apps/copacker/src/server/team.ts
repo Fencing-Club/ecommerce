@@ -3,12 +3,12 @@ import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { jobs, memberships, profiles, teamInvitations } from "@/db/schema"
 import { LocalizedError, type ErrorKey } from "@/i18n/errors"
+import { AccessError } from "@/i18n/errors"
 import { type Access, accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
-import type { Session } from "./auth"
-import { AccessError } from "./errors"
 import { hash, token } from "./security"
 import { requestLocale } from "./text"
+import type { Session } from "./workspace-session"
 
 const week = 7 * 86400000
 const emailSchema = z.object({ email: z.email("errors.enterEmail").max(254) })

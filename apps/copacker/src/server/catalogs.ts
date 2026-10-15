@@ -18,8 +18,9 @@ import {
   quantityRulesSchema
 } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
-import { requireSupplier, type Session } from "./auth"
+import { requireSupplier } from "./authorization"
 import { pricingText } from "./text"
+import { type Session } from "./workspace-session"
 
 type Executor = Transaction | ReturnType<typeof db>
 

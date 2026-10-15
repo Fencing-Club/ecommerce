@@ -11,9 +11,9 @@ import {
   variantFields
 } from "@/db/schema"
 import { type ErrorKey } from "@/i18n/errors"
-import type { Session } from "./auth"
 import { StatusError } from "./errors"
 import { syncShopifySuppliers } from "./suppliers"
+import type { Session } from "./workspace-session"
 
 // Details Copacker keeps for each Shopify variation, and for each product (case quantity, and the supplier chosen on
 // the product). They were Shopify metafields; each store's are copied here once (copyShopifyFields), and from then on

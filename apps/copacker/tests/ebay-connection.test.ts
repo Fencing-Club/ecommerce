@@ -19,8 +19,8 @@ vi.mock("@/server/auth", async (original) => ({
 }))
 import { GET } from "../src/app/api/connections/[provider]/route"
 import { LocalizedError } from "../src/i18n/errors"
+import { AccessError } from "../src/i18n/errors"
 import { connection, disconnect } from "../src/server/connections"
-import { AccessError } from "../src/server/errors"
 import { decrypt, hash } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 

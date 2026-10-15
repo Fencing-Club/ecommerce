@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { requireAccess, session } from "@/server/auth"
+import { session } from "@/server/auth"
+import { requireAccess } from "@/server/authorization"
 import { deleteCatalog } from "@/server/catalogs"
 import { errorResponse, failureMessage, failureStatus } from "@/server/errors"
 import { isAppOrigin } from "@/server/security"

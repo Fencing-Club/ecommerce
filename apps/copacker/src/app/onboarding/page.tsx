@@ -8,10 +8,11 @@ import { SignedInAs } from "@/components/onboarding/signed-in-as"
 import { db } from "@/db"
 import { memberships, organizations } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
-import { identity, workspaceCookie } from "@/server/auth"
+import { identity } from "@/server/auth"
 import { findInvitation, invitationKind, invitationPath } from "@/server/invitations"
 import { ownProfile } from "@/server/profile"
 import { returnPath } from "@/server/security"
+import { workspaceCookie } from "@/server/workspace-session"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("onboarding")

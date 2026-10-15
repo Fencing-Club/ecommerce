@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { documents, shipments, type ShipmentState } from "@/db/schema"
 import { accessibleOrder } from "./access"
-import type { Session } from "./auth"
 import { linesMissingLabels } from "./product-barcodes"
 import {
   finishedStates,
@@ -15,6 +14,7 @@ import {
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { type ServerKey, serverText } from "./text"
+import type { Session } from "./workspace-session"
 
 const finishedMessages: Partial<Record<ShipmentState, ServerKey>> = {
   received: "workflow.arrived",

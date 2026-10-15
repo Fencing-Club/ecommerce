@@ -58,6 +58,9 @@ try {
   const missing = await request("/probe", { method: "POST" })
   assert.equal(missing.status, 403)
 
+  const workspace = await request("/workspace", { method: "POST", headers: { Origin: origin } })
+  assert.equal(workspace.status, 401, "Workspace queries require a validated session")
+
   const saved = await request("/probe", { method: "POST", headers: { Origin: origin } })
   assert.equal(saved.status, 200, await saved.text())
   const cookies = saved.headers.getSetCookie()

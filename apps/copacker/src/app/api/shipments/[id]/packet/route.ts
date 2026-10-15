@@ -4,13 +4,14 @@ import { z } from "zod"
 import { db } from "@/db"
 import { shipments, documents } from "@/db/schema"
 import { accessibleOrder } from "@/server/access"
-import { session, requireMembership, requirePage } from "@/server/auth"
+import { session, requirePage } from "@/server/auth"
 import { packingDocuments } from "@/server/documents"
 import { errorTextResponse } from "@/server/errors"
 import { lineLabelFiles, lineLabels, warningLabelFile } from "@/server/product-barcodes"
 import { releaseIssues } from "@/server/readiness"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
+import { requireMembership } from "@/server/workspace-session"
 // The supplier's packet, to print: the packing list and checklist, the product labels and suffocation warning labels
 // for the lines it carries, then, for a shipment to Amazon, Amazon's carton labels and the buyer's shipping labels.
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {

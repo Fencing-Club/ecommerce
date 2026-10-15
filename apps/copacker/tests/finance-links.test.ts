@@ -7,7 +7,6 @@ import * as tables from "../src/db/schema"
 const context = vi.hoisted(() => ({ current: null as unknown }))
 vi.mock("@/db", () => ({ db: () => context.current }))
 import { freightPerSku, freightShipment, syncInboundShipments } from "../src/server/amazon-shipments"
-import type { Session } from "../src/server/auth"
 import { syncExchangeRates } from "../src/server/exchange-rates"
 import { landedMarkupsFor } from "../src/server/landed-costs"
 import {
@@ -24,6 +23,7 @@ import {
   salesByDay,
   shopifyCustomers
 } from "../src/server/overview-sales"
+import type { Session } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 
 describe("freight by shipment", () => {

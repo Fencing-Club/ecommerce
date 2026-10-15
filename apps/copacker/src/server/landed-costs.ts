@@ -6,7 +6,7 @@ import { events, landedCosts, orders } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
 import { amazonFreightByOrder } from "./amazon-shipments"
-import type { Session } from "./auth"
+import type { Session } from "./workspace-session"
 
 // Landed costs are the buyer's own record. Session is imported as a type only, so the worker can load this module.
 function requireBuyer(s: Session) {

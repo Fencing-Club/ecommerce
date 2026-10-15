@@ -4,10 +4,10 @@ import { db } from "@/db"
 import { connections, forwarders, orders, shipments, stockSnapshots, supplierProfiles, suppliers } from "@/db/schema"
 import { can } from "@/lib/access"
 import { forwarderOrders, orderVisibleTo } from "./access"
-import type { Session } from "./auth"
 import { isCollective } from "./inventory-products"
 import { stockScopes } from "./stock"
 import { serverText } from "./text"
+import type { Session } from "./workspace-session"
 
 export type SearchOrder = {
   id: string

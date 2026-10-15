@@ -27,11 +27,11 @@ import {
   signInSchema,
   signUpSchema
 } from "@/lib/sign-in"
-import { workspaceCookie } from "./auth"
 import { sendEmail } from "./email"
 import { appUrl, decrypt, encrypt, returnPath } from "./security"
 import { siteUrl } from "./site"
 import { workos, workosClientId } from "./workos"
+import { workspaceCookie } from "./workspace-session"
 
 // Copacker's own sign-in pages talk to WorkOS directly: email and password, a code emailed to confirm a new address,
 // password resets, and Google or Microsoft. Every path ends in AuthKit's session cookie, as the hosted pages did.

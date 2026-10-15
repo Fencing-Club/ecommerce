@@ -34,7 +34,7 @@ import { bundleQuote } from "@/lib/bundle-quote"
 import { quantityProblem } from "@/lib/catalog-pricing"
 import { eventMessage, type TimelineEvent } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
-import { requireBuyer, type Session } from "./auth"
+import { requireBuyer } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { copyDocument, generatePo } from "./documents"
@@ -47,6 +47,7 @@ import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 import { pricingText, serverText } from "./text"
+import { type Session } from "./workspace-session"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
 async function amazonAccount(orgId: string) {

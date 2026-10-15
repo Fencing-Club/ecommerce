@@ -7,6 +7,7 @@ import { workerStyles } from "../../scripts/vite-vanilla-extract.ts"
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
+  resolve: { alias: { "@": fileURLToPath(new URL("../../src", import.meta.url)) } },
   plugins: [
     workerStyles(),
     cloudflare({

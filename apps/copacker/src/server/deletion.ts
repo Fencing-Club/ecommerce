@@ -4,12 +4,12 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, memberships, oauthStates, organizations, profiles } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import type { Session } from "./auth"
-import { workspaceCookie } from "./auth"
 import { disconnect } from "./connections"
 import { deleteFile } from "./storage"
 import { workos } from "./workos"
 import { deleteWorkspaceRecords, unlinkPartners, withdrawInvitations } from "./workspace-records"
+import type { Session } from "./workspace-session"
+import { workspaceCookie } from "./workspace-session"
 
 // Deleting a person's account, and deleting a workspace. Both are for good: a person's sign-in, memberships and profile
 // go, and a deleted workspace takes its purchase orders, products, connections and team with it.

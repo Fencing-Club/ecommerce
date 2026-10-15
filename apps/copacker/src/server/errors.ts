@@ -1,16 +1,13 @@
 import { getTranslations } from "next-intl/server"
 import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
-import { type ErrorKey, LocalizedError } from "@/i18n/errors"
+import { AccessError, type ErrorKey, LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
 
 type Values = Record<string, string | number>
 
 // The saved authorization can no longer be used; only reconnecting in Settings fixes it.
 export class ReconnectRequiredError extends Error {}
-
-// The person's role or page access doesn't allow what they asked for.
-export class AccessError extends LocalizedError {}
 
 // A failure to show the person, with the HTTP status a route answers it with.
 export class StatusError extends LocalizedError {

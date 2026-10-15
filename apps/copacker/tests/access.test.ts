@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ actor: null as Session | null }))
 vi.mock("../src/server/auth", async (original) => ({

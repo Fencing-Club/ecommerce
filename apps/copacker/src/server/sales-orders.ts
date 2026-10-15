@@ -19,7 +19,6 @@ import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncInboundShipments } from "./amazon-shipments"
-import type { Session } from "./auth"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
 import { countedOrder } from "./counted-orders"
 import { ReconnectRequiredError } from "./errors"
@@ -34,6 +33,7 @@ import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
 import { describeError, stockErrorCode } from "./stock"
 import { syncLedger } from "./stock-days"
 import { type ServerKey, type ServerText, serverText, serverTextInEnglish } from "./text"
+import type { Session } from "./workspace-session"
 
 export const salesSources = ["shopify", "amazon", "ebay"] as const
 export type SalesSource = (typeof salesSources)[number]

@@ -17,12 +17,13 @@ import {
 import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
-import { requireBuyer, requireSupplier, type Session } from "./auth"
+import { requireBuyer, requireSupplier } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor } from "./connections"
 import { generateInvoice, generatePo } from "./documents"
 import { checkOrder, prepareOrder } from "./orders"
 import { describeError } from "./stock"
+import { type Session } from "./workspace-session"
 
 export const proposalSchema = z.object({
   lines: z

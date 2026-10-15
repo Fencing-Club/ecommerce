@@ -25,8 +25,8 @@ const sessions = new Set<string>()
 const identity = z.object({ userId: z.string().nullable() })
 const claims = z.object({ sid: z.string() })
 
-function request(method: string, cookie?: string, body?: string) {
-  return fetch(`${target.origin}/auth`, {
+function request(method: string, cookie?: string, body?: string, path = "/auth") {
+  return fetch(`${target.origin}${path}`, {
     method,
     redirect: "manual",
     headers: {
@@ -78,6 +78,19 @@ try {
   await expectIdentity(await request("GET", initialCookie), user)
   await expectIdentity(await request("GET", "migration-session=tampered"), null)
 
+  const anonymousWorkspace = await request("POST", undefined, undefined, "/workspace")
+  assert.equal(anonymousWorkspace.status, 401, "Workspace queries require a validated session")
+  const workspace = await request("POST", initialCookie, undefined, "/workspace")
+  assert.equal(workspace.status, 200, `Workspace probe failed with HTTP ${workspace.status}`)
+  assert.deepEqual(await workspace.json(), {
+    selectedRole: "member",
+    deniedEdit: true,
+    foreignCookieRejected: true,
+    permissionChangeApplied: true,
+    revokedMembershipRemoved: true,
+    switcherKeys: ["id", "kind", "name"]
+  })
+
   const refresh = await request("GET", await needsRefresh(initial))
   await expectIdentity(refresh, user)
   const refreshedCookie = cookieFrom(refresh)
@@ -108,7 +121,7 @@ try {
   await expectIdentity(rejected, null)
   assert(cookieFrom(rejected) === "migration-session=", "Rejected sessions must clear their cookie")
   process.stdout.write(
-    "Deployed WorkOS test-account checks passed: login, JWT validation, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
+    "Deployed WorkOS test-account checks passed: login, JWT validation, workspace authorization, refresh persistence, replacement login, logout precedence and revoked refresh.\n"
   )
 } finally {
   for (const sessionId of sessions) {

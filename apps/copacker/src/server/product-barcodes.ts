@@ -9,7 +9,6 @@ import { db } from "@/db"
 import { connections, productBarcodes, stockSnapshots } from "@/db/schema"
 import { LocalizedError, type ErrorKey } from "@/i18n/errors"
 import { accessibleOrder } from "./access"
-import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { errorText, StatusError } from "./errors"
 import { inventoryContext } from "./inventory-context"
@@ -17,6 +16,7 @@ import { isCollective } from "./inventory-products"
 import { type ProductDefaults, readProductDefaults } from "./product-defaults"
 import { describeError } from "./stock"
 import { deleteFile, getFile, putFile, validatePdf } from "./storage"
+import type { Session } from "./workspace-session"
 
 // What the products page shows about a variation's saved barcode.
 export type ProductBarcode = { name: string; bytes: number; uploadedAt: string }

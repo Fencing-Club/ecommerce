@@ -16,3 +16,6 @@ export class LocalizedError extends Error {
     super(inEnglish(key, values))
   }
 }
+
+// A role or page grant does not allow this operation. Kept independent of request-local translation helpers.
+export class AccessError extends LocalizedError {}

@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.current }))

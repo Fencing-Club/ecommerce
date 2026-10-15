@@ -3,7 +3,6 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, orders, salesSyncs, supplierProducts, suppliers } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import type { Session } from "./auth"
 import { inventoryContext } from "./inventory-context"
 import { inventoryLocations } from "./inventory-products"
 import { type ProductDefaults, readProductDefaults } from "./product-defaults"
@@ -13,6 +12,7 @@ import { resolveRestockSupplier } from "./restock-supplier"
 import type { DemandRow } from "./sales-attribution"
 import { restockDemand, type SalesSource } from "./sales-orders"
 import { stockoutDays } from "./stock-days"
+import type { Session } from "./workspace-session"
 
 const days = z.number().int().min(dayRange.min).max(dayRange.max)
 export const restockInputSchema = z.strictObject({

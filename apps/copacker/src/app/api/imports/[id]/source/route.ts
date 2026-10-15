@@ -2,9 +2,11 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
-import { session, requireBuyer, requireMembership, requirePage } from "@/server/auth"
+import { session, requirePage } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 import { errorTextResponse } from "@/server/errors"
 import { getFile } from "@/server/storage"
+import { requireMembership } from "@/server/workspace-session"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const s = await session()

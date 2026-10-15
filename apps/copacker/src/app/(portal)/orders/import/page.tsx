@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server"
 import { PageHeader } from "@/components/common"
 import { ImportIntake } from "@/components/import-intake"
-import { requireBuyer, requirePage, session, titleFor } from "@/server/auth"
+import { requirePage, session, titleFor } from "@/server/auth"
+import { requireBuyer } from "@/server/authorization"
 
 export const generateMetadata = titleFor("orders.import.title", "orders", "edit")
 

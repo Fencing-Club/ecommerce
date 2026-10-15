@@ -24,6 +24,14 @@ A person belongs to one WorkOS organization per workspace, so WorkOS asks which 
 browser had open, or else the first. `next` survives every step, and only ever points at a Copacker page
 (`returnPath`).
 
+Workspace lookup and permissions are independent of the web framework: `src/server/workspace-session.ts` resolves the
+person's current database memberships, and `src/server/authorization.ts` checks role, page and price grants. The active
+workspace cookie can choose only an existing membership. Missing, stale or foreign selections fall back to the oldest
+authorized workspace (ID breaks creation-time ties); no memberships sends the person to onboarding. The workspace
+switcher receives only ID, name and kind. Full workspace settings stay on the server and page loaders return explicit
+rendering data. The current Next request helpers call these same functions used by the protected Start compatibility
+Worker; see [migration evidence](specs/platform-migration/compatibility.md).
+
 ## WorkOS settings
 
 The [domain and provider inventory](domains.md) is the cross-environment checklist for redirects, sign-out destinations,

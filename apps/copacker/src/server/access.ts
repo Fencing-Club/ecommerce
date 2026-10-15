@@ -3,8 +3,8 @@ import { notFound } from "next/navigation"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
 import { forwarders, orders, suppliers } from "@/db/schema"
-import type { Session } from "./auth"
 import { forwarderLeg } from "./shipment-legs"
+import type { Session } from "./workspace-session"
 
 // The POs a buyer or supplier workspace can open: every one of a buyer's own, and a supplier's sent ones for as long as
 // the buyer keeps it on. The query must join suppliers on the PO's supplier.

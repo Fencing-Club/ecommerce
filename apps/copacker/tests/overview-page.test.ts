@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { LocalizedError } from "../src/i18n/errors"
+import { AccessError } from "../src/i18n/errors"
 import type { Permissions } from "../src/lib/access"
-import { AccessError } from "../src/server/errors"
 import { overview } from "../src/server/overview"
 import { overviewPageData } from "../src/server/overview-page"
 import { supplierOverview } from "../src/server/supplier-overview"

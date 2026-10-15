@@ -1,7 +1,8 @@
 # Roles and page access
 
 Everyone in a workspace has one of three roles, kept on their membership (`memberships.role` and `memberships.access`).
-The model is in `src/lib/access.ts`; the server's checks are in `src/server/auth.ts`.
+The model is in `src/lib/access.ts`; operation guards are in `src/server/authorization.ts` and current membership lookup
+is in `src/server/workspace-session.ts`. Next's remaining page/redirect boundary is in `src/server/auth.ts`.
 
 | Role   | Who                                                  | Can do                                                                                   |
 | ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |

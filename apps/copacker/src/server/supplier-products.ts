@@ -5,9 +5,10 @@ import { catalogProducts, catalogs, supplierProductGroups, supplierProducts } fr
 import { LocalizedError } from "@/i18n/errors"
 import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema } from "@/lib/catalog-pricing"
 import { imageTypes, variantsProblem, variantTitle } from "@/lib/supplier-product"
-import { requireSupplier, type Session } from "./auth"
+import { requireSupplier } from "./authorization"
 import { addToCatalogs } from "./catalogs"
 import { pricingText } from "./text"
+import { type Session } from "./workspace-session"
 
 const count = z.number().int().positive().max(2_147_483_647)
 const variantSchema = z.object({

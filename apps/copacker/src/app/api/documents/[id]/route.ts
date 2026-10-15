@@ -4,10 +4,11 @@ import { z } from "zod"
 import { db } from "@/db"
 import { documents, shipments } from "@/db/schema"
 import { accessibleOrder, forwarderOrder } from "@/server/access"
-import { type Session, session, requireMembership, requirePage } from "@/server/auth"
+import { session, requirePage } from "@/server/auth"
 import { errorTextResponse } from "@/server/errors"
 import { releasedStates } from "@/server/readiness"
 import { getFile } from "@/server/storage"
+import { type Session, requireMembership } from "@/server/workspace-session"
 async function labelsReleased(doc: typeof documents.$inferSelect) {
   if (!["shipping_label", "carton_label"].includes(doc.kind)) {
     return true
