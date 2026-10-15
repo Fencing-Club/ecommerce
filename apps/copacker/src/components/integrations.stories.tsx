@@ -56,12 +56,10 @@ const meta = preview.meta({
 export const AmazonAdsNotConnected = meta.story({
   args: { amazon },
   play: async ({ canvas }) => {
-    const card = canvas.getByRole("button", { name: "Amazon Ads settings" })
-    await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
-    await expect(await within(card).findByText("Not connected")).toBeVisible()
-    await userEvent.click(card)
-    const panel = await screen.findByRole("dialog", { name: "Amazon Ads" })
-    await waitFor(() => expect(within(panel).getByRole("link", { name: "Connect Amazon Ads" })).toBeVisible())
+    const card = await canvas.findByRole("link", { name: "Connect Amazon Ads" })
+    await expect(card).toHaveTextContent("Not connected")
+    await expect(card).toHaveAttribute("href", "/api/connections/amazon-ads")
+    await expect(canvas.queryByRole("button", { name: "Amazon Ads settings" })).toBeNull()
   }
 })
 
@@ -74,7 +72,7 @@ export const AmazonAdsConnected = meta.story({
       )
     ),
   play: async ({ canvas }) => {
-    const card = canvas.getByRole("button", { name: "Amazon Ads settings" })
+    const card = await canvas.findByRole("button", { name: "Amazon Ads settings" })
     await expect(await within(card).findByText("Amazon Ads")).toBeVisible()
     await waitFor(() => expect(within(card).getAllByText("Connected")).toHaveLength(1))
   }
@@ -338,6 +336,16 @@ export const AdsConnectedMember = meta.story({
   play: async ({ canvas }) => {
     const ads = canvas.getByRole("region", { name: "Advertising" })
     await expect(await within(ads).findByText("Connected")).toBeVisible()
+    await expect(within(ads).queryByRole("button")).toBeNull()
+  }
+})
+
+export const AdsUnavailable = meta.story({
+  args: { amazon, amazonAdsAvailable: false },
+  play: async ({ canvas }) => {
+    const ads = canvas.getByRole("region", { name: "Advertising" })
+    await expect(within(ads).getByText("Ads setup required.")).toBeVisible()
+    await expect(within(ads).queryByRole("link")).toBeNull()
     await expect(within(ads).queryByRole("button")).toBeNull()
   }
 })

@@ -1,7 +1,7 @@
 # Amazon Ads expense reporting
 
-Amazon Ads is authorized separately from SP-API. A buyer owner or admin connects it under Settings > Integrations > Advertising > Amazon Ads. Its own card shows the Ads connection status and opens the Ads
-controls. Store connections remain in the Stores group; without an Amazon store, the Ads card asks to connect one first.
+Amazon Ads is authorized separately from SP-API. A buyer owner or admin connects it under Settings > Integrations > Advertising > Amazon Ads. Its own card shows the Ads connection status. Connect starts Amazon consent directly; a connected card opens the Ads
+controls. Missing application credentials show a setup-required message instead of a Connect action. Store connections remain in the Stores group; without an Amazon store, the Ads card asks to connect one first.
 Workspace members can read this status, while only owners and admins can change the connection.
 The connected seller must already exist. OAuth state is single-use, expires after ten minutes, and is bound to
 the workspace, user and seller. Only North American seller profiles matching that seller ID are imported; vendor,
