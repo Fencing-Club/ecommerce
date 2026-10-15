@@ -27,10 +27,18 @@
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "apps/copacker": {
-      "entry": [".storybook/mocks/*.ts", "scripts/local-server.ts"],
+      "entry": [
+        ".storybook/mocks/*.ts",
+        "scripts/local-server.ts",
+        "tests/start-runtime/{cloudflare,vite}.config.ts",
+        "tests/start-runtime/src/router.tsx",
+        "tests/start-runtime/src/start.ts",
+        "tests/start-runtime/src/server.ts",
+        "tests/start-runtime/src/routes/**/*.{ts,tsx}"
+      ],
       "ignoreBinaries": ["openssl"],
       "ignore": [".storybook/public/**"],
-      "ignoreDependencies": ["@repo/oxlint-config"]
+      "ignoreDependencies": ["@repo/oxlint-config", "cloudflare"]
     },
     "apps/video": {
       "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],

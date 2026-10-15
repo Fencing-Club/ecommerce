@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "plugins": [],
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "*.config.ts",
+    ".cloudflare/types/index.d.ts",
+    "../../src/i18n/global.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -13,6 +13,7 @@ overrides:
   react-dom: 19.2.7
   react-is: 19.2.7
 allowBuilds:
+  workerd: true
   esbuild: true
   lefthook: true
   sharp: true
@@ -20,3 +21,13 @@ allowBuilds:
   "@swc/core": true
   "@parcel/watcher": false
   msw: false
+minimumReleaseAgeExclude:
+  - "@tanstack/react-start-rsc@0.1.63"
+  - "@tanstack/react-start-server@1.167.50"
+  - "@tanstack/react-start@1.169.2"
+  - "@tanstack/router-generator@1.167.44"
+  - "@tanstack/router-plugin@1.168.46"
+  - "@tanstack/router-utils@1.162.4"
+  - "@tanstack/start-plugin-core@1.171.53"
+  - "@tanstack/start-server-core@1.169.43"
+  - cf@1.0.0-beta.17

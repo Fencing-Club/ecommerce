@@ -1,0 +1,102 @@
+import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
+import { fileURLToPath } from "node:url"
+import { parseEnv } from "node:util"
+import { createBuilder, preview } from "vite"
+
+const configFile = fileURLToPath(new URL("../tests/start-runtime/vite.config.ts", import.meta.url))
+const remote = process.argv[2] === "--remote" ? process.argv[3] : undefined
+assert(process.argv.length === 2 || (process.argv.length === 4 && remote), "Use --remote <origin> or no arguments")
+if (!remote) {
+  await (await createBuilder({ configFile, logLevel: "warn" })).buildApp()
+}
+const server = remote
+  ? undefined
+  : await preview({ configFile, logLevel: "warn", preview: { host: "127.0.0.1", port: 0, open: false } })
+try {
+  const address = server?.httpServer.address()
+  assert(remote || (address && typeof address !== "string"))
+  const origin = remote ?? `http://127.0.0.1:${address && typeof address !== "string" ? address.port : 0}`
+  let token: string | undefined
+  if (remote) {
+    const url = new URL(remote)
+    assert.equal(url.protocol, "https:")
+    assert(url.hostname.startsWith("copacker-start-compatibility.") && url.hostname.endsWith(".workers.dev"))
+    token = parseEnv(
+      await readFile(new URL("../.cloudflare/probe-secrets.env", import.meta.url), "utf8")
+    ).PROBE_ACCESS_TOKEN
+    assert(token)
+    const unauthenticated = await fetch(`${origin}/probe`, { signal: AbortSignal.timeout(30_000) })
+    assert.equal(unauthenticated.status, 404)
+    assert.equal(await unauthenticated.text(), "", "The probe must reject anonymous requests itself")
+  }
+  const request = (path: string, options?: RequestInit) => {
+    const headers = new Headers(options?.headers)
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`)
+    }
+    return fetch(`${origin}${path}`, { ...options, headers, signal: AbortSignal.timeout(30_000) })
+  }
+  const page = await request("/?add=supplier&import=true&keep=inventory")
+  assert.equal(page.status, 200)
+  const html = await page.text()
+  assert.match(html, /data-testid="partner">supplier</)
+  assert.match(html, /data-testid="import">open</)
+  assert.match(html, /data-testid="marker">empty</)
+  const rtl = await request("/?lang=ur")
+  assert.equal(rtl.status, 200, "RTL page response")
+  assert(/<html lang="ur" dir="rtl"/.test(await rtl.text()), "RTL markup is missing")
+  const invalid = await request("/?add=invalid&import=invalid&filter=unrelated")
+  assert.equal(invalid.status, 200, "Invalid query input must not break the page")
+  const invalidHtml = await invalid.text()
+  assert(/data-testid="partner">closed</.test(invalidHtml), "Invalid partner selection must close the sheet")
+  assert(/data-testid="import">closed</.test(invalidHtml), "Invalid import selection must close the dialog")
+
+  const foreign = await request("/probe", { method: "POST", headers: { Origin: "https://foreign.example" } })
+  assert.equal(foreign.status, 403)
+  assert.equal(foreign.headers.getSetCookie().length, 0)
+  const missing = await request("/probe", { method: "POST" })
+  assert.equal(missing.status, 403)
+
+  const saved = await request("/probe", { method: "POST", headers: { Origin: origin } })
+  assert.equal(saved.status, 200, await saved.text())
+  const cookies = saved.headers.getSetCookie()
+  assert.equal(cookies.length, 2)
+  assert(cookies.some((cookie) => cookie.startsWith("migration-session=") && /httponly/i.test(cookie)))
+  assert(cookies.every((cookie) => !/domain=/i.test(cookie)))
+  const cookieHeader = cookies.map((cookie) => cookie.split(";")[0]).join("; ")
+  const session = await request("/probe", { headers: { Cookie: cookieHeader } })
+  assert.deepEqual(await session.json(), { userId: "user_compatibility" })
+  const anonymous = await request("/probe")
+  assert.deepEqual(await anonymous.json(), { userId: null })
+  const cleared = await request("/probe", { method: "DELETE", headers: { Origin: origin, Cookie: cookieHeader } })
+  assert.equal(cleared.status, 204)
+  assert(
+    cleared.headers
+      .getSetCookie()
+      .some((cookie) => cookie.startsWith("migration-session=;") && /max-age=0/i.test(cookie))
+  )
+
+  const documents = await request("/probe?kind=document", { method: "POST", headers: { Origin: origin } })
+  assert.equal(documents.status, 200, await documents.clone().text())
+  const documentResult: unknown = await documents.json()
+  assert(
+    documentResult && typeof documentResult === "object" && "pages" in documentResult && "crypto" in documentResult
+  )
+  assert.equal(documentResult.pages, 1000)
+  assert.equal(documentResult.crypto, true)
+
+  // Overlapping requests must not reuse sockets or each other's transaction-local tables.
+  await Promise.all(
+    Array.from({ length: 8 }, async () => {
+      const database = await request("/probe?kind=database", { method: "POST", headers: { Origin: origin } })
+      assert.equal(database.status, 200, await database.clone().text())
+      assert.deepEqual(await database.json(), { rows: [{ value: 42 }] })
+    })
+  )
+  process.stdout.write(
+    "Start/Workers runtime passed: SSR, RTL, nuqs direct links, CSRF, session storage, cookies, PDF, crypto and concurrent PostgreSQL.\n"
+  )
+} finally {
+  await server?.close()
+}

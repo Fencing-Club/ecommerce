@@ -22,6 +22,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
+          server: { deps: { inline: ["@workos-inc/authkit-nextjs"] } },
           // Request fixtures use this origin, independently of the developer's local app port.
           env: { APP_URL: "http://localhost:3000", APP_ALIAS_URLS: "" },
           include: ["tests/**/*.test.ts"],
