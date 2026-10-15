@@ -1,7 +1,7 @@
 # Amazon Ads expense reporting
 
-Amazon Ads is authorized separately from SP-API. A buyer owner or admin connects it under Settings > Amazon > Amazon
-Ads. The Amazon integration card also shows whether Ads is connected; opening the card exposes the connect controls.
+Amazon Ads is authorized separately from SP-API. A buyer owner or admin connects it under Settings > Integrations > Advertising > Amazon Ads. Its card shows the linked store, connection status and sync activity. Connect starts Amazon consent directly; Manage opens the ad-spend sync and connection controls. Disconnect asks for confirmation and keeps previously imported expenses.
+Store cards use the same Manage action. Shopify separates its name and domain; Amazon summarizes the marketplace count, with the full list in Manage. Management uses content-sized dialogs with account identity and connection status in the header, visible sync controls in a consistent two-column desktop grid (including single cards), grouped import preferences, and a separate footer for connection actions. Queued work is distinguished from running work; order-history progress is only shown while running. Ads includes a link to Overview, where the imported spend is used. Missing application credentials show a setup-required message instead of a Connect action. Store connections remain in the Stores group; without an Amazon store, the Ads card asks to connect one first.
 Workspace members can read this status, while only owners and admins can change the connection.
 The connected seller must already exist. OAuth state is single-use, expires after ten minutes, and is bound to
 the workspace, user and seller. Only North American seller profiles matching that seller ID are imported; vendor,

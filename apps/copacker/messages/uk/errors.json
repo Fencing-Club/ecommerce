@@ -322,7 +322,7 @@
   "supplierRemovedChooseAnother": "Цього постачальника видалено. Виберіть іншого постачальника або додайте його знову.",
   "supplierWorkspaceRequired": "Перейдіть до робочого простору постачальника",
   "syncAmazonBeforeRestock": "Синхронізуйте Amazon на сторінці «Товари», перш ніж поповнювати Amazon",
-  "syncOrdersFirst": "Спочатку синхронізуйте замовлення {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} на сторінці «Замовлення»",
+  "syncOrdersFirst": "Спочатку синхронізуйте замовлення {provider, select, amazon {Amazon} ebay {eBay} other {Shopify}} у налаштуваннях",
   "tooManyAttempts": "Забагато спроб. Спробуйте за хвилину.",
   "tooManyLabelVariations": "Виберіть менше товарів. За один раз можна скачати до 1000 варіантів.",
   "tooManyMessages": "Забагато повідомлень. Спробуйте за кілька хвилин.",

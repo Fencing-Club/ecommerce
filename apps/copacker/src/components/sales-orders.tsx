@@ -1,7 +1,7 @@
 "use client"
 
 import { useDebouncedValue } from "@mantine/hooks"
-import { ChevronLeft, ChevronRight, ExternalLink, Repeat, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, ExternalLink, Repeat, Search } from "lucide-react"
 import { useFormatter, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
@@ -18,9 +18,9 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
-import { DetailRow } from "./inventory-locations"
+import { IntegrationSyncCard, type IntegrationSyncState } from "./integration-sync-card"
 import { SalesStatus } from "./sales-status"
-import { SyncedAt, SyncMenu, SyncProgress } from "./sync-menu"
+import { SyncedAt, SyncProgress } from "./sync-status"
 
 type SyncState = {
   source: SalesSource
@@ -139,8 +139,9 @@ export function useOrderSync(source: SalesSource) {
 // A store's order sync in its Settings: when it last synced or what went wrong, with Sync now.
 export function OrdersSyncRow({ source }: { source: SalesSource }) {
   const t = useTranslations("sales.sync")
+  const panel = useTranslations("settings.integrations.panel")
   const errorMessage = useErrorMessage()
-  const { currentData, isLoading, refetch } = salesApi.useSalesStatusQuery(undefined, {
+  const { currentData, isLoading, isError, refetch } = salesApi.useSalesStatusQuery(undefined, {
     pollingInterval: 5000,
     skipPollingIfUnfocused: true
   })
@@ -157,20 +158,29 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
     }
   }
   const syncedAt = state ? (state.finishedAt ?? state.coveredTo) : null
+  let syncState: IntegrationSyncState = "idle"
   let text: React.ReactNode = t("notSyncedYet")
   if (isLoading) {
+    syncState = "loading"
     text = t("loading")
   } else if (syncing) {
-    text = <SyncProgress progress={state?.progress} />
+    syncState = state?.status === "queued" ? "queued" : "syncing"
+    text = panel(state?.status === "queued" ? "queuedHint" : "syncingHint")
   } else if (mutation.isError) {
+    syncState = "failed"
     text = <span className="text-destructive">{errorMessage(mutation.error, t("couldNotStart"))}</span>
   } else if (state?.status === "failed") {
+    syncState = "failed"
     text = (
       <span className="text-destructive">
         {state.errorCode === "provider_unavailable" ? t("unreachable", { source: title }) : t("lastFailed")}
       </span>
     )
+  } else if (isError) {
+    syncState = "unavailable"
+    text = undefined
   } else if (syncedAt) {
+    syncState = "synced"
     text = <SyncedAt at={syncedAt} />
   }
   let reconnect: string | null = null
@@ -181,19 +191,17 @@ export function OrdersSyncRow({ source }: { source: SalesSource }) {
         : `/api/connections/${source}`
   }
   return (
-    <DetailRow
+    <IntegrationSyncCard
       title={t("orders")}
-      action={
-        <SyncMenu
-          label={t("sourceOrders", { source: title })}
-          syncing={syncing || isLoading}
-          onSync={() => void startSync()}
-          reconnect={reconnect}
-        />
-      }
-    >
-      <span aria-live="polite">{text}</span>
-    </DetailRow>
+      label={t("sourceOrders", { source: title })}
+      icon={<ShoppingBag />}
+      status={syncState}
+      detail={text}
+      progress={state?.progress}
+      onSync={() => void startSync()}
+      disabled={syncing || isLoading || isError || !state}
+      reconnect={reconnect}
+    />
   )
 }
 

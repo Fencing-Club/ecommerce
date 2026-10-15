@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "集成",
-    "description": "与 Copacker 同步的店铺",
+    "description": "店铺和广告账户",
     "marketplaces": "站点",
     "marketplacesUnavailable": "无法从 Amazon 加载",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "选择商城，并粘贴 Amazon Solution Provider Portal 中的刷新令牌。",
       "connect": "连接",
       "refreshToken": "刷新令牌"
+    },
+    "storeGroup": "店铺",
+    "advertisingGroup": "广告",
+    "manage": "管理",
+    "marketplaceCount": "{count} 个商城",
+    "panel": {
+      "syncTitle": "数据同步",
+      "preferencesTitle": "导入偏好设置",
+      "syncAction": "同步{label}",
+      "queuedHint": "等待开始。",
+      "syncingHint": "关闭此窗口后，更新仍会继续。",
+      "status": {
+        "queued": "排队中",
+        "syncing": "同步中",
+        "synced": "已同步",
+        "failed": "需要处理",
+        "idle": "尚未同步",
+        "loading": "检查中",
+        "unavailable": "状态不可用",
+        "scheduled": "已启用每日同步"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "同步广告支出",
     "disconnect": "断开 Ads",
     "checking": "检查中…",
-    "statusUnavailable": "状态不可用"
+    "statusUnavailable": "状态不可用",
+    "summary": "广告支出",
+    "requiresStore": "请先连接您的 Amazon 店铺。",
+    "ready": "每日同步已启用",
+    "spendTitle": "广告支出",
+    "connectionTitle": "连接",
+    "disconnectTitle": "断开 Amazon Ads 连接？",
+    "disconnectDescription": "新的广告支出将停止同步。已导入的支出将被保留。"
   }
 }

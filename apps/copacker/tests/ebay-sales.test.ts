@@ -175,6 +175,73 @@ describe("eBay order sync", () => {
   })
 })
 
+describe("Restock sales availability", () => {
+  it("keeps a first sync waiting for history visible without logging it as a read failure", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    await database.insert(tables.connections).values([
+      { orgId, provider: "shopify", externalId: "club.myshopify.com", encryptedToken: "x" },
+      { orgId, provider: "amazon", externalId: "seller", encryptedToken: "x" }
+    ])
+    await database.insert(tables.salesSyncs).values([
+      { orgId, source: "shopify", externalAccountId: "club.myshopify.com", status: "queued" },
+      { orgId, source: "amazon", externalAccountId: "seller", status: "running" },
+      { orgId, source: "ebay", externalAccountId: seller, status: "queued" }
+    ])
+
+    const demand = await restockDemand(orgId, ["shopify", "amazon", "ebay"], 28)
+    expect(demand).toMatchObject({ shopifySales: null, amazonSales: null, ebaySales: null })
+    expect(demand.sources).toEqual(
+      ["Shopify", "Amazon", "eBay"].map((provider) =>
+        expect.objectContaining({ error: `Sync ${provider} orders in Settings first`, window: null })
+      )
+    )
+    expect(errorLog).not.toHaveBeenCalled()
+  })
+
+  it("keeps missing connections and insufficient history unavailable without error logs", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    await database.insert(tables.salesSyncs).values({
+      orgId,
+      source: "ebay",
+      externalAccountId: seller,
+      coveredFrom: new Date(Date.now() - 7 * day),
+      coveredTo: new Date()
+    })
+    const demand = await restockDemand(orgId, ["shopify", "ebay"], 28)
+    expect(demand.shopifySales).toBeNull()
+    expect(demand.ebaySales).toBeNull()
+    expect(demand.sources).toEqual([
+      expect.objectContaining({ source: "shopify", error: expect.stringContaining("Connect Shopify"), window: null }),
+      expect.objectContaining({ source: "ebay", error: expect.stringContaining("go back 7 days"), window: null })
+    ])
+    expect(errorLog).not.toHaveBeenCalled()
+  })
+
+  it("logs unexpected read failures while continuing to read the other sources", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const select = vi.spyOn(database, "select").mockImplementationOnce(() => {
+      throw new Error("Database unavailable")
+    })
+    try {
+      const demand = await restockDemand(orgId, ["shopify", "ebay"], 28)
+      expect(demand.sources).toEqual([
+        expect.objectContaining({ source: "shopify", error: "Sales couldn't be read. Try again.", window: null }),
+        expect.objectContaining({ source: "ebay", error: "Sync eBay orders in Settings first", window: null })
+      ])
+      expect(errorLog).toHaveBeenCalledExactlyOnceWith(
+        JSON.stringify({
+          event: "sales_read_failed",
+          source: "shopify",
+          orgId,
+          error: { name: "Error", message: "Database unavailable" }
+        })
+      )
+    } finally {
+      select.mockRestore()
+    }
+  })
+})
+
 describe("eBay orders beside Shopify's copies of them", () => {
   // Shopify's eBay sales channel copies each eBay order into Shopify, tagged eBay. With eBay connected, those copies
   // are left out by excluding the tag in Settings, so each sale counts once.

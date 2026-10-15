@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "انٹیگریشنز",
-    "description": "وہ اسٹورز جن کے ساتھ Copacker سنک کرتا ہے",
+    "description": "اسٹورز اور اشتہاری اکاؤنٹس",
     "marketplaces": "مارکیٹ پلیسز",
     "marketplacesUnavailable": "Amazon سے لوڈ نہیں ہو سکا",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "اپنی مارکیٹ پلیس منتخب کریں اور Amazon کے Solution Provider Portal سے ریفریش ٹوکن پیسٹ کریں۔",
       "connect": "منسلک کریں",
       "refreshToken": "ریفریش ٹوکن"
+    },
+    "storeGroup": "اسٹورز",
+    "advertisingGroup": "اشتہارات",
+    "manage": "انتظام کریں",
+    "marketplaceCount": "{count} مارکیٹ پلیس",
+    "panel": {
+      "syncTitle": "ڈیٹا کی مطابقت پذیری",
+      "preferencesTitle": "درآمد کی ترجیحات",
+      "syncAction": "{label} سنک کریں",
+      "queuedHint": "شروع ہونے کا انتظار ہے۔",
+      "syncingHint": "یہ ونڈو بند کرنے کے بعد بھی اپ ڈیٹس جاری رہیں گی۔",
+      "status": {
+        "queued": "قطار میں",
+        "syncing": "سنک ہو رہا ہے",
+        "synced": "سنک ہو گیا",
+        "failed": "توجہ درکار ہے",
+        "idle": "سنک نہیں ہوا",
+        "loading": "جانچ جاری ہے",
+        "unavailable": "حیثیت دستیاب نہیں",
+        "scheduled": "روزانہ سنک فعال ہے"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "اشتہاری اخراجات سنک کریں",
     "disconnect": "Ads منقطع کریں",
     "checking": "جانچ جاری ہے…",
-    "statusUnavailable": "حیثیت دستیاب نہیں"
+    "statusUnavailable": "حیثیت دستیاب نہیں",
+    "summary": "اشتہارات کے اخراجات",
+    "requiresStore": "پہلے اپنا Amazon اسٹور منسلک کریں۔",
+    "ready": "روزانہ کی ہم وقت سازی فعال ہے",
+    "spendTitle": "اشتہاری اخراجات",
+    "connectionTitle": "کنکشن",
+    "disconnectTitle": "Amazon Ads منقطع کریں؟",
+    "disconnectDescription": "نئے اشتہاری اخراجات کی ہم وقت سازی رک جائے گی۔ پہلے سے درآمد شدہ اخراجات محفوظ رہیں گے۔"
   }
 }

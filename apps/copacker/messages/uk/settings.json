@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Інтеграції",
-    "description": "Магазини, з якими синхронізується Copacker",
+    "description": "Магазини та рекламні облікові записи",
     "marketplaces": "Маркетплейси",
     "marketplacesUnavailable": "Не вдалося завантажити з Amazon",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "Виберіть маркетплейс і вставте токен оновлення з Amazon Solution Provider Portal.",
       "connect": "Підключити",
       "refreshToken": "Refresh token"
+    },
+    "storeGroup": "Магазини",
+    "advertisingGroup": "Реклама",
+    "manage": "Керувати",
+    "marketplaceCount": "{count, plural, one {# маркетплейс} few {# маркетплейси} many {# маркетплейсів} other {# маркетплейсу}}",
+    "panel": {
+      "syncTitle": "Синхронізація даних",
+      "preferencesTitle": "Налаштування імпорту",
+      "syncAction": "Синхронізувати {label}",
+      "queuedHint": "Очікування запуску.",
+      "syncingHint": "Оновлення триватимуть після закриття цього вікна.",
+      "status": {
+        "queued": "У черзі",
+        "syncing": "Синхронізація",
+        "synced": "Синхронізовано",
+        "failed": "Потребує уваги",
+        "idle": "Не синхронізовано",
+        "loading": "Перевірка",
+        "unavailable": "Статус недоступний",
+        "scheduled": "Щоденну синхронізацію ввімкнено"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "Синхронізувати витрати",
     "disconnect": "Відключити Ads",
     "checking": "Перевірка…",
-    "statusUnavailable": "Статус недоступний"
+    "statusUnavailable": "Статус недоступний",
+    "summary": "Витрати на рекламу",
+    "requiresStore": "Спочатку підключіть свій магазин Amazon.",
+    "ready": "Щоденну синхронізацію ввімкнено",
+    "spendTitle": "Витрати на рекламу",
+    "connectionTitle": "Підключення",
+    "disconnectTitle": "Відключити Amazon Ads?",
+    "disconnectDescription": "Нові витрати на рекламу більше не синхронізуватимуться. Раніше імпортовані витрати буде збережено."
   }
 }

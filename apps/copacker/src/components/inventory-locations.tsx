@@ -1,6 +1,7 @@
 "use client"
 
 import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import { MapPin } from "lucide-react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useState } from "react"
@@ -54,18 +55,25 @@ const locationsApi = api.injectEndpoints({
 // One setting of a connected account: its name, its value beneath, and a button to change it on the right.
 export function DetailRow({
   title,
+  icon,
   action,
   children
 }: {
   title: React.ReactNode
+  icon?: React.ReactNode
   action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-      <div className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex items-start gap-3 p-4">
+      {icon && (
+        <span className="mt-0.5 shrink-0 text-muted-foreground [&>svg]:size-4" aria-hidden>
+          {icon}
+        </span>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h3 className="flex items-center gap-2 text-sm font-medium">{title}</h3>
-        <div className="text-sm text-muted-foreground">{children}</div>
+        <div className="text-xs leading-relaxed break-words text-muted-foreground">{children}</div>
       </div>
       {action}
     </div>
@@ -125,6 +133,7 @@ export function InventoryLocations() {
   const included = data?.locations.filter((location) => location.classification === "merchant") ?? []
   return (
     <DetailRow
+      icon={<MapPin />}
       title={t("title")}
       action={snapshotId && data && <EditLocations locations={data.locations} snapshotId={snapshotId} />}
     >
@@ -191,7 +200,9 @@ function EditLocations({ locations, snapshotId }: { locations: LocationSetting[]
         setOpen(next)
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" aria-label={t("editLabel")} />}>
+      <DialogTrigger
+        render={<Button variant="outline" className="h-11 shrink-0 sm:h-[34px]" aria-label={t("editLabel")} />}
+      >
         {t("edit")}
       </DialogTrigger>
       <DialogContent>

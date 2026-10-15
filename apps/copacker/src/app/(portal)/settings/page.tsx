@@ -1,12 +1,12 @@
 import { money } from "@repo/aisle"
 import { eq } from "drizzle-orm"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
-import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
+import { IntegrationSection } from "@/components/integration-panel"
 import { Integrations } from "@/components/integrations"
-import { DetailRow, InventoryLocations } from "@/components/inventory-locations"
+import { InventoryLocations } from "@/components/inventory-locations"
 import { InventorySyncRow } from "@/components/inventory-sync"
 import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
@@ -131,12 +131,13 @@ export default async function Settings() {
         {buyer && (
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
+              amazonAdsAvailable={amazonAdsApp() !== null}
               admin={admin}
               amazonSelfAuth={amazonSelfAuthEnabled()}
               ebayAvailable={ebayApp() !== null}
               shopify={
                 shopifyAccount
-                  ? { account: account(shopName, shopifyAccount.externalId), externalId: shopifyAccount.externalId }
+                  ? { account: shopName ?? shopifyAccount.externalId, externalId: shopifyAccount.externalId }
                   : null
               }
               amazon={
@@ -150,10 +151,22 @@ export default async function Settings() {
               }
               shopifySettings={
                 <>
-                  <OrdersSyncRow source="shopify" />
-                  <InventorySyncRow provider="shopify" />
-                  <InventoryLocations />
-                  <ExcludedOrderTags tags={s.org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
+                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <OrdersSyncRow source="shopify" />
+                      <InventorySyncRow provider="shopify" />
+                    </div>
+                  </IntegrationSection>
+                  <IntegrationSection title={t("integrations.panel.preferencesTitle")}>
+                    <div className="divide-y rounded-lg border bg-card">
+                      <InventoryLocations />
+                      <ExcludedOrderTags
+                        tags={s.org.excludedShopifyTags}
+                        suggestions={orderTags}
+                        copying={copyingTags}
+                      />
+                    </div>
+                  </IntegrationSection>
                 </>
               }
               ebay={
@@ -161,17 +174,21 @@ export default async function Settings() {
                   ? { account: ebayName ?? ebayAccount.externalId, externalId: ebayName ?? ebayAccount.externalId }
                   : null
               }
-              ebaySettings={<OrdersSyncRow source="ebay" />}
+              ebaySettings={
+                <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <OrdersSyncRow source="ebay" />
+                  </div>
+                </IntegrationSection>
+              }
               amazonSettings={
                 <>
-                  <OrdersSyncRow source="amazon" />
-                  <AmazonAdsSettings available={amazonAdsApp() !== null} />
-                  <InventorySyncRow provider="amazon" />
-                  <DetailRow title={t("integrations.marketplaces")}>
-                    {amazon
-                      ? amazon.marketplaces.join(", ") || t("integrations.noMarketplaces")
-                      : t("integrations.marketplacesUnavailable")}
-                  </DetailRow>
+                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <OrdersSyncRow source="amazon" />
+                      <InventorySyncRow provider="amazon" />
+                    </div>
+                  </IntegrationSection>
                 </>
               }
             />
@@ -315,11 +332,6 @@ function Section({
       <div className="flex min-w-0 flex-col gap-4">{children}</div>
     </section>
   )
-}
-
-// A store's name and account id, once when they're the same: "Fencing Club, fencing-club.myshopify.com".
-function account(name: string | null, externalId: string) {
-  return name && name !== externalId ? `${name}, ${externalId}` : externalId
 }
 
 // Settings only owners and admins change, as the rest of the team sees them.

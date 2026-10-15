@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integraciones",
-    "description": "Tiendas que Copacker sincroniza",
+    "description": "Tiendas y cuentas publicitarias",
     "marketplaces": "Marketplaces",
     "marketplacesUnavailable": "No se pudo cargar desde Amazon",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "Elige tu marketplace y pega el token de actualización del Solution Provider Portal de Amazon.",
       "connect": "Conectar",
       "refreshToken": "Token de actualización"
+    },
+    "storeGroup": "Tiendas",
+    "advertisingGroup": "Publicidad",
+    "manage": "Administrar",
+    "marketplaceCount": "{count, plural, one {# marketplace} other {# marketplaces}}",
+    "panel": {
+      "syncTitle": "Sincronización",
+      "preferencesTitle": "Preferencias de importación",
+      "syncAction": "Sincronizar {label}",
+      "queuedHint": "En espera de iniciar.",
+      "syncingHint": "Las actualizaciones continúan al cerrar esta ventana.",
+      "status": {
+        "queued": "En cola",
+        "syncing": "Sincronizando",
+        "synced": "Sincronizado",
+        "failed": "Requiere atención",
+        "idle": "Sin sincronizar",
+        "loading": "Verificando",
+        "unavailable": "Estado no disponible",
+        "scheduled": "Sincronización diaria activa"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "Sincronizar gastos",
     "disconnect": "Desconectar Ads",
     "checking": "Consultando…",
-    "statusUnavailable": "Estado no disponible"
+    "statusUnavailable": "Estado no disponible",
+    "summary": "Gasto publicitario",
+    "requiresStore": "Conecta primero tu tienda de Amazon.",
+    "ready": "Sincronización diaria activada",
+    "spendTitle": "Gasto publicitario",
+    "connectionTitle": "Conexión",
+    "disconnectTitle": "¿Desconectar Amazon Ads?",
+    "disconnectDescription": "Los nuevos gastos publicitarios dejarán de sincronizarse. Los gastos ya importados se conservarán."
   }
 }

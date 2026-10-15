@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Intégrations",
-    "description": "Boutiques synchronisées avec Copacker",
+    "description": "Boutiques et comptes publicitaires",
     "marketplaces": "Marketplaces",
     "marketplacesUnavailable": "Impossible de charger depuis Amazon",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "Choisissez votre marketplace et collez le jeton de renouvellement du Solution Provider Portal Amazon.",
       "connect": "Connecter",
       "refreshToken": "Jeton d’actualisation"
+    },
+    "storeGroup": "Boutiques",
+    "advertisingGroup": "Publicité",
+    "manage": "Gérer",
+    "marketplaceCount": "{count, plural, one {# marketplace} other {# marketplaces}}",
+    "panel": {
+      "syncTitle": "Synchronisation",
+      "preferencesTitle": "Préférences d’importation",
+      "syncAction": "Synchroniser {label}",
+      "queuedHint": "En attente de démarrage.",
+      "syncingHint": "Les mises à jour continuent après la fermeture de cette fenêtre.",
+      "status": {
+        "queued": "En attente",
+        "syncing": "Synchronisation",
+        "synced": "Synchronisé",
+        "failed": "Action requise",
+        "idle": "Non synchronisé",
+        "loading": "Vérification",
+        "unavailable": "Statut indisponible",
+        "scheduled": "Synchronisation quotidienne activée"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "Synchroniser les dépenses",
     "disconnect": "Déconnecter Ads",
     "checking": "Vérification…",
-    "statusUnavailable": "Statut indisponible"
+    "statusUnavailable": "Statut indisponible",
+    "summary": "Dépenses publicitaires",
+    "requiresStore": "Connectez d’abord votre boutique Amazon.",
+    "ready": "Synchronisation quotidienne activée",
+    "spendTitle": "Dépenses publicitaires",
+    "connectionTitle": "Connexion",
+    "disconnectTitle": "Déconnecter Amazon Ads ?",
+    "disconnectDescription": "Les nouvelles dépenses publicitaires ne seront plus synchronisées. Les dépenses déjà importées seront conservées."
   }
 }

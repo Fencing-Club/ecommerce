@@ -1,12 +1,12 @@
 "use client"
 
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
-import { ArrowRight, CircleCheck, CircleDashed } from "lucide-react"
+import { ArrowRight, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
 import { StatusBadge } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -19,24 +19,16 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { AmazonAdsIndicator } from "./amazon-ads"
+import { AmazonAdsCard } from "./amazon-ads"
 import { AmazonConnect } from "./amazon-connect"
 import { DisconnectButton } from "./disconnect-button"
 import { RequiredMark } from "./form-controls"
+import { IntegrationCard } from "./integration-card"
+import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
 import { useStockSync } from "./inventory-sync"
 import { useOrderSync } from "./sales-orders"
-import { StoreLogo } from "./store-logos"
-import { SyncedAt, SyncProgress } from "./sync-menu"
+import { SyncedAt, SyncProgress } from "./sync-status"
 
 type Store = "shopify" | "amazon" | "ebay"
 type Connection = { account: string; externalId: string; marketplaces?: string[] | null }
@@ -44,16 +36,14 @@ type Connection = { account: string; externalId: string; marketplaces?: string[]
 // Each store's name. What connecting it brings is under settings.integrations.stores.
 const storeNames = { shopify: "Shopify", amazon: "Amazon", ebay: "eBay" } as const
 
-const tile = "flex h-full w-full flex-col items-start gap-4 rounded-xl border bg-card p-4 text-start shadow-xs"
-const clickable =
-  "cursor-pointer transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+const cardAction = cn(buttonVariants({ variant: "outline", className: "h-11 sm:h-[34px]" }))
 
-// Every store as a card. Connecting starts from its card: Amazon's and eBay's consent pages, or Shopify's store address
-// in a dialog. A connected store's card opens its settings and Disconnect. eBay is coming until Copacker has its keys.
+// Each card has an explicit Connect or Manage action. Members can inspect connection details without changing them.
 export function Integrations({
   admin,
   ebayAvailable,
   amazonSelfAuth = false,
+  amazonAdsAvailable = false,
   shopify,
   amazon,
   ebay,
@@ -64,6 +54,7 @@ export function Integrations({
   admin: boolean
   ebayAvailable: boolean
   amazonSelfAuth?: boolean
+  amazonAdsAvailable?: boolean
   shopify: Connection | null
   amazon: Connection | null
   ebay: Connection | null
@@ -91,16 +82,17 @@ export function Integrations({
     )
   } else if (admin) {
     amazonCard = (
-      <AmazonConnect selfAuth={amazonSelfAuth} className={cn(tile, clickable)}>
-        <TileBody store="amazon" footer={<ConnectLabel />} />
-      </AmazonConnect>
+      <StoreCard
+        store="amazon"
+        action={
+          <AmazonConnect selfAuth={amazonSelfAuth} className={cardAction}>
+            <ConnectLabel store="amazon" />
+          </AmazonConnect>
+        }
+      />
     )
   }
-  let ebayCard = (
-    <div className={tile}>
-      <TileBody store="ebay" badge={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
-    </div>
-  )
+  let ebayCard = <StoreCard store="ebay" status={<Badge variant="secondary">{t("comingSoon")}</Badge>} />
   if (ebay) {
     ebayCard = (
       <Connected store="ebay" connection={ebay} admin={admin}>
@@ -110,67 +102,88 @@ export function Integrations({
   } else if (ebayAvailable && admin) {
     // eBay's sign-in and consent page, which comes back to Settings.
     ebayCard = (
-      <a href="/api/connections/ebay" className={cn(tile, clickable)}>
-        <TileBody store="ebay" footer={<ConnectLabel />} />
-      </a>
+      <StoreCard
+        store="ebay"
+        action={
+          <a href="/api/connections/ebay" className={cardAction}>
+            <ConnectLabel store="ebay" />
+          </a>
+        }
+      />
     )
   } else if (ebayAvailable) {
     ebayCard = <NotConnected store="ebay" />
   }
   return (
-    <div className="@container">
-      <div className="grid gap-4 @lg:grid-cols-2 @3xl:grid-cols-3">
-        {shopifyCard}
-        {amazonCard}
-        {ebayCard}
-      </div>
+    <div className="@container space-y-8">
+      <section className="space-y-3" aria-label={t("storeGroup")}>
+        <h3 className="text-sm font-medium">{t("storeGroup")}</h3>
+        <div className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-3">
+          {shopifyCard}
+          {amazonCard}
+          {ebayCard}
+        </div>
+      </section>
+      <section className="space-y-3" aria-label={t("advertisingGroup")}>
+        <h3 className="text-sm font-medium">{t("advertisingGroup")}</h3>
+        <div className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-3">
+          <AmazonAdsCard
+            admin={admin}
+            available={amazonAdsAvailable}
+            sellerConnected={Boolean(amazon)}
+            account={amazon?.account}
+          />
+        </div>
+      </section>
     </div>
   )
 }
 
-// A card's logo and status on top, then the store's name and what it brings, and a footer line.
-function TileBody({ store, badge, footer }: { store: Store; badge?: React.ReactNode; footer?: React.ReactNode }) {
-  const t = useTranslations("settings.integrations.stores")
+function StoreCard({
+  store,
+  status,
+  action,
+  children
+}: {
+  store: Store
+  status?: React.ReactNode
+  action?: React.ReactNode
+  children?: React.ReactNode
+}) {
+  const t = useTranslations("settings.integrations")
   return (
-    <>
-      <span className="flex w-full items-start justify-between gap-3">
-        <StoreLogo store={store} />
-        {badge}
-      </span>
-      <span className="flex flex-col gap-1">
-        <span className="font-medium">{storeNames[store]}</span>
-        <span className="text-sm text-muted-foreground">{t(store)}</span>
-      </span>
-      {footer && <span className="mt-auto flex w-full min-w-0 items-center gap-1.5 text-sm">{footer}</span>}
-    </>
+    <IntegrationCard
+      store={store}
+      title={storeNames[store]}
+      description={t(`stores.${store}`)}
+      status={
+        status ?? (
+          <StatusBadge tone="neutral" icon={<CircleDashed aria-hidden />}>
+            {t("notConnected")}
+          </StatusBadge>
+        )
+      }
+      action={action}
+    >
+      {children}
+    </IntegrationCard>
   )
 }
 
-function ConnectLabel() {
+function ConnectLabel({ store }: { store: Store }) {
   const t = useTranslations("settings.integrations")
   return (
-    <span className="inline-flex items-center gap-1 font-medium">
+    <>
       {t("connect")}
-      <ArrowRight className="size-4 rtl:rotate-180" />
-    </span>
+      <span className="sr-only"> {storeNames[store]}</span>
+      <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+    </>
   )
 }
 
 // Members see the stores the owner and admins haven't connected.
 function NotConnected({ store }: { store: Store }) {
-  const t = useTranslations("settings.integrations")
-  return (
-    <div className={tile}>
-      <TileBody
-        store={store}
-        badge={
-          <StatusBadge tone="neutral" icon={<CircleDashed aria-hidden />}>
-            {t("notConnected")}
-          </StatusBadge>
-        }
-      />
-    </div>
-  )
+  return <StoreCard store={store} />
 }
 
 // A connected store's card, which opens its settings for the owner and admins.
@@ -186,64 +199,88 @@ function Connected({
   children: React.ReactNode
 }) {
   const t = useTranslations("settings.integrations")
-  const body = (
-    <TileBody
+  const card = (
+    <StoreCard
       store={store}
-      badge={
+      status={
         <StatusBadge tone="success" icon={<CircleCheck aria-hidden />}>
           {t("connected")}
         </StatusBadge>
       }
-      footer={
-        <span className="flex w-full min-w-0 flex-col gap-2">
-          <span className="truncate text-muted-foreground">{connection.account}</span>
-          {store === "amazon" && (
-            <span className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">{t("marketplaces")}</span>
-              {connection.marketplaces?.length ? (
-                <span className="flex flex-wrap gap-1.5">
-                  {connection.marketplaces.map((marketplace) => (
-                    <Badge key={marketplace} variant="secondary">
-                      <CircleCheck className="size-3 text-success" aria-hidden />
-                      {marketplace}
-                    </Badge>
-                  ))}
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  {t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
-                </span>
-              )}
-            </span>
-          )}
-          <StoreSync store={store} />
-          {store === "amazon" && <AmazonAdsIndicator admin={admin} />}
-        </span>
+      action={
+        admin && (
+          <DialogTrigger render={<Button variant="outline" className="h-11 sm:h-[34px]" />}>
+            {t("manage")}
+            <span className="sr-only"> {storeNames[store]}</span>
+            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+          </DialogTrigger>
+        )
       }
-    />
+    >
+      <p className="truncate font-medium" title={connection.account}>
+        {connection.account}
+      </p>
+      {store === "shopify" && connection.account !== connection.externalId && (
+        <p className="truncate text-xs text-muted-foreground" title={connection.externalId}>
+          {connection.externalId}
+        </p>
+      )}
+      {store === "amazon" && (
+        <p
+          className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          title={connection.marketplaces?.join(", ")}
+        >
+          <Globe className="size-3.5 shrink-0" aria-hidden />
+          {connection.marketplaces?.length
+            ? t("marketplaceCount", { count: connection.marketplaces.length })
+            : t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
+        </p>
+      )}
+      {store === "amazon" && !admin && Boolean(connection.marketplaces?.length) && (
+        <p className="text-xs leading-relaxed text-muted-foreground">{connection.marketplaces?.join(", ")}</p>
+      )}
+      <div className="pt-1">
+        <StoreSync store={store} />
+      </div>
+    </StoreCard>
   )
   if (!admin) {
-    return <div className={tile}>{body}</div>
+    return card
   }
   return (
-    <Sheet>
-      <SheetTrigger className={cn(tile, clickable)} aria-label={t("storeSettings", { store: storeNames[store] })}>
-        {body}
-      </SheetTrigger>
-      <SheetContent className="sm:max-w-md">
-        <SheetHeader className="flex-row items-center gap-3 border-b">
-          <StoreLogo store={store} />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <SheetTitle>{storeNames[store]}</SheetTitle>
-            <SheetDescription className="truncate">{connection.account}</SheetDescription>
-          </div>
-        </SheetHeader>
-        <div className="flex flex-col divide-y overflow-y-auto px-4">{children}</div>
-        <SheetFooter className="flex-row justify-end border-t">
-          <DisconnectButton provider={store} account={connection.externalId} />
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+    <Dialog>
+      {card}
+      <IntegrationPanel
+        store={store}
+        title={storeNames[store]}
+        account={connection.account}
+        domain={store === "shopify" && connection.account !== connection.externalId ? connection.externalId : undefined}
+      >
+        <div className="min-h-0 space-y-6 overflow-y-auto bg-muted/20 p-5 sm:p-6">
+          {children}
+          {store === "amazon" && (
+            <IntegrationSection title={t("marketplaces")}>
+              {connection.marketplaces?.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {connection.marketplaces.map((marketplace) => (
+                    <li key={marketplace} className="rounded-md border bg-card px-3 py-2 text-xs">
+                      {marketplace}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t(connection.marketplaces ? "noMarketplaces" : "marketplacesUnavailable")}
+                </p>
+              )}
+            </IntegrationSection>
+          )}
+        </div>
+        <IntegrationPanelFooter>
+          <DisconnectButton provider={store} account={connection.account} />
+        </IntegrationPanelFooter>
+      </IntegrationPanel>
+    </Dialog>
   )
 }
 
@@ -253,17 +290,25 @@ function StoreSync({ store }: { store: Store }) {
   return store === "ebay" ? <SyncLine store={store} stock={noStock} /> : <StockSync store={store} />
 }
 // eBay sells from the stock Shopify tracks, so it has no inventory sync of its own.
-const noStock = { active: false, problem: null }
+const noStock = { active: false, queued: false, problem: null }
 function StockSync({ store }: { store: "shopify" | "amazon" }) {
   return <SyncLine store={store} stock={useStockSync(store)} />
 }
-function SyncLine({ store, stock }: { store: Store; stock: { active: boolean; problem: unknown } }) {
+function SyncLine({ store, stock }: { store: Store; stock: { active: boolean; queued: boolean; problem: unknown } }) {
   const t = useTranslations("settings.integrations.sync")
+  const panel = useTranslations("settings.integrations.panel")
   const orders = useOrderSync(store)
   const ordersActive = orders?.status === "queued" || orders?.status === "running"
   const syncedAt = orders?.finishedAt ?? orders?.coveredTo
   let text: React.ReactNode = null
-  if (ordersActive) {
+  if (orders?.status === "queued" || (!ordersActive && stock.queued)) {
+    text = (
+      <span className="inline-flex items-center gap-1.5">
+        <Clock3 className="size-3.5" aria-hidden />
+        {panel("status.queued")}
+      </span>
+    )
+  } else if (ordersActive) {
     text = (
       <SyncProgress>
         {typeof orders.progress === "number" ? t("ordersProgress", { progress: orders.progress }) : t("orders")}
@@ -290,9 +335,14 @@ function ConnectShopify() {
   const [error, setError] = useState<string>()
   return (
     <Dialog onOpenChange={() => setError(undefined)}>
-      <DialogTrigger className={cn(tile, clickable)}>
-        <TileBody store="shopify" footer={<ConnectLabel />} />
-      </DialogTrigger>
+      <StoreCard
+        store="shopify"
+        action={
+          <DialogTrigger className={cardAction}>
+            <ConnectLabel store="shopify" />
+          </DialogTrigger>
+        }
+      />
       <DialogContent>
         <form
           action="/api/connections/shopify"

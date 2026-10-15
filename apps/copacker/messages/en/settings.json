@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integrations",
-    "description": "Stores Copacker syncs with",
+    "description": "Stores and advertising accounts",
     "marketplaces": "Marketplaces",
     "marketplacesUnavailable": "Couldn’t load from Amazon",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "Choose your marketplace and paste the refresh token from Amazon’s Solution Provider Portal.",
       "connect": "Connect",
       "refreshToken": "Refresh token"
+    },
+    "storeGroup": "Stores",
+    "advertisingGroup": "Advertising",
+    "manage": "Manage",
+    "marketplaceCount": "{count, plural, one {# marketplace} other {# marketplaces}}",
+    "panel": {
+      "syncTitle": "Data sync",
+      "preferencesTitle": "Import preferences",
+      "syncAction": "Sync {label}",
+      "queuedHint": "Waiting to start.",
+      "syncingHint": "Updates continue after you close this window.",
+      "status": {
+        "queued": "Queued",
+        "syncing": "Syncing",
+        "synced": "Synced",
+        "failed": "Needs attention",
+        "idle": "Not synced",
+        "loading": "Checking",
+        "unavailable": "Status unavailable",
+        "scheduled": "Daily sync enabled"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "Sync ad spend",
     "disconnect": "Disconnect Ads",
     "checking": "Checking…",
-    "statusUnavailable": "Status unavailable"
+    "statusUnavailable": "Status unavailable",
+    "summary": "Advertising spend",
+    "requiresStore": "Connect your Amazon store first.",
+    "ready": "Daily sync enabled",
+    "spendTitle": "Ad spend",
+    "connectionTitle": "Connection",
+    "disconnectTitle": "Disconnect Amazon Ads?",
+    "disconnectDescription": "New ad spend will stop syncing. Previously imported expenses will be kept."
   }
 }

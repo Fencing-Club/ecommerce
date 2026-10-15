@@ -2,12 +2,12 @@ import { money } from "@repo/aisle"
 import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { AmazonAdsSettings } from "@/components/amazon-ads"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
 import { ExcludedOrderTags } from "@/components/excluded-order-tags"
+import { IntegrationSection } from "@/components/integration-panel"
 import { Integrations } from "@/components/integrations"
-import { DetailRow, InventoryLocations } from "@/components/inventory-locations"
+import { InventoryLocations } from "@/components/inventory-locations"
 import { InventorySyncRow } from "@/components/inventory-sync"
 import { MonthlyCosts } from "@/components/monthly-costs"
 import { ProfileForm } from "@/components/profile-form"
@@ -144,11 +144,12 @@ async function SettingsPage(args: Args) {
         {buyer && (
           <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
             <Integrations
+              amazonAdsAvailable={false}
               admin={admin}
               ebayAvailable={args.ebayAvailable}
               shopify={
                 shopifyAccount
-                  ? { account: account(shopName, shopifyAccount.externalId), externalId: shopifyAccount.externalId }
+                  ? { account: shopName ?? shopifyAccount.externalId, externalId: shopifyAccount.externalId }
                   : null
               }
               amazon={
@@ -162,10 +163,18 @@ async function SettingsPage(args: Args) {
               }
               shopifySettings={
                 <>
-                  <OrdersSyncRow source="shopify" />
-                  <InventorySyncRow provider="shopify" />
-                  <InventoryLocations />
-                  <ExcludedOrderTags tags={org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
+                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <OrdersSyncRow source="shopify" />
+                      <InventorySyncRow provider="shopify" />
+                    </div>
+                  </IntegrationSection>
+                  <IntegrationSection title={t("integrations.panel.preferencesTitle")}>
+                    <div className="divide-y rounded-lg border bg-card">
+                      <InventoryLocations />
+                      <ExcludedOrderTags tags={org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
+                    </div>
+                  </IntegrationSection>
                 </>
               }
               ebay={
@@ -173,17 +182,21 @@ async function SettingsPage(args: Args) {
                   ? { account: ebayName ?? ebayAccount.externalId, externalId: ebayName ?? ebayAccount.externalId }
                   : null
               }
-              ebaySettings={<OrdersSyncRow source="ebay" />}
+              ebaySettings={
+                <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <OrdersSyncRow source="ebay" />
+                  </div>
+                </IntegrationSection>
+              }
               amazonSettings={
                 <>
-                  <OrdersSyncRow source="amazon" />
-                  <AmazonAdsSettings available={false} />
-                  <InventorySyncRow provider="amazon" />
-                  <DetailRow title={t("integrations.marketplaces")}>
-                    {amazon
-                      ? amazon.marketplaces.join(", ") || t("integrations.noMarketplaces")
-                      : t("integrations.marketplacesUnavailable")}
-                  </DetailRow>
+                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <OrdersSyncRow source="amazon" />
+                      <InventorySyncRow provider="amazon" />
+                    </div>
+                  </IntegrationSection>
                 </>
               }
             />
@@ -326,10 +339,6 @@ function Section({
       <div className="flex min-w-0 flex-col gap-4">{children}</div>
     </section>
   )
-}
-
-function account(name: string | null, externalId: string) {
-  return name && name !== externalId ? `${name}, ${externalId}` : externalId
 }
 
 function Values({ values }: { values: Array<{ label: string; value: string }> }) {
@@ -476,9 +485,7 @@ export const BuyerOwner = meta.story({
   ...buyer,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible()
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual([
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Profile",
       "Language",
       "Team",
@@ -522,8 +529,8 @@ export const ShopifySettings = meta.story({
   ...buyer,
   play: async ({ canvas }) => {
     const integrations = canvas.getByRole("region", { name: "Integrations" })
-    await expect(within(integrations).getByText(`Harbor Goods, ${shopifyAccount}`)).toBeVisible()
-    await userEvent.click(within(integrations).getByRole("button", { name: "Shopify settings" }))
+    await expect(within(integrations).getByText(shopifyAccount)).toBeVisible()
+    await userEvent.click(within(integrations).getByRole("button", { name: "Manage Shopify" }))
     const sheet = await screen.findByRole("dialog", { name: "Shopify" })
     await expect(within(sheet).getByRole("heading", { name: "Orders" })).toBeInTheDocument()
     await expect(within(sheet).getByRole("heading", { name: "Inventory" })).toBeInTheDocument()
@@ -543,11 +550,13 @@ export const ShopifySettings = meta.story({
 export const AmazonSettings = meta.story({
   ...buyer,
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Harbor Goods US")
     await expect(sheet).not.toHaveTextContent(amazonAccount)
-    await expect(sheet).toHaveTextContent("United States, Canada")
+    await expect(sheet).not.toHaveTextContent("Amazon Ads")
+    await waitFor(() => expect(within(sheet).getByText("United States")).toBeVisible())
+    await expect(within(sheet).getByText("Canada")).toBeVisible()
     await expect(within(sheet).queryByRole("heading", { name: "Excluded order tags" })).toBeNull()
   }
 })
@@ -558,8 +567,8 @@ export const AmazonUnavailable = meta.story({
   args: { amazonStore: null, linked: [{ provider: "amazon", externalId: amazonAccount }] },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(amazonAccount)).toBeNull()
-    await expect(canvas.getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
-    await userEvent.click(canvas.getByRole("button", { name: "Amazon settings" }))
+    await expect(canvas.getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
+    await userEvent.click(canvas.getByRole("button", { name: "Manage Amazon" }))
     const sheet = await screen.findByRole("dialog", { name: "Amazon" })
     await expect(sheet).toHaveTextContent("Couldn’t load from Amazon")
   }
@@ -570,13 +579,13 @@ export const NothingConnected = meta.story({
   args: { linked: [] },
   play: async ({ canvas }) => {
     const integrations = canvas.getByRole("region", { name: "Integrations" })
-    await expect(within(integrations).getByRole("button", { name: /^Shopify/ })).toHaveTextContent("Connect")
-    await expect(within(integrations).getByRole("link", { name: /^eBay/ })).toHaveAttribute(
+    await expect(within(integrations).getByRole("button", { name: "Connect Shopify" })).toHaveTextContent("Connect")
+    await expect(within(integrations).getByRole("link", { name: "Connect eBay" })).toHaveAttribute(
       "href",
       "/api/connections/ebay"
     )
     // Amazon starts with a marketplace choice.
-    await userEvent.click(within(integrations).getByRole("button", { name: /^Amazon/ }))
+    await userEvent.click(within(integrations).getByRole("button", { name: "Connect Amazon" }))
     await expect(await screen.findByRole("dialog", { name: "Connect Amazon" })).toBeInTheDocument()
   }
 })
@@ -587,13 +596,12 @@ export const EbaySettings = meta.story({
   play: async ({ canvas }) => {
     const integrations = canvas.getByRole("region", { name: "Integrations" })
     await expect(within(integrations).getByText(ebayAccount)).toBeVisible()
-    await userEvent.click(within(integrations).getByRole("button", { name: "eBay settings" }))
+    await userEvent.click(within(integrations).getByRole("button", { name: "Manage eBay" }))
     const sheet = await screen.findByRole("dialog", { name: "eBay" })
     await expect(within(sheet).getByRole("heading", { name: "Orders" })).toBeInTheDocument()
     await expect(within(sheet).queryByRole("heading", { name: "Inventory" })).toBeNull()
-    await expect(await within(sheet).findByText(/^Synced/)).toBeInTheDocument()
-    await userEvent.click(within(sheet).getByRole("button", { name: "eBay orders actions" }))
-    await expect(await screen.findByRole("menuitem", { name: "Sync now" })).toBeInTheDocument()
+    await expect(await within(sheet).findByText(/./, { selector: "time" })).toBeInTheDocument()
+    await expect(within(sheet).getByRole("button", { name: "Sync eBay orders" })).toBeEnabled()
   }
 })
 
@@ -613,7 +621,7 @@ export const EbayComingSoon = meta.story({
   play: async ({ canvas }) => {
     const integrations = canvas.getByRole("region", { name: "Integrations" })
     await expect(within(integrations).getByText("Coming soon")).toBeVisible()
-    await expect(within(integrations).queryByRole("link", { name: /^eBay/ })).toBeNull()
+    await expect(within(integrations).queryByRole("link", { name: "Connect eBay" })).toBeNull()
   }
 })
 
@@ -649,8 +657,8 @@ export const BuyerMember = meta.story({
     )
     const monthly = canvas.getByRole("region", { name: "Monthly costs" })
     await expect(within(monthly).queryByRole("button", { name: "Add cost" })).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Shopify settings" })).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "eBay settings" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Manage Shopify" })).toBeNull()
+    await expect(canvas.queryByRole("button", { name: "Manage eBay" })).toBeNull()
     await expect(canvas.getAllByText("Connected")).toHaveLength(3)
     await expect(canvas.queryByRole("button", { name: "Add address" })).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Delete workspace" })).toBeNull()
@@ -695,9 +703,14 @@ export const Supplier = meta.story({
   ...supplier,
   args: supplierArgs,
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual(["Profile", "Language", "Team", "Supplier profile", "Pickup addresses", "Delete"])
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Profile",
+      "Language",
+      "Team",
+      "Supplier profile",
+      "Pickup addresses",
+      "Delete"
+    ])
     await expect(canvas.getByRole("combobox", { name: "Language" })).toHaveTextContent("简体中文")
     const profile = canvas.getByRole("region", { name: "Supplier profile" })
     await expect(within(profile).getByRole("textbox", { name: "Contact name" })).toHaveValue("Mei Chen")
@@ -742,9 +755,13 @@ export const Forwarder = meta.story({
     team: { members: [team.members[0]!], invitations: [] }
   },
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)
-    ).toEqual(["Profile", "Language", "Team", "Addresses", "Delete"])
+    await expect(canvas.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Profile",
+      "Language",
+      "Team",
+      "Addresses",
+      "Delete"
+    ])
     // Without a saved profile, the name starts empty and the company is the workspace's.
     await expect(canvas.getByRole("textbox", { name: "First name" })).toHaveValue("")
     await expect(canvas.getByRole("textbox", { name: "Company" })).toHaveValue("Bayline Freight")

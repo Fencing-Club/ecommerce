@@ -93,7 +93,7 @@
   },
   "integrations": {
     "title": "Integrationen",
-    "description": "Shops, mit denen Copacker synchronisiert",
+    "description": "Shops und Werbekonten",
     "marketplaces": "Marktplätze",
     "marketplacesUnavailable": "Laden von Amazon fehlgeschlagen",
     "stores": {
@@ -132,6 +132,27 @@
       "description": "Wähle deinen Marktplatz und füge den Aktualisierungstoken aus Amazons Solution Provider Portal ein.",
       "connect": "Verbinden",
       "refreshToken": "Refresh-Token"
+    },
+    "storeGroup": "Shops",
+    "advertisingGroup": "Werbung",
+    "manage": "Verwalten",
+    "marketplaceCount": "{count, plural, one {# Marktplatz} other {# Marktplätze}}",
+    "panel": {
+      "syncTitle": "Datensynchronisierung",
+      "preferencesTitle": "Importeinstellungen",
+      "syncAction": "{label} synchronisieren",
+      "queuedHint": "Wartet auf den Start.",
+      "syncingHint": "Updates laufen nach dem Schließen dieses Fensters weiter.",
+      "status": {
+        "queued": "In Warteschlange",
+        "syncing": "Wird synchronisiert",
+        "synced": "Synchronisiert",
+        "failed": "Aktion erforderlich",
+        "idle": "Nicht synchronisiert",
+        "loading": "Wird geprüft",
+        "unavailable": "Status nicht verfügbar",
+        "scheduled": "Tägliche Synchronisierung aktiv"
+      }
     }
   },
   "excludedTags": {
@@ -245,6 +266,13 @@
     "sync": "Werbeausgaben synchronisieren",
     "disconnect": "Ads trennen",
     "checking": "Wird geprüft…",
-    "statusUnavailable": "Status nicht verfügbar"
+    "statusUnavailable": "Status nicht verfügbar",
+    "summary": "Werbeausgaben",
+    "requiresStore": "Verbinde zuerst deinen Amazon-Shop.",
+    "ready": "Tägliche Synchronisierung aktiv",
+    "spendTitle": "Werbeausgaben",
+    "connectionTitle": "Verbindung",
+    "disconnectTitle": "Amazon Ads trennen?",
+    "disconnectDescription": "Neue Werbeausgaben werden nicht mehr synchronisiert. Bereits importierte Ausgaben bleiben erhalten."
   }
 }
