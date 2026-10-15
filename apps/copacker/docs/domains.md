@@ -63,11 +63,18 @@ Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript
 Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
 through Docker's build argument. Do not add these keys to workers or fixture Storybook previews.
 Address autocomplete uses the key embedded in each environment's web build.
+The Google script uses its default loading mode so Next's `onReady` runs after SDK initialization, including the first
+mount. Do not add `loading=async` without switching initialization to Google's callback contract.
 
 Acceptance: Places Autocomplete (New) returned HTTP 200 with suggestions for each key's intended referrer
 (`main.local.copacker.ai`, `staging.copacker.ai`, `copacker.ai`). All three returned HTTP 403 with
 `API_KEY_HTTP_REFERRER_BLOCKED` for `https://example.org/`. These are API restriction checks, not a substitute for
 browser acceptance of address autocomplete in each environment. Railway variable values were compared without logging secrets.
+Browser acceptance must start from a fresh document: open the address step once, search, select a result, and verify
+street, city, region, postal code and country. Reopening the step can hide an SDK initialization race. Staging selection
+filled these fields from a live Google result; the unsaved onboarding draft was discarded. After correcting the loading
+mode, a fresh local document enabled search on its first address-dialog mount and filled the same fields. Keyboard
+suggestions and the mobile dialog were checked, and the test address was cancelled without saving.
 
 The previous shared key (`829033b6-204a-48a7-9e52-fda3b6226976`) remains active. Retire it only after active local
 checkouts refresh their ignored environment configuration and the consuming UI passes browser acceptance.
