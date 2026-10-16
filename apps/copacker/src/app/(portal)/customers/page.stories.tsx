@@ -1,17 +1,17 @@
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { CustomersPageView } from "@/components/customers-page"
 import { can, type Permissions } from "@/lib/access"
 import { customerEditor, customerListData } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 function CustomersPage({ list, permissions }: { list: typeof customerListData; permissions: Permissions }) {
   const customers = list.customers.map((customer) => ({
     ...customer,
     spent: can(permissions, "prices") ? customer.spent : []
   }))
-  return <CustomersPageView customers={customers} catalogs={list.catalogs} />
+  return <PageView page={{ customers: customers, catalogs: list.catalogs }} />
 }
 
 const meta = preview.meta({

@@ -26,19 +26,19 @@ describe("eBay's endpoint challenge", () => {
     vi.stubEnv("APP_URL", "https://copacker.ai")
     expect(hasPublicEbayEndpoint()).toBe(false)
   })
-  it("requires an explicit public destination even for a hook hostname", () => {
+  it("rejects loopback domain aliases even when explicitly configured", () => {
     vi.stubEnv("APP_URL", "https://hooks.local.copacker.ai")
     expect(hasPublicEbayEndpoint()).toBe(false)
     vi.stubEnv("WEBHOOK_BASE_URL", "https://hooks.local.copacker.ai")
-    expect(hasPublicEbayEndpoint()).toBe(true)
+    expect(hasPublicEbayEndpoint()).toBe(false)
     vi.stubEnv("WEBHOOK_BASE_URL", "https://slot1.hooks.dev.copacker.ai")
     expect(hasPublicEbayEndpoint()).toBe(false)
   })
   it("uses the owned public slot for both delivery and challenge hashing", () => {
     vi.stubEnv("COPACKER_LOCAL", "1")
     vi.stubEnv("APP_URL", "https://local.copacker.ai")
-    vi.stubEnv("WEBHOOK_BASE_URL", "https://slot1.hooks.local.copacker.ai")
-    expect(ebayEndpoint()).toBe("https://slot1.hooks.local.copacker.ai/api/webhooks/ebay")
+    vi.stubEnv("WEBHOOK_BASE_URL", "https://copacker-dev.example.com")
+    expect(ebayEndpoint()).toBe("https://copacker-dev.example.com/api/webhooks/ebay")
     expect(hasPublicEbayEndpoint()).toBe(true)
     expect(ebayChallengeResponse("abc", verificationToken)).toBe(
       createHash("sha256").update(`abc${verificationToken}${ebayEndpoint()}`).digest("hex")

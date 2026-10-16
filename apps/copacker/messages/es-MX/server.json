@@ -24,7 +24,8 @@
       "awdConfiguration": "{sku}: dale a todas las cajas el mismo contenido, medidas y peso, o divídelas en envíos separados",
       "overQuantity": "{sku}: las cajas superan la cantidad pendiente de la orden de compra",
       "unknownChange": "Los cambios de la factura deben referirse a artículos únicos de la orden de compra"
-    }
+    },
+    "networkMismatch": "Empaca solo productos asignados a la red de Amazon de este envío."
   },
   "workflow": {
     "arrived": "La mercancía llegó",

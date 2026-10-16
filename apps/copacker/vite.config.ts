@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
     watch: { ignored: ["**/e2e/.results/**", "**/e2e/.auth/**", "**/.cloudflare/**"] }
   },
   preview: { cors: false },
+  // Style extraction introduces this import after dependency scanning. Prebundle it to avoid a late full reload.
+  optimizeDeps: { include: ["@vanilla-extract/sprinkles/createRuntimeSprinkles"] },
   environments: {
     client: {
       // Shared tiny chunks otherwise generate hundreds of requests per portal document, exhausting Windows
@@ -38,7 +40,14 @@ export default defineConfig(({ mode }) => ({
     },
     ssr: {
       optimizeDeps: {
-        include: ["react", "react-dom", "react-dom/server", "react/jsx-runtime", "react/jsx-dev-runtime"]
+        include: [
+          "react",
+          "react-dom",
+          "react-dom/server",
+          "react/jsx-runtime",
+          "react/jsx-dev-runtime",
+          "@vanilla-extract/sprinkles/createRuntimeSprinkles"
+        ]
       }
     }
   },

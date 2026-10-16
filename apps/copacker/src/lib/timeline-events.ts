@@ -27,11 +27,13 @@ export const timelineEventSchema = z.discriminatedUnion("key", [
       "changesDeclined",
       "packingReady",
       "invoiceEntered",
+      "existingAwdUnlinked",
       "invoiceChangesSubmitted"
     ]),
     values: z.null()
   }),
   z.object({ key: z.literal("readyDateSet"), values: z.object({ date: z.iso.date() }) }),
+  z.object({ key: z.literal("existingAwdLinked"), values: z.object({ shipmentId: text }) }),
   z.object({ key: z.literal("changesProposedWithNote"), values: z.object({ note: text }) }),
   z.object({
     key: z.enum(["changesDeclinedWithReason", "correctionRequested"]),

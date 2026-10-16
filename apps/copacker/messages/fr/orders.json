@@ -160,7 +160,6 @@
     "addStop": "Ajouter une étape",
     "stopNeedsPhone": "Amazon a besoin d’un numéro de téléphone à cette étape pour l’enlèvement. <link>En ajouter un</link>",
     "noProducts": "Aucun produit",
-    "skuPerUnit": "{sku}, {count} par unité",
     "needsLabel": "Nécessite une étiquette importée",
     "supplierSkuFor": "SKU fournisseur de {name}",
     "quantityOf": "Quantité de {name}",
@@ -188,7 +187,28 @@
     "removeAdjustment": "Retirer l’ajustement",
     "addAdjustment": "Ajouter un ajustement",
     "skuLabel": "Étiquette SKU",
-    "amazonRequiresIt": "Exigée par Amazon"
+    "amazonRequiresIt": "Exigée par Amazon",
+    "shipments": "Expéditions",
+    "groupingHint": "Sélectionnez des produits pour les déplacer entre les expéditions.",
+    "moveProducts": "Déplacer les produits",
+    "selectedProducts": "{count, plural, one {# produit sélectionné} other {# produits sélectionnés}}",
+    "moveTo": "Déplacer vers {destination}",
+    "clearSelection": "Effacer la sélection",
+    "selectShipment": "Sélectionner tous les produits pour {destination}",
+    "shipmentTo": "Expédition vers {destination}",
+    "shipmentCounts": "{count, plural, one {# variante} other {# variantes}}, {pieces, number} pièces",
+    "selectProduct": "Sélectionner {name}",
+    "packCount": "{count, number} lots de {size}",
+    "supplierCharges": "Frais du fournisseur",
+    "addSupplierCharge": "Ajouter des frais",
+    "removeSupplierCharge": "Supprimer les frais",
+    "rate": "Tarif",
+    "chargeBasis": "Base de calcul",
+    "perPack": "Par lot",
+    "perPiece": "Par pièce",
+    "flatAmount": "Montant fixe",
+    "shipmentTotal": "Total de l’expédition",
+    "expenseType": "Type de frais"
   },
   "revise": {
     "title": "Modifier la commande",
@@ -282,7 +302,9 @@
       "forwarderShipped": "{forwarder} a expédié la marchandise : {tracking}",
       "packingReady": "Emballage envoyé ; prêt à expédier",
       "invoiceEntered": "Facture saisie avec des modifications du bon de commande",
-      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation"
+      "invoiceChangesSubmitted": "Le fournisseur a envoyé des modifications de la facture pour approbation",
+      "existingAwdLinked": "Envoi AWD existant {shipmentId} lié",
+      "existingAwdUnlinked": "Lien vers l’envoi AWD existant supprimé"
     }
   },
   "actions": {

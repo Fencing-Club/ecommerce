@@ -1,13 +1,6 @@
-import { Link } from "@tanstack/react-router"
-import { FileUp, Plus } from "lucide-react"
 import { expect } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { EmptyState, PageHeader } from "@/components/common"
-import { OrderList } from "@/components/order-list"
-import { StatCard, StatGrid } from "@/components/stat-card"
-import { SupplierOrderIndex } from "@/components/supplier/order-index"
-import { Button } from "@/components/ui/button"
 import { can, isAdmin, type Permissions } from "@/lib/access"
 import { orderListRows } from "@/server/order-list"
 import type { ListedOrder } from "@/server/supplier-workspace"
@@ -15,6 +8,7 @@ import { orderRows } from "@/stories/fixtures/orders"
 import { supplierOrders, warehouse } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
 import { member, owner, type WorkspaceKind } from "@/stories/workspace"
+import PageView from "./page"
 
 type Row = (typeof orderRows)[number]
 
@@ -37,14 +31,13 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
   const t = await translateStory("orders.index")
   if (kind === "supplier") {
     return (
-      <>
-        <PageHeader title={t("supplierTitle")} />
-        {/* withoutTotals, for someone who doesn't see prices. */}
-        <SupplierOrderIndex
-          orders={can(s, "prices") ? orders : orders.map((order) => ({ ...order, total: null }))}
-          initialTab={tab}
-        />
-      </>
+      <PageView
+        page={{
+          view: "supplier",
+          orders: can(s, "prices") ? orders : orders.map((order) => ({ ...order, total: null })),
+          tab
+        }}
+      />
     )
   }
   const rows = queried.toReversed()
@@ -75,57 +68,20 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
   const guided = isBuyer && nextStep.allowed
 
   return (
-    <>
-      <PageHeader title={t("title")}>
-        {creates && (
-          <>
-            <Button variant="outline" nativeButton={false} render={<Link to="/orders/import" />}>
-              <FileUp data-icon="inline-start" />
-              {t("import")}
-            </Button>
-            <Button nativeButton={false} render={<Link to="/orders/new" />}>
-              <Plus data-icon="inline-start" />
-              {t("create")}
-            </Button>
-          </>
-        )}
-      </PageHeader>
-
-      {rows.length > 0 && (
-        <StatGrid>
-          <StatCard label={t("stats.open")} value={rows.filter((r) => r.order.status !== "closed").length} />
-          <StatCard
-            label={t("stats.withSuppliers")}
-            value={rows.filter((r) => r.order.status === "submitted").length}
-          />
-          {/* Only buyers have drafts. */}
-          {isBuyer && (
-            <StatCard label={t("stats.drafts")} value={rows.filter((r) => r.order.status === "draft").length} />
-          )}
-        </StatGrid>
-      )}
-
-      {rows.length ? (
-        <OrderList
-          rows={await orderListRows(rows, showValue)}
-          status={status}
-          showValue={showValue}
-          drafts={isBuyer}
-          timeZone={undefined}
-        />
-      ) : (
-        <EmptyState
-          title={guided ? t("empty.guidedTitle") : t("empty.title")}
-          description={guided ? nextStep.description : t(kind === "forwarder" ? "empty.forwarder" : "empty.other")}
-        >
-          {guided && (
-            <Button nativeButton={false} render={<Link to="." href={nextStep.href} />}>
-              {nextStep.action}
-            </Button>
-          )}
-        </EmptyState>
-      )}
-    </>
+    <PageView
+      page={{
+        view: "other",
+        rows: await orderListRows(rows, showValue),
+        showValue,
+        isBuyer,
+        creates,
+        nextStep,
+        guided,
+        kind,
+        status,
+        timeZone: "UTC"
+      }}
+    />
   )
 }
 

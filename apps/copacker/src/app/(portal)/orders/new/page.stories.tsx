@@ -3,7 +3,6 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { OrderBuilder } from "@/components/order-builder"
 import type { suppliers } from "@/db/schema"
 import type { orderLine } from "@/lib/order-lines"
 import type { ForwarderAddress } from "@/server/forwarders"
@@ -19,6 +18,7 @@ import {
   supplierRecord
 } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 type Args = {
   // The URL's search parameters, which Restock and Reorder links set.
@@ -45,22 +45,24 @@ async function NewOrder({
   const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = addresses.filter((delivery) => delivery.shopifyLocationId === params.locationId)
   return (
-    <OrderBuilder
-      title={t("builder.newTitle")}
-      parents={[{ label: t("index.title"), href: "/orders" }]}
-      suppliers={rows.map((r) => ({ id: r.id, name: r.name }))}
-      deliveries={addresses}
-      forwarderAddresses={stops.map((row) => ({
-        addressId: row.addressId,
-        forwarderId: row.forwarderId,
-        label: `${row.forwarderName}, ${row.addressName}`,
-        hasPhone: Boolean(row.address.phoneNumber)
-      }))}
-      initialItems={initialItems}
-      needsBarcodeVariantIds={needsBarcode}
-      initialDestination={initialDestination}
-      initialSupplierId={rows.find((row) => row.id === params.supplierId)?.id}
-      initialDeliveryId={initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined}
+    <PageView
+      page={{
+        title: t("builder.newTitle"),
+        parents: [{ label: t("index.title"), href: "/orders" }],
+        suppliers: rows.map((r) => ({ id: r.id, name: r.name })),
+        deliveries: addresses,
+        forwarderAddresses: stops.map((row) => ({
+          addressId: row.addressId,
+          forwarderId: row.forwarderId,
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
+        })),
+        initialItems: initialItems,
+        needsBarcodeVariantIds: needsBarcode,
+        initialDestination: initialDestination,
+        initialSupplierId: rows.find((row) => row.id === params.supplierId)?.id,
+        initialDeliveryId: initialDestination === "warehouse" && linked.length === 1 ? linked[0]!.id : undefined
+      }}
     />
   )
 }

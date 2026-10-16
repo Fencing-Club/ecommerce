@@ -29,6 +29,7 @@ const provider = vi.hoisted(() => ({
     eligibility: vi.fn<(...args: never[]) => Promise<unknown>>(),
     create: vi.fn<(...args: never[]) => Promise<unknown>>(),
     order: vi.fn<(...args: never[]) => Promise<unknown>>(),
+    awdInboundShipment: vi.fn<(...args: never[]) => Promise<unknown>>(),
     confirm: vi.fn<(...args: never[]) => Promise<unknown>>(),
     labels: vi.fn<(...args: never[]) => Promise<unknown>>(),
     listings: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -107,6 +108,8 @@ vi.mock("../src/server/import-trace", async (original) => ({
 }))
 
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
+import { linkExistingAwd } from "../src/server/awd-link"
+import { checkLinkedAwd } from "../src/server/awd-packing"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
 import { startFirstSync } from "../src/server/first-sync"
 import {
@@ -807,7 +810,11 @@ describe("Postgres workflow and authorization", () => {
     }))
   }
   const refreshRequest = () =>
-    new Request("http://localhost/api/inventory/refresh", { method: "POST", body: JSON.stringify({ source: "awd" }) })
+    new Request("http://localhost/api/inventory/refresh", {
+      method: "POST",
+      headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
+      body: JSON.stringify({ source: "awd" })
+    })
 
   const fbaData = {
     source: "fba",
@@ -820,6 +827,7 @@ describe("Postgres workflow and authorization", () => {
     refreshInventory(
       new Request("http://localhost/api/inventory/refresh", {
         method: "POST",
+        headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
         body: JSON.stringify({ source: "fba", marketplaceId: "ATVPDKIKX0DER" })
       })
     )
@@ -861,7 +869,11 @@ describe("Postgres workflow and authorization", () => {
       expect(
         (
           await refreshInventory(
-            new Request("http://localhost/api/inventory/refresh", { method: "POST", body: JSON.stringify(body) })
+            new Request("http://localhost/api/inventory/refresh", {
+              method: "POST",
+              headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
+              body: JSON.stringify(body)
+            })
           )
         ).status
       ).toBe(400)
@@ -922,6 +934,7 @@ describe("Postgres workflow and authorization", () => {
     refreshInventory(
       new Request("http://localhost/api/inventory/refresh", {
         method: "POST",
+        headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
         body: JSON.stringify({ source: "shopify" })
       })
     )
@@ -1922,6 +1935,104 @@ async function post(name: string, data: Record<string, unknown>) {
     })
   )
 }
+
+describe("linking existing AWD shipments", () => {
+  beforeEach(orderConnections)
+
+  async function linkedDraft() {
+    const draft = await preparation()
+    await database.update(tables.shipments).set({ amazonNetwork: "awd_us" }).where(eq(tables.shipments.id, draft.id))
+    const request = buildAwdRequest(orderData, draft.packing, "created-outside-copacker")
+    const remote = {
+      shipmentId: "STAR-EXTERNAL",
+      orderId: "existing-order",
+      shipmentStatus: "CREATED",
+      originAddress: request.originAddress,
+      destinationAddress: { countryCode: "US", postalCode: "92344" },
+      shipmentContainerQuantities: request.packagesToInbound
+    }
+    provider.api.awdInboundShipment.mockResolvedValue(remote)
+    return { ...draft, remote }
+  }
+
+  it("links an external shipment and retrieves labels without create, eligibility or confirmation", async () => {
+    const draft = await linkedDraft()
+    await linkExistingAwd(buyer, draft.id, 1, "star-external")
+    await submitPacking(supplier, draft.id, draft.packing, 2)
+    provider.api.labels.mockResolvedValue({ labelStatus: "GENERATING" })
+    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
+      "labels are generating"
+    )
+    await expect(amazonJob({ shipmentId: draft.id, revision: 2 }, async () => undefined)).rejects.toThrow(
+      "labels are generating"
+    )
+    expect(provider.api.labels).toHaveBeenCalledWith("STAR-EXTERNAL")
+    expect(provider.api.create).not.toHaveBeenCalled()
+    expect(provider.api.eligibility).not.toHaveBeenCalled()
+    expect(provider.api.confirm).not.toHaveBeenCalled()
+    expect(provider.api.prepDetails).not.toHaveBeenCalled()
+    const [row] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
+    expect(row).toMatchObject({
+      linkedAmazonShipmentId: "STAR-EXTERNAL",
+      amazonOrderId: "existing-order",
+      amazonShipmentId: "STAR-EXTERNAL"
+    })
+  })
+
+  it("rejects suppliers, another workspace, stale revisions and duplicate links", async () => {
+    const draft = await linkedDraft()
+    await expect(linkExistingAwd(supplier, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow(/buyer|Buyer|Forbidden/)
+    await expect(linkExistingAwd(actor("buyer", otherId), draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow(
+      /404|not.found/i
+    )
+    await expect(linkExistingAwd(buyer, draft.id, 2, "STAR-EXTERNAL")).rejects.toThrow("changed")
+    await linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")
+    const second = await linkedDraft()
+    await expect(linkExistingAwd(buyer, second.id, 1, "STAR-EXTERNAL")).rejects.toThrow("already linked")
+    await linkExistingAwd(buyer, draft.id, 2, null)
+    await expect(linkExistingAwd(buyer, second.id, 1, "STAR-EXTERNAL")).resolves.toEqual({ revision: 2 })
+  })
+
+  it("rejects shipped shipments and SKU or carton discrepancies", async () => {
+    const draft = await linkedDraft()
+    provider.api.awdInboundShipment.mockResolvedValue({ ...draft.remote, shipmentStatus: "CANCELLED" })
+    await expect(linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow("has not shipped")
+    const different = structuredClone(draft.remote)
+    different.shipmentContainerQuantities[0]!.distributionPackage.contents.products[0]!.sku = "other-sku"
+    provider.api.awdInboundShipment.mockResolvedValue(different)
+    await expect(linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")).rejects.toThrow("outside this AWD order")
+    expect(() => checkLinkedAwd(different, orderData, draft.packing)).toThrow("Cartons differ")
+    const overweight = structuredClone(draft.remote)
+    overweight.shipmentContainerQuantities[0]!.distributionPackage.measurements.weight.weight++
+    expect(() => checkLinkedAwd(overweight, orderData, draft.packing)).toThrow("Cartons differ")
+    expect(() =>
+      checkLinkedAwd(
+        { ...draft.remote, originAddress: { ...draft.remote.originAddress, postalCode: "other" } },
+        orderData,
+        draft.packing
+      )
+    ).toThrow("pickup address differs")
+    expect(() => checkLinkedAwd(draft.remote, orderData, draft.packing)).not.toThrow()
+  })
+
+  it("keeps the link through corrections and never cancels the external Amazon order", async () => {
+    const draft = await linkedDraft()
+    await linkExistingAwd(buyer, draft.id, 1, "STAR-EXTERNAL")
+    await database
+      .update(tables.shipments)
+      .set({ status: "waiting_labels", operation: "complete", amazonOrderId: "existing-order", packing: draft.packing })
+      .where(eq(tables.shipments.id, draft.id))
+    await correctShipment(buyer, draft.id, "Fix the local packing")
+    const [row] = await database.select().from(tables.shipments).where(eq(tables.shipments.id, draft.id))
+    expect(row).toMatchObject({
+      status: "correction",
+      operation: "none",
+      linkedAmazonShipmentId: "STAR-EXTERNAL",
+      amazonOrderId: null
+    })
+    expect(provider.api.cancel).not.toHaveBeenCalled()
+  })
+})
 
 describe("durable shipment worker recovery", () => {
   it("resumes confirmation polling without creating a second Amazon order", async () => {
@@ -3614,7 +3725,13 @@ describe("PO to a released FBA shipment", () => {
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    // An already-saved draft from before drafts were assigned a network at PO submission.
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, orderId))
+    const [draft] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: data })
+      .returning()
+    const shipmentId = draft!.id
     const invoice = await uploadPdf("invoice", shipmentId)
     const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
     const packing = packingSchema.parse({
@@ -3694,7 +3811,13 @@ describe("PO to a released FBA shipment", () => {
     }
     await database.update(tables.orders).set({ data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    const { shipmentId } = await submitOrder(buyer, orderId, 1)
+    // An already-saved draft from before drafts were assigned a network at PO submission.
+    await database.update(tables.orders).set({ status: "submitted" }).where(eq(tables.orders.id, orderId))
+    const [draft] = await database
+      .insert(tables.shipments)
+      .values({ orderId, orderRevision: 1, snapshot: data })
+      .returning()
+    const shipmentId = draft!.id
     const invoice = await uploadPdf("invoice", shipmentId)
     const [invoiceDocument] = ((await invoice.json()) as { documents: Array<{ id: string }> }).documents
     const packing = packingSchema.parse({
@@ -3793,6 +3916,24 @@ describe("PO to a released FBA shipment", () => {
 })
 
 describe("fluid packing handoff", () => {
+  it("starts independent AWD and FBA drafts and prevents packing a product into the wrong network", async () => {
+    const fbaItem = { ...orderData.items[0]!, id: randomUUID(), buyerSku: "foil-fba", amazonNetwork: "fba" as const }
+    const data = { ...orderData, items: [...orderData.items, fbaItem] }
+    await database.update(tables.orders).set({ status: "draft", data })
+    await submitOrder(buyer, orderId, 1)
+    const drafts = await database.select().from(tables.shipments).where(eq(tables.shipments.orderId, orderId))
+    expect(drafts.map((row) => row.amazonNetwork).sort()).toEqual(["awd_us", "fba"])
+    const awd = drafts.find((row) => row.amazonNetwork === "awd_us")!
+    const prepared = await preparation()
+    const wrong = {
+      ...prepared.packing,
+      cartons: prepared.packing.cartons.map((carton) => ({ ...carton, items: [{ itemId: fbaItem.id, pieces: 160 }] }))
+    }
+    await expect(submitPacking(supplier, awd.id, wrong, 1)).rejects.toThrow(
+      "Pack only products assigned to this shipment"
+    )
+    expect(provider.api.create).not.toHaveBeenCalled()
+  })
   it("starts a packing draft with PO submission and resumes it on repeated create", async () => {
     await database.update(tables.orders).set({ status: "draft" })
     const submitted = await submitOrder(buyer, orderId, 1)

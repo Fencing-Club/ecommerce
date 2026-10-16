@@ -39,6 +39,9 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
   const step = workflow.shipments.find((row) => row.id === id)!
   const reserved = reservedPieces(await db().select().from(shipments).where(eq(shipments.orderId, order.id)), id)
   const snapshot = shipment.snapshot ?? order.data
+  const packingOrder = shipment.amazonNetwork
+    ? { ...order.data, items: order.data.items.filter((item) => item.amazonNetwork === shipment.amazonNetwork) }
+    : order.data
   const [docs, addresses] = await Promise.all([
     db()
       .select()
@@ -100,8 +103,11 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
     prices,
     editsPartners: can(s, "partners", "edit"),
     order: { id: order.id, revision: order.revision, data: prices ? order.data : unpricedOrder(order.data) },
+    packingOrder: prices ? packingOrder : unpricedOrder(packingOrder),
     supplier: { id: supplier.id, name: supplier.name },
     shipment: {
+      amazonNetwork: shipment.amazonNetwork,
+      linkedAmazonShipmentId: shipment.linkedAmazonShipmentId,
       status: shipment.status,
       revision: shipment.revision,
       issue: shipment.issue,
@@ -114,7 +120,12 @@ export async function shipmentPage(input: { id: string; query: Record<string, st
       packingDraft: prices ? shipment.packingDraft : unpricedDraft(shipment.packingDraft),
       labels: shipment.labels.map((label) => ({ cartonId: label.cartonId, labelNumber: label.labelNumber }))
     },
-    step: { next: step.next, issues: step.issues, packetUrl: step.packetUrl, canRelease: step.canRelease },
+    step: {
+      next: { step: step.next.step, message: step.next.message },
+      issues: step.issues.map(({ message }) => ({ message })),
+      packetUrl: step.packetUrl,
+      canRelease: step.canRelease
+    },
     reserved,
     snapshot: prices ? snapshot : unpricedOrder(snapshot),
     addresses: addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address })),

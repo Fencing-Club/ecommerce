@@ -1,22 +1,24 @@
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { CustomerPageView } from "@/components/customer-page"
 import { can, type Permissions } from "@/lib/access"
 import { catalogIds, customerIds, customerRows, harborDetail } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 function CustomerPage({ detail, permissions }: { detail: typeof harborDetail; permissions: Permissions }) {
   const prices = can(permissions, "prices")
   const showOrders = can(permissions, "orders")
   return (
-    <CustomerPageView
-      {...detail}
-      customer={{ ...detail.customer, spent: prices ? detail.customer.spent : [] }}
-      orders={showOrders ? detail.orders.map((order) => ({ ...order, total: prices ? order.total : null })) : []}
-      prices={prices}
-      showOrders={showOrders}
-      openCatalog={prices && can(permissions, "catalogs")}
+    <PageView
+      page={{
+        ...detail,
+        customer: { ...detail.customer, spent: prices ? detail.customer.spent : [] },
+        orders: showOrders ? detail.orders.map((order) => ({ ...order, total: prices ? order.total : null })) : [],
+        prices: prices,
+        showOrders: showOrders,
+        openCatalog: prices && can(permissions, "catalogs")
+      }}
     />
   )
 }

@@ -42,7 +42,7 @@ const reviewApi = api.injectEndpoints({
     }),
     saveImport: build.mutation<
       { id: string; redirect: string },
-      { id: string; revision: number; supplierId: string; reference: string; dueDate: string }
+      { id: string; revision: number; supplierId: string; reference: string; dueDate?: string }
     >({
       query: ({ id, ...body }) => ({
         url: `imports/${id}/save`,
@@ -305,7 +305,6 @@ export function ImportReview({
   const missing = {
     supplier: !supplierId,
     reference: !proposal.reference?.trim(),
-    dueDate: !dueDate,
     currency: !currency
   }
   const flagged = (value: string | number | null) => checking && blank(value)
@@ -412,7 +411,7 @@ export function ImportReview({
         revision: corrected.revision,
         supplierId,
         reference: proposal.reference ?? "",
-        dueDate
+        dueDate: dueDate || undefined
       }).unwrap()
       router.navigate({ href: result.redirect })
       router.invalidate()
@@ -518,19 +517,9 @@ export function ImportReview({
                     {checking && missing.reference ? validation("required") : undefined}
                   </FieldError>
                 </Field>
-                <Field data-invalid={checking && missing.dueDate}>
-                  <FormLabel htmlFor="import-due-date" label={t("detail.requiredBy")} required />
-                  <DateInput
-                    id="import-due-date"
-                    required
-                    aria-invalid={checking && missing.dueDate}
-                    aria-describedby={checking && missing.dueDate ? "import-due-date-error" : undefined}
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                  <FieldError id="import-due-date-error">
-                    {checking && missing.dueDate ? validation("required") : undefined}
-                  </FieldError>
+                <Field>
+                  <FormLabel htmlFor="import-due-date" label={t("detail.requiredBy")} />
+                  <DateInput id="import-due-date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </Field>
                 <SelectField
                   id="import-currency"

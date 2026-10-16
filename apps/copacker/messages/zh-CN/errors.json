@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "无法生成警告标签。请重试。",
   "workbookNoSheets": "工作簿中没有工作表",
   "workspaceAccessDenied": "你没有此工作区的访问权限",
-  "wrongCode": "验证码不正确。请检查邮件后重试。"
+  "wrongCode": "验证码不正确。请检查邮件后重试。",
+  "awdCartonsDiffer": "箱子信息与 Amazon 不符。请检查产品、数量、尺寸和重量。",
+  "awdShipmentAlreadyShipped": "请选择尚未发出的 AWD 货件。",
+  "awdOriginDiffers": "提货地址与 Amazon 不符。请检查街道、单元、邮编和国家。",
+  "linkAwdOnly": "只有 AWD 装箱草稿才能关联现有 AWD 货件。",
+  "awdProductsDiffer": "Amazon 货件包含此 AWD 订单之外的产品或数量。",
+  "awdAlreadyLinked": "此 Amazon 货件已关联到采购订单。"
 }

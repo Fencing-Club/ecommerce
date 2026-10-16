@@ -129,6 +129,8 @@ export const RecordHeader = meta.story({
     await expect(within(breadcrumb).getByRole("link", { name: "Purchase orders" })).toHaveAttribute("href", "/orders")
     await expect(within(breadcrumb).queryByRole("link", { name: "Lotus Manufacturing" })).toBeNull()
     await expect(within(breadcrumb).getByText("Lotus Manufacturing")).toBeVisible()
+    await expect(breadcrumb.querySelectorAll("ol svg")).toHaveLength(1)
+    await expect(breadcrumb.querySelector("ol li:last-child")?.lastChild?.nodeName).not.toBe("svg")
     const title = canvas.getByRole("heading", { level: 1, name: "PO-1045" })
     await expect(title).toBeVisible()
     await expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(breadcrumb.getBoundingClientRect().bottom)

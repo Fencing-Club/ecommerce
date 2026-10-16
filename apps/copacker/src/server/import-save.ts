@@ -21,7 +21,7 @@ const saveSchema = z
     // A forwarder's address to stop at on the way.
     via: orderInputSchema.shape.via,
     reference: z.string().trim().min(1).max(80),
-    dueDate: z.iso.date(),
+    dueDate: orderInputSchema.shape.dueDate,
     notes: z.string().max(8000).default("")
   })
   .strict()

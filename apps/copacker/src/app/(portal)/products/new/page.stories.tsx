@@ -2,12 +2,12 @@ import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { ProductEditor } from "@/components/supplier/product-editor"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 // A supplier's Add product page (page.tsx), which starts from a blank product. A buyer's is redirected to Products.
 async function NewProductPage() {
-  return <ProductEditor />
+  return <PageView page={{}} />
 }
 
 // The products each story saved.

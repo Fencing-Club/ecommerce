@@ -16,6 +16,7 @@ import { shipments, orders, orderRevisions, organizations, memberships, profiles
 import type { Locale } from "../i18n/locales"
 import { defaultLocale, isLocale } from "../i18n/locales"
 import { translatorFor } from "../i18n/translator"
+import { checkLinkedAwd } from "./awd-packing"
 import { amazonFor, shopifyFor } from "./connections"
 import { filedPo, generateShipmentDocuments, shipmentDestination, storeDocument } from "./documents"
 import { sendEmail } from "./email"
@@ -71,78 +72,97 @@ export async function amazonJob(payload: Record<string, unknown>, assertOwned: (
     await fbaShipmentJob(api, { ...shipment, packing, snapshot: shipment.snapshot }, input, assertOwned)
     return
   }
-  const request = buildAwdRequest(
-    shipment.snapshot,
-    packing,
-    amazonReference(shipment.id, revision),
-    await api.prepDetails(shipment.snapshot.items.map((item) => item.buyerSku))
-  )
-  let orderId = shipment.amazonOrderId
-  if (!orderId) {
-    if (shipment.operation === "sending") {
-      throw new Error("Amazon create outcome is unknown. Reconcile the existing order before retrying.")
+  let amazonShipmentId: string
+  if (shipment.linkedAmazonShipmentId) {
+    const remote = await api.awdInboundShipment(shipment.linkedAmazonShipmentId)
+    if (remote.shipmentId !== shipment.linkedAmazonShipmentId) {
+      throw new Error("Amazon returned a different shipment")
     }
-    await api.eligibility(request.packagesToInbound)
+    checkLinkedAwd(remote, shipment.snapshot, packing)
+    amazonShipmentId = remote.shipmentId
     await assertOwned()
-    const dispatch = await db()
-      .update(shipments)
-      .set({ status: "creating", operation: "sending" })
-      .where(
-        and(
-          eq(shipments.id, shipmentId),
-          eq(shipments.revision, revision),
-          eq(shipments.status, "creating"),
-          eq(shipments.operation, "none"),
-          isNull(shipments.amazonOrderId)
-        )
-      )
-      .returning({ id: shipments.id })
-    if (dispatch.length !== 1) {
-      throw new Error("Amazon creation is already in progress. Reconcile before retrying.")
-    }
-    const result = await createOnce(shipmentId, () => api.create(request))
-    orderId = result.orderId
     await db()
       .update(shipments)
-      .set({ amazonOrderId: orderId, operation: "created" })
-      .where(eq(shipments.id, shipmentId))
-  }
-  await assertOwned()
-  const remote = await api.order(orderId)
-  if (remote.externalReferenceId !== request.externalReferenceId) {
-    throw new Error("Amazon order reference does not match this shipment")
-  }
-  const signature = (packages: typeof request.packagesToInbound | typeof remote.packagesToInbound) =>
-    JSON.stringify(
-      packages
-        .map((p) => [
-          p.count,
-          p.distributionPackage.contents.products.map((i) => [i.sku, i.quantity]),
-          p.distributionPackage.measurements
-        ])
-        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+      .set({
+        amazonOrderId: remote.orderId,
+        amazonShipmentId,
+        operation: "confirmed"
+      })
+      .where(and(eq(shipments.id, shipmentId), eq(shipments.revision, revision), eq(shipments.status, "creating")))
+  } else {
+    const request = buildAwdRequest(
+      shipment.snapshot,
+      packing,
+      amazonReference(shipment.id, revision),
+      await api.prepDetails(shipment.snapshot.items.map((item) => item.buyerSku))
     )
-  if (signature(request.packagesToInbound) !== signature(remote.packagesToInbound)) {
-    throw new Error("Amazon carton contents do not match the approved packing list")
-  }
-  for (const [key, value] of Object.entries(request.originAddress)) {
-    if (value && remote.originAddress[key] !== value) {
-      throw new Error("Amazon origin does not match the shipment")
+    let orderId = shipment.amazonOrderId
+    if (!orderId) {
+      if (shipment.operation === "sending") {
+        throw new Error("Amazon create outcome is unknown. Reconcile the existing order before retrying.")
+      }
+      await api.eligibility(request.packagesToInbound)
+      await assertOwned()
+      const dispatch = await db()
+        .update(shipments)
+        .set({ status: "creating", operation: "sending" })
+        .where(
+          and(
+            eq(shipments.id, shipmentId),
+            eq(shipments.revision, revision),
+            eq(shipments.status, "creating"),
+            eq(shipments.operation, "none"),
+            isNull(shipments.amazonOrderId)
+          )
+        )
+        .returning({ id: shipments.id })
+      if (dispatch.length !== 1) {
+        throw new Error("Amazon creation is already in progress. Reconcile before retrying.")
+      }
+      const result = await createOnce(shipmentId, () => api.create(request))
+      orderId = result.orderId
+      await db()
+        .update(shipments)
+        .set({ amazonOrderId: orderId, operation: "created" })
+        .where(eq(shipments.id, shipmentId))
     }
-  }
-  if (remote.orderStatus === "VALIDATING") {
-    throw new PollAgain("Amazon is validating cartons")
-  }
-  if (remote.orderStatus === "DRAFT") {
     await assertOwned()
-    await api.confirm(orderId)
-    throw new PollAgain("Amazon shipment confirmation is processing")
+    const remote = await api.order(orderId)
+    if (remote.externalReferenceId !== request.externalReferenceId) {
+      throw new Error("Amazon order reference does not match this shipment")
+    }
+    const signature = (packages: typeof request.packagesToInbound | typeof remote.packagesToInbound) =>
+      JSON.stringify(
+        packages
+          .map((p) => [
+            p.count,
+            p.distributionPackage.contents.products.map((i) => [i.sku, i.quantity]),
+            p.distributionPackage.measurements
+          ])
+          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+      )
+    if (signature(request.packagesToInbound) !== signature(remote.packagesToInbound)) {
+      throw new Error("Amazon carton contents do not match the approved packing list")
+    }
+    for (const [key, value] of Object.entries(request.originAddress)) {
+      if (value && remote.originAddress[key] !== value) {
+        throw new Error("Amazon origin does not match the shipment")
+      }
+    }
+    if (remote.orderStatus === "VALIDATING") {
+      throw new PollAgain("Amazon is validating cartons")
+    }
+    if (remote.orderStatus === "DRAFT") {
+      await assertOwned()
+      await api.confirm(orderId)
+      throw new PollAgain("Amazon shipment confirmation is processing")
+    }
+    if (remote.orderStatus !== "CONFIRMED" || !remote.destinationDetails?.shipmentId) {
+      throw new Error(`Amazon order requires review: ${remote.orderStatus}`)
+    }
+    amazonShipmentId = remote.destinationDetails.shipmentId
+    await db().update(shipments).set({ amazonShipmentId, operation: "confirmed" }).where(eq(shipments.id, shipmentId))
   }
-  if (remote.orderStatus !== "CONFIRMED" || !remote.destinationDetails?.shipmentId) {
-    throw new Error(`Amazon order requires review: ${remote.orderStatus}`)
-  }
-  const amazonShipmentId = remote.destinationDetails.shipmentId
-  await db().update(shipments).set({ amazonShipmentId, operation: "confirmed" }).where(eq(shipments.id, shipmentId))
   const labelResponse = await api.labels(amazonShipmentId)
   if (labelResponse.labelStatus === "GENERATION_FAILED") {
     throw new Error("Amazon could not generate carton labels")

@@ -33,3 +33,4 @@ minimumReleaseAgeExclude:
   - "@tanstack/start-plugin-core@1.171.53"
   - "@tanstack/start-server-core@1.169.43"
   - cf@1.0.0-beta.17
+  - "@buildkitgg/dev-domains@0.1.0"

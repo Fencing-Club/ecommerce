@@ -29,7 +29,6 @@
     "apps/copacker": {
       "entry": [
         ".storybook/mocks/*.ts",
-        "scripts/local-server.ts",
         "tests/start-runtime/{cloudflare,vite}.config.ts",
         "tests/start-runtime/src/router.tsx",
         "tests/start-runtime/src/start.ts",
@@ -38,9 +37,9 @@
         "cloudflare.config.ts",
         "e2e/runtime/cloudflare.config.ts",
         "src/{router,start,server}.{ts,tsx}",
-        "src/routes/**/*.{ts,tsx}"
+        "src/routes/**/*.{ts,tsx}",
+        "dev-domains.config.ts"
       ],
-      "ignoreBinaries": ["openssl"],
       "ignore": [".storybook/public/**"],
       "ignoreDependencies": ["@repo/oxlint-config", "cloudflare"]
     },

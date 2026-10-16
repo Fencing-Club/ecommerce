@@ -131,6 +131,15 @@
       "awdLabel": "موجودہ Amazon AWD آرڈر ID",
       "awdInvalid": "Amazon آرڈر ID درج کریں، جو STAR- سے شروع ہوتی ہے",
       "fbaInvalid": "ان باؤنڈ پلان ID درج کریں، جو wf سے شروع ہوتی ہے"
+    },
+    "linkExisting": {
+      "title": "موجودہ AWD شپمنٹ استعمال کریں",
+      "description": "اس کا STAR ID درج کریں۔ Copacker کارٹن چیک کرکے لیبل حاصل کرے گا۔",
+      "linked": "{shipmentId} سے منسلک ہے۔ پیکنگ جمع کرنے پر اس کے لیبل حاصل ہوں گے۔",
+      "unlink": "لنک ہٹائیں",
+      "label": "AWD شپمنٹ ID",
+      "submit": "شپمنٹ منسلک کریں",
+      "invalid": "STAR- سے شروع ہونے والی شپمنٹ ID درج کریں"
     }
   },
   "forward": {

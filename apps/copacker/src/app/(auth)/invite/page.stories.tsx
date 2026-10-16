@@ -1,14 +1,7 @@
-import { Link } from "@tanstack/react-router"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
-import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { AcceptInvitation } from "@/components/auth/accept-invitation"
-import { AuthPage, AuthShell, AuthSwitch } from "@/components/auth/auth-shell"
-import { SignInForm } from "@/components/auth/sign-in-form"
-import { SignUpForm } from "@/components/auth/sign-up-form"
-import { SocialSignIn } from "@/components/auth/social-sign-in"
-import { Button } from "@/components/ui/button"
+import { AuthShell } from "@/components/auth/auth-shell"
 import type { Invitation, InvitationKind } from "@/server/invitations"
 import {
   actionRecorder,
@@ -20,23 +13,9 @@ import {
   skipAnimations
 } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
-
-// Bold text inside a translated sentence, such as an email address.
-function strong(chunks: React.ReactNode) {
-  return <span className="font-medium text-foreground">{chunks}</span>
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
-}
 
 type Args = {
   kind: InvitationKind
@@ -57,99 +36,23 @@ type Args = {
 // is the story frame's own providers.
 async function InvitationPage({ kind, invitation, user, existing = false, mode, owned = [] }: Args) {
   const token = invitationToken
-  const home = user ? "/" : "/login"
-  const t = await translateStory("auth.invite")
-  const page = async () => {
-    if (!invitation) {
-      return (
-        <AuthPage title={t("invalidTitle")} description={t("invalidDescription")}>
-          <Button className="h-10 w-full" nativeButton={false} render={<Link to="." href={home} />}>
-            {user ? t("openCopacker") : t("signIn")}
-          </Button>
-        </AuthPage>
-      )
-    }
-    if (invitation.expired) {
-      return (
-        <AuthPage title={t("expiredTitle")} description={t("expiredDescription", { name: invitation.from })}>
-          <Button className="h-10 w-full" nativeButton={false} render={<Link to="." href={home} />}>
-            {user ? t("openCopacker") : t("signIn")}
-          </Button>
-        </AuthPage>
-      )
-    }
-    const here = invitationPath(kind, token)
-    const setUp = `/onboarding?${new URLSearchParams({ invite: token, kind: kind === "supplier" ? "invite" : kind })}`
-    const joining = t(`joining.${kind}`)
-    const title = (
-      <span className="flex flex-col gap-5">
-        <span
-          aria-hidden
-          className="flex size-12 items-center justify-center rounded-xl border bg-muted text-base font-semibold tracking-normal"
-        >
-          {initials(invitation.from)}
-        </span>
-        {t("invitedYou", { name: invitation.from })}
-      </span>
-    )
-    if (!user) {
-      const signIn = mode ? mode === "signin" : existing
-      const other = await translateStory("auth.switch")
-      return (
-        <AuthPage title={title} description={joining}>
-          <div className="flex flex-col gap-6">
-            <SocialSignIn next={here} email={invitation.email} />
-            {signIn ? (
-              <SignInForm next={here} email={invitation.email} locked />
-            ) : (
-              <SignUpForm next={here} email={invitation.email} locked />
-            )}
-          </div>
-          {signIn ? (
-            <AuthSwitch prompt={other("newToCopacker")} href={`${here}&mode=signup`}>
-              {other("createAccount")}
-            </AuthSwitch>
-          ) : (
-            <AuthSwitch prompt={other("haveAccount")} href={`${here}&mode=signin`}>
-              {other("signIn")}
-            </AuthSwitch>
-          )}
-        </AuthPage>
-      )
-    }
-    if (user.email.toLowerCase() !== invitation.email) {
-      return (
-        <AuthPage
-          title={t("otherEmailTitle")}
-          description={t.rich("otherEmailDescription", {
-            invited: invitation.email,
-            current: user.email,
-            strong
-          })}
-        >
-          <form action="/logout" method="post">
-            <input type="hidden" name="next" value={here} />
-            <Button type="submit" className="h-10 w-full">
-              {t("signOutAndContinue")}
-            </Button>
-          </form>
-        </AuthPage>
-      )
-    }
-    if (kind === "team") {
-      return (
-        <AuthPage title={title} description={joining}>
-          <AcceptInvitation kind="team" token={token} label={t("join", { company: invitation.company })} />
-        </AuthPage>
-      )
-    }
-    return (
-      <AuthPage title={title} description={t(`choosing.${kind}`)}>
-        <AcceptInvitation kind={kind} token={token} label={t("accept")} workspaces={owned} setUp={setUp} />
-      </AuthPage>
-    )
-  }
-  return <AuthShell>{await page()}</AuthShell>
+  return (
+    <AuthShell>
+      <PageView
+        page={{
+          token,
+          kind,
+          invitation,
+          user,
+          owned,
+          home: user ? "/" : "/login",
+          here: invitationPath(kind, token),
+          setUp: "/onboarding?" + new URLSearchParams({ invite: token, kind: kind === "supplier" ? "invite" : kind }),
+          signIn: mode ? mode === "signin" : existing
+        }}
+      />
+    </AuthShell>
+  )
 }
 
 // Where the sign-out form would post, caught before the browser leaves the story.

@@ -2,13 +2,13 @@ import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { InventoryPageView } from "@/components/inventory-page"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { supplierInventory } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 function InventoryPage({ rows, tab }: { rows: InventoryRow[]; tab?: string }) {
-  return <InventoryPageView rows={rows} tab={tab} />
+  return <PageView page={{ rows: rows, tab: tab }} />
 }
 
 // The counts each story saved.

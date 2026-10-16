@@ -380,9 +380,18 @@ export async function submitOrder(s: Session, id: string, expectedRevision: numb
         })
         .onConflictDoNothing()
     }
+    const networks =
+      order.data.destination === "amazon" ? [...new Set(order.data.items.map((item) => item.amazonNetwork))] : [null]
     const [shipment] = await tx
       .insert(shipments)
-      .values({ orderId: id, orderRevision: order.revision, snapshot: order.data })
+      .values(
+        networks.map((amazonNetwork) => ({
+          orderId: id,
+          orderRevision: order.revision,
+          snapshot: order.data,
+          amazonNetwork
+        }))
+      )
       .returning()
     await tx.insert(events).values({
       orderId: id,
@@ -679,6 +688,7 @@ export async function correctShipment(s: Session, shipmentId: string, reason: st
         issue: reason,
         packingDraft: shipment.packingDraft ?? shipment.packing,
         revision: shipment.revision + 1,
+        ...(shipment.linkedAmazonShipmentId ? { amazonOrderId: null, amazonShipmentId: null, operation: "none" } : {}),
         updatedAt: new Date()
       })
       .where(eq(shipments.id, shipmentId))

@@ -222,16 +222,7 @@ export default function Settings({ page }: { page: Awaited<ReturnType<typeof set
           title={supplier ? t("addresses.pickupTitle") : t("addresses.title")}
           description={supplier ? t("addresses.pickupDescription") : t("addresses.description")}
         >
-          <SavedAddresses
-            // Addresses saved for a forwarder or a supplier live with that partner on the Partners page. Older
-            // forwarder addresses, saved before forwarders had their own page, stay here to copy over and delete.
-            contacts={saved.filter(
-              (contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId)
-            )}
-            supplier={supplier}
-            locations={ownLocations}
-            admin={admin}
-          />
+          <SavedAddresses contacts={saved} supplier={supplier} locations={ownLocations} admin={admin} />
         </Section>
 
         <Section id="delete" title={t("delete.title")} description={t("delete.description")}>

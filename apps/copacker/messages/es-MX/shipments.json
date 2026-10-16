@@ -131,6 +131,15 @@
       "awdLabel": "ID del pedido de Amazon AWD existente",
       "awdInvalid": "Ingresa el ID del pedido de Amazon, que empieza con STAR-",
       "fbaInvalid": "Ingresa el ID del plan de envío, que empieza con wf"
+    },
+    "linkExisting": {
+      "title": "Usar un envío AWD existente",
+      "description": "Ingresa su ID STAR. Copacker revisará las cajas y obtendrá sus etiquetas.",
+      "linked": "Vinculado a {shipmentId}. Al enviar el empaque se obtendrán sus etiquetas.",
+      "unlink": "Quitar vínculo",
+      "label": "ID del envío AWD",
+      "submit": "Vincular envío",
+      "invalid": "Ingresa un ID de envío que comience con STAR-"
     }
   },
   "forward": {

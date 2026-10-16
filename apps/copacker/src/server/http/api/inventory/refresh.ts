@@ -1,8 +1,12 @@
 import { requirePage, session } from "@/server/auth"
 import { errorResponse } from "@/server/errors"
+import { isAppOrigin } from "@/server/security"
 import { refreshStock, stockSelection } from "@/server/stock"
 
 export async function POST(request: Request) {
+  if (!isAppOrigin(request.headers.get("origin"))) {
+    return errorResponse("invalidOrigin", 403)
+  }
   const s = await session()
   const headers = { "Cache-Control": "private, no-store" }
   if (s.org.kind !== "buyer") {

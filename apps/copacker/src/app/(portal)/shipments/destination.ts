@@ -29,6 +29,3 @@ export async function shipmentDestinations(orders: Array<Pick<OrderInput, "deliv
     return places.find((row) => row.id === order.deliveryId)?.name ?? formatDestination(order.destination, common)
   }
 }
-
-// A ready date, a calendar day such as "2026-09-27", as "Sep 27" in the viewer's language.
-export const readyDateFormat = { month: "short", day: "numeric", timeZone: "UTC" } as const

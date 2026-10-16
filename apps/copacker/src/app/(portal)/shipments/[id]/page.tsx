@@ -26,6 +26,7 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
     prices,
     editsPartners,
     order,
+    packingOrder,
     supplier,
     shipment,
     step,
@@ -142,13 +143,16 @@ export default function ShipmentPage({ page }: { page: Awaited<ReturnType<typeof
         <PackingForm
           orderId={order.id}
           shipmentId={id}
+          linkedAmazonShipmentId={
+            isBuyer && shipment.amazonNetwork === "awd_us" ? shipment.linkedAmazonShipmentId : undefined
+          }
           key={`${id}:${order.revision}`}
           revision={shipment.revision}
           orderRevision={order.revision}
           availablePieces={Object.fromEntries(
             order.data.items.map((item) => [item.id, Math.max(0, item.pieces - (reserved[item.id] ?? 0))])
           )}
-          order={order.data}
+          order={packingOrder}
           initial={shipment.packingDraft ?? shipment.packing}
           invoice={invoice && { id: invoice.id, name: invoice.name, bytes: invoice.bytes }}
           addresses={addresses.map((contact) => ({ id: contact.id, name: contact.name, address: contact.address }))}

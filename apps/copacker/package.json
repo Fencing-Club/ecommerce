@@ -11,8 +11,8 @@
     ]
   },
   "scripts": {
-    "dev": "node --import tsx scripts/dev.ts app",
-    "storybook": "node --import tsx scripts/dev.ts stories",
+    "dev": "dev-domains run app",
+    "storybook": "dev-domains run stories",
     "build-storybook": "storybook build",
     "build": "vite build --mode staging",
     "lint": "oxlint --max-warnings=0",
@@ -32,15 +32,16 @@
     "db:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-dev.ts",
     "db:seed:e2e": "node --env-file-if-exists=.env --import tsx scripts/seed-e2e.ts",
     "worker": "node --env-file-if-exists=.env --import tsx src/server/worker.ts",
-    "dev:setup": "node --import tsx scripts/dev.ts setup",
-    "dev:urls": "node --import tsx scripts/dev.ts urls",
-    "dev:status": "node --import tsx scripts/dev.ts status",
+    "dev:setup": "dev-domains setup",
+    "dev:urls": "dev-domains urls",
+    "dev:status": "dev-domains status",
     "build:e2e": "node --import tsx scripts/dev.ts build-e2e",
     "worker:dev": "node --import tsx scripts/dev.ts worker",
     "typegen": "node --import tsx scripts/generate-routes.ts && cf workers types && pnpm typegen:start-runtime",
     "release": "node --import tsx scripts/release.ts",
     "build:stories-release": "node --import tsx scripts/build-stories-release.ts",
-    "storage:transfer": "node --import tsx scripts/storage-transfer.ts"
+    "storage:transfer": "node --import tsx scripts/storage-transfer.ts",
+    "dev:doctor": "dev-domains doctor"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",
@@ -114,12 +115,12 @@
     "msw": "^2.15.0",
     "msw-storybook-addon": "^3.0.3",
     "playwright": "1.63.0",
-    "portless": "0.15.8",
     "storybook": "10.6.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.0",
     "typescript": "catalog:",
     "vite": "^8.3.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@buildkitgg/dev-domains": "0.1.0"
   }
 }

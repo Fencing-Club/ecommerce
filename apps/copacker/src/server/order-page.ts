@@ -8,7 +8,7 @@ import { accessibleOrder, forwarderOrder } from "@/server/access"
 import { amazonFreightByOrder } from "@/server/amazon-shipments"
 import { requirePage, session } from "@/server/auth"
 import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
-import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-proposals"
+import { proposalChanges, proposalState } from "@/server/order-proposals"
 import { lineLabels } from "@/server/product-barcodes"
 import { requirementTranslator } from "@/server/requirements"
 import { forwarderLeg } from "@/server/shipment-legs"
@@ -16,7 +16,7 @@ import { storeTimeZone } from "@/server/store-time-zone"
 import { serverTranslator } from "@/server/translation"
 import { orderWorkflow } from "@/server/workflow"
 import { forwarderPage } from "./forwarder-page"
-import { unpricedOrder } from "./prices"
+import { unpricedChanges, unpricedOrder } from "./prices"
 
 export async function orderPage(input: { id: string; query: Record<string, string | string[]> }) {
   const [s, t] = await Promise.all([session(), serverTranslator("orders")])
@@ -227,7 +227,9 @@ export async function orderPage(input: { id: string; query: Record<string, strin
       instructionsByItem: Object.fromEntries(
         order.data.items.map((item) => [
           item.id,
-          itemRequirements(item, order.data.destination, prep).map(text.requirement)
+          itemRequirements(item, order.data.destination, prep)
+            .filter((requirement) => requirement.code !== "packFor")
+            .map(text.requirement)
         ])
       ),
       shipmentRows: shipmentRows.map((row) => ({

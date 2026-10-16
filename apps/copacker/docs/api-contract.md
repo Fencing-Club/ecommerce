@@ -25,7 +25,7 @@ Private PDF responses (`/api/documents/:id`, `/api/shipments/:id/packet`, `/api/
 workspace membership after the storage read or packet assembly, before returning bytes. Removing a member during a slow
 download stops that response. They are sent `private, no-store` with `Content-Security-Policy: sandbox`.
 
-The single-document endpoint uses `server/document-download.ts` in both framework runtimes. It opens a storage stream,
+The single-document endpoint uses `server/document-download.ts` for private downloads. It opens a storage stream,
 then rechecks the document, relationship, label release/revision and current membership's page/price grants before
 returning it. Denial cancels the unread stream. The Node transport closes its S3 client after consumption, cancellation
 or failure; Workers supply an invocation-scoped private R2 binding. PDF processors still materialize bytes explicitly.
@@ -120,6 +120,11 @@ kept with that partner and change through the partner's commands.
 | monthlyCost.create, monthlyCost.delete | cost fields, or id | Buyer admin; costs paid monthly that no platform reports |
 | job.retry | id | Buyer admin. A failed email or Shopify job for an accessible PO |
 
+`OrderInput.items[].supplierCharges` optionally records product-specific supplier services. Each entry contains
+`description`, `amount` (a nonnegative integer rate in currency minor units), and `basis` (`piece`, `pack`, or `flat`).
+Pack charges use the Shopify bundle's `piecesPerSet`. They remain separate from product unit prices and PO-level
+`adjustments`; totals include each charge once. See [supplier service costs](../../../packages/aisle/docs/README.md).
+
 ### Shipments
 
 | Action | Data | Permission / result |
@@ -131,6 +136,7 @@ kept with that partner and change through the partner's commands.
 | shipment.approve | id, revision, updateCost: boolean | Buyer, Shipments: Edit, prices. Approves the invoice's changes as the PO's next revision, saves supplier SKUs, and with updateCost writes unit costs to Shopify |
 | shipment.correct | id, reason | Shipments: Edit. Moves the shipment to correction and outdates its documents |
 | shipment.retry | id, revision | Buyer, Shipments: Edit. Requeues a shipment needing attention whose create outcome is known |
+| shipment.linkExisting | id, revision, amazonShipmentId (STAR ID or null) | Buyer, Shipments: Edit. Verifies and links an existing AWD shipment to an editable AWD draft, or removes the link; returns the next revision |
 | shipment.reconcile | id, amazonOrderId | Buyer, Shipments: Edit. Reads the AWD order or FBA inbound plan and checks it names this shipment before the worker resumes |
 | shipment.cancelAmazon | id | Buyer, Shipments: Edit. Cancels the AWD order or FBA inbound plan and verifies it before releasing quantities |
 | shipment.release | id, revision, bookingReference | Buyer, Shipments: Edit. Releases a shipment waiting for labels once its packet is complete and queues the `ready` email to a supplier that has joined; for a supplier not on Copacker, the buyer shares the packet |
@@ -313,7 +319,7 @@ Avoid wording implying Amazon has agreed to the requested date.
 
 ## Resumable packing
 
-Submitting a PO creates its first packing draft, so the supplier can enter packing at once. `shipment.create` resumes
+Submitting a PO creates one packing draft per Amazon network (one for a warehouse PO), so the supplier can enter packing at once. `shipment.create` resumes
 the editable draft; it creates another shipment only when there is none and unassigned PO quantity remains. Submitted
 shipments reserve quantities; saved drafts don't.
 
@@ -534,7 +540,7 @@ Buyer routes (Orders: Edit) that bind every record and store lookup to the activ
 - `DELETE /api/imports/:id`: cancels by advancing the revision; the source is kept. Saved imports can't be cancelled.
 - `POST /api/imports/:id`: retries a failed import with a fresh revision and job; 409 otherwise.
 - `POST /api/imports/:id/save` `{revision, reviewed: true, supplierId, destination, deliveryId?, via?, reference,
-  dueDate, notes?}`: returns `{id, redirect: "/orders/:id"}`. Every row needs a resolved variant, whole-piece
+  dueDate?, notes?}`: returns `{id, redirect: "/orders/:id"}`. Every row needs a resolved variant, whole-piece
   quantities, a valid set conversion and prices representable in minor units; known totals must reconcile. The server
   re-fetches Shopify and Amazon identities and rejects changed store connections. The import and the new draft PO are
   linked in one transaction; saving again returns the same PO. Saving sends no email and creates no Amazon shipment.

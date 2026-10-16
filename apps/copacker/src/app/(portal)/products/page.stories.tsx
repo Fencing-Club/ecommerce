@@ -1,13 +1,13 @@
 import { http, HttpResponse } from "msw"
-import { fn, expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { ProductsPageView } from "@/components/products-page"
 import type { ProductRow } from "@/components/supplier/product-index"
 import { can, type Permissions } from "@/lib/access"
 import { productsPage, supplierProducts, withoutSupplier } from "@/stories/fixtures/catalog"
 import { daysAgo } from "@/stories/fixtures/orders"
 import { pageStory } from "@/stories/server"
 import { member, owner, type WorkspaceKind } from "@/stories/workspace"
+import PageView from "./page"
 
 type Args = {
   kind: WorkspaceKind
@@ -31,7 +31,7 @@ function ProductsPage({ kind, permissions, products, providers, q }: Args) {
           }))
         }
       : { kind: "buyer" as const, providers, search: typeof q === "string" ? q.trim().slice(0, 200) : "" }
-  return <ProductsPageView refresh={fn()} page={page} />
+  return <PageView page={page} />
 }
 
 const buyer = pageStory("/products", ProductsPage, "buyer")

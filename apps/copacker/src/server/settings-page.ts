@@ -94,7 +94,9 @@ export async function settingsPage(_input: { query: Record<string, string | stri
     admin,
     finances,
     restock,
-    saved: saved.filter((contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId)),
+    saved: saved
+      .filter((contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId))
+      .map(({ id, name, kind, address, shopifyLocationId }) => ({ id, name, kind, address, shopifyLocationId })),
     profile: profile
       ? {
           website: profile.website,

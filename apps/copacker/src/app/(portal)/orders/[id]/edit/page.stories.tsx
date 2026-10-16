@@ -2,7 +2,6 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { OrderBuilder } from "@/components/order-builder"
 import type { orders, suppliers } from "@/db/schema"
 import type { ForwarderAddress } from "@/server/forwarders"
 import {
@@ -16,6 +15,7 @@ import {
   supplierRecord
 } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 type Args = {
   // The draft, and what the page reads for the editor: the buyer's suppliers, delivery addresses, the variations that
@@ -33,22 +33,24 @@ async function EditOrder({ order, suppliers: rows, deliveries: addresses, needsB
   const t = await translateStory("orders")
   const id = order.id
   return (
-    <OrderBuilder
-      title={t("builder.edit")}
-      parents={[
-        { label: t("index.title"), href: "/orders" },
-        { label: order.data.reference, href: `/orders/${id}` }
-      ]}
-      suppliers={rows.map((row) => ({ id: row.id, name: row.name }))}
-      deliveries={addresses}
-      forwarderAddresses={stops.map((row) => ({
-        addressId: row.addressId,
-        forwarderId: row.forwarderId,
-        label: `${row.forwarderName}, ${row.addressName}`,
-        hasPhone: Boolean(row.address.phoneNumber)
-      }))}
-      needsBarcodeVariantIds={needsBarcode}
-      draft={{ id, revision: order.revision, data: order.data }}
+    <PageView
+      page={{
+        title: t("builder.edit"),
+        parents: [
+          { label: t("index.title"), href: "/orders" },
+          { label: order.data.reference, href: `/orders/${id}` }
+        ],
+        suppliers: rows.map((row) => ({ id: row.id, name: row.name })),
+        deliveries: addresses,
+        forwarderAddresses: stops.map((row) => ({
+          addressId: row.addressId,
+          forwarderId: row.forwarderId,
+          label: `${row.forwarderName}, ${row.addressName}`,
+          hasPhone: Boolean(row.address.phoneNumber)
+        })),
+        needsBarcodeVariantIds: needsBarcode,
+        draft: { id, revision: order.revision, data: order.data }
+      }}
     />
   )
 }

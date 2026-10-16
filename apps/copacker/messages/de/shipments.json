@@ -131,6 +131,15 @@
       "awdLabel": "Bestehende Amazon-AWD-Auftrags-ID",
       "awdInvalid": "Geben Sie die Amazon-Auftrags-ID ein, die mit STAR- beginnt",
       "fbaInvalid": "Geben Sie die Einlieferungsplan-ID ein, die mit wf beginnt"
+    },
+    "linkExisting": {
+      "title": "Vorhandene AWD-Sendung verwenden",
+      "description": "STAR-ID eingeben. Copacker prüft die Kartons und ruft die Etiketten ab.",
+      "linked": "Mit {shipmentId} verknüpft. Nach Abgabe der Packliste werden die Etiketten abgerufen.",
+      "unlink": "Verknüpfung entfernen",
+      "label": "AWD-Sendungs-ID",
+      "submit": "Sendung verknüpfen",
+      "invalid": "Eine Sendungs-ID eingeben, die mit STAR- beginnt"
     }
   },
   "forward": {

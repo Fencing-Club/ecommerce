@@ -127,6 +127,15 @@ export const amazonOrderSchema = z.object({
     .optional()
 })
 
+export const awdInboundShipmentSchema = z.object({
+  shipmentId: z.string().min(1),
+  orderId: z.string().min(1),
+  shipmentStatus: z.string().min(1),
+  originAddress: z.record(z.string(), z.unknown()),
+  destinationAddress: z.record(z.string(), z.unknown()),
+  shipmentContainerQuantities: z.array(packageSchema).min(1).max(1000)
+})
+
 const fbaInbound = "/inbound/fba/2024-03-20"
 const operationStarted = z.object({ operationId: z.string() })
 const fbaMoney = z.object({ amount: z.number(), code: z.string() })
@@ -926,6 +935,12 @@ export class Amazon {
       nextToken = page.nextToken
     }
     throw new Error("AWD shipments exceed the supported page limit")
+  }
+  /** Reads an existing AWD shipment, including its actual cartons and destination. Never creates or confirms it. */
+  async awdInboundShipment(shipmentId: string) {
+    return awdInboundShipmentSchema.parse(
+      await this.request("GET", `/awd/2024-05-09/inboundShipments/${encodeURIComponent(shipmentId)}`)
+    )
   }
   /**
    * The units of each seller SKU in an AWD inbound shipment, by its shipment ID (such as STAR-ABC123): each carton's

@@ -17,7 +17,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Run Copacker: setup, releases and infrastructure](operations.md)
 - [Cloudflare runtime, releases and private-storage migration](cloudflare.md)
 - [Domains and provider configuration across environments](domains.md)
-- [Local development with Portless](development.md)
+- [Local development domains with Buildkit and Portless](development.md)
 - [End-to-end tests: the Playwright suite](e2e.md)
 - [Shopify webhooks and Amazon notifications](notifications.md)
 - [Styling](styling.md)

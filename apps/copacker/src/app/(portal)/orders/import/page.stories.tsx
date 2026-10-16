@@ -1,21 +1,13 @@
 import { http, HttpResponse } from "msw"
 import { expect, within } from "storybook/test"
-import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { ImportIntake } from "@/components/import-intake"
 import { importList } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 // The import page (page.tsx), which only buyers who edit purchase orders open.
-async function ImportOrder() {
-  const t = await translateStory("orders")
-  return (
-    <>
-      <PageHeader parents={[{ label: t("index.title"), href: "/orders" }]} title={t("import.title")} />
-      <ImportIntake />
-    </>
-  )
+function ImportOrder() {
+  return <PageView />
 }
 
 const meta = preview.meta({

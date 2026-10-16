@@ -1,14 +1,14 @@
 import { http, HttpResponse } from "msw"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { RestockPageView } from "@/components/restock-page"
 import { restockSettings } from "@/server/restock-report"
 import { restockChannels, restockReport, suppliers } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 type Org = { restockSalesDays: number | null; restockLeadTimeDays: number | null }
 function RestockPage({ org }: { org: Org }) {
-  return <RestockPageView settings={restockSettings(org)} />
+  return <PageView page={{ settings: restockSettings(org) }} />
 }
 
 // The plans each story asked for.

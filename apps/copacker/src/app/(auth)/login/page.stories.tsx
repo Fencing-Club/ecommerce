@@ -1,16 +1,16 @@
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
 function Login({ next, email, error }: { next: string; email?: string; error?: string }) {
   return (
     <AuthShell>
-      <AuthScreen page={{ kind: "login", next, email, failed: Boolean(error) }} />
+      <PageView page={{ kind: "login", next, email, failed: Boolean(error) }} />
     </AuthShell>
   )
 }

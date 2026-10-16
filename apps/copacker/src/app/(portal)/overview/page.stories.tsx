@@ -1,14 +1,15 @@
-import { expect, fn, within } from "storybook/test"
+import { expect, within } from "storybook/test"
 import { createTranslator } from "use-intl"
 import { storyIntl } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { OverviewPagePending, OverviewPageView } from "@/components/overview-page"
+import { OverviewPagePending } from "@/components/overview-page"
 import { canOpen, isAdmin, type Permissions } from "@/lib/access"
 import type { Overview } from "@/server/overview"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
 import { buyerOverview, supplierOverviewData, unconnectedOverview } from "@/stories/fixtures/overview"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 type Args = { permissions: Permissions; data: Overview; supplier: SupplierOverviewData }
 
@@ -16,10 +17,7 @@ type Args = { permissions: Permissions; data: Overview; supplier: SupplierOvervi
 // the loader's authorization and field selection have separate server tests.
 function BuyerOverviewPage({ permissions, data }: Args) {
   return (
-    <OverviewPageView
-      refresh={fn()}
-      onPeriodChange={fn()}
-      onChannelChange={fn()}
+    <PageView
       page={{
         kind: "buyer",
         admin: isAdmin(permissions),
@@ -29,18 +27,12 @@ function BuyerOverviewPage({ permissions, data }: Args) {
           setup: isAdmin(permissions) ? data.setup : []
         }
       }}
+      query={{}}
     />
   )
 }
 function SupplierOverviewPage({ permissions, supplier }: Args) {
-  return (
-    <OverviewPageView
-      refresh={fn()}
-      onPeriodChange={fn()}
-      onChannelChange={fn()}
-      page={{ kind: "supplier", data: supplier, permissions }}
-    />
-  )
+  return <PageView page={{ kind: "supplier", data: supplier, permissions }} query={{}} />
 }
 
 // A member with the Overview (which needs prices) and purchase orders, but not Restock or Shipments.

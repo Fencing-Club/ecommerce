@@ -1,12 +1,14 @@
 import { http, HttpResponse } from "msw"
+import { useState } from "react"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { type EditorProduct, ProductEditor } from "@/components/supplier/product-editor"
+import { type EditorProduct } from "@/components/supplier/product-editor"
 import { can, type Permissions } from "@/lib/access"
 import { editorProduct } from "@/stories/fixtures/catalog"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 type Catalog = { id: string; title: string; status: "active" | "draft" | "archived" }
 
@@ -32,11 +34,9 @@ function ProductPage({
     }))
   }
   return (
-    <ProductEditor
+    <PageView
       key={product.revision}
-      initial={initial}
-      catalogs={catalogs}
-      readOnly={!prices || !can(permissions, "products", "edit")}
+      page={{ initial: initial, catalogs: catalogs, readOnly: !prices || !can(permissions, "products", "edit") }}
     />
   )
 }
@@ -62,6 +62,38 @@ const meta = preview.meta({
         return HttpResponse.json({ id: editorProduct.id })
       })
     )
+  }
+})
+
+function ProductRevision() {
+  const [initial, setInitial] = useState(editorProduct)
+  return (
+    <>
+      <button
+        onClick={() =>
+          setInitial({
+            ...editorProduct,
+            revision: (editorProduct.revision ?? 0) + 1,
+            title: "Updated by another editor"
+          })
+        }
+      >
+        Load saved revision
+      </button>
+      <PageView page={{ initial, catalogs, readOnly: false }} />
+    </>
+  )
+}
+
+export const SavedRevision = meta.story({
+  ...pageStory(`/products/${editorProduct.id}`, () => <ProductRevision />, "supplier"),
+  play: async ({ canvas }) => {
+    const title = canvas.getByRole("textbox", { name: "Title" })
+    await userEvent.clear(title)
+    await userEvent.type(title, "Unsaved title")
+    await userEvent.click(canvas.getByRole("button", { name: "Load saved revision" }))
+    await expect(canvas.getByRole("textbox", { name: "Title" })).toHaveValue("Updated by another editor")
+    await expect(canvas.queryByRole("region", { name: "Unsaved changes" })).toBeNull()
   }
 })
 

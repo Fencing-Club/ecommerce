@@ -1,8 +1,7 @@
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { OnboardingWizard, type WizardValues } from "@/components/onboarding/onboarding-wizard"
-import { SignedInAs } from "@/components/onboarding/signed-in-as"
+import { type WizardValues } from "@/components/onboarding/onboarding-wizard"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
 import type { Invitation } from "@/server/invitations"
@@ -16,6 +15,7 @@ import {
   skipAnimations
 } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
@@ -43,65 +43,68 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
     position: profile?.position ?? ""
   }
   const blank: WizardValues = { person, kind: "", company: { name: "", website: "", phone: "" }, address: blankPlace }
-  const account = <SignedInAs email={user.email} />
   const about = complete ? [] : (["about"] as const)
 
   if (invite) {
     if (invite.kind === "team") {
       return (
-        <OnboardingWizard
-          steps={["about"]}
-          finish={{ type: "join", token: invitationToken, workspace: invite.company }}
-          kind={null}
-          initial={blank}
-          invitedBy={invite.from}
-          account={account}
-          accountEmail={user.email}
+        <PageView
+          page={{
+            steps: ["about"],
+            finish: { type: "join", token: invitationToken, workspace: invite.company },
+            kind: null,
+            initial: blank,
+            invitedBy: invite.from,
+            accountEmail: user.email
+          }}
         />
       )
     }
     return (
-      <OnboardingWizard
-        steps={[...about, "company", "address"]}
-        finish={{ type: "workspace", invitation: { kind: invite.kind, token: invitationToken } }}
-        kind={invite.kind}
-        initial={{
-          ...blank,
+      <PageView
+        page={{
+          steps: [...about, "company", "address"],
+          finish: { type: "workspace", invitation: { kind: invite.kind, token: invitationToken } },
           kind: invite.kind,
-          company: { name: invite.company, website: invite.website, phone: invite.phone },
-          address: invite.addresses[0] ?? blankPlace
+          initial: {
+            ...blank,
+            kind: invite.kind,
+            company: { name: invite.company, website: invite.website, phone: invite.phone },
+            address: invite.addresses[0] ?? blankPlace
+          },
+          invitedBy: invite.from,
+          accountEmail: user.email
         }}
-        invitedBy={invite.from}
-        account={account}
-        accountEmail={user.email}
       />
     )
   }
 
   if (!workspaces.length) {
     return (
-      <OnboardingWizard
-        steps={[...about, "role", "company", "address"]}
-        finish={{ type: "workspace", invitation: null }}
-        kind={null}
-        initial={blank}
-        invitedBy={null}
-        account={account}
-        accountEmail={user.email}
+      <PageView
+        page={{
+          steps: [...about, "role", "company", "address"],
+          finish: { type: "workspace", invitation: null },
+          kind: null,
+          initial: blank,
+          invitedBy: null,
+          accountEmail: user.email
+        }}
       />
     )
   }
 
   const company = profile?.company || (workspaces.find((row) => row.id === open) ?? workspaces[0]!).name
   return (
-    <OnboardingWizard
-      steps={["about"]}
-      finish={{ type: "profile", company, next }}
-      kind={null}
-      initial={blank}
-      invitedBy={null}
-      account={account}
-      accountEmail={user.email}
+    <PageView
+      page={{
+        steps: ["about"],
+        finish: { type: "profile", company, next },
+        kind: null,
+        initial: blank,
+        invitedBy: null,
+        accountEmail: user.email
+      }}
     />
   )
 }

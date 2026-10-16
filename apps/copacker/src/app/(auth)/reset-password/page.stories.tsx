@@ -1,9 +1,9 @@
 import { expect, userEvent, waitFor } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import PageView from "./page"
 
 const actions = actionRecorder()
 const token = "reset_9fK2mQ7xLp3Zt8Wn"
@@ -11,7 +11,7 @@ const token = "reset_9fK2mQ7xLp3Zt8Wn"
 function ResetPassword({ token }: { token?: string }) {
   return (
     <AuthShell>
-      <AuthScreen page={{ kind: "reset-password", token }} />
+      <PageView page={{ kind: "reset-password", token }} />
     </AuthShell>
   )
 }

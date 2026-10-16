@@ -67,6 +67,8 @@ The repository's `CLOUDFLARE_RELEASE_ENABLED` stays off until resource, storage,
 Each environment's deploys are serialized. Older main commits cannot replace newer staging. The retained worker is
 released after the web and Storybook; both HTTP health endpoints must report the expected commit.
 
+Both web and Storybook HTTPS origins are validated before any build, migration, or deployment. Production also requires each origin in its respective Worker custom-domain configuration.
+
 Promotion reads staging's served SHA and requires a successful CI run that actually completed staging deployment.
 Production uses that exact commit and runs signed-out smoke checks. Full browser qualification uses isolated test
 workspaces; never seed production. Passing builds and dry runs do not replace deployed qualification, data reconciliation,

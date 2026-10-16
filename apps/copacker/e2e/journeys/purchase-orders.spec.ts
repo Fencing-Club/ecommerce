@@ -207,7 +207,7 @@ test("the new purchase order builder picks a route and needs products to save", 
   await page.getByRole("button", { name: "Create purchase order" }).click()
   await expect(page).toHaveURL(/\/orders\/new$/)
   await expect(page.getByRole("heading", { level: 1, name: "New purchase order" })).toBeVisible()
-  await expect(page.getByRole("cell", { name: "No products" })).toBeVisible()
+  await expect(page.getByText("No products", { exact: true })).toBeVisible()
   await expect(page.getByText("0 variants (0 units)")).toBeVisible()
   const save = page.getByRole("button", { name: "Save" })
   await expect(save).toBeDisabled()

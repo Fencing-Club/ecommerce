@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "Impossibile creare le etichette di avvertenza. Riprova.",
   "workbookNoSheets": "La cartella di lavoro non contiene fogli",
   "workspaceAccessDenied": "Non hai accesso a questo workspace",
-  "wrongCode": "Il codice non è corretto. Controlla l’email e riprova."
+  "wrongCode": "Il codice non è corretto. Controlla l’email e riprova.",
+  "awdCartonsDiffer": "I colli differiscono da Amazon. Controlla prodotti, quantità, dimensioni e pesi.",
+  "awdShipmentAlreadyShipped": "Scegli una spedizione AWD non ancora partita.",
+  "awdOriginDiffers": "L’indirizzo di ritiro differisce da Amazon. Controlla via, interno, CAP e paese.",
+  "linkAwdOnly": "Solo una bozza di imballaggio AWD può collegare una spedizione AWD esistente.",
+  "awdProductsDiffer": "La spedizione Amazon contiene prodotti o quantità estranei a questo ordine AWD.",
+  "awdAlreadyLinked": "Questa spedizione Amazon è già collegata a un ordine di acquisto."
 }

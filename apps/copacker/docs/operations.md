@@ -167,3 +167,7 @@ private `postgres.railway.internal` hostname, which a local computer can't reach
 ### Amazon connection mode
 
 `AMAZON_SELF_AUTH_ENABLED` defaults to `true`. Settings retains the marketplace selector and adds a refresh-token field for private self-authorization, validates access with Amazon, and stores the token encrypted. The seller ID is configured server-side in `AMAZON_MERCHANT_TOKEN`; customers never enter it. The token must belong to the configured `AMAZON_CLIENT_ID` and `AMAZON_CLIENT_SECRET`. Set the flag to `false` to show the marketplace selector and launch the existing Seller Central OAuth flow. Manual-token submissions are also rejected server-side when disabled. This flag does not change existing connections.
+
+## Preview scope
+
+PR previews currently cover Storybook and fixture-backed UX. Do not provision preview databases or storage on Railway or reuse staging/production data. Database previews are deferred until the Neon migration, and storage previews until the Cloudflare migration, to simplify and reduce the cost of isolated resources. See the [domain inventory](domains.md#pull-request-previews) for the current deployment and the deferred persistence checklist.

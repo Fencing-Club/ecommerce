@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "Couldn’t make the warning labels. Try again.",
   "workbookNoSheets": "The workbook has no sheets",
   "workspaceAccessDenied": "You don’t have access to this workspace",
-  "wrongCode": "That code isn’t right. Check the email and try again."
+  "wrongCode": "That code isn’t right. Check the email and try again.",
+  "awdCartonsDiffer": "Cartons differ from Amazon. Check products, quantities, dimensions and weights.",
+  "awdShipmentAlreadyShipped": "Choose an AWD shipment that has not shipped.",
+  "awdOriginDiffers": "The pickup address differs from Amazon. Check the street, unit, postal code and country.",
+  "linkAwdOnly": "Only an AWD packing draft can link an existing AWD shipment.",
+  "awdProductsDiffer": "The Amazon shipment contains products or quantities outside this AWD order.",
+  "awdAlreadyLinked": "This Amazon shipment is already linked to a purchase order."
 }

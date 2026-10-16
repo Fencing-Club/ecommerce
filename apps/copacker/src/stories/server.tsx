@@ -1,7 +1,7 @@
 import type { Decorator } from "@storybook/react-vite"
 import type { Loader } from "@storybook/react-vite"
 import type { Args } from "@storybook/react-vite"
-import { Children, cloneElement, createContext, Fragment, isValidElement, use, type ReactNode } from "react"
+import { createContext, use, type ReactNode } from "react"
 import { prepareIntl } from "#.storybook/intl"
 import { mockRows } from "#.storybook/mocks/db"
 import { getStoryRouter } from "#.storybook/router"
@@ -9,44 +9,12 @@ import { Shell } from "@/components/shell"
 import type { WorkspaceKind } from "./workspace"
 import { person, workspaces } from "./workspace"
 
-// React renders async server components only on the server. A story renders them first, in a loader, into the client
-// components they return; the story then shows that tree.
-
-function isAsync(type: unknown): type is (props: unknown) => Promise<ReactNode> {
-  return typeof type === "function" && type.constructor.name === "AsyncFunction"
-}
-
-// Resolves every async component in the tree, and in the elements passed as props (such as a card's `actions`), to
-// what it renders. Other components render as usual once the story shows the tree.
-export async function renderServer(node: ReactNode | Promise<ReactNode>): Promise<ReactNode> {
-  const resolved = await node
-  if (Array.isArray(resolved)) {
-    return Promise.all(resolved.map((child: ReactNode) => renderServer(child)))
-  }
-  if (!isValidElement<Record<string, unknown>>(resolved)) {
-    return resolved
-  }
-  if (isAsync(resolved.type)) {
-    // What it renders keeps its key, so a list of them stays keyed.
-    const rendered = await renderServer(resolved.type(resolved.props))
-    return resolved.key === null ? rendered : <Fragment key={resolved.key}>{rendered}</Fragment>
-  }
-  const props: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(resolved.props)) {
-    if (isValidElement(value) || (Array.isArray(value) && value.some((child) => isValidElement(child)))) {
-      props[key] = await renderServer(key === "children" ? Children.toArray(value as ReactNode) : (value as ReactNode))
-    }
-  }
-  return Object.keys(props).length ? cloneElement(resolved, props) : resolved
-}
-
-// A story of a server component: it renders the component (or a page's server render) with the story's args. The
-// database answers with the story's `db` parameter, rows by table name, such as { contacts: [...] }.
+// Prepare asynchronous fixture data in a loader; React renders the actual page components.
 export function serverStory<A extends Args>(render: (args: A) => ReactNode | Promise<ReactNode>) {
   const loader: Loader = async ({ args, globals, parameters }) => {
     await prepareIntl(globals.locale)
     mockRows(parameters.db ?? {})
-    return { server: await renderServer(render(args as A)) }
+    return { server: await render(args as A) }
   }
   return {
     loaders: [loader],
@@ -93,7 +61,7 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
   }
 }
 
-// A page story: the page's server render, inside the portal.
+// A page story: the production page with fixture data, inside the portal.
 export function pageStory<A extends Args>(
   pathname: string,
   render: (args: A) => ReactNode | Promise<ReactNode>,

@@ -2,7 +2,7 @@
 
 See [domains and provider configuration](domains.md) for the cross-environment endpoint and credential checklist.
 Portless app addresses are local even though they use HTTPS. For live local eBay testing, explicitly reserve a public
-public tunnel URL or an optional `hooks.local.copacker.ai` / `<worktree>.hooks.local.copacker.ai` receiver and set `WEBHOOK_BASE_URL` on both the web process and worker to that origin.
+tunnel URL or an owned receiver outside the loopback namespace and set `WEBHOOK_BASE_URL` on both the web process and worker to that origin.
 Without it, local subscription jobs skip eBay. The challenge response hashes this public endpoint, not the app origin.
 Use separate provider apps/destinations and queues for a slot; never repoint staging or production subscriptions.
 

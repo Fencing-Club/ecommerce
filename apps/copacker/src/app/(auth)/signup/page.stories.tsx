@@ -1,9 +1,9 @@
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
@@ -20,7 +20,7 @@ function SignUp({
 }) {
   return (
     <AuthShell>
-      <AuthScreen
+      <PageView
         page={{ kind: "signup", next, email: invited ?? email, invitation: invited ? invitation : undefined }}
       />
     </AuthShell>

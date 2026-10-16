@@ -1,11 +1,11 @@
 import { isRedirect, redirect } from "@tanstack/react-router"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Landing } from "@/components/marketing/landing"
 import type { Permissions } from "@/lib/access"
 import { homeFor } from "@/lib/navigation"
 import { serverStory } from "@/stories/server"
 import { member, owner, type WorkspaceKind, workspaces } from "@/stories/workspace"
+import PageView from "./page"
 
 // Who opens the home page: no one signed in, or a person in a workspace of some kind.
 type Visitor = { kind: WorkspaceKind; permissions: Permissions } | null
@@ -13,7 +13,7 @@ type Visitor = { kind: WorkspaceKind; permissions: Permissions } | null
 // The home page (page.tsx): the marketing page for anyone signed out, and otherwise a redirect to the person's home.
 async function Home({ visitor }: { visitor: Visitor }) {
   if (!visitor) {
-    return <Landing />
+    return <PageView />
   }
   throw redirect({ href: homeFor(workspaces[visitor.kind].kind, visitor.permissions) })
 }

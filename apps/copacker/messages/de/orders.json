@@ -160,7 +160,6 @@
     "addStop": "Zwischenstopp hinzufügen",
     "stopNeedsPhone": "Amazon benötigt für die Abholung an diesem Zwischenstopp eine Telefonnummer. <link>Hinzufügen</link>",
     "noProducts": "Keine Produkte",
-    "skuPerUnit": "{sku}, {count} pro Einheit",
     "needsLabel": "Benötigt ein hochgeladenes Etikett",
     "supplierSkuFor": "Lieferanten-SKU für {name}",
     "quantityOf": "Menge von {name}",
@@ -188,7 +187,28 @@
     "removeAdjustment": "Anpassung entfernen",
     "addAdjustment": "Anpassung hinzufügen",
     "skuLabel": "SKU-Etikett",
-    "amazonRequiresIt": "Von Amazon vorgeschrieben"
+    "amazonRequiresIt": "Von Amazon vorgeschrieben",
+    "shipments": "Sendungen",
+    "groupingHint": "Wähle Produkte aus, um sie zwischen Sendungen zu verschieben.",
+    "moveProducts": "Produkte verschieben",
+    "selectedProducts": "{count, plural, one {# Produkt ausgewählt} other {# Produkte ausgewählt}}",
+    "moveTo": "Nach {destination} verschieben",
+    "clearSelection": "Auswahl aufheben",
+    "selectShipment": "Alle Produkte für {destination} auswählen",
+    "shipmentTo": "Sendung an {destination}",
+    "shipmentCounts": "{count, plural, one {# Variante} other {# Varianten}}, {pieces, number} Stück",
+    "selectProduct": "{name} auswählen",
+    "packCount": "{count, number} Packungen à {size}",
+    "supplierCharges": "Lieferantenkosten",
+    "addSupplierCharge": "Ausgabe hinzufügen",
+    "removeSupplierCharge": "Ausgabe entfernen",
+    "rate": "Betrag",
+    "chargeBasis": "Berechnungsbasis",
+    "perPack": "Pro Packung",
+    "perPiece": "Pro Stück",
+    "flatAmount": "Pauschalbetrag",
+    "shipmentTotal": "Sendungssumme",
+    "expenseType": "Ausgabenart"
   },
   "revise": {
     "title": "Auftrag bearbeiten",
@@ -282,7 +302,9 @@
       "forwarderShipped": "{forwarder} hat die Ware versendet: {tracking}",
       "packingReady": "Packliste gesendet; versandbereit",
       "invoiceEntered": "Rechnung mit Änderungen an der Bestellung erfasst",
-      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet"
+      "invoiceChangesSubmitted": "Lieferant hat Rechnungsänderungen zur Genehmigung gesendet",
+      "existingAwdLinked": "Vorhandene AWD-Sendung {shipmentId} verknüpft",
+      "existingAwdUnlinked": "Verknüpfung zur vorhandenen AWD-Sendung entfernt"
     }
   },
   "actions": {

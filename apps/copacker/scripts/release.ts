@@ -5,9 +5,11 @@ import { fileURLToPath } from "node:url"
 import invariant from "tiny-invariant"
 import { z } from "zod"
 import { optionalSecrets, requiredSecrets, workerSettings } from "./cloudflare-environment"
+import { releaseOrigins } from "./release-origins"
 
 const mode = z.enum(["staging", "production"]).parse(process.argv[2])
 const action = z.enum(["check", "deploy"]).parse(process.argv[3] || "check")
+const origins = releaseOrigins(process.env, mode)
 const root = process.cwd()
 const sha = z
   .string()
@@ -61,7 +63,7 @@ if (action === "deploy") {
 }
 // Only the Worker integrations enter the build process. Direct database/admin and account credentials stay out of
 // Worker bindings. cf reads its own scoped API token from the parent environment when deploying.
-const environment = { ...process.env, ...settings, ...secrets }
+const environment = { ...process.env, ...origins, ...settings, ...secrets }
 const vite = fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json")))
 const storybook = fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json")))
 const cf = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))

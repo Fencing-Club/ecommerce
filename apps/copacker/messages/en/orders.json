@@ -160,7 +160,6 @@
     "addStop": "Add stop",
     "stopNeedsPhone": "Amazon needs a phone number at this stop for pickup. <link>Add one</link>",
     "noProducts": "No products",
-    "skuPerUnit": "{sku}, {count} per unit",
     "needsLabel": "Needs an uploaded label",
     "supplierSkuFor": "Supplier SKU for {name}",
     "quantityOf": "Quantity of {name}",
@@ -188,7 +187,28 @@
     "removeAdjustment": "Remove adjustment",
     "addAdjustment": "Add adjustment",
     "skuLabel": "SKU label",
-    "amazonRequiresIt": "Amazon requires it"
+    "amazonRequiresIt": "Amazon requires it",
+    "shipments": "Shipments",
+    "groupingHint": "Select products to move them between shipments.",
+    "moveProducts": "Move products",
+    "selectedProducts": "{count, plural, one {# product selected} other {# products selected}}",
+    "moveTo": "Move to {destination}",
+    "clearSelection": "Clear selection",
+    "selectShipment": "Select all products for {destination}",
+    "shipmentTo": "{destination} shipment",
+    "shipmentCounts": "{count, plural, one {# variant} other {# variants}}, {pieces, number} pieces",
+    "selectProduct": "Select {name}",
+    "packCount": "{count, number} packs of {size}",
+    "supplierCharges": "Supplier costs",
+    "addSupplierCharge": "Add expense",
+    "removeSupplierCharge": "Remove expense",
+    "rate": "Rate",
+    "chargeBasis": "Charge basis",
+    "perPack": "Per pack",
+    "perPiece": "Per piece",
+    "flatAmount": "Flat amount",
+    "shipmentTotal": "Shipment total",
+    "expenseType": "Expense type"
   },
   "revise": {
     "title": "Edit order",
@@ -282,7 +302,9 @@
       "forwarderShipped": "{forwarder} shipped the goods: {tracking}",
       "packingReady": "Packing submitted; ready to ship",
       "invoiceEntered": "Invoice entered with changes to the purchase order",
-      "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval"
+      "invoiceChangesSubmitted": "Supplier submitted invoice changes for approval",
+      "existingAwdLinked": "Linked existing AWD shipment {shipmentId}",
+      "existingAwdUnlinked": "Removed the existing AWD shipment link"
     }
   },
   "actions": {

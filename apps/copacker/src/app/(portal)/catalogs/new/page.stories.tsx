@@ -2,14 +2,14 @@ import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { newCatalog } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 // The New catalog page (page.tsx): the catalog form with every active product and the customers to assign.
 async function NewCatalogPage({ data }: { data: CatalogEditorData }) {
-  return <CatalogEditor data={data} />
+  return <PageView page={{ data, readOnly: false }} />
 }
 
 const saved = fn()

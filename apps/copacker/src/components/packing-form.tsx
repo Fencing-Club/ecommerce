@@ -33,6 +33,7 @@ import { FormInput, FormMoney, FormNumber, RequiredMark } from "./form-controls"
 import { SelectField } from "./form-fields"
 import { FormSelect } from "./form-select"
 import { AddressSummary, type PartnerAddress, PartnerAddressDialog } from "./partner-address"
+import { LinkExistingShipment } from "./shipment-actions"
 import { Upload } from "./upload"
 
 type Values = z.input<typeof packingSchema>
@@ -162,7 +163,8 @@ export function PackingForm({
   invoice,
   addresses,
   enteringFor,
-  addAddressTo
+  addAddressTo,
+  linkedAmazonShipmentId
 }: {
   orderId: string
   shipmentId: string
@@ -179,6 +181,8 @@ export function PackingForm({
   enteringFor?: string
   // The supplier that hasn't joined, when the buyer's owner fills this in for it and can save addresses to it.
   addAddressTo?: { id: string; name: string }
+  // Present only for a buyer's AWD draft. Null means it has no existing Amazon shipment yet.
+  linkedAmazonShipmentId?: string | null
 }) {
   const t = useTranslations("orders.packing")
   const errorMessage = useErrorMessage()
@@ -192,7 +196,8 @@ export function PackingForm({
   const [savedRevision, setSavedRevision] = useState(revision)
   const [notice, setNotice] = useState("")
   const [serverError, setServerError] = useState("")
-  const [working, setWorking] = useState<"save" | "check" | "submit" | null>(null)
+  const [working, setWorking] = useState<"save" | "check" | "submit" | "link" | null>(null)
+  const [linkedId, setLinkedId] = useState(linkedAmazonShipmentId)
   const firstItem = order.items[0]!.id
   const multipleProducts = order.items.length > 1
   // A packing list without a pickup address yet starts from the supplier's only saved one.
@@ -288,6 +293,27 @@ export function PackingForm({
     }
   }
 
+  async function linkShipment(amazonShipmentId: string | null) {
+    setWorking("link")
+    setNotice("")
+    setServerError("")
+    try {
+      // Preserve any incomplete packing before changing the link; both writes use the latest revision.
+      const nextRevision = await saveDraft(form.getValues())
+      const result = z.object({ revision: z.number() }).parse(
+        await run({
+          action: "shipment.linkExisting",
+          data: { id: shipmentId, revision: nextRevision, amazonShipmentId }
+        }).unwrap()
+      )
+      setSavedRevision(result.revision)
+      setLinkedId(amazonShipmentId)
+      router.invalidate()
+    } finally {
+      setWorking(null)
+    }
+  }
+
   const validated = (mode: "check" | "submit") =>
     form.handleSubmit(
       () => perform(mode, form.getValues()),
@@ -315,6 +341,9 @@ export function PackingForm({
     <FormProvider {...form}>
       {/* Also the sticky action bar's container, so the bar stays in view down to the last card. */}
       <fieldset disabled={working !== null} className="flex min-w-0 flex-col gap-6">
+        {linkedId !== undefined && (
+          <LinkExistingShipment key={linkedId ?? "unlinked"} linkedId={linkedId} onLink={linkShipment} />
+        )}
         {/* Outside the packing form element: the upload is a form of its own. */}
         <InvoiceCard orderId={orderId} shipmentId={shipmentId} invoice={invoice} enteringFor={enteringFor} />
 

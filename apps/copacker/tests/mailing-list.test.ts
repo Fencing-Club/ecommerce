@@ -58,7 +58,7 @@ const signup = (body: unknown, address = "203.0.113.1", language = "en-US") =>
   POST(
     new Request("http://localhost/api/mailing-list", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-forwarded-for": address, "accept-language": language },
+      headers: { "content-type": "application/json", "cf-connecting-ip": address, "accept-language": language },
       body: JSON.stringify(body)
     })
   )

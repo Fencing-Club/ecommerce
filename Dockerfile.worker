@@ -1,7 +1,8 @@
 # The retained background executor runs TypeScript through tsx. Web and Storybook run on Cloudflare.
 FROM node:24-bookworm-slim
 WORKDIR /app
-RUN npm install -g pnpm@12.10.1
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm install -g pnpm@12.10.1 --registry=$NPM_REGISTRY
 COPY . .
 ENV LEFTHOOK=0
 RUN npm pkg delete scripts.prepare && pnpm install --frozen-lockfile --filter copacker...

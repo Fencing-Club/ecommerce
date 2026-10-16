@@ -6,6 +6,40 @@ local development/domain changes preserved. The main application now runs on Tan
 The sections after the current qualification record retain earlier incremental proof and its then-current limits.
 References there to a still-running Next application describe those earlier increments, not this working tree.
 
+## PR review, October 16
+
+[PR 19](https://github.com/AndrewCraswell/ecommerce/pull/19) was reviewed against current main, including its shipment
+grouping, AWD linking and shared Buildkit development-domain changes. Review covered route and HTTP parity,
+authorization and DTO disclosure, session/cookie precedence, database and storage lifetimes, mutation refresh,
+release isolation, dependency boundaries, duplication and browser behavior.
+
+The review corrected these defects and design problems:
+
+- Inventory refresh now rejects missing or foreign origins before authentication or job enqueueing. Public rate
+  limits use Cloudflare's client-IP header rather than caller-controlled forwarded addresses.
+- Release preflight validates HTTPS origins and production hostnames before building, migrating or deploying. The
+  retained Node worker deployment waits for its own deployment ID, so an overlapping deployment cannot hide failure.
+- Page stories render the actual page components with fixture data. Copied page markup and the obsolete recursive
+  server-component renderer were removed. Price-redaction helpers have a pure module boundary so stories cannot pull
+  database or document-processing code into the browser. Settings/shipment DTOs omit unused internal fields.
+- Product and catalog editors reset from a newly loaded revision after saves. Regression stories cover dirty edits
+  followed by an updated saved revision.
+- Localized loader data owns document titles through Router's head API. Browser tests require one correctly named
+  title after navigation. Standalone route generation and the Vite build now produce the same registration footer.
+- The development dependency optimizer includes vanilla-extract's generated runtime import up front, avoiding a late
+  dependency rebuild that interrupted navigation. Fresh development navigation, keyboard shipment-group controls,
+  and phone settings/sidebar layouts were checked in the integrated browser without browser console errors.
+
+The complete local suite passed after the main integration (147 tests, four existing skips). Final regression runs
+for the title/development fixes and the full repository verification are recorded with the PR before readiness.
+These review changes have not yet been redeployed to shared staging; the deployment identifiers below describe the
+earlier qualification artifact, not the reviewed commit.
+
+The old Railway Storybook preview check still targets `Dockerfile.storybook`; its build log confirms that removed
+file is the failure. The Cloudflare static build is the replacement. Retirement of the shared Railway preview
+integration must be coordinated with the hosting transition, rather than restoring an obsolete deployment path or
+disabling unrelated checks.
+
 ## Main application qualification
 
 All 40 page paths and 62 HTTP handler files have Start entry points. Browser pages receive explicit rendering data;

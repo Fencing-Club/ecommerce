@@ -1,14 +1,11 @@
-import { Link } from "@tanstack/react-router"
 import { expect, userEvent, waitFor } from "storybook/test"
-import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { getStoryRouter } from "#.storybook/router"
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
-import { Button } from "@/components/ui/button"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
 import { actionRecorder, redirectTo, savedProfile, skipAnimations } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
@@ -21,28 +18,24 @@ async function NewWorkspace({
   profile: typeof profiles.$inferSelect | null
   complete: boolean
 }) {
-  const t = await translateStory("onboarding.wizard")
   return (
-    <OnboardingWizard
-      steps={complete ? ["role", "company", "address"] : ["about", "role", "company", "address"]}
-      finish={{ type: "workspace", invitation: null }}
-      kind={null}
-      initial={{
-        person: {
-          firstName: profile?.firstName ?? "",
-          lastName: profile?.lastName ?? "",
-          position: profile?.position ?? ""
+    <PageView
+      page={{
+        steps: complete ? ["role", "company", "address"] : ["about", "role", "company", "address"],
+        finish: { type: "workspace", invitation: null },
+        kind: null,
+        initial: {
+          person: {
+            firstName: profile?.firstName ?? "",
+            lastName: profile?.lastName ?? "",
+            position: profile?.position ?? ""
+          },
+          kind: "",
+          company: { name: "", website: "", phone: "" },
+          address: blankPlace
         },
-        kind: "",
-        company: { name: "", website: "", phone: "" },
-        address: blankPlace
+        invitedBy: null
       }}
-      invitedBy={null}
-      account={
-        <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/" />}>
-          {t("cancel")}
-        </Button>
-      }
     />
   )
 }

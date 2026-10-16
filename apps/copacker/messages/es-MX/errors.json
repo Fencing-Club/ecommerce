@@ -348,5 +348,11 @@
   "warningLabelsNotMade": "No se pudieron generar las etiquetas de advertencia. Inténtalo de nuevo.",
   "workbookNoSheets": "El libro no tiene hojas",
   "workspaceAccessDenied": "No tienes acceso a este espacio de trabajo",
-  "wrongCode": "Ese código no es correcto. Revisa el correo e inténtalo de nuevo."
+  "wrongCode": "Ese código no es correcto. Revisa el correo e inténtalo de nuevo.",
+  "awdCartonsDiffer": "Las cajas difieren de Amazon. Revisa productos, cantidades, medidas y pesos.",
+  "awdShipmentAlreadyShipped": "Elige un envío AWD que aún no se haya despachado.",
+  "awdOriginDiffers": "La dirección de recolección difiere de Amazon. Revisa calle, unidad, código postal y país.",
+  "linkAwdOnly": "Solo un borrador de empaque AWD puede vincular un envío AWD existente.",
+  "awdProductsDiffer": "El envío de Amazon contiene productos o cantidades fuera de este pedido AWD.",
+  "awdAlreadyLinked": "Este envío de Amazon ya está vinculado a una orden de compra."
 }

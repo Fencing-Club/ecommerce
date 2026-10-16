@@ -94,7 +94,7 @@ export const CreateOrder = meta.story({
     await replace(canvas.getByRole("spinbutton", { name: "Quantity of Waffle towel" }), "100")
     await replace(canvas.getByRole("spinbutton", { name: "Cost of Waffle towel" }), "7")
     await expect(canvas.getByText("1 variant (100 units)")).toBeVisible()
-    await expect(canvas.getAllByText("$700.00")).toHaveLength(3)
+    await expect(canvas.getAllByText("$700.00")).toHaveLength(4)
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1050")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
 
@@ -268,7 +268,7 @@ export const EditDraft = meta.story({
 export const CostSummary = meta.story({
   args: { initialItems: [tote!] },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText("$1,020.00")).toHaveLength(3)
+    await expect(canvas.getAllByText("$1,020.00")).toHaveLength(4)
     await userEvent.click(canvas.getByRole("button", { name: "Edit cost summary" }))
     const dialog = await shownDialog("Edit cost summary")
     await userEvent.click(dialog.getByRole("button", { name: "Add adjustment" }))
@@ -317,7 +317,139 @@ export const NoForwarders = meta.story({
   }
 })
 
-// A line's packing details: its Amazon network, preparation and labels, and instructions for the supplier.
+export const ShipmentGroups = meta.story({
+  args: {
+    initialItems: [
+      { ...tote!, amazonNetwork: "awd_us" },
+      { ...apron!, amazonNetwork: "fba" },
+      { ...basket!, amazonNetwork: "fba" }
+    ],
+    initialSupplierId: supplierId
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { name: "AWD US shipment" })).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "FBA shipment" })).toBeVisible()
+    const apronSelection = canvas.getByRole("checkbox", { name: /^Select Linen apron/ })
+    await userEvent.click(apronSelection)
+    await expect(canvas.getByRole("checkbox", { name: "Select all products for FBA" })).toHaveAttribute(
+      "aria-checked",
+      "mixed"
+    )
+    await userEvent.click(canvas.getByRole("button", { name: "Move to AWD US" }))
+    // Moving a line changes its destination without reordering the form array or losing quantities/prices.
+    await replace(canvas.getByRole("spinbutton", { name: "Quantity of Linen apron" }), "60")
+    await expect(canvas.getByRole("spinbutton", { name: "Quantity of Canvas tote bag" })).toHaveValue(tote!.pieces)
+    await expect(canvas.getByRole("spinbutton", { name: "Cost of Linen apron" })).toHaveValue(apron!.unitPrice / 100)
+    await expect(canvas.getByRole("button", { name: /AWD US shipment/ })).toHaveTextContent(
+      money(tote!.pieces * tote!.unitPrice + 60 * apron!.unitPrice, "USD")
+    )
+    await replace(canvas.getByRole("spinbutton", { name: "Cost of Linen apron" }), "10")
+    await expect(canvas.getByRole("button", { name: /AWD US shipment/ })).toHaveTextContent(
+      money(tote!.pieces * tote!.unitPrice + 60000, "USD")
+    )
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Select all products for FBA" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Move to AWD US" }))
+    await expect(canvas.queryByRole("heading", { name: "FBA shipment" })).toBeNull()
+    // Move a single line back, then save the actual network allocation.
+    await userEvent.click(canvas.getByRole("checkbox", { name: /^Select Linen apron/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Move to FBA" }))
+    await expect(canvas.getByRole("heading", { name: "FBA shipment" })).toBeVisible()
+    const fbaToggle = canvas.getByRole("button", { name: /FBA shipment/ })
+    await userEvent.click(fbaToggle)
+    await expect(fbaToggle).toHaveAttribute("aria-expanded", "false")
+    await expect(fbaToggle).toHaveTextContent("$600.00")
+    await userEvent.click(fbaToggle)
+    await expect(canvas.getByRole("spinbutton", { name: "Quantity of Linen apron" })).toHaveValue(60)
+    await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1052")
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() =>
+      expect(actions).toHaveBeenCalledWith({
+        action: "order.create",
+        data: expect.objectContaining({
+          items: [
+            expect.objectContaining({ id: tote!.id, amazonNetwork: "awd_us", pieces: tote!.pieces }),
+            expect.objectContaining({ id: apron!.id, amazonNetwork: "fba", pieces: 60, unitPrice: 1000 }),
+            expect.objectContaining({ id: basket!.id, amazonNetwork: "awd_us", pieces: basket!.pieces })
+          ]
+        })
+      })
+    )
+  }
+})
+
+export const BundlePackDetails = meta.story({
+  args: {
+    initialSupplierId: supplierId,
+    initialItems: [
+      {
+        ...tote!,
+        name: "Canvas tote bag (2 Pack)",
+        buyerSku: "TOTE-2PACK",
+        supplierSku: "",
+        piecesPerSet: 2,
+        components: [
+          { variantId: "gid://shopify/ProductVariant/901", buyerSku: "TOTE", supplierSku: "LM-TOTE", quantity: 2 }
+        ]
+      }
+    ]
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("TOTE-2PACK", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("2 per pack", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("2 × LM-TOTE", { exact: true })).toBeVisible()
+    await expect(canvas.queryByText(/per unit/)).toBeNull()
+  }
+})
+
+export const SupplierPackingCosts = meta.story({
+  args: {
+    initialSupplierId: supplierId,
+    initialItems: [{ ...tote!, piecesPerSet: 2, amazonNetwork: "fba" }]
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "More for Canvas tote bag" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Edit packing details" }))
+    const dialog = await shownDialog("Packing details")
+    await userEvent.click(dialog.getByRole("button", { name: "Add expense" }))
+    await expect(dialog.getByRole("combobox", { name: "Charge basis" })).toHaveTextContent("Per pack")
+    await replace(dialog.getByRole("spinbutton", { name: "Rate" }), "0.26")
+    await expect(dialog.getByText("$31.20")).toBeVisible()
+    await userEvent.click(dialog.getByRole("button", { name: "Add expense" }))
+    await userEvent.click(dialog.getAllByRole("combobox", { name: "Expense type" })[1]!)
+    await userEvent.click(await screen.findByRole("option", { name: "Labeling" }))
+    await userEvent.click(dialog.getAllByRole("combobox", { name: "Charge basis" })[1]!)
+    await userEvent.click(await screen.findByRole("option", { name: "Flat amount" }))
+    await replace(dialog.getAllByRole("spinbutton", { name: "Rate" })[1]!, "10")
+    await userEvent.click(dialog.getByRole("button", { name: "Done" }))
+    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,061.20")
+    await replace(canvas.getByRole("spinbutton", { name: "Quantity of Canvas tote bag" }), "242")
+    await expect(canvas.getByRole("button", { name: /FBA shipment/ })).toHaveTextContent("$1,069.96")
+    await userEvent.click(canvas.getByRole("checkbox", { name: /^Select Canvas tote bag/ }))
+    await userEvent.click(canvas.getByRole("button", { name: "Move to AWD US" }))
+    await expect(canvas.getByRole("button", { name: /AWD US shipment/ })).toHaveTextContent("$1,069.96")
+    await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-PACKING")
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }))
+    await waitFor(() =>
+      expect(actions).toHaveBeenCalledWith({
+        action: "order.create",
+        data: expect.objectContaining({
+          items: [
+            expect.objectContaining({
+              pieces: 242,
+              amazonNetwork: "awd_us",
+              supplierCharges: [
+                { description: "Packing", amount: 26, basis: "pack" },
+                { description: "Labeling", amount: 1000, basis: "flat" }
+              ]
+            })
+          ]
+        })
+      })
+    )
+  }
+})
+
+// A line's packing details: preparation, labels and supplier instructions. Its destination is managed in the shipment groups.
 export const PackingDetails = meta.story({
   args: { initialItems: [tote!], initialSupplierId: supplierId },
   play: async ({ canvas }) => {
@@ -327,7 +459,7 @@ export const PackingDetails = meta.story({
     await userEvent.click(await screen.findByRole("menuitem", { name: "Edit packing details" }))
     const dialog = await shownDialog("Packing details")
     await expect(dialog.getByText("Canvas tote bag")).toBeVisible()
-    await expect(dialog.getByRole("combobox", { name: "Amazon warehouse" })).toHaveTextContent("FBA")
+    await expect(dialog.queryByRole("combobox", { name: "Amazon warehouse" })).toBeNull()
     // Amazon needs every unit labeled.
     const skuLabel = dialog.getByRole("checkbox", { name: /SKU label/ })
     await expect(skuLabel).toBeChecked()
@@ -348,3 +480,4 @@ export const PackingDetails = meta.story({
     )
   }
 })
+import { money } from "@repo/aisle"

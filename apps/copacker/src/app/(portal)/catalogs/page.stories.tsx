@@ -1,13 +1,13 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { CatalogsPageView } from "@/components/catalogs-page"
 import { can, type Permissions } from "@/lib/access"
 import { catalogRows, catalogViewer } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 function CatalogsPage({ catalogs, permissions }: { catalogs: typeof catalogRows; permissions: Permissions }) {
-  return <CatalogsPageView catalogs={catalogs} editable={can(permissions, "catalogs", "edit")} />
+  return <PageView page={{ catalogs: catalogs, editable: can(permissions, "catalogs", "edit") }} />
 }
 
 const meta = preview.meta({

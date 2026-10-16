@@ -107,6 +107,17 @@ export const itemSchema = z
     pieces: z.number().int().min(1).max(1000000),
     piecesPerSet: z.number().int().min(1).max(1000),
     unitPrice: z.number().int().min(0).max(100000000),
+    // Supplier services for this product, such as assembling a multipack. Amounts are rates in minor units.
+    supplierCharges: z
+      .array(
+        z.object({
+          description: z.string().trim().min(1).max(255),
+          amount: z.number().int().min(0).max(100000000),
+          basis: z.enum(["piece", "pack", "flat"])
+        })
+      )
+      .max(20)
+      .optional(),
     instructions: z.string().max(4000).default(""),
     prepCategory: z.enum(prepCategories).default("POLYBAGGING"),
     // Each unit's polybag gets a suffocation warning label, printed from the PO's label sheets.
@@ -176,7 +187,7 @@ export const orderInputSchema = z
   })
   .superRefine((order, ctx) => {
     const total =
-      order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0) +
+      order.items.reduce((sum, item) => sum + itemTotal(item), 0) +
       (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
     if (!Number.isSafeInteger(total) || total < 0) {
       ctx.addIssue({
@@ -574,9 +585,42 @@ export function fbaBoxes(order: OrderInput, packing: Packing, prep: ReadonlyMap<
 export function money(amount: number, currency = "USD", locale = "en-US") {
   return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount / 100)
 }
-export function orderTotal(order: OrderInput) {
+export function supplierChargeTotal(
+  item: Pick<OrderItem, "pieces" | "piecesPerSet">,
+  charge: NonNullable<OrderItem["supplierCharges"]>[number]
+) {
+  const counts = { flat: 1, pack: item.pieces / item.piecesPerSet, piece: item.pieces }
+  return charge.amount * counts[charge.basis]
+}
+
+// A product's total includes services assigned to it, so those costs follow it between shipment groups.
+type PricedItem = Pick<OrderItem, "pieces" | "piecesPerSet" | "unitPrice" | "supplierCharges">
+type OrderCosts = { items: readonly PricedItem[]; adjustments?: OrderInput["adjustments"] }
+
+export function itemTotal(item: PricedItem) {
   return (
-    order.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0) +
+    item.pieces * item.unitPrice +
+    (item.supplierCharges ?? []).reduce((sum, charge) => sum + supplierChargeTotal(item, charge), 0)
+  )
+}
+
+// Summary rows and PDFs share the same charge calculation. Product prices remain separate from service rates.
+export function orderCharges(order: OrderCosts) {
+  const amounts = new Map<string, number>()
+  for (const item of order.items) {
+    for (const charge of item.supplierCharges ?? []) {
+      amounts.set(charge.description, (amounts.get(charge.description) ?? 0) + supplierChargeTotal(item, charge))
+    }
+  }
+  for (const charge of order.adjustments ?? []) {
+    amounts.set(charge.description, (amounts.get(charge.description) ?? 0) + charge.amount)
+  }
+  return [...amounts].map(([description, amount]) => ({ description, amount }))
+}
+
+export function orderTotal(order: OrderCosts) {
+  return (
+    order.items.reduce((sum, item) => sum + itemTotal(item), 0) +
     (order.adjustments ?? []).reduce((sum, adjustment) => sum + adjustment.amount, 0)
   )
 }

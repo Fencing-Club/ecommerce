@@ -156,8 +156,9 @@ export function PageHeader({
       {parents?.length ? (
         <nav aria-label={t("breadcrumb")}>
           <ol className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-muted-foreground max-md:hidden">
-            {parents.map((parent) => (
+            {parents.map((parent, index) => (
               <li key={parent.label} className="flex items-center gap-1.5">
+                {index > 0 && <ChevronRight aria-hidden className="size-3.5 shrink-0 rtl:rotate-180" />}
                 {parent.href ? (
                   <a href={parent.href} className="rounded-sm hover:text-foreground">
                     {parent.label}
@@ -165,7 +166,6 @@ export function PageHeader({
                 ) : (
                   parent.label
                 )}
-                <ChevronRight aria-hidden className="size-3.5 shrink-0 rtl:rotate-180" />
               </li>
             ))}
           </ol>

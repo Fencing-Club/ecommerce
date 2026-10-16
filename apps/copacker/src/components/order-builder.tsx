@@ -3,14 +3,29 @@ import {
   adjustmentTypes,
   amazonNetworks,
   commonPaymentTerms,
+  itemTotal,
+  orderCharges,
+  orderTotal,
+  supplierChargeTotal,
   type OrderInput,
   orderInputSchema
 } from "@repo/aisle"
 import { Link, useRouter } from "@tanstack/react-router"
-import { ArrowRight, Building2, Download, Ellipsis, MapPin, Package, Plus, Warehouse, X } from "lucide-react"
+import {
+  ArrowRight,
+  Building2,
+  ChevronDown,
+  Download,
+  Ellipsis,
+  MapPin,
+  Package,
+  Plus,
+  Warehouse,
+  X
+} from "lucide-react"
 import { useEffect, useId, useRef, useState } from "react"
 import { FormProvider, useController, useFieldArray, useFormContext, useWatch } from "react-hook-form"
-import { useTranslations } from "use-intl"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { PageHeader, WarningNote } from "@/components/common"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -18,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Dialog,
   DialogClose,
@@ -40,6 +56,7 @@ import type { BundleQuoteStatus } from "@/lib/bundle-quote"
 import { bundleQuote } from "@/lib/bundle-quote"
 import type { QuantityRules } from "@/lib/catalog-pricing"
 import { quantityProblem } from "@/lib/catalog-pricing"
+import { currencySymbol } from "@/lib/currency"
 import { adjustmentKeys, knownName, orderLine, paymentTermKeys } from "@/lib/order-lines"
 import { prepOptions } from "@/lib/prep"
 import { cn } from "@/lib/utils"
@@ -128,6 +145,7 @@ export function OrderBuilder({
 }) {
   const t = useTranslations("orders")
   const tb = useTranslations("orders.builder")
+  const locale = useLocale()
   const money = useMoney()
   const needsBarcode = new Set(needsBarcodeVariantIds)
   const router = useRouter()
@@ -161,6 +179,38 @@ export function OrderBuilder({
   const deliveryId = useWatch({ control: form.control, name: "deliveryId" })
   const via = useWatch({ control: form.control, name: "via" })
   const [addingStop, setAddingStop] = useState(false)
+  const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set())
+  const selectedCount = lineItems.fields.filter((line) => selectedLines.has(line.id)).length
+  const groups = (destination === "amazon" ? (["awd_us", "fba"] as const) : (["warehouse"] as const))
+    .map((network) => ({
+      network,
+      label: network === "warehouse" ? tb("destinations.warehouse") : amazonNetworkNames[network],
+      lines: lineItems.fields
+        .map((line, index) => ({ line, index }))
+        .filter(({ index }) => network === "warehouse" || (items[index]?.amazonNetwork ?? "fba") === network)
+    }))
+    .filter((group) => group.lines.length > 0)
+  function selectLines(ids: string[], selected: boolean) {
+    setSelectedLines((current) => {
+      const next = new Set(current)
+      for (const id of ids) {
+        if (selected) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      }
+      return next
+    })
+  }
+  function moveSelected(network: OrderInput["items"][number]["amazonNetwork"]) {
+    lineItems.fields.forEach((line, index) => {
+      if (selectedLines.has(line.id)) {
+        form.setValue(`items.${index}.amazonNetwork`, network, { shouldDirty: true, shouldValidate: true })
+      }
+    })
+    setSelectedLines(new Set())
+  }
   // A delivery address is one of the buyer's locations, so another destination clears it. A stop on the way suits
   // either destination and stays.
   useEffect(() => {
@@ -305,7 +355,8 @@ export function OrderBuilder({
   ]
   const units = items.reduce((n, i) => n + (i?.pieces || 0), 0)
   const subtotal = items.reduce((n, i) => n + (i?.unitPrice || 0) * (i?.pieces || 0), 0)
-  const amount = subtotal + adjustments.reduce((sum, charge) => sum + (charge?.amount || 0), 0)
+  const summaryCharges = orderCharges({ items, adjustments })
+  const amount = orderTotal({ items, adjustments })
 
   return (
     <FormProvider {...form}>
@@ -326,199 +377,303 @@ export function OrderBuilder({
           {tb("save")}
         </SubmitButton>
       </PageHeader>
-      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form id={formId} onSubmit={submit} noValidate className="@container flex flex-col gap-4">
         <FormError message={form.formState.errors.root?.server?.message} />
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <Card className="gap-0 overflow-hidden py-0">
-            <div className="flex flex-wrap items-center gap-1.5 p-3">
-              <RoutePicker
-                name="supplierId"
-                label={tb("supplier")}
-                icon={<Building2 />}
-                placeholder={tb("chooseSupplier")}
-                options={suppliers.map((row) => ({ value: row.id, label: row.name }))}
-              />
-              <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-              {(via || addingStop) && (
-                <>
-                  <Stop
-                    forwarderAddresses={forwarderAddresses}
-                    onRemove={() => {
-                      form.setValue("via", undefined, { shouldDirty: true })
-                      setAddingStop(false)
-                    }}
-                  />
-                  <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
-                </>
-              )}
-              <RoutePicker
-                name="destination"
-                label={tb("destination")}
-                icon={<MapPin />}
-                options={destinations.map((value) => ({ value, label: tb(`destinations.${value}`) }))}
-              />
-              {destination === "warehouse" && (
+        <div className="grid grid-cols-1 items-start gap-4 @min-[72rem]:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <Card className="gap-0 py-0">
+              <div className="flex flex-wrap items-center gap-1.5 p-3">
                 <RoutePicker
-                  name="deliveryId"
-                  label={tb("deliveryAddress")}
-                  placeholder={deliveries.length ? tb("chooseAddress") : tb("addAddressInSettings")}
-                  options={deliveries.map((row) => ({ value: row.id, label: row.name }))}
+                  name="supplierId"
+                  label={tb("supplier")}
+                  icon={<Building2 />}
+                  placeholder={tb("chooseSupplier")}
+                  options={suppliers.map((row) => ({ value: row.id, label: row.name }))}
                 />
-              )}
-              {!via && !addingStop && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ms-auto text-muted-foreground"
-                  disabled={!forwarderAddresses.length}
-                  onClick={() => setAddingStop(true)}
-                >
-                  <Plus data-icon="inline-start" />
-                  {tb("addStop")}
+                <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+                {(via || addingStop) && (
+                  <>
+                    <Stop
+                      forwarderAddresses={forwarderAddresses}
+                      onRemove={() => {
+                        form.setValue("via", undefined, { shouldDirty: true })
+                        setAddingStop(false)
+                      }}
+                    />
+                    <ArrowRight className="size-4 text-muted-foreground rtl:rotate-180" aria-hidden />
+                  </>
+                )}
+                <RoutePicker
+                  name="destination"
+                  label={tb("destination")}
+                  icon={<MapPin />}
+                  options={destinations.map((value) => ({ value, label: tb(`destinations.${value}`) }))}
+                />
+                {destination === "warehouse" && (
+                  <RoutePicker
+                    name="deliveryId"
+                    label={tb("deliveryAddress")}
+                    placeholder={deliveries.length ? tb("chooseAddress") : tb("addAddressInSettings")}
+                    options={deliveries.map((row) => ({ value: row.id, label: row.name }))}
+                  />
+                )}
+                {!via && !addingStop && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ms-auto text-muted-foreground"
+                    disabled={!forwarderAddresses.length}
+                    onClick={() => setAddingStop(true)}
+                  >
+                    <Plus data-icon="inline-start" />
+                    {tb("addStop")}
+                  </Button>
+                )}
+              </div>
+              {via &&
+                destination === "amazon" &&
+                forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
+                  <p className="px-3 pb-3">
+                    <WarningNote>{tb.rich("stopNeedsPhone", { link: forwardersLink })}</WarningNote>
+                  </p>
+                )}
+            </Card>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{tb("shipments")}</h2>
+              {destination === "amazon" && <p className="text-sm text-muted-foreground">{tb("groupingHint")}</p>}
+            </div>
+            {destination === "amazon" && selectedCount > 0 && (
+              <div
+                className="flex flex-wrap items-center gap-2 rounded-md border bg-muted p-3"
+                role="toolbar"
+                aria-label={tb("moveProducts")}
+              >
+                <span className="me-auto text-sm font-medium">{tb("selectedProducts", { count: selectedCount })}</span>
+                {networkOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveSelected(option.value)}
+                  >
+                    {tb("moveTo", { destination: option.label })}
+                  </Button>
+                ))}
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedLines(new Set())}>
+                  {tb("clearSelection")}
                 </Button>
-              )}
-            </div>
-            {via &&
-              destination === "amazon" &&
-              forwarderAddresses.find((row) => row.addressId === via.addressId)?.hasPhone === false && (
-                <p className="px-3 pb-3">
-                  <WarningNote>{tb.rich("stopNeedsPhone", { link: forwardersLink })}</WarningNote>
-                </p>
-              )}
-
-            {/* Too narrow for its inputs, as on a phone, the table scrolls sideways instead of squeezing them. It's
-                positioned so the header's hidden labels scroll with it. Its header band matches the app's other tables. */}
-            <div className="relative overflow-x-auto border-t">
-              <table className="w-full min-w-3xl text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="h-10 px-3 text-start font-medium">{t("detail.columns.products")}</th>
-                    <th className="h-10 w-36 px-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
-                    <th className="h-10 w-24 px-2 text-start font-medium">{t("detail.columns.quantity")}</th>
-                    <th className="h-10 w-32 px-2 text-start font-medium">{t("detail.columns.cost")}</th>
-                    <th className="h-10 w-24 px-2 text-end font-medium">{t("detail.columns.total")}</th>
-                    <th className="w-18">
-                      <span className="sr-only">{t("detail.columns.actions")}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!lineItems.fields.length && (
-                    <tr className="border-t">
-                      <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
-                        {tb("noProducts")}
-                      </td>
-                    </tr>
-                  )}
-                  {lineItems.fields.map((line, index) => {
-                    const item = items[index]
-                    const note = matches[index] && matchNote(matches[index].status)
-                    const available = matches[index]?.available ?? null
-                    const rules = matches[index]?.rules
-                    const ruleProblem = rules && item?.pieces ? quantityProblem(rules, item.pieces, "piece") : null
-                    const lineError = form.formState.errors.items?.[index]
-                    return (
-                      <tr key={line.key} className="border-t align-top">
-                        <td className="px-3 py-2.5">
-                          <p className="leading-snug font-medium">{line.name}</p>
-                          {line.variant && line.variant !== "Default Title" && (
-                            <Badge variant="secondary" className="mt-1">
-                              {line.variant}
-                            </Badge>
-                          )}
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {line.piecesPerSet > 1
-                              ? tb("skuPerUnit", { sku: line.buyerSku, count: line.piecesPerSet })
-                              : line.buyerSku}
-                          </p>
-                          {needsBarcode.has(line.variantId) && (
-                            <p className="mt-1">
-                              <WarningNote>{tb("needsLabel")}</WarningNote>
-                            </p>
-                          )}
-                          <FormError message={lineError?.message ?? lineError?.root?.message} />
-                        </td>
-                        <td className="px-2 py-2">
-                          {item?.components?.length ? (
-                            <p className="py-1.5 text-xs text-muted-foreground">
-                              {item.components
-                                .map((component) => `${component.quantity} × ${component.supplierSku || "?"}`)
-                                .join(", ")}
-                            </p>
-                          ) : (
-                            <CellInput
-                              name={`items.${index}.supplierSku`}
-                              label={tb("supplierSkuFor", { name: line.name })}
-                            />
-                          )}
-                        </td>
-                        <td className="px-2 py-2">
-                          <CellNumber
-                            name={`items.${index}.pieces`}
-                            label={tb("quantityOf", { name: line.name })}
-                            min={line.piecesPerSet}
-                            step={line.piecesPerSet}
-                          />
-                          {available !== null && (
-                            <p
-                              className={cn(
-                                "mt-1 text-xs",
-                                (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
-                              )}
-                            >
-                              {tb("available", { count: available })}
-                            </p>
-                          )}
-                          {ruleProblem && (
-                            <p className="mt-1">
-                              <WarningNote>{ruleProblem}</WarningNote>
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-2 py-2">
-                          <CellNumber
-                            name={`items.${index}.unitPrice`}
-                            label={tb("costOf", { name: line.name })}
-                            prefix="$"
-                            scale={100}
-                            step={0.01}
-                            min={0}
-                            onValueChange={() => buyerEditedPrices.current.add(line.id)}
-                          />
-                          {note && <p className="mt-1 text-xs text-muted-foreground">{tb(`matchNotes.${note}`)}</p>}
-                        </td>
-                        <td className="px-2 py-3.5 text-end tabular-nums">
-                          {money((item?.unitPrice || 0) * (item?.pieces || 0), currency)}
-                        </td>
-                        <td className="py-2 pe-2">
-                          <div className="flex justify-end">
-                            <LineMenu
-                              index={index}
-                              name={line.name}
-                              orderId={draft?.id}
-                              itemId={line.id}
-                              toAmazon={destination === "amazon"}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={tb("remove", { name: line.name })}
-                              onClick={() => lineItems.remove(index)}
-                            >
-                              <X />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="border-t p-3">
+              </div>
+            )}
+            {groups.map((group) => {
+              const selected = group.lines.filter(({ line }) => selectedLines.has(line.id)).length
+              const groupPieces = group.lines.reduce((sum, { index }) => sum + (items[index]?.pieces || 0), 0)
+              const groupTotal = group.lines.reduce(
+                (sum, { index }) => sum + (items[index] ? itemTotal(items[index]) : 0),
+                0
+              )
+              return (
+                <Collapsible key={group.network} defaultOpen render={<Card className="gap-0 overflow-hidden py-0" />}>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    {destination === "amazon" && (
+                      <Checkbox
+                        aria-label={tb("selectShipment", { destination: group.label })}
+                        checked={selected === group.lines.length}
+                        indeterminate={selected > 0 && selected < group.lines.length}
+                        onCheckedChange={(checked) =>
+                          selectLines(
+                            group.lines.map(({ line }) => line.id),
+                            checked
+                          )
+                        }
+                      />
+                    )}
+                    <CollapsibleTrigger className="group flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-sm text-start focus-visible:outline-ring">
+                      <Package className="size-4 text-muted-foreground" aria-hidden />
+                      <h3 className="font-semibold">{tb("shipmentTo", { destination: group.label })}</h3>
+                      <span className="ms-auto flex flex-col items-end gap-1 text-end text-sm sm:flex-row sm:items-center sm:gap-4">
+                        <span className="text-muted-foreground">
+                          {tb("shipmentCounts", { count: group.lines.length, pieces: groupPieces })}
+                        </span>
+                        <span className="font-semibold whitespace-nowrap tabular-nums">
+                          <span className="sr-only">{tb("shipmentTotal")} </span>
+                          {money(groupTotal, currency)}
+                        </span>
+                      </span>
+                      <ChevronDown
+                        className="size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-180"
+                        aria-hidden
+                      />
+                    </CollapsibleTrigger>
+                  </div>
+                  <CollapsibleContent keepMounted>
+                    <div className="relative overflow-x-auto border-t">
+                      <table className="w-full min-w-3xl text-sm">
+                        <thead className="bg-muted">
+                          <tr>
+                            {destination === "amazon" && (
+                              <th className="w-10">
+                                <span className="sr-only">{tb("select")}</span>
+                              </th>
+                            )}
+                            <th className="h-10 px-3 text-start font-medium">{t("detail.columns.products")}</th>
+                            <th className="h-10 w-36 px-2 text-start font-medium">{t("detail.columns.supplierSku")}</th>
+                            <th className="h-10 w-24 px-2 text-end font-medium">{t("detail.columns.quantity")}</th>
+                            <th className="h-10 w-32 px-2 text-start font-medium">{t("detail.columns.cost")}</th>
+                            <th className="h-10 w-24 px-2 text-end font-medium">{t("detail.columns.total")}</th>
+                            <th className="w-18">
+                              <span className="sr-only">{t("detail.columns.actions")}</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.lines.map(({ line, index }) => {
+                            const item = items[index]
+                            const note = matches[index] && matchNote(matches[index].status)
+                            const available = matches[index]?.available ?? null
+                            const rules = matches[index]?.rules
+                            const ruleProblem =
+                              rules && item?.pieces ? quantityProblem(rules, item.pieces, "piece") : null
+                            const lineError = form.formState.errors.items?.[index]
+                            return (
+                              <tr
+                                key={line.key}
+                                className={cn(
+                                  "border-t align-top",
+                                  destination === "amazon" && selectedLines.has(line.id) && "bg-accent/50"
+                                )}
+                              >
+                                {destination === "amazon" && (
+                                  <td className="px-3 py-4">
+                                    <Checkbox
+                                      aria-label={tb("selectProduct", {
+                                        name: `${line.name}${line.variant && line.variant !== "Default Title" ? `, ${line.variant}` : ""}`
+                                      })}
+                                      checked={selectedLines.has(line.id)}
+                                      onCheckedChange={(checked) => selectLines([line.id], checked)}
+                                    />
+                                  </td>
+                                )}
+                                <td className="px-3 py-2.5">
+                                  <p className="leading-snug font-medium">{line.name}</p>
+                                  {line.variant && line.variant !== "Default Title" && (
+                                    <Badge variant="secondary" className="mt-1">
+                                      {line.variant}
+                                    </Badge>
+                                  )}
+                                  <p className="mt-1 text-xs text-muted-foreground">{line.buyerSku}</p>
+                                  {line.piecesPerSet > 1 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {t("detail.perPack", { count: line.piecesPerSet })}
+                                    </p>
+                                  )}
+                                  {needsBarcode.has(line.variantId) && (
+                                    <p className="mt-1">
+                                      <WarningNote>{tb("needsLabel")}</WarningNote>
+                                    </p>
+                                  )}
+                                  <FormError message={lineError?.message ?? lineError?.root?.message} />
+                                </td>
+                                <td className="px-2 py-2">
+                                  {item?.components?.length ? (
+                                    <p className="py-1.5 text-xs text-muted-foreground">
+                                      {item.components
+                                        .map((component) => `${component.quantity} × ${component.supplierSku || "?"}`)
+                                        .join(", ")}
+                                    </p>
+                                  ) : (
+                                    <CellInput
+                                      name={`items.${index}.supplierSku`}
+                                      label={tb("supplierSkuFor", { name: line.name })}
+                                    />
+                                  )}
+                                </td>
+                                <td className="px-2 py-2">
+                                  <CellNumber
+                                    name={`items.${index}.pieces`}
+                                    label={tb("quantityOf", { name: line.name })}
+                                    min={line.piecesPerSet}
+                                    step={line.piecesPerSet}
+                                  />
+                                  {line.piecesPerSet > 1 && item?.pieces ? (
+                                    <p className="mt-1 text-end text-xs whitespace-nowrap text-muted-foreground">
+                                      {tb("packCount", {
+                                        count: item.pieces / line.piecesPerSet,
+                                        size: line.piecesPerSet
+                                      })}
+                                    </p>
+                                  ) : null}
+                                  {available !== null && (
+                                    <p
+                                      className={cn(
+                                        "mt-1 text-xs",
+                                        (item?.pieces ?? 0) > available ? "text-destructive" : "text-muted-foreground"
+                                      )}
+                                    >
+                                      {tb("available", { count: available })}
+                                    </p>
+                                  )}
+                                  {ruleProblem && (
+                                    <p className="mt-1">
+                                      <WarningNote>{ruleProblem}</WarningNote>
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="px-2 py-2">
+                                  <CellNumber
+                                    name={`items.${index}.unitPrice`}
+                                    label={tb("costOf", { name: line.name })}
+                                    prefix={currencySymbol(currency, locale)}
+                                    scale={100}
+                                    step={0.01}
+                                    min={0}
+                                    onValueChange={() => buyerEditedPrices.current.add(line.id)}
+                                  />
+                                  {note && (
+                                    <p className="mt-1 text-xs text-muted-foreground">{tb(`matchNotes.${note}`)}</p>
+                                  )}
+                                </td>
+                                <td className="px-2 py-3.5 text-end tabular-nums">
+                                  {money(item ? itemTotal(item) : 0, currency)}
+                                </td>
+                                <td className="py-2 pe-2">
+                                  <div className="flex justify-end">
+                                    <LineMenu
+                                      index={index}
+                                      name={line.name}
+                                      orderId={draft?.id}
+                                      itemId={line.id}
+                                      toAmazon={destination === "amazon"}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={tb("remove", { name: line.name })}
+                                      onClick={() => lineItems.remove(index)}
+                                    >
+                                      <X />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })}
+            {!lineItems.fields.length && (
+              <Card>
+                <CardContent className="text-center text-sm text-muted-foreground">{tb("noProducts")}</CardContent>
+              </Card>
+            )}
+            <div>
               <AddProductsDialog
                 added={new Set(items.map((item) => item?.variantId))}
                 stockAt={{ ...stockAt, label: stockLabel[stockAt.label] }}
@@ -527,7 +682,7 @@ export function OrderBuilder({
               <FormError message={itemsError?.message ?? itemsError?.root?.message} />
               {matchError && <FormError message={matchError} />}
             </div>
-          </Card>
+          </div>
 
           <div className="flex flex-col gap-4">
             <Card size="sm">
@@ -547,7 +702,7 @@ export function OrderBuilder({
                   <span>{t("detail.variantsAndItems", { variants: lineItems.fields.length, items: units })}</span>
                   <span className="tabular-nums">{money(subtotal, currency)}</span>
                 </div>
-                {adjustments.map((adjustment, index) => (
+                {summaryCharges.map((adjustment, index) => (
                   <div key={index} className="flex justify-between gap-3">
                     <span>{knownName(adjustmentKeys, adjustment.description, t)}</span>
                     <span className="tabular-nums">{money(adjustment.amount, currency)}</span>
@@ -776,7 +931,7 @@ function CellNumber({
         onBlur()
       }}
       aria-invalid={fieldState.invalid}
-      className="text-end tabular-nums"
+      className="text-end tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
     />
   )
   return (
@@ -808,13 +963,8 @@ function LineMenu({
   const t = useTranslations("orders")
   const tShipments = useTranslations("shipments")
   const [packing, setPacking] = useState(false)
-  const { getValues, setValue } = useFormContext()
   const warning = useWatch({ name: `items.${index}.suffocationWarning` }) as boolean | undefined
   function editPacking() {
-    // Lines saved before each chose its Amazon network go to FBA, as the schema defaults them.
-    if (toAmazon && !getValues(`items.${index}.amazonNetwork`)) {
-      setValue(`items.${index}.amazonNetwork`, "fba")
-    }
     setPacking(true)
   }
   return (
@@ -857,20 +1007,12 @@ function LineMenu({
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={packing} onOpenChange={setPacking}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("builder.packingDetails")}</DialogTitle>
             <DialogDescription>{name}</DialogDescription>
           </DialogHeader>
           <FieldGroup className="gap-4">
-            {toAmazon && (
-              <FormSelect
-                name={`items.${index}.amazonNetwork`}
-                required
-                label={t("builder.amazonWarehouse")}
-                options={networkOptions}
-              />
-            )}
             <FormSelect
               name={`items.${index}.prepCategory`}
               required
@@ -884,6 +1026,7 @@ function LineMenu({
               label={t("detail.instructions")}
               placeholder={t("builder.instructionsPlaceholder")}
             />
+            <SupplierCharges index={index} />
           </FieldGroup>
           <DialogFooter>
             <DialogClose render={<Button type="button" />}>{t("builder.done")}</DialogClose>
@@ -891,6 +1034,97 @@ function LineMenu({
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function SupplierCharges({ index }: { index: number }) {
+  const t = useTranslations("orders")
+  const locale = useLocale()
+  const money = useMoney()
+  const { control } = useFormContext<OrderInput>()
+  const currency = useWatch({ control, name: "currency" })
+  const item = useWatch({ control, name: `items.${index}` })
+  const charges = useFieldArray({ control, name: `items.${index}.supplierCharges`, keyName: "key" })
+  const types = adjustmentTypes
+    .filter((type) => type !== "Discount")
+    .map((type) => ({
+      value: type,
+      label: knownName(adjustmentKeys, type, t)
+    }))
+  return (
+    <div className="flex flex-col gap-3 border-t pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-medium">{t("builder.supplierCharges")}</h3>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={charges.fields.length >= 20}
+          onClick={() =>
+            charges.append({ description: "Packing", amount: 0, basis: item.piecesPerSet > 1 ? "pack" : "piece" })
+          }
+        >
+          <Plus />
+          {t("builder.addSupplierCharge")}
+        </Button>
+      </div>
+      {charges.fields.map((charge, chargeIndex) => (
+        <div
+          key={charge.key}
+          className={cn(
+            "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-end gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto_2rem]",
+            chargeIndex > 0 && "border-t pt-3 sm:[&_[data-slot=field-label]]:sr-only"
+          )}
+        >
+          <FormSelect
+            name={`items.${index}.supplierCharges.${chargeIndex}.description`}
+            label={t("builder.expenseType")}
+            className="col-span-2 min-w-0 gap-1.5 sm:col-span-1"
+            options={types}
+          />
+          <div className="row-start-2 flex min-w-0 flex-col gap-1.5 sm:row-start-auto">
+            <span className={cn("text-sm font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("builder.rate")}</span>
+            <CellNumber
+              name={`items.${index}.supplierCharges.${chargeIndex}.amount`}
+              label={t("builder.rate")}
+              min={0}
+              step={0.01}
+              scale={100}
+              prefix={currencySymbol(currency, locale)}
+            />
+          </div>
+          <FormSelect
+            name={`items.${index}.supplierCharges.${chargeIndex}.basis`}
+            label={t("builder.chargeBasis")}
+            className="col-span-2 col-start-2 row-start-2 min-w-0 gap-1.5 sm:col-span-1 sm:col-start-auto sm:row-start-auto"
+            options={[
+              { value: "pack", label: t("builder.perPack") },
+              { value: "piece", label: t("builder.perPiece") },
+              { value: "flat", label: t("builder.flatAmount") }
+            ]}
+          />
+          <div className="col-span-3 flex items-center justify-between gap-1.5 text-sm sm:col-span-1 sm:min-w-20 sm:flex-col sm:items-end">
+            <span className={cn("font-medium", chargeIndex > 0 && "sm:sr-only")}>{t("detail.columns.total")}</span>
+            <span className="flex h-9 items-center tabular-nums">
+              {money(
+                item.supplierCharges?.[chargeIndex] ? supplierChargeTotal(item, item.supplierCharges[chargeIndex]) : 0,
+                currency
+              )}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="col-start-3 row-start-1 mb-0.5 sm:col-start-5 sm:row-start-auto"
+            aria-label={t("builder.removeSupplierCharge")}
+            onClick={() => charges.remove(chargeIndex)}
+          >
+            <X />
+          </Button>
+        </div>
+      ))}
+    </div>
   )
 }
 
