@@ -189,7 +189,7 @@ export class Shopify {
   constructor(
     readonly domain: string,
     private token: string,
-    private transport: typeof fetch = fetch,
+    private transport: typeof fetch = fetch.bind(globalThis),
     private delay: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   ) {
     shopDomainSchema.parse(domain)

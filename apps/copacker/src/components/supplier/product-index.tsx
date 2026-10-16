@@ -1,9 +1,6 @@
-"use client"
-
-import { useLocale, useTranslations } from "next-intl"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { EmptyState, WarningNote } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -11,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import type { PriceBasis } from "@/lib/catalog-pricing"
+import { responseError } from "@/lib/response-data"
 import type { ProductImage } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { IndexToolbar, matches, Pager, ProductThumb, rowLink, StatusBadge } from "./shared"
@@ -135,10 +133,10 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
         body: JSON.stringify({ ids: [...selected], active })
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? shared("couldNotSave"))
+        throw new Error(responseError(await response.json(), shared("couldNotSave")))
       }
       setSelected(new Set())
-      router.refresh()
+      router.invalidate()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {
@@ -149,7 +147,7 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
   if (!products.length) {
     return (
       <EmptyState title={t("emptyTitle")} description={t("emptyDescription")}>
-        <Button nativeButton={false} render={<Link href="/products/new" />}>
+        <Button nativeButton={false} render={<Link to="/products/new" />}>
           {t("addProduct")}
         </Button>
       </EmptyState>
@@ -259,7 +257,11 @@ export function ProductIndex({ products }: { products: ProductRow[] }) {
                     <div className="flex items-center gap-3">
                       <ProductThumb image={product.images[0] ?? null} className="hidden @sm:flex" />
                       <div className="flex min-w-0 flex-col">
-                        <Link href={`/products/${product.id}`} className={cn("line-clamp-2 font-medium", rowLink)}>
+                        <Link
+                          to="/products/$id"
+                          params={{ id: product.id }}
+                          className={cn("line-clamp-2 font-medium", rowLink)}
+                        >
                           {product.title}
                         </Link>
                         <span className="truncate text-xs text-muted-foreground">

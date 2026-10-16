@@ -1,6 +1,5 @@
-"use client"
-
 import { useDebouncedValue } from "@mantine/hooks"
+import { Link } from "@tanstack/react-router"
 import {
   ChevronDown,
   ChevronLeft,
@@ -14,9 +13,8 @@ import {
   TriangleAlert,
   X
 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
-import Link from "next/link"
 import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { BulkBarcodeUpload } from "@/components/bulk-barcode-upload"
 import { WarningNote } from "@/components/common"
@@ -35,13 +33,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import {
-  type AmazonOnlyStock,
-  type InventoryProduct,
-  type InventoryVariant,
-  pageSizes,
-  type PurchaseOrderLink
-} from "@/server/inventory-products"
+import type { AmazonOnlyStock } from "@/server/inventory-products"
+import type { PurchaseOrderLink } from "@/server/inventory-products"
+import { type InventoryProduct, type InventoryVariant, pageSizes } from "@/server/inventory-products"
 import type { ProductBarcode } from "@/server/product-barcodes"
 import type { ProductDefaults } from "@/server/product-defaults"
 
@@ -356,7 +350,7 @@ function RowMenu({ product, onEdit }: { product: ListedProduct; onEdit: () => vo
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         {reorders && (
-          <DropdownMenuItem render={<Link href={reorderHref(product.variants)} />}>
+          <DropdownMenuItem render={<Link to="." href={reorderHref(product.variants)} />}>
             <PackagePlus />
             {t("reorder")}
           </DropdownMenuItem>

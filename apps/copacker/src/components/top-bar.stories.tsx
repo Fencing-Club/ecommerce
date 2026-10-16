@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { searchIndex } from "@/stories/fixtures/shared"
@@ -7,7 +7,7 @@ import { TopBar } from "./top-bar"
 
 const meta = preview.meta({
   component: TopBar,
-  args: { kind: "buyer" },
+  args: { kind: "buyer", navigate: fn() },
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (

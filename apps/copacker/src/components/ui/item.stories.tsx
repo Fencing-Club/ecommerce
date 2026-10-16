@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router"
 import { ChevronRight, Package, Truck } from "lucide-react"
-import Link from "next/link"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "./button"
@@ -134,7 +134,7 @@ export const Group = meta.story({
 // A whole item that links somewhere, with a header and footer.
 export const AsLink = meta.story({
   render: () => (
-    <Item variant="outline" className="max-w-md" render={<Link href="/shipments/sh_1" />}>
+    <Item variant="outline" className="max-w-md" render={<Link to="/shipments/$id" params={{ id: "sh_1" }} />}>
       <ItemHeader>
         <span className="text-xs text-muted-foreground">Shipment</span>
       </ItemHeader>

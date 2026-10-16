@@ -1,6 +1,7 @@
-import { money, type OrderInput } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import { money } from "@repo/aisle"
 import { ChevronDown } from "lucide-react"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { TimelineEvent } from "@/lib/timeline-events"
 import { TimelineComment } from "./timeline-comment"
@@ -40,7 +41,7 @@ function Avatar({ name }: { name: string }) {
 
 // A PO's timeline, like Shopify's: a comment box, then what happened, newest first and grouped by day. Comments show
 // who wrote them, with their workspace when it's another company's.
-export async function PoTimeline({
+export function PoTimeline({
   orderId,
   viewer,
   viewerOrg,
@@ -56,7 +57,9 @@ export async function PoTimeline({
   // Whether a revision's lines show their prices.
   prices: boolean
 }) {
-  const [locale, t, eventText] = await Promise.all([getLocale(), getTranslations("orders.timeline"), eventTranslator()])
+  const locale = useLocale(),
+    t = useTranslations("orders.timeline"),
+    eventText = useEventTranslator()
   const day = (at: Date) =>
     at.toLocaleDateString(locale, { timeZone, weekday: "long", month: "long", day: "numeric", year: "numeric" })
   const time = (at: Date) => at.toLocaleTimeString(locale, { timeZone, hour: "numeric", minute: "2-digit" })
@@ -164,8 +167,9 @@ export async function PoTimeline({
 
 // An event in the reader's language, with what it names (a note, a reason, a carrier) as written. Text, such as a
 // comment, shows as written.
-async function eventTranslator() {
-  const [t, format] = await Promise.all([getTranslations("orders.timeline.events"), getFormatter()])
+function useEventTranslator() {
+  const t = useTranslations("orders.timeline.events"),
+    format = useFormatter()
   return (content: TimelineEvent | string) => {
     if (typeof content === "string") {
       return content

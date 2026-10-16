@@ -11,7 +11,7 @@ The tools we reach for **first**. Prefer them before introducing an alternative 
 - **pnpm** — package manager (workspaces, catalog, hoisted linker).
 - **Turborepo** — task runner + caching.
 - **Vite** — bundler / dev server.
-- **Next.js** — web framework for server-rendered apps.
+- **TanStack Start** — web framework for server-rendered apps on Cloudflare Workers, with TanStack Router and Vite.
 - **oxlint** — linter · **oxfmt** — formatter.
 - **knip** — unused files / deps / exports.
 - **npm-run-all2** — script orchestration (`run-s` / `run-p`).
@@ -156,9 +156,8 @@ Built on the **unified** (remark + rehype) ecosystem — the standard for parsin
 
 ## Localization (i18n)
 
-- **next-intl** — translations and formatting for Next.js apps.
-- **react-intl** + **@formatjs/cli** + **@formatjs/unplugin** — FormatJS message extraction + runtime, outside
-  Next.js.
+- **use-intl** — typed translations and formatting for TanStack Start, server operations and Storybook.
+- **react-intl** + **@formatjs/cli** + **@formatjs/unplugin** — FormatJS message extraction and runtime for other surfaces.
 - **generaltranslation** — AI-assisted translation.
 
 ## SEO

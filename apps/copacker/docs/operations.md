@@ -6,8 +6,8 @@ encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Ne
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
 `pnpm --filter copacker worker:dev` in a second process. Set up [Portless](development.md) before `pnpm dev`.
 The [domain inventory](domains.md) lists every environment address and provider setting.
-The worker runs the durable jobs recorded in Postgres when [Cloudflare delivers a job signal](background-jobs.md). Staging and
-production run it as a second Railway service built from `Dockerfile.worker`, which skips `next build` and runs the
+The worker runs the durable jobs queued in Postgres. Staging and
+production run it as a second Railway service built from `Dockerfile.worker`, which runs the
 worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
 
 ## External setup
@@ -39,7 +39,9 @@ worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (
    anyone else: staging's end-to-end runs invite `@example.net` addresses, which would bounce from the real domain.
    Nothing receives `@copacker.ai` mail. Invitations, purchase orders, label notices and password resets set no
    reply-to, so replies to them go to `hello@copacker.ai` and bounce.
-5. Storage: a private Railway bucket (`S3_*`). Objects are only read through server-authorized routes.
+5. Storage: a private R2 binding for the web and matching R2 `S3_*` settings for the retained worker. Existing Railway
+   files move only after the verified [storage cutover](cloudflare.md#private-storage-transfer-and-recovery). Objects
+   are read only through server-authorized routes.
 6. Privacy policy and terms: developer programs and app listings ask for `<APP_URL>/privacy` and `<APP_URL>/terms`
    ([Landing page](landing-page.md)).
 7. Amazon Ads: a separate approved Login with Amazon profile, with `AMAZON_ADS_CLIENT_ID` and
@@ -66,11 +68,14 @@ address with a 503 and `Retry-After`, and the API and server actions answer 503 
 
 - The flag is created once, in the dashboard (Create feature flag, slug `maintenance`). WorkOS creates flags in every
   environment, each with its own setting. **Some** takes no one down: Copacker reads the flag for everyone at once.
-- The page skips sign-in and the database, so it works while Postgres is down. If WorkOS can't be reached, Copacker
-  stays up.
+- The page skips sign-in and the database, so it works while Postgres is down. The flag lookup uses WorkOS's public
+  feature-flag API with a two-second deadline and a ten-second cache. No background poller runs in the web process.
+  If WorkOS cannot be reached on a cold process, Copacker stays up; after a successful read it retains that setting
+  during an outage and retries on the next request after ten seconds. A deleted flag means maintenance is off.
 - `/maintenance` is a 404 while Copacker is up. The worker keeps running; stop it in Railway if the work needs it idle.
-- The rules are in `apps/copacker/src/server/maintenance.ts`. `next.config.ts` shows the page for requests the proxy
-  marks, since a rewrite from the proxy itself leaves the app when the server's hostname is 127.0.0.1.
+- The rules are in `src/server/maintenance.ts`. `src/server.ts` and `server/start-maintenance.ts` establish the
+  invocation context before authentication; Router rewriting renders the maintenance screen at the requested URL.
+  The page and API status policy is shared with the deployed compatibility proof.
 
 ## Releases
 
@@ -85,33 +90,23 @@ Then, side by side:
 - `stories`: the Storybook tests, in four shards, when Copacker is affected.
 - `e2e`: the [end-to-end suite](e2e.md), in two shards, when Copacker is affected.
 
-Turbo replays any task whose inputs haven't changed from the [remote cache](../../turbo-cache/docs/README.md). When the
-jobs pass on a push that affects Copacker, `deploy-staging` deploys the commit to Railway's staging environment and runs
-the end-to-end suite against it, unless a newer commit is already the tip of `main`; that push deploys instead. A last
-job, `ci-ok`, passes when nothing failed, counting skipped jobs as passed. Pushes run side by side, and a new push to a
-pull request replaces its older run. To release to production, run the **Promote to production** workflow in GitHub
-Actions. It releases the commit staging serves, then runs the signed-out smoke specs against production.
+Turbo replays tasks whose inputs have not changed. `ci-ok` is the required aggregate check. The Cloudflare release
+workflow is gated by `CLOUDFLARE_RELEASE_ENABLED` and the protected environment's `RELEASE_CUTOVER_READY`; neither
+should be enabled before storage, callback, database and rollback qualification.
 
-Both run `.github/scripts/deploy.sh`. It sets `APP_COMMIT_SHA` on all three services, then deploys the web service (its
-pre-deploy step runs the migrations), the worker and Storybook. It waits for each deployment to succeed, then checks
-app `/api/health` and Storybook `/health.json` for the same commit. Deploys to one environment never overlap, and none cancels another.
+The [Cloudflare release guide](cloudflare.md#release-procedure) describes exact-commit promotion, scoped secrets,
+static Storybook, the retained Railway worker, serialized migrations and deployed health checks. The old web container
+and predeploy path are removed from this branch. Existing live services remain in place until the authorized cutover.
 
-- Secrets: `RAILWAY_STAGING_TOKEN` and `RAILWAY_PRODUCTION_TOKEN`, Railway project tokens scoped to their environment
-  (Project settings, Tokens), and `WORKOS_API_KEY`, the WorkOS staging environment's key, which the end-to-end suite
-  signs in with.
-- Staging's web service pre-deploy command is `sh -c "pnpm --filter copacker predeploy && pnpm --filter copacker
-  db:seed:e2e"` (set in Railway), so every staging deploy starts the end-to-end workspaces over. Railway doesn't run the
-  command in a shell, so without `sh -c` the `&&` reaches pnpm as arguments. Production's only migrates.
-- Variables: `STAGING_URL` (`https://copacker-staging.up.railway.app`), `PRODUCTION_URL` (`https://copacker.ai`).
-- Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
-  forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in one
-  release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to undo a
-  migration, write a new one, or restore from Neon history or a verified export. Check the actual Neon retention window; it does not inherit
-  Railway's old daily/weekly backups. See [Neon recovery and migration acceptance](neon.md).
-- CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change.
-- Deploying by hand with `railway up` still works; prefer the workflows so the health check reports the commit.
+Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
+A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
+new migration or restore a verified recovery point from the authoritative database. Confirm Neon's actual restore
+window and matching private documents as described in [database recovery](neon.md#transfer-and-acceptance);
+the former Railway retention does not apply to Neon.
 
 ## Infrastructure
+
+This is the last verified **pre-cutover live inventory**; the migration branch has not changed these domains.
 
 Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 
@@ -153,15 +148,15 @@ Local Shopify connects through "Copacker Dev" in the Shopify Dev Dashboard (clie
 and staging's redirects. Keep its scopes the same as production's app. Until Shopify approves `read_all_orders` for it,
 order syncs through it copy the last 60 days. Local Amazon connects by self-authorization through Aisle Dev; production
 uses Aisle. Put each dev app's client ID and secret (and Aisle Dev's application ID) in the local `.env`. Local
-`APP_URL` and `NEXT_PUBLIC_WORKOS_REDIRECT_URI` are supplied by the Portless launcher for each worktree.
+`APP_URL` and `WORKOS_REDIRECT_URI` are supplied by the Portless launcher for each worktree.
 Register its exact commerce callbacks as described in the [domain inventory](domains.md). Webhooks, notifications and queues per
 environment are in [Shopify webhooks and Amazon notifications](notifications.md).
 
 Schema changes are migrations: edit `src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and commit the new file
 under `drizzle/`. `tests/migrations.test.ts` fails when the schema changes without a migration, when an applied
 migration is edited (record each migration's hash there once it's deployed), or when migrations are numbered out of the
-order they were made. The web service's pre-deploy command runs the `predeploy` script in `apps/copacker/package.json`
-(today, `db:migrate`), so changes to it ship with the code; only the web service runs it, so migrations never run twice.
+order they were made. The release runner uses one direct connection and an advisory lock to apply pending migrations
+before deployment. Disable the old Railway predeploy migration command before activating the new release workflow.
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.
@@ -176,5 +171,6 @@ See [Neon connections and releases](neon.md).
 ## Preview scope
 
 Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Hosted app previews
-are deferred to the Cloudflare web migration; no new Railway resources are provisioned. Existing Storybook fixture
-previews remain available. See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.
+remain a follow-up after the Cloudflare web release; no new Railway resources are provisioned. Existing shared Storybook
+deployments remain available; the former container preview integration cannot build this branch's static Worker.
+See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.

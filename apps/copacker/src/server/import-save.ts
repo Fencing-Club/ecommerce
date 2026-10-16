@@ -5,9 +5,10 @@ import { z } from "zod"
 import { db } from "@/db"
 import { poImports } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import { requireBuyer, type Session } from "./auth"
+import { requireBuyer } from "./authorization"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
+import type { Session } from "./workspace-session"
 
 const saveSchema = z
   .object({

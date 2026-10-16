@@ -1,11 +1,10 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Mail, UserPlus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,10 +33,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
-import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
+import type { Access } from "@/lib/access"
+import type { Area } from "@/lib/access"
+import type { Role } from "@/lib/access"
+import { highestLevel } from "@/lib/access"
 import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
-import { ActionForm, FormError } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 import { SelectControl } from "./form-select"
 
@@ -424,7 +426,7 @@ function useRowAction() {
     setError("")
     try {
       await run({ action, data }).unwrap()
-      router.refresh()
+      router.invalidate()
       return true
     } catch (failure) {
       setError(errorMessage(failure))

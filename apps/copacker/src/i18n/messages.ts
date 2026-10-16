@@ -1,5 +1,5 @@
-import type { AbstractIntlMessages } from "next-intl"
 import { objectKeys } from "ts-extras"
+import type { AbstractIntlMessages } from "use-intl"
 import auth from "../../messages/en/auth.json"
 import common from "../../messages/en/common.json"
 import emails from "../../messages/en/emails.json"
@@ -21,7 +21,8 @@ import settings from "../../messages/en/settings.json"
 import shipments from "../../messages/en/shipments.json"
 import supplier from "../../messages/en/supplier.json"
 import validation from "../../messages/en/validation.json"
-import { defaultLocale, type Locale } from "./locales"
+import type { Locale } from "./locales"
+import { defaultLocale } from "./locales"
 
 // The English messages, one file per area of the app under messages/<locale>/<namespace>.json. Their shape is the
 // type every translation is checked against (see global.ts).

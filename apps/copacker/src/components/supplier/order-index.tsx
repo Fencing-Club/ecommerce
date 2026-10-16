@@ -1,15 +1,14 @@
-"use client"
-
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { EmptyState, Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useMoney } from "@/hooks/use-money"
 import { formatDate } from "@/lib/format"
-import type { ListedOrder, OrderStage } from "@/server/supplier-workspace"
+import type { ListedOrder } from "@/server/supplier-workspace"
+import type { OrderStage } from "@/server/supplier-workspace"
 import { IndexToolbar, matches, Pager } from "./shared"
 
 type Tab = "all" | OrderStage
@@ -91,7 +90,11 @@ export function SupplierOrderIndex({
             {shown.slice(current * pageSize, (current + 1) * pageSize).map((order) => (
               <LinkRow key={order.id} href={`/orders/${order.id}`}>
                 <TableCell className="max-w-72">
-                  <Link href={`/orders/${order.id}`} className="font-medium underline-offset-4 hover:underline">
+                  <Link
+                    to="/orders/$id"
+                    params={{ id: order.id }}
+                    className="font-medium underline-offset-4 hover:underline"
+                  >
                     {order.reference}
                   </Link>
                   <p className="truncate text-xs text-muted-foreground">

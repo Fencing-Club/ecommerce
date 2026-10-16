@@ -15,8 +15,9 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Roles and page access](permissions.md)
 - [Landing page: the signed-out home page](landing-page.md)
 - [Run Copacker: setup, releases and infrastructure](operations.md)
-- [Neon databases, migrations, and PR previews](neon.md)
-- [Background jobs and Cloudflare scheduling](background-jobs.md)
+- [Neon database operations and PR previews](neon.md)
+- [Background jobs and Cloudflare wake signals](background-jobs.md)
+- [Cloudflare runtime, releases and private-storage migration](cloudflare.md)
 - [Domains and provider configuration across environments](domains.md)
 - [Local development domains with Buildkit and Portless](development.md)
 - [End-to-end tests: the Playwright suite](e2e.md)
@@ -27,6 +28,8 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 
 Specs (planned work; the purchase order flow also maps how orders work today):
 
+- [TanStack Start and Cloudflare migration: tasks, milestones and cutover](specs/platform-migration/README.md)
+- [CLI and MCP contract proposal](specs/cli/README.md)
 - [App redesign: information architecture and design spec](specs/app-redesign/README.md)
 - [Inventory sync](specs/inventory-sync/README.md)
 - [Purchase order flow](specs/purchase-order-flow/README.md)

@@ -40,3 +40,12 @@ export const Dark = meta.story({
     await waitFor(() => expect(asked).toHaveBeenCalled())
   }
 })
+
+export const Urdu = meta.story({
+  globals: { locale: "ur" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("ہم جلد واپس آئیں گے")
+    await expect(canvas.getByRole("button", { name: "ہم سے رابطہ کریں" })).toHaveAttribute("href", "/contact")
+    await waitFor(() => expect(asked).toHaveBeenCalled())
+  }
+})

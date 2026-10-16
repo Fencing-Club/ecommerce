@@ -1,8 +1,6 @@
-"use client"
-
 import { Plus, Trash2 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,7 +14,8 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { useMoney } from "@/hooks/use-money"
-import { countOf, type PriceBasis, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
+import type { PriceBasis } from "@/lib/catalog-pricing"
+import { countOf, type PriceBreak, pricingProblem, type QuantityRules } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
 
 // Typed money as minor units: null for blank, undefined for something that isn't an amount.

@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { ShipmentProgress } from "./shipment-progress"
 
 const meta = preview.meta({
@@ -11,7 +11,7 @@ const meta = preview.meta({
 export const NextStep = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("status")).toHaveTextContent("The forwarder ships it on next.")
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
@@ -20,6 +20,6 @@ export const Processing = meta.story({
   args: { processing: true, message: undefined },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("status")).toBeNull()
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled(), { timeout: 7000 })
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled(), { timeout: 7000 })
   }
 })

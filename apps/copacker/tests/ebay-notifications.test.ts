@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { GET } from "../src/app/api/webhooks/ebay/route"
 import { ebayChallengeResponse, ebayEndpoint, hasPublicEbayEndpoint } from "../src/server/ebay-notifications"
+import { GET } from "../src/server/http/api/webhooks/ebay"
 
 const verificationToken = "copacker_ebay-verification-token-0123456789"
 

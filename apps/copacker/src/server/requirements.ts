@@ -1,7 +1,9 @@
-import { type AmazonNetwork, amazonNetworkNames, type PrepCategory } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/aisle"
+import { amazonNetworkNames, type PrepCategory } from "@repo/aisle"
 import type { Requirement } from "@repo/aisle/requirements"
-import { getFormatter, getTranslations } from "next-intl/server"
 import { match, P } from "ts-pattern"
+import { createFormatter, createTranslator } from "use-intl"
+import { localization } from "@/server/localization"
 
 // Each preparation's instruction, under shipments.requirements.prep.
 const prepKeys = {
@@ -17,7 +19,9 @@ const prepKeys = {
 // What the supplier must do, and where a PO to Amazon goes, in the request's language. The product's own instructions
 // show as the buyer wrote them.
 export async function requirementTranslator() {
-  const [t, format] = await Promise.all([getTranslations("shipments.requirements"), getFormatter()])
+  const config = await localization()
+  const t = createTranslator({ ...config, namespace: "shipments.requirements" })
+  const format = createFormatter(config)
   const names = (networks: AmazonNetwork[]) => format.list(networks.map((network) => amazonNetworkNames[network]))
   return {
     requirement(requirement: Requirement) {

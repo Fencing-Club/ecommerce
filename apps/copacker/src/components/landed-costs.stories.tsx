@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { actionHandler, landedCosts, orderId, shownDialog } from "@/stories/fixtures/purchase-orders"
 import { LandedCosts } from "./landed-costs"
 
@@ -70,7 +70,7 @@ export const RemoveCost = meta.story({
     await waitFor(() =>
       expect(actions).toHaveBeenCalledWith({ action: "landedCost.delete", data: { id: landedCosts[1]!.id } })
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -84,7 +84,7 @@ export const RemoveFails = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "More actions for Freight cost" }))
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove" }))
     await expect(await canvas.findByText("This cost was already removed")).toBeVisible()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 

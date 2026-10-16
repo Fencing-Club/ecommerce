@@ -1,5 +1,3 @@
-"use client"
-
 import { useId, useRef } from "react"
 import { useController } from "react-hook-form"
 import { FormLabel, type FormFieldProps } from "@/components/form-controls"

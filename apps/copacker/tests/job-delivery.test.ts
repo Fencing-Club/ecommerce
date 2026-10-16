@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { acknowledgeJobSignal, receiveJobSignals, signalJobs, withJobWake } from "../src/server/job-delivery"
+import {
+  acknowledgeJobSignal,
+  receiveJobSignals,
+  signalJobs,
+  withJobPublisher,
+  withJobWake
+} from "../src/server/job-delivery"
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -18,6 +24,33 @@ function setup(result: unknown = {}) {
 }
 
 describe("Cloudflare job delivery", () => {
+  it("uses the invocation's binding without HTTP credentials", async () => {
+    const fetcher = setup()
+    vi.stubEnv("CLOUDFLARE_JOBS_QUEUE_ID", "")
+    vi.stubEnv("CLOUDFLARE_JOBS_TOKEN", "")
+    const publish = vi.fn<(delay: number) => Promise<void>>().mockResolvedValue()
+    expect(await withJobPublisher(publish, () => withJobWake(Promise.resolve("saved")))).toBe("saved")
+    await withJobPublisher(publish, () => signalJobs(1.2))
+    expect(publish.mock.calls).toEqual([[0], [2]])
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it("isolates publishers between overlapping invocations and restores the Node transport", async () => {
+    const fetcher = setup()
+    const first = vi.fn<(delay: number) => Promise<void>>().mockResolvedValue()
+    const second = vi.fn<(delay: number) => Promise<void>>().mockResolvedValue()
+    const { promise: pending, resolve: release } = Promise.withResolvers<void>()
+    const invocation = withJobPublisher(first, async () => {
+      await pending
+      await signalJobs(3)
+    })
+    await withJobPublisher(second, () => signalJobs(4))
+    release()
+    await invocation
+    expect(first.mock.calls).toEqual([[3]])
+    expect(second.mock.calls).toEqual([[4]])
+    await signalJobs()
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
   it("publishes only after commit and preserves the transaction result", async () => {
     const fetcher = setup()
     let commit: (value: number) => void = () => undefined

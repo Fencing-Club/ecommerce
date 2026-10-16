@@ -1,7 +1,7 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Unsubscribe } from "@/components/marketing/unsubscribe"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 // What the page says: a link that isn't Copacker's, the answer once the button's post comes back, or else the question.
 function stateOf(valid: boolean, done: string, failed: string) {
@@ -26,7 +26,7 @@ async function UnsubscribePage({ query, signed }: { query: Query; signed: boolea
   const email = read("email")
   const token = read("token")
   const valid = Boolean(email) && signed
-  return <Unsubscribe email={email} token={token} state={stateOf(valid, read("done"), read("failed"))} />
+  return <PageView email={email} token={token} state={stateOf(valid, read("done"), read("failed"))} />
 }
 
 const email = "jordan@example.com"

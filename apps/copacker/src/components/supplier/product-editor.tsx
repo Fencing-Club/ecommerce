@@ -1,9 +1,7 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, ImagePlus, Pencil, Plus, SlidersHorizontal, Star, Trash2, X } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { PageLink, useCan } from "@/components/access"
 import { fileName, PageHeader } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
@@ -23,8 +21,14 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
-import { defaultQuantityRules, type PriceBasis, type PriceBreak, type QuantityRules } from "@/lib/catalog-pricing"
-import { imageUrl, type ProductImage, variantLabel, variantsProblem } from "@/lib/supplier-product"
+import type { PriceBreak } from "@/lib/catalog-pricing"
+import type { QuantityRules } from "@/lib/catalog-pricing"
+import { defaultQuantityRules, type PriceBasis } from "@/lib/catalog-pricing"
+import { savedRecord } from "@/lib/response-data"
+import { responseError } from "@/lib/response-data"
+import { productImageSchema } from "@/lib/supplier-product"
+import type { ProductImage } from "@/lib/supplier-product"
+import { imageUrl, variantLabel, variantsProblem } from "@/lib/supplier-product"
 import { cn } from "@/lib/utils"
 import { MoneyInput, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
 import { SaveBar, StatusBadge } from "./shared"
@@ -150,9 +154,9 @@ function Media({ images, onChange }: { images: ProductImage[]; onChange: (images
       const response = await fetch("/api/product-images", { method: "POST", body })
       const result = await response.json()
       if (response.ok) {
-        added.push(result)
+        added.push(productImageSchema.parse(result))
       } else {
-        setFailed({ name: file.name, error: result.error ?? t("couldNotUpload") })
+        setFailed({ name: file.name, error: responseError(result, t("couldNotUpload")) })
       }
       setUploading((count) => count - 1)
     }
@@ -534,13 +538,13 @@ export function ProductEditor({
       })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? t("saveFailed"))
+        throw new Error(responseError(result, t("saveFailed")))
       }
       setSaved(product)
       if (product.id) {
-        router.refresh()
+        router.invalidate()
       } else {
-        router.replace(`/products/${result.id}`)
+        router.navigate({ href: `/products/${savedRecord.parse(result).id}`, replace: true })
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("saveFailed"))
@@ -911,7 +915,7 @@ export function ProductEditor({
           error={error}
           onDiscard={() => {
             if (!saved.id) {
-              router.push("/products")
+              router.navigate({ href: "/products" })
               return
             }
             setProduct(saved)

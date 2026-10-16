@@ -1,10 +1,8 @@
-"use client"
-
 import type { Address } from "@repo/aisle"
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,7 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { type ContactKind, contactKindLabelKeys } from "@/lib/contacts"
+import type { ContactKind } from "@/lib/contacts"
+import { contactKindLabelKeys } from "@/lib/contacts"
 import { formatPhone, phoneHref } from "@/lib/phone"
 import { ContactForm } from "./settings-forms"
 
@@ -113,7 +112,7 @@ function SavedAddress({
     setError("")
     try {
       await run({ action: "contact.delete", data: { id: contact.id } }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("removeFailed")))
       setPending(false)

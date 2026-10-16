@@ -1,23 +1,7 @@
-import { getTranslations } from "next-intl/server"
-import { redirect } from "next/navigation"
-import { PageHeader } from "@/components/common"
-import { RestockReport } from "@/components/restock-report"
-import { requirePage, session, titleFor } from "@/server/auth"
-import { restockSettings } from "@/server/restock-report"
+import { RestockPageView } from "@/components/restock-page"
+import type { readRestock } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("restock.title", "restock")
-
-export default async function RestockPage() {
-  const s = await session()
-  if (s.org.kind !== "buyer") {
-    redirect("/orders")
-  }
-  requirePage(s, "restock")
-  const t = await getTranslations("restock")
-  return (
-    <>
-      <PageHeader title={t("title")} />
-      <RestockReport settings={restockSettings(s.org)} />
-    </>
-  )
+type Data = Extract<Awaited<ReturnType<typeof readRestock>>, { forbidden: false }>["page"]
+export default function RestockPage({ page }: { page: Data["data"] }) {
+  return <RestockPageView {...page} />
 }

@@ -1,27 +1,21 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "@tanstack/react-router"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { FormProvider, type Path, useForm, useWatch } from "react-hook-form"
+import type { Path } from "react-hook-form"
+import { FormProvider, useForm, useWatch } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
-import { FormError, SubmitButton } from "@/components/actions"
 import { BrandMark, Stage } from "@/components/auth/stage"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { companySchema, personSchema, placeSchema, type WorkspaceKind, workspaceKinds } from "@/lib/onboarding"
+import type { WorkspaceKind } from "@/lib/onboarding"
+import { companySchema, personSchema, placeSchema, workspaceKinds } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
-import {
-  AboutFields,
-  AddressStepFields,
-  CompanyFields,
-  RoleFields,
-  useStepHeading,
-  type WizardStep
-} from "./wizard-steps"
+import type { WizardStep } from "./wizard-steps"
+import { AboutFields, AddressStepFields, CompanyFields, RoleFields, useStepHeading } from "./wizard-steps"
 import { WorkspacePreview } from "./workspace-preview"
 
 const wizardSchema = z.object({
@@ -180,8 +174,8 @@ export function OnboardingWizard({
     setError("")
     try {
       const result = await run(request).unwrap()
-      router.push(finish.type === "profile" ? finish.next : (result.redirect ?? "/"))
-      router.refresh()
+      router.navigate({ href: finish.type === "profile" ? finish.next : (result.redirect ?? "/") })
+      router.invalidate()
     } catch (failure) {
       setError(errorMessage(failure))
       setPending(null)

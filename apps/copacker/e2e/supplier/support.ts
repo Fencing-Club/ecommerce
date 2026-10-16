@@ -21,22 +21,17 @@ export type ProductInput = {
   variants: VariantInput[]
 }
 
-// Sends a JSON request from a page on the app, so it carries the app's origin like the page's own requests.
+// Fixture requests share the browser's cookies and explicit app origin. They survive a document navigation.
 async function send(page: Page, url: string, method: "POST" | "DELETE", body?: unknown) {
   if (!page.url().startsWith("http")) {
     await page.goto("/overview")
   }
-  const result = await page.evaluate(
-    async ({ url, method, body }) => {
-      const init: RequestInit = { method, headers: { "Content-Type": "application/json" } }
-      if (body !== undefined) {
-        init.body = JSON.stringify(body)
-      }
-      const response = await fetch(url, init)
-      return { ok: response.ok, text: await response.text() }
-    },
-    { url, method, body }
-  )
+  const response = await page.request.fetch(url, {
+    method,
+    data: body,
+    headers: { "Content-Type": "application/json", Origin: new URL(page.url()).origin }
+  })
+  const result = { ok: response.ok(), text: await response.text() }
   expect(result.ok, result.text).toBe(true)
   const parsed: unknown = JSON.parse(result.text)
   return parsed

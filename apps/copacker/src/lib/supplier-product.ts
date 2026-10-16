@@ -1,13 +1,12 @@
-import {
-  englishPricing,
-  type PriceBreak,
-  type PricingText,
-  pricingProblem,
-  type QuantityRules
-} from "./catalog-pricing"
+import { z } from "zod"
+import type { PriceBreak } from "./catalog-pricing"
+import type { PricingText } from "./catalog-pricing"
+import type { QuantityRules } from "./catalog-pricing"
+import { englishPricing, pricingProblem } from "./catalog-pricing"
 
 // A supplier product's photo in document storage, under supplier-images/<supplier workspace>/.
-export type ProductImage = { key: string; name: string; contentType: string }
+export const productImageSchema = z.object({ key: z.string(), name: z.string(), contentType: z.string() })
+export type ProductImage = z.infer<typeof productImageSchema>
 
 export const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const
 

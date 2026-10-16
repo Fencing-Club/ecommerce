@@ -1,7 +1,13 @@
+import { fileURLToPath } from "node:url"
 import { defineConfig } from "@buildkitgg/dev-domains"
 import { localAppEnvironment } from "./scripts/dev-environment"
 
 const env = localAppEnvironment("{origin}")
+const vite = [
+  process.execPath,
+  "--env-file-if-exists=.env",
+  fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json")))
+]
 
 export default defineConfig({
   project: "copacker",
@@ -12,8 +18,8 @@ export default defineConfig({
     app: {
       primaryName: "local",
       name: "{worktree}.local",
-      command: ["next", "dev"],
-      framework: "next",
+      command: [...vite, "dev", "--mode", "development"],
+      framework: "vite",
       env,
       auth: [
         "/callback",
@@ -35,8 +41,8 @@ export default defineConfig({
       kind: "e2e",
       primaryName: "e2e.local",
       name: "{worktree}.e2e.local",
-      command: ["next", process.env.E2E_DEV ? "dev" : "start"],
-      framework: "next",
+      command: [...vite, process.env.E2E_DEV ? "dev" : "preview", "--mode", "e2e"],
+      framework: "vite",
       env: { ...env, COPACKER_E2E_BUILD: "1" },
       auth: ["/callback"]
     }

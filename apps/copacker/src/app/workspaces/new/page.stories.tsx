@@ -1,14 +1,11 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
-import { Button } from "@/components/ui/button"
+import { getStoryRouter } from "#.storybook/router"
 import type { profiles } from "@/db/schema"
 import { blankPlace } from "@/lib/onboarding"
 import { actionRecorder, redirectTo, savedProfile, skipAnimations } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
@@ -21,28 +18,24 @@ async function NewWorkspace({
   profile: typeof profiles.$inferSelect | null
   complete: boolean
 }) {
-  const t = await getTranslations("onboarding.wizard")
   return (
-    <OnboardingWizard
-      steps={complete ? ["role", "company", "address"] : ["about", "role", "company", "address"]}
-      finish={{ type: "workspace", invitation: null }}
-      kind={null}
-      initial={{
-        person: {
-          firstName: profile?.firstName ?? "",
-          lastName: profile?.lastName ?? "",
-          position: profile?.position ?? ""
+    <PageView
+      page={{
+        steps: complete ? ["role", "company", "address"] : ["about", "role", "company", "address"],
+        finish: { type: "workspace", invitation: null },
+        kind: null,
+        initial: {
+          person: {
+            firstName: profile?.firstName ?? "",
+            lastName: profile?.lastName ?? "",
+            position: profile?.position ?? ""
+          },
+          kind: "",
+          company: { name: "", website: "", phone: "" },
+          address: blankPlace
         },
-        kind: "",
-        company: { name: "", website: "", phone: "" },
-        address: blankPlace
+        invitedBy: null
       }}
-      invitedBy={null}
-      account={
-        <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/" />}>
-          {t("cancel")}
-        </Button>
-      }
     />
   )
 }
@@ -50,7 +43,7 @@ async function NewWorkspace({
 const meta = preview.meta({
   title: "Pages/Shared/Workspaces/New",
   ...serverStory(NewWorkspace),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/workspaces/new" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/workspaces/new" } } },
   args: { profile: savedProfile, complete: true },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/overview")))
@@ -72,7 +65,7 @@ export const Default = meta.story({
     await expect(await canvas.findByRole("heading", { level: 1, name: "Pickup address" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Skip for now" }))
     // The new workspace opens once it's made.
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     await expect(actions.sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: {

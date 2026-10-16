@@ -4,7 +4,7 @@ import { eq, like } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 vi.mock("../src/server/connections", () => ({
@@ -17,16 +17,8 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("next/navigation", () => ({
-  notFound: () => {
-    throw new Error("not found")
-  },
-  redirect: () => {
-    throw new Error("redirect")
-  }
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { POST as action } from "../src/app/api/action/route"
+
+import { POST as action } from "../src/server/http/api/action"
 import { appUrl, hash } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 

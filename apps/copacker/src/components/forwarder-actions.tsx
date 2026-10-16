@@ -1,10 +1,9 @@
-"use client"
-
-import { Pencil, Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
+import { Pencil } from "lucide-react"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
+import { FormError } from "@/components/form-feedback"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,66 +27,8 @@ import {
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
-import { ActionForm, FormError } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
-
-const addSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  email: z.union([z.email().max(254), z.literal("")])
-})
-
-// Adds a freight forwarder. With an email, it's invited to join and keep its own addresses.
-export function AddForwarder({
-  open: shown,
-  onOpenChange
-}: {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-}) {
-  const t = useTranslations("partners.forwarder.add")
-  const [own, setOwn] = useState(false)
-  const open = shown ?? own
-  const setOpen = onOpenChange ?? setOwn
-  const { form, submit } = useActionForm({
-    schema: addSchema,
-    action: "forwarder.create",
-    defaultValues: { name: "", email: "" },
-    onSuccess: () => setOpen(false)
-  })
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {shown === undefined && (
-        <DialogTrigger render={<Button />}>
-          <Plus data-icon="inline-start" />
-          {t("trigger")}
-        </DialogTrigger>
-      )}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
-        </DialogHeader>
-        <ActionForm form={form} onSubmit={submit} label={t("submit")} dialog>
-          <FormInput
-            name="name"
-            required
-            label={t("company")}
-            placeholder={t("companyPlaceholder")}
-            autoComplete="off"
-          />
-          <FormInput
-            name="email"
-            label={t("email")}
-            type="email"
-            placeholder="ops@forwarder.example"
-            autoComplete="off"
-            description={t("emailDescription")}
-          />
-        </ActionForm>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 const inviteSchema = z.object({ email: z.email().max(254) })
 
@@ -182,7 +123,7 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
     try {
       await run({ action: "forwarder.remove", data: { id } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("failed", { name })))
     } finally {

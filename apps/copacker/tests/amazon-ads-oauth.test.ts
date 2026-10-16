@@ -60,6 +60,7 @@ describe("shared Amazon Ads callback", () => {
     "https://local.copacker.ai.evil.example",
     "https://stories.local.copacker.ai",
     "https://e2e.local.copacker.ai",
+    "https://hooks.local.copacker.ai",
     "https://feature.stories.local.copacker.ai",
     "https://feature.e2e.local.copacker.ai",
     "http://local.copacker.ai",

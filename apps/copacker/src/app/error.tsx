@@ -1,8 +1,6 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { CircleAlert } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -18,7 +16,7 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
   return (
     <div className="flex min-h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center border-b px-4">
-        <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark flat />
         </Link>
       </header>
@@ -36,7 +34,7 @@ export default function ErrorPage({ retry }: { retry: () => void }) {
           <EmptyContent>
             <div className="flex flex-wrap justify-center gap-2">
               <Button onClick={retry}>{t("tryAgain")}</Button>
-              <Button variant="outline" nativeButton={false} render={<Link href="/overview" />}>
+              <Button variant="outline" nativeButton={false} render={<Link to="/overview" />}>
                 {t("goToOverview")}
               </Button>
             </div>

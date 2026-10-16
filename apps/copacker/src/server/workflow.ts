@@ -1,20 +1,22 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
-import { documents, shipments, type ShipmentState } from "@/db/schema"
+import type { ShipmentState } from "@/db/schema"
+import { documents, shipments } from "@/db/schema"
+import type { ServerKey } from "@/i18n/server-text"
 import { accessibleOrder } from "./access"
-import type { Session } from "./auth"
 import { linesMissingLabels } from "./product-barcodes"
+import type { ReadinessIssue } from "./readiness"
 import {
   finishedStates,
   orderCoverage,
   packingReadiness,
   releasedStates,
   releaseIssues,
-  reservedPieces,
-  type ReadinessIssue
+  reservedPieces
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
-import { type ServerKey, serverText } from "./text"
+import { serverText } from "./text"
+import type { Session } from "./workspace-session"
 
 const finishedMessages: Partial<Record<ShipmentState, ServerKey>> = {
   received: "workflow.arrived",

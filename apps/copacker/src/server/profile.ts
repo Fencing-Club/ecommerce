@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { profiles, supplierProfiles } from "@/db/schema"
+import { AccessError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { personSchema, websiteSchema } from "@/lib/onboarding"
-import type { Session } from "./auth"
-import { AccessError } from "./errors"
+import type { Session } from "./workspace-session"
 
 // The profile the portal asks for before anything else: the person and their company, and for a buyer's owner or admin,
 // the workspace's website.

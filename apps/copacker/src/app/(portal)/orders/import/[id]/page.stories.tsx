@@ -1,12 +1,13 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { ImportReview, type ReviewProduct } from "@/components/import-review"
+import { type ReviewProduct } from "@/components/import-review"
 import type { poImports } from "@/db/schema"
 import { importProposalSchema } from "@/server/import-proposal"
 import { daysAgo } from "@/stories/fixtures/orders"
 import { builderSuppliers, importedProducts, importId, importProposal } from "@/stories/fixtures/purchase-orders"
 import { pageStory } from "@/stories/server"
 import { workspaces } from "@/stories/workspace"
+import PageView from "./page"
 
 type Args = {
   // The import in review, the buyer's suppliers, and the chosen products Shopify found (none while it's down).
@@ -19,13 +20,15 @@ type Args = {
 // goes back to the imports.
 async function ReviewImport({ record, suppliers, selectedProducts }: Args) {
   return (
-    <ImportReview
-      id={record.id}
-      filename={record.filename}
-      initialRevision={record.revision}
-      initialProposal={importProposalSchema.parse(record.proposal)}
-      initialSelectedProducts={selectedProducts}
-      suppliers={suppliers}
+    <PageView
+      page={{
+        id: record.id,
+        filename: record.filename,
+        initialRevision: record.revision,
+        initialProposal: importProposalSchema.parse(record.proposal),
+        initialSelectedProducts: selectedProducts,
+        suppliers: suppliers
+      }}
     />
   )
 }

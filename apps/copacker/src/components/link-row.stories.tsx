@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { expect, fireEvent, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { member } from "@/stories/workspace"
@@ -21,7 +21,9 @@ function OrdersTable({ onRemind }: { onRemind: () => void }) {
       <TableBody>
         <LinkRow href="/orders/order-1045">
           <TableCell>
-            <Link href="/orders/order-1045">PO-1045</Link>
+            <Link to="/orders/$id" params={{ id: "order-1045" }}>
+              PO-1045
+            </Link>
           </TableCell>
           <TableCell>Lotus Manufacturing</TableCell>
           <TableCell>
@@ -48,12 +50,12 @@ const meta = preview.meta({
 export const OpensOnClick = meta.story({
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByText("Lotus Manufacturing"))
-    await expect(getRouter().push).toHaveBeenCalledWith("/orders/order-1045")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-1045" })
     // The row's own buttons do their own thing.
-    getRouter().push.mockClear()
+    getStoryRouter().navigate.mockClear()
     await userEvent.click(canvas.getByRole("button", { name: "Remind" }))
     await expect(args.onRemind).toHaveBeenCalledOnce()
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 
@@ -71,7 +73,7 @@ export const NewTab = meta.story({
     } finally {
       window.open = original
     }
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 
@@ -82,8 +84,8 @@ export const MemberWithoutPage = meta.story({
     const restock = canvas.getByText("Canvas tote bag").closest("tr")
     await expect(restock).not.toHaveClass("cursor-pointer")
     await userEvent.click(canvas.getByText("Canvas tote bag"))
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
     await userEvent.click(canvas.getByText("Lotus Manufacturing"))
-    await expect(getRouter().push).toHaveBeenCalledWith("/orders/order-1045")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-1045" })
   }
 })

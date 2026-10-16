@@ -1,18 +1,19 @@
 import { randomUUID } from "node:crypto"
+import type { OrderInput } from "@repo/aisle"
+import type { Packing } from "@repo/aisle"
 import {
   amazonNetworkNames,
   approveChanges,
   commercialChanges,
-  type OrderInput,
   orderInputSchema,
-  type Packing,
   packingDraftSchema,
   splitByNetwork
 } from "@repo/aisle"
 import { bundleSupplierComponents, piecesPerUnit } from "@repo/aisle/shopify"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import {
   orders,
   orderProposals,
@@ -32,10 +33,11 @@ import { LocalizedError } from "@/i18n/errors"
 import { can } from "@/lib/access"
 import { bundleQuote } from "@/lib/bundle-quote"
 import { quantityProblem } from "@/lib/catalog-pricing"
-import { eventMessage, type TimelineEvent } from "@/lib/timeline-events"
+import type { TimelineEvent } from "@/lib/timeline-events"
+import { eventMessage } from "@/lib/timeline-events"
 import { withJobWake } from "@/server/job-delivery"
 import { accessibleOrder } from "./access"
-import { requireBuyer, type Session } from "./auth"
+import { requireBuyer } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor, amazonFor, connection } from "./connections"
 import { copyDocument, generatePo } from "./documents"
@@ -48,6 +50,7 @@ import { describeError } from "./stock"
 import { matchSupplierCatalog } from "./supplier-catalog-match"
 import { checkSupplierStock, returnSupplierStock, takeSupplierStock } from "./supplier-stock"
 import { pricingText, serverText } from "./text"
+import type { Session } from "./workspace-session"
 
 // Amazon is optional until a PO ships to Amazon; without it, ASINs and FNSKUs are looked up when the PO is sent.
 async function amazonAccount(orgId: string) {

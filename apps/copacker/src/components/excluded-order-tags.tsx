@@ -1,9 +1,8 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Tags } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
+import { useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,7 +19,6 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
-import { FormError } from "./actions"
 import { DetailRow } from "./inventory-locations"
 import { TagPicker } from "./tag-picker"
 
@@ -83,7 +81,7 @@ function EditTags({ tags, suggestions }: { tags: string[]; suggestions: string[]
     try {
       await run({ action: "workspace.excludedShopifyTags", data: { tags: value } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (saveError) {
       setError(errorMessage(saveError, t("saveFailed")))
     }

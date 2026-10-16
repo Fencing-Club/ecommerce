@@ -27,9 +27,21 @@
       "ignoreDependencies": ["@repo/oxlint-config"]
     },
     "apps/copacker": {
-      "entry": [".storybook/mocks/*.ts", "dev-domains.config.ts"],
+      "entry": [
+        ".storybook/mocks/*.ts",
+        "tests/start-runtime/{cloudflare,vite}.config.ts",
+        "tests/start-runtime/src/router.tsx",
+        "tests/start-runtime/src/start.ts",
+        "tests/start-runtime/src/server.ts",
+        "tests/start-runtime/src/routes/**/*.{ts,tsx}",
+        "cloudflare.config.ts",
+        "e2e/runtime/cloudflare.config.ts",
+        "src/{router,start,server}.{ts,tsx}",
+        "src/routes/**/*.{ts,tsx}",
+        "dev-domains.config.ts"
+      ],
       "ignore": [".storybook/public/**"],
-      "ignoreDependencies": ["@repo/oxlint-config"]
+      "ignoreDependencies": ["@repo/oxlint-config", "cloudflare"]
     },
     "apps/copacker/scheduler": {
       "entry": ["index.ts", "cloudflare.config.ts"]

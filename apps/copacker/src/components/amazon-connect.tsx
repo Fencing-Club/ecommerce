@@ -1,7 +1,5 @@
-"use client"
-
-import { useLocale, useTranslations } from "next-intl"
 import { useId, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,7 +15,7 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { selfAuthorizationSchema } from "@/lib/amazon"
 import { amazonMarketplaces } from "@/lib/amazon-marketplaces"
 import { countriesIn } from "@/lib/countries"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput, FormLabel } from "./form-controls"
 import { FormSelect, SelectControl } from "./form-select"
 

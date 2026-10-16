@@ -1,29 +1,39 @@
+import { checkServerIdentity } from "node:tls"
 import type { PoolConfig } from "pg"
+import invariant from "tiny-invariant"
 
+// Node services and administrative tools share verified connection policy. The web Worker uses Hyperdrive.
 export function databaseConfig(purpose: "application" | "migration" = "application"): PoolConfig {
   const connectionString =
     purpose === "migration" ? process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL : process.env.DATABASE_URL
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not configured")
-  }
+  invariant(connectionString, "DATABASE_URL is not configured")
   const url = new URL(connectionString)
   if (purpose === "migration" && url.hostname.includes("-pooler.")) {
     throw new Error("Migrations require DIRECT_DATABASE_URL with a non-pooled connection")
   }
-  // Neon uses a publicly trusted certificate. Explicitly verify the hostname as well as the certificate chain.
   const isNeon = url.hostname.endsWith(".neon.tech")
+  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)
+  const ca = process.env.DATABASE_CA_CERT
+  invariant(
+    isNeon || local || url.hostname.endsWith(".railway.internal") || ca,
+    "Public database access requires DATABASE_CA_CERT"
+  )
+  // Strip URL TLS options that would override our verified configuration. Neon uses its public CA and hostname.
+  for (const name of ["sslmode", "sslcert", "sslkey", "sslrootcert", "uselibpqcompat"]) {
+    url.searchParams.delete(name)
+  }
   if (isNeon) {
     url.searchParams.set("sslmode", "verify-full")
-    url.searchParams.delete("sslrootcert")
   }
+  const identity = process.env.DATABASE_TLS_SERVER_NAME || url.hostname
   return {
-    connectionString: url.toString(),
+    connectionString: url.href,
     max: purpose === "migration" ? 1 : 10,
     keepAlive: true,
-    connectionTimeoutMillis: 15000,
+    connectionTimeoutMillis: 15_000,
     ssl:
-      !isNeon && process.env.DATABASE_CA_CERT
-        ? { ca: process.env.DATABASE_CA_CERT, rejectUnauthorized: true }
+      !isNeon && ca
+        ? { ca, rejectUnauthorized: true, checkServerIdentity: (_host, cert) => checkServerIdentity(identity, cert) }
         : undefined
   }
 }

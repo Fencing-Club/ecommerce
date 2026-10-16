@@ -3,10 +3,12 @@ import type { Shopify } from "@repo/aisle/shopify"
 import type { CasePack } from "@/lib/case-packs"
 import { bundleSales } from "./bundle-sales"
 import type { LocationClassification } from "./inventory-locations"
-import { groupInventory, type PendingOrder } from "./inventory-products"
+import type { PendingOrder } from "./inventory-products"
+import { groupInventory } from "./inventory-products"
 import type { ProductDefaults } from "./product-defaults"
 import { restockRecommendation } from "./restock"
-import type { DemandGap, DemandRow } from "./sales-attribution"
+import type { DemandGap } from "./sales-attribution"
+import type { DemandRow } from "./sales-attribution"
 
 type Catalog = Awaited<ReturnType<Shopify["stock"]>>["rows"]
 type FbaRow = Awaited<ReturnType<Amazon["fbaStock"]>>["rows"][number]

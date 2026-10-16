@@ -1,5 +1,4 @@
-import { useFormatter, useTranslations } from "next-intl"
-import { ClientMessages } from "@/components/client-messages"
+import { useFormatter, useTranslations } from "use-intl"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { Agents } from "./agents"
@@ -11,7 +10,8 @@ import { RestockShot } from "./mockups"
 import { Planner } from "./planner"
 import { Scaled } from "./scaled"
 import { Signup } from "./signup"
-import { JoinWaitlist, lift, lit, quiet, rise, Site, stage } from "./site"
+import { JoinWaitlist, Site } from "./site"
+import { lift, lit, quiet, rise, stage } from "./site-styles"
 import "./stylesheet"
 import { Tilt } from "./tilt"
 
@@ -240,18 +240,7 @@ function Closing() {
 export function Landing() {
   const t = useTranslations("marketing")
   return (
-    <ClientMessages
-      namespaces={[
-        "common.ui",
-        "marketing.film",
-        "marketing.planner",
-        "marketing.journey",
-        "marketing.agentsDiagram",
-        "marketing.connect",
-        "marketing.copyButton",
-        "marketing.signup"
-      ]}
-    >
+    <>
       <Site>
         <main id="main-content">
           <Hero />
@@ -277,6 +266,6 @@ export function Landing() {
           <Closing />
         </main>
       </Site>
-    </ClientMessages>
+    </>
   )
 }

@@ -27,7 +27,9 @@ consumer. Use `cf queues create` and `cf queues consumers create` after checking
 dead-letter queue for each consumer and monitor it, plus `job_signal_failed` application logs. Do not share queues
 between environments or provide these credentials to PR previews.
 
-Set these secrets/settings on both the web and worker services in each environment:
+The web Worker publishes through its invocation-scoped native `JOBS` binding. It has no queue API token. The local
+web emulator suppresses hosted wake signals; its local Node worker uses database polling. Set these secrets/settings
+on the retained Node worker in each deployed environment:
 
 - `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID.
 - `CLOUDFLARE_JOBS_QUEUE_ID`: that environment's queue ID.
@@ -42,7 +44,8 @@ no database credentials and no public HTTP handler. Logs and traces are enabled.
 
 From the repository root, set `COPACKER_ENVIRONMENT`, then run
 `pnpm --filter copacker-scheduler exec cf deploy --dry-run` to validate and `pnpm --filter copacker-scheduler exec cf deploy`
-to deploy. CI uses the repository secret `CLOUDFLARE_API_TOKEN` with Worker deployment and queue binding permissions.
+to deploy. The release workflow deploys it after the retained executor, using the protected environment's
+`CLOUDFLARE_API_TOKEN` with Worker deployment and queue binding permissions.
 Runtime queue credentials should be separate from that deployment token.
 
 ## Acceptance before cutover

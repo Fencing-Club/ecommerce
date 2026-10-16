@@ -16,7 +16,7 @@ const port = Number(process.env.E2E_PORT ?? 3005)
 const ci = Boolean(process.env.CI)
 const local = !deployed && !ci ? await playwrightServer("e2e", fileURLToPath(new URL(".", import.meta.url))) : undefined
 const baseURL = deployed ?? local?.use.baseURL ?? `http://127.0.0.1:${port}`
-if (!deployed && !ci) {
+if (!deployed) {
   Object.assign(process.env, localAppEnvironment(baseURL))
 }
 
@@ -51,7 +51,7 @@ export default defineConfig({
         ...local?.webServer,
         command:
           local?.webServer.command ??
-          `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`,
+          `pnpm exec vite ${process.env.E2E_DEV ? "dev" : "preview"} --host 127.0.0.1 --port ${port} --strictPort --mode e2e`,
         url: `${baseURL}/api/health`,
         reuseExistingServer: false,
         timeout: 180_000,

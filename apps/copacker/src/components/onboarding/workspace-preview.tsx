@@ -1,11 +1,9 @@
-"use client"
-
+import type { LucideIcon } from "lucide-react"
 import {
   BookOpen,
   Box,
   ClipboardList,
   LayoutDashboard,
-  type LucideIcon,
   MapPin,
   PackagePlus,
   Receipt,
@@ -15,10 +13,11 @@ import {
   Users,
   Warehouse
 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
 import { useWatch } from "react-hook-form"
+import { useLocale, useTranslations } from "use-intl"
 import type { Messages } from "@/i18n/messages"
-import { isPosition, positionKeys, type WorkspaceKind } from "@/lib/onboarding"
+import type { WorkspaceKind } from "@/lib/onboarding"
+import { isPosition, positionKeys } from "@/lib/onboarding"
 import { cn } from "@/lib/utils"
 import type { WizardStep } from "./wizard-steps"
 

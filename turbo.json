@@ -8,9 +8,17 @@
       "dependsOn": ["^transit"]
     },
     "build": {
+      "env": [
+        "APP_URL",
+        "APP_COMMIT_SHA",
+        "CLOUDFLARE_HYPERDRIVE_ID",
+        "CLOUDFLARE_DOCUMENTS_BUCKET",
+        "CLOUDFLARE_DOMAINS",
+        "VITE_GOOGLE_MAPS_API_KEY"
+      ],
       "dependsOn": ["^build", "^transit"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", ".cloudflare/output/**"]
     },
     "build-storybook": {
       "dependsOn": ["^build"],

@@ -1,6 +1,7 @@
 import type { Address } from "@repo/aisle"
 import { and, eq, isNull, sql } from "drizzle-orm"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import {
   contacts,
   forwarders,

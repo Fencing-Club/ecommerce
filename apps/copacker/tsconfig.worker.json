@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "cloudflare.config.ts", ".cloudflare/types/index.d.ts"],
+  "exclude": ["node_modules", "src/**/*.stories.tsx", "src/stories/**"],
+  "compilerOptions": { "tsBuildInfoFile": ".cloudflare/worker.tsbuildinfo" }
+}

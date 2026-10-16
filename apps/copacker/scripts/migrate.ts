@@ -1,12 +1,20 @@
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"
-import { Pool } from "pg"
+import { Client } from "pg"
 import { databaseConfig } from "../src/db/connection"
 
-const pool = new Pool(databaseConfig("migration"))
+const client = new Client(databaseConfig("migration"))
+await client.connect()
 try {
-  await migrate(drizzle(pool), { migrationsFolder: "./drizzle" })
-  process.stdout.write("Copacker migrations applied.\n")
+  // One session owns the lock and runs Drizzle, including across its migration transactions.
+  await client.query("SET lock_timeout = '120s'")
+  await client.query("SELECT pg_advisory_lock(843947210, 1)")
+  try {
+    await migrate(drizzle(client), { migrationsFolder: "./drizzle" })
+    process.stdout.write("Copacker migrations applied.\n")
+  } finally {
+    await client.query("SELECT pg_advisory_unlock(843947210, 1)")
+  }
 } finally {
-  await pool.end()
+  await client.end()
 }

@@ -8,7 +8,7 @@ setup and the [docs index](../docs/README.md) for conventions.
 
 - **Lint:** `oxlint` (not eslint) · **Format:** `oxfmt` (not prettier).
 - **Type-check:** `tsc` from the pinned TypeScript 7 native compiler — keep the version aligned across packages.
-- **Test:** Vitest · **Web framework:** Next.js · **Workshop:** Storybook.
+- **Test:** Vitest · **Web framework:** TanStack Start · **Workshop:** Storybook.
 - **Package manager:** pnpm (`>=12`) on Node `>=24`, enforced via root `engines` + `engine-strict`.
 - **Task runner:** Turborepo.
 - oxlint rules live in the shared `@repo/oxlint-config` base; add new rules there so every package benefits.
@@ -85,7 +85,7 @@ needs a human discussion**, not a silent add.
 - Its database holds production data. Change the schema only through a new migration: edit
   `apps/copacker/src/db/schema.ts`, run `pnpm --filter copacker db:generate`, and add the new file's hash to
   `apps/copacker/tests/migrations.test.ts` once it has been deployed. Never edit an existing migration or apply SQL by
-  hand. Deploys run pending migrations (the web service's `predeploy` script) before the web service starts.
+  hand. The serialized release runner applies pending migrations before deploying the web service.
 - Develop against the local Docker database (`pnpm --filter copacker db:up`), never production. Local prototype data is
   disposable; never reset or delete production data unless the user explicitly asks, and keep integration credentials
   and unrelated external configuration when resetting application data unless a full reset is requested.

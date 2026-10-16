@@ -1,7 +1,5 @@
-"use client"
-
 import { useMounted } from "@mantine/hooks"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "use-intl"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 // The ad, played in a dialog, which ./film loads once the page is idle. The film is served from the copacker-media R2

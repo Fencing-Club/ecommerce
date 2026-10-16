@@ -1,12 +1,13 @@
 import addonA11y from "@storybook/addon-a11y"
-import { definePreview } from "@storybook/nextjs-vite"
+import { definePreview } from "@storybook/react-vite"
 import addonMsw from "msw-storybook-addon"
 import { setupWorker } from "msw/browser"
-import { NextIntlClientProvider } from "next-intl"
 import { NuqsTestingAdapter } from "nuqs/adapters/testing"
 import { useEffect } from "react"
 import { configure } from "storybook/test"
 import { INITIAL_VIEWPORTS } from "storybook/viewport"
+import { IntlProvider } from "use-intl"
+import { getStoryRouter } from "#.storybook/router"
 import { AccessProvider } from "@/components/access"
 import { Providers } from "@/components/providers"
 import { direction, localeNames, locales, type Locale } from "@/i18n/locales"
@@ -15,6 +16,7 @@ import { type Permissions } from "@/lib/access"
 import { owner } from "@/stories/workspace"
 import { prepareIntl, storyTimeZone } from "./intl"
 import { handlers } from "./mocks/handlers"
+import { prepareStoryRouter, StoryRouter } from "./router"
 // The app's stylesheet, as AppProviders brings it: the reset first, then Tailwind's layers.
 import "@/styles/global.css"
 import "@/app/globals.css"
@@ -40,36 +42,61 @@ function applyTheme(theme: Theme) {
 
 // What each story renders in: the page's language and direction, the app's providers, the permissions of the person
 // signed in (an owner unless the story's `permissions` parameter says otherwise), and the URL's query, which state kept
-// in the URL reads (`parameters.nextjs.navigation.query`). Each story gets its own, so one story's URL never leaks into
+// in the URL reads (`parameters.router.navigation.query`). Each story gets its own, so one story's URL never leaks into
 // the next.
 function StoryFrame({
   locale,
   messages,
   theme,
   permissions,
+  router,
   query,
   children
 }: {
   locale: Locale
   messages: Messages
   theme: Theme
+  router: Awaited<ReturnType<typeof prepareStoryRouter>>
   permissions: Permissions
   query: Record<string, string>
   children: React.ReactNode
 }) {
   useEffect(() => applyTheme(theme), [theme])
   useEffect(() => {
+    // Document links are real navigation in the app. In a story, record their destination without leaving the test
+    // iframe; the integrated browser separately verifies full document loads and Start transitions.
+    const navigate = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest("a") : null
+      const href = link?.getAttribute("href")
+      if (
+        href?.startsWith("/") &&
+        !href.startsWith("//") &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        !link?.hasAttribute("download")
+      ) {
+        event.preventDefault()
+        getStoryRouter().navigate({ href })
+      }
+    }
+    document.addEventListener("click", navigate, true)
+    return () => document.removeEventListener("click", navigate, true)
+  }, [])
+  useEffect(() => {
     document.documentElement.lang = locale
     document.documentElement.dir = direction(locale)
   }, [locale])
   return (
-    <NextIntlClientProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
+    <IntlProvider locale={locale} messages={messages} timeZone={storyTimeZone}>
       <Providers>
         <NuqsTestingAdapter searchParams={query} hasMemory>
-          <AccessProvider permissions={permissions}>{children}</AccessProvider>
+          <AccessProvider permissions={permissions}>
+            <StoryRouter router={router}>{children}</StoryRouter>
+          </AccessProvider>
         </NuqsTestingAdapter>
       </Providers>
-    </NextIntlClientProvider>
+    </IntlProvider>
   )
 }
 
@@ -108,7 +135,7 @@ export default definePreview({
   initialGlobals: { theme: "light", locale: "en" },
   parameters: {
     layout: "padded",
-    nextjs: { appDirectory: true },
+    router: {},
     viewport: { options: INITIAL_VIEWPORTS },
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
     // Accessibility checks report in the panel and in tests without failing them.
@@ -116,19 +143,25 @@ export default definePreview({
   },
   // The story's language, loaded before it renders, for client components and the mocked server alike.
   loaders: [
-    async ({ globals }) => {
+    async ({ globals, parameters }) => {
       const { locale, messages } = await prepareIntl(globals.locale)
-      return { locale, messages }
+      const storyRouter = await prepareStoryRouter(
+        parameters.router?.navigation?.pathname ?? "/",
+        parameters.router?.navigation?.query ?? {}
+      )
+      return { locale, messages, storyRouter }
     }
   ],
   decorators: [
-    (Story, { globals, loaded, parameters }) => (
+    (Story, { globals, loaded, parameters, id }) => (
       <StoryFrame
+        key={id}
+        router={loaded.storyRouter}
         locale={loaded.locale}
         messages={loaded.messages}
         theme={themes.find((theme) => theme === globals.theme) ?? "light"}
         permissions={parameters.permissions ?? owner}
-        query={parameters.nextjs?.navigation?.query ?? {}}
+        query={parameters.router?.navigation?.query ?? {}}
       >
         <Story />
       </StoryFrame>

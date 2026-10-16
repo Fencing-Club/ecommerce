@@ -1,18 +1,21 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
+import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { CatalogEditor } from "@/components/supplier/catalog-editor"
+import { getStoryRouter } from "#.storybook/router"
 import { can, type Permissions } from "@/lib/access"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { catalogIds, catalogViewer, wholesaleCatalog } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
 // A catalog's page (page.tsx): its form, read-only for someone who can't edit catalogs.
 async function CatalogPage({ data, permissions }: { data: CatalogEditorData; permissions: Permissions }) {
   // A new revision remounts the form with what was saved.
-  return <CatalogEditor key={data.catalog?.revision} data={data} readOnly={!can(permissions, "catalogs", "edit")} />
+  return (
+    <PageView key={data.catalog?.revision} page={{ data: data, readOnly: !can(permissions, "catalogs", "edit") }} />
+  )
 }
 
 const saved = fn()
@@ -32,6 +35,41 @@ const meta = preview.meta({
   }
 })
 
+function CatalogRevision() {
+  const [data, setData] = useState(wholesaleCatalog)
+  return (
+    <>
+      <button
+        onClick={() =>
+          setData({
+            ...wholesaleCatalog,
+            catalog: wholesaleCatalog.catalog && {
+              ...wholesaleCatalog.catalog,
+              revision: wholesaleCatalog.catalog.revision + 1,
+              title: "Updated wholesale catalog"
+            }
+          })
+        }
+      >
+        Load saved revision
+      </button>
+      <PageView page={{ data, readOnly: false }} />
+    </>
+  )
+}
+
+export const SavedRevision = meta.story({
+  ...pageStory(`/catalogs/${catalogIds.wholesale}`, () => <CatalogRevision />, "supplier"),
+  play: async ({ canvas }) => {
+    const title = canvas.getByRole("textbox", { name: /Title/ })
+    await userEvent.clear(title)
+    await userEvent.type(title, "Unsaved title")
+    await userEvent.click(canvas.getByRole("button", { name: "Load saved revision" }))
+    await expect(canvas.getByRole("textbox", { name: /Title/ })).toHaveValue("Updated wholesale catalog")
+    await expect(canvas.queryByRole("region", { name: "Unsaved changes" })).toBeNull()
+  }
+})
+
 export const Default = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Wholesale 2026" })).toBeVisible()
@@ -44,7 +82,7 @@ export const Default = meta.story({
         expect.objectContaining({ id: catalogIds.wholesale, revision: 3, includeNewProducts: false })
       )
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

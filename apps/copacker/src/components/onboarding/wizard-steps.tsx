@@ -1,9 +1,7 @@
-"use client"
-
 import { Factory, Ship, Store } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useController } from "react-hook-form"
 import { objectKeys } from "ts-extras"
+import { useTranslations } from "use-intl"
 import { AddressFields } from "@/components/address-fields"
 import { FormInput } from "@/components/form-controls"
 import { FormSelect } from "@/components/form-select"
@@ -18,7 +16,8 @@ import {
   FieldTitle
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { positionKeys, type WorkspaceKind } from "@/lib/onboarding"
+import type { WorkspaceKind } from "@/lib/onboarding"
+import { positionKeys } from "@/lib/onboarding"
 import { formatPhone } from "@/lib/phone"
 
 // Getting started's steps, in the order they come. Which ones a person sees depends on how they arrived.

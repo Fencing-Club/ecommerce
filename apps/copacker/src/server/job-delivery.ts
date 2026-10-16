@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks"
 import { z } from "zod"
 
 const configuration = z.object({
@@ -8,9 +9,15 @@ const configuration = z.object({
 const envelope = z.object({ success: z.literal(true), result: z.unknown().optional() })
 const messages = z.object({ messages: z.array(z.object({ lease_id: z.string(), body: z.unknown() })) })
 export const jobSignal = z.object({ kind: z.enum(["wake", "reconcile"]) })
+const publisher = new AsyncLocalStorage<(delaySeconds: number) => Promise<void>>()
+
+// Each Worker invocation owns its binding. Node producers and consumers use the scoped HTTP credentials below.
+export function withJobPublisher<T>(publish: (delaySeconds: number) => Promise<void>, run: () => T): T {
+  return publisher.run(publish, run)
+}
 
 export function jobDeliveryConfigured() {
-  return Boolean(process.env.CLOUDFLARE_JOBS_QUEUE_ID)
+  return Boolean(publisher.getStore() || process.env.CLOUDFLARE_JOBS_QUEUE_ID)
 }
 
 async function request(action: string, body: unknown) {
@@ -29,19 +36,26 @@ async function request(action: string, body: unknown) {
     }
   )
   if (!response.ok) {
+    await response.body?.cancel()
     throw new Error(`Job delivery failed (${response.status})`)
   }
   return envelope.parse(await response.json()).result
 }
 
 export async function signalJobs(delaySeconds = 0) {
+  const delay = Math.min(86400, Math.max(0, Math.ceil(delaySeconds)))
+  const publish = publisher.getStore()
+  if (publish) {
+    await publish(delay)
+    return
+  }
   if (!jobDeliveryConfigured()) {
     return
   }
   await request("", {
     body: JSON.stringify({ kind: "wake" }),
     content_type: "text",
-    delay_seconds: Math.min(86400, Math.max(0, Math.ceil(delaySeconds)))
+    delay_seconds: delay
   })
 }
 

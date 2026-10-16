@@ -1,5 +1,3 @@
-"use client"
-
 import { ApiProvider } from "@reduxjs/toolkit/query/react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"

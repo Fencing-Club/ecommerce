@@ -56,7 +56,7 @@ function allows(origin: string, config: NonNullable<ReturnType<typeof relayConfi
       const label = new URL(origin).hostname.slice(0, -".local.copacker.ai".length)
       return (
         /^https:\/\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.local\.copacker\.ai$/.test(origin) &&
-        !["stories", "e2e"].includes(label)
+        !["stories", "e2e", "hooks"].includes(label)
       )
     }
     if (allowed === "https://pr-*.preview.copacker.ai") {

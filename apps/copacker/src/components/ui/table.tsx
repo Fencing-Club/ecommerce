@@ -1,6 +1,4 @@
-"use client"
-
-import * as React from "react"
+import type * as React from "react"
 import { cn } from "@/lib/utils"
 
 // `framed={false}` drops the table's own border, for a table that sits edge to edge inside a card.

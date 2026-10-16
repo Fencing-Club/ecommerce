@@ -1,24 +1,10 @@
 import { money } from "@repo/aisle"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { DangerZone } from "@/components/danger-zone"
-import { ExcludedOrderTags } from "@/components/excluded-order-tags"
-import { IntegrationSection } from "@/components/integration-panel"
-import { Integrations } from "@/components/integrations"
-import { InventoryLocations } from "@/components/inventory-locations"
-import { InventorySyncRow } from "@/components/inventory-sync"
-import { MonthlyCosts } from "@/components/monthly-costs"
-import { ProfileForm } from "@/components/profile-form"
-import { OrdersSyncRow } from "@/components/sales-orders"
-import { SavedAddresses } from "@/components/saved-addresses"
-import { LanguageForm, RestockSettingsForm, SupplierProfileForm, TimeZoneForm } from "@/components/settings-forms"
-import { TeamSettings } from "@/components/team-settings"
-import { Card, CardContent } from "@/components/ui/card"
-import { isLocale, type Locale } from "@/i18n/locales"
+import { type Locale } from "@/i18n/locales"
 import { can, isAdmin, type Permissions } from "@/lib/access"
-import { timeZoneLabel, timeZones } from "@/lib/time-zone"
+import { timeZoneLabel } from "@/lib/time-zone"
 import { monthlyCostChannels, type MonthlyCost } from "@/server/monthly-costs"
 import { restockSettings } from "@/server/restock-report"
 import {
@@ -39,6 +25,7 @@ import {
 } from "@/stories/fixtures/logistics"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner, person, type WorkspaceKind, workspaces } from "@/stories/workspace"
+import PageView from "./page"
 
 type Contact = (typeof buyerContacts)[number] & { supplierId: string | null; forwarderId: string | null }
 
@@ -89,7 +76,7 @@ async function SettingsPage(args: Args) {
   const buyer = kind === "buyer"
   const supplier = kind === "supplier"
   const admin = isAdmin(s)
-  const finances = buyer && can(s, "overview")
+  const finances = buyer && can(s, "overview") && can(s, "prices")
   const restock = restockSettings(org)
   const costs = finances ? args.costs : []
   const currency = finances ? args.currency : "USD"
@@ -106,261 +93,57 @@ async function SettingsPage(args: Args) {
         .filter((location) => location.classification === "merchant")
         .map((location) => ({ id: location.locationId, name: location.name }))
     : []
-  const [t, format, locale] = await Promise.all([getTranslations("settings"), getFormatter(), getLocale()])
+  const [t, format, locale] = await Promise.all([translateStory("settings"), formatStory(), localeStory()])
   const date = (day: string) =>
     format.dateTime(new Date(`${day}T00:00:00Z`), { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
   return (
-    <>
-      <PageHeader title={t("title")} />
-
-      <div className="flex w-full max-w-5xl flex-col divide-y">
-        <Section id="profile" title={t("profile.title")} description={person.email}>
-          <ProfileForm
-            profile={{
-              firstName: saved?.firstName ?? "",
-              lastName: saved?.lastName ?? "",
-              position: saved?.position ?? "",
-              company: saved?.company || org.name,
-              ...(buyer && admin && { website: profile?.website ?? "" })
-            }}
-          />
-        </Section>
-
-        <Section id="language" title={t("language.title")} description={t("language.description")}>
-          <LanguageForm locale={isLocale(saved?.locale) ? saved.locale : null} systemLocale={args.computerLocale} />
-        </Section>
-
-        <Section id="team" title={t("team.title")} description={t("team.description", { workspace: org.name })}>
-          <TeamSettings
-            {...args.team}
-            admin={admin}
-            owner={s.role === "owner"}
-            you={person.id}
-            workspace={org.name}
-            kind={kind}
-          />
-        </Section>
-
-        {buyer && (
-          <Section id="integrations" title={t("integrations.title")} description={t("integrations.description")}>
-            <Integrations
-              amazonAdsAvailable={false}
-              admin={admin}
-              ebayAvailable={args.ebayAvailable}
-              shopify={
-                shopifyAccount
-                  ? { account: shopName ?? shopifyAccount.externalId, externalId: shopifyAccount.externalId }
-                  : null
-              }
-              amazon={
-                amazonAccount
-                  ? {
-                      account: amazon?.name ?? "Amazon",
-                      externalId: amazonAccount.externalId,
-                      marketplaces: amazon?.marketplaces ?? null
-                    }
-                  : null
-              }
-              shopifySettings={
-                <>
-                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <OrdersSyncRow source="shopify" />
-                      <InventorySyncRow provider="shopify" />
-                    </div>
-                  </IntegrationSection>
-                  <IntegrationSection title={t("integrations.panel.preferencesTitle")}>
-                    <div className="divide-y rounded-lg border bg-card">
-                      <InventoryLocations />
-                      <ExcludedOrderTags tags={org.excludedShopifyTags} suggestions={orderTags} copying={copyingTags} />
-                    </div>
-                  </IntegrationSection>
-                </>
-              }
-              ebay={
-                ebayAccount
-                  ? { account: ebayName ?? ebayAccount.externalId, externalId: ebayName ?? ebayAccount.externalId }
-                  : null
-              }
-              ebaySettings={
-                <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <OrdersSyncRow source="ebay" />
-                  </div>
-                </IntegrationSection>
-              }
-              amazonSettings={
-                <>
-                  <IntegrationSection title={t("integrations.panel.syncTitle")}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <OrdersSyncRow source="amazon" />
-                      <InventorySyncRow provider="amazon" />
-                    </div>
-                  </IntegrationSection>
-                </>
-              }
-            />
-          </Section>
-        )}
-
-        {buyer && (
-          <Section id="restock" title={t("restock.title")} description={t("restock.description")}>
-            {admin ? (
-              <RestockSettingsForm salesDays={restock.days} leadTimeDays={restock.leadTimeDays} />
-            ) : (
-              <Values
-                values={[
-                  { label: t("restock.salesPeriod"), value: t("restock.days", { count: restock.days }) },
-                  { label: t("restock.leadTime"), value: t("restock.days", { count: restock.leadTimeDays }) }
-                ]}
-              />
-            )}
-          </Section>
-        )}
-
-        {buyer && (
-          <Section id="time-zone" title={t("timeZone.title")} description={t("timeZone.description")}>
-            {admin ? (
-              <TimeZoneForm
-                timeZone={org.timeZone}
-                computerZone={computerZone}
-                zones={timeZones().map((zone) => ({ value: zone, label: timeZoneLabel(zone) }))}
-              />
-            ) : (
-              <Values
-                values={[
-                  {
-                    label: t("timeZone.label"),
-                    value: org.timeZone
-                      ? timeZoneLabel(org.timeZone)
-                      : t("timeZone.automaticZone", { zone: timeZoneLabel(computerZone) })
-                  }
-                ]}
-              />
-            )}
-          </Section>
-        )}
-
-        {finances && (
-          <Section id="monthly-costs" title={t("monthlyCosts.title")} description={t("monthlyCosts.description")}>
-            <MonthlyCosts
-              costs={costs.map((cost) => ({
-                id: cost.id,
-                name: cost.name,
-                amount: money(cost.amountMinor, cost.currency, locale),
-                details: costDetails(cost, t, date)
-              }))}
-              currency={currency}
-              admin={admin}
-            />
-          </Section>
-        )}
-
-        {supplier && (
-          <Section
-            id="supplier-profile"
-            title={t("supplierProfile.title")}
-            description={t("supplierProfile.description")}
-          >
-            {admin ? (
-              <SupplierProfileForm
-                contactName={profile?.contactName ?? ""}
-                contactEmail={profile?.contactEmail ?? ""}
-                phoneNumber={profile?.phoneNumber ?? ""}
-                website={profile?.website ?? ""}
-              />
-            ) : (
-              <Values
-                values={[
-                  { label: t("supplierProfile.contactName"), value: profile?.contactName || "—" },
-                  { label: t("supplierProfile.contactEmail"), value: profile?.contactEmail || "—" },
-                  { label: t("supplierProfile.phone"), value: profile?.phoneNumber || "—" },
-                  { label: t("supplierProfile.website"), value: profile?.website || "—" }
-                ]}
-              />
-            )}
-          </Section>
-        )}
-
-        <Section
-          id="addresses"
-          title={supplier ? t("addresses.pickupTitle") : t("addresses.title")}
-          description={supplier ? t("addresses.pickupDescription") : t("addresses.description")}
-        >
-          <SavedAddresses
-            contacts={args.saved.filter(
-              (contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId)
-            )}
-            supplier={supplier}
-            locations={ownLocations}
-            admin={admin}
-          />
-        </Section>
-
-        <Section id="delete" title={t("delete.title")} description={t("delete.description")}>
-          <DangerZone
-            workspace={org.name}
-            kind={kind}
-            owner={s.role === "owner"}
-            email={person.email}
-            handOver={args.owned.handOver}
-            closing={args.owned.closing}
-          />
-        </Section>
-      </div>
-    </>
-  )
-}
-
-// page.tsx's own helpers, as it defines them.
-function Section({
-  id,
-  title,
-  description,
-  children
-}: {
-  id: string
-  title: string
-  description: string
-  children: React.ReactNode
-}) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="grid scroll-mt-20 gap-4 py-8 first:pt-0 last:pb-0 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-10"
-    >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h2 id={`${id}-title`} className="font-semibold">
-          {title}
-        </h2>
-        <p className="text-sm break-words text-muted-foreground">{description}</p>
-      </div>
-      <div className="flex min-w-0 flex-col gap-4">{children}</div>
-    </section>
-  )
-}
-
-function Values({ values }: { values: Array<{ label: string; value: string }> }) {
-  return (
-    <Card>
-      <CardContent>
-        <dl className="grid gap-4 sm:grid-cols-2">
-          {values.map(({ label, value }) => (
-            <div key={label} className="flex min-w-0 flex-col gap-1">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="font-medium break-words">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
+    <PageView
+      page={{
+        s: { org: { ...workspaces[kind], ...org }, user: { id: person.id, email: person.email }, role: s.role },
+        computerZone,
+        buyer,
+        supplier,
+        admin,
+        finances,
+        restock,
+        saved: args.saved.filter(
+          (contact) => !contact.supplierId && (contact.kind !== "forwarder" || !contact.forwarderId)
+        ),
+        profile,
+        costs: costs.map((cost) => ({
+          id: cost.id,
+          name: cost.name,
+          amount: money(cost.amountMinor, cost.currency, locale),
+          details: costDetails(cost, t, date)
+        })),
+        currency,
+        team: args.team,
+        shopifyAccount,
+        amazonAccount,
+        ebayAccount,
+        shopName,
+        amazon,
+        ebayName,
+        orderTags,
+        copyingTags,
+        ownLocations,
+        person: saved,
+        owned: {
+          handOver: args.owned.handOver.map((name) => ({ name })),
+          closing: args.owned.closing.map((name) => ({ name }))
+        },
+        computerLocale: args.computerLocale,
+        amazonAdsAvailable: false,
+        amazonSelfAuth: true,
+        ebayAvailable: args.ebayAvailable
+      }}
+    />
   )
 }
 
 function costDetails(
   cost: MonthlyCost,
-  t: Awaited<ReturnType<typeof getTranslations<"settings">>>,
+  t: Awaited<ReturnType<typeof translateStory<"settings">>>,
   date: (day: string) => string
 ) {
   const channel = cost.channel ? monthlyCostChannels[cost.channel] : t("monthlyCosts.allChannels")

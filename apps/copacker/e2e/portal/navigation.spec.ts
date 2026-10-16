@@ -52,6 +52,8 @@ for (const role of ["buyer", "supplier", "forwarder"] as const) {
         await link.click()
         await expect(page).toHaveURL(new RegExp(`${item.path}$`))
         await expect(page.getByRole("heading", { level: 1, name: item.heading, exact: true })).toBeVisible()
+        await expect(page).toHaveTitle(`${item.heading} | Copacker`)
+        await expect(page.locator("head title")).toHaveCount(1)
         await expect(link).toHaveAttribute("data-active", "")
         await expect(sidebar(page).locator("[data-active]")).toHaveCount(1)
       }

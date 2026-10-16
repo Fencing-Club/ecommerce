@@ -5,8 +5,9 @@ import { connections, events, orders, orderProposals, shipments } from "@/db/sch
 import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
 import { accessibleOrder } from "./access"
-import { requireBuyer, type Session } from "./auth"
+import { requireBuyer } from "./authorization"
 import { amazonFor } from "./connections"
+import type { Session } from "./workspace-session"
 
 export async function linkExistingAwd(s: Session, id: string, revision: number, raw: unknown) {
   requireBuyer(s)

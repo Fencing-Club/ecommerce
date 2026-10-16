@@ -1,9 +1,7 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { ChevronDown, Download, Ellipsis, Pencil, SlidersHorizontal, Trash2 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useId, useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { EmptyState, PageHeader } from "@/components/common"
 import {
   AlertDialog,
@@ -46,6 +44,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useMoney } from "@/hooks/use-money"
 import { adjustPrice, type CatalogEntry, catalogPricing } from "@/lib/catalog-pricing"
 import { currencySymbol } from "@/lib/currency"
+import { savedRecord } from "@/lib/response-data"
+import { responseError } from "@/lib/response-data"
 import { cn } from "@/lib/utils"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { moneyText, parseMoney, PricingRulesDialog, useRulesSummary } from "./pricing-controls"
@@ -405,13 +405,13 @@ export function CatalogEditor({
       })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? t("saveFailed"))
+        throw new Error(responseError(result, t("saveFailed")))
       }
       setSaved({ settings, entries })
       if (catalog) {
-        router.refresh()
+        router.invalidate()
       } else {
-        router.replace(`/catalogs/${result.id}`)
+        router.navigate({ href: `/catalogs/${savedRecord.parse(result).id}`, replace: true })
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("saveFailed"))
@@ -428,10 +428,10 @@ export function CatalogEditor({
     const response = await fetch(`/api/catalogs/${catalog.id}`, { method: "DELETE" })
     if (response.ok) {
       setSaved({ settings, entries })
-      router.push("/catalogs")
-      router.refresh()
+      router.navigate({ href: "/catalogs" })
+      router.invalidate()
     } else {
-      setError((await response.json()).error ?? t("deleteFailed"))
+      setError(responseError(await response.json(), t("deleteFailed")))
       setPending(false)
       setConfirmDelete(false)
     }
@@ -912,7 +912,7 @@ export function CatalogEditor({
           error={error}
           onDiscard={() => {
             if (!catalog) {
-              router.push("/catalogs")
+              router.navigate({ href: "/catalogs" })
               return
             }
             setSettings(saved.settings)

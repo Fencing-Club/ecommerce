@@ -1,33 +1,13 @@
-import { Plus } from "lucide-react"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
-import { PageHeader } from "@/components/common"
-import { CatalogIndex } from "@/components/supplier/catalog-index"
-import { Button } from "@/components/ui/button"
 import { can, type Permissions } from "@/lib/access"
 import { catalogRows, catalogViewer } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
 import { owner } from "@/stories/workspace"
+import PageView from "./page"
 
-// The supplier's Catalogs page (page.tsx) with the catalogs the database would return, for someone with these
-// permissions.
-async function CatalogsPage({ catalogs, permissions }: { catalogs: typeof catalogRows; permissions: Permissions }) {
-  const t = await getTranslations("supplier.pages")
-  return (
-    <>
-      <PageHeader title={t("catalogs")}>
-        {catalogs.length > 0 && can(permissions, "catalogs", "edit") && (
-          <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
-            <Plus data-icon="inline-start" />
-            {t("createCatalog")}
-          </Button>
-        )}
-      </PageHeader>
-      <CatalogIndex catalogs={catalogs} />
-    </>
-  )
+function CatalogsPage({ catalogs, permissions }: { catalogs: typeof catalogRows; permissions: Permissions }) {
+  return <PageView page={{ catalogs: catalogs, editable: can(permissions, "catalogs", "edit") }} />
 }
 
 const meta = preview.meta({

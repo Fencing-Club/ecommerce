@@ -1,14 +1,18 @@
-import { type AmazonNetwork, amazonNetworks, prepCategories } from "@repo/aisle"
-import { type CatalogVariant, piecesPerUnit } from "@repo/aisle/shopify"
+import type { AmazonNetwork } from "@repo/aisle"
+import { amazonNetworks, prepCategories } from "@repo/aisle"
+import type { CatalogVariant } from "@repo/aisle/shopify"
+import { piecesPerUnit } from "@repo/aisle/shopify"
 import { and, eq, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, productDefaults, stockSnapshots, suppliers } from "@/db/schema"
-import { type CasePack, casePackSchema } from "@/lib/case-packs"
-import { type ProductLabel, productLabels } from "@/lib/product-label"
-import type { Session } from "./auth"
+import type { CasePack } from "@/lib/case-packs"
+import { casePackSchema } from "@/lib/case-packs"
+import type { ProductLabel } from "@/lib/product-label"
+import { productLabels } from "@/lib/product-label"
 import { StatusError } from "./errors"
 import { refreshStoredStockFields } from "./product-fields"
+import type { Session } from "./workspace-session"
 
 // Buyer-owned product details. Everything else about a product comes from Shopify or Amazon and is edited there.
 export type ProductDefaults = {

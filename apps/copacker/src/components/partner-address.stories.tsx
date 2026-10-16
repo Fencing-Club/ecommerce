@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import {
   type ActionRequest,
@@ -69,7 +69,7 @@ export const EditPickup = meta.story({
       }
     })
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit pickup address" })).toBeNull())
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -85,7 +85,7 @@ export const RemovePickup = meta.story({
         }
       ])
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

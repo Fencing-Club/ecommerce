@@ -4,12 +4,13 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import { requireBuyer, type Session } from "./auth"
+import { requireBuyer } from "./authorization"
 import { amazonFor, connection, shopifyFor } from "./connections"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { amazonSalesMarketplaces } from "./sales-orders"
 import { excludedShopifyTags, hasExcludedTag } from "./shopify-tags"
+import type { Session } from "./workspace-session"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
 export class DemandAccessError extends LocalizedError {}

@@ -1,12 +1,12 @@
 import { http, HttpResponse } from "msw"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { Contact } from "@/components/marketing/contact"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 // The contact page (page.tsx): anyone can write in, signed in or not.
 function ContactPage() {
-  return <Contact />
+  return <PageView />
 }
 
 // What the contact endpoint received.

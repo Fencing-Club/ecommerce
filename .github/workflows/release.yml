@@ -1,0 +1,90 @@
+name: Release Copacker
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      commit:
+        required: true
+        type: string
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.mode }}
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      group: deploy-${{ inputs.mode }}
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_HYPERDRIVE_ID: ${{ vars.CLOUDFLARE_HYPERDRIVE_ID }}
+      CLOUDFLARE_DOCUMENTS_BUCKET: ${{ vars.CLOUDFLARE_DOCUMENTS_BUCKET }}
+      CLOUDFLARE_DOMAINS: ${{ vars.CLOUDFLARE_DOMAINS }}
+      CLOUDFLARE_STORIES_DOMAINS: ${{ vars.CLOUDFLARE_STORIES_DOMAINS }}
+      APP_URL: ${{ vars.APP_URL }}
+      STORIES_URL: ${{ vars.STORIES_URL }}
+      APP_COMMIT_SHA: ${{ inputs.commit }}
+      RELEASE_CUTOVER_READY: ${{ vars.RELEASE_CUTOVER_READY }}
+      DIRECT_DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+      DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+      DATABASE_TLS_SERVER_NAME: ${{ vars.DATABASE_TLS_SERVER_NAME }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_WORKER_TOKEN }}
+      VITE_GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.commit }}
+      - name: Reject an outdated staging release
+        if: inputs.mode == 'staging'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$APP_COMMIT_SHA" != "$latest" ]; then
+            echo "::error::A newer main commit exists; refusing to replace staging with an older release."
+            exit 1
+          fi
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global pnpm@12.10.1 @railway/cli@5.68.0
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare scoped release inputs
+        working-directory: apps/copacker
+        run: |
+          mkdir -p .cloudflare
+          printf '%s' "$WORKER_SECRETS" > .cloudflare/release-secrets.json
+          printf '%s' "$WORKER_SETTINGS" > .cloudflare/release-settings.json
+          chmod 600 .cloudflare/release-secrets.json
+        env:
+          WORKER_SECRETS: ${{ secrets.CLOUDFLARE_WORKER_SECRETS }}
+          WORKER_SETTINGS: ${{ vars.CLOUDFLARE_WORKER_SETTINGS || '{}' }}
+      - name: Build, validate, migrate and deploy
+        working-directory: apps/copacker
+        run: node --import tsx scripts/release.ts "${{ inputs.mode }}" deploy
+        env:
+          CLOUDFLARE_SECRETS_FILE: .cloudflare/release-secrets.json
+          CLOUDFLARE_SETTINGS_FILE: .cloudflare/release-settings.json
+      - name: Deploy retained background executor
+        timeout-minutes: 35
+        run: bash .github/scripts/deploy-worker.sh "$APP_COMMIT_SHA"
+      - name: Deploy background-job scheduler
+        run: pnpm --filter copacker-scheduler exec cf deploy
+        env:
+          COPACKER_ENVIRONMENT: ${{ inputs.mode }}
+      - name: Verify deployed commit
+        working-directory: apps/copacker
+        run: node --import tsx scripts/check-release.ts
+      - run: pnpm --filter copacker exec playwright install --with-deps chromium
+      - name: Signed-out release smoke tests
+        run: pnpm --filter copacker test:e2e --grep @smoke
+        env:
+          E2E_BASE_URL: ${{ vars.APP_URL }}
+      - name: Remove local secret file
+        if: always()
+        working-directory: apps/copacker
+        run: rm -f .cloudflare/release-secrets.json

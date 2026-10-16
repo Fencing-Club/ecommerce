@@ -1,10 +1,10 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type Address, type OrderInput, type PackingDraft, packingSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import type { PackingDraft } from "@repo/aisle"
+import { packingSchema } from "@repo/aisle"
+import { useRouter } from "@tanstack/react-router"
 import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
   FormProvider,
@@ -16,8 +16,10 @@ import {
   useWatch
 } from "react-hook-form"
 import { objectKeys } from "ts-extras"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldGroup, FieldSeparator } from "@/components/ui/field"
@@ -25,7 +27,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { FormError, SubmitButton } from "./actions"
 import { AddressFields, emptyAddress } from "./address-fields"
 import { EmptyState } from "./common"
 import { FormInput, FormMoney, FormNumber, RequiredMark } from "./form-controls"
@@ -284,7 +285,7 @@ export function PackingForm({
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       setServerError(errorMessage(error, t("saveFailed")))
     } finally {
@@ -307,7 +308,7 @@ export function PackingForm({
       )
       setSavedRevision(result.revision)
       setLinkedId(amazonShipmentId)
-      router.refresh()
+      router.invalidate()
     } finally {
       setWorking(null)
     }

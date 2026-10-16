@@ -1,10 +1,9 @@
-"use client"
-
 import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -22,7 +21,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { LocationClassification } from "@/server/inventory-locations"
-import { FormError } from "./actions"
 
 type LocationSetting = {
   locationId: string
@@ -117,7 +115,7 @@ function LocationRow({
 
 function productsLink(chunks: React.ReactNode) {
   return (
-    <Link href="/products" className="underline underline-offset-4 hover:text-foreground">
+    <Link to="/products" className="underline underline-offset-4 hover:text-foreground">
       {chunks}
     </Link>
   )

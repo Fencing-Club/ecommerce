@@ -43,7 +43,7 @@ Portless. Host-only cookies keep worktree sessions separate. Keep the existing e
 - `dev:urls` prints this checkout's URLs; `dev:status` prints active Portless routes. Reuse only the exact checkout/service URL.
 - Never use global process-name kills, `portless clean`, `proxy stop` or `prune` to resolve a single task's conflict.
 - Put worktrees under `D:\system\worktrees\ecommerce\<worktree-name>` and remove owned worktrees after completion.
-- Separate mutable databases, test accounts, S3 prefixes and live provider resources when concurrent work changes
+- Separate mutable databases, test accounts, local R2 state and live provider resources when concurrent work changes
   them. Portless isolates addresses, not data. The default Docker database remains shared unless explicitly separated.
 - Do not copy staging/production queue URLs into local `.env`. Local HTTPS does not make a webhook publicly reachable.
 
@@ -60,9 +60,8 @@ Copacker currently chooses a dedicated E2E process so tests can build and stop i
 A second domain is a convenience, not a Playwright requirement; testing an existing app URL needs no additional hostname.
 
 Local Playwright owns a dedicated `<worktree>.e2e.local.copacker.ai` server and never reuses an existing server. Build it
-with `pnpm --filter copacker build:e2e`, then run `pnpm --filter copacker test:e2e`. `E2E_DEV=1` runs Next development
-mode instead. Both use `.next-e2e`, leaving the interactive `.next` directory alone. Run only one E2E suite per checkout. The test launcher enables Node system CA trust for HTTPS health and API requests.
-`E2E_BASE_URL` remains reserved for an explicitly deployed target. CI keeps its isolated loopback port and normal build.
+with `pnpm --filter copacker build:e2e`, then run `pnpm --filter copacker test:e2e`. `E2E_DEV=1` runs Vite development mode instead. E2E output lives in `e2e/runtime/.cloudflare/output/v0`, with private files under `.cloudflare/state/e2e`; interactive development uses `.cloudflare/state/development`. Run only one E2E suite per checkout. The test launcher enables Node system CA trust for HTTPS health and API requests.
+`E2E_BASE_URL` explicitly selects an existing local or deployed test target. CI keeps its isolated loopback port and E2E build.
 
 ## Acceptance
 
@@ -87,4 +86,4 @@ following the [package guide](https://github.com/AndrewCraswell/buildkit/tree/ma
 The gateway permits configured POST paths only: eBay's GET challenge verification needs a separately configured
 receiver or tunnel that supports that handshake. Set the same `WEBHOOK_BASE_URL` for the app and worker.
 
-Database and storage migration and preview resource isolation remain deferred until the Neon/Cloudflare migration.
+The Start web server uses the Cloudflare local runtime and native R2 emulation. `worker:dev` connects the retained Node executor to that same local bucket through the emulator’s S3 endpoint; local storage credentials are generated in ignored files. Database-provider migration and preview resource isolation remain separate work. See [Cloudflare runtime and releases](cloudflare.md).

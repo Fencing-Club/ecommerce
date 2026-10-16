@@ -3,7 +3,7 @@ export function localAppEnvironment(url: string) {
   return {
     APP_URL: url,
     APP_ALIAS_URLS: "",
-    NEXT_PUBLIC_WORKOS_REDIRECT_URI: `${url}/callback`,
+    WORKOS_REDIRECT_URI: `${url}/callback`,
     WORKOS_COOKIE_DOMAIN: "",
     COPACKER_LOCAL: "1"
   }

@@ -1,4 +1,5 @@
-import { type SQL, sql } from "drizzle-orm"
+import type { SQL } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 
 // Which stored orders count as sales, in one place for the Overview, the Orders page and anything else that adds orders
 // up. `data` is the stored order's JSON column, such as sql`o.data` or the salesOrders table's data column.

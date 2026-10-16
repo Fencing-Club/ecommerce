@@ -1,10 +1,7 @@
-"use client"
-
+import { Link, useRouter } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { useLocale, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
 import { StatusBadge, type StatusTone } from "@/components/common"
 import { Button } from "@/components/ui/button"
@@ -22,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useMoney } from "@/hooks/use-money"
 import { dayDate } from "@/lib/format"
+import { responseError } from "@/lib/response-data"
 import { cn } from "@/lib/utils"
 import type { proposalChanges } from "@/server/order-proposals"
 
@@ -139,10 +137,10 @@ export function ProposalPanel({
         body: JSON.stringify(body)
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? shared("couldNotSave"))
+        throw new Error(responseError(await response.json(), shared("couldNotSave")))
       }
       setDeclining(false)
-      startTransition(() => router.refresh())
+      startTransition(() => router.invalidate())
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : shared("couldNotSave"))
     } finally {
@@ -276,7 +274,11 @@ export function ProposalPanel({
               <Button variant="outline" disabled={busy} onClick={() => void act("withdraw", { action: "withdraw" })}>
                 {pending === "withdraw" ? t("withdrawing") : t("withdraw")}
               </Button>
-              <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}/revise`} />}>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link to="/orders/$id/revise" params={{ id: orderId }} />}
+              >
                 {t("edit")}
               </Button>
             </>

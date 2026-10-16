@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { ProfileForm } from "./profile-form"
 
@@ -73,7 +73,7 @@ export const Owner = meta.story({
     await expect(canvas.getByText("https://", { exact: true })).toBeVisible()
     await expect(website).toHaveValue("harbor.example.com")
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

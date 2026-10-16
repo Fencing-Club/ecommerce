@@ -1,6 +1,4 @@
-"use client"
-
-import { useTranslations } from "next-intl"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"
 import { isPosition, personSchema, positionKeys, positions, websiteSchema } from "@/lib/onboarding"

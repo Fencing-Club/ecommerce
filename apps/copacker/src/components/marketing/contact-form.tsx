@@ -1,15 +1,14 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, Check, Handshake, LifeBuoy, MessageCircle, Newspaper, Presentation, Rocket } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
 import { Controller, FormProvider, useForm } from "react-hook-form"
+import { useTranslations } from "use-intl"
 import type { z } from "zod"
 import { FormInput, FormTextarea } from "@/components/form-controls"
 import { Button } from "@/components/ui/button"
 import { useFormErrorMap } from "@/hooks/use-error-text"
-import { type ContactTopic, contactSchema, contactTopics } from "@/lib/contact"
+import type { ContactTopic } from "@/lib/contact"
+import { contactSchema, contactTopics } from "@/lib/contact"
 import { cn } from "@/lib/utils"
 
 // The contact page's form: what it's about as a set of tiles, then who's writing and the message. Once it's sent, a

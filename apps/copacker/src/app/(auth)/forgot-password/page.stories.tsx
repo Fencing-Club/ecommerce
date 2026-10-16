@@ -1,9 +1,9 @@
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { AuthShell } from "@/components/auth/auth-shell"
-import { ForgotPassword } from "@/components/auth/password-reset"
 import { actionRecorder, errors, failWith, skipAnimations } from "@/stories/fixtures/auth"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 
@@ -12,7 +12,7 @@ const actions = actionRecorder()
 async function ForgotPasswordPage({ email }: { email?: string }) {
   return (
     <AuthShell>
-      <ForgotPassword email={email} />
+      <PageView page={{ kind: "forgot-password", email }} />
     </AuthShell>
   )
 }
@@ -20,7 +20,7 @@ async function ForgotPasswordPage({ email }: { email?: string }) {
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Forgot password",
   ...serverStory(ForgotPasswordPage),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/forgot-password" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/forgot-password" } } },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler())
     return skipAnimations()

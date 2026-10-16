@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError, shipmentId } from "@/stories/fixtures/logistics"
 import { ForwardShipment } from "./forward-shipment"
 
@@ -38,7 +38,7 @@ export const MarkShipped = meta.story({
       ])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

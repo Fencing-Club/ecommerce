@@ -8,7 +8,7 @@ import Setup from "./page"
 const meta = preview.meta({
   title: "Pages/Shared/Setup",
   component: Setup,
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/setup" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/setup" } } },
   beforeEach: skipAnimations
 })
 

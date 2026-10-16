@@ -10,7 +10,8 @@ import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./eb
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
-import { type NotificationQueue, pollQueue } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { pollQueue } from "./sqs"
 
 // The order topics each seller is subscribed to. A confirmed order starts the order sync, which also reads the last
 // 30 days again, so shipments and cancellations arrive with the next order or the daily reconciliation.

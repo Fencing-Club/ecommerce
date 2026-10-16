@@ -1,5 +1,8 @@
-import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
-import { eq, type SQL, sql } from "drizzle-orm"
+import type { AmazonSale } from "@repo/aisle/sales"
+import type { EbaySale } from "@repo/aisle/sales"
+import type { ShopifySale } from "@repo/aisle/sales"
+import type { SQL } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { organizations, salesOrders, salesSyncs } from "@/db/schema"
 

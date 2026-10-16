@@ -116,7 +116,7 @@ export class Ebay {
   private access?: { token: string; expires: number }
   constructor(
     private credentials: EbayCredentials,
-    private transport: typeof fetch = fetch
+    private transport: typeof fetch = fetch.bind(globalThis)
   ) {}
   private async token() {
     if (this.access && this.access.expires > Date.now()) {

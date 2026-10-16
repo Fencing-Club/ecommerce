@@ -18,8 +18,9 @@ import {
   quantityRulesSchema
 } from "@/lib/catalog-pricing"
 import { variantLabel } from "@/lib/supplier-product"
-import { requireSupplier, type Session } from "./auth"
+import { requireSupplier } from "./authorization"
 import { pricingText } from "./text"
+import type { Session } from "./workspace-session"
 
 type Executor = Transaction | ReturnType<typeof db>
 
@@ -101,7 +102,14 @@ export async function catalogEditor(orgId: string, id: string | null) {
   const catalog = id
     ? (
         await db()
-          .select()
+          .select({
+            id: catalogs.id,
+            revision: catalogs.revision,
+            title: catalogs.title,
+            status: catalogs.status,
+            adjustmentBasisPoints: catalogs.adjustmentBasisPoints,
+            includeNewProducts: catalogs.includeNewProducts
+          })
           .from(catalogs)
           .where(and(eq(catalogs.id, id), eq(catalogs.supplierOrgId, orgId)))
       ).at(0)

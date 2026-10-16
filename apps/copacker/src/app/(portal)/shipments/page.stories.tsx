@@ -1,15 +1,6 @@
-import { amazonNetworkNames, type OrderInput } from "@repo/aisle"
-import { AlertTriangle, ExternalLink } from "lucide-react"
-import { getFormatter, getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { type OrderInput } from "@repo/aisle"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
-import { EmptyState, PageHeader, Status } from "@/components/common"
-import { StatCard, StatGrid } from "@/components/stat-card"
-import { TabLinks } from "@/components/tab-links"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { can, type Permissions } from "@/lib/access"
 import type { AmazonShipment } from "@/server/amazon-shipments"
 import {
@@ -21,7 +12,8 @@ import {
 } from "@/stories/fixtures/logistics"
 import { portalPage, serverStory } from "@/stories/server"
 import { member, owner, workspaces } from "@/stories/workspace"
-import { readyDateFormat, shipmentDestinations } from "./destination"
+import { shipmentDestinations } from "./destination"
+import PageView from "./page"
 
 type OrderRow = { order: { id: string; data: OrderInput; buyerOrgId: string }; supplier: { name: string } }
 
@@ -41,20 +33,6 @@ type Args = {
   amazonFails?: boolean
 }
 
-// As page.tsx lays out the list.
-const rowLink =
-  "font-medium outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50 focus-visible:after:ring-inset"
-const columns = {
-  row: "relative @max-md:flex @max-md:items-start @max-md:gap-x-3 @max-md:px-4 @max-md:py-3",
-  shipment: "@max-md:min-w-0 @max-md:flex-1 @max-md:p-0",
-  detail: "text-xs whitespace-normal text-muted-foreground",
-  destination: "hidden @2xl:table-cell",
-  partner: "hidden @3xl:table-cell",
-  partnerInline: "@3xl:hidden",
-  cartons: "text-end tabular-nums @max-md:hidden",
-  ready: "hidden ps-6 tabular-nums @4xl:table-cell",
-  status: "@max-md:p-0"
-}
 const views = [
   { view: undefined, key: "active" },
   { view: "received", key: "received" },
@@ -72,7 +50,6 @@ function stage(status: string) {
 async function ShipmentsPage({ kind, permissions, view, rows, list, customers, amazonShipments, amazonFails }: Args) {
   const current = views.find((tab) => tab.view === view) ?? views[0]
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
-  const [t, format] = await Promise.all([getTranslations("shipments.list"), getFormatter()])
   const isBuyer = kind === "buyer"
   const supplierView = kind === "supplier"
   const destination = await shipmentDestinations(rows.map((row) => row.order.data))
@@ -109,133 +86,29 @@ async function ShipmentsPage({ kind, permissions, view, rows, list, customers, a
     statuses.filter((status) => tab === "all" || stage(status) === tab).length
 
   return (
-    <>
-      <PageHeader title={t("title")} />
-
-      {list.length > 0 && (
-        <StatGrid>
-          <StatCard label={t("stats.packing")} value={count("packing")} />
-          <StatCard
-            label={isBuyer ? t("stats.actionNeeded") : t("stats.waitingOnBuyer")}
-            value={count("approval", "waiting_labels")}
-          />
-          <StatCard label={t("stats.readyForPickup")} value={count("ready")} />
-        </StatGrid>
-      )}
-
-      {amazonFailed && (
-        <Alert>
-          <AlertTriangle />
-          <AlertTitle>{t("amazonFailed.title")}</AlertTitle>
-          <AlertDescription>{t("amazonFailed.description")}</AlertDescription>
-        </Alert>
-      )}
-
-      {list.length > 0 || amazonAll.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          <TabLinks
-            label={t("tabsLabel")}
-            tabs={views.map((tab) => ({
-              label: t(`tabs.${tab.key}`),
-              href: tab.view ? `/shipments?view=${tab.view}` : "/shipments",
-              current: tab === current,
-              count: tabCount(tab.view)
-            }))}
-          />
-          <div className="@container">
-            <Table className="@max-md:block">
-              <TableHeader className="@max-md:hidden">
-                <TableRow>
-                  <TableHead>{t("columns.shipment")}</TableHead>
-                  <TableHead className={columns.partner}>
-                    {isBuyer ? t("columns.supplier") : t("columns.customer")}
-                  </TableHead>
-                  <TableHead className={columns.destination}>{t("columns.destination")}</TableHead>
-                  <TableHead className={columns.cartons}>{t("columns.cartons")}</TableHead>
-                  <TableHead className={columns.ready}>{t("columns.readyDate")}</TableHead>
-                  <TableHead>{t("columns.status")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="@max-md:block">
-                {shown.map(({ shipment, order, partner, number }) => {
-                  const cartons = shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
-                  const ready = shipment.packingDraft?.readyDate || shipment.packing?.readyDate
-                  return (
-                    <TableRow key={shipment.id} className={columns.row}>
-                      <TableCell className={columns.shipment}>
-                        <Link href={`/shipments/${shipment.id}`} className={rowLink}>
-                          {order.data.reference}
-                        </Link>
-                        <p className={columns.detail}>
-                          <span className={columns.partnerInline}>{partner}, </span>
-                          {[t("shipmentNumber", { number }), shipment.amazonShipmentId].filter(Boolean).join(", ")}
-                        </p>
-                      </TableCell>
-                      <TableCell className={columns.partner}>{partner}</TableCell>
-                      <TableCell className={columns.destination}>
-                        {destination(order.data, shipment.amazonNetwork)}
-                      </TableCell>
-                      <TableCell className={columns.cartons}>{cartons || "—"}</TableCell>
-                      <TableCell className={columns.ready}>
-                        {ready ? format.dateTime(new Date(`${ready}T00:00:00Z`), readyDateFormat) : "—"}
-                      </TableCell>
-                      <TableCell className={columns.status}>
-                        <Status status={shipment.status} />
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-                {amazon.map((row) => (
-                  <TableRow key={row.shipmentId} className={columns.row}>
-                    <TableCell className={columns.shipment}>
-                      <a
-                        href={row.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`${rowLink} inline-flex items-center gap-1`}
-                      >
-                        {row.shipmentId}
-                        <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
-                        <span className="sr-only"> {t("opensInSellerCentral")}</span>
-                      </a>
-                      {row.name && <p className={columns.detail}>{row.name}</p>}
-                    </TableCell>
-                    <TableCell className={columns.partner}>—</TableCell>
-                    <TableCell className={columns.destination}>Amazon {amazonNetworkNames[row.network]}</TableCell>
-                    <TableCell className={columns.cartons}>—</TableCell>
-                    <TableCell className={columns.ready}>—</TableCell>
-                    <TableCell className={columns.status}>
-                      <Status status={row.status} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!shown.length && !amazon.length && (
-                  <TableRow className="hover:bg-transparent @max-md:block">
-                    <TableCell
-                      colSpan={6}
-                      className="h-24 text-center text-muted-foreground @max-md:flex @max-md:items-center @max-md:justify-center"
-                    >
-                      {t(`empty.${current.key}`)}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      ) : (
-        <EmptyState
-          title={t("none.title")}
-          description={supplierView ? t("none.supplierDescription") : t("none.buyerDescription")}
-        >
-          {can(permissions, "orders") && (
-            <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
-              {supplierView ? t("none.viewOrders") : t("none.viewPurchaseOrders")}
-            </Button>
-          )}
-        </EmptyState>
-      )}
-    </>
+    <PageView
+      page={{
+        isBuyer,
+        supplierView,
+        seesOrders: can(permissions, "orders"),
+        listCount: list.length,
+        amazonAllCount: amazonAll.length,
+        amazon,
+        amazonFailed,
+        current: current.key,
+        stats: { packing: count("packing"), actionNeeded: count("approval", "waiting_labels"), ready: count("ready") },
+        tabs: views.map((tab) => ({ ...tab, count: tabCount(tab.view) })),
+        shown: shown.map(({ shipment, order, partner, number }) => ({
+          shipment: { id: shipment.id, status: shipment.status, amazonShipmentId: shipment.amazonShipmentId },
+          reference: order.data.reference,
+          partner,
+          number,
+          cartons: shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0,
+          ready: shipment.packingDraft?.readyDate || shipment.packing?.readyDate,
+          destination: destination(order.data, shipment.amazonNetwork)
+        }))
+      }}
+    />
   )
 }
 

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import {
   catalogIds,
   catalogOptions,
@@ -62,7 +62,7 @@ export const AssignCatalog = meta.story({
     ).toBeInTheDocument()
     await userEvent.click(screen.getByRole("option", { name: "Legacy pricing (archived)" }))
     await waitFor(() => expect(assigned).toHaveBeenCalledWith(customerIds.bluebird, { catalogId: catalogIds.legacy }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await expect(rowOf("Bluebird Home").getByRole("combobox")).toHaveTextContent("Legacy pricing (archived)")
   }
 })
@@ -89,7 +89,7 @@ export const AssignFails = meta.story({
     await expect(await rowOf("Harbor Goods").findByText("That catalog was deleted.")).toBeVisible()
     // The customer keeps the catalog it had.
     await expect(rowOf("Harbor Goods").getByRole("combobox")).toHaveTextContent("Wholesale 2026")
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
@@ -118,7 +118,7 @@ export const Search = meta.story({
 export const OpenFromRow = meta.story({
   play: async () => {
     await userEvent.click(rowOf("Summit Outfitters").getByText("1 open"))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/customers/${customerIds.summit}`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/customers/${customerIds.summit}` })
   }
 })
 

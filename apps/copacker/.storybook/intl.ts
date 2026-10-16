@@ -1,3 +1,4 @@
+import { createFormatter, createTranslator, type NamespaceKeys, type NestedKeyOf } from "use-intl"
 import { isLocale, type Locale } from "@/i18n/locales"
 import { english, loadMessages, type Messages } from "@/i18n/messages"
 
@@ -6,7 +7,7 @@ export const storyTimeZone = "America/Los_Angeles"
 
 type Intl = { locale: Locale; messages: Messages; timeZone: string }
 
-// The language the toolbar picked, for the mocked next-intl/server that server components read.
+// The language the toolbar picked, for the mocked #.storybook/intl that server components read.
 let current: Intl = { locale: "en", messages: english, timeZone: storyTimeZone }
 const loading = new Map<Locale, Promise<Messages>>([["en", Promise.resolve(english)]])
 
@@ -25,4 +26,16 @@ export async function prepareIntl(global: unknown) {
 
 export function storyIntl() {
   return current
+}
+
+export async function translateStory<Namespace extends NamespaceKeys<Messages, NestedKeyOf<Messages>> = never>(
+  namespace?: Namespace
+) {
+  return createTranslator({ ...storyIntl(), namespace })
+}
+export async function formatStory() {
+  return createFormatter(storyIntl())
+}
+export async function localeStory() {
+  return storyIntl().locale
 }

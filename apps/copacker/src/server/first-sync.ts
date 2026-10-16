@@ -1,6 +1,6 @@
-import type { Session } from "./auth"
 import { requestSalesSync } from "./sales-orders"
 import { refreshStock, type stockSelection } from "./stock"
+import type { Session } from "./workspace-session"
 
 type Selection = import("zod").infer<typeof stockSelection>
 

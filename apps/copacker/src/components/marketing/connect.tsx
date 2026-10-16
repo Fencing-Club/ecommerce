@@ -1,8 +1,6 @@
-"use client"
-
 import { useClipboard, useInViewport, useReducedMotion } from "@mantine/hooks"
-import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
 import { setups } from "./setups"

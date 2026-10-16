@@ -1,3 +1,13 @@
+vi.mock("@tanstack/react-start/server", () => ({
+  deleteCookie: (name: string) => {
+    remote.cookies.delete(name)
+  }
+}))
+vi.mock("../src/server/auth-session", () => ({
+  clearAuthentication: async () => {
+    remote.cookies.delete("wos-session")
+  }
+}))
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { orderInputSchema } from "@repo/aisle"
@@ -23,10 +33,7 @@ vi.mock("../src/server/workos", () => ({
 }))
 vi.mock("../src/server/storage", () => ({ deleteFile: remote.deleteFile }))
 vi.mock("../src/server/connections", () => ({ disconnect: remote.disconnect }))
-vi.mock("next/headers", () => ({
-  cookies: async () => ({ delete: (name: string) => void remote.cookies.delete(name) })
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+
 import { deleteAccount, deleteWorkspace, ownedWorkspaces } from "../src/server/deletion"
 import { applyMigrations } from "./migrations"
 

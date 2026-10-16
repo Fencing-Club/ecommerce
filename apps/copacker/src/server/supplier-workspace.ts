@@ -1,6 +1,7 @@
 import { orderTotal } from "@repo/aisle"
 import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { db } from "@/db"
+import type { ShipmentState } from "@/db/schema"
 import {
   catalogs,
   organizations,
@@ -9,8 +10,7 @@ import {
   supplierProductGroups,
   supplierProducts,
   supplierProfiles,
-  suppliers,
-  type ShipmentState
+  suppliers
 } from "@/db/schema"
 import { variantLabel } from "@/lib/supplier-product"
 import { supplierCustomers } from "./catalogs"

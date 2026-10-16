@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
-import { type OrderInput, orderInputSchema, orderTotal } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import { orderInputSchema, orderTotal } from "@repo/aisle"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { z } from "zod"
 import { db, type Transaction } from "@/db"
@@ -18,12 +19,13 @@ import { LocalizedError } from "@/i18n/errors"
 import { eventMessage } from "@/lib/timeline-events"
 import { withJobWake } from "@/server/job-delivery"
 import { accessibleOrder } from "./access"
-import { requireBuyer, requireSupplier, type Session } from "./auth"
+import { requireBuyer, requireSupplier } from "./authorization"
 import { customerProducts } from "./catalogs"
 import { shopifyFor } from "./connections"
 import { generateInvoice, generatePo } from "./documents"
 import { checkOrder, prepareOrder } from "./orders"
 import { describeError } from "./stock"
+import type { Session } from "./workspace-session"
 
 export const proposalSchema = z.object({
   lines: z
@@ -115,19 +117,6 @@ export function proposalChanges(order: OrderInput, proposal: ProposalInput) {
         ? { before: order.readyDate ?? null, after: proposal.readyDate }
         : null,
     total: { before: orderTotal(order), after: orderTotal(applied(order, proposal)) + addedTotal }
-  }
-}
-
-// The changes without their prices, for someone who doesn't see them: what's added, removed or changed stays.
-export function unpricedChanges(changes: ReturnType<typeof proposalChanges>): ReturnType<typeof proposalChanges> {
-  return {
-    ...changes,
-    lines: changes.lines.map((line) =>
-      line.change === "removed"
-        ? { ...line, before: { ...line.before, unitPrice: 0 } }
-        : { ...line, before: line.before && { ...line.before, unitPrice: 0 }, after: { ...line.after, unitPrice: 0 } }
-    ),
-    total: { before: 0, after: 0 }
   }
 }
 

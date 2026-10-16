@@ -16,7 +16,7 @@ import { drizzle } from "drizzle-orm/pglite"
 import { PDFDocument, StandardFonts } from "pdf-lib"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const provider = vi.hoisted(() => ({
   amazonFor: vi.fn<(...args: never[]) => Promise<unknown>>(),
@@ -79,12 +79,13 @@ vi.mock("../src/server/product-fields", async (original) => ({
 }))
 const storage = vi.hoisted(() => ({
   putFile: vi.fn<(...args: never[]) => Promise<void>>(),
-  getFile: vi.fn<(...args: never[]) => Promise<Uint8Array>>()
+  getFile: vi.fn<(key: string) => Promise<Uint8Array>>()
 }))
 vi.mock("../src/server/storage", async (original) => ({
   ...(await original<typeof import("../src/server/storage")>()),
   putFile: storage.putFile,
-  getFile: storage.getFile
+  getFile: storage.getFile,
+  readFile: async (key: string) => ({ body: new Response(Buffer.from(await storage.getFile(key))).body! })
 }))
 // Documents are drawn as usual; tests can read the ship-to the purchase order and packing list were given.
 vi.mock("@repo/aisle/documents", async (original) => {
@@ -105,37 +106,8 @@ vi.mock("../src/server/import-trace", async (original) => ({
   ...(await original<typeof import("../src/server/import-trace")>()),
   traceImport: async () => true
 }))
-vi.mock("next/navigation", () => ({
-  notFound: () => {
-    throw new Error("not found")
-  },
-  redirect: () => {
-    throw new Error("redirect")
-  }
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { POST as action } from "../src/app/api/action/route"
-import { GET as downloadDocument } from "../src/app/api/documents/[id]/route"
-import { POST as upload } from "../src/app/api/documents/route"
-import { GET as searchImportCatalog } from "../src/app/api/imports/[id]/catalog/route"
-import {
-  GET as getImport,
-  DELETE as cancelImport,
-  POST as retryImport,
-  PATCH as patchImport
-} from "../src/app/api/imports/[id]/route"
-import { GET as downloadImportSource } from "../src/app/api/imports/[id]/source/route"
-import { POST as uploadImport } from "../src/app/api/imports/route"
-import { POST as readDemand } from "../src/app/api/inventory/demand/route"
-import { GET as readLocations, PATCH as patchLocation } from "../src/app/api/inventory/locations/route"
-import { POST as refreshInventory } from "../src/app/api/inventory/refresh/route"
-import { GET as readInventory } from "../src/app/api/inventory/route"
-import { GET as downloadOrderLabels } from "../src/app/api/orders/[id]/labels/route"
-import { GET as downloadPo } from "../src/app/api/orders/[id]/po/route"
-import { GET as getCoverage } from "../src/app/api/orders/summary/route"
-import { GET as downloadPacket } from "../src/app/api/shipments/[id]/packet/route"
+
 import { accessibleOrder, forwarderOrder, forwarderOrders } from "../src/server/access"
-import { profileFor } from "../src/server/auth"
 import { linkExistingAwd } from "../src/server/awd-link"
 import { checkLinkedAwd } from "../src/server/awd-packing"
 import { generatePo, generateShipmentDocuments, storeDocument } from "../src/server/documents"
@@ -147,6 +119,26 @@ import {
   inviteForwarder,
   saveForwarderAddress
 } from "../src/server/forwarders"
+import { POST as action } from "../src/server/http/api/action"
+import { POST as upload } from "../src/server/http/api/documents"
+import { GET as downloadDocument } from "../src/server/http/api/documents/$id"
+import { POST as uploadImport } from "../src/server/http/api/imports"
+import {
+  GET as getImport,
+  DELETE as cancelImport,
+  POST as retryImport,
+  PATCH as patchImport
+} from "../src/server/http/api/imports/$id"
+import { GET as searchImportCatalog } from "../src/server/http/api/imports/$id/catalog"
+import { GET as downloadImportSource } from "../src/server/http/api/imports/$id/source"
+import { GET as readInventory } from "../src/server/http/api/inventory"
+import { POST as readDemand } from "../src/server/http/api/inventory/demand"
+import { GET as readLocations, PATCH as patchLocation } from "../src/server/http/api/inventory/locations"
+import { POST as refreshInventory } from "../src/server/http/api/inventory/refresh"
+import { GET as downloadOrderLabels } from "../src/server/http/api/orders/$id/labels"
+import { GET as downloadPo } from "../src/server/http/api/orders/$id/po"
+import { GET as getCoverage } from "../src/server/http/api/orders/summary"
+import { GET as downloadPacket } from "../src/server/http/api/shipments/$id/packet"
 import { importJob } from "../src/server/import-job"
 import { importProposalSchema } from "../src/server/import-proposal"
 import { saveImportedOrder } from "../src/server/import-save"
@@ -203,6 +195,7 @@ import { saveSupplierAddress, supplierPickupAddresses } from "../src/server/supp
 import { supplierOverview } from "../src/server/supplier-overview"
 import { syncShopifySuppliers, updateSupplier } from "../src/server/suppliers"
 import { orderWorkflow } from "../src/server/workflow"
+import { profileFor } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 
 const pg = new PGlite(),
@@ -817,7 +810,11 @@ describe("Postgres workflow and authorization", () => {
     }))
   }
   const refreshRequest = () =>
-    new Request("http://localhost/api/inventory/refresh", { method: "POST", body: JSON.stringify({ source: "awd" }) })
+    new Request("http://localhost/api/inventory/refresh", {
+      method: "POST",
+      headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
+      body: JSON.stringify({ source: "awd" })
+    })
 
   const fbaData = {
     source: "fba",
@@ -830,6 +827,7 @@ describe("Postgres workflow and authorization", () => {
     refreshInventory(
       new Request("http://localhost/api/inventory/refresh", {
         method: "POST",
+        headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
         body: JSON.stringify({ source: "fba", marketplaceId: "ATVPDKIKX0DER" })
       })
     )
@@ -871,7 +869,11 @@ describe("Postgres workflow and authorization", () => {
       expect(
         (
           await refreshInventory(
-            new Request("http://localhost/api/inventory/refresh", { method: "POST", body: JSON.stringify(body) })
+            new Request("http://localhost/api/inventory/refresh", {
+              method: "POST",
+              headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
+              body: JSON.stringify(body)
+            })
           )
         ).status
       ).toBe(400)
@@ -932,6 +934,7 @@ describe("Postgres workflow and authorization", () => {
     refreshInventory(
       new Request("http://localhost/api/inventory/refresh", {
         method: "POST",
+        headers: { Origin: process.env.APP_URL ?? "http://localhost:3000" },
         body: JSON.stringify({ source: "shopify" })
       })
     )
@@ -1657,7 +1660,7 @@ describe("Postgres workflow and authorization", () => {
     provider.shopifyFor.mockResolvedValue({
       catalogPage: async () => ({ nodes: [variant], pageInfo: { hasNextPage: true, endCursor: "next" } })
     })
-    const params = { params: Promise.resolve({ id: imported.id }) }
+    const params = { params: { id: imported.id } }
     const request = new Request(`http://localhost/api/imports/${imported.id}/catalog?q=supplier-1`)
     const response = await searchImportCatalog(request, params)
     expect(await response.json()).toEqual({ results: [variant], nextCursor: "next", complete: false })
@@ -1670,7 +1673,7 @@ describe("Postgres workflow and authorization", () => {
   it("rejects stale review edits before catalog access and handles invalid JSON", async () => {
     const imported = await reviewedImport()
     const origin = process.env.APP_URL ?? "http://localhost:3000"
-    const params = { params: Promise.resolve({ id: imported.id }) }
+    const params = { params: { id: imported.id } }
     const request = (body: string) =>
       new Request(`${origin}/api/imports/${imported.id}`, { method: "PATCH", headers: { origin }, body })
     expect(
@@ -1689,7 +1692,7 @@ describe("Postgres workflow and authorization", () => {
         headers: { origin },
         body: JSON.stringify({ revision: 1, proposal: imported.proposal })
       }),
-      { params: Promise.resolve({ id: imported.id }) }
+      { params: { id: imported.id } }
     )
     expect(response.status).toBe(503)
     expect(await response.text()).not.toContain("Private provider diagnostics")
@@ -1708,7 +1711,7 @@ describe("Postgres workflow and authorization", () => {
       filename: "invoice.pdf",
       shopifyDomain: "test.myshopify.com"
     })
-    const params = { params: Promise.resolve({ id }) }
+    const params = { params: { id } }
     const own = await getImport(new Request(`http://localhost/api/imports/${id}`), params)
     expect(own.status).toBe(200)
     expect(await own.json()).not.toHaveProperty("objectKey")
@@ -1727,7 +1730,7 @@ describe("Postgres workflow and authorization", () => {
       status: "failed",
       promptVersion: 1
     })
-    const params = { params: Promise.resolve({ id }) }
+    const params = { params: { id } }
     const origin = process.env.APP_URL ?? "http://localhost:3000"
     const request = () => new Request(`${origin}/api/imports/${id}`, { method: "POST", headers: { origin } })
     expect((await retryImport(request(), params)).status).toBe(202)
@@ -2643,7 +2646,7 @@ describe("document upload and packet release", () => {
   it("downloads the filed purchase order rather than filing another", async () => {
     const filed = await generatePo(orderId)
     storage.getFile.mockResolvedValue(new Uint8Array([4, 5, 6]))
-    const result = await downloadPo(new Request("http://localhost"), { params: Promise.resolve({ id: orderId }) })
+    const result = await downloadPo(new Request("http://localhost"), { params: { id: orderId } })
     expect(result.status).toBe(200)
     expect(new Uint8Array(await result.arrayBuffer())).toEqual(new Uint8Array([4, 5, 6]))
     expect(storage.getFile).toHaveBeenCalledWith(filed.doc.objectKey)
@@ -2652,13 +2655,17 @@ describe("document upload and packet release", () => {
   })
   it("downloads an unchanged authorized document without caching", async () => {
     const prepared = await preparation()
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     storage.getFile.mockResolvedValue(new Uint8Array([1, 2, 3]))
     context.actor = supplier
     const result = await downloadDocument(new Request("http://localhost"), {
-      params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
+      params: { id: prepared.packing.invoiceDocumentId }
     })
     expect(result.status).toBe(200)
     expect(result.headers.get("Cache-Control")).toBe("private, no-store")
@@ -2669,16 +2676,20 @@ describe("document upload and packet release", () => {
     context.actor = actor("buyer", otherId)
     await expect(
       downloadDocument(new Request("http://localhost"), {
-        params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
+        params: { id: prepared.packing.invoiceDocumentId }
       })
     ).rejects.toThrow("not found")
     expect(storage.getFile).not.toHaveBeenCalled()
   })
   it("withholds document bytes when workspace membership is removed during storage access", async () => {
     const prepared = await preparation()
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     context.actor = supplier
     storage.getFile.mockImplementation(async () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, supplier.user.id))
@@ -2686,7 +2697,7 @@ describe("document upload and packet release", () => {
     })
     await expect(
       downloadDocument(new Request("http://localhost"), {
-        params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
+        params: { id: prepared.packing.invoiceDocumentId }
       })
     ).rejects.toThrow("You don’t have access to this workspace")
   })
@@ -2696,8 +2707,7 @@ describe("document upload and packet release", () => {
       .insert(tables.memberships)
       .values({ orgId: buyerId, userId: buyer.user.id, email: buyer.user.email, role: "owner" })
     storage.getFile.mockResolvedValue(new Uint8Array([1, 2, 3]))
-    const request = () =>
-      downloadImportSource(new Request("http://localhost"), { params: Promise.resolve({ id: imported.id }) })
+    const request = () => downloadImportSource(new Request("http://localhost"), { params: { id: imported.id } })
     expect((await request()).status).toBe(200)
     storage.getFile.mockImplementation(async () => {
       await database.delete(tables.memberships).where(eq(tables.memberships.userId, buyer.user.id))
@@ -2715,7 +2725,7 @@ describe("document upload and packet release", () => {
       return new Uint8Array([1])
     })
     const result = await downloadDocument(new Request("http://localhost"), {
-      params: Promise.resolve({ id: prepared.packing.invoiceDocumentId })
+      params: { id: prepared.packing.invoiceDocumentId }
     })
     expect(result.status).toBe(409)
     expect(await result.text()).toContain("Document changed")
@@ -2753,7 +2763,7 @@ describe("document upload and packet release", () => {
       return bytes
     })
     const result = await downloadDocument(new Request("http://localhost"), {
-      params: Promise.resolve({ id: label!.id })
+      params: { id: label!.id }
     })
     expect(result.status).toBe(409)
   })
@@ -2765,7 +2775,7 @@ describe("document upload and packet release", () => {
       .where(eq(tables.shipments.id, prepared.id))
     context.actor = supplier
     const result = await downloadPacket(new Request("http://localhost"), {
-      params: Promise.resolve({ id: prepared.id })
+      params: { id: prepared.id }
     })
     expect(result.status).toBe(409)
     expect(await result.text()).toContain("incomplete")
@@ -2840,11 +2850,14 @@ describe("document upload and packet release", () => {
     pdf.addPage([288, 432])
     const bytes = await pdf.save()
     storage.getFile.mockResolvedValue(bytes)
-    const packet = () =>
-      downloadPacket(new Request("http://localhost"), { params: Promise.resolve({ id: prepared.id }) })
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    const packet = () => downloadPacket(new Request("http://localhost"), { params: { id: prepared.id } })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     // The product label is made from the product now; Shopify has no country of origin for it.
     provider.shopifyFor.mockResolvedValue({ variants: async () => [] })
     const downloaded = await packet()
@@ -2951,9 +2964,13 @@ describe("PO to a released Amazon shipment", () => {
     })
     await database.update(tables.orders).set({ status: "draft", data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     const stored = new Map<string, Uint8Array>()
     storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
       stored.set(key, bytes)
@@ -3067,7 +3084,7 @@ describe("PO to a released Amazon shipment", () => {
     expect(released.shipments[0]).toMatchObject({ status: "ready", packetUrl: `/api/shipments/${shipmentId}/packet` })
     expect(released.documents.every((doc) => doc.downloadUrl)).toBe(true)
     const packet = await downloadPacket(new Request("http://localhost"), {
-      params: Promise.resolve({ id: shipmentId })
+      params: { id: shipmentId }
     })
     expect(packet.status).toBe(200)
     const pages = (await PDFDocument.load(await packet.arrayBuffer())).getPages()
@@ -3079,7 +3096,7 @@ describe("PO to a released Amazon shipment", () => {
     ])
     // The PO's labels download has the product's sheet, then the warning sheet.
     const labels = await downloadOrderLabels(new Request("http://localhost"), {
-      params: Promise.resolve({ id: orderId })
+      params: { id: orderId }
     })
     expect(labels.status).toBe(200)
     const sheets = await PDFDocument.load(await labels.arrayBuffer())
@@ -3098,7 +3115,7 @@ describe("PO to the buyer's own location", () => {
     items: orderData.items.map((item) => ({ ...item, asin: "", fnsku: "", suffocationWarning: true }))
   })
   const stored = new Map<string, Uint8Array>()
-  const packet = (id: string) => downloadPacket(new Request("http://localhost"), { params: Promise.resolve({ id }) })
+  const packet = (id: string) => downloadPacket(new Request("http://localhost"), { params: { id } })
   const pageSizes = async (response: Response) =>
     (await PDFDocument.load(await response.arrayBuffer())).getPages().map((page) => [page.getWidth(), page.getHeight()])
   const letter = [612, 792]
@@ -3119,9 +3136,13 @@ describe("PO to the buyer's own location", () => {
     })
     await database.update(tables.orders).set({ status: "draft", data }).where(eq(tables.orders.id, orderId))
     await database.update(tables.orderRevisions).set({ data }).where(eq(tables.orderRevisions.orderId, orderId))
-    await database
-      .insert(tables.memberships)
-      .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "member" })
+    await database.insert(tables.memberships).values({
+      orgId: supplierId,
+      userId: supplier.user.id,
+      email: supplier.user.email,
+      role: "member",
+      access: { shipments: "view", prices: "view" }
+    })
     stored.clear()
     storage.putFile.mockImplementation(async (key: string, bytes: Uint8Array) => {
       stored.set(key, bytes)
@@ -3589,7 +3610,7 @@ describe("PO to a released FBA shipment", () => {
       .insert(tables.memberships)
       .values({ orgId: buyerId, userId: buyer.user.id, email: buyer.user.email, role: "owner" })
     const packet = await downloadPacket(new Request("http://localhost"), {
-      params: Promise.resolve({ id: shipmentId })
+      params: { id: shipmentId }
     })
     expect(packet.status).toBe(200)
     // Packing list, checklist, two product label sheets, four box labels and four shipping labels.
@@ -3856,7 +3877,7 @@ describe("PO to a released FBA shipment", () => {
       .insert(tables.memberships)
       .values({ orgId: supplierId, userId: supplier.user.id, email: supplier.user.email, role: "owner" })
     const download = await downloadDocument(new Request("http://localhost"), {
-      params: Promise.resolve({ id: copy.id })
+      params: { id: copy.id }
     })
     expect(download.status).toBe(200)
     expect((await PDFDocument.load(await download.arrayBuffer())).getPageCount()).toBe(1)
@@ -4441,7 +4462,7 @@ describe("tenant sales demand reads", () => {
     expect(provider.amazonFor).toHaveBeenCalledWith(buyerId, "A123456789")
   })
   it("rejects tenant overrides, suppliers and invalid request origins", async () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+    vi.stubEnv("APP_URL", "http://localhost:3000")
     const request = (body: unknown, origin = "http://localhost:3000") =>
       new Request("http://localhost:3000/api/inventory/demand", {
         method: "POST",
@@ -4456,7 +4477,7 @@ describe("tenant sales demand reads", () => {
     expect(provider.api.request).not.toHaveBeenCalled()
   })
   it("returns safe errors and private caching rather than provider diagnostics", async () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+    vi.stubEnv("APP_URL", "http://localhost:3000")
     const request = () =>
       new Request("http://localhost:3000/api/inventory/demand", {
         method: "POST",

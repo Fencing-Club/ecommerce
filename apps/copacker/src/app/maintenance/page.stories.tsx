@@ -2,17 +2,17 @@ import { http, HttpResponse } from "msw"
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import NotFound from "@/app/not-found"
-import { Maintenance } from "@/components/maintenance"
 import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 // The maintenance page (page.tsx): it stands in for another page while Copacker is down, which the maintenance
-// header says. Opened directly, it isn't a page, so Next shows the app's not-found page. Its layout's AppProviders
+// header says. Opened directly, its route shows the app's not-found page. AppProviders
 // (messages, theme, data cache) are what every story already renders in.
 async function MaintenancePage({ standingIn }: { standingIn: boolean }) {
   if (!standingIn) {
     return <NotFound />
   }
-  return <Maintenance />
+  return <PageView />
 }
 
 const meta = preview.meta({

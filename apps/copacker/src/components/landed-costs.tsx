@@ -1,11 +1,10 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus, Trash2 } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"
 import { useCan } from "@/components/access"
+import { FormError } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -24,7 +23,7 @@ import { useMoney } from "@/hooks/use-money"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { ActionForm, FormError } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput, FormMoney } from "./form-controls"
 import { FormSelect } from "./form-select"
 import { InfoTip } from "./info-tip"
@@ -157,7 +156,7 @@ function CostRow({
     setError("")
     try {
       await run({ action: "landedCost.delete", data: { id: cost.id } }).unwrap()
-      startRefresh(() => router.refresh())
+      startRefresh(() => router.invalidate())
     } catch (failure) {
       setError(errorMessage(failure))
     }

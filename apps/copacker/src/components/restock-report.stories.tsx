@@ -26,7 +26,7 @@ const lotusGroup = () => screen.findByRole("region", { name: "Lotus Manufacturin
 const meta = preview.meta({
   component: RestockReport,
   args: { settings: { days: 60, leadTimeDays: 60 } },
-  parameters: { nextjs: { navigation: { pathname: "/restock" } } },
+  parameters: { router: { navigation: { pathname: "/restock" } } },
   beforeEach: ({ msw }) => {
     plans = []
     // The page remembers its channel, supplier and sort between visits.
@@ -146,7 +146,7 @@ export const SearchAndSort = meta.story({
 // Opened from an Overview link: a channel, a days-of-cover group and only the items to reorder.
 export const FromOverview = meta.story({
   parameters: {
-    nextjs: {
+    router: {
       navigation: { pathname: "/restock", query: { channel: "shopify:81234", cover: "out", status: "order" } }
     }
   },

@@ -1,9 +1,7 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput, FormMoney } from "./form-controls"
 import { FormSelect } from "./form-select"
 
@@ -82,7 +80,7 @@ function MonthlyCostItem({ cost, admin }: { cost: MonthlyCostRow; admin: boolean
     setError("")
     try {
       await run({ action: "monthlyCost.delete", data: { id: cost.id } }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("removeFailed")))
       setPending(false)

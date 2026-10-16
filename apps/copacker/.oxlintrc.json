@@ -1,4 +1,11 @@
 {
   "extends": ["../../packages/oxlint-config/base.json"],
-  "ignorePatterns": [".next/**", "next-env.d.ts", "drizzle/meta/**", ".storybook/public/**"]
+  "ignorePatterns": [
+    ".next/**",
+    "next-env.d.ts",
+    "drizzle/meta/**",
+    ".storybook/public/**",
+    "**/routeTree.gen.ts",
+    "**/.cloudflare/**"
+  ]
 }

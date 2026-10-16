@@ -10,9 +10,7 @@ import {
   Package,
   TriangleAlert
 } from "lucide-react"
-import { useFormatter, useLocale, useTranslations } from "next-intl"
-import Image from "next/image"
-import Link from "next/link"
+import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Status } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -23,7 +21,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overview"
+import type { AttentionItem } from "@/server/overview"
+import type { Money } from "@/server/overview"
+import type { Overview } from "@/server/overview"
+import type { SetupStep } from "@/server/overview"
 import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"
@@ -93,7 +94,7 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
         variant="ghost"
         size="sm"
         nativeButton={false}
-        render={<Link href={href} />}
+        render={<a href={href}>{children}</a>}
         className="-my-1 -me-2 text-muted-foreground"
       >
         {children}
@@ -154,7 +155,15 @@ export function DeltaPill({ value, title }: { value: number | null; title?: stri
 function Thumbnail({ url }: { url: string | null }) {
   const frame = "size-9 shrink-0 rounded-md bg-muted ring-1 ring-foreground/10"
   return url ? (
-    <Image src={url} alt="" width={36} height={36} unoptimized className={cn(frame, "object-cover")} />
+    <img
+      loading="lazy"
+      decoding="async"
+      src={url}
+      alt=""
+      width={36}
+      height={36}
+      className={cn(frame, "object-cover")}
+    />
   ) : (
     <span className={cn(frame, "flex items-center justify-center text-muted-foreground")} aria-hidden>
       <Package className="size-4" />
@@ -235,14 +244,14 @@ const edgeTable = "[&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-ch
 const tableCard = "@container gap-0 py-0"
 const tableCardHeader = "border-b pt-4"
 
-export function SetupChecklist({ steps }: { steps: SetupStep[] }) {
+export function SetupChecklist({ steps, refresh }: { steps: SetupStep[]; refresh: () => void }) {
   const t = useTranslations("overview.setup")
   const tSync = useTranslations("common.sync")
   const done = steps.filter((step) => step.done).length
   return (
     <Card>
       {/* A first sync ticks its step off when it finishes, so the page reloads while one runs. */}
-      <RefreshWhile active={steps.some((step) => step.syncing)} />
+      <RefreshWhile active={steps.some((step) => step.syncing)} refresh={refresh} />
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
         <CardAction className="text-sm text-muted-foreground tabular-nums">

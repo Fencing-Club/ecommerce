@@ -1,10 +1,8 @@
-"use client"
-
 import { useDebouncedValue } from "@mantine/hooks"
+import { Link } from "@tanstack/react-router"
 import { ChevronLeft, ChevronRight, ShoppingBag, ExternalLink, Repeat, Search } from "lucide-react"
-import { useFormatter, useTranslations } from "next-intl"
-import Link from "next/link"
 import { useState } from "react"
+import { useFormatter, useTranslations } from "use-intl"
 import { useCan, useIsAdmin } from "@/components/access"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
@@ -17,8 +15,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import type { SalesOrderSummary, SalesSource } from "@/server/sales-orders"
-import { IntegrationSyncCard, type IntegrationSyncState } from "./integration-sync-card"
+import type { SalesOrderSummary } from "@/server/sales-orders"
+import type { SalesSource } from "@/server/sales-orders"
+import type { IntegrationSyncState } from "./integration-sync-card"
+import { IntegrationSyncCard } from "./integration-sync-card"
 import { SalesStatus } from "./sales-status"
 import { SyncedAt, SyncProgress } from "./sync-status"
 
@@ -63,7 +63,7 @@ const isSource = (value: unknown): value is SalesSource => value === "shopify" |
 const closedStatuses = new Set(["Cancelled", "Unfulfillable"])
 
 const settingsLink = (chunks: React.ReactNode) => (
-  <Link href="/settings#integrations" className="underline underline-offset-2">
+  <Link to="/settings" hash="integrations" className="underline underline-offset-2">
     {chunks}
   </Link>
 )
@@ -542,7 +542,7 @@ export function SalesOrders({ initialSearch = "" }: { initialSearch?: string }) 
           </EmptyHeader>
           {admin && (
             <EmptyContent>
-              <Button nativeButton={false} render={<Link href="/settings#integrations" />}>
+              <Button nativeButton={false} render={<Link to="/settings" hash="integrations" />}>
                 {t("goToSettings")}
               </Button>
             </EmptyContent>

@@ -2,8 +2,8 @@ import { z } from "zod"
 import { db } from "@/db"
 import { events } from "@/db/schema"
 import { accessibleOrder } from "./access"
-import type { Session } from "./auth"
 import { ownProfile } from "./profile"
+import type { Session } from "./workspace-session"
 
 export const commentInputSchema = z.object({
   orderId: z.uuid(),

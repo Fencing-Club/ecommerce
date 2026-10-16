@@ -1,5 +1,6 @@
-import { createTranslator } from "next-intl"
-import { defaultLocale, isLocale, type Locale } from "./locales"
+import { createTranslator } from "use-intl"
+import type { Locale } from "./locales"
+import { defaultLocale, isLocale } from "./locales"
 import { loadMessages } from "./messages"
 
 // Translations outside a page or route, such as in the worker's jobs and emails, in a person's chosen language (the

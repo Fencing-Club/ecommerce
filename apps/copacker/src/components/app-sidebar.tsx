@@ -1,9 +1,5 @@
-"use client"
-
 import { PanelLeft } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useTranslations } from "use-intl"
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +17,8 @@ import {
 import { navigationFor, navigationGroups } from "@/lib/navigation"
 import { usePermissions } from "./access"
 import { AccountMenu } from "./account-menu"
-import { type Workspace, WorkspaceMenu } from "./workspace-menu"
+import type { Workspace } from "./workspace-menu"
+import { WorkspaceMenu } from "./workspace-menu"
 
 // A page's entry: 34px, its icon muted. The open page, or the list a record belongs to, has a muted fill, a primary
 // marker on its leading edge, and its label and icon in full.
@@ -46,6 +43,7 @@ export function SidebarToggle() {
 }
 
 export type AppSidebarProps = {
+  pathname: string
   kind: string
   // The open workspace, and its name as the session gave it until the workspace list has it.
   active: string
@@ -59,8 +57,7 @@ export type AppSidebarProps = {
 // The workspace switcher, then the workspace kind's pages in their groups, Settings pinned at the bottom, and the
 // signed-in person's account below them. On a computer the sidebar starts under the top bar and collapses to its icons;
 // on a phone it's a sheet over everything.
-export function AppSidebar({ kind, active, name, workspaces, userName, email }: AppSidebarProps) {
-  const pathname = usePathname()
+export function AppSidebar({ pathname, kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
   const t = useTranslations("navigation")
@@ -93,7 +90,13 @@ export function AppSidebar({ kind, active, name, workspaces, userName, email }: 
                         isActive={isActive(item.view)}
                         tooltip={t(`pages.${item.labelKey}`)}
                         className={itemClass}
-                        render={<Link href={`/${item.view}`} onClick={() => setOpenMobile(false)} />}
+                        render={
+                          <a
+                            aria-label={t(`pages.${item.labelKey}`)}
+                            href={`/${item.view}`}
+                            onClick={() => setOpenMobile(false)}
+                          />
+                        }
                       >
                         <item.icon />
                         <span>{t(`pages.${item.labelKey}`)}</span>

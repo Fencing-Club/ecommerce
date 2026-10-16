@@ -1,15 +1,12 @@
-"use client"
-
 import { MailCheck } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"
-import { FormError, SubmitButton } from "@/components/actions"
+import { useTranslations } from "use-intl"
 import { FormInput } from "@/components/form-controls"
+import { FormError, SubmitButton } from "@/components/form-feedback"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
-import { useActionForm } from "@/hooks/useActionForm"
+import { useAuthForm } from "@/hooks/use-auth-form"
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/sign-in"
 import { cn } from "@/lib/utils"
 import { AuthPage, AuthSwitch } from "./auth-shell"
@@ -26,7 +23,7 @@ function strong(chunks: React.ReactNode) {
 export function ForgotPassword({ email = "" }: { email?: string }) {
   const t = useTranslations("auth")
   const [sentTo, setSentTo] = useState<string | null>(null)
-  const { form, submit } = useActionForm({
+  const { form, submit } = useAuthForm({
     schema: forgotPasswordSchema,
     action: "auth.forgotPassword",
     defaultValues: { email },
@@ -52,7 +49,12 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
           strong
         })}
       >
-        <Button variant="outline" className="h-10 w-full" nativeButton={false} render={<Link href="/login" />}>
+        <Button
+          variant="outline"
+          className="h-10 w-full"
+          nativeButton={false}
+          render={<a href="/login" aria-label={t("forgotPassword.backToSignIn")} />}
+        >
           {t("forgotPassword.backToSignIn")}
         </Button>
       </AuthPage>
@@ -89,7 +91,7 @@ export function ForgotPassword({ email = "" }: { email?: string }) {
 // The new password, from the emailed link's token. Saving it signs straight in.
 export function ResetPasswordForm({ token }: { token: string }) {
   const t = useTranslations("auth")
-  const { form, submit } = useActionForm({
+  const { form, submit } = useAuthForm({
     schema: resetPasswordSchema,
     action: "auth.resetPassword",
     defaultValues: { password: "" },

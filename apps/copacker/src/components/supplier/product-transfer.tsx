@@ -1,10 +1,8 @@
-"use client"
-
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import { useRouter } from "next/navigation"
 import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"
+import { useLocale, useTranslations } from "use-intl"
+import { z } from "zod"
 import { useCan } from "@/components/access"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -27,7 +25,7 @@ import { Input } from "@/components/ui/input"
 
 // The Products page's less common actions in one menu, like Shopify's More actions: import, export and the template.
 // `?import=true` opens the import, so the top bar's Create menu can link straight to it.
-export function ProductActions() {
+export function ProductActions({ onImported }: { onImported: () => void }) {
   const [importing, setImporting] = useQueryState("import", parseAsBoolean.withDefault(false))
   // Importing changes products; exporting only reads them, prices included.
   const editable = useCan("products", "edit")
@@ -77,29 +75,38 @@ export function ProductActions() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {editable && <ProductImportDialog open={importing} onOpenChange={(open) => void setImporting(open)} />}
+      {editable && (
+        <ProductImportDialog
+          onImported={onImported}
+          open={importing}
+          onOpenChange={(open) => void setImporting(open)}
+        />
+      )}
     </>
   )
 }
 
-type Preview = {
-  products: number
-  createdProducts: number
-  variants: { created: number; updated: number; unchanged: number }
-  sample: Array<{ handle: string; title: string; variants: number; isNew: boolean }>
-  revisionHash: string
-  fileHash: string
-}
+const count = z.number().int().nonnegative()
+const previewSchema = z.object({
+  products: count,
+  createdProducts: count,
+  variants: z.object({ created: count, updated: count, unchanged: count }),
+  sample: z.array(z.object({ handle: z.string(), title: z.string(), variants: count, isNew: z.boolean() })),
+  revisionHash: z.string(),
+  fileHash: z.string()
+})
+type Preview = z.infer<typeof previewSchema>
 
 // Imports the product template, CSV or Excel: pick a file, check what it will change, then import.
 function ProductImportDialog({
   open,
-  onOpenChange: setOpen
+  onOpenChange: setOpen,
+  onImported
 }: {
+  onImported: () => void
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const router = useRouter()
   const prices = useCan("prices")
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -134,17 +141,26 @@ function ProductImportDialog({
       const response = await fetch("/api/supplier-catalog/import", { method: "POST", body })
       const result = await response.json()
       if (!response.ok) {
-        throw new Error(result.error ?? t("importFailed"))
+        const failure = z.object({ error: z.string() }).safeParse(result)
+        throw new Error(failure.success ? failure.data.error : t("importFailed"))
       }
       if (mode === "preview") {
-        setPreview(result)
+        const parsed = previewSchema.safeParse(result)
+        if (!parsed.success) {
+          throw new Error(t("importFailed"))
+        }
+        setPreview(parsed.data)
         return
       }
-      if (!result.imported) {
+      const committed = z.object({ imported: z.boolean() }).safeParse(result)
+      if (!committed.success) {
+        throw new Error(t("importFailed"))
+      }
+      if (!committed.data.imported) {
         throw new Error(t("alreadyImported"))
       }
       close()
-      router.refresh()
+      onImported()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("importFailed"))
     } finally {

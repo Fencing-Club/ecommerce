@@ -1,5 +1,3 @@
-"use client"
-
 import { useReducedMotion } from "@mantine/hooks"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"

@@ -1,8 +1,6 @@
-"use client"
-
-import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { objectKeys } from "ts-extras"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { FieldSeparator } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"

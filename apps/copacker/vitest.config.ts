@@ -8,12 +8,14 @@ const dirname = fileURLToPath(new URL(".", import.meta.url))
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
+    // Each database suite starts an embedded PostgreSQL instance. Bound concurrency independently of host core count.
+    maxWorkers: 4,
     testTimeout: 30000,
     hookTimeout: 30000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
-      include: ["src/server/**/*.ts", "src/app/api/**/*.ts", "src/components/**/*.tsx"],
+      include: ["src/server/**/*.ts", "src/components/**/*.tsx"],
       exclude: ["src/server/worker.ts", "src/**/*.stories.tsx"]
     },
     projects: [

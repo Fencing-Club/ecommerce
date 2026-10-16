@@ -9,6 +9,11 @@ already stores and reads nothing from Shopify or Amazon directly. `overview()` i
 assembles it, with the sales queries and maths in `overview-sales.ts`. The page renders `components/overview.tsx`, the
 cards in `overview-sections.tsx`, and Recharts charts in `overview-charts.tsx`.
 
+`server/overview-page.ts` checks page and price access and prepares the rendering data. It filters attention links and
+admin setup on the server, retains the workspace's reporting settings, and passes no session or organization records
+to the view. `components/overview-page.tsx` renders both workspace kinds synchronously; the page and its stories use
+that same component. This data/rendering split prepares the page for the Start loader conversion.
+
 ## Days, channels and freshness
 
 - **Time zone.** Days and months follow the store's time zone: the one chosen in Settings (`organizations.timeZone`),

@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import type { StorybookConfig } from "@storybook/nextjs-vite"
+import type { StorybookConfig } from "@storybook/react-vite"
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin"
 import { mergeConfig } from "vite"
 
@@ -12,21 +12,34 @@ const localHost =
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.tsx"],
   addons: ["@storybook/addon-vitest", "@storybook/addon-a11y"],
-  framework: { name: "@storybook/nextjs-vite", options: { nextConfigPath: "../next.config.ts" } },
+  framework: { name: "@storybook/react-vite", options: { builder: { viteConfigPath: ".storybook/vite.config.ts" } } },
   core: { disableTelemetry: true, ...(localHost && { allowedHosts: [localHost] }) },
   // The mock service worker lives with Storybook, so the app never serves it.
   staticDirs: ["../public", "./public"],
-  viteFinal: (vite) =>
-    mergeConfig(vite, {
-      ...(localHost && { server: { allowedHosts: [localHost] } }),
+  viteFinal: (vite) => {
+    const hmr = vite.server?.hmr
+    return mergeConfig(vite, {
+      server: {
+        ...(localHost && { allowedHosts: [localHost] }),
+        // Storybook supplies its HTTP server through the older HMR options. Pass it to Vite 8's WebSocket options
+        // explicitly so concurrent worktrees share their own HTTP port instead of competing for Vite's default port.
+        ...(typeof hmr === "object" &&
+          hmr.server && {
+            ws: {
+              server: hmr.server,
+              port: hmr.port,
+              ...(localHost && { host: localHost, protocol: "wss", clientPort: 443 })
+            }
+          })
+      },
       plugins: [vanillaExtractPlugin()],
       resolve: {
         // The server's side of what server components use: messages from the story's language, a database that
-        // answers with each story's rows, and ClientMessages, which the marketing pages render inside sync components.
+        // answers with each story's rows. Components use the story's real locale and router providers.
         alias: [
-          { find: /^next-intl\/server$/, replacement: mock("next-intl-server.ts") },
+          { find: /^@\/lib\/auth-navigation$/, replacement: mock("auth-navigation.ts") },
+          { find: /^@\/server\/localization$/, replacement: mock("localization.ts") },
           { find: /^@\/db$/, replacement: mock("db.ts") },
-          { find: /^@\/components\/client-messages$/, replacement: mock("client-messages.ts") },
           // vanilla-extract compiles .css.ts files apart from the app's modules, without the tsconfig paths.
           { find: /^@\//, replacement: fileURLToPath(new URL("../src/", import.meta.url)) }
         ]
@@ -42,6 +55,7 @@ const config: StorybookConfig = {
         ]
       }
     })
+  }
 }
 
 export default config

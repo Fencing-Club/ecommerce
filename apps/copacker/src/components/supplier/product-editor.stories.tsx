@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { productCatalogs, toteProduct } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
 import { ProductEditor } from "./product-editor"
@@ -110,7 +110,7 @@ export const EditAndSave = meta.story({
       quantityRules: { increment: 1, minimum: 1, maximum: null },
       notes: null
     })
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await waitFor(() => expect(screen.queryByRole("region", { name: "Unsaved changes" })).toBeNull())
   }
 })
@@ -303,7 +303,9 @@ export const New = meta.story({
     await expect(body.variants).toEqual([
       expect.objectContaining({ supplierSku: "LM-BASKET", priceMinor: 1450, options: {}, notes: null })
     ])
-    await waitFor(() => expect(getRouter().replace).toHaveBeenCalledWith(`/products/${newId}`))
+    await waitFor(() =>
+      expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/products/${newId}`, replace: true })
+    )
   }
 })
 
@@ -311,7 +313,7 @@ export const NewDiscard = meta.story({
   args: { initial: undefined },
   play: async () => {
     await userEvent.click(saveBar().getByRole("button", { name: "Discard" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/products")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/products" })
   }
 })
 

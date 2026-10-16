@@ -1,6 +1,7 @@
-import { ArrowRight, Hourglass, LoaderCircle, TriangleAlert, type LucideIcon } from "lucide-react"
-import { useTranslations } from "next-intl"
+import type { LucideIcon } from "lucide-react"
+import { ArrowRight, Hourglass, LoaderCircle, TriangleAlert } from "lucide-react"
 import { useId } from "react"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 
 // What moves a purchase order, shipment, leg or combined shipment on, told from the viewer's side: the viewer's own next

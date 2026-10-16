@@ -1,8 +1,5 @@
-"use client"
-
 import { Menu } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"
 import { useSidebar } from "@/components/ui/sidebar"
 import { CreateMenu } from "./create-menu"
@@ -11,6 +8,7 @@ import { SearchCommand } from "./search-command"
 
 export type TopBarProps = {
   kind: string
+  navigate: (href: string) => void
 }
 
 // The bar across the top of every portal page: Copacker's mark and name, search in the middle, then Create and the
@@ -19,7 +17,7 @@ export type TopBarProps = {
 // sidebar and the person's account at its bottom; on a computer the sidebar's toggle is in the page's corner. On a phone
 // the bar starts with the menu button that opens the sidebar as a sheet, and Create isn't shown since each list's own
 // action covers it.
-export function TopBar({ kind }: TopBarProps) {
+export function TopBar({ kind, navigate }: TopBarProps) {
   const t = useTranslations("common.ui")
   const { toggleSidebar } = useSidebar()
   return (
@@ -33,16 +31,16 @@ export function TopBar({ kind }: TopBarProps) {
         >
           <Menu className="size-5" aria-hidden />
         </button>
-        <Link
+        <a
           href="/"
           className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-[15px] font-semibold tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:gap-2.5 md:px-2 md:text-sm"
         >
           <CopackerMark className="size-6 rounded-[6px] md:size-7 md:rounded-[7px] [&>svg]:size-3.5 md:[&>svg]:size-4" />
           Copacker
-        </Link>
+        </a>
       </div>
       <div className="md:w-full">
-        <SearchCommand kind={kind} />
+        <SearchCommand kind={kind} navigate={navigate} />
       </div>
       <div className="flex items-center justify-end gap-2 max-md:gap-0">
         <span className="max-md:hidden">

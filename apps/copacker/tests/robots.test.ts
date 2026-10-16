@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import robots from "../src/app/robots"
+import robots from "../src/server/robots"
 
 beforeEach(() => {
   vi.stubEnv("APP_URL", "https://copacker.ai")
@@ -26,7 +26,7 @@ describe("robots.txt", () => {
 
   it("keeps the marketing pages, sign-in, sign-up and the site's assets open", () => {
     const { closed } = rule()
-    const open = ["/", "/contact", "/privacy", "/terms", "/login", "/signup", "/marketing/og.jpg", "/_next/static/x.js"]
+    const open = ["/", "/contact", "/privacy", "/terms", "/login", "/signup", "/marketing/og.jpg", "/assets/entry.js"]
     expect(open.filter(closed)).toEqual([])
   })
 

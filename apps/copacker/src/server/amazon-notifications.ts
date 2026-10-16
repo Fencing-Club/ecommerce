@@ -8,7 +8,8 @@ import { withJobWake } from "@/server/job-delivery"
 import { amazonApp, amazonFor } from "./connections"
 import { PollAgain } from "./job-handlers"
 import { amazonDataVersion, amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
-import { type NotificationQueue, pollQueue, queueArn } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { pollQueue, queueArn } from "./sqs"
 import { refreshStock } from "./stock"
 
 // Amazon sends notifications to an SQS queue (it has no HTTPS webhooks). Order changes update the stored orders by

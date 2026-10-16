@@ -1,14 +1,17 @@
 import { randomUUID } from "node:crypto"
-import { type Address, addressSchema } from "@repo/aisle"
-import { type AnyColumn, and, eq, inArray, isNull, sql } from "drizzle-orm"
+import type { Address } from "@repo/aisle"
+import { addressSchema } from "@repo/aisle"
+import type { AnyColumn } from "drizzle-orm"
+import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { contacts, forwarders, jobs, memberships, orderRevisions, orders, organizations, shipments } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"
 import { withJobWake } from "@/server/job-delivery"
+import { requestLocale } from "@/server/localization"
 import { hash, token } from "./security"
-import { requestLocale } from "./text"
 
 const week = 7 * 86400000
 

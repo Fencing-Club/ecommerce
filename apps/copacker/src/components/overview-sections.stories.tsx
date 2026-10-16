@@ -1,4 +1,4 @@
-import { expect, screen, userEvent, within } from "storybook/test"
+import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { buyerOverview, setupSteps } from "@/stories/fixtures/overview"
 import { member } from "@/stories/workspace"
@@ -61,7 +61,7 @@ export const AttentionForMember = meta.story({
 })
 
 export const Setup = meta.story({
-  render: () => <SetupChecklist steps={setupSteps} />,
+  render: () => <SetupChecklist steps={setupSteps} refresh={fn()} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Finish setting up")).toBeVisible()
     await expect(canvas.getByText("1 of 4 done")).toBeVisible()

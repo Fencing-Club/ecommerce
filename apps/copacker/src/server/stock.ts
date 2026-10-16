@@ -7,13 +7,13 @@ import { db } from "@/db"
 import { connections, jobs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { withJobWake } from "@/server/job-delivery"
-import type { Session } from "./auth"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
 import { PollAgain } from "./job-handlers"
 import { copyShopifyFields, fillStockRows } from "./product-fields"
 import { recordStockDays } from "./stock-days"
+import type { Session } from "./workspace-session"
 
 export const stockSource = z.enum(["awd", "shopify", "fba"])
 export const stockScopes = {

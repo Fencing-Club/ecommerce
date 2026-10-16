@@ -1,45 +1,25 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect, userEvent, waitFor } from "storybook/test"
+import { finishSignIn } from "#.storybook/mocks/auth-navigation"
 import preview from "#.storybook/preview"
-import { AuthPage, AuthShell } from "@/components/auth/auth-shell"
-import { ResetPasswordForm } from "@/components/auth/password-reset"
-import { Button } from "@/components/ui/button"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { actionRecorder, errors, failWith, redirectTo, skipAnimations } from "@/stories/fixtures/auth"
-import { serverStory } from "@/stories/server"
+import PageView from "./page"
 
 const actions = actionRecorder()
 const token = "reset_9fK2mQ7xLp3Zt8Wn"
 
-// The reset-password page (page.tsx) in the auth layout, with the emailed link's `token`. The layout's AppProviders
-// is the story frame's own providers.
-async function ResetPassword({ token }: { token?: string }) {
-  const t = await getTranslations("auth.resetPassword")
-  if (!token) {
-    return (
-      <AuthShell>
-        <AuthPage title={t("incompleteTitle")} description={t("incompleteDescription")}>
-          <Button className="h-10 w-full" nativeButton={false} render={<Link href="/forgot-password" />}>
-            {t("sendNewLink")}
-          </Button>
-        </AuthPage>
-      </AuthShell>
-    )
-  }
+function ResetPassword({ token }: { token?: string }) {
   return (
     <AuthShell>
-      <AuthPage title={t("title")}>
-        <ResetPasswordForm token={token} />
-      </AuthPage>
+      <PageView page={{ kind: "reset-password", token }} />
     </AuthShell>
   )
 }
 
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Reset password",
-  ...serverStory(ResetPassword),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/reset-password" } } },
+  component: ResetPassword,
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/reset-password" } } },
   args: { token },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/")))
@@ -53,7 +33,7 @@ export const Default = meta.story({
     await userEvent.type(canvas.getByLabelText("New password"), "a brand new password")
     await userEvent.click(canvas.getByRole("button", { name: "Save and sign in" }))
     // Saving signs straight in.
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/"))
+    await waitFor(() => expect(finishSignIn).toHaveBeenCalledWith("/"))
     await expect(actions.sent).toEqual([
       { action: "auth.resetPassword", data: { password: "a brand new password", token } }
     ])

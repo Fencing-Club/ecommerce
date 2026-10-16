@@ -27,10 +27,11 @@ its existing direct callback. Partial or invalid relay configuration fails close
 
 Register `https://local.copacker.ai` explicitly for the primary checkout.
 The two supported patterns are `https://*.local.copacker.ai` (normalized worktree folder labels; excludes the reserved
-`stories` and `e2e` service labels) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
-is a reserved option for future Cloudflare app-preview hosting, not a provisioned DNS namespace. Never use
-`*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. PRs currently receive isolated Neon
-database branches only; they do not host an app or participate in the Ads relay. See [Neon previews](neon.md).
+`stories`, `e2e`, and `hooks` service labels) and `https://pr-*.preview.copacker.ai` (only positive numeric PR labels). The latter
+is a reserved option for future app-preview hosting, not a provisioned DNS namespace. Railway-generated app preview
+origins can instead be enrolled as exact origins by trusted deployment automation and removed on teardown. Never use
+`*.up.railway.app`, give secrets to fork PRs, or add static Storybook previews. Current PR previews are Storybook-only;
+data-backed app previews remain deferred until isolated database/storage provisioning exists.
 
 Amazon sees one fixed callback. The originating app stores a hash of a signed ticket with its exact HTTPS origin,
 nonce, callback and ten-minute expiry. Staging verifies its signature, expiry and destination allowlist before

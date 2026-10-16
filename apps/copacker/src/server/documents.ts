@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto"
-import type { Address, OrderInput, Packing } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import type { Packing } from "@repo/aisle"
 import { purchaseOrderPdf, packingListPdf, checklistPdf, commercialInvoicePdf } from "@repo/aisle/documents"
 import { destinationName } from "@repo/aisle/requirements"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import invariant from "tiny-invariant"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import {
   contacts,
   documents,

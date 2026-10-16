@@ -1,14 +1,15 @@
 import type { OrderInput } from "@repo/aisle"
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
-import { OrderReviser, type ReviserProduct } from "@/components/supplier/order-reviser"
+import { getStoryRouter } from "#.storybook/router"
+import { type ReviserProduct } from "@/components/supplier/order-reviser"
 import type { Proposal } from "@/db/schema"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
 import { reviserProducts } from "@/stories/fixtures/supplier"
 import { pageStory } from "@/stories/server"
+import PageView from "./page"
 
 const orderId = "5e9b2d71-4b3e-4f5a-8c6d-000000000001"
 
@@ -24,7 +25,7 @@ type Args = {
 
 // The supplier's Edit order page (page.tsx) for a sent purchase order, from what the database would return.
 async function ReviseOrderPage({ order, latest, customer, products }: Args) {
-  const t = await getTranslations("orders.revise")
+  const t = await translateStory("orders.revise")
   const id = orderId
   const { data } = order
   // A pending proposal is edited from where the supplier left it: its lines, terms, ready date and note.
@@ -70,22 +71,22 @@ async function ReviseOrderPage({ order, latest, customer, products }: Args) {
     : []
   const current = { paymentTerms: data.paymentTerms, readyDate: data.readyDate ?? null }
   return (
-    <OrderReviser
-      orderId={id}
-      revision={order.revision}
-      reference={data.reference}
-      customer={customer ?? t("yourCustomer")}
-      currency={data.currency}
-      items={[...items, ...removed]}
-      subtotal={data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)}
-      current={current}
-      terms={
-        proposal
+    <PageView
+      page={{
+        orderId: id,
+        revision: order.revision,
+        reference: data.reference,
+        customer: customer ?? t("yourCustomer"),
+        currency: data.currency,
+        items: [...items, ...removed],
+        subtotal: data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0),
+        current: current,
+        terms: proposal
           ? { paymentTerms: proposal.paymentTerms, readyDate: proposal.readyDate, note: proposal.note }
-          : { ...current, note: "" }
-      }
-      proposalPending={proposal !== null}
-      products={products}
+          : { ...current, note: "" },
+        proposalPending: proposal !== null,
+        products: products
+      }}
     />
   )
 }
@@ -135,7 +136,7 @@ export const Default = meta.story({
         readyDate: null
       }
     })
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
   }
 })
 

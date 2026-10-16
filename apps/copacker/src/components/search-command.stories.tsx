@@ -1,4 +1,3 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
@@ -11,7 +10,7 @@ const salesSearched = fn<(query: string | null) => void>()
 
 const meta = preview.meta({
   component: SearchCommand,
-  args: { kind: "buyer" },
+  args: { kind: "buyer", navigate: fn() },
   decorators: [(Story) => <div className="mx-auto max-w-xl">{Story()}</div>],
   beforeEach: ({ msw }) => {
     salesSearched.mockClear()
@@ -41,7 +40,7 @@ function groupNames(panel: HTMLElement, group: string) {
 
 // Before anything is typed: the pages, and the newest purchase orders.
 export const Open = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const trigger = canvas.getByRole("button", { name: "Search" })
     await expect(trigger).toHaveAttribute("aria-keyshortcuts", "Control+K")
     const panel = await openSearch(canvas)
@@ -64,7 +63,7 @@ export const Open = meta.story({
     // The first result is highlighted, and Enter opens it.
     await expect(within(panel).getByRole("option", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
     await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}")
-    await expect(getRouter().push).toHaveBeenCalledWith("/products")
+    await expect(args.navigate).toHaveBeenCalledWith("/products")
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   }
 })
@@ -86,7 +85,7 @@ export const KeyboardShortcut = meta.story({
 
 // Typing matches purchase orders, shipments, products and partners, each best first.
 export const FindPartner = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const panel = await openSearch(canvas)
     await userEvent.type(within(panel).getByRole("combobox"), "lotus")
     const partners = await within(panel).findByRole("group", { name: "Partners" })
@@ -103,12 +102,12 @@ export const FindPartner = meta.story({
     await waitFor(() => expect(within(panel).queryByRole("progressbar")).toBeNull())
     await expect(within(panel).queryByRole("group", { name: "Sales orders" })).toBeNull()
     await userEvent.click(within(partners).getByRole("option", { name: /Lotus Manufacturing/ }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/partners?q=Lotus%20Manufacturing")
+    await expect(args.navigate).toHaveBeenCalledWith("/partners?q=Lotus%20Manufacturing")
   }
 })
 
 export const FindShipment = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const panel = await openSearch(canvas)
     await userEvent.type(within(panel).getByRole("combobox"), "FBA17")
     const shipments = await within(panel).findByRole("group", { name: "Shipments" })
@@ -116,24 +115,24 @@ export const FindShipment = meta.story({
     // The purchase order with that Amazon shipment matches too.
     await expect(groupNames(panel, "Purchase orders")).toEqual(["PO-1045Lotus ManufacturingWith supplier"])
     await userEvent.click(within(shipments).getByRole("option", { name: /FBA17XK2Q9LP/ }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/shipments/shipment-1")
+    await expect(args.navigate).toHaveBeenCalledWith("/shipments/shipment-1")
   }
 })
 
 export const FindProduct = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const panel = await openSearch(canvas)
     // A variation's SKU finds its product.
     await userEvent.type(within(panel).getByRole("combobox"), "APRON-001")
     const products = await within(panel).findByRole("group", { name: "Products" })
     await userEvent.click(within(products).getByRole("option", { name: "Linen apron" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/products?q=Linen%20apron")
+    await expect(args.navigate).toHaveBeenCalledWith("/products?q=Linen%20apron")
   }
 })
 
 // Sales orders are searched on the server once typing pauses.
 export const FindSalesOrder = meta.story({
-  play: async ({ canvas }) => {
+  play: async ({ canvas, args }) => {
     const panel = await openSearch(canvas)
     await userEvent.type(within(panel).getByRole("combobox"), "#10")
     const orders = await within(panel).findByRole("group", { name: "Sales orders" })
@@ -146,7 +145,7 @@ export const FindSalesOrder = meta.story({
         .map((option) => option.textContent)
     ).toEqual(["#1042Online StoreFulfilled", "#1017Online StoreUnfulfilled"])
     await userEvent.click(within(orders).getByRole("option", { name: /#1017/ }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/sales?q=%231017")
+    await expect(args.navigate).toHaveBeenCalledWith("/sales?q=%231017")
   }
 })
 

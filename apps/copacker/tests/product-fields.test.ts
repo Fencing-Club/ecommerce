@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import * as tables from "../src/db/schema"
-import type { Session } from "../src/server/auth"
+import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ current: null as unknown, actor: null as Session | null }))
 vi.mock("@/db", () => ({ db: () => context.current }))
@@ -13,9 +13,8 @@ vi.mock("../src/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => context.actor
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 
-import { PATCH } from "../src/app/api/inventory/variant-fields/route"
+import { PATCH } from "../src/server/http/api/inventory/variant-fields"
 import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"

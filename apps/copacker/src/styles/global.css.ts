@@ -1,4 +1,5 @@
-import { type GlobalStyleRule, globalLayer, globalStyle as unlayeredGlobalStyle } from "@vanilla-extract/css"
+import type { GlobalStyleRule } from "@vanilla-extract/css"
+import { globalLayer, globalStyle as unlayeredGlobalStyle } from "@vanilla-extract/css"
 import { vars } from "./theme.css"
 
 // The reset sits in a layer, so everything unlayered (page styles and sx utilities) overrides it. This file is imported

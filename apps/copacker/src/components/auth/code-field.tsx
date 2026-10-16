@@ -1,5 +1,4 @@
-"use client"
-
+import { useMounted } from "@mantine/hooks"
 import { useId, useState } from "react"
 import { useController } from "react-hook-form"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -24,6 +23,8 @@ export function CodeField({
   onComplete: (code: string) => void
 }) {
   const id = useId()
+  // SSR displays the field before its automatic-submit handler is attached. Keep early typing from being lost.
+  const mounted = useMounted()
   const [focused, setFocused] = useState(false)
   const {
     field: { ref, value: fieldValue, onChange, onBlur, name: fieldName },
@@ -65,6 +66,7 @@ export function CodeField({
           id={id}
           ref={ref}
           name={fieldName}
+          disabled={!mounted}
           value={value}
           // No maxLength: the browser would cut pasted text to six characters before its digits are picked out. A
           // digit typed into a full code is turned away instead, as maxLength would.

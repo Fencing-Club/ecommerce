@@ -1,7 +1,11 @@
 # Neon database operations and PR previews
 
-Copacker keeps its Node web service, worker, and private documents on Railway. PostgreSQL lives in the existing
-Neon project `Copacker` (`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon (`aws-us-west-2`).
+The TanStack Start web runtime uses Cloudflare Workers, Hyperdrive and private R2 storage. The Node job executor
+remains on Railway. The database migration merged in PR 17 selects the existing Neon project `Copacker`
+(`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon (`aws-us-west-2`). Verify each live service and Hyperdrive
+origin before cutover. On October 16, a read-only Cloudflare check confirmed staging Hyperdrive targets Neon with
+`verify-full`, caching disabled and five origin connections. The earlier application qualification ran against Railway;
+repeat deployed acceptance against the new origin before release.
 
 | Environment | Neon branch | Railway environment |
 | --- | --- | --- |
@@ -12,8 +16,9 @@ Neon project `Copacker` (`noisy-glitter-65827666`), PostgreSQL 18 in AWS Oregon 
 
 ## Connections and releases
 
-Set `DATABASE_URL` to the pooled Neon connection on both web and worker. Set `DIRECT_DATABASE_URL` to the direct
-connection on the web service for its existing pre-deploy migration step. Both URLs use `sslmode=verify-full`.
+Set `DATABASE_URL` to the pooled Neon connection on the Node worker. Point each web environment's Hyperdrive at its
+direct Neon endpoint with query caching disabled and verified TLS. The protected release environment's
+`DATABASE_MIGRATION_URL` secret supplies `DIRECT_DATABASE_URL` to the serialized migration runner. Both Node URLs use `sslmode=verify-full`.
 The runtime verifies Neon's public certificate and does not reuse a Railway CA. Never disable TLS verification.
 Migrations reject a Neon pooler endpoint. Local Docker can leave `DIRECT_DATABASE_URL` unset.
 
@@ -21,9 +26,10 @@ Keep the existing `TOKEN_ENCRYPTION_KEY`, WorkOS configuration, commerce app cre
 with each environment. Moving encrypted database records does not rotate their encryption key or store authorizations.
 Staging and production remain independent; never reset staging from production.
 
-CI continues to validate migrations on an empty local Postgres 18. After checks, `main` deploys to staging; the
-production promotion workflow releases the exact tested staging commit. The web pre-deploy step owns migrations;
-the worker starts after the web deployment succeeds. Staging also seeds its designated E2E workspaces as before.
+CI continues to validate migrations on an empty local Postgres 18. The gated Cloudflare release workflow migrates
+through one dedicated session with an advisory lock before deploying web, Storybook, the retained worker and scheduler.
+Disable the old Railway web pre-deploy step before enabling this runner. Production promotion releases the exact
+tested staging commit. See the [release gates](cloudflare.md#release-procedure); tests never seed production.
 
 ## PR previews
 
@@ -33,7 +39,7 @@ test edits. Forks and Dependabot do not receive credentials. The Actions summary
 it does not link to a running application. Copied integration records remain encrypted; the job receives no
 decryption key, commerce credentials, storage credentials, or background worker configuration.
 
-Hosted app previews are deferred until the web runtime moves to Cloudflare. This migration does not create Railway
+Hosted app previews remain a separate follow-up after the Cloudflare web release. This migration does not create Railway
 preview services or buckets. New app and storage resources belong in Cloudflare; preview documents will use a private
 R2 bucket with a separate prefix per PR when hosted previews are implemented.
 
