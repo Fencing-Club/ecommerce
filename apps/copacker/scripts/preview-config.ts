@@ -1,7 +1,19 @@
 import { z } from "zod"
 
+export const previewNumber = z.string().regex(/^[1-9]\d*$/)
+
+export function previewResources(input: string) {
+  const number = previewNumber.parse(input)
+  return {
+    app: `copacker-pr-${number}`,
+    stories: `copacker-stories-pr-${number}`,
+    queue: `copacker-jobs-pr-${number}`,
+    prefix: `pr-${number}/`
+  }
+}
+
 export const previewSettings = z.object({
-  PR_NUMBER: z.string().regex(/^[1-9]\d*$/),
+  PR_NUMBER: previewNumber,
   NEON_PROJECT_ID: z.string().regex(/^[a-z0-9-]+$/),
   NEON_STAGING_BRANCH_ID: z.string().startsWith("br-"),
   NEON_DATABASE_NAME: z.string().min(1),

@@ -3,9 +3,12 @@ import type { PoolConfig } from "pg"
 import invariant from "tiny-invariant"
 
 // Node services and administrative tools share verified connection policy. The web Worker uses Hyperdrive.
-export function databaseConfig(purpose: "application" | "migration" = "application"): PoolConfig {
+export function databaseConfig(
+  purpose: "application" | "migration" = "application",
+  environment = process.env
+): PoolConfig {
   const connectionString =
-    purpose === "migration" ? process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL : process.env.DATABASE_URL
+    purpose === "migration" ? environment.DIRECT_DATABASE_URL || environment.DATABASE_URL : environment.DATABASE_URL
   invariant(connectionString, "DATABASE_URL is not configured")
   const url = new URL(connectionString)
   if (purpose === "migration" && url.hostname.includes("-pooler.")) {
@@ -13,7 +16,7 @@ export function databaseConfig(purpose: "application" | "migration" = "applicati
   }
   const isNeon = url.hostname.endsWith(".neon.tech")
   const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)
-  const ca = process.env.DATABASE_CA_CERT
+  const ca = environment.DATABASE_CA_CERT
   invariant(
     isNeon || local || url.hostname.endsWith(".railway.internal") || ca,
     "Public database access requires DATABASE_CA_CERT"
@@ -25,7 +28,7 @@ export function databaseConfig(purpose: "application" | "migration" = "applicati
   if (isNeon) {
     url.searchParams.set("sslmode", "verify-full")
   }
-  const identity = process.env.DATABASE_TLS_SERVER_NAME || url.hostname
+  const identity = environment.DATABASE_TLS_SERVER_NAME || url.hostname
   return {
     connectionString: url.href,
     max: purpose === "migration" ? 1 : 10,

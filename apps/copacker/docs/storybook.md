@@ -10,6 +10,9 @@ The Cloudflare release builds an assets-only Worker with `scripts/build-stories-
 Storybook and reports the release commit at `/health.json`. No database, WorkOS or other application bindings are
 attached. Stories use fixtures and MSW; do not put private data into them. Responses include `noindex, nofollow`.
 
+Configured PR previews publish `copacker-stories-pr-<number>` on the account's workers.dev subdomain. The same
+[preview lifecycle](neon.md#pr-previews) deploys and removes this Worker, including when a PR is merged.
+
 The existing Railway Storybook services remain live until the separate domain cutover. See the
 [release guide](cloudflare.md) for build validation, environment variables and health checks, and the
 [domain inventory](domains.md) for the last verified live DNS configuration.

@@ -1,14 +1,19 @@
-// Trusted PRs get a staging database copy. App previews will move to Cloudflare with the web runtime.
+// Trusted PRs get staging data; closed PRs lose every preview resource, including partial deployments.
 import { execFileSync } from "node:child_process"
 import { appendFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { z } from "zod"
+import { hostedPreviewNumbers, hostingSettings, previewInventory, removeHostedPreview } from "./preview-cloudflare"
 import { assertPreviewBranch, neonBranch, previewSettings } from "./preview-config"
+import { deployHostedPreview } from "./preview-hosting"
 
 export async function runPreview(mode: "deploy" | "remove" | "sweep") {
   const settings = previewSettings.parse({ ...process.env, ...(mode === "sweep" ? { PR_NUMBER: "1" } : {}) })
   const name = `pr-${settings.PR_NUMBER}`
   const key = z.string().trim().min(1).parse(process.env.NEON_API_KEY)
+  const hosting = process.env.CLOUDFLARE_PREVIEW_CONFIG
+    ? hostingSettings.parse(JSON.parse(process.env.CLOUDFLARE_PREVIEW_CONFIG))
+    : undefined
 
   function log(message: string) {
     process.stdout.write(`${message}\n`)
@@ -24,7 +29,7 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
     if (!response.ok) {
       throw new Error(`Neon ${method} failed (${response.status})`)
     }
-    return response.json()
+    return response.status === 204 ? undefined : response.json()
   }
 
   async function branches(search: string) {
@@ -44,29 +49,65 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
     return found
   }
 
-  if (mode === "sweep") {
+  async function pullRequest(number: string) {
     const repository = z
       .string()
       .regex(/^[\w.-]+\/[\w.-]+$/)
       .parse(process.env.GITHUB_REPOSITORY)
     const token = z.string().min(1).parse(process.env.GH_TOKEN)
-    for (const branch of await branches("pr-")) {
-      if (!/^pr-[1-9]\d*$/.test(branch.name) || branch.parent_id !== settings.NEON_STAGING_BRANCH_ID) {
-        continue
+    const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${number}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(30000)
+    })
+    // A missing PR can also mean lost access; delete only when GitHub explicitly reports it closed.
+    if (!response.ok) {
+      throw new Error(`GitHub PR lookup failed (${response.status})`)
+    }
+    return z
+      .object({ state: z.enum(["open", "closed"]), head: z.object({ sha: z.string() }).optional() })
+      .parse(await response.json())
+  }
+
+  async function remove(number: string, branch?: z.infer<typeof neonBranch>) {
+    if (branch) {
+      assertPreviewBranch(branch, `pr-${number}`, settings.NEON_STAGING_BRANCH_ID)
+    }
+    if (hosting) {
+      removeHostedPreview(hosting, number)
+    }
+    // Keep the database until hosting/files are confirmed gone. Every retry inventories providers again.
+    if (branch) {
+      await neon(`/branches/${branch.id}`, "DELETE")
+      if ((await branches(`pr-${number}`)).some((entry) => entry.id === branch.id)) {
+        throw new Error("Neon preview branch still exists after cleanup")
       }
-      assertPreviewBranch(branch, branch.name, settings.NEON_STAGING_BRANCH_ID)
-      const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${branch.name.slice(3)}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-        signal: AbortSignal.timeout(30000)
-      })
-      // A missing PR can also mean lost access; delete only when GitHub explicitly reports it closed.
-      if (!response.ok) {
-        throw new Error(`GitHub PR lookup failed (${response.status})`)
+    }
+    log(`Removed pr-${number}`)
+  }
+
+  if (mode === "sweep") {
+    const found = (await branches("pr-")).filter(
+      (branch) => /^pr-[1-9]\d*$/.test(branch.name) && branch.parent_id === settings.NEON_STAGING_BRANCH_ID
+    )
+    const numbers = hosting ? hostedPreviewNumbers(previewInventory(hosting)) : new Set<string>()
+    for (const branch of found) {
+      numbers.add(branch.name.slice(3))
+    }
+    const failed: string[] = []
+    for (const number of numbers) {
+      try {
+        if ((await pullRequest(number)).state === "closed") {
+          await remove(
+            number,
+            found.find((branch) => branch.name === `pr-${number}`)
+          )
+        }
+      } catch {
+        failed.push(number)
       }
-      if (z.object({ state: z.enum(["open", "closed"]) }).parse(await response.json()).state === "closed") {
-        await neon(`/branches/${branch.id}`, "DELETE")
-        log(`Removed ${branch.name}`)
-      }
+    }
+    if (failed.length) {
+      throw new Error(`Preview cleanup incomplete for PRs ${failed.join(", ")}; rerun cleanup`)
     }
   } else {
     let branch = (await branches(name)).find((entry) => entry.name === name)
@@ -74,11 +115,27 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
       assertPreviewBranch(branch, name, settings.NEON_STAGING_BRANCH_ID)
     }
     if (mode === "remove") {
-      if (branch) {
-        await neon(`/branches/${branch.id}`, "DELETE")
+      if (hosting && (await pullRequest(settings.PR_NUMBER)).state !== "closed") {
+        log(`Preserved ${name}: PR is open or has reopened`)
+        return
       }
-      log(`Removed ${name}`)
+      await remove(settings.PR_NUMBER, branch)
     } else {
+      if (hosting) {
+        const pr = await pullRequest(settings.PR_NUMBER)
+        if (pr.state === "closed") {
+          await remove(settings.PR_NUMBER, branch)
+          return
+        }
+        if (pr.head?.sha !== process.env.APP_COMMIT_SHA) {
+          log("Skipped outdated preview deployment")
+          return
+        }
+        // An expired database must not be paired with old PR files or a live app pointed at its old endpoint.
+        if (!branch) {
+          removeHostedPreview(hosting, settings.PR_NUMBER)
+        }
+      }
       const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString().replace(/\.\d{3}Z$/, "Z")
       if (!branch) {
         branch = z.object({ branch: neonBranch }).parse(
@@ -112,13 +169,21 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
         throw new Error(`Migrations failed on Neon branch ${branch.id}; inspect this isolated PR database`)
       }
       log(`Neon branch ${name} (${branch.id}) is ready; migrations applied; expires ${expiresAt}`)
+      const urls = hosting ? await deployHostedPreview(hosting, settings.PR_NUMBER, url) : undefined
+      if (hosting && (await pullRequest(settings.PR_NUMBER)).state === "closed") {
+        await remove(settings.PR_NUMBER, branch)
+        return
+      }
       if (process.env.GITHUB_OUTPUT) {
-        appendFileSync(process.env.GITHUB_OUTPUT, `branch_id=${branch.id}\n`)
+        appendFileSync(
+          process.env.GITHUB_OUTPUT,
+          `branch_id=${branch.id}\n${urls ? `url=${urls.app}\nstories_url=${urls.stories}\n` : ""}`
+        )
       }
       if (process.env.GITHUB_STEP_SUMMARY) {
         appendFileSync(
           process.env.GITHUB_STEP_SUMMARY,
-          `Neon database branch: ${name} (${branch.id})\n\nCopied from staging, with this PR's migrations applied. Expires ${expiresAt}.\n\nHosted app previews are deferred until the Cloudflare web migration. No app, worker, or storage resources are provisioned.\n`
+          `Neon database branch: ${name} (${branch.id})\n\nCopied from staging, with this PR's migrations applied. Expires ${expiresAt}.\n\n${urls ? `[App preview](${urls.app}) | [Storybook](${urls.stories})\n\nPreview resources are removed on merge/close, with a six-hour cleanup sweep. Background jobs stay isolated and pending until preview job execution is migrated.` : "Cloudflare previews require the repository's CLOUDFLARE_PREVIEW_CONFIG and preview credentials."}\n`
         )
       }
     }

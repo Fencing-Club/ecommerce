@@ -29,6 +29,7 @@ beforeEach(() => {
   }
   vi.stubEnv("GITHUB_OUTPUT", undefined)
   vi.stubEnv("GITHUB_STEP_SUMMARY", undefined)
+  vi.stubEnv("CLOUDFLARE_PREVIEW_CONFIG", undefined)
 })
 
 afterEach(() => {
@@ -81,6 +82,7 @@ describe("Neon preview lifecycle", () => {
     respond({ state: "open" })
     respond({ state: "closed" })
     respond({})
+    respond({ branches: [] })
     await run("sweep")
     expect(String(fetchMock.mock.calls[1]![0])).toContain("cursor=next-page")
     const deleted = fetchMock.mock.calls.filter(([, options]) => options?.method === "DELETE")
@@ -91,7 +93,7 @@ describe("Neon preview lifecycle", () => {
   it("preserves the branch when GitHub cannot confirm the PR's state", async () => {
     respond({ branches: [branch] })
     respond({}, 404)
-    await expect(run("sweep")).rejects.toThrow("GitHub PR lookup failed (404)")
+    await expect(run("sweep")).rejects.toThrow("Preview cleanup incomplete for PRs 42")
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
   })
 

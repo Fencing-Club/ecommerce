@@ -53,7 +53,8 @@ export default {
                   },
                   delete: (key) => env.DOCUMENTS.delete(key)
                 },
-                () => withAuthentication(request, render)
+                () => withAuthentication(request, render),
+                env.DOCUMENTS_PREFIX
               )
             )
     )
