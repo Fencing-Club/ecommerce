@@ -9,7 +9,8 @@ inside a transaction. A publication failure is logged without failing an already
 producers must use the same boundary, including manual retries. The hourly recovery signal covers a process crash
 between commit and publication; work can be delayed by up to an hour in that failure case.
 
-One received signal drains available jobs in three lanes. Existing Postgres row locks, job keys and attempt leases
+Three independent signal readers share a global limit of three executing jobs, so a long import cannot block free
+slots from handling new signals. Existing Postgres row locks, job keys and attempt leases
 handle duplicate delivery. The worker then reads the earliest pending job or lease expiry once and publishes a delayed
 signal. The signal is acknowledged only after draining and scheduling succeed. Cloudflare delivery is at least once;
 handlers must retain their existing idempotency checks. Long batches can outlive the signal's ten-minute visibility

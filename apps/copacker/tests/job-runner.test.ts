@@ -1,8 +1,51 @@
 import { describe, expect, it, vi } from "vitest"
 import scheduler from "../scheduler/index"
-import { drainPendingJobs } from "../src/server/job-runner"
+import { drainPendingJobs, jobConcurrency, limitJobConcurrency } from "../src/server/job-runner"
 
 describe("signal-driven jobs", () => {
+  it("uses free slots for a new signal while an earlier batch has a long-running job", async () => {
+    const longJob = Promise.withResolvers<boolean>()
+    const shortJob = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
+    const runNext = limitJobConcurrency(
+      vi.fn<() => Promise<boolean>>().mockReturnValueOnce(longJob.promise).mockImplementation(shortJob)
+    )
+    const options = { runNext, signal: async () => undefined, nextDelay: async () => null, stopped: () => false }
+    const first = drainPendingJobs(options)
+    await vi.waitFor(() => expect(shortJob).toHaveBeenCalledTimes(2))
+    // The second signal finishes without waiting for the first batch's slow handler.
+    await drainPendingJobs(options)
+    expect(shortJob).toHaveBeenCalledTimes(5)
+    longJob.resolve(false)
+    await first
+  })
+  it("bounds shared execution across signal readers and releases slots after errors", async () => {
+    const pending: ReturnType<typeof Promise.withResolvers<boolean>>[] = []
+    let active = 0
+    let peak = 0
+    const runNext = limitJobConcurrency(async () => {
+      active++
+      peak = Math.max(peak, active)
+      const task = Promise.withResolvers<boolean>()
+      pending.push(task)
+      try {
+        return await task.promise
+      } finally {
+        active--
+      }
+    })
+    const work = Promise.allSettled(Array.from({ length: 9 }, runNext))
+    expect(pending).toHaveLength(jobConcurrency)
+    pending[0]!.reject(new Error("database unavailable"))
+    await vi.waitFor(() => expect(pending).toHaveLength(4))
+    for (let index = 1; index < 9; index++) {
+      await vi.waitFor(() => expect(pending.length).toBeGreaterThan(index))
+      pending[index]!.resolve(false)
+    }
+    const results = await work
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1)
+    expect(peak).toBe(jobConcurrency)
+    expect(active).toBe(0)
+  })
   it("finishes an empty queue without scheduling another database check", async () => {
     const runNext = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
     const signal = vi.fn<(delay: number) => Promise<void>>()

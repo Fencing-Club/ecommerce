@@ -86,7 +86,10 @@ const target = z
   .object({ environment: z.object({ name: z.literal("previews"), projectId: z.literal(project) }) })
   .parse(api("query($id:String!){environment(id:$id){name projectId}}", { id: environment }))
 log(`Preparing ${name} in ${target.environment.name}`)
-railway(["link", "--project", project, "--environment", environment, "--json"])
+// Environment-scoped CI tokens already select their project. `link` requires a user login.
+if (!process.env.RAILWAY_TOKEN) {
+  railway(["link", "--project", project, "--environment", environment, "--json"])
+}
 const resources = z.array(z.object({ id: z.string(), name: z.string() }))
 const services = resources.parse(json(["service", "list"]))
 const buckets = resources.parse(json(["bucket", "list", "--environment", environment]))

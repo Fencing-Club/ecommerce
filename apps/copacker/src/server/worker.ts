@@ -3,7 +3,7 @@ import { SQSClient } from "@aws-sdk/client-sqs"
 import { pollAmazonNotifications } from "./amazon-notifications"
 import { pollEbayEvents } from "./ebay-events"
 import { acknowledgeJobSignal, jobDeliveryConfigured, jobSignal, receiveJobSignals, signalJobs } from "./job-delivery"
-import { drainPendingJobs } from "./job-runner"
+import { drainPendingJobs, jobConcurrency, limitJobConcurrency } from "./job-runner"
 import { logLine } from "./log"
 import { nextJobDelay, runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
@@ -50,18 +50,22 @@ const readQueues = [amazonQueueUrl && "amazon", shopifyQueueUrl && "shopify", eb
 
 // Jobs run in several loops, so a long job (a year of Amazon orders) doesn't hold up the rest. Each claim skips jobs
 // another loop holds, and each sync guards against a second run for the same workspace and source.
-const jobLoops = 3
+const runNext = limitJobConcurrency(() => (stopped ? Promise.resolve(false) : runNextJob()))
 async function drainJobs() {
-  await drainPendingJobs({ runNext: runNextJob, nextDelay: nextJobDelay, signal: signalJobs, stopped: () => stopped })
+  await drainPendingJobs({ runNext, nextDelay: nextJobDelay, signal: signalJobs, stopped: () => stopped })
 }
 async function runJobs() {
   if (!jobDeliveryConfigured() && process.env.NODE_ENV === "production") {
     throw new Error("Production workers require Cloudflare job delivery configuration")
   }
-  // One recovery pass on startup handles a worker replacement without an idle database polling loop.
-  await drainJobs()
+  let recover = true
   while (!stopped) {
     try {
+      // Startup recovery belongs inside the retry boundary, including a transient Neon wake-up failure.
+      if (recover) {
+        await drainJobs()
+        recover = false
+      }
       if (!jobDeliveryConfigured()) {
         // Local Docker development has no hosted queue or scheduler.
         await queueReconciliation()
@@ -90,9 +94,10 @@ async function runJobs() {
   }
 }
 logLine(
-  `Worker started with ${jobLoops} job loops${readQueues.length ? `, reading the ${readQueues.join(", ")} queues` : ""}`
+  `Worker started with ${jobConcurrency} job slots${readQueues.length ? `, reading the ${readQueues.join(", ")} queues` : ""}`
 )
-await runJobs()
+// Independent readers can wake free slots while another reader waits for a long import to finish.
+await Promise.all(Array.from({ length: jobConcurrency }, () => runJobs()))
 // A message being handled when the worker stops is received again later, since it is only removed once handled.
 await Promise.race([queueReaders, wait(25000)])
 process.exit(0)
