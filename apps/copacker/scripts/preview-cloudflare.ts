@@ -65,7 +65,7 @@ export async function uploadPreviewFile(config: HostingSettings, key: string, fi
 
 // Keep cf's output private: Hyperdrive responses and CLI errors can contain database credentials.
 export function cloudflare(
-  config: HostingSettings,
+  config: Pick<HostingSettings, "accountId">,
   args: string[],
   options: { body?: unknown; binary?: boolean } = {}
 ) {
@@ -94,7 +94,7 @@ export function cloudflare(
   }
 }
 
-export function cloudflareJson(config: HostingSettings, args: string[], body?: unknown): unknown {
+export function cloudflareJson(config: Pick<HostingSettings, "accountId">, args: string[], body?: unknown): unknown {
   return JSON.parse(cloudflare(config, args, { body }).toString())
 }
 
