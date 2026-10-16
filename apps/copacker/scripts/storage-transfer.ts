@@ -9,7 +9,7 @@ import { S3Client, ListObjectsV2Command, GetObjectCommand, PutObjectCommand, NoS
 import { Client } from "pg"
 import invariant from "tiny-invariant"
 import { z } from "zod"
-import { directDatabase } from "../src/db/connection"
+import { databaseConfig } from "../src/db/connection"
 import { storageReferenceQuery } from "../src/db/storage-references"
 
 export async function storageTransfer(modeInput: string | undefined, folderInput: string | undefined) {
@@ -75,7 +75,7 @@ export async function storageTransfer(modeInput: string | undefined, folderInput
     return objects.sort((a, b) => a.key.localeCompare(b.key))
   }
   async function references() {
-    const client = new Client(directDatabase())
+    const client = new Client(databaseConfig("migration"))
     await client.connect()
     try {
       await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY")

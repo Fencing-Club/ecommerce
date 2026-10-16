@@ -28,7 +28,7 @@ The naming change is implemented in the launcher; external activation is tracked
 | Marketing media | `media.copacker.ai` | `media.copacker.ai` | `media.copacker.ai` | Existing shared public R2 assets |
 | Turbo remote cache | `turbo.copacker.ai` | `turbo.copacker.ai` in CI | `turbo.copacker.ai` in CI | Existing Cloudflare service; not a browser OAuth origin |
 | Email sender domain | `resend.dev` | `resend.dev` | `copacker.ai` | Existing Resend setup; dev/staging restricted to account owner |
-| Database | Local Docker loopback | Railway private Postgres | Railway private Postgres | No public browser hostname; worktree data isolation must be configured explicitly |
+| Database | Local Docker loopback | Neon staging branch | Neon production branch | Staging Hyperdrive verified on Neon October 16, with full TLS and caching off; repeat app acceptance after the origin change |
 | Document storage | Native local R2 emulator | Railway documents bucket | Separate Railway documents bucket | `S3_ENDPOINT` is provider-issued; do not invent a vanity domain |
 | Shopify events | Fixtures or owned development EventBridge/SQS resources | Staging EventBridge/SQS | Production EventBridge/SQS | No Copacker HTTP webhook hostname |
 | Amazon notifications | Fixtures or owned development SQS resources | Staging SQS | Production SQS | No HTTP webhook hostname |
@@ -101,8 +101,8 @@ Three replacement keys were created on 2026-10-14 after enabling Maps JavaScript
 Hosted variables were saved without triggering an out-of-band deployment; the normal release rebuild supplies them
 through Docker's build argument. Do not add these keys to workers or fixture Storybook previews.
 Address autocomplete uses the key embedded in each environment's web build.
-The Google script uses its default loading mode so Next's `onReady` runs after SDK initialization, including the first
-mount. Do not add `loading=async` without switching initialization to Google's callback contract.
+The Maps loader resolves only after SDK initialization, including the first mount. Preserve that readiness contract
+when changing the script loading mode.
 
 Acceptance: Places Autocomplete (New) returned HTTP 200 with suggestions for each key's intended referrer
 (`main.local.copacker.ai`, `staging.copacker.ai`, `copacker.ai`). All three returned HTTP 403 with
@@ -129,46 +129,14 @@ live integration task; never reuse another project's tunnel.
 
 ## Pull request previews
 
-Storybook previews run in the separate Railway project `copacker-storybook-previews`
-(`16c32c30-7ae6-41c7-b3c9-896d0c4d3876`). Its `preview-base` environment
-(`379f7435-fe02-47d2-8125-3bcb58a890e1`) contains only `copacker-stories`
-(`4af6c3a1-6118-46c0-b434-de0deecf8185`), with no application secrets, database, bucket or worker.
-PR deployments are enabled and the GitHub source follows `main`. PR #8 merged after all checks passed; its CI logout test now verifies the exact return origin.
+Trusted same-repository PRs receive an isolated Neon branch copied from staging, with the PR's migrations applied.
+See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets. Hosted application previews are deferred
+to the Cloudflare web migration; their private documents will use R2. No new Railway preview infrastructure is created.
 
-Opening [PR #9](https://github.com/AndrewCraswell/ecommerce/pull/9) automatically created ephemeral environment
-`ecommerce-pr-9` (`dfc03b53-5dcc-4f0d-ba00-b34cda91a67d`) and
-`https://copacker-stories-ecommerce-pr-9.up.railway.app`. Its inventory contains one Storybook service, only
-`PORT` / `RAILWAY_DOCKERFILE_PATH` variables, and no volumes or buckets. The PR records deployment and cleanup
-acceptance evidence; its temporary address is not a permanent environment URL.
-
-| Surface | Address and lifecycle | Configuration |
-| --- | --- | --- |
-| Preview base | `https://copacker-stories-preview-base.up.railway.app` | Tracks `main`; exists to supply the PR template |
-| Storybook PR | Railway-issued `*.up.railway.app` URL shown on the PR deployment | Created per eligible repository PR, updated on pushes, removed on close/merge |
-| UX preview | Page and component stories, with fixture data and mocked API responses | Review flows through Storybook; no connection to shared staging or production data |
-| Database preview | Deferred until the Neon migration | Plan per-PR branches, sanitized seeds, credential isolation and deletion on PR close |
-| Storage preview | Deferred until the Cloudflare storage migration | Plan isolated per-PR namespaces or buckets, scoped credentials and cleanup on PR close |
-| Full data-backed app PR | Deferred with database and storage | Add real persistence and integration acceptance only after isolated resources are available |
-
-Use the actual Railway-issued preview URL; `pr-123.stories.preview.copacker.ai` is not configured.
-Generated domains give automatic HTTPS and cleanup without per-PR DNS records. They require no WorkOS, Google,
-Shopify, Amazon or eBay callback entries because Storybook runs fixtures. Runtime is limited to 0.5 GB and one CPU,
-with sleeping enabled. Railway restricts automatic PR deployment to recognized project/workspace contributors.
-Health metadata uses `RAILWAY_GIT_COMMIT_SHA` for GitHub deployments; release CD supplies `APP_COMMIT_SHA` explicitly.
-Do not enable app-project PR duplication from production: that would copy live integration configuration.
-
-### Deferred persistence (decision: 2026-10-14)
-
-Preview scope is Storybook and fixture-backed UX only. Do not provision a Railway database or storage bucket per PR,
-run migrations/seeds against shared environments, or wire UX previews to staging/production persistence.
-Database previews are deferred until the migration to Neon; storage previews are deferred until the migration to
-Cloudflare. The intent is to make isolated preview resources simpler and cheaper to provision and remove. This is a
-planned dependency, not a claim that either migration or preview resource automation has been completed.
-
-Revisit full app previews after those migrations: define per-PR resource ownership and lifetime, sanitized fixture
-seeding, least-privilege credentials, callback/origin registrations, cost limits, CI readiness checks and automatic
-cleanup on PR close. Workers, real emails and external integration/webhook subscriptions remain disabled unless a
-preview explicitly provisions dedicated test resources.
+Automatic PR environment creation is disabled in both Copacker Railway projects. Existing fixture-only Storybook
+previews for open PRs remain until those PRs close; they contain no application credentials. The
+`pr-*.preview.copacker.ai` namespace remains reserved and is not provisioned. When Cloudflare app previews are enabled,
+register their exact WorkOS callbacks; do not add `*.up.railway.app` to any origin allowlist.
 
 ## Configuration change register
 

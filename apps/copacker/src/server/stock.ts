@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { withJobWake } from "@/server/job-delivery"
 import { amazonFor, shopifyFor } from "./connections"
 import { ReconnectRequiredError } from "./errors"
 import { isCollective } from "./inventory-products"
@@ -74,50 +75,52 @@ export async function refreshStock(
   if (org.kind !== "buyer") {
     throw new LocalizedError("buyerWorkspaceRequired")
   }
-  return db().transaction(async (tx) => {
-    const [account] = await tx
-      .select()
-      .from(connections)
-      .where(and(eq(connections.orgId, org.id), eq(connections.provider, provider)))
-      .for("update")
-    if (!account) {
-      return null
-    }
-    const scope = and(
-      eq(stockSnapshots.orgId, org.id),
-      eq(stockSnapshots.source, source),
-      eq(stockSnapshots.externalAccountId, account.externalId),
-      eq(stockSnapshots.scopeKey, scopeKey)
-    )
-    await tx
-      .insert(stockSnapshots)
-      .values({ orgId: org.id, source, externalAccountId: account.externalId, scopeKey })
-      .onConflictDoNothing()
-    const [current] = await tx.select().from(stockSnapshots).where(scope).for("update")
-    if (!current) {
-      throw new Error("Stock scope could not be created")
-    }
-    if (["queued", "running"].includes(current.status)) {
-      return { id: current.id, revision: current.revision, status: current.status }
-    }
-    const revision = current.revision + 1
-    await tx
-      .update(stockSnapshots)
-      .set({
-        revision,
-        status: "queued",
-        requestedAt: new Date(),
-        attemptStartedAt: null,
-        attemptFinishedAt: null,
-        workerToken: null,
-        errorCode: null
-      })
-      .where(eq(stockSnapshots.id, current.id))
-    await tx
-      .insert(jobs)
-      .values({ key: `stock:${current.id}:${revision}`, kind: "stock", payload: { id: current.id, revision } })
-    return { id: current.id, revision, status: "queued" }
-  })
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [account] = await tx
+        .select()
+        .from(connections)
+        .where(and(eq(connections.orgId, org.id), eq(connections.provider, provider)))
+        .for("update")
+      if (!account) {
+        return null
+      }
+      const scope = and(
+        eq(stockSnapshots.orgId, org.id),
+        eq(stockSnapshots.source, source),
+        eq(stockSnapshots.externalAccountId, account.externalId),
+        eq(stockSnapshots.scopeKey, scopeKey)
+      )
+      await tx
+        .insert(stockSnapshots)
+        .values({ orgId: org.id, source, externalAccountId: account.externalId, scopeKey })
+        .onConflictDoNothing()
+      const [current] = await tx.select().from(stockSnapshots).where(scope).for("update")
+      if (!current) {
+        throw new Error("Stock scope could not be created")
+      }
+      if (["queued", "running"].includes(current.status)) {
+        return { id: current.id, revision: current.revision, status: current.status }
+      }
+      const revision = current.revision + 1
+      await tx
+        .update(stockSnapshots)
+        .set({
+          revision,
+          status: "queued",
+          requestedAt: new Date(),
+          attemptStartedAt: null,
+          attemptFinishedAt: null,
+          workerToken: null,
+          errorCode: null
+        })
+        .where(eq(stockSnapshots.id, current.id))
+      await tx
+        .insert(jobs)
+        .values({ key: `stock:${current.id}:${revision}`, kind: "stock", payload: { id: current.id, revision } })
+      return { id: current.id, revision, status: "queued" }
+    })
+  )
 }
 
 const retryDelayMs = 5 * 60000

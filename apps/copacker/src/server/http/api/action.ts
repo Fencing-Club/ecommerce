@@ -38,6 +38,7 @@ import {
   renameForwarder,
   saveForwarderAddress
 } from "@/server/forwarders"
+import { withJobWake } from "@/server/job-delivery"
 import { addLandedCost, removeLandedCost } from "@/server/landed-costs"
 import { requestLocale } from "@/server/localization"
 import { addMonthlyCost, removeMonthlyCost } from "@/server/monthly-costs"
@@ -171,13 +172,15 @@ export async function POST(request: Request) {
             .values({ buyerOrgId: s.org.id, ...input, ...invite })
             .returning()
       if (invitation && input.email) {
-        await db()
-          .insert(jobs)
-          .values({
-            key: `invite:${supplier!.id}:${randomUUID()}`,
-            kind: "email",
-            payload: { type: "invite", to: input.email, name: s.org.name, invitation, locale: await requestLocale() }
-          })
+        await withJobWake(
+          db()
+            .insert(jobs)
+            .values({
+              key: `invite:${supplier!.id}:${randomUUID()}`,
+              kind: "email",
+              payload: { type: "invite", to: input.email, name: s.org.name, invitation, locale: await requestLocale() }
+            })
+        )
       }
       return Response.json({ id: supplier!.id })
     }
@@ -192,37 +195,39 @@ export async function POST(request: Request) {
         .parse(data.email)
       // A fresh token replaces the old one, so earlier invitation links stop working.
       const invitation = token()
-      await db().transaction(async (tx) => {
-        const [supplier] = await tx
-          .update(suppliers)
-          .set({
-            invitationHash: hash(invitation),
-            expiresAt: new Date(Date.now() + 7 * 86400000),
-            ...(email && { email })
-          })
-          .where(
-            and(
-              eq(suppliers.id, id()),
-              eq(suppliers.buyerOrgId, s.org.id),
-              isNull(suppliers.supplierOrgId),
-              isNull(suppliers.removedAt)
+      await withJobWake(
+        db().transaction(async (tx) => {
+          const [supplier] = await tx
+            .update(suppliers)
+            .set({
+              invitationHash: hash(invitation),
+              expiresAt: new Date(Date.now() + 7 * 86400000),
+              ...(email && { email })
+            })
+            .where(
+              and(
+                eq(suppliers.id, id()),
+                eq(suppliers.buyerOrgId, s.org.id),
+                isNull(suppliers.supplierOrgId),
+                isNull(suppliers.removedAt)
+              )
             )
-          )
-          .returning()
-        if (!supplier) {
-          throw new LocalizedError("supplierJoinedOrRemoved")
-        }
-        if (!supplier.email) {
-          throw new LocalizedError("enterSupplierEmail")
-        }
-        // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
-        // reused key carrying a different invitation.
-        await tx.insert(jobs).values({
-          key: `invite:${supplier.id}:${randomUUID()}`,
-          kind: "email",
-          payload: { type: "invite", to: supplier.email, name: s.org.name, invitation, locale: await requestLocale() }
+            .returning()
+          if (!supplier) {
+            throw new LocalizedError("supplierJoinedOrRemoved")
+          }
+          if (!supplier.email) {
+            throw new LocalizedError("enterSupplierEmail")
+          }
+          // Each send is its own job: the job key doubles as the email provider's idempotency key, which rejects a
+          // reused key carrying a different invitation.
+          await tx.insert(jobs).values({
+            key: `invite:${supplier.id}:${randomUUID()}`,
+            kind: "email",
+            payload: { type: "invite", to: supplier.email, name: s.org.name, invitation, locale: await requestLocale() }
+          })
         })
-      })
+      )
       return Response.json({ ok: true })
     }
     if (action === "supplier.remove") {
@@ -482,34 +487,36 @@ export async function POST(request: Request) {
     if (action === "shipment.retry") {
       requireBuyer(s)
       requireAccess(s, "shipments", "edit")
-      await db().transaction(async (tx) => {
-        const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
-        if (!initial) {
-          throw new LocalizedError("shipmentNotFound")
-        }
-        await accessibleOrder(s, initial.orderId, tx, true)
-        const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
-        if (
-          !shipment ||
-          shipment.status !== "needs_attention" ||
-          shipment.operation === "sending" ||
-          shipment.revision !== revision()
-        ) {
-          throw new LocalizedError("reconcileBeforeRetry")
-        }
-        await tx.update(shipments).set({ status: "queued", issue: null }).where(eq(shipments.id, shipment.id))
-        await tx
-          .insert(jobs)
-          .values({
-            key: `amazon:${shipment.id}:${shipment.revision}`,
-            kind: "amazon",
-            payload: { shipmentId: shipment.id, revision: shipment.revision }
-          })
-          .onConflictDoUpdate({
-            target: jobs.key,
-            set: { id: randomUUID(), status: "pending", attempts: 0, error: null, runAt: new Date() }
-          })
-      })
+      await withJobWake(
+        db().transaction(async (tx) => {
+          const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
+          if (!initial) {
+            throw new LocalizedError("shipmentNotFound")
+          }
+          await accessibleOrder(s, initial.orderId, tx, true)
+          const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
+          if (
+            !shipment ||
+            shipment.status !== "needs_attention" ||
+            shipment.operation === "sending" ||
+            shipment.revision !== revision()
+          ) {
+            throw new LocalizedError("reconcileBeforeRetry")
+          }
+          await tx.update(shipments).set({ status: "queued", issue: null }).where(eq(shipments.id, shipment.id))
+          await tx
+            .insert(jobs)
+            .values({
+              key: `amazon:${shipment.id}:${shipment.revision}`,
+              kind: "amazon",
+              payload: { shipmentId: shipment.id, revision: shipment.revision }
+            })
+            .onConflictDoUpdate({
+              target: jobs.key,
+              set: { id: randomUUID(), status: "pending", attempts: 0, error: null, runAt: new Date() }
+            })
+        })
+      )
       return Response.json({ ok: true })
     }
     if (action === "shipment.reconcile") {
@@ -538,27 +545,29 @@ export async function POST(request: Request) {
       if (order.buyerOrgId !== s.org.id) {
         throw new Error("Account mismatch")
       }
-      await db().transaction(async (tx) => {
-        const [current] = await tx.select().from(shipments).where(eq(shipments.id, shipment.id)).for("update")
-        if (current?.revision !== shipment.revision || current?.status !== shipment.status) {
-          throw new LocalizedError("shipmentChangedWhileReconciling")
-        }
-        await tx
-          .update(shipments)
-          .set({ amazonOrderId, operation: "created", status: "queued", issue: null })
-          .where(eq(shipments.id, shipment.id))
-        await tx
-          .insert(jobs)
-          .values({
-            key: `amazon:${shipment.id}:${shipment.revision}`,
-            kind: "amazon",
-            payload: { shipmentId: shipment.id, revision: shipment.revision }
-          })
-          .onConflictDoUpdate({
-            target: jobs.key,
-            set: { id: randomUUID(), status: "pending", attempts: 0, runAt: new Date(), error: null }
-          })
-      })
+      await withJobWake(
+        db().transaction(async (tx) => {
+          const [current] = await tx.select().from(shipments).where(eq(shipments.id, shipment.id)).for("update")
+          if (current?.revision !== shipment.revision || current?.status !== shipment.status) {
+            throw new LocalizedError("shipmentChangedWhileReconciling")
+          }
+          await tx
+            .update(shipments)
+            .set({ amazonOrderId, operation: "created", status: "queued", issue: null })
+            .where(eq(shipments.id, shipment.id))
+          await tx
+            .insert(jobs)
+            .values({
+              key: `amazon:${shipment.id}:${shipment.revision}`,
+              kind: "amazon",
+              payload: { shipmentId: shipment.id, revision: shipment.revision }
+            })
+            .onConflictDoUpdate({
+              target: jobs.key,
+              set: { id: randomUUID(), status: "pending", attempts: 0, runAt: new Date(), error: null }
+            })
+        })
+      )
       return Response.json({ ok: true })
     }
     if (action === "shipment.cancelAmazon") {
@@ -664,7 +673,9 @@ export async function POST(request: Request) {
       }
       const orderId = z.uuid().parse(job.payload.orderId)
       await accessibleOrder(s, orderId)
-      await db().update(jobs).set({ status: "pending", runAt: new Date(), error: null }).where(eq(jobs.id, id()))
+      await withJobWake(
+        db().update(jobs).set({ status: "pending", runAt: new Date(), error: null }).where(eq(jobs.id, id()))
+      )
       return Response.json({ ok: true })
     }
     if (action === "shipment.release") {
@@ -672,52 +683,54 @@ export async function POST(request: Request) {
       const [released] = await db().select({ orderId: shipments.orderId }).from(shipments).where(eq(shipments.id, id()))
       const missingLabels = released ? await linesMissingLabels(s, released.orderId) : new Set<string>()
       requireBuyer(s)
-      await db().transaction(async (tx) => {
-        const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
-        if (!initial) {
-          throw new LocalizedError("shipmentNotFound")
-        }
-        const { supplier } = await accessibleOrder(s, initial.orderId, tx, true)
-        const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
-        if (
-          !shipment?.packing ||
-          !shipment.snapshot ||
-          shipment.status !== "waiting_labels" ||
-          shipment.revision !== revision()
-        ) {
-          throw new LocalizedError("shipmentNotReadyForRelease")
-        }
-        const docs = await tx
-          .select()
-          .from(documents)
-          .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
-        const issues = releaseIssues(shipment, docs, missingLabels, await serverText())
-        if (issues.length) {
-          throw new Error(issues.map((issue) => issue.message).join("\n"))
-        }
-        await tx
-          .update(shipments)
-          .set({ status: "ready", bookingReference: z.string().trim().min(1).max(100).parse(data.bookingReference) })
-          .where(eq(shipments.id, id()))
-        // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the
-        // shipment in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the
-        // purchase order's documents.
-        if (supplier.supplierOrgId && supplier.email) {
+      await withJobWake(
+        db().transaction(async (tx) => {
+          const [initial] = await tx.select().from(shipments).where(eq(shipments.id, id()))
+          if (!initial) {
+            throw new LocalizedError("shipmentNotFound")
+          }
+          const { supplier } = await accessibleOrder(s, initial.orderId, tx, true)
+          const [shipment] = await tx.select().from(shipments).where(eq(shipments.id, id())).for("update")
+          if (
+            !shipment?.packing ||
+            !shipment.snapshot ||
+            shipment.status !== "waiting_labels" ||
+            shipment.revision !== revision()
+          ) {
+            throw new LocalizedError("shipmentNotReadyForRelease")
+          }
+          const docs = await tx
+            .select()
+            .from(documents)
+            .where(and(eq(documents.orderId, shipment.orderId), eq(documents.outdated, 0)))
+          const issues = releaseIssues(shipment, docs, missingLabels, await serverText())
+          if (issues.length) {
+            throw new Error(issues.map((issue) => issue.message).join("\n"))
+          }
           await tx
-            .insert(jobs)
-            .values({
-              key: `ready:${shipment.id}:${shipment.revision}`,
-              kind: "email",
-              payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
-            })
-            .onConflictDoNothing()
-        }
-        await tx.insert(events).values({
-          orderId: shipment.orderId,
-          actor: s.user.id,
-          ...eventMessage({ key: supplier.supplierOrgId ? "labelsReleased" : "labelsReleasedToShare", values: null })
+            .update(shipments)
+            .set({ status: "ready", bookingReference: z.string().trim().min(1).max(100).parse(data.bookingReference) })
+            .where(eq(shipments.id, id()))
+          // Only a supplier that joined Copacker is emailed that its labels are ready, since the email links to the
+          // shipment in its workspace. For one that hasn't, the buyer downloads the packet and shares it, as it does the
+          // purchase order's documents.
+          if (supplier.supplierOrgId && supplier.email) {
+            await tx
+              .insert(jobs)
+              .values({
+                key: `ready:${shipment.id}:${shipment.revision}`,
+                kind: "email",
+                payload: { type: "ready", to: supplier.email, orderId: shipment.orderId, shipmentId: shipment.id }
+              })
+              .onConflictDoNothing()
+          }
+          await tx.insert(events).values({
+            orderId: shipment.orderId,
+            actor: s.user.id,
+            ...eventMessage({ key: supplier.supplierOrgId ? "labelsReleased" : "labelsReleasedToShare", values: null })
+          })
         })
-      })
+      )
       return Response.json({ ok: true })
     }
     throw new Error("Unknown action")

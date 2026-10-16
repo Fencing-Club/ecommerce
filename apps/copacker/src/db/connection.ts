@@ -1,26 +1,39 @@
 import { checkServerIdentity } from "node:tls"
-import type { ClientConfig } from "pg"
+import type { PoolConfig } from "pg"
 import invariant from "tiny-invariant"
 
-// Node workers and administrative scripts share one verified direct connection policy. Workers use Hyperdrive.
-export function directDatabase(): ClientConfig {
-  invariant(process.env.DATABASE_URL, "DATABASE_URL is required")
-  const url = new URL(process.env.DATABASE_URL)
+// Node services and administrative tools share verified connection policy. The web Worker uses Hyperdrive.
+export function databaseConfig(purpose: "application" | "migration" = "application"): PoolConfig {
+  const connectionString =
+    purpose === "migration" ? process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL : process.env.DATABASE_URL
+  invariant(connectionString, "DATABASE_URL is not configured")
+  const url = new URL(connectionString)
+  if (purpose === "migration" && url.hostname.includes("-pooler.")) {
+    throw new Error("Migrations require DIRECT_DATABASE_URL with a non-pooled connection")
+  }
+  const isNeon = url.hostname.endsWith(".neon.tech")
   const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)
   const ca = process.env.DATABASE_CA_CERT
   invariant(
-    local || url.hostname.endsWith(".railway.internal") || ca,
+    isNeon || local || url.hostname.endsWith(".railway.internal") || ca,
     "Public database access requires DATABASE_CA_CERT"
   )
-  const identity = process.env.DATABASE_TLS_SERVER_NAME || url.hostname
+  // Strip URL TLS options that would override our verified configuration. Neon uses its public CA and hostname.
   for (const name of ["sslmode", "sslcert", "sslkey", "sslrootcert", "uselibpqcompat"]) {
     url.searchParams.delete(name)
   }
+  if (isNeon) {
+    url.searchParams.set("sslmode", "verify-full")
+  }
+  const identity = process.env.DATABASE_TLS_SERVER_NAME || url.hostname
   return {
     connectionString: url.href,
+    max: purpose === "migration" ? 1 : 10,
+    keepAlive: true,
     connectionTimeoutMillis: 15_000,
-    ssl: ca
-      ? { ca, rejectUnauthorized: true, checkServerIdentity: (_host, cert) => checkServerIdentity(identity, cert) }
-      : undefined
+    ssl:
+      !isNeon && ca
+        ? { ca, rejectUnauthorized: true, checkServerIdentity: (_host, cert) => checkServerIdentity(identity, cert) }
+        : undefined
   }
 }

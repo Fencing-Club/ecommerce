@@ -1,14 +1,16 @@
 # Cloudflare runtime and releases
 
-The migration branch runs Copacker on TanStack Start and Cloudflare Workers. PostgreSQL remains on Railway. The retained
-Railway Node worker is the only background executor; this web release does not activate Queues or Workflows. Existing
+The migration branch runs Copacker on TanStack Start and Cloudflare Workers. It integrates the separately merged
+[Neon database migration](neon.md). The retained Railway Node worker remains the only background executor;
+[Cloudflare Queues and Cron](background-jobs.md) deliver wake signals and scheduled reconciliation. Workflows and
+Cloudflare job execution remain a later milestone. Existing
 production hostnames and services remain live until the separately reviewed [cutover](specs/platform-migration/cutover.md).
 
 ## Request boundaries
 
 `src/routes` owns the typed route tree. Presentational pages in `src/app` receive explicit loader data. Server functions
 and `src/server/http` retain the existing authorization and HTTP contracts. `src/server.ts` creates invocation-scoped
-authentication, localization, database and private-storage contexts. A router is created per request. Database sockets
+authentication, localization, database, private-storage and queue-publisher contexts. A router is created per request. Database sockets
 close before the request finishes; Hyperdrive query caching is disabled. Mutations recheck current database permissions.
 
 The application retains Redux Toolkit Query and nuqs. Router invalidation refreshes loader data after changes; edits
@@ -34,8 +36,10 @@ owns its storage. Local credentials live in ignored `.cloudflare/storage-credent
 cutover, configure the deployed Node worker with environment-scoped R2 S3 credentials for the exact bucket bound to
 the web Worker. It retains direct PostgreSQL access. Never point a local job worker at staging provider queues.
 
-The qualification deployment is at `copacker-staging.hoa-preview.workers.dev`; its source is an uncommitted working
-tree and its release SHA is deliberately blank. The original staging worker still uses the original object store.
+The earlier qualification deployment is at `copacker-staging.hoa-preview.workers.dev`; its source was an uncommitted
+working tree and its release SHA is deliberately blank. It predates the Neon integration. On October 16, a read-only
+check confirmed its Hyperdrive now targets Neon with `verify-full`, caching disabled and five origin connections.
+Its original staging worker used the original object store. Recheck both storage endpoints before further writes.
 Use this deployment for qualification reads until the final storage delta and both readers/writers switch together.
 See the [qualification record](specs/platform-migration/compatibility.md#main-application-qualification).
 
@@ -55,17 +59,21 @@ in either Worker input file. Storybook is an assets-only project under `.cloudfl
 at `/health.json`, fixtures and MSW, and no application bindings.
 
 Deployment adds `RELEASE_CUTOVER_READY=true`, a clean checkout matching the release commit, and the direct migration connection.
-`DATABASE_CA_CERT` is required for public database connections; `DATABASE_TLS_SERVER_NAME` names the certificate's
-identity when Railway's TCP proxy hostname differs. Verification is never disabled. One dedicated PostgreSQL session
+Use Neon's direct endpoint through `DIRECT_DATABASE_URL`, with public certificate and hostname verification.
+For retained Railway database recovery access, `DATABASE_CA_CERT` is required over the public proxy and
+`DATABASE_TLS_SERVER_NAME` names the certificate's identity when it differs from the proxy. Verification is never disabled. One dedicated PostgreSQL session
 holds an advisory lock around Drizzle migrations, with a two-minute lock timeout. Disable the old Railway web
 predeploy migration command before enabling the new release workflow.
 
 GitHub's protected `staging` and `production` environments supply the variables above, `CLOUDFLARE_ACCOUNT_ID`,
-`STORIES_URL`, optional domain lists, and `CLOUDFLARE_API_TOKEN`, `DATABASE_MIGRATION_URL`, `DATABASE_CA_CERT`,
+`STORIES_URL`, optional domain lists, and `CLOUDFLARE_API_TOKEN`, `DATABASE_MIGRATION_URL`, optional `DATABASE_CA_CERT`,
 `CLOUDFLARE_WORKER_SECRETS` and `RAILWAY_WORKER_TOKEN` secrets. `CLOUDFLARE_WORKER_SETTINGS` is a JSON variable.
 The repository's `CLOUDFLARE_RELEASE_ENABLED` stays off until resource, storage, callback and rollback gates pass.
 Each environment's deploys are serialized. Older main commits cannot replace newer staging. The retained worker is
-released after the web and Storybook; both HTTP health endpoints must report the expected commit.
+released after the web and Storybook, followed by its queue scheduler; both HTTP health endpoints must report the expected commit.
+Provision the environment's `copacker-jobs-<environment>` queue and HTTP consumer before release. Verify wake,
+retry and recovery delivery before switching traffic. The Worker uses a native binding; only the Node executor
+receives the queue HTTP token.
 
 Both web and Storybook HTTPS origins are validated before any build, migration, or deployment. Production also requires each origin in its respective Worker custom-domain configuration.
 
@@ -78,7 +86,7 @@ or the agreed observation window. Keep the previous web artifact and storage ava
 
 `pnpm storage:transfer scan|copy|verify .cloudflare/storage-transfer/<run>` operates on explicitly supplied
 `SOURCE_S3_ENDPOINT`, `SOURCE_S3_BUCKET`, `SOURCE_S3_ACCESS_KEY_ID`, `SOURCE_S3_SECRET_ACCESS_KEY` and equivalent
-`TARGET_S3_*` values. Use HTTPS except for a loopback emulator. `DATABASE_URL` is read through the verified direct
+`TARGET_S3_*` values. Use HTTPS except for a loopback emulator. `DIRECT_DATABASE_URL` (or `DATABASE_URL` when direct) is read through the verified direct
 connection policy. Credentials, manifests, journals and temporary files stay ignored and outside browser assets.
 
 1. Pause all document writers, including the retained worker. Record the matching database recovery point.
@@ -96,5 +104,6 @@ connection policy. Credentials, manifests, journals and temporary files stay ign
 
 Rehearse these steps with nonproduction data. Deletions, retention and database restoration require a recorded decision;
 a successful object copy alone cannot establish recovery correctness. Keep additive schema changes compatible with both
-the previous web release and the retained worker. Database rollback uses a forward migration or the existing Railway
-scheduled backup policy, not an edited applied migration.
+the previous web release and the retained worker. Database rollback uses a forward migration or a verified Neon
+recovery point with matching documents, not an edited applied migration or a stale Railway copy. Confirm Neon's
+actual retention and restore policy before cutover; it does not inherit Railway's backup retention.

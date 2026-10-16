@@ -8,6 +8,19 @@ References there to a still-running Next application describe those earlier incr
 
 ## PR review, October 16
 
+Main advanced to `db68082` during the review with the separate Neon migration (PR 17). The integration preserves
+direct migration connections, the session advisory lock, isolated database previews and the retained executor's
+queue delivery. The web boundary supplies an invocation-scoped native queue publisher, so no queue API token enters
+the Worker. Concurrent invocation tests cover publisher isolation. The release deploys the queue scheduler after
+the Node executor. This integration still needs deployed Neon Hyperdrive and queue qualification; the historical
+Railway deployment evidence below must not be treated as proof for those resources.
+
+A read-only Cloudflare inventory on October 16 confirmed staging Hyperdrive now targets
+`ep-quiet-lab-arjcxtk1.c-4.us-west-2.aws.neon.tech`, with `verify-full`, caching disabled and a five-connection origin
+limit. Both `copacker-jobs-staging` and `copacker-jobs-production` have HTTP pull consumers and separate dead-letter
+queues (ten retries, ten-minute visibility). No resources were changed by this review. These configuration checks
+do not replace deployed transaction, job and recovery acceptance on the final reviewed release.
+
 [PR 19](https://github.com/AndrewCraswell/ecommerce/pull/19) was reviewed against current main, including its shipment
 grouping, AWD linking and shared Buildkit development-domain changes. Review covered route and HTTP parity,
 authorization and DTO disclosure, session/cookie precedence, database and storage lifetimes, mutation refresh,
@@ -49,7 +62,8 @@ All 40 page paths and 62 HTTP handler files have Start entry points. Browser pag
 server functions and HTTP handlers enforce current memberships and permissions. Next, its WorkOS/Storybook adapters,
 image/font/navigation integrations and web containers are removed. React Compiler, RTK Query, nuqs, styles,
 localization, custom WorkOS screens and public HTTP contracts are retained. The Node worker remains the sole
-background executor. Queues/Workflows are a separate release and have not been activated.
+background executor. The reviewed source integrates Queue wake signals and Cron from PR 17; the earlier deployment
+below predates that integration. Cloudflare job execution and Workflows remain a separate release.
 
 nuqs' unused optional Next peer is removed with a scoped
 [pnpm override](https://pnpm.io/settings/dependency-resolution#overrides). React Email's separate development preview

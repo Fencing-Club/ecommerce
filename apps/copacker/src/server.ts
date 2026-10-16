@@ -6,6 +6,7 @@ import { profiles } from "@/db/schema"
 import { timeZoneCookie } from "@/lib/time-zone"
 import { signedInUser } from "@/server/auth"
 import { withAuthentication } from "@/server/auth-session"
+import { withJobPublisher } from "@/server/job-delivery"
 import { resolveLocalization, withLocalization } from "@/server/localization"
 import { closedForMaintenance, underMaintenance } from "@/server/maintenance"
 import { maintenanceResponse } from "@/server/start-maintenance"
@@ -14,7 +15,15 @@ import { withFileStorage } from "@/server/storage"
 export default {
   async fetch(request, env) {
     const active = await underMaintenance()
-    const render = () => handler.fetch(request)
+    const render = () =>
+      withJobPublisher(
+        async (delaySeconds) => {
+          if (env.DEPLOYMENT_ENV !== "local") {
+            await env.JOBS.send(JSON.stringify({ kind: "wake" }), { contentType: "text", delaySeconds })
+          }
+        },
+        () => handler.fetch(request)
+      )
     const response = await withLocalization(
       async () => {
         const user = active ? null : await signedInUser()

@@ -17,34 +17,35 @@ JSON values, object counts/bytes/checksums, job duration, event backlog, provide
 
 Agree on allowable write downtime and recovery point/time targets for the compute and storage cutovers. Rehearse with
 authorized nonproduction data. Keep local Docker and isolated CI databases populated through migrations and fixtures;
-do not enable workers against a raw production clone. No database-provider migration or Neon branching is in scope.
+do not enable workers against a raw production clone. The separately merged Neon migration owns data transfer and
+PR database provisioning; this web cutover must verify and use the resulting authoritative database.
 
-## Railway Postgres connectivity and continuity
+## Neon Postgres connectivity and continuity
 
-1. Retain the existing staging and production databases, migration history, data, encryption keys and scheduled backups.
-   Do not export/import data, configure a replication cutover, change the database provider or retire its resources.
-2. Prove the connection from a deployed Worker through Hyperdrive to Railway's public TCP proxy, starting with staging.
-   Railway's private hostname is not directly reachable from Workers. Configure the correct Railway CA and `verify-ca`
-   as documented in current operations; use `verify-full` only when hostname validation is supported. Test certificate
-   rotation and failed validation. Never turn verification off. Keep credentials in scoped secrets, not browser code
-   or logs. [Hyperdrive TLS configuration](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/).
+1. Confirm the authoritative staging and production Neon branches and completion of the separately managed
+   [database transfer](../../neon.md#transfer-and-acceptance). Preserve migration history, data and encryption keys.
+   The earlier Cloudflare qualification targeted Railway; it does not qualify the Neon origin.
+2. Prove the deployed Worker connection through Hyperdrive to Neon's direct endpoint, starting with staging.
+   Require certificate and hostname verification, and test failed validation. Never turn verification off or reuse
+   the Railway CA for Neon. Keep credentials in scoped secrets, not browser code or logs.
+   [Hyperdrive TLS configuration](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/).
 3. Use separate environment-specific Hyperdrive configurations with query caching disabled initially. Validate row
    locks, transactions, JSON/array queries, token refresh serialization, reconnect behavior and read-after-write results.
    Use invocation-scoped clients and reserve enough origin connections for retained Node services and the migration
-   runner. Measure latency and Railway network egress under representative load before switching web traffic.
-4. Keep retained Node services on their existing Railway private connection. Move the migration runner from the web
+   runner. Measure cross-provider latency and network egress under representative load before switching web traffic.
+4. Configure retained Node services with pooled Neon connections. Move the migration runner from the web
    service's predeploy hook to one serialized CI job before retiring that web service; never run both migration paths
-   for the same release. Its direct Railway connection must use the required CA when traversing the public proxy.
-5. Keep scheduled Railway database backups and test restoration into an isolated nonproduction database. Verify key
-   business totals and matching R2 documents in the recovery drill. The current documented daily/weekly retention
-   reaches 27 days; this hosting effort does not replace that recovery policy.
-6. Code/origin rollback continues to use the same authoritative Railway Postgres database. Preserve expand/contract
-   schema compatibility for old and new web/job executors. There is no database-provider reversal or reverse data copy
-   in this effort. Maintain exactly one execution owner per job family through cutover and rollback.
+   for the same release. Its direct Neon connection must use `sslmode=verify-full` and hold the migration advisory
+   lock on one session; a transaction pooler is rejected.
+5. Confirm Neon's actual history retention and restore into an isolated nonproduction database. Verify key business
+   totals and matching R2 documents. Neon does not inherit Railway's old daily/weekly backup retention.
+6. Code/origin rollback continues to use the same authoritative Neon database. Preserve expand/contract schema
+   compatibility for old and new web/job executors. Returning to a stale Railway copy loses accepted writes;
+   data recovery requires the separate database runbook. Maintain one execution owner per job family.
 
 Use the repository's migration process for all schema changes, including any later outbox/executor fields. Do not edit
-historical migrations or use hand-applied schema SQL. The later database migration will have its own data-transfer,
-branching and rollback runbook.
+historical migrations or use hand-applied schema SQL. The [database operations guide](../../neon.md) owns data-transfer,
+branching and recovery requirements.
 
 ## Private bucket cutover
 
@@ -68,7 +69,7 @@ through the database recovery window, and prove that a restored database can ret
 
 Prove a complete route before committing to the port: login, workspace authorization, server data, localized rendering,
 mutation, origin/CSRF validation, fresh data after mutation, private document download and logout. Exercise on deployed
-Workers with actual nonproduction WorkOS credentials, Railway staging Postgres and isolated R2 resources. Serialize
+Workers with actual nonproduction WorkOS credentials, Neon staging Postgres and isolated R2 resources. Serialize
 staging acceptance runs or provision separate nonproduction databases for concurrent writable previews.
 
 Port the remaining routes in reviewable groups, preserving the HTTP API and URL contracts. Cover custom authentication,
@@ -80,12 +81,16 @@ Replace Railway's web `predeploy` migration with one serialized CI migration job
 and do not let every Worker instance migrate on startup. Preserve expand/contract schema compatibility while old code,
 jobs or Workflows can still run. Staging seeds must never execute in production.
 
-Switch web routing while the Node worker continues against Railway Postgres and R2. Keep `copacker.ai`, `staging.copacker.ai`, media and
+Switch web routing while the Node worker continues against Neon Postgres and R2. Keep `copacker.ai`, `staging.copacker.ai`, media and
 provider callback paths stable. Verify TLS and proxy behavior rather than copying the Railway-specific SSL setting.
 Retain a tested origin/version rollback and compatible cookies; if Start's session format differs, explicitly plan
 re-authentication. Bypass shared CDN caching for auth/session responses and tenant data.
 
 ## Worker and event cutover
+
+The current web release retains the Node executor and adds native Queue wake signals plus the Cron scheduler from
+PR 17. First qualify publication after commit, delayed retries, restart, hourly recovery and daily reconciliation as
+described in [background jobs](../../background-jobs.md). The following executor-transfer requirements remain future work.
 
 1. Add inbox/outbox and execution ownership through migrations. Commit business changes and jobs together. The
    dispatcher retries unconfirmed publication; consumers tolerate duplicate delivery and out-of-order messages.
@@ -118,7 +123,7 @@ commands. A successful deployment alone is not the routing-switch gate.
 | --- | --- | --- |
 | Private R2 | Manifest, old/new private downloads, upload and worker-generated file, access/revision denial | Pause writers and reconcile reverse delta/deletions after any new R2 writes |
 | Static Storybook | Domain/TLS, assets, MSW, navigation and story access policy | Restore previous routing/artifact; retain the previous deployment through observation |
-| Start web | Health commit, custom sign-in/out, mutation/freshness, private download, callback, locale and maintenance status | Restore compatible origin/code; keep Railway DB and accepted cookie transition; do not roll back schema destructively |
+| Start web | Health commit, custom sign-in/out, mutation/freshness, private download, callback, locale and maintenance status | Restore compatible origin/code; keep the authoritative Neon DB and accepted cookie transition; do not roll back schema destructively |
 | Job family | Correct owner/fence, queued/delayed jobs, progress, provider outcome and DLQ/outbox age | Pause new claims, drain/checkpoint, reconcile external effects, then transfer owner; never enable two executors |
 | SQS reader/scheduler | Durable receipt, partial-batch retries, event age and one daily job identity | Controlled reader/trigger handover; preserve accepted event/job identities and deduplication history |
 
@@ -132,13 +137,13 @@ the incident and choose the rehearsed rollback or a concrete repair; do not cont
 | User journeys | Integrated-browser acceptance at desktop/mobile with keyboard/accessibility checks; buyer, supplier and forwarder permissions; localization and sign-in parity |
 | Workers runtime | Real deployment exercises transactions, SDKs, cryptography, PDF/ZIP/XLSX processing and worst-case concurrent memory/CPU; no Node-only assumption left untested |
 | Events and jobs | Duplicate/out-of-order replay, provider timeout, process death after side effect, expired lease, queue/DLQ recovery, outbox publication failure and manual retry |
-| Database continuity | Railway remains authoritative; verified Hyperdrive TLS, transaction correctness, shared connection budget, acceptable latency and unchanged scheduled backups |
+| Database continuity | Confirm authoritative Neon branches; verified Hyperdrive TLS, transaction correctness, shared connection budget, acceptable latency and a proven recovery window |
 | Data and files | Reconciled business totals/object manifests; token decryption and refresh; zero missing referenced documents; no cross-workspace disclosure |
 | Environment isolation | No production tokens, writes, subscriptions or email in test environments; independent DB/storage/queue bindings and cleanup for any optional previews |
 | Operations | Health reports correct commit; useful alerts; restored DB plus matching documents; documented code and data rollback; measured cost/latency acceptable |
 
 Retire only the replaced Railway web, worker, Storybook and private bucket resources after the agreed observation window,
-restore drill, reconciliation and replacement of any necessary container workload. **Retain Railway Postgres, its volume,
-scheduled backups and required connection configuration.** Remove only obsolete secrets, aliases and provider
-registrations, then update the live operations and domain documentation. Railway database hosting and AWS notification
-transport both remain part of the resulting platform. The database migration is a separate future effort.
+restore drill, reconciliation and replacement of any necessary container workload. Database retirement belongs to
+the separate Neon migration checklist; never delete a recovery copy during a web deployment. Remove only obsolete
+secrets, aliases and provider registrations, then update the live operations and domain documentation.
+Neon hosting and required AWS notification transport remain part of the resulting platform.

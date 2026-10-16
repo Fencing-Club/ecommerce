@@ -435,6 +435,27 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@types/node@24.13.2)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(happy-dom@20.14.5)(msw@2.15.0(@types/node@24.13.2)(typescript@7.0.1-rc))(vite@8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
 
+  apps/copacker/scheduler:
+    devDependencies:
+      '@cloudflare/vite-plugin':
+        specifier: 2.0.0-beta.v.0
+        version: 2.0.0-beta.v.0(@types/node@24.13.2)(vite@8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))(workerd@1.20261012.1)
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../../packages/typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      cf:
+        specifier: 1.0.0-beta.17
+        version: 1.0.0-beta.17(@types/node@24.13.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.1-rc
+      vite:
+        specifier: ^8.3.0
+        version: 8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1)
+
   apps/turbo-cache:
     devDependencies:
       '@repo/oxlint-config':
@@ -1140,6 +1161,12 @@ packages:
     peerDependencies:
       vite: ^6.1.0 || ^7.0.0 || ^8.0.0
       wrangler: ^4.151.0
+
+  '@cloudflare/vite-plugin@2.0.0-beta.v.0':
+    resolution: {integrity: sha512-G7492jrrCF/pUOuKEv7cLdjDDHPjsd+VJXtT0MjEDATiqNV5XsmztSNSEJt9MM5lPw6KbeKKcPHe5az/qrTOmQ==}
+    hasBin: true
+    peerDependencies:
+      vite: ^7.0.0 || ^8.0.0
 
   '@cloudflare/workerd-darwin-64@1.20261012.1':
     resolution: {integrity: sha512-dkTL9aY3V4D40b+jBpGPCistWUPFQ/M61wlWi6i1o8MvHFFgEw7EQkcaYEv6Yd3bkPDD/3TFT4hRsMb2xVZSwQ==}
@@ -9357,6 +9384,22 @@ snapshots:
       - '@types/node'
       - bufferutil
       - utf-8-validate
+
+  '@cloudflare/vite-plugin@2.0.0-beta.v.0(@types/node@24.13.2)(vite@8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))(workerd@1.20261012.1)':
+    dependencies:
+      '@cloudflare/build-output-utils': 0.9.2
+      '@cloudflare/config': 0.26.0
+      '@cloudflare/runtime-types': 0.1.11(@types/node@24.13.2)
+      '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261012.1)
+      miniflare: 5.20261012.0-beta(@types/node@24.13.2)
+      unenv: 2.0.0-rc.24
+      vite: 8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1)
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - utf-8-validate
+      - workerd
 
   '@cloudflare/workerd-darwin-64@1.20261012.1':
     optional: true

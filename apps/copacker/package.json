@@ -41,7 +41,10 @@
     "release": "node --import tsx scripts/release.ts",
     "build:stories-release": "node --import tsx scripts/build-stories-release.ts",
     "storage:transfer": "node --import tsx scripts/storage-transfer.ts",
-    "dev:doctor": "dev-domains doctor"
+    "dev:doctor": "dev-domains doctor",
+    "preview:deploy": "node --import tsx scripts/preview.ts deploy",
+    "preview:remove": "node --import tsx scripts/preview.ts remove",
+    "preview:sweep": "node --import tsx scripts/preview.ts sweep"
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.1136.0",

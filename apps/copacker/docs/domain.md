@@ -44,7 +44,7 @@ it ([Amazon inbound shipments](amazon-inbound.md)).
 ## Architecture
 
 - TanStack Start and Router with shadcn/ui; every read and write is authorized on the server.
-- Postgres on Railway with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
+- Postgres on Neon with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
 - One private bucket per environment for uploaded and generated documents, downloaded only through authorized routes.
   The Cloudflare release uses R2; moving the existing Railway files requires the verified storage cutover.
 - Store credentials are encrypted per workspace; OAuth state is single-use and expires; supplier invitations match the

@@ -43,6 +43,9 @@
       "ignore": [".storybook/public/**"],
       "ignoreDependencies": ["@repo/oxlint-config", "cloudflare"]
     },
+    "apps/copacker/scheduler": {
+      "entry": ["index.ts", "cloudflare.config.ts"]
+    },
     "apps/video": {
       "entry": ["src/index.ts", "remotion.config.ts", "scripts/*.ts"],
       "ignoreDependencies": ["@repo/oxlint-config"]

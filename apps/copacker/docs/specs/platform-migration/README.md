@@ -6,11 +6,15 @@ The full local browser suite passes. Production cutover and the separate backgro
 This specification does not authorize a production cutover.
 
 Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
-**Postgres stays on Railway for this entire effort**, including the existing staging and production databases and
-scheduled backups. Retain WorkOS, Resend and the commerce integrations. **TanStack Start is the selected replacement
-for Next.js.** The compatibility spike determines how to implement it, rather than reopening the framework choice.
-Keep Railway's worker until its replacement passes recovery and duplicate-delivery tests. A later database migration,
-potentially to Neon, is a separate effort.
+Retain WorkOS, Resend and the commerce integrations. **TanStack Start is the selected replacement for Next.js.**
+Keep Railway's worker until its replacement passes recovery and duplicate-delivery tests.
+
+**October 16 integration update:** PR 17 separately introduced Neon databases, isolated PR database branches and
+Cloudflare wake signals for the retained Node executor. This branch incorporates that work. It supersedes the original
+Railway-only database assumptions in the planning articles. [Neon operations](../../neon.md),
+[background jobs](../../background-jobs.md), and the updated [cutover requirements](cutover.md) describe the current
+contracts. Earlier deployed qualification against Railway is historical evidence; Neon Hyperdrive and queue delivery
+must be qualified before release. Hosted application previews and full Cloudflare execution remain separate work.
 
 - [Current and proposed architecture](architecture.md)
 - [Implementation decisions and compatibility evidence](compatibility.md)
@@ -31,7 +35,7 @@ private files, static Storybook and suitable background work to Cloudflare, with
 large files require a container. Framework migration and worker replacement have separate release gates.
 
 The migration does not redesign screens, replace the client data layer, change identity providers, introduce a new
-database engine, migrate Railway Postgres, implement other planned product specs, or require experimental React Server
+database engine, repeat the separately managed Neon data transfer, implement other planned product specs, or require experimental React Server
 Components. Existing contract defects discovered during the port get a separate decision; accidental behavior changes
 must not be hidden inside framework work.
 
@@ -42,7 +46,7 @@ must not be hidden inside framework work.
 | Client requests | Keep Redux Toolkit Query, current HTTP contracts, React Hook Form and Zod; do not introduce TanStack Query in the same migration |
 | Localization | Preserve catalogs and locale behavior; propose standalone `use-intl`, with the dependency decision recorded before implementation |
 | Identity | Keep WorkOS and custom authentication screens; prove supported Start SDK session APIs before porting the remaining pages |
-| Database | Keep Railway Postgres, Drizzle and `pg`; use Hyperdrive with verified TLS and query caching disabled |
+| Database | Keep Postgres, Drizzle and `pg`; use Neon through Hyperdrive with verified TLS and query caching disabled |
 | Private files | Separate private R2 buckets per environment; preserve authenticated downloads and document validation |
 | Background work | Postgres ledger plus transactional inbox/outbox, Queues, Workflows and Cron; retain necessary AWS notification transport |
 | Local services | Keep the current local Postgres workflow initially; Podman is an optional compatibility task, not a Cloudflare deployment dependency |
@@ -53,7 +57,7 @@ GitHub issues. Milestone completion requires recorded evidence from [verificatio
 code. Record dependency choices and compatibility results beside this specification before implementation changes add
 libraries, in accordance with the repository's preferred-stack policy.
 
-## Database boundary: retain Railway Postgres
+## Database boundary: integrate Neon without changing SQL semantics
 
 Copacker already uses Postgres through Drizzle and `pg`. Its schema declares 40 tables, including JSONB and PostgreSQL
 arrays. Business operations use transactions and row locks; the job processor claims work with
@@ -61,33 +65,31 @@ arrays. Business operations use transactions and row locks; the job processor cl
 Postgres independently of branching. See [schema](../../../src/db/schema.ts), [queue](../../../src/server/queue.ts),
 [connections](../../../src/server/connections.ts) and [sales](../../../src/server/sales-orders.ts).
 
-| Area | This effort | Later effort |
-| --- | --- | --- |
-| Database hosting | Existing Railway Postgres remains authoritative | Evaluate and migrate the database separately |
-| SQL and schema | Retain Drizzle, `pg`, transactions and committed migrations | Preserve Postgres semantics in any later provider move |
-| Connectivity | Add verified Workers-to-Railway connectivity through Hyperdrive | Repoint and validate connectivity during a later DB migration |
-| Database branching | Keep local Docker and isolated CI databases; no Neon provisioning | Evaluate Neon branching with the later migration |
-| Recovery | Keep Railway scheduled backups and prove restoration | Review the future provider's recovery policy separately |
+| Area | Current contract |
+| --- | --- |
+| Database hosting | Neon staging and production branches from PR 17; verify live origins before cutover |
+| SQL and schema | Retain Drizzle, `pg`, transactions and committed migrations |
+| Connectivity | Web uses uncached Hyperdrive to the direct Neon endpoint; Node executor uses pooled Neon |
+| Database branching | Keep local Docker and isolated CI databases; trusted PRs receive a private Neon database branch |
+| Recovery | Verify Neon's actual recovery history and a matching document restore; do not assume Railway retention |
 
 No database export/import, replication cutover, database-engine replacement or database-provider retirement is in scope.
 Application schema changes required for the new job architecture still use the normal Drizzle migration process.
 
-For Workers, retain Drizzle plus `pg` through **Hyperdrive connected to Railway Postgres**. Railway's private hostname
-is not directly reachable from Workers. Prove the public TCP proxy path with Railway's CA and certificate verification
-before the web cutover; the existing operations guide specifies `verify-ca`. Use `verify-full` only when the hostname
-and certificate support it. Never disable certificate verification to make the connection work. Confirm account support
-and configure the CA explicitly in Hyperdrive. Sources: [current database access](../../operations.md#databases-and-migrations)
+For Workers, retain Drizzle plus `pg` through **Hyperdrive connected to Neon Postgres**. Prove TLS certificate and
+hostname verification before the web cutover. Never disable verification to make a connection work or reuse the old
+Railway CA for Neon. Sources: [current database access](../../neon.md#connections-and-releases)
 and [Hyperdrive TLS configuration](https://developers.cloudflare.com/hyperdrive/configuration/tls-ssl-certificates-for-hyperdrive/).
 
-Use invocation-scoped clients in place of the current process-wide pool. Migrations use a separate direct Railway
-connection and migration role, with the required CA when connecting through the public proxy.
+Use invocation-scoped clients in place of the web's process-wide pool. Migrations use a separate direct Neon
+connection and migration role, with verified TLS and a session advisory lock; never use a transaction pooler.
 Keep query caching disabled initially: permissions, document release status, stock, job state and token refreshes need
 fresh reads. Hyperdrive is a connection service, not the database. Benchmark region placement and sequential queries;
 placing the web runtime at the edge does not make a regional Postgres database local to every user.
 Sources: [Hyperdrive behavior](https://developers.cloudflare.com/hyperdrive/concepts/how-hyperdrive-works/) and
 [connection lifecycle](https://developers.cloudflare.com/hyperdrive/concepts/connection-lifecycle/).
 
-Retained Node services continue using Railway's private connection and their existing pool. Budget their connections
+Retained Node services use the pooled Neon connection and their existing pool. Budget their connections
 alongside Hyperdrive's pool during the transition. Test the Shopify refresh-token transaction explicitly: it holds a row lock
 across the provider request to prevent competing refreshes. Do not remove that serialization as a pooling optimization.
 
@@ -147,7 +149,7 @@ but do not remove the memory/CPU constraints of processing a PDF. Sources:
 [Queues limits](https://developers.cloudflare.com/queues/platform/limits/).
 
 If large-file processing cannot meet those constraints, keep it in a container service while the rest moves. Evaluate
-Cloudflare Containers separately if moving that compute is useful; Railway Postgres remains regardless. Do not reduce
+Cloudflare Containers separately if moving that compute is useful. Do not reduce
 supported file sizes or promise an all-Workers implementation before measurement. Prefer isolated processing jobs and streamed downloads;
 any asynchronous-upload UX change needs its own acceptance tests and must preserve validation before release.
 
@@ -166,32 +168,31 @@ database branching is included in the estimate.
 Use `cf` for new Copacker Cloudflare configuration under repository policy; Copacker has no Wrangler configuration in
 the inspected checkout. Verify beta CLI capabilities and configuration support against the pinned version in M0.
 
-## Environments, deferred branching and cost
+## Environments, database previews and cost
 
-Keep local Docker Postgres, isolated CI databases, and the existing Railway staging and production databases. Automatic
-database branches are not a deliverable. If a cloud preview needs writes, provide a separately isolated nonproduction
-Postgres database and fixtures, or use the existing serialized staging workflow; never bind a disposable preview to
-production or let concurrent previews overwrite a shared staging dataset.
+Keep local Docker Postgres and isolated CI databases. PR 17 supplies separate Neon staging and production branches
+and automatic isolated PR database branches. The preview job applies migrations without application, commerce or
+storage credentials. Hosted app previews remain deferred; never bind one to production or share a writable staging dataset.
 
 Database isolation must precede binding any preview runtime. Give each preview its own database role/Hyperdrive binding,
 private storage namespace or bucket, jobs, secrets and allowed origins. Disable live subscriptions, scheduled sync,
 real email and commerce writes by default. Copied production connection tokens and pending jobs are unsafe: even a
 database-isolated preview can rotate Shopify tokens or create real shipments. R2 objects, WorkOS users, AWS queues and
-merchant accounts require their own environment isolation. Neon remains a candidate for a later database migration,
-when branching, data transfer, recovery and preview-resource lifecycle can be designed and estimated together.
+merchant accounts require their own environment isolation. Database-only previews do not qualify these future
+application resources; their lifecycle and isolation need separate implementation and acceptance.
 
 Do not promise savings without a baseline. Capture Railway's web/worker/DB/bucket spend, request CPU, DB size and active
-hours, object operations, event rates, workflow steps and peak file memory. Model retained Railway database/backups and
+hours, object operations, event rates, workflow steps and peak file memory. Model Neon compute/storage/recovery and
 database network egress, Workers/Hyperdrive, R2, Queues, Workflows, AWS transport and any container fallback. Measure
-cross-provider database latency and traffic; keeping Postgres in Railway means its hosting cost remains. No Neon costs
-or database scale-to-zero savings belong in this effort's model.
+cross-provider database latency and traffic. Confirm actual idle compute behavior; hourly recovery, jobs and user
+traffic still consume database compute, so scale-to-zero savings must be measured.
 Sources: [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
 [R2 pricing](https://developers.cloudflare.com/r2/pricing/) and
 [Workflows pricing](https://developers.cloudflare.com/workflows/reference/pricing/).
 
 Before committing to production dates, resolve measured data/object sizes, acceptable write downtime, recovery targets,
-peak document-processing requirements and the verified Cloudflare-to-Railway connection path. The first implementation
-milestone is the compatibility proof, followed by R2 and web/job cutovers. Railway Postgres stays authoritative throughout.
+peak document-processing requirements and the verified Cloudflare-to-Neon connection path. The first implementation
+milestone is the compatibility proof, followed by R2 and web/job cutovers. Preserve one authoritative database per environment.
 
 ## Definition of done
 
@@ -200,5 +201,5 @@ supported user journeys pass on deployed Start; no server credentials or privile
 unauthorized loader responses. Private documents and job recovery meet their existing product contracts. Production
 has completed its agreed observation window, operations and domain documentation reflect the deployed state, and only
 replaced resources have been retired. An approved container-processing exception may remain; it must have an owner,
-bounded scope, monitoring and recovery instructions. Railway Postgres and required AWS transport remain intentional
+bounded scope, monitoring and recovery instructions. Neon Postgres and required AWS transport remain intentional
 dependencies, not unfinished migration tasks.

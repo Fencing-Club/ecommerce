@@ -28,7 +28,7 @@ jobs:
       STORIES_URL: ${{ vars.STORIES_URL }}
       APP_COMMIT_SHA: ${{ inputs.commit }}
       RELEASE_CUTOVER_READY: ${{ vars.RELEASE_CUTOVER_READY }}
-      DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+      DIRECT_DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
       DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
       DATABASE_TLS_SERVER_NAME: ${{ vars.DATABASE_TLS_SERVER_NAME }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_WORKER_TOKEN }}
@@ -72,6 +72,10 @@ jobs:
       - name: Deploy retained background executor
         timeout-minutes: 35
         run: bash .github/scripts/deploy-worker.sh "$APP_COMMIT_SHA"
+      - name: Deploy background-job scheduler
+        run: pnpm --filter copacker-scheduler exec cf deploy
+        env:
+          COPACKER_ENVIRONMENT: ${{ inputs.mode }}
       - name: Verify deployed commit
         working-directory: apps/copacker
         run: node --import tsx scripts/check-release.ts

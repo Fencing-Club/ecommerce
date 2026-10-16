@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"
 import { Client } from "pg"
-import { directDatabase } from "../src/db/connection"
+import { databaseConfig } from "../src/db/connection"
 
-const client = new Client(directDatabase())
+const client = new Client(databaseConfig("migration"))
 await client.connect()
 try {
   // One session owns the lock and runs Drizzle, including across its migration transactions.

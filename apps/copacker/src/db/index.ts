@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { drizzle } from "drizzle-orm/node-postgres"
 import type { PoolConfig } from "pg"
 import { Pool } from "pg"
-import { directDatabase } from "./connection"
+import { databaseConfig } from "./connection"
 import * as schema from "./schema"
 const invocation = new AsyncLocalStorage<Database | Transaction>()
 let instance: ReturnType<typeof nodeDatabase> | undefined
@@ -11,7 +11,7 @@ function createDatabase(pool: Pool) {
 }
 function nodeDatabase() {
   const pool = new Pool({
-    ...directDatabase(),
+    ...databaseConfig(),
     max: 10,
     // Keepalive stops the database proxy from silently dropping idle connections.
     keepAlive: true

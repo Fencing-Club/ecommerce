@@ -51,7 +51,10 @@ if (action === "deploy") {
     process.env.RELEASE_CUTOVER_READY === "true",
     "Complete the release gates and set RELEASE_CUTOVER_READY in the protected GitHub environment"
   )
-  invariant(process.env.DATABASE_URL, "Deploy requires the direct migration connection")
+  invariant(
+    process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL,
+    "Deploy requires the direct migration connection"
+  )
   invariant(
     execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim() === sha,
     "Release commit differs from the checkout"

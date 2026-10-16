@@ -21,6 +21,7 @@ import type { ServerText } from "@/i18n/server-text"
 import { serverTextInEnglish } from "@/i18n/server-text"
 import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
+import { withJobWake } from "@/server/job-delivery"
 import { syncAmazonFees } from "./amazon-fees"
 import { syncInboundShipments } from "./amazon-shipments"
 import { amazonFor, connection, ebayFor, shopifyFor } from "./connections"
@@ -139,60 +140,66 @@ export async function requestSalesSync(org: Pick<Session["org"], "id" | "kind">,
   if (org.kind !== "buyer") {
     throw new SalesSyncError("buyerWorkspaceRequired")
   }
-  return db().transaction(async (tx) => {
-    const [account] = await tx
-      .select({ externalId: connections.externalId, scopes: connections.scopes })
-      .from(connections)
-      .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
-    if (!account) {
-      throw new SalesSyncError("connectInSettings", { provider: source })
-    }
-    if (source === "shopify") {
-      const scopes = new Set(account.scopes.split(/[,\s]+/))
-      if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
-        throw new SalesSyncError("reconnectShopifyOrders")
+  return withJobWake(
+    db().transaction(async (tx) => {
+      const [account] = await tx
+        .select({ externalId: connections.externalId, scopes: connections.scopes })
+        .from(connections)
+        .where(and(eq(connections.orgId, org.id), eq(connections.provider, source)))
+      if (!account) {
+        throw new SalesSyncError("connectInSettings", { provider: source })
       }
-    }
-    const [current] = await tx
-      .select()
-      .from(salesSyncs)
-      .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
-      .for("update")
-    if (current && ["queued", "running"].includes(current.status) && current.externalAccountId === account.externalId) {
-      // A sync whose job failed or went missing (such as one a worker couldn't run) would wait forever; it starts again.
-      const [job] = await tx
-        .select({ status: jobs.status })
-        .from(jobs)
-        .where(eq(jobs.key, `sales:${org.id}:${source}:${current.revision}`))
-      if (job && ["pending", "running"].includes(job.status)) {
-        return { status: current.status }
+      if (source === "shopify") {
+        const scopes = new Set(account.scopes.split(/[,\s]+/))
+        if (!scopes.has("read_orders") && !scopes.has("write_orders")) {
+          throw new SalesSyncError("reconnectShopifyOrders")
+        }
       }
-    }
-    // A different account starts over; its orders don't belong to the new one.
-    const sameAccount = current?.externalAccountId === account.externalId
-    const revision = (current?.revision ?? 0) + 1
-    const values = {
-      externalAccountId: account.externalId,
-      status: "queued" as const,
-      revision,
-      requestedAt: new Date(),
-      errorCode: null,
-      ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null })
-    }
-    await tx
-      .insert(salesSyncs)
-      .values({ orgId: org.id, source, ...values })
-      .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
-    await tx
-      .insert(jobs)
-      .values({
-        key: `sales:${org.id}:${source}:${revision}`,
-        kind: "sales",
-        payload: { orgId: org.id, source, revision }
-      })
-      .onConflictDoNothing()
-    return { status: "queued" }
-  })
+      const [current] = await tx
+        .select()
+        .from(salesSyncs)
+        .where(and(eq(salesSyncs.orgId, org.id), eq(salesSyncs.source, source)))
+        .for("update")
+      if (
+        current &&
+        ["queued", "running"].includes(current.status) &&
+        current.externalAccountId === account.externalId
+      ) {
+        // A sync whose job failed or went missing (such as one a worker couldn't run) would wait forever; it starts again.
+        const [job] = await tx
+          .select({ status: jobs.status })
+          .from(jobs)
+          .where(eq(jobs.key, `sales:${org.id}:${source}:${current.revision}`))
+        if (job && ["pending", "running"].includes(job.status)) {
+          return { status: current.status }
+        }
+      }
+      // A different account starts over; its orders don't belong to the new one.
+      const sameAccount = current?.externalAccountId === account.externalId
+      const revision = (current?.revision ?? 0) + 1
+      const values = {
+        externalAccountId: account.externalId,
+        status: "queued" as const,
+        revision,
+        requestedAt: new Date(),
+        errorCode: null,
+        ...(sameAccount ? {} : { coveredFrom: null, coveredTo: null })
+      }
+      await tx
+        .insert(salesSyncs)
+        .values({ orgId: org.id, source, ...values })
+        .onConflictDoUpdate({ target: [salesSyncs.orgId, salesSyncs.source], set: values })
+      await tx
+        .insert(jobs)
+        .values({
+          key: `sales:${org.id}:${source}:${revision}`,
+          kind: "sales",
+          payload: { orgId: org.id, source, revision }
+        })
+        .onConflictDoNothing()
+      return { status: "queued" }
+    })
+  )
 }
 
 // The periods a sync reads, in order. Each touches the stored range, so the range stays unbroken and grows as the sync

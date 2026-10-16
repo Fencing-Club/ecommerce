@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
         APP_URL: bindings.text(new URL(origin).origin),
         DEPLOYMENT_ENV: bindings.text(environment),
         COPACKER_LOCAL: bindings.text(deployed ? "" : "1"),
+        JOBS: bindings.queue<string>({ name: `copacker-jobs-${environment}` }),
         DOCUMENTS: bindings.r2({
           name: bucket,
           ...(!deployed ? { dev: { experimentalS3Credentials: localStorage().credentials } } : {})

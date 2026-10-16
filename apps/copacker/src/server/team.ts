@@ -9,6 +9,7 @@ import { AccessError } from "@/i18n/errors"
 import type { Access } from "@/lib/access"
 import { accessSchema, highestLevel } from "@/lib/access"
 import { areasFor } from "@/lib/navigation"
+import { withJobWake } from "@/server/job-delivery"
 import { requestLocale } from "@/server/localization"
 import { hash, token } from "./security"
 import type { Session } from "./workspace-session"
@@ -114,25 +115,27 @@ export async function inviteColleague(org: Pick<Session["org"], "id" | "name" | 
   if (member) {
     throw new LocalizedError("alreadyInWorkspace", { email })
   }
-  await db().transaction((tx) => send(tx, org, email, grant))
+  await withJobWake(db().transaction((tx) => send(tx, org, email, grant)))
   return { ok: true, email }
 }
 
 // Sends an invitation again with a new link, keeping what it gives.
 export async function resendInvitation(org: Pick<Session["org"], "id" | "name">, raw: unknown) {
   const email = emailSchema.parse(raw).email.toLowerCase()
-  await db().transaction(async (tx) => {
-    const [waiting] = await tx
-      .select({ role: teamInvitations.role, access: teamInvitations.access })
-      .from(teamInvitations)
-      .where(and(eq(teamInvitations.orgId, org.id), eq(teamInvitations.email, email)))
-      .orderBy(desc(teamInvitations.createdAt))
-      .for("update")
-    if (!waiting) {
-      throw new LocalizedError("invitationAnswered")
-    }
-    await send(tx, org, email, waiting)
-  })
+  await withJobWake(
+    db().transaction(async (tx) => {
+      const [waiting] = await tx
+        .select({ role: teamInvitations.role, access: teamInvitations.access })
+        .from(teamInvitations)
+        .where(and(eq(teamInvitations.orgId, org.id), eq(teamInvitations.email, email)))
+        .orderBy(desc(teamInvitations.createdAt))
+        .for("update")
+      if (!waiting) {
+        throw new LocalizedError("invitationAnswered")
+      }
+      await send(tx, org, email, waiting)
+    })
+  )
   return { ok: true, email }
 }
 

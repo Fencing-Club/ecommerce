@@ -100,8 +100,9 @@ and predeploy path are removed from this branch. Existing live services remain i
 
 Migrations move forward: add columns and tables before deploying consumers, and drop obsolete fields in a later release.
 A rollback uses the previous compatible web artifact and reconciled private files. To reverse a schema change, write a
-new migration or restore an existing Railway scheduled backup: daily backups are kept six days, weekly backups 27 days.
-Avoid permanent manual backups consuming the provider's limited backup slots.
+new migration or restore a verified recovery point from the authoritative database. Confirm Neon's actual restore
+window and matching private documents as described in [database recovery](neon.md#transfer-and-acceptance);
+the former Railway retention does not apply to Neon.
 
 ## Infrastructure
 
@@ -115,10 +116,9 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 | Staging environment     | `b822ecad-68dd-4f4f-89e0-d9db00485545` |
 | Web service (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
 | Worker (`copacker-worker`) | `08c1edb8-c309-4fe4-b71e-14b54065a0fc` |
-| Postgres                | `aef82310-c9f9-4472-a2bb-e19949723c31` |
 | Documents bucket        | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
 
-Each environment has its own instance of every service, database and bucket. Production answers on
+Each deployed environment has its own web/worker services and document bucket, and an independent [Neon database branch](neon.md). Production answers on
 `https://copacker.ai` (`APP_URL`) and `https://copacker-production.up.railway.app`; staging on
 `https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both sign in through WorkOS's staging
 environment ([WorkOS settings](auth.md#workos-settings)).
@@ -160,9 +160,9 @@ before deployment. Disable the old Railway predeploy migration command before ac
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.
-To read a deployed database, go through the Railway CLI rather than storing its URL locally: `railway run` uses the
-private `postgres.railway.internal` hostname, which a local computer can't reach, and the public TCP proxy needs
-`sslmode=verify-ca` with the CA from Railway. Never disable certificate verification.
+Read deployed databases through direct Neon connections with `sslmode=verify-full`. Keep credentials in runtime
+environment variables or secret stores; never replace a local development URL with a deployed database URL.
+See [Neon connections and releases](neon.md).
 
 ### Amazon connection mode
 
@@ -170,4 +170,7 @@ private `postgres.railway.internal` hostname, which a local computer can't reach
 
 ## Preview scope
 
-PR previews currently cover Storybook and fixture-backed UX. Do not provision preview databases or storage on Railway or reuse staging/production data. Database previews are deferred until the Neon migration, and storage previews until the Cloudflare migration, to simplify and reduce the cost of isolated resources. See the [domain inventory](domains.md#pull-request-previews) for the current deployment and the deferred persistence checklist.
+Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Hosted app previews
+remain a follow-up after the Cloudflare web release; no new Railway resources are provisioned. Existing shared Storybook
+deployments remain available; the former container preview integration cannot build this branch's static Worker.
+See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.
