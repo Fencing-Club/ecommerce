@@ -36,11 +36,13 @@ tested staging commit. See the [release gates](cloudflare.md#release-procedure);
 After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging.
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
 test edits. Forks and Dependabot do not receive credentials. With `CLOUDFLARE_PREVIEW_CONFIG` configured, CI builds
-the Cloudflare app and fixture-only Storybook Workers, verifies their commit health endpoints, and links both in
+the Cloudflare app Worker and uploads fixture-only Storybook files, verifies their commit health endpoints, and links both in
 the Actions summary. Each app gets its own Hyperdrive connection and queue. Previews reuse the existing private
-`copacker-staging-private` R2 bucket, with `pr-<number>/` reserved for each PR. Referenced staging files are copied
-into that PR's folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
+`copacker-staging-private` R2 bucket, with `previews/pr-<number>/` reserved for each PR. Referenced staging files are copied
+into that PR's `app/` folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
 pushes preserve the preview's edits. No new bucket or Railway resource is created.
+
+Storybook is served at `https://previews.copacker.ai/pr-<number>/storybook/` by one shared Worker. Its files live under `previews/pr-<number>/storybook/<build-version>/`. Publication changes only after every upload succeeds. The server checks the publication marker before serving cached files, so cleanup makes even cached URLs unavailable. The private bucket is never made public, and the server cannot route requests to app documents. The app itself retains its isolated workers.dev origin for routing and authentication; the `app/` bucket folder contains documents, not executable server code.
 
 The storage adapter prefixes every preview read, write and delete. These folders separate normal app operations,
 not bucket permissions: trusted preview code has the same bucket access as staging. The shared bucket holds only
@@ -51,10 +53,10 @@ Do not provide production or commerce API credentials. Background jobs remain pe
 database/queue: the retained staging and production executors never consume them. Hosted previews cover web,
 authentication, database mutations and documents; full job execution needs the separate Cloudflare executor migration.
 
-The close workflow runs trusted default-branch code on **both merge and close**. It stops the app and Storybook,
+The close workflow runs trusted default-branch code on **both merge and close**. It stops the app and unpublishes Storybook,
 removes the PR's queue and Hyperdrive, deletes only its R2 prefix, and finally removes the Neon branch. It verifies
 absence before reporting success. A partial failure fails the job and can be retried safely; the database remains
-until Cloudflare cleanup succeeds. Shared buckets, staging and production are preserved.
+until Cloudflare cleanup succeeds. The shared assets Worker and bucket, staging and production are preserved.
 
 A six-hour sweep inventories Neon, Workers, Hyperdrive, queues **and R2 files independently**, so an expired Neon
 branch or interrupted deployment cannot hide leftover hosting. It removes only PRs GitHub explicitly reports closed;
@@ -74,9 +76,11 @@ Required repository configuration:
 `CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-staging-private`),
 `subdomain` (the account's workers.dev subdomain), and `caCertificateId` (the uploaded Neon public root CA).
 CI reuses the existing staging bucket and never deletes it. The scoped account token
-needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. The secrets JSON contains
+needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. Deploying the shared assets Worker with its custom domain also requires the corresponding Workers domain/zone permissions. The secrets JSON contains
 exactly `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`, and `TOKEN_ENCRYPTION_KEY`.
 Register the test WorkOS callback/sign-out patterns listed in [domains](domains.md#pull-request-previews).
+
+Deploy and verify the shared assets Worker with `pnpm --filter copacker preview:assets:deploy` before enabling hosted previews. Its dedicated workflow maintains it after changes on main.
 
 Enable the configuration only after this cleanup implementation is on the default branch and staging's R2 files
 match its database references. Until then, existing database-only previews continue; do not claim hosted previews

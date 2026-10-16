@@ -1,8 +1,10 @@
-import { execFileSync } from "node:child_process"
+import { execFile, execFileSync } from "node:child_process"
 import { mkdtempSync, rmSync, rmdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { setTimeout } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
+import { promisify } from "node:util"
 import invariant from "tiny-invariant"
 import { z } from "zod"
 import { previewNumber, previewResources } from "./preview-config"
@@ -22,6 +24,44 @@ const object = z.object({
   size: z.number().optional(),
   http_metadata: z.object({ contentType: z.string().optional() }).optional()
 })
+const cli = fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json")))
+
+// Upload concurrently through the same pinned CLI without logging provider output.
+export async function uploadPreviewFile(config: HostingSettings, key: string, file: string, contentType: string) {
+  invariant(/^previews\/pr-[1-9]\d*\/storybook\//.test(key), "Invalid Storybook upload prefix")
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await promisify(execFile)(
+        process.execPath,
+        [
+          cli,
+          "r2",
+          "objects",
+          "put",
+          key,
+          "--bucket-name",
+          config.bucket,
+          "--file",
+          file,
+          "--content-type",
+          contentType
+        ],
+        {
+          env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
+          timeout: 120000,
+          maxBuffer: 1024 * 1024
+        }
+      )
+      return
+    } catch {
+      if (attempt === 2) {
+        throw new Error("Storybook file upload failed; retry the preview workflow")
+      }
+      // PUT is idempotent for this immutable build key, including a lost successful response.
+      await setTimeout(2000 * (attempt + 1))
+    }
+  }
+}
 
 // Keep cf's output private: Hyperdrive responses and CLI errors can contain database credentials.
 export function cloudflare(
@@ -37,17 +77,13 @@ export function cloudflare(
       writeFileSync(file, JSON.stringify(options.body), { mode: 0o600 })
       args = [...args, "--body", `@${file}`]
     }
-    return execFileSync(
-      process.execPath,
-      [fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))), ...args],
-      {
-        env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
-        stdio: "pipe",
-        timeout: 120000,
-        maxBuffer: 64 * 1024 * 1024,
-        ...(options.binary ? {} : { encoding: "utf8" })
-      }
-    )
+    return execFileSync(process.execPath, [cli, ...args], {
+      env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: config.accountId },
+      stdio: "pipe",
+      timeout: 120000,
+      maxBuffer: 64 * 1024 * 1024,
+      ...(options.binary ? {} : { encoding: "utf8" })
+    })
   } catch {
     throw new Error(`Cloudflare ${args.slice(0, 2).join(" ")} failed; retry the preview workflow`)
   } finally {
@@ -110,7 +146,7 @@ export function previewInventory(config: HostingSettings) {
     workers: pages(config, ["workers", "list"], worker),
     hyperdrives: pages(config, ["hyperdrive", "list"], hyperdrive),
     queues: z.array(queue).parse(cloudflareJson(config, ["queues", "list"])),
-    objects: previewObjects(config, config.bucket, "pr-")
+    objects: previewObjects(config, config.bucket, "previews/pr-")
   }
 }
 type Inventory = ReturnType<typeof previewInventory>
@@ -123,7 +159,7 @@ export function hostedPreviewNumbers(inventory: Inventory) {
     ...inventory.queues.map((item) => item.queue_name),
     ...inventory.objects.map((item) => item.key)
   ]) {
-    const match = /^(?:copacker-(?:stories-|jobs-)?pr-([1-9]\d*)|pr-([1-9]\d*)\/.*)$/.exec(name)
+    const match = /^(?:copacker-(?:jobs-)?pr-([1-9]\d*)|previews\/pr-([1-9]\d*)\/.*)$/.exec(name)
     const number = match?.[1] || match?.[2]
     if (number) {
       numbers.add(number)
@@ -137,15 +173,19 @@ export function removeHostedPreview(config: HostingSettings, input: string) {
   const names = previewResources(number)
   const inventory = previewInventory(config)
   // Stop all writers first. If this fails, preserve files/database rather than race a live preview.
-  for (const item of inventory.workers.filter((entry) => entry.name === names.app || entry.name === names.stories)) {
+  for (const item of inventory.workers.filter((entry) => entry.name === names.app)) {
     cloudflare(config, ["workers", "delete", item.id, "--force"])
   }
   const remaining = pages(config, ["workers", "list"], worker)
-  invariant(
-    !remaining.some((item) => item.name === names.app || item.name === names.stories),
-    "Preview Worker still exists after deletion"
-  )
+  invariant(!remaining.some((item) => item.name === names.app), "Preview Worker still exists after deletion")
   const failures: string[] = []
+  // The shared asset server checks this marker before serving even cached files.
+  const publication = `${names.storiesPrefix}.release.json`
+  if (inventory.objects.some((item) => item.key === publication)) {
+    cloudflare(config, ["r2", "objects", "bulk-delete", "--bucket-name", config.bucket, "--force"], {
+      body: [publication]
+    })
+  }
   function attempt(label: string, remove: () => void) {
     try {
       remove()

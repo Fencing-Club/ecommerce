@@ -105,7 +105,11 @@ export default definePreview({
     addonA11y(),
     addonMsw(async () => {
       const worker = setupWorker(...handlers)
-      await worker.start({ onUnhandledRequest: "bypass", quiet: true })
+      await worker.start({
+        onUnhandledRequest: "bypass",
+        quiet: true,
+        serviceWorker: { url: new URL("mockServiceWorker.js", window.location.href).href }
+      })
       return worker
     })
   ],

@@ -1,13 +1,9 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { z } from "zod"
-import { previewResources } from "./preview-config"
 
-const mode = z.enum(["staging", "production", "preview"]).parse(process.argv[2])
-let name = mode === "production" ? "copacker-stories" : "copacker-stories-staging"
-if (mode === "preview") {
-  name = previewResources(process.env.PR_NUMBER || "").stories
-}
+const mode = z.enum(["staging", "production"]).parse(process.argv[2])
+const name = mode === "production" ? "copacker-stories" : "copacker-stories-staging"
 // A separate project/output tree keeps Storybook deployment independent from the web artifact.
 const root = path.resolve(".cloudflare/stories-release")
 const output = path.join(root, ".cloudflare/output/v0")
@@ -32,7 +28,7 @@ await writeFile(
     compatibilityDate: "2026-10-15",
     workersDev: mode !== "production",
     previewUrls: false,
-    domains: (mode === "preview" ? "" : process.env.CLOUDFLARE_STORIES_DOMAINS || "")
+    domains: (process.env.CLOUDFLARE_STORIES_DOMAINS || "")
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean),

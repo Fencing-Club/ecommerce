@@ -13,7 +13,7 @@ const invocation = new AsyncLocalStorage<FileStorage>()
 
 // A Worker supplies its private bucket for this invocation. The retained Node worker uses its S3 configuration.
 export function withFileStorage<T>(files: FileStorage, run: () => T, prefix = ""): T {
-  if (prefix && !/^pr-[1-9]\d*\/$/.test(prefix)) {
+  if (prefix && !/^previews\/pr-[1-9]\d*\/app\/$/.test(prefix)) {
     throw new Error("Invalid preview storage prefix")
   }
   // R2 keys are literal strings. Prefix every operation; a preview never falls back to the bucket root.

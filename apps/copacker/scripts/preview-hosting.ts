@@ -11,7 +11,8 @@ import { databaseConfig } from "../src/db/connection"
 import { storageReferenceQuery } from "../src/db/storage-references"
 import { requiredSecrets } from "./cloudflare-environment"
 import { cloudflare, previewObjects, provisionHostedPreview, type HostingSettings } from "./preview-cloudflare"
-import { previewResources } from "./preview-config"
+import { previewAssetsHostname, previewResources } from "./preview-config"
+import { publishPreviewStories } from "./preview-stories"
 
 function fingerprint(bytes: Buffer) {
   return createHash("sha256").update(bytes).digest("hex")
@@ -19,7 +20,7 @@ function fingerprint(bytes: Buffer) {
 
 // Copy the referenced staging documents once. Further pushes preserve the PR's own document edits.
 async function copyDocuments(config: HostingSettings, number: string, databaseUrl: URL, folder: string) {
-  const prefix = previewResources(number).prefix
+  const prefix = previewResources(number).documentsPrefix
   const marker = `${prefix}.preview-ready`
   const existing = new Set(previewObjects(config, config.bucket, prefix).map((item) => item.key))
   if (existing.has(marker)) {
@@ -90,7 +91,7 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
   )
   const folder = mkdtempSync(path.join(tmpdir(), "copacker-preview-"))
   const app = `https://${names.app}.${config.subdomain}.workers.dev`
-  const stories = `https://${names.stories}.${config.subdomain}.workers.dev`
+  const stories = `https://${previewAssetsHostname}/pr-${number}/storybook/`
   try {
     const hyperdrive = provisionHostedPreview(config, number, databaseUrl)
     await copyDocuments(config, number, databaseUrl, folder)
@@ -126,7 +127,6 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
       "preview"
     ])
     run([fileURLToPath(new URL("./dist/bin/dispatcher.js", import.meta.resolve("storybook/package.json"))), "build"])
-    run(["--import", "tsx", "scripts/build-stories-release.ts", "preview"])
     const deploy = [
       fileURLToPath(new URL("./bin/cf", import.meta.resolve("cf/package.json"))),
       "deploy",
@@ -141,9 +141,8 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
     ]
     run([...deploy, "--dry-run", "--secrets-file", secretFile])
     run([...deploy, "--secrets-file", secretFile])
-    run([...deploy, "--dry-run"], path.join(root, ".cloudflare/stories-release"))
-    run(deploy, path.join(root, ".cloudflare/stories-release"))
-    for (const url of [`${app}/api/health`, `${stories}/health.json`]) {
+    await publishPreviewStories(config, number, sha, path.join(root, "storybook-static"))
+    for (const url of [`${app}/api/health`, `${stories}health.json`]) {
       const response = await fetch(url, { signal: AbortSignal.timeout(30000) })
       invariant(
         response.ok && z.object({ commit: z.string() }).parse(await response.json()).commit === sha,

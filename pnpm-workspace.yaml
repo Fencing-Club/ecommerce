@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "apps/copacker/scheduler"
+  - "apps/copacker/preview-assets"
   - "packages/*"
 nodeLinker: hoisted
 verifyDepsBeforeRun: error

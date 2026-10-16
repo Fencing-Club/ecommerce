@@ -115,7 +115,7 @@ export async function runPreview(mode: "deploy" | "remove" | "sweep") {
       assertPreviewBranch(branch, name, settings.NEON_STAGING_BRANCH_ID)
     }
     if (mode === "remove") {
-      if (hosting && (await pullRequest(settings.PR_NUMBER)).state !== "closed") {
+      if ((await pullRequest(settings.PR_NUMBER)).state !== "closed") {
         log(`Preserved ${name}: PR is open or has reopened`)
         return
       }

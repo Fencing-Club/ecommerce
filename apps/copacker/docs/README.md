@@ -16,6 +16,7 @@ The buyer, supplier and forwarder portal in `apps/copacker`. The monorepo's shar
 - [Landing page: the signed-out home page](landing-page.md)
 - [Run Copacker: setup, releases and infrastructure](operations.md)
 - [Neon database operations and PR previews](neon.md)
+- [Shared preview Storybook server](../preview-assets/docs/README.md)
 - [Background jobs and Cloudflare wake signals](background-jobs.md)
 - [Cloudflare runtime, releases and private-storage migration](cloudflare.md)
 - [Domains and provider configuration across environments](domains.md)
