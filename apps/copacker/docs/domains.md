@@ -127,14 +127,14 @@ live integration task; never reuse another project's tunnel.
 
 ## Pull request previews
 
-Trusted same-repository PRs deploy a Railway web service with a provider-generated HTTPS origin, an isolated Neon
-branch copied from staging, and a private document bucket copied from staging. CI publishes the actual URL in the
-GitHub deployment and Actions summary. See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets.
+Trusted same-repository PRs receive an isolated Neon branch copied from staging, with the PR's migrations applied.
+See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets. Hosted application previews are deferred
+to the Cloudflare web migration; their private documents will use R2. No new Railway preview infrastructure is created.
 
-Email/password sign-in uses the staging identity provider. Register exact preview `/callback` URLs before testing
-Google/Microsoft OAuth; do not add `*.up.railway.app` to any origin allowlist. Commerce app credentials, outgoing email,
-queues, and workers are excluded. The `pr-*.preview.copacker.ai` namespace remains reserved and is not provisioned.
-Storybook continues using fixtures without database credentials.
+Automatic PR environment creation is disabled in both Copacker Railway projects. Existing fixture-only Storybook
+previews for open PRs remain until those PRs close; they contain no application credentials. The
+`pr-*.preview.copacker.ai` namespace remains reserved and is not provisioned. When Cloudflare app previews are enabled,
+register their exact WorkOS callbacks; do not add `*.up.railway.app` to any origin allowlist.
 
 ## Configuration change register
 
