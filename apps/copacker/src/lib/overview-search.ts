@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { periodQuery, type Period } from "./date-range"
+import { stringifyUrlSearch } from "./url-search"
 
 // Preserve the established URL contract, including unrelated keys owned by other controls.
 const searchValue = z.union([z.string(), z.number(), z.boolean()]).transform(String)
@@ -21,14 +22,5 @@ export function selectOverviewChannel(query: OverviewSearch, channel: string | n
 }
 
 export function overviewHref(query: OverviewSearch) {
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined) {
-      continue
-    }
-    for (const item of Array.isArray(value) ? value : [value]) {
-      params.append(key, item)
-    }
-  }
-  return `/overview${params.size ? `?${params}` : ""}`
+  return `/overview${stringifyUrlSearch(query)}`
 }

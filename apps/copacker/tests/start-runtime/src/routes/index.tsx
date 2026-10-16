@@ -25,11 +25,15 @@ const partner = parseAsStringLiteral(partnerKinds)
 const importing = parseAsBoolean.withDefault(false)
 
 export const Route = createFileRoute("/")({
-  // Router has already parsed JSON booleans. Invalid input must fall back just as the existing nuqs consumers do;
+  // Invalid input must fall back just as the existing nuqs consumers do;
   // nuqs' strict Standard Schema adapter would turn an invalid enum into a route error instead.
   validateSearch: z.object({
     add: z.enum(partnerKinds).optional().catch(undefined),
-    import: z.boolean().optional().catch(undefined),
+    import: z
+      .union([z.boolean(), z.enum(["true", "false"])])
+      .transform((value) => value === true || value === "true")
+      .optional()
+      .catch(undefined),
     lang: z.enum(["en", "ur"]).optional().catch(undefined)
   }),
   loader: () => readMarker(),

@@ -100,9 +100,12 @@ export async function checkStartPortal(request: Requester, origin: string, sessi
     assert.equal(response.status, 200, path)
     await response.body?.cancel()
   }
+  // More overlapping pages than the staging origin connection budget: no page may hold a transaction while waiting
+  // for a second locale transaction. Also verify language/workspace isolation across the same Worker isolate.
   const overlapping = await Promise.all([
     request("/overview", { headers: headers("owner", { "x-probe-locale": "ur" }) }),
-    request("/overview?period=today", { headers: supplierHeaders })
+    request("/overview?period=today", { headers: supplierHeaders }),
+    ...Array.from({ length: 4 }, () => request("/query/products?import=true", { headers: headers() }))
   ])
   const [buyerConcurrent, supplierConcurrent] = await Promise.all(
     overlapping.map(async (response) => {
@@ -114,4 +117,32 @@ export async function checkStartPortal(request: Requester, origin: string, sessi
   assert(!buyerConcurrent?.includes("Units shipped"))
   assert(supplierConcurrent?.includes('<html lang="en" dir="ltr"'))
   assert(supplierConcurrent?.includes("Units shipped"))
+
+  for (const path of [
+    "/query/partners?add=supplier&keep=stock",
+    "/query/partners?add=forwarder&keep=stock",
+    "/query/partners?add=invalid&keep=stock",
+    "/query/products?import=true&keep=stock",
+    "/query/products?import=false&keep=stock",
+    "/query/products?import=invalid&keep=stock"
+  ]) {
+    let response = await request(path, { headers: headers(), redirect: "manual" })
+    if (path.includes("=invalid")) {
+      assert.equal(response.status, 307, path)
+      const normalized = `${path.split("?")[0]}?keep=stock`
+      assert.equal(response.headers.get("Location"), normalized)
+      await response.body?.cancel()
+      response = await request(normalized, { headers: headers(), redirect: "manual" })
+    }
+    assert.equal(response.status, 200, path)
+    const html = markup(await response.text())
+    assert(html.includes('aria-label="Compatibility pages"'))
+    assert(html.includes(path.startsWith("/query/partners") ? "Add partner" : "More actions"))
+  }
+  const readOnly = await request("/query/partners?add=supplier", { headers: headers("view-only") })
+  assert.equal(readOnly.status, 200)
+  assert(!markup(await readOnly.text()).includes("Add partner"))
+  const forbiddenQuery = await request("/query/products?import=true", { headers: headers("no-overview") })
+  assert.equal(forbiddenQuery.status, 403)
+  assert(!markup(await forbiddenQuery.text()).includes("More actions"))
 }

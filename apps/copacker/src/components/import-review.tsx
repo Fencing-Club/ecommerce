@@ -18,7 +18,7 @@ import { useCan } from "./access"
 import { fileName, PageHeader, WarningNote } from "./common"
 import { DateInput, FormLabel } from "./form-controls"
 import { SelectField } from "./form-fields"
-import { InviteSupplier } from "./supplier-actions"
+import { InviteSupplier } from "./invite-supplier"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
@@ -950,7 +950,12 @@ export function ImportReview({
         </fieldset>
       </form>
       {canAddSupplier && (
-        <InviteSupplier open={addingSupplier} onOpenChange={setAddingSupplier} finalFocus={supplierButton} />
+        <InviteSupplier
+          onCreated={router.refresh}
+          open={addingSupplier}
+          onOpenChange={setAddingSupplier}
+          finalFocus={supplierButton}
+        />
       )}
       <Dialog
         open={sourceDetails !== null}

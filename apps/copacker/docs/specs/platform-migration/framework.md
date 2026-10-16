@@ -140,19 +140,20 @@ server/browser formatting. Keep background-job/email translators independent of 
 height, left-to-right filenames, Latin/script-specific font preloads and marketing namespace reduction. Update all
 next-intl imports rather than leaving a hidden Next dependency. See [localization.md](../../localization.md).
 
-Trial nuqs before considering replacement. Its [TanStack Router adapter](https://nuqs.dev/docs/adapters) is experimental and its
-documentation does not claim complete Start support. The acceptance slice is deliberately small:
+The [completed trial](compatibility.md#actual-nuqs-consumers) keeps nuqs 2.10.1 for these two consumers on the pinned
+Start/Router combination. Its [TanStack Router adapter](https://nuqs.dev/docs/adapters) remains experimental and its
+documentation does not claim complete Start support. Repeat this acceptance on relevant dependency upgrades:
 
 | Consumer | Existing URL contract | Required checks |
 | --- | --- | --- |
-| `partner-actions.tsx` | `?add=supplier` or `?add=forwarder` opens the corresponding sheet | Direct SSR load, hydration, close/remove key, invalid enum, navigation/back/forward and unrelated query keys |
+| `add-partner.tsx` | `?add=supplier` or `?add=forwarder` opens the corresponding dialog | Direct SSR load, hydration, close/remove key, invalid enum, navigation/back/forward and unrelated query keys |
 | `supplier/product-transfer.tsx` | `?import=true` opens product import; default is closed | Direct SSR load, boolean parsing, close, role access, navigation/back/forward and unrelated query keys |
 
 Place the adapter at the supported router boundary. Ensure Router search validation neither strips nuqs-owned keys nor
-creates competing navigation updates. Preserve existing history semantics, document them in tests, and keep
-`NuqsTestingAdapter` where appropriate in stories. Keep the adapter if these tests pass on deployed Start. Only if it
-fails, record the failing behavior and replace these two uses with typed Router search state in one focused task; do
-not build a generic compatibility layer. That fallback is a contingency, not additional planned work.
+creates competing navigation updates. Keep the shared URLSearchParams serializer to preserve repeated/opaque search
+values, and use invalid-value fallbacks for owned keys. Preserve nuqs' default replace-history semantics and keep
+`NuqsTestingAdapter` where appropriate in stories. If a later upgrade fails acceptance, record the failing behavior
+before considering a focused Router-search replacement; do not build a generic compatibility layer.
 
 ## Styling, assets, caching and maintenance
 

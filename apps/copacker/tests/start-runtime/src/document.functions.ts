@@ -14,10 +14,22 @@ export const readDocument = createServerFn()
       url.pathname === "/" && url.searchParams.get("lang") === "ur"
         ? await resolveLocalization({ preferredLocale: "ur", acceptLanguage: null, timeZone: resolved.timeZone })
         : resolved
-    const { auth, common, validation, overview, navigation, supplier, sales } = config.messages
+    const { auth, common, validation, overview, navigation, supplier, sales, partners, settings } = config.messages
     return {
       ...config,
-      messages: { auth, common, validation, ...(portal && { overview, navigation, supplier, sales }) },
+      messages: {
+        auth,
+        common,
+        validation,
+        ...(portal && {
+          overview,
+          navigation,
+          supplier,
+          sales,
+          partners,
+          settings: { supplierForm: settings.supplierForm }
+        })
+      },
       maintenance: maintenanceActive()
     }
   })

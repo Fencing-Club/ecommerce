@@ -1,8 +1,7 @@
 "use client"
 
-import { CheckCircle2, ChevronDown, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Plus, Send } from "lucide-react"
+import { CheckCircle2, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Send } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
@@ -19,34 +18,10 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { AddForwarder, InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
+import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
 import { isRowClick } from "./link-row"
 import { type PartnerAddress, PartnerAddressSheet } from "./partner-address"
-import { EditSupplier, InviteSupplier, InviteSupplierByEmail } from "./supplier-actions"
-
-// One button for adding either kind of partner. `?add=supplier` or `?add=forwarder` opens its sheet, so the top bar's
-// Create menu can link straight to it.
-export function AddPartner() {
-  const t = useTranslations("partners.add")
-  const [adding, setAdding] = useQueryState("add", parseAsStringLiteral(["supplier", "forwarder"]))
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button />}>
-          <Plus data-icon="inline-start" />
-          {t("button")}
-          <ChevronDown data-icon="inline-end" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => void setAdding("supplier")}>{t("supplier")}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void setAdding("forwarder")}>{t("forwarder")}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <InviteSupplier open={adding === "supplier"} onOpenChange={(open) => void setAdding(open ? "supplier" : null)} />
-      <AddForwarder open={adding === "forwarder"} onOpenChange={(open) => void setAdding(open ? "forwarder" : null)} />
-    </>
-  )
-}
+import { EditSupplier, InviteSupplierByEmail } from "./supplier-actions"
 
 // Where a partner stands with Copacker: on it, invited (the invitation may have run out), or not yet.
 type Standing = { joined: boolean; invited: boolean; expired: boolean }

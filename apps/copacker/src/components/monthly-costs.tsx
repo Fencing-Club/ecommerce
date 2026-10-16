@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { useActionForm } from "@/hooks/useActionForm"
 import { useActionMutation } from "@/lib/api"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput, FormMoney } from "./form-controls"
 import { FormSelect } from "./form-select"
 

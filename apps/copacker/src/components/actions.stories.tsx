@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useActionForm } from "@/hooks/useActionForm"
 import { held, recordActions } from "@/stories/fixtures/shared"
-import { ActionButton, ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
+import { ActionButton } from "./actions"
 import { FormInput } from "./form-controls"
 
 const meta = preview.meta({

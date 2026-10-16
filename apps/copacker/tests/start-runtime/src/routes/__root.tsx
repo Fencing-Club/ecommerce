@@ -10,7 +10,8 @@ import "@/styles/global.css"
 import "@/app/globals.css"
 
 export const Route = createRootRoute({
-  loader: ({ location }) => readDocument({ data: location.pathname === "/overview" }),
+  loader: ({ location }) =>
+    readDocument({ data: location.pathname === "/overview" || location.pathname.startsWith("/query/") }),
   shouldReload: true,
   head: () => ({
     meta: [

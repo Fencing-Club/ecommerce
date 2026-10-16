@@ -1,9 +1,10 @@
 import { Search } from "lucide-react"
 import { getTranslations } from "next-intl/server"
-import { expect, screen, userEvent, within } from "storybook/test"
+import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { AddPartner } from "@/components/add-partner"
 import { EmptyState, PageHeader } from "@/components/common"
-import { AddPartner, ForwarderRow, SupplierRow } from "@/components/partner-actions"
+import { ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import type { PartnerAddress } from "@/components/partner-address"
 import { TabLinks } from "@/components/tab-links"
 import { Card } from "@/components/ui/card"
@@ -101,7 +102,7 @@ async function PartnersPage({ permissions, type, q: query, partners, restockLead
 
   return (
     <>
-      <PageHeader title={t("title")}>{editable && <AddPartner />}</PageHeader>
+      <PageHeader title={t("title")}>{editable && <AddPartner onCreated={fn()} />}</PageHeader>
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks

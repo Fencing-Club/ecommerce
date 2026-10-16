@@ -38,7 +38,7 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { type Access, type Area, highestLevel, type Role } from "@/lib/access"
 import { useActionMutation } from "@/lib/api"
 import { areasFor } from "@/lib/navigation"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput } from "./form-controls"
 import { SelectControl } from "./form-select"
 

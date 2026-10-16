@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
-import { ProductsPageView } from "@/components/products-page"
 import { requirePage, session, titleFor } from "@/server/auth"
 import { withRequest } from "@/server/next-request"
 import { productsPageData } from "@/server/workspace-pages"
+import { ProductsContent } from "./content"
 
 export const generateMetadata = titleFor("products.page.title", "products")
 export default withRequest(async function ProductsPage({
@@ -15,5 +15,5 @@ export default withRequest(async function ProductsPage({
   if (s.org.kind !== "supplier" && s.org.kind !== "buyer") {
     redirect("/orders")
   }
-  return <ProductsPageView page={await productsPageData(s, (await searchParams).q)} />
+  return <ProductsContent page={await productsPageData(s, (await searchParams).q)} />
 })

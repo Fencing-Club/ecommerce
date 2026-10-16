@@ -1,6 +1,7 @@
 import { createRouter } from "@tanstack/react-router"
 import { createIsomorphicFn } from "@tanstack/react-start"
 import { maintenanceRewrite } from "@/lib/maintenance"
+import { parseUrlSearch, stringifyUrlSearch } from "@/lib/url-search"
 import { maintenanceActive } from "@/server/maintenance"
 import { routeTree } from "./routeTree.gen"
 
@@ -11,6 +12,8 @@ const maintenanceDocument = createIsomorphicFn()
 export function getRouter() {
   return createRouter({
     routeTree,
+    parseSearch: parseUrlSearch,
+    stringifySearch: stringifyUrlSearch,
     scrollRestoration: true,
     rewrite: maintenanceRewrite(maintenanceDocument())
   })

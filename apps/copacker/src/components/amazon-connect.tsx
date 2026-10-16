@@ -17,7 +17,7 @@ import { useActionForm } from "@/hooks/useActionForm"
 import { selfAuthorizationSchema } from "@/lib/amazon"
 import { amazonMarketplaces } from "@/lib/amazon-marketplaces"
 import { countriesIn } from "@/lib/countries"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormInput, FormLabel } from "./form-controls"
 import { FormSelect, SelectControl } from "./form-select"
 

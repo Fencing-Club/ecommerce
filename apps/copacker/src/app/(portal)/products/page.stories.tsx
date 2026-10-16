@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw"
-import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { fn, expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { ProductsPageView } from "@/components/products-page"
 import type { ProductRow } from "@/components/supplier/product-index"
@@ -31,7 +31,7 @@ function ProductsPage({ kind, permissions, products, providers, q }: Args) {
           }))
         }
       : { kind: "buyer" as const, providers, search: typeof q === "string" ? q.trim().slice(0, 200) : "" }
-  return <ProductsPageView page={page} />
+  return <ProductsPageView refresh={fn()} page={page} />
 }
 
 const buyer = pageStory("/products", ProductsPage, "buyer")

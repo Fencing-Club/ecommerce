@@ -29,6 +29,7 @@ import { Route as ApiMaintenanceRouteImport } from './routes/api.maintenance'
 import { Route as ApiSearchRouteImport } from './routes/api.search'
 import { Route as ApiWorkspaceRouteImport } from './routes/api.workspace'
 import { Route as LoginProviderRouteImport } from './routes/login.$provider'
+import { Route as QuerySurfaceRouteImport } from './routes/query.$surface'
 import { Route as ApiSalesOrdersRouteImport } from './routes/api.sales.orders'
 
 const IndexRoute = IndexRouteImport.update({
@@ -131,6 +132,11 @@ const LoginProviderRoute = LoginProviderRouteImport.update({
   path: '/$provider',
   getParentRoute: () => LoginRoute,
 } as any)
+const QuerySurfaceRoute = QuerySurfaceRouteImport.update({
+  id: '/query/$surface',
+  path: '/query/$surface',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSalesOrdersRoute = ApiSalesOrdersRouteImport.update({
   id: '/api/sales/orders',
   path: '/api/sales/orders',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/api/search': typeof ApiSearchRoute
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
+  '/query/$surface': typeof QuerySurfaceRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
 }
 export interface FileRoutesByTo {
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/api/search': typeof ApiSearchRoute
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
+  '/query/$surface': typeof QuerySurfaceRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
 }
 export interface FileRoutesById {
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/api/search': typeof ApiSearchRoute
   '/api/workspace': typeof ApiWorkspaceRoute
   '/login/$provider': typeof LoginProviderRoute
+  '/query/$surface': typeof QuerySurfaceRoute
   '/api/sales/orders': typeof ApiSalesOrdersRoute
 }
 export interface FileRouteTypes {
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/api/workspace'
     | '/login/$provider'
+    | '/query/$surface'
     | '/api/sales/orders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/api/workspace'
     | '/login/$provider'
+    | '/query/$surface'
     | '/api/sales/orders'
   id:
     | '__root__'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/api/workspace'
     | '/login/$provider'
+    | '/query/$surface'
     | '/api/sales/orders'
   fileRoutesById: FileRoutesById
 }
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   ApiMaintenanceRoute: typeof ApiMaintenanceRoute
   ApiSearchRoute: typeof ApiSearchRoute
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
+  QuerySurfaceRoute: typeof QuerySurfaceRoute
   ApiSalesOrdersRoute: typeof ApiSalesOrdersRoute
 }
 
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginProviderRouteImport
       parentRoute: typeof LoginRoute
     }
+    '/query/$surface': {
+      id: '/query/$surface'
+      path: '/query/$surface'
+      fullPath: '/query/$surface'
+      preLoaderRoute: typeof QuerySurfaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sales/orders': {
       id: '/api/sales/orders'
       path: '/api/sales/orders'
@@ -484,6 +504,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMaintenanceRoute: ApiMaintenanceRoute,
   ApiSearchRoute: ApiSearchRoute,
   ApiWorkspaceRoute: ApiWorkspaceRoute,
+  QuerySurfaceRoute: QuerySurfaceRoute,
   ApiSalesOrdersRoute: ApiSalesOrdersRoute,
 }
 export const routeTree = rootRouteImport

@@ -50,8 +50,9 @@ resources. M0 selects implementation details; TanStack Start and leaving Next ar
   Prove existing encrypted-token decryption and multiple response cookies. Record session-cookie compatibility.
 - [ ] **M0-05 — Database proof.** Validate Hyperdrive-to-Railway TLS/CA, transactions, locks, token-refresh serialization,
   concurrent clients, failure/reconnect behavior, latency and connection budget. Query caching stays disabled.
-- [ ] **M0-06 — nuqs trial.** Test both existing consumers through the TanStack Router adapter, including SSR/hydration,
-  direct links, back/forward, invalid values and preservation of other search keys. Record keep/fallback decision.
+- [x] **M0-06 — nuqs trial.** Both existing controls passed local/deployed SSR, hydration, direct links, history,
+  invalid values, repeated search keys and permission checks. Keep nuqs 2.10.1's trial adapter on the tested combination;
+  see [evidence and remaining route work](compatibility.md#actual-nuqs-consumers).
 - [ ] **M0-07 — Document and SDK proof.** Exercise maximum supported PDFs, representative generated packets, compressed
   reports and XLSX imports/exports under concurrency. Include AI requests, tracing, email rendering and provider SDKs.
   Record CPU/memory and select Workers or a scoped processor for each failing workload.
@@ -218,7 +219,7 @@ ordering, pause and rollback rules in [cutover.md](cutover.md) apply to every tr
 | --- | --- | --- | --- |
 | D01 | Supported Start/Cloudflare/WorkOS/Vite versions and custom session API | Official integration, ordinary SSR; no unsupported session internals | M0 exit |
 | D02 | Localization dependency agreement | Selected `use-intl` 4.14.9 in the authorized implementation; preserve catalogs/behavior | M3-03 |
-| D03 | nuqs compatibility result | Keep trial adapter if all checks pass; focused Router search fallback if it fails | M3-06 |
+| D03 | nuqs compatibility result | Decided: keep nuqs 2.10.1's trial adapter with URLSearchParams serialization; both controls passed deployed acceptance | Complete, M0-06 |
 | D04 | Railway connectivity/CA/account capability and connection budget | Verified TLS, query cache off, existing databases retained | M1-02 |
 | D05 | Document executor and concurrency limits | Preserve 32 MiB/1,000-page behavior; scoped processor if necessary | M3/M4 document work |
 | D06 | SQS ingress strategy and acceptable latency | Lambda bridge by default; bounded scheduled polling only by recorded choice | M4-07 |

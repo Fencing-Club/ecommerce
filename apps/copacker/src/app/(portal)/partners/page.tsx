@@ -1,7 +1,7 @@
 import { Search } from "lucide-react"
 import { getTranslations } from "next-intl/server"
 import { EmptyState, PageHeader } from "@/components/common"
-import { AddPartner, ForwarderRow, SupplierRow } from "@/components/partner-actions"
+import { ForwarderRow, SupplierRow } from "@/components/partner-actions"
 import { TabLinks } from "@/components/tab-links"
 import { Card } from "@/components/ui/card"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
@@ -12,6 +12,7 @@ import { requireBuyer } from "@/server/authorization"
 import { withRequest } from "@/server/next-request"
 import { listPartners, type PartnerForwarder, type PartnerSupplier } from "@/server/partners"
 import { restockSettings } from "@/server/restock-report"
+import { PartnerCreation } from "./add"
 
 export const generateMetadata = titleFor("partners.page.title", "partners")
 
@@ -89,7 +90,7 @@ export default withRequest(async function PartnersPage({
 
   return (
     <>
-      <PageHeader title={t("title")}>{editable && <AddPartner />}</PageHeader>
+      <PageHeader title={t("title")}>{editable && <PartnerCreation />}</PageHeader>
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b p-2">
           <TabLinks

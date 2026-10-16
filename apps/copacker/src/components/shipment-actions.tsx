@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FieldGroup } from "@/components/ui/field"
 import { useActionForm } from "@/hooks/useActionForm"
-import { ActionForm } from "./actions"
+import { ActionForm } from "./action-form"
 import { FormCheckbox, FormInput, FormTextarea } from "./form-controls"
 import * as styles from "./shipment-actions.css"
 

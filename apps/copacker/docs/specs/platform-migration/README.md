@@ -37,7 +37,7 @@ must not be hidden inside framework work.
 | Decision | Plan |
 | --- | --- |
 | Framework and hosting | TanStack Start with TanStack Router, Vite and the Cloudflare Vite integration; SSR and server routes on Workers |
-| Query-string state | Trial the existing two nuqs uses with its experimental TanStack Router adapter; keep them if the Start tests pass |
+| Query-string state | Keep nuqs 2.10.1's experimental TanStack Router adapter for the two existing uses; the local/deployed trial passed |
 | Client requests | Keep Redux Toolkit Query, current HTTP contracts, React Hook Form and Zod; do not introduce TanStack Query in the same migration |
 | Localization | Preserve catalogs and locale behavior; propose standalone `use-intl`, with the dependency decision recorded before implementation |
 | Identity | Keep WorkOS and custom authentication screens; prove supported Start SDK session APIs before porting the remaining pages |

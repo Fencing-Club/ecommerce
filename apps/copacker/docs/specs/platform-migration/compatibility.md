@@ -68,10 +68,10 @@ the Worker environment, as required by the Cloudflare Vite plugin; unrelated ext
 Worker types are generated from `cloudflare.config.ts`. The fixture has its own TypeScript project so its Worker
 platform globals and Router registration do not change the current application's browser/Next types.
 
-The nuqs TanStack Router adapter remains a trial. It is experimental and its documentation does not promise Start
-support. The browser trial found that nuqs' strict Standard Schema validation turns invalid enum values into route
-errors. The fixture now uses optional Zod fields with invalid-value fallbacks, accepting Router's parsed booleans.
-The real partners/product-import consumers still need their complete acceptance pass before D03 is closed.
+Keep nuqs 2.10.1 with its experimental TanStack Router adapter for the two existing consumers. The actual partner
+creation and product-import controls passed the local and deployed Start trial described below. This decision applies
+to the tested package combination; [nuqs' documentation](https://nuqs.dev/docs/adapters) still does not promise Start
+support. Repeat this acceptance when upgrading the adapter or Router.
 
 ## Verified checks
 
@@ -254,7 +254,7 @@ workspace checks, header search, sales search, and the actual POST `/logout` con
 The shared shell is synchronous, with explicit sidebar state and pathname. Search navigation, period/channel changes
 and refresh callbacks belong to each route. Start invalidates its loaders; Next retains its existing refresh boundary.
 The period helper preserves unrelated/repeated search keys and removes obsolete range keys together. Root message
-selection includes portal namespaces only for the overview. Native product images retain dimensions, lazy loading and
+selection includes portal namespaces only for the overview and query-control trial. Native product images retain dimensions, lazy loading and
 async decoding. Shared error/forbidden views are used by both route boundaries.
 
 Workspace changes set a host-only HttpOnly cookie only after a fresh membership lookup, then start a new document and
@@ -278,6 +278,41 @@ production build and local/deployed Workers runtime checks also passed for this 
 The main app still runs on Next. Remaining portal routes, registered typed links, complete auth/onboarding flows,
 app-level private download entry points, release cache drills and production cutover are not completed by this fixture.
 
+## Actual nuqs consumers
+
+`AddPartner`, `InviteSupplier`, `AddForwarder`, `SupplierForm` and `ActionForm` now have canonical browser modules
+without Next imports. Their successful mutations call an explicit route-owned refresh callback. Next's partner and
+product pages bind that callback to their current router; the Start trial binds it to loader invalidation. The product
+import control uses the same boundary and validates its preview/commit responses before using them. Stories cover
+successful callbacks, validation, permission restrictions, server failures and malformed preview data.
+
+The protected `/query/partners` and `/query/products` fixture renders these actual controls with current membership
+permissions. Local and deployed browser checks cover supplier/forwarder direct links, opening and closing through the
+menu, Cancel/Escape, empty form validation, invalid enum/boolean values, `import=false`, permission-restricted deep
+links, typed navigation and Back/Forward restoration. Closing removes only the owned key, including when unrelated
+keys repeat. Urdu mobile checks cover both dialogs without horizontal overflow; no hydration/console errors appeared.
+nuqs retains its existing default **replace** history behavior; navigating between documents adds history entries.
+
+Router's default JSON search encoding changed repeated URL values into a JSON array during normalization. The router
+now uses [custom search serialization](https://tanstack.com/router/latest/docs/guide/custom-search-param-serialization)
+through `URLSearchParams`, preserving repeated values and opaque strings. Route validators own only their known keys;
+invalid dialog state is removed by a 307 redirect without dropping unrelated keys. Shared URL tests also cover numeric
+and boolean values, empty/removal behavior, unsupported nested objects and prototype-like query names.
+
+The staging checks exposed a separate fixture connection dependency: a domain transaction could wait for localization
+while the profile-locale transaction waited for another Hyperdrive connection. Logs showed a stalled `BEGIN`; the
+origin showed an idle transaction after its profile read. The fixture now resolves localization before acquiring a
+domain transaction. Unit coverage checks this order and failure propagation; local/deployed acceptance overlaps six
+pages against the unchanged five-connection staging budget. Hyperdrive uses
+[transaction pooling](https://developers.cloudflare.com/hyperdrive/concepts/connection-pooling/); production request
+boundaries must likewise avoid holding a transaction while acquiring another connection for dependent work.
+
+The final `pnpm verify` includes 2,375 Copacker tests across 301 files. The Next production build and local/deployed
+Workers runtime/authentication checks passed. The new routes test URL state and form interactions, with no real partner
+invitations or product-import writes. Existing mocked stories cover submissions. Porting the actual partner/product
+routes and import/export/template endpoints, and verifying freshness after real mutations, remain M3/M4 work. M0-06
+and decision D03 are complete; the overall compatibility milestone is still open.
+
 ## Staging database and certificate
 
 Railway Postgres stays authoritative. The user supplied staging credentials in ignored `apps/copacker/.env.staging`.
@@ -298,7 +333,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
 | Private R2 binding | `DOCUMENTS`, bucket `copacker-staging-private` in WNAM; managed public access disabled; no custom domains |
-| Tested Worker version | `0cc11368-65c9-433f-9968-18ef9a88f3a6` |
+| Tested Worker version | `a4c44b60-072a-44ee-a2a3-625f79981872` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,
@@ -317,6 +352,6 @@ the old CA. Repeat separately for production; do not assume both environments sh
 ## Remaining proof before M0 exit
 
 Remaining custom WorkOS signup/verification/OAuth flows; complete workspace/logout browser-cache isolation; app-level private download acceptance;
-database row locks/token-refresh serialization and reconnect drills; full nuqs browser acceptance in both consumers;
+database row locks/token-refresh serialization and reconnect drills;
 maximum-size and representative PDF/ZIP/XLSX/AI workloads under concurrency; existing-service baseline and agreed
 release/recovery budgets. The application route conversion, background executors and production cutover are pending.
