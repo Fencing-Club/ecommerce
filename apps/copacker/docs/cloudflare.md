@@ -13,8 +13,10 @@ and `src/server/http` retain the existing authorization and HTTP contracts. `src
 authentication, localization, database, private-storage and queue-publisher contexts. A router is created per request. Database sockets
 close before the request finishes; Hyperdrive query caching is disabled. Mutations recheck current database permissions.
 
-The application retains Redux Toolkit Query and nuqs. Router invalidation refreshes loader data after changes; edits
-wait for fresh data before remounting. Authentication and workspace changes load a new document to discard old caches.
+The application retains Redux Toolkit Query and nuqs. Forms and action buttons await synchronous router invalidation
+before completing; form reset also waits so pending state covers the refresh. Authenticated actions resolve the request
+language before holding a domain transaction, avoiding a second profile connection inside a small Hyperdrive pool.
+Restock search survives report replacement while order selections reset. Authentication and workspace changes load a new document to discard old caches.
 Start's import protection rejects server dependencies in browser bundles. Client environment variables use the `VITE_`
 prefix only for deliberately public values, currently the restricted Google Maps browser key.
 
@@ -40,8 +42,9 @@ the web Worker. It retains direct PostgreSQL access. Never point a local job wor
 The earlier qualification deployment is at `copacker-staging.hoa-preview.workers.dev`; its source was an uncommitted
 working tree and its release SHA is deliberately blank. It predates the Neon integration. On October 16, a read-only
 check confirmed its Hyperdrive now targets Neon with `verify-full`, caching disabled and five origin connections.
-Its original staging worker used the original object store. Recheck both storage endpoints before further writes.
-Use this deployment for qualification reads until the final storage delta and both readers/writers switch together.
+Its original staging worker used the original object store. The October 16 storage transfer subsequently moved both
+retained web and executor readers/writers to R2 and verified the transferred bytes and references. Replace this early
+qualification artifact with the tested release before routing the stable staging domain to it.
 See the [qualification record](specs/platform-migration/compatibility.md#main-application-qualification).
 
 Required Worker secrets and optional integration secrets/settings are allowlisted in `scripts/cloudflare-environment.ts`.

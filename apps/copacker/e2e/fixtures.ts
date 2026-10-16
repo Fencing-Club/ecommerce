@@ -3,6 +3,8 @@ import path from "node:path"
 import { type Browser, type BrowserContext, expect, type Page, test as base } from "@playwright/test"
 import { e2eEmail, e2ePassword, e2eUser } from "../scripts/e2e-user"
 
+export { e2eEmail }
+
 // The seeded workspaces the test account owns (scripts/seed-e2e.ts).
 export const workspaces = {
   buyer: "E2E Buyer",

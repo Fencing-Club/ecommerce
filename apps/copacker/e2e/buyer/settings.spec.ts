@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { deployed, expect, test, unique } from "../fixtures"
+import { deployed, e2eEmail, expect, test, unique } from "../fixtures"
 
 test.use({ role: "buyer" })
 
@@ -24,7 +24,7 @@ test("lists every settings section for the owner", async ({ page }) => {
   ]) {
     await expect(page.getByRole("heading", { name, level: 2, exact: true })).toBeVisible()
   }
-  await expect(section(page, "Profile").getByText("copacker-e2e@example.net")).toBeVisible()
+  await expect(section(page, "Profile").getByText(e2eEmail)).toBeVisible()
 })
 
 test("edits the profile and puts it back", async ({ page }) => {

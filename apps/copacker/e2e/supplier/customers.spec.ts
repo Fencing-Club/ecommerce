@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { expect, test, unique } from "../fixtures"
+import { e2eEmail, expect, test, unique } from "../fixtures"
 import { createCatalog, deleteCatalog, withCustomer } from "./support"
 
 test.use({ role: "supplier" })
@@ -34,10 +34,7 @@ test("shows a customer's stats and contact", async ({ page }) => {
   for (const label of ["Amount spent", "Orders", "Customer since"]) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible()
   }
-  await expect(page.getByRole("link", { name: "copacker-e2e@example.net" })).toHaveAttribute(
-    "href",
-    "mailto:copacker-e2e@example.net"
-  )
+  await expect(page.getByRole("link", { name: e2eEmail })).toHaveAttribute("href", `mailto:${e2eEmail}`)
   await expect(page.getByRole("link", { name: /206/ })).toHaveAttribute("href", /^tel:/)
 })
 

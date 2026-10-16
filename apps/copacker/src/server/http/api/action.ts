@@ -89,6 +89,9 @@ export async function POST(request: Request) {
     if (signInAction) {
       return Response.json(await signInAction(await signInRequest(), data))
     }
+    // Resolve the profile language before a domain transaction holds a connection. A lazy lookup from inside that
+    // transaction needs another connection and can deadlock a small Hyperdrive pool under concurrent submissions.
+    await requestLocale()
     // Getting started: signed in, but maybe without a workspace yet.
     if (action === "onboarding.workspace") {
       return Response.json(await setUpWorkspace(await identity(), data))
