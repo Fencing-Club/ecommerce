@@ -6,7 +6,7 @@ import { urlQuery } from "@/lib/url-query"
 import { requirePage, session } from "@/server/auth"
 import { localization } from "@/server/localization"
 import { overviewPageData } from "@/server/overview-page"
-import { pageResult } from "@/server/page-result"
+import { localizedPage, pageResult } from "@/server/page-result"
 import { overviewDestination } from "@/server/portal-session"
 import {
   catalogsPageData,
@@ -23,7 +23,7 @@ import {
 export const readCatalogs = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(() =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/" })
@@ -33,15 +33,14 @@ export const readCatalogs = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("supplier.pages.catalogs") }
-    })
+      return page
+    }, "supplier.pages.catalogs")
   )
 
 export const readNewCatalog = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(() =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/" })
@@ -51,15 +50,14 @@ export const readNewCatalog = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("supplier.pages.newCatalog") }
-    })
+      return page
+    }, "supplier.pages.newCatalog")
   )
 
 export const readCatalog = createServerFn()
   .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/" })
@@ -69,15 +67,14 @@ export const readCatalog = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("supplier.pages.catalog") }
-    })
+      return page
+    }, "supplier.pages.catalog")
   )
 
 export const readCustomers = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(() =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/" })
@@ -87,15 +84,14 @@ export const readCustomers = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("supplier.pages.customers") }
-    })
+      return page
+    }, "supplier.pages.customers")
   )
 
 export const readCustomer = createServerFn()
   .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/" })
@@ -105,15 +101,14 @@ export const readCustomer = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("supplier.pages.customer") }
-    })
+      return page
+    }, "supplier.pages.customer")
   )
 
 export const readInventory = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/products" })
@@ -123,15 +118,14 @@ export const readInventory = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("inventory.page.title") }
-    })
+      return page
+    }, "inventory.page.title")
   )
 
 export const readSales = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "buyer") {
         throw redirect({ href: "/orders" })
@@ -141,15 +135,14 @@ export const readSales = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("sales.title") }
-    })
+      return page
+    }, "sales.title")
   )
 
 export const readRestock = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(() =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "buyer") {
         throw redirect({ href: "/orders" })
@@ -159,15 +152,14 @@ export const readRestock = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("restock.title") }
-    })
+      return page
+    }, "restock.title")
   )
 
 export const readProducts = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "buyer" && s.org.kind !== "supplier") {
         throw redirect({ href: "/orders" })
@@ -177,34 +169,28 @@ export const readProducts = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("products.page.title") }
-    })
+      return page
+    }, "products.page.title")
   )
 
 export const readNewProduct = createServerFn()
   .validator(z.object({ query: urlQuery }))
   .handler(() =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/products" })
       }
       requirePage(s, "products", "edit")
       requirePage(s, "prices")
-      const page = await {}
-      if (!page) {
-        throw notFound()
-      }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("products.page.addProduct") }
-    })
+      return {}
+    }, "products.page.addProduct")
   )
 
 export const readProduct = createServerFn()
   .validator(z.object({ query: urlQuery, id: z.string().max(128) }))
   .handler(({ data }) =>
-    pageResult(async () => {
+    localizedPage(async () => {
       const s = await session()
       if (s.org.kind !== "supplier") {
         throw redirect({ href: "/products" })
@@ -214,9 +200,8 @@ export const readProduct = createServerFn()
       if (!page) {
         throw notFound()
       }
-      const t = createTranslator(await localization())
-      return { data: page, title: t("products.page.product") }
-    })
+      return page
+    }, "products.page.product")
   )
 
 export const readOverview = createServerFn()
