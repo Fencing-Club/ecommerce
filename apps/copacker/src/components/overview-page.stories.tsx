@@ -1,4 +1,4 @@
-import { expect } from "storybook/test"
+import { expect, fn } from "storybook/test"
 import preview from "#.storybook/preview"
 import { buyerOverview, supplierOverviewData } from "@/stories/fixtures/overview"
 import { owner } from "@/stories/workspace"
@@ -6,7 +6,12 @@ import { OverviewPagePending, OverviewPageView } from "./overview-page"
 
 const meta = preview.meta({
   component: OverviewPageView,
-  args: { page: { kind: "buyer", admin: true, data: buyerOverview } }
+  args: {
+    refresh: fn(),
+    onPeriodChange: fn(),
+    onChannelChange: fn(),
+    page: { kind: "buyer", admin: true, data: buyerOverview }
+  } satisfies React.ComponentProps<typeof OverviewPageView>
 })
 
 export const Buyer = meta.story({

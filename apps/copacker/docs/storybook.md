@@ -23,6 +23,10 @@ Copacker's pages and components live in Storybook 10 (`@storybook/nextjs-vite`),
 `src/app/**/page.stories.tsx` for pages and `src/components/**/<name>.stories.tsx` for components. Every story has a
 `play` function, and Vitest runs them all in Chromium.
 
+The preview records ordinary internal anchor clicks through the navigation mock without leaving the story iframe.
+Route-controlled filters, refreshes and search navigation receive explicit callbacks in their component stories.
+The integrated browser remains required for actual document navigation, Start transitions and cross-tab behavior.
+
 ```bash
 pnpm --filter copacker storybook
 ```

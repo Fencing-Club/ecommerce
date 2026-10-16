@@ -1,7 +1,6 @@
 "use client"
 
 import { useWindowEvent } from "@mantine/hooks"
-import { usePathname } from "next/navigation"
 import { useEffect } from "react"
 
 // Tabs of this browser tell each other when the workspace changes.
@@ -22,12 +21,14 @@ export function announceWorkspace(id: string) {
 // again on navigation. After another tab switches workspaces, a page opened here would show that workspace's data
 // under this one's name. So the shell reloads when another tab announces a switch, and checks the active workspace
 // whenever the page changes or the window comes back into focus.
-export function WorkspaceWatch({ id }: { id: string }) {
-  const pathname = usePathname()
-
+export function WorkspaceWatch({ id, pathname }: { id: string; pathname: string }) {
   async function check() {
     try {
       const response = await fetch("/api/workspace", { cache: "no-store" })
+      if (response.status === 401 || response.status === 403 || response.redirected) {
+        window.location.reload()
+        return
+      }
       const current = response.ok ? ((await response.json()) as { id: string }).id : id
       if (current !== id) {
         window.location.reload()
@@ -54,5 +55,10 @@ export function WorkspaceWatch({ id }: { id: string }) {
   }, [pathname])
 
   useWindowEvent("focus", () => void check())
+  useWindowEvent("pageshow", (event) => {
+    if (event.persisted) {
+      window.location.reload()
+    }
+  })
   return null
 }

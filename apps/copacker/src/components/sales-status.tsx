@@ -1,4 +1,6 @@
-import { useTranslations } from "next-intl"
+"use client"
+
+import { useTranslations } from "use-intl"
 import { StatusBadge, type StatusTone } from "@/components/common"
 
 // Shopify's, Amazon's and eBay's order statuses on the shared status tones: shipped is done, waiting to ship is in

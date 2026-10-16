@@ -1,5 +1,6 @@
 import addonA11y from "@storybook/addon-a11y"
 import { definePreview } from "@storybook/nextjs-vite"
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import addonMsw from "msw-storybook-addon"
 import { setupWorker } from "msw/browser"
 import { NuqsTestingAdapter } from "nuqs/adapters/testing"
@@ -58,6 +59,27 @@ function StoryFrame({
   children: React.ReactNode
 }) {
   useEffect(() => applyTheme(theme), [theme])
+  useEffect(() => {
+    // Document links are real navigation in the app. In a story, record their destination without leaving the test
+    // iframe; the integrated browser separately verifies full document loads and Start transitions.
+    const navigate = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest("a") : null
+      const href = link?.getAttribute("href")
+      if (
+        href?.startsWith("/") &&
+        !href.startsWith("//") &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        !link?.hasAttribute("download")
+      ) {
+        event.preventDefault()
+        getRouter().push(href)
+      }
+    }
+    document.addEventListener("click", navigate, true)
+    return () => document.removeEventListener("click", navigate, true)
+  }, [])
   useEffect(() => {
     document.documentElement.lang = locale
     document.documentElement.dir = direction(locale)

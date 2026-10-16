@@ -1,8 +1,6 @@
 "use client"
 
 import { PanelLeft } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { useTranslations } from "use-intl"
 import {
   Sidebar,
@@ -46,6 +44,7 @@ export function SidebarToggle() {
 }
 
 export type AppSidebarProps = {
+  pathname: string
   kind: string
   // The open workspace, and its name as the session gave it until the workspace list has it.
   active: string
@@ -59,8 +58,7 @@ export type AppSidebarProps = {
 // The workspace switcher, then the workspace kind's pages in their groups, Settings pinned at the bottom, and the
 // signed-in person's account below them. On a computer the sidebar starts under the top bar and collapses to its icons;
 // on a phone it's a sheet over everything.
-export function AppSidebar({ kind, active, name, workspaces, userName, email }: AppSidebarProps) {
-  const pathname = usePathname()
+export function AppSidebar({ pathname, kind, active, name, workspaces, userName, email }: AppSidebarProps) {
   const isActive = (item: string) => pathname.startsWith(`/${item}`)
   const { setOpenMobile } = useSidebar()
   const t = useTranslations("navigation")
@@ -93,7 +91,13 @@ export function AppSidebar({ kind, active, name, workspaces, userName, email }: 
                         isActive={isActive(item.view)}
                         tooltip={t(`pages.${item.labelKey}`)}
                         className={itemClass}
-                        render={<Link href={`/${item.view}`} onClick={() => setOpenMobile(false)} />}
+                        render={
+                          <a
+                            aria-label={t(`pages.${item.labelKey}`)}
+                            href={`/${item.view}`}
+                            onClick={() => setOpenMobile(false)}
+                          />
+                        }
                       >
                         <item.icon />
                         <span>{t(`pages.${item.labelKey}`)}</span>

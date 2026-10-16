@@ -2,7 +2,6 @@
 
 import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
-import Link from "next/link"
 import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
 import { isPresent } from "ts-extras"
@@ -416,7 +415,7 @@ export function CoverChart({
         return (
           <li key={bucket.key}>
             {bucket.href ? (
-              <Link
+              <a
                 href={bucket.href}
                 className={cn(
                   row,
@@ -424,7 +423,7 @@ export function CoverChart({
                 )}
               >
                 {content}
-              </Link>
+              </a>
             ) : (
               <span className={cn(row, "text-muted-foreground")}>{content}</span>
             )}

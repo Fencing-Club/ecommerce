@@ -1,4 +1,5 @@
 import type { Args, Decorator, Loader } from "@storybook/nextjs-vite"
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { Children, cloneElement, createContext, Fragment, isValidElement, use, type ReactNode } from "react"
 import { prepareIntl } from "#.storybook/intl"
 import { mockRows } from "#.storybook/mocks/db"
@@ -63,6 +64,9 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
   const loader: Loader = async ({ globals }) => {
     await prepareIntl(globals.locale)
     const shell = await Shell({
+      pathname,
+      defaultOpen: true,
+      navigate: getRouter().push,
       name: workspace.name,
       userName: person.name,
       email: person.email,

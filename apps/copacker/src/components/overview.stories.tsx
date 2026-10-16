@@ -1,4 +1,4 @@
-import { expect, screen, userEvent, within } from "storybook/test"
+import { expect, fn, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { buyerOverview, setupSteps, unconnectedOverview } from "@/stories/fixtures/overview"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "./overview"
@@ -7,7 +7,7 @@ const noSales = buyerOverview.sales.daily.map((day) => ({ ...day, amazon: null, 
 
 const meta = preview.meta({
   component: OverviewDashboard,
-  args: { data: buyerOverview },
+  args: { data: buyerOverview, refresh: fn() },
   parameters: { layout: "fullscreen" }
 })
 
@@ -107,7 +107,7 @@ export const SetupUnfinished = meta.story({
 
 // The period and channel pickers beside the title, once the overview's data has loaded.
 export const Filters = meta.story({
-  render: ({ data }) => <OverviewFilters data={data} />,
+  render: ({ data }) => <OverviewFilters data={data} onPeriodChange={fn()} onChannelChange={fn()} />,
   parameters: { layout: "padded", nextjs: { navigation: { pathname: "/overview" } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /Last 30 days/ })).toBeVisible()
@@ -117,7 +117,7 @@ export const Filters = meta.story({
 
 // One channel has nothing to choose between.
 export const FiltersOneChannel = meta.story({
-  render: ({ data }) => <OverviewFilters data={data} />,
+  render: ({ data }) => <OverviewFilters data={data} onPeriodChange={fn()} onChannelChange={fn()} />,
   args: { data: { ...buyerOverview, channels: [{ key: "amazon", label: "Amazon" }] } },
   parameters: { layout: "padded" },
   play: async ({ canvas }) => {
@@ -128,7 +128,7 @@ export const FiltersOneChannel = meta.story({
 
 // Without a connected store there's nothing to filter.
 export const FiltersWithoutStores = meta.story({
-  render: ({ data }) => <OverviewFilters data={data} />,
+  render: ({ data }) => <OverviewFilters data={data} onPeriodChange={fn()} onChannelChange={fn()} />,
   args: { data: unconnectedOverview },
   parameters: { layout: "padded" },
   play: async ({ canvas }) => {

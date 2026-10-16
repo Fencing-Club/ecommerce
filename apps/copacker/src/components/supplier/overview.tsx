@@ -1,5 +1,7 @@
+"use client"
+
 import { CircleAlert, CircleCheck, CircleSlash, TriangleAlert } from "lucide-react"
-import { useLocale, useTimeZone, useTranslations } from "next-intl"
+import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { PageLink } from "@/components/access"
 import { Status } from "@/components/common"
 import { LinkRow } from "@/components/link-row"

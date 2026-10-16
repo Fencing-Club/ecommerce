@@ -2,19 +2,10 @@
 
 import { Popover } from "@base-ui/react/popover"
 import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
-import {
-  type Comparison,
-  type DayRange,
-  type PresetKey,
-  periodQuery,
-  presetGroups,
-  presetRange,
-  rangeLabel
-} from "@/lib/date-range"
+import { type Comparison, type DayRange, type PresetKey, presetGroups, presetRange, rangeLabel } from "@/lib/date-range"
 import { addDays, addMonths } from "@/lib/time-zone"
 import { cn } from "@/lib/utils"
 import { DateInput } from "./form-controls"
@@ -44,28 +35,20 @@ function usePeriodLabel() {
 }
 
 // Opens the Overview on another period or comparison, keeping the channel.
-function useNavigate() {
-  const router = useRouter()
-  const pathname = usePathname()
-  const params = useSearchParams()
-  return (next: Pick<PickerPeriod, "key" | "range" | "comparison">) => {
-    const query = periodQuery(next)
-    const channel = params.get("channel")
-    if (channel) {
-      query.set("channel", channel)
-    }
-    const search = query.toString()
-    router.push(search ? `${pathname}?${search}` : pathname)
-  }
-}
+export type PeriodSelection = Pick<PickerPeriod, "key" | "range" | "comparison">
 
 // The period every sales figure on the Overview covers, like Shopify's analytics: a preset relative to today in the
 // store's time zone, or any range picked on the calendar. The change applies on Apply.
-export function PeriodPicker({ period }: { period: PickerPeriod }) {
+export function PeriodPicker({
+  period,
+  onChange
+}: {
+  period: PickerPeriod
+  onChange: (next: PeriodSelection) => void
+}) {
   const t = useTranslations("overview.period")
   const format = useFormatter()
   const periodLabel = usePeriodLabel()
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Selection>(period)
   // Which list of presets shows: the main one, or the "Last" or "Period to date" group.
@@ -277,7 +260,7 @@ export function PeriodPicker({ period }: { period: PickerPeriod }) {
                   size="sm"
                   onClick={() => {
                     setOpen(false)
-                    navigate({ ...draft, comparison: period.comparison })
+                    onChange({ ...draft, comparison: period.comparison })
                   }}
                 >
                   {t("apply")}

@@ -8,6 +8,7 @@ import { AppSidebar } from "./app-sidebar"
 function inWorkspace(kind: WorkspaceKind) {
   const workspace = workspaces[kind]
   return {
+    pathname: "/orders/order-1045",
     kind: workspace.kind,
     active: workspace.id,
     name: workspace.name,
@@ -103,7 +104,7 @@ export const BuyerMember = meta.story({
 })
 
 export const Supplier = meta.story({
-  args: inWorkspace("supplier"),
+  args: { ...inWorkspace("supplier"), pathname: "/inventory" },
   parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/inventory" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual([
@@ -131,7 +132,7 @@ export const SupplierMember = meta.story({
 
 // A forwarder's freight: the purchase orders coming through it, and Settings.
 export const Forwarder = meta.story({
-  args: inWorkspace("forwarder"),
+  args: { ...inWorkspace("forwarder"), pathname: "/settings" },
   parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/settings" } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(navigation(canvasElement)).toEqual(["Purchase orders", "Settings"])

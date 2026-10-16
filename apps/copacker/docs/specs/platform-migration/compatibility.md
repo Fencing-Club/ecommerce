@@ -10,8 +10,8 @@ still runs on Next.
 The authorized implementation uses TanStack Start 1.169.2, Router 1.170.44, Cloudflare Vite plugin 1.64.0, `cf`
 1.0.0-beta.17 and WorkOS session package 0.7.1. Keep Vite's React plugin at 5.2.0 to preserve the
 existing Babel React Compiler integration. Standalone `use-intl` 4.14.9 is the replacement for Next-specific localization;
-catalogs and existing locale behavior remain the contract. Client hooks and shared translators now use it (108 import
-sites), with the typed catalog augmentation moved to `use-intl`. Storybook uses its `IntlProvider`; its framework/router
+catalogs and existing locale behavior remain the contract. Migrated client hooks and shared translators now use it,
+with the typed catalog augmentation moved to `use-intl`. Storybook uses its `IntlProvider`; its framework/router
 conversion and the application's Next server translation integration are still pending.
 
 Shared server errors, Zod messages, pricing, preparation instructions and store time zones now use standalone
@@ -21,7 +21,8 @@ does not acquire an email-job language. Browser-safe text definitions are separa
 build exposed and verified removal of an inventory helper's indirect server import. Seventeen focused unit cases cover
 concurrent requests, cached lookups, defaults, profile precedence, invalid time zones and the Next API boundary.
 The protected Start probe runs the canonical helpers in all nine languages and two time zones concurrently. Its
-language selection uses browser preferences; actual Start profile lookup and localized overview routing are still pending.
+language selection uses browser preferences; the protected portal fixture additionally reads the authenticated
+profile's preferred language and renders the canonical overview in that language.
 
 The WorkOS Start SDK 0.11.1 trial exposed a cookie ordering conflict: its middleware appends automatic refresh after
 the handler's explicit session change. A reproduction of its public middleware with a controlled refresh result emitted
@@ -241,6 +242,42 @@ continues exercising the same canonical download service.
 Live Node-to-R2 S3 access, full object reconciliation/recovery, maximum-size concurrent workloads and the production
 download route conversion remain pending. This private-bucket proof does not complete the storage migration.
 
+## Protected overview and portal controls
+
+The protected Start fixture now renders the canonical buyer and supplier overview through a validated server
+function. `portalSession` resolves current memberships and requires a complete profile on every operation; it does not
+trust parent-loader state. Shell data is an explicit DTO without organization/provider settings. Overview access is
+checked before loading reports, and missing price permission returns localized forbidden content with HTTP 403.
+Anonymous requests and incomplete profiles preserve their return paths. The fixture also covers workspace switching,
+workspace checks, header search, sales search, and the actual POST `/logout` contract.
+
+The shared shell is synchronous, with explicit sidebar state and pathname. Search navigation, period/channel changes
+and refresh callbacks belong to each route. Start invalidates its loaders; Next retains its existing refresh boundary.
+The period helper preserves unrelated/repeated search keys and removes obsolete range keys together. Root message
+selection includes portal namespaces only for the overview. Native product images retain dimensions, lazy loading and
+async decoding. Shared error/forbidden views are used by both route boundaries.
+
+Workspace changes set a host-only HttpOnly cookie only after a fresh membership lookup, then start a new document and
+notify other tabs. The portal's client providers are keyed by workspace. Focus checks reload after revoked access or
+sign-out, and restored browser-history documents reload. More complete logout/back-cache and membership-revocation
+acceptance remains a release gate.
+
+Portal fixtures always shadow application tables with transaction-local temporary tables, even without a scenario
+header. They copy schema shapes, never existing rows; staging requires the private gate and a real WorkOS test session.
+An explicit local-only scenario enables the reserved browser-preview identity. The new transaction context ensures
+nested canonical services stay on that transaction's connection. Fixture provisioning is not a production latency
+measurement. No production records, settings, provider connections or jobs were changed.
+
+Local/deployed checks cover both workspace kinds, profile-language precedence, sidebar persistence, onboarding and
+permission redirects, HTTP 403 without overview data, membership-checked switching, foreign-workspace/origin rejection,
+search contracts and concurrent request isolation. Integrated-browser acceptance covers period changes/back navigation,
+cross-tab workspace replacement, keyboard search, permission revocation during client navigation, and the mobile Urdu
+layout without horizontal overflow. Full `pnpm verify` passed, including 2,360 Copacker tests across 292 files; the Next
+production build and local/deployed Workers runtime checks also passed for this shared-code increment.
+
+The main app still runs on Next. Remaining portal routes, registered typed links, complete auth/onboarding flows,
+app-level private download entry points, release cache drills and production cutover are not completed by this fixture.
+
 ## Staging database and certificate
 
 Railway Postgres stays authoritative. The user supplied staging credentials in ignored `apps/copacker/.env.staging`.
@@ -261,7 +298,7 @@ hostname is not in the database certificate. Certificate verification is never d
 | Hyperdrive settings | Query caching disabled; origin connection limit 5; uploaded CA with `verify-ca` |
 | Compatibility Worker | `copacker-start-compatibility.hoa-preview.workers.dev` |
 | Private R2 binding | `DOCUMENTS`, bucket `copacker-staging-private` in WNAM; managed public access disabled; no custom domains |
-| Tested Worker version | `d607f3d9-ccf1-4f9d-adcf-351c142f4530` |
+| Tested Worker version | `0cc11368-65c9-433f-9968-18ef9a88f3a6` |
 | Runtime | Compatibility date `2026-10-15`, `nodejs_compat`, logs/traces enabled |
 
 The deployed fixture has WorkOS test-environment secrets and a separately generated cookie key, no production bindings,
@@ -279,7 +316,7 @@ the old CA. Repeat separately for production; do not assume both environments sh
 
 ## Remaining proof before M0 exit
 
-Remaining custom WorkOS signup/verification/OAuth flows; workspace switching and browser-cache isolation; app-level private download acceptance;
+Remaining custom WorkOS signup/verification/OAuth flows; complete workspace/logout browser-cache isolation; app-level private download acceptance;
 database row locks/token-refresh serialization and reconnect drills; full nuqs browser acceptance in both consumers;
 maximum-size and representative PDF/ZIP/XLSX/AI workloads under concurrency; existing-service baseline and agreed
 release/recovery budgets. The application route conversion, background executors and production cutover are pending.

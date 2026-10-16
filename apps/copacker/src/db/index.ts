@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { Pool, type PoolConfig } from "pg"
 import * as schema from "./schema"
-const invocation = new AsyncLocalStorage<ReturnType<typeof createDatabase>>()
+const invocation = new AsyncLocalStorage<Database | Transaction>()
 let instance: ReturnType<typeof createDatabase> | undefined
 function createDatabase(pool: Pool) {
   return drizzle(pool, { schema })
@@ -39,5 +39,9 @@ export async function withDatabase<T>(config: PoolConfig, run: () => Promise<T>)
     await pool.end()
   }
 }
-export type Database = ReturnType<typeof db>
+// Domain reads inside a transaction must use its connection, including nested service calls.
+export function withTransaction<T>(transaction: Transaction, run: () => Promise<T>) {
+  return invocation.run(transaction, run)
+}
+export type Database = ReturnType<typeof createDatabase>
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0]

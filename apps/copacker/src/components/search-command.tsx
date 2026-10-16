@@ -4,8 +4,6 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
 import { defaultFilter } from "cmdk"
 import { ArrowDown, ArrowUp, ClipboardList, CornerDownLeft, Package, Receipt, Search, Truck, Users } from "lucide-react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
 import { useDeferredValue, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
 import { Status } from "@/components/common"
@@ -74,11 +72,10 @@ function closeKey() {
 // The search in the top bar, like Shopify's: clicking it, or Ctrl+K (⌘K on a Mac) from anywhere, opens a panel over the
 // bar with the text box where the bar was and results under it. The bar says what it finds in this kind of workspace,
 // and becomes a button on a phone.
-export function SearchCommand({ kind }: { kind: string }) {
+export function SearchCommand({ kind, navigate }: { kind: string; navigate: (href: string) => void }) {
   const t = useTranslations("navigation.search")
   const [open, setOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
-  const router = useRouter()
   const os = useOs()
   const mac = os === "macos" || os === "ios"
   useHotkeys([["mod+K", () => setOpen((current) => !current)]], [])
@@ -86,7 +83,7 @@ export function SearchCommand({ kind }: { kind: string }) {
 
   function go(href: string) {
     setOpen(false)
-    router.push(href)
+    navigate(href)
   }
 
   return (
@@ -257,12 +254,13 @@ function SearchResults({
                 onSelect={() => onSelect(`/products?q=${encodeURIComponent(product.title)}`)}
               >
                 {product.imageUrl ? (
-                  <Image
+                  <img
+                    loading="lazy"
+                    decoding="async"
                     src={product.imageUrl}
                     alt=""
                     width={20}
                     height={20}
-                    unoptimized
                     className="size-5 shrink-0 rounded-sm object-cover"
                   />
                 ) : (

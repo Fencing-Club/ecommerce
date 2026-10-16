@@ -1,5 +1,7 @@
-import { useLocale, useTranslations } from "next-intl"
+"use client"
+
 import { isPresent } from "ts-extras"
+import { useLocale, useTranslations } from "use-intl"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { rangeLabel } from "@/lib/date-range"
@@ -27,7 +29,7 @@ import {
   UpcomingSpend,
   useFigures
 } from "./overview-sections"
-import { PeriodPicker } from "./period-picker"
+import { PeriodPicker, type PeriodSelection } from "./period-picker"
 
 // Grids: six KPI tiles, the sales chart beside gross profit, a wide card beside a narrow one, and two even halves.
 // The KPI row goes by its own width, sidebar or not: two tiles a row, three once each has room for its whole label,
@@ -315,7 +317,7 @@ function SalesByChannel({ data }: { data: Overview }) {
   )
 }
 
-export function OverviewDashboard({ data }: { data: Overview }) {
+export function OverviewDashboard({ data, refresh }: { data: Overview; refresh: () => void }) {
   const t = useTranslations("overview.sections")
   const { sales, restock, purchasing } = data
   // Restock and stock links use the restock channel: Amazon for any Amazon marketplace, eBay's location for eBay.
@@ -329,7 +331,7 @@ export function OverviewDashboard({ data }: { data: Overview }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {data.setup.some((step) => !step.done) && <SetupChecklist steps={data.setup} />}
+      {data.setup.some((step) => !step.done) && <SetupChecklist steps={data.setup} refresh={refresh} />}
       <Attention items={attention} />
 
       <SalesKpis sales={sales} period={data.period} restock={restock} />
@@ -373,15 +375,25 @@ export function OverviewDashboard({ data }: { data: Overview }) {
 }
 
 // The period and channel every card covers, in the page header once the overview has loaded.
-export function OverviewFilters({ data }: { data: Overview }) {
+export function OverviewFilters({
+  data,
+  onPeriodChange,
+  onChannelChange
+}: {
+  data: Overview
+  onPeriodChange: (period: PeriodSelection) => void
+  onChannelChange: (channel: string | null) => void
+}) {
   const { connected, period, channels, channel } = data
   if (!connected.length) {
     return null
   }
   return (
     <>
-      <PeriodPicker period={period} />
-      {channels.length > 1 && <ChannelFilter channels={channels} value={channel?.key ?? null} />}
+      <PeriodPicker period={period} onChange={onPeriodChange} />
+      {channels.length > 1 && (
+        <ChannelFilter channels={channels} value={channel?.key ?? null} onChange={onChannelChange} />
+      )}
     </>
   )
 }

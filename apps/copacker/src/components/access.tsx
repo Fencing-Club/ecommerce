@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { createContext, use } from "react"
 import { type AccessLevel, can, canOpen, type Grant, isAdmin, type Permissions } from "@/lib/access"
 import { cn } from "@/lib/utils"
@@ -59,9 +58,9 @@ export function PageLink({
     )
   }
   return (
-    <Link href={href} title={title} className={className}>
+    <a href={href} title={title} className={className}>
       {children}
-    </Link>
+    </a>
   )
 }
 

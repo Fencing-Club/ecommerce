@@ -1,7 +1,6 @@
 "use client"
 
 import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen, type LucideIcon } from "lucide-react"
-import Link from "next/link"
 import { useTranslations } from "use-intl"
 import { usePermissions } from "@/components/access"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -41,7 +40,7 @@ export function CreateMenu({ kind }: { kind: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} className="w-56">
         {allowed.map((action) => (
-          <DropdownMenuItem key={action.key} render={<Link href={action.href} />}>
+          <DropdownMenuItem key={action.key} render={<a href={action.href} aria-label={t(action.key)} />}>
             <action.icon />
             {t(action.key)}
           </DropdownMenuItem>

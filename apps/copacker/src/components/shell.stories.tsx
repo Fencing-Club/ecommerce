@@ -1,4 +1,4 @@
-import { cookies } from "next/headers"
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { EmptyState, PageHeader } from "@/components/common"
@@ -18,12 +18,11 @@ async function ShellStory({
   collapsed: boolean
   actions?: boolean
 }) {
-  const store = await cookies()
-  if (collapsed) {
-    store.set("sidebar_state", "false")
-  }
   const workspace = workspaces[kind]
   const shell = await Shell({
+    defaultOpen: !collapsed,
+    pathname: "/shipments",
+    navigate: getRouter().push,
     name: workspace.name,
     userName: person.name,
     email: person.email,
@@ -45,7 +44,6 @@ async function ShellStory({
     )
   })
   // Later stories start with the sidebar open.
-  store.delete("sidebar_state")
   return shell
 }
 

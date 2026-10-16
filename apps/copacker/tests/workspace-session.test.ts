@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import * as tables from "../src/db/schema"
 import { AccessError, LocalizedError } from "../src/i18n/errors"
 import { requireAccess, requireAdmin } from "../src/server/authorization"
+import { overviewDestination, portalSession, portalShell } from "../src/server/portal-session"
 import { profileFor, requireMembership, workspaceSession } from "../src/server/workspace-session"
 import { applyMigrations } from "./migrations"
 
@@ -114,6 +115,46 @@ describe("request workspace resolution", () => {
 
   it.each([foreign, "not-a-uuid"])("rejects a direct membership request for %s", async (id) => {
     await expect(requireMembership(user.id, id)).rejects.toThrow(LocalizedError)
+  })
+})
+
+describe("portal entry and shell data", () => {
+  it("preserves a safe return path for anonymous users and rejects external destinations", async () => {
+    expect(await portalSession(null, first, "/overview?channel=amazon")).toEqual({
+      redirect: "/login?next=%2Foverview%3Fchannel%3Damazon"
+    })
+    expect(await portalSession(null, first, "//other.example/steal")).toEqual({ redirect: "/login?next=%2F" })
+  })
+  it("requires a complete profile before portal data can load", async () => {
+    expect(await portalSession(user, first, "/overview?period=today")).toEqual({
+      redirect: "/onboarding?next=%2Foverview%3Fperiod%3Dtoday"
+    })
+    await database
+      .update(tables.profiles)
+      .set({ position: "Operations", company: "Buyer" })
+      .where(eq(tables.profiles.userId, user.id))
+    const result = await portalSession(user, first, "/overview")
+    expect(result.session?.org.id).toBe(first)
+    const shell = portalShell(result.session!, "false")
+    expect(shell.defaultOpen).toBe(false)
+    expect(Object.keys(shell).toSorted()).toEqual([
+      "active",
+      "defaultOpen",
+      "email",
+      "kind",
+      "name",
+      "permissions",
+      "userName",
+      "workspaces"
+    ])
+    expect(JSON.stringify(shell)).not.toContain("org_private")
+    expect(overviewDestination(result.session!)).toBeNull()
+    const restricted = await workspaceSession(user, second)
+    expect(overviewDestination(restricted!)).toBe("/orders")
+  })
+  it("requires onboarding after every membership is revoked", async () => {
+    await database.delete(tables.memberships).where(eq(tables.memberships.userId, user.id))
+    expect(await portalSession(user, first, "/overview")).toEqual({ redirect: "/onboarding" })
   })
 })
 

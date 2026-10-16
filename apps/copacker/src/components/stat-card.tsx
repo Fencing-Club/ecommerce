@@ -1,5 +1,7 @@
-import { useTranslations } from "next-intl"
+"use client"
+
 import { Children } from "react"
+import { useTranslations } from "use-intl"
 import { InfoTip } from "@/components/info-tip"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"

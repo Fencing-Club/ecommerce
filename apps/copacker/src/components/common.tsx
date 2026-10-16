@@ -1,6 +1,7 @@
+"use client"
+
 import { AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 import messages from "../../messages/en/common.json"
@@ -160,9 +161,9 @@ export function PageHeader({
             {parents.map((parent) => (
               <li key={parent.label} className="flex items-center gap-1.5">
                 {parent.href ? (
-                  <Link href={parent.href} className="rounded-sm hover:text-foreground">
+                  <a href={parent.href} className="rounded-sm hover:text-foreground">
                     {parent.label}
-                  </Link>
+                  </a>
                 ) : (
                   parent.label
                 )}
@@ -171,13 +172,13 @@ export function PageHeader({
             ))}
           </ol>
           {back?.href && (
-            <Link
+            <a
               href={back.href}
               className="flex w-fit items-center gap-1 rounded-sm text-[13px] font-medium text-muted-foreground hover:text-foreground md:hidden"
             >
               <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:rotate-180" />
               {back.label}
-            </Link>
+            </a>
           )}
         </nav>
       ) : null}

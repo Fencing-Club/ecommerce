@@ -1,7 +1,6 @@
 "use client"
 
 import { Store } from "lucide-react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "use-intl"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -11,15 +10,14 @@ const all = "all"
 // Chooses the channel every card on the Overview shows: all of them, Amazon, one Shopify location, or eBay.
 export function ChannelFilter({
   channels,
-  value
+  value,
+  onChange
 }: {
   channels: { key: string; label: string }[]
   value: string | null
+  onChange: (channel: string | null) => void
 }) {
   const t = useTranslations("overview.channel")
-  const router = useRouter()
-  const pathname = usePathname()
-  const params = useSearchParams()
   const shopifyLocations = channels.filter((channel) => channel.key.startsWith("shopify:")).length
   const items = [
     { value: all, label: t("all") },
@@ -29,21 +27,7 @@ export function ChannelFilter({
     }))
   ]
   return (
-    <Select
-      items={items}
-      value={value ?? all}
-      onValueChange={(next) => {
-        // The period stays as chosen.
-        const query = new URLSearchParams(params)
-        if (next && next !== all) {
-          query.set("channel", next)
-        } else {
-          query.delete("channel")
-        }
-        const search = query.toString()
-        router.push(search ? `${pathname}?${search}` : pathname)
-      }}
-    >
+    <Select items={items} value={value ?? all} onValueChange={(next) => onChange(next && next !== all ? next : null)}>
       <SelectTrigger
         aria-label={t("label")}
         className="max-w-56 bg-background hover:bg-muted *:data-[slot=select-value]:block *:data-[slot=select-value]:truncate"

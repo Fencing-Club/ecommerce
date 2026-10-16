@@ -1,7 +1,6 @@
 "use client"
 
 import { LogOut, Monitor, Moon, Palette, Sun, UserRound } from "lucide-react"
-import Link from "next/link"
 import { useId } from "react"
 import { useTranslations } from "use-intl"
 import { useTheme } from "@/components/theme-provider"
@@ -61,7 +60,7 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/settings" />}>
+          <DropdownMenuItem render={<a href="/settings" aria-label={t("accountSettings")} />}>
             <UserRound />
             {t("accountSettings")}
           </DropdownMenuItem>

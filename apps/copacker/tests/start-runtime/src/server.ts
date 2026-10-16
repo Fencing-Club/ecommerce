@@ -5,7 +5,9 @@ import { timeZoneCookie } from "../../../src/lib/time-zone"
 import { withAuthentication } from "../../../src/server/auth-session"
 import { resolveLocalization, withLocalization } from "../../../src/server/localization"
 import { closedForMaintenance, underMaintenance } from "../../../src/server/maintenance"
+import { ownProfile } from "../../../src/server/profile"
 import { maintenanceResponse } from "../../../src/server/start-maintenance"
+import { portalData } from "./portal-data.server"
 
 export default {
   async fetch(request, env) {
@@ -31,8 +33,15 @@ export default {
     const mode = request.headers.get("x-probe-maintenance")
     const active = mode === "live" ? await underMaintenance() : mode === "on"
     const response = await withLocalization(
-      () =>
+      async () =>
         resolveLocalization({
+          preferredLocale:
+            !active &&
+            (new URL(request.url).pathname === "/overview" ||
+              new URL(request.url).pathname.startsWith("/_serverFn/") ||
+              request.headers.has("x-probe-portal"))
+              ? await portalData(async (user) => (user ? (await ownProfile(user.id)).profile?.locale : undefined))
+              : undefined,
           acceptLanguage: request.headers.get("accept-language"),
           timeZone: getCookie(timeZoneCookie)
         }),

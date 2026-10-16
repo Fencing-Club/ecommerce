@@ -1,13 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { getCookie, setCookie } from "@tanstack/react-start/server"
+import { getCookie, getRequestHeader, setCookie } from "@tanstack/react-start/server"
 import { parseAsBoolean, parseAsStringLiteral, useQueryState } from "nuqs"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { panel } from "../runtime.css"
 
-const readMarker = createServerFn().handler(() => getCookie("migration-marker") ?? "empty")
+const readMarker = createServerFn().handler(() => {
+  if (getRequestHeader("x-probe-portal")) {
+    throw redirect({ to: "/overview" })
+  }
+  return getCookie("migration-marker") ?? "empty"
+})
 const writeMarker = createServerFn({ method: "POST" })
   .validator(z.string().max(32))
   .handler(({ data }) => {

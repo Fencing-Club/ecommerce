@@ -7,6 +7,7 @@ import { sessionEncryption, type Session } from "@workos/authkit-session"
 import { PDFDocument } from "pdf-lib"
 import { z } from "zod"
 import { loadMessages } from "../src/i18n/messages"
+import { checkStartPortal } from "./start-portal-checks"
 
 // Explicit remote target only. These credentials belong to the existing test account, never a production account.
 const origin = process.argv[2]
@@ -94,6 +95,18 @@ try {
   assert.deepEqual(await login.json(), { redirect: "/" }, "The custom sign-in flow preserves its redirect")
   const initialCookie = cookieFrom(login)
   const initial = await unseal(initialCookie)
+  await checkStartPortal(
+    (path, options) =>
+      fetch(`${target.origin}${path}`, {
+        ...options,
+        redirect: options?.redirect ?? "manual",
+        headers: { ...Object.fromEntries(new Headers(options?.headers)), Authorization: `Bearer ${probeToken}` },
+        signal: AbortSignal.timeout(30_000)
+      }),
+    target.origin,
+    initialCookie
+  )
+  process.stdout.write("Protected overview and workspace-switch checks passed.\n")
   const user = initial.user.id
   await expectIdentity(await request("GET", initialCookie), user)
   await expectIdentity(await request("GET", "migration-session=tampered"), null)
@@ -176,7 +189,7 @@ try {
   const replaced = await unseal(cookieFrom(replacement))
   assert.equal(replaced.user.id, user)
   await expectIdentity(await request("GET", cookieFrom(replacement)), user)
-  const logout = await request("DELETE", await needsRefresh(replaced))
+  const logout = await request("POST", await needsRefresh(replaced), undefined, "/logout")
   assert(logout.status === 303, "Logout must redirect to WorkOS")
   assert(new URL(logout.headers.get("Location")!).hostname === "api.workos.com", "Unexpected logout destination")
   assert(cookieFrom(logout) === "migration-session=", "Refresh must not overwrite logout")

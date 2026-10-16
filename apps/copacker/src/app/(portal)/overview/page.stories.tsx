@@ -1,4 +1,4 @@
-import { expect, within } from "storybook/test"
+import { expect, fn, within } from "storybook/test"
 import { createTranslator } from "use-intl"
 import { storyIntl } from "#.storybook/intl"
 import preview from "#.storybook/preview"
@@ -17,6 +17,9 @@ type Args = { permissions: Permissions; data: Overview; supplier: SupplierOvervi
 function BuyerOverviewPage({ permissions, data }: Args) {
   return (
     <OverviewPageView
+      refresh={fn()}
+      onPeriodChange={fn()}
+      onChannelChange={fn()}
       page={{
         kind: "buyer",
         admin: isAdmin(permissions),
@@ -30,7 +33,14 @@ function BuyerOverviewPage({ permissions, data }: Args) {
   )
 }
 function SupplierOverviewPage({ permissions, supplier }: Args) {
-  return <OverviewPageView page={{ kind: "supplier", data: supplier, permissions }} />
+  return (
+    <OverviewPageView
+      refresh={fn()}
+      onPeriodChange={fn()}
+      onChannelChange={fn()}
+      page={{ kind: "supplier", data: supplier, permissions }}
+    />
+  )
 }
 
 // A member with the Overview (which needs prices) and purchase orders, but not Restock or Shipments.

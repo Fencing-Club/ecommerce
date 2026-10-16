@@ -7,6 +7,7 @@ import { createBuilder, preview } from "vite"
 import { z } from "zod"
 import { direction, locales } from "../src/i18n/locales"
 import { loadMessages } from "../src/i18n/messages"
+import { checkStartPortal } from "./start-portal-checks"
 
 const configFile = fileURLToPath(new URL("../tests/start-runtime/vite.config.ts", import.meta.url))
 const remote = process.argv[2] === "--remote" ? process.argv[3] : undefined
@@ -42,6 +43,9 @@ try {
     return fetch(`${origin}${path}`, { ...options, headers, signal: AbortSignal.timeout(30_000) })
   }
   const page = await request("/?add=supplier&import=true&keep=inventory")
+  if (!remote) {
+    await checkStartPortal(request, origin)
+  }
   assert.equal(page.status, 200)
   const html = await page.text()
   assert.match(html, /data-testid="partner">supplier</)

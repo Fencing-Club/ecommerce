@@ -1,4 +1,3 @@
-import { cookies } from "next/headers"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar, type AppSidebarProps, SidebarToggle } from "./app-sidebar"
 import { TopBar } from "./top-bar"
@@ -6,9 +5,12 @@ import { TopBar } from "./top-bar"
 // The sidebar is 240px wide, and 56px as a rail of icons.
 const sidebarWidths = { "--sidebar-width": "15rem", "--sidebar-width-icon": "3.5rem" } as React.CSSProperties
 
-export async function Shell({ children, ...shell }: AppSidebarProps & { children: React.ReactNode }) {
-  const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false"
-
+export function Shell({
+  children,
+  defaultOpen,
+  navigate,
+  ...shell
+}: AppSidebarProps & { children: React.ReactNode; defaultOpen: boolean; navigate: (href: string) => void }) {
   return (
     // The top bar spans the window, with the sidebar and the page under it.
     <SidebarProvider
@@ -16,7 +18,7 @@ export async function Shell({ children, ...shell }: AppSidebarProps & { children
       style={sidebarWidths}
       className="flex-col [--header-height:calc(--spacing(14))]"
     >
-      <TopBar kind={shell.kind} />
+      <TopBar kind={shell.kind} navigate={navigate} />
       <div className="flex flex-1">
         <AppSidebar {...shell} />
         <SidebarInset>

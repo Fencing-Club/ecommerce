@@ -1,13 +1,11 @@
-import { headers } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { AccessProvider } from "@/components/access"
 import { AppProviders } from "@/components/app-providers"
-import { Shell } from "@/components/shell"
-import { SystemTimeZone } from "@/components/system-time-zone"
-import { WorkspaceWatch } from "@/components/workspace-watch"
 import { session } from "@/server/auth"
 import { withRequest } from "@/server/next-request"
 import { ownProfile } from "@/server/profile"
+import { Portal } from "./portal"
 export const dynamic = "force-dynamic"
 export default withRequest(async function PortalLayout({ children }: { children: React.ReactNode }) {
   const s = await session()
@@ -21,7 +19,8 @@ export default withRequest(async function PortalLayout({ children }: { children:
   return (
     <AppProviders>
       <AccessProvider permissions={{ role: s.role, access: s.access }}>
-        <Shell
+        <Portal
+          defaultOpen={(await cookies()).get("sidebar_state")?.value !== "false"}
           name={s.org.name}
           userName={s.user.name}
           email={s.user.email}
@@ -29,10 +28,8 @@ export default withRequest(async function PortalLayout({ children }: { children:
           active={s.org.id}
           workspaces={s.workspaces}
         >
-          <SystemTimeZone />
-          <WorkspaceWatch id={s.org.id} />
           {children}
-        </Shell>
+        </Portal>
       </AccessProvider>
     </AppProviders>
   )

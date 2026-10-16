@@ -34,7 +34,14 @@ and make generation run before type checking in a fresh checkout.
 The current preparatory implementation separates the overview and ten additional portal routes from their data
 reads. `server/workspace-pages.ts` supplies permission-filtered data to synchronous views shared with the page stories;
 the existing product and catalog editors remain the canonical detail views. Those routes still have thin Next entry
-points. Their Start route registration, navigation and server-function request boundaries are not yet migrated.
+points. The ten additional routes still await Start registration, navigation and server-function request boundaries.
+
+The protected Start fixture now mounts the canonical overview and shell. Period/channel changes and refresh are
+controlled by the route, with typed Start search navigation and server-function reads. The retained Next overview
+supplies its own route callbacks to those same views. Shell and content links currently use ordinary document
+navigation; converting those destinations and their links to registered Start routes remains part of M3. The fixture
+also includes workspace switching, workspace checks, header search, sales search, and POST sign-out. It is not the
+application's production route tree.
 
 ## Server execution and data boundaries
 
