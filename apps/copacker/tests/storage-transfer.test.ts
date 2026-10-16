@@ -3,6 +3,7 @@ import { readFile, rm } from "node:fs/promises"
 import path from "node:path"
 import { Readable } from "node:stream"
 import { afterEach, expect, it, vi } from "vitest"
+import { storageTransfer } from "../scripts/storage-transfer"
 
 const state = vi.hoisted(() => ({
   source: new Map<string, { bytes: Buffer; type: string }>(),
@@ -65,9 +66,7 @@ vi.mock("@aws-sdk/client-s3", async (original) => {
 
 const root = path.resolve(".cloudflare/storage-transfer")
 const folders: string[] = []
-const originalArgs = process.argv
 afterEach(async () => {
-  process.argv = originalArgs
   vi.unstubAllEnvs()
   vi.restoreAllMocks()
   for (const folder of folders.splice(0)) {
@@ -95,9 +94,7 @@ function setup() {
   return folder
 }
 async function run(mode: string, folder: string) {
-  vi.resetModules()
-  process.argv = ["node", "storage-transfer.ts", mode, folder]
-  await import("../scripts/storage-transfer")
+  await storageTransfer(mode, folder)
 }
 
 it("copies privately, verifies bytes and metadata, resumes without writes, and detects target corruption", async () => {

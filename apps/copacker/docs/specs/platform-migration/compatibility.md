@@ -29,6 +29,9 @@ The review corrected these defects and design problems:
 - The development dependency optimizer includes vanilla-extract's generated runtime import up front, avoiding a late
   dependency rebuild that interrupted navigation. Fresh development navigation, keyboard shipment-group controls,
   and phone settings/sidebar layouts were checked in the integrated browser without browser console errors.
+- Storage transfer exposes one callable operation behind its CLI entry point. Regression tests invoke that operation
+  directly instead of resetting and reimporting the SDK graph for every scan/copy/verify step; the CLI retains the
+  same argument validation and storage behavior.
 
 The complete local suite passed after the main integration (147 tests, four existing skips). Final regression runs
 for the title/development fixes and the full repository verification are recorded with the PR before readiness.
