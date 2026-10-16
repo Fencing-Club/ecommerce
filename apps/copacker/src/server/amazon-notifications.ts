@@ -4,6 +4,7 @@ import { and, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
+import { withJobWake } from "@/server/job-delivery"
 import { amazonApp, amazonFor } from "./connections"
 import { PollAgain } from "./job-handlers"
 import { amazonDataVersion, amazonSalesMarketplaces, requestSalesSync } from "./sales-orders"
@@ -77,17 +78,19 @@ export async function receiveAmazonNotification(body: string, now = Date.now()) 
     return 0
   }
   const batch = Math.floor(now / batchMs)
-  await db()
-    .insert(jobs)
-    .values(
-      accounts.map(({ orgId }) => ({
-        key: `amazon-event:${orgId}:${target}:${batch}`,
-        kind: "amazon-event" as const,
-        payload: { orgId, sellerId, target },
-        runAt: new Date((batch + 1) * batchMs + settleMs)
-      }))
-    )
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values(
+        accounts.map(({ orgId }) => ({
+          key: `amazon-event:${orgId}:${target}:${batch}`,
+          kind: "amazon-event" as const,
+          payload: { orgId, sellerId, target },
+          runAt: new Date((batch + 1) * batchMs + settleMs)
+        }))
+      )
+      .onConflictDoNothing()
+  )
   return accounts.length
 }
 
@@ -209,10 +212,12 @@ async function updateStoredOrders(
 
 // Queues subscribing the workspace's seller to Copacker's notifications. Runs after connecting and daily.
 export async function queueAmazonSubscription(orgId: string, key: string) {
-  await db()
-    .insert(jobs)
-    .values({ key: `amazon-subscribe:${orgId}:${key}`, kind: "amazon-subscribe", payload: { orgId } })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `amazon-subscribe:${orgId}:${key}`, kind: "amazon-subscribe", payload: { orgId } })
+      .onConflictDoNothing()
+  )
 }
 
 // Worker job: makes sure Copacker's queue is a notification destination and the seller is subscribed to it.

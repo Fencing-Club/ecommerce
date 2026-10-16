@@ -13,6 +13,19 @@ import { shopifyComplianceJob } from "./shopify-compliance"
 import { shopifyEventJob, shopifySubscribeJob } from "./shopify-webhooks"
 import { describeError, stockJob } from "./stock"
 
+// Read once after draining, then let the external queue wake us when the next retry or abandoned lease is due.
+export async function nextJobDelay() {
+  const [row] = await db()
+    .select({
+      due: sql<
+        string | null
+      >`min(case when ${jobs.status} = 'running' then ${jobs.leaseAt} + interval '10 minutes' else ${jobs.runAt} end)`
+    })
+    .from(jobs)
+    .where(inArray(jobs.status, ["pending", "running"]))
+  return row?.due ? Math.max(1, Math.ceil((new Date(row.due).getTime() - Date.now()) / 1000)) : null
+}
+
 export async function runNextJob() {
   const job = await db().transaction(async (tx) => {
     await tx

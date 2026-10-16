@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, salesOrders, salesSyncs } from "@/db/schema"
+import { withJobWake } from "@/server/job-delivery"
 import { ebayApp, ebayFor } from "./connections"
 import { ebayEndpoint, ebayVerificationToken, hasPublicEbayEndpoint } from "./ebay-notifications"
 import { PollAgain } from "./job-handlers"
@@ -130,17 +131,19 @@ export async function receiveEbayNotification(notification: EbayNotification, no
     return 0
   }
   const batch = Math.floor(now / batchMs)
-  await db()
-    .insert(jobs)
-    .values(
-      accounts.map(({ orgId }) => ({
-        key: `ebay-event:${orgId}:${batch}`,
-        kind: "ebay-event" as const,
-        payload: { orgId, userId: seller.data },
-        runAt: new Date((batch + 1) * batchMs + settleMs)
-      }))
-    )
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values(
+        accounts.map(({ orgId }) => ({
+          key: `ebay-event:${orgId}:${batch}`,
+          kind: "ebay-event" as const,
+          payload: { orgId, userId: seller.data },
+          runAt: new Date((batch + 1) * batchMs + settleMs)
+        }))
+      )
+      .onConflictDoNothing()
+  )
   return accounts.length
 }
 
@@ -188,10 +191,12 @@ export async function ebayEventJob(payload: Record<string, unknown>) {
 // Queues subscribing the workspace's seller to Copacker's order notifications. Runs after connecting and daily, which
 // also turns back on subscriptions eBay disabled after failed deliveries.
 export async function queueEbaySubscription(orgId: string, key: string) {
-  await db()
-    .insert(jobs)
-    .values({ key: `ebay-subscribe:${orgId}:${key}`, kind: "ebay-subscribe", payload: { orgId } })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `ebay-subscribe:${orgId}:${key}`, kind: "ebay-subscribe", payload: { orgId } })
+      .onConflictDoNothing()
+  )
 }
 
 // Worker job: makes sure the app's notification destination points at the webhook, then subscribes the seller to each

@@ -6,7 +6,7 @@ encoded as base64; `WORKOS_COOKIE_PASSWORD` is at least 32 random characters. Ne
 Run `pnpm --filter copacker db:up` and `pnpm --filter copacker db:migrate` before starting the web app, and
 `pnpm --filter copacker worker:dev` in a second process. Set up [Portless](development.md) before `pnpm dev`.
 The [domain inventory](domains.md) lists every environment address and provider setting.
-The worker runs the durable jobs queued in Postgres. Staging and
+The worker runs the durable jobs recorded in Postgres when [Cloudflare delivers a job signal](background-jobs.md). Staging and
 production run it as a second Railway service built from `Dockerfile.worker`, which skips `next build` and runs the
 worker's TypeScript through tsx. Only the web service has the HTTP healthcheck (`/api/health`).
 
@@ -106,9 +106,8 @@ app `/api/health` and Storybook `/health.json` for the same commit. Deploys to o
 - Migrations run on staging first, and production only gets a commit whose migrations already ran there. They only go
   forward: the worker and the previous web release briefly run against the new schema, so add columns and tables in one
   release and drop old ones in a later one. To undo a release, redeploy the previous deployment in Railway; to undo a
-  migration, write a new one, or restore one of Railway's scheduled backups of production Postgres: daily (kept 6 days)
-  and weekly (27 days). Don't take manual backups: they never expire, and they count toward Railway's 10 per volume,
-  scheduled ones included.
+  migration, write a new one, or restore from Neon history or a verified export. Check the actual Neon retention window; it does not inherit
+  Railway's old daily/weekly backups. See [Neon recovery and migration acceptance](neon.md).
 - CI caches the pnpm store and turbo's results, so lint, types and tests replay for packages a push didn't change.
 - Deploying by hand with `railway up` still works; prefer the workflows so the health check reports the commit.
 
@@ -122,10 +121,9 @@ Railway project `copacker` (`d8195bc8-1e6d-4fd6-b7bc-8ecf9852acd6`):
 | Staging environment     | `b822ecad-68dd-4f4f-89e0-d9db00485545` |
 | Web service (`copacker`) | `79da7d29-d1d6-4aa7-9fef-709dbf2b9619` |
 | Worker (`copacker-worker`) | `08c1edb8-c309-4fe4-b71e-14b54065a0fc` |
-| Postgres                | `aef82310-c9f9-4472-a2bb-e19949723c31` |
 | Documents bucket        | `868f3e53-a9fe-4b2b-9eeb-e69926c2b1d2` |
 
-Each environment has its own instance of every service, database and bucket. Production answers on
+Each deployed environment has its own web/worker services and document bucket, and an independent [Neon database branch](neon.md). Production answers on
 `https://copacker.ai` (`APP_URL`) and `https://copacker-production.up.railway.app`; staging on
 `https://staging.copacker.ai` and `https://copacker-staging.up.railway.app`. Both sign in through WorkOS's staging
 environment ([WorkOS settings](auth.md#workos-settings)).
@@ -167,9 +165,9 @@ order they were made. The web service's pre-deploy command runs the `predeploy` 
 
 `pnpm --filter copacker db:drift` compares a live database (`DATABASE_URL`, with `DATABASE_CA_CERT` when TLS needs it)
 with a freshly migrated one (`REFERENCE_DATABASE_URL`, such as the local database after `db:migrate`), read-only on both.
-To read a deployed database, go through the Railway CLI rather than storing its URL locally: `railway run` uses the
-private `postgres.railway.internal` hostname, which a local computer can't reach, and the public TCP proxy needs
-`sslmode=verify-ca` with the CA from Railway. Never disable certificate verification.
+Read deployed databases through direct Neon connections with `sslmode=verify-full`. Keep credentials in runtime
+environment variables or secret stores; never replace a local development URL with a deployed database URL.
+See [Neon connections and releases](neon.md).
 
 ### Amazon connection mode
 
@@ -177,4 +175,6 @@ private `postgres.railway.internal` hostname, which a local computer can't reach
 
 ## Preview scope
 
-PR previews currently cover Storybook and fixture-backed UX. Do not provision preview databases or storage on Railway or reuse staging/production data. Database previews are deferred until the Neon migration, and storage previews until the Cloudflare migration, to simplify and reduce the cost of isolated resources. See the [domain inventory](domains.md#pull-request-previews) for the current deployment and the deferred persistence checklist.
+Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Hosted app previews
+are deferred to the Cloudflare web migration; no new Railway resources are provisioned. Existing Storybook fixture
+previews remain available. See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.

@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, jobs, organizations, stockSnapshots } from "@/db/schema"
+import { withJobWake } from "@/server/job-delivery"
 import { queueAdsSync } from "./amazon-ads"
 import { queueAmazonSubscription } from "./amazon-notifications"
 import { queueEbaySubscription } from "./ebay-events"
@@ -13,10 +14,12 @@ import { refreshStock, stockScopes, stockSelection } from "./stock"
 // arrived and keeps sources without webhooks current. It runs at 07:00 UTC, overnight in the US.
 export async function queueReconciliation(now = new Date()) {
   const date = now.toISOString().slice(0, 10)
-  await db()
-    .insert(jobs)
-    .values({ key: `reconcile:${date}`, kind: "reconcile", payload: { date }, runAt: new Date(`${date}T07:00:00Z`) })
-    .onConflictDoNothing()
+  await withJobWake(
+    db()
+      .insert(jobs)
+      .values({ key: `reconcile:${date}`, kind: "reconcile", payload: { date }, runAt: new Date(`${date}T07:00:00Z`) })
+      .onConflictDoNothing()
+  )
 }
 
 // Worker job: starts a sales sync and a refresh of each stock scope already in use for every buyer connection, and

@@ -183,7 +183,7 @@ import {
 } from "../src/server/product-defaults"
 import { productsWithoutSupplier } from "../src/server/product-suppliers"
 import { ownProfile, saveProfile } from "../src/server/profile"
-import { runNextJob } from "../src/server/queue"
+import { nextJobDelay, runNextJob } from "../src/server/queue"
 import { restockDefaults, restockSettings } from "../src/server/restock-report"
 import { readSalesDemand } from "../src/server/sales"
 import {
@@ -2111,6 +2111,20 @@ describe("durable shipment worker recovery", () => {
     await database.update(tables.jobs).set({ status: "running", leaseAt: new Date() })
     expect(await runNextJob()).toBe(false)
     expect(provider.api.create).not.toHaveBeenCalled()
+  })
+  it("schedules recovery at lease expiry rather than the running job's original due time", async () => {
+    await queuedShipment()
+    await database.update(tables.jobs).set({ status: "running", leaseAt: new Date(), runAt: new Date(0) })
+    const delay = await nextJobDelay()
+    expect(delay).toBeGreaterThan(590)
+    expect(delay).toBeLessThanOrEqual(600)
+  })
+  it("schedules delayed work and stops waking after it is complete", async () => {
+    await queuedShipment()
+    await database.update(tables.jobs).set({ status: "pending", runAt: new Date(Date.now() + 120000) })
+    expect(await nextJobDelay()).toBeGreaterThan(110)
+    await database.update(tables.jobs).set({ status: "complete" })
+    expect(await nextJobDelay()).toBeNull()
   })
   it("prevents an old worker from confirming or overwriting a newer attempt", async () => {
     const shipment = await queuedShipment()
