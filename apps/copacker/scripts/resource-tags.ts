@@ -23,8 +23,8 @@ export function reconcileResourceTags(target: z.infer<typeof tagTarget>, run: Ru
     return
   }
   run(["account-tags", "update", "--if-match", current.etag], {
-    "resource-type": target.type,
-    "resource-id": target.id,
+    resource_type: target.type,
+    resource_id: target.id,
     tags: { ...current.tags, ...target.tags }
   })
   invariant(matches(read().tags), "Resource tags did not persist; rerun reconciliation")

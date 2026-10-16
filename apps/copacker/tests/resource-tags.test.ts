@@ -12,8 +12,8 @@ describe("Cloudflare tag reconciliation", () => {
       .mockReturnValueOnce({ etag: "version-2", tags: { owner: "team", ...target.tags } })
     reconcileResourceTags(target, run)
     expect(run).toHaveBeenNthCalledWith(2, ["account-tags", "update", "--if-match", "version-1"], {
-      "resource-type": "queue",
-      "resource-id": "queue-id",
+      resource_type: "queue",
+      resource_id: "queue-id",
       tags: { owner: "team", ...target.tags }
     })
     expect(run).toHaveBeenCalledTimes(3)
