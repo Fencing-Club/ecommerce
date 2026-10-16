@@ -29,6 +29,7 @@ Build output is `.cloudflare/output/v0`. The build contains binding declarations
 | Development | Vite and local workerd, exact Portless origin | Local PostgreSQL | `.cloudflare/state/development/v3/r2` |
 | Browser tests | Separate `e2e/runtime/.cloudflare/output/v0` build | Dedicated local/CI test database | `.cloudflare/state/e2e/v3/r2` |
 | Staging | `copacker-staging`, no indexing | Staging Hyperdrive, caching off | Private `copacker-staging-private` |
+| PR preview | `copacker-pr-<number>`, no indexing | Own Hyperdrive and Neon branch | `previews/pr-<number>/app/` folder in `copacker-staging-private` |
 | Production | `copacker`, explicit custom domains | Explicit production Hyperdrive | Explicit private production bucket |
 
 `worker:dev` uses the running web emulator's local S3 endpoint to read and write the development bucket. One emulator

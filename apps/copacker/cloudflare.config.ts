@@ -3,12 +3,15 @@ import { bindings, defineConfig } from "cf/config"
 import { z } from "zod"
 import { optionalSecrets, workerSettings } from "./scripts/cloudflare-environment.ts"
 import { localStorage } from "./scripts/local-storage.ts"
+import { previewResources } from "./scripts/preview-config.ts"
 
 export default defineConfig(({ mode }) => {
-  const deployed = mode === "staging" || mode === "production"
+  const preview = mode === "preview" ? previewResources(process.env.PR_NUMBER || "") : undefined
+  const deployed = mode === "staging" || mode === "production" || Boolean(preview)
   const production = mode === "production"
-  const environment = deployed ? mode : "local"
+  const environment = deployed ? z.enum(["preview", "production", "staging"]).parse(mode) : "local"
   const defaults = {
+    preview: { name: preview?.app || "", origin: "" },
     local: { name: "copacker-local", origin: "https://local.copacker.ai" },
     staging: { name: "copacker-staging", origin: "https://copacker-staging.hoa-preview.workers.dev" },
     production: { name: "copacker", origin: "https://copacker.ai" }
@@ -17,11 +20,15 @@ export default defineConfig(({ mode }) => {
   if (deployed && new URL(origin).protocol !== "https:") {
     throw new Error("Deployed APP_URL must use HTTPS")
   }
-  const bucket = process.env.CLOUDFLARE_DOCUMENTS_BUCKET || (production ? undefined : "copacker-staging-private")
+  const bucket =
+    process.env.CLOUDFLARE_DOCUMENTS_BUCKET || (production || preview ? undefined : "copacker-staging-private")
   const hyperdrive =
-    process.env.CLOUDFLARE_HYPERDRIVE_ID || (production ? undefined : "0a74043480fe42a6acdbf46b9572ef58")
+    process.env.CLOUDFLARE_HYPERDRIVE_ID || (production || preview ? undefined : "0a74043480fe42a6acdbf46b9572ef58")
   if (!bucket || !hyperdrive) {
-    throw new Error("Production requires CLOUDFLARE_HYPERDRIVE_ID and CLOUDFLARE_DOCUMENTS_BUCKET")
+    throw new Error("Deployment requires CLOUDFLARE_HYPERDRIVE_ID and CLOUDFLARE_DOCUMENTS_BUCKET")
+  }
+  if (preview && bucket !== "copacker-staging-private") {
+    throw new Error("PR previews require the private staging bucket")
   }
   return {
     worker: {
@@ -30,7 +37,7 @@ export default defineConfig(({ mode }) => {
       workersDev: !production,
       previewUrls: false,
       // Attaching a hostname is a separate, explicit cutover setting.
-      domains: (process.env.CLOUDFLARE_DOMAINS || "")
+      domains: (preview ? "" : process.env.CLOUDFLARE_DOMAINS || "")
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean),
@@ -47,7 +54,8 @@ export default defineConfig(({ mode }) => {
         APP_URL: bindings.text(new URL(origin).origin),
         DEPLOYMENT_ENV: bindings.text(environment),
         COPACKER_LOCAL: bindings.text(deployed ? "" : "1"),
-        JOBS: bindings.queue<string>({ name: `copacker-jobs-${environment}` }),
+        JOBS: bindings.queue<string>({ name: preview?.queue || `copacker-jobs-${environment}` }),
+        DOCUMENTS_PREFIX: bindings.text(preview?.documentsPrefix || ""),
         DOCUMENTS: bindings.r2({
           name: bucket,
           ...(!deployed ? { dev: { experimentalS3Credentials: localStorage().credentials } } : {})

@@ -130,13 +130,17 @@ live integration task; never reuse another project's tunnel.
 ## Pull request previews
 
 Trusted same-repository PRs receive an isolated Neon branch copied from staging, with the PR's migrations applied.
-See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets. Hosted application previews are deferred
-to the Cloudflare web migration; their private documents will use R2. No new Railway preview infrastructure is created.
+See [Neon previews](neon.md) for provisioning, expiry, cleanup, and secrets. Cloudflare hosting uses
+`copacker-pr-<number>.hoa-preview.workers.dev` and `previews.copacker.ai/pr-<number>/storybook/`;
+documents use only that PR's prefix in private R2. No new Railway preview infrastructure is created.
 
 Automatic PR environment creation is disabled in both Copacker Railway projects. Existing fixture-only Storybook
 previews for open PRs remain until those PRs close; they contain no application credentials. The
-`pr-*.preview.copacker.ai` namespace remains reserved and is not provisioned. When Cloudflare app previews are enabled,
-register their exact WorkOS callbacks; do not add `*.up.railway.app` to any origin allowlist.
+`pr-*.preview.copacker.ai` namespace remains reserved and is not provisioned. Before enabling Cloudflare previews,
+register `https://copacker-pr-*.hoa-preview.workers.dev/callback` and the corresponding sign-out origin
+`https://copacker-pr-*.hoa-preview.workers.dev` in the staging WorkOS environment. Preserve existing/default entries.
+WorkOS supports prefixed subdomain wildcards; these patterns cover only this account's Copacker preview Workers.
+They are shared configuration, not per-PR registrations. Do not add `*.up.railway.app` to any origin allowlist.
 
 ## Configuration change register
 

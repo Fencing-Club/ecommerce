@@ -170,7 +170,8 @@ See [Neon connections and releases](neon.md).
 
 ## Preview scope
 
-Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Hosted app previews
-remain a follow-up after the Cloudflare web release; no new Railway resources are provisioned. Existing shared Storybook
-deployments remain available; the former container preview integration cannot build this branch's static Worker.
-See [Neon PR previews](neon.md) for scope, credentials, expiry, and cleanup.
+Trusted PRs receive isolated Neon staging copies with their migrations applied after CI passes. Configured Cloudflare
+previews deploy the app and static Storybook, use a private R2 prefix per PR, and remove their hosting, database
+connection, queue, files and Neon branch on merge/close. A six-hour sweep retries incomplete cleanup, including
+Cloudflare resources whose Neon branch already expired. No new Railway resources are provisioned.
+See [Neon PR previews](neon.md) for activation, scope, credentials, expiry, and cleanup.

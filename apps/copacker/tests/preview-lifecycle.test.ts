@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { runPreview as run } from "../scripts/preview-runner"
 
 const child = vi.hoisted(() => ({ execFileSync: vi.fn<typeof execFileSync>() }))
-vi.mock("node:child_process", () => child)
+vi.mock("node:child_process", async (original) => ({
+  ...(await original<typeof import("node:child_process")>()),
+  ...child
+}))
 const fetchMock = vi.fn<typeof fetch>()
 const branch = { id: "br-preview", name: "pr-42", parent_id: "br-staging", default: false }
 
@@ -29,6 +32,7 @@ beforeEach(() => {
   }
   vi.stubEnv("GITHUB_OUTPUT", undefined)
   vi.stubEnv("GITHUB_STEP_SUMMARY", undefined)
+  vi.stubEnv("CLOUDFLARE_PREVIEW_CONFIG", undefined)
 })
 
 afterEach(() => {
@@ -70,9 +74,17 @@ describe("Neon preview lifecycle", () => {
 
   it("tolerates cleanup after automatic expiration", async () => {
     respond({ branches: [] })
+    respond({ state: "closed" })
     await run("remove")
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(child.execFileSync).not.toHaveBeenCalled()
+  })
+
+  it("preserves a reopened PR database even when hosted previews are disabled", async () => {
+    respond({ branches: [branch] })
+    respond({ state: "open" })
+    await run("remove")
+    expect(fetchMock.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
   })
 
   it("sweeps every page and removes only confirmed closed staging children", async () => {
@@ -81,6 +93,7 @@ describe("Neon preview lifecycle", () => {
     respond({ state: "open" })
     respond({ state: "closed" })
     respond({})
+    respond({ branches: [] })
     await run("sweep")
     expect(String(fetchMock.mock.calls[1]![0])).toContain("cursor=next-page")
     const deleted = fetchMock.mock.calls.filter(([, options]) => options?.method === "DELETE")
@@ -91,7 +104,7 @@ describe("Neon preview lifecycle", () => {
   it("preserves the branch when GitHub cannot confirm the PR's state", async () => {
     respond({ branches: [branch] })
     respond({}, 404)
-    await expect(run("sweep")).rejects.toThrow("GitHub PR lookup failed (404)")
+    await expect(run("sweep")).rejects.toThrow("Preview cleanup incomplete for PRs 42")
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === "DELETE")).toBe(false)
   })
 

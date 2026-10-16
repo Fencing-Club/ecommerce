@@ -3,6 +3,7 @@ import path from "node:path"
 import { z } from "zod"
 
 const mode = z.enum(["staging", "production"]).parse(process.argv[2])
+const name = mode === "production" ? "copacker-stories" : "copacker-stories-staging"
 // A separate project/output tree keeps Storybook deployment independent from the web artifact.
 const root = path.resolve(".cloudflare/stories-release")
 const output = path.join(root, ".cloudflare/output/v0")
@@ -23,9 +24,9 @@ await writeFile(path.join(output, "config.json"), JSON.stringify({ buildContext:
 await writeFile(
   path.join(worker, "worker.config.json"),
   JSON.stringify({
-    name: mode === "production" ? "copacker-stories" : "copacker-stories-staging",
+    name,
     compatibilityDate: "2026-10-15",
-    workersDev: mode === "staging",
+    workersDev: mode !== "production",
     previewUrls: false,
     domains: (process.env.CLOUDFLARE_STORIES_DOMAINS || "")
       .split(",")

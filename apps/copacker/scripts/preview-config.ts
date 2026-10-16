@@ -1,7 +1,23 @@
 import { z } from "zod"
 
+export const previewNumber = z.string().regex(/^[1-9]\d*$/)
+export const previewAssetsWorker = "copacker-preview-assets"
+export const previewAssetsHostname = "previews.copacker.ai"
+
+export function previewResources(input: string) {
+  const number = previewNumber.parse(input)
+  const prefix = `previews/pr-${number}/`
+  return {
+    app: `copacker-pr-${number}`,
+    queue: `copacker-jobs-pr-${number}`,
+    prefix,
+    documentsPrefix: `${prefix}app/`,
+    storiesPrefix: `${prefix}storybook/`
+  }
+}
+
 export const previewSettings = z.object({
-  PR_NUMBER: z.string().regex(/^[1-9]\d*$/),
+  PR_NUMBER: previewNumber,
   NEON_PROJECT_ID: z.string().regex(/^[a-z0-9-]+$/),
   NEON_STAGING_BRANCH_ID: z.string().startsWith("br-"),
   NEON_DATABASE_NAME: z.string().min(1),

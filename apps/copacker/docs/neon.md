@@ -35,25 +35,56 @@ tested staging commit. See the [release gates](cloudflare.md#release-procedure);
 
 After the regular CI checks pass, trusted same-repository PRs receive a private Neon branch cloned from staging.
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
-test edits. Forks and Dependabot do not receive credentials. The Actions summary identifies the database branch;
-it does not link to a running application. Copied integration records remain encrypted; the job receives no
-decryption key, commerce credentials, storage credentials, or background worker configuration.
+test edits. Forks and Dependabot do not receive credentials. With `CLOUDFLARE_PREVIEW_CONFIG` configured, CI builds
+the Cloudflare app Worker and uploads fixture-only Storybook files, verifies their commit health endpoints, and links both in
+the Actions summary. Each app gets its own Hyperdrive connection and queue. Previews reuse the existing private
+`copacker-staging-private` R2 bucket, with `previews/pr-<number>/` reserved for each PR. Referenced staging files are copied
+into that PR's `app/` folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
+pushes preserve the preview's edits. No new bucket or Railway resource is created.
 
-Hosted app previews remain a separate follow-up after the Cloudflare web release. This migration does not create Railway
-preview services or buckets. New app and storage resources belong in Cloudflare; preview documents will use a private
-R2 bucket with a separate prefix per PR when hosted previews are implemented.
+Storybook is served at `https://previews.copacker.ai/pr-<number>/storybook/` by one shared Worker. Its files live under `previews/pr-<number>/storybook/<build-version>/`. Publication changes only after every upload succeeds. The server checks the publication marker before serving cached files, so cleanup makes even cached URLs unavailable. The private bucket is never made public, and the server cannot route requests to app documents. The app itself retains its isolated workers.dev origin for routing and authentication; the `app/` bucket folder contains documents, not executable server code.
 
-The close workflow runs trusted default-branch code to remove the Neon branch. Branches expire seven days after
-the latest successful provisioning attempt. A six-hour sweep removes branches for PRs GitHub explicitly reports as
-closed. Pushing after expiration recreates the branch from current staging. All preview provisioning and cleanup
-runs serialize to avoid deletion races. Cleanup can also be dispatched with a PR number.
+The storage adapter prefixes every preview read, write and delete. These folders separate normal app operations,
+not bucket permissions: trusted preview code has the same bucket access as staging. The shared bucket holds only
+test data; production files stay in a separate bucket.
+
+Preview secrets contain only the staging WorkOS credentials, a session password, and the staging encryption key.
+Do not provide production or commerce API credentials. Background jobs remain pending in the isolated preview
+database/queue: the retained staging and production executors never consume them. Hosted previews cover web,
+authentication, database mutations and documents; full job execution needs the separate Cloudflare executor migration.
+
+The close workflow runs trusted default-branch code on **both merge and close**. It stops the app and unpublishes Storybook,
+removes the PR's queue and Hyperdrive, deletes only its R2 prefix, and finally removes the Neon branch. It verifies
+absence before reporting success. A partial failure fails the job and can be retried safely; the database remains
+until Cloudflare cleanup succeeds. The shared assets Worker and bucket, staging and production are preserved.
+
+A six-hour sweep inventories Neon, Workers, Hyperdrive, queues **and R2 files independently**, so an expired Neon
+branch or interrupted deployment cannot hide leftover hosting. It removes only PRs GitHub explicitly reports closed;
+unknown/inaccessible or reopened PRs are preserved. One PR's failure does not prevent attempts on the others.
+Deployments recheck PR state and commit before provisioning and PR state after deployment. All lifecycle jobs share
+a concurrency group. The scheduled sweep also recovers events displaced from GitHub's pending concurrency slot.
+Cleanup can be dispatched with a closed PR number. Branches expire seven days after provisioning; a later push
+removes old hosting/files before recreating the database from current staging.
 
 Required repository configuration:
 
 | Kind | Names |
 | --- | --- |
-| Secrets | `NEON_API_KEY` (project-scoped) |
-| Variables | `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `NEON_DATABASE_NAME`, `NEON_ROLE_NAME` |
+| Secrets | `NEON_API_KEY` (project-scoped), `CLOUDFLARE_PREVIEW_TOKEN`, `CLOUDFLARE_PREVIEW_SECRETS` |
+| Variables | `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `NEON_DATABASE_NAME`, `NEON_ROLE_NAME`, `CLOUDFLARE_PREVIEW_CONFIG` |
+
+`CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-staging-private`),
+`subdomain` (the account's workers.dev subdomain), and `caCertificateId` (the uploaded Neon public root CA).
+CI reuses the existing staging bucket and never deletes it. The scoped account token
+needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. Deploying the shared assets Worker with its custom domain also requires the corresponding Workers domain/zone permissions. The secrets JSON contains
+exactly `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`, and `TOKEN_ENCRYPTION_KEY`.
+Register the test WorkOS callback/sign-out patterns listed in [domains](domains.md#pull-request-previews).
+
+Deploy and verify the shared assets Worker with `pnpm --filter copacker preview:assets:deploy` before enabling hosted previews. Its dedicated workflow maintains it after changes on main.
+
+Enable the configuration only after this cleanup implementation is on the default branch and staging's R2 files
+match its database references. Until then, existing database-only previews continue; do not claim hosted previews
+are active from a build or dry run alone.
 
 ## Transfer and acceptance
 
