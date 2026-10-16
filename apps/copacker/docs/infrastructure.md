@@ -6,7 +6,8 @@ Staging and production have separate root modules and state keys. They share one
 ## First adoption
 
 This PR adopts each environment's existing private document bucket and two queues. Declarative import blocks identify
-the exact resources. The first plan must show three imports and **zero creates, updates or deletes** per environment.
+the exact resources. The first plan must show three Cloudflare imports and **zero Cloudflare creates, updates or deletes** per environment,
+plus one local `terraform_data.tags` creation that reconciles resource tags through the pinned `cf` CLI.
 Stop and investigate any other result. `prevent_destroy` protects buckets and queues while their resource blocks exist;
 removing a block also removes that protection, so review plans even for apparently small edits.
 
@@ -27,6 +28,9 @@ Use a separate bucket-scoped Object Read & Write credential through `AWS_ACCESS_
 These environment-variable names belong to Terraform's S3-compatible backend; no AWS account or console is needed.
 The Cloudflare provider reads a separately scoped `CLOUDFLARE_API_TOKEN` with R2 Storage and Queues read/write permissions.
 Keep all credentials out of checked-in files, backend arguments and logs.
+
+The same provider token also needs Tag Read and Tag Write. Install repository dependencies with `pnpm install --frozen-lockfile`
+and use the repository's Node version before applying; Terraform's tag reconciler uses the pinned CLI and `tsx`.
 
 From the selected environment directory:
 
@@ -68,11 +72,19 @@ These tags were written and read back on October 16, 2026, preserving existing t
 Every resource also has `app=copacker`. The production document bucket was created private on that date.
 Both private buckets' r2.dev access was verified disabled.
 
-Cloudflare's current Terraform provider does not expose the generic Resource Tagging API. Manage these tags through
-`cf account-tags get` followed by a merged `cf account-tags update --if-match <etag> --body @file.json`, then read them
-back. Never replace someone else's tags. Hyperdrive is not currently a supported generic tag resource. Preview folders
-are object prefixes, not independent taggable resources. Per-PR Worker/Queue tagging still needs Tag Write on the preview
-CI token before it can be automated; current cleanup relies on exact resource names and PR ownership, not tags.
+Cloudflare's current Terraform provider does not expose the generic Resource Tagging API. Terraform owns the desired tags
+for its buckets and queues through `terraform_data.tags`, invoking the shared reconciler on every apply. Its planned local
+replacement is expected, does not replace Cloudflare resources, and has no destroy provisioner. This repairs tag drift on
+apply; tag drift is not visible during plan. Read/merge/ETag-checked updates preserve unrelated tags and readback verifies
+success. Failed reads, concurrent edits or failed verification fail the apply; retry after resolving the cause. The token
+stays in the process environment, outside state and command arguments. Other persistent resources retain their current
+owners and tags. Native provider support should replace this adapter when available.
+
+Preview deployment uses the same reconciler for its app Worker and Queue before publishing Storybook or reporting success.
+It sets `app=copacker`, `environment=preview`, `lifecycle=ephemeral`, `pr=<number>`, and `component=web` or `jobs` on every
+deployment. The preview token must have Tag Read and Tag Write; failures block successful publication rather than silently
+skipping tags. Hyperdrive is not a supported generic tag resource and folders are object prefixes, not taggable resources.
+Cleanup continues to rely on exact resource names and verified PR ownership, never on mutable tags.
 
 ## Cutover and retirement status
 
@@ -100,8 +112,8 @@ runner and do not re-enable automatic reseeding. Unrelated staged WorkOS setting
 
 Hosted preview and release configuration remain gated. Railway web, Storybook and the Node executor remain required;
 retire original document storage only after authenticated production acceptance and the observation/recovery gates pass.
-Deletion of the unprovisioned `pr-999999` bucket was rejected by automatic approval review; it remains intact pending
-fresh approval. Follow [the cutover runbook](specs/platform-migration/cutover.md) for recovery and retirement.
+The user deferred deletion of the unprovisioned `pr-999999` bucket until final Railway retirement.
+Follow [the cutover runbook](specs/platform-migration/cutover.md) for recovery and retirement.
 
 References: [Cloudflare R2 backend](https://developers.cloudflare.com/terraform/advanced-topics/remote-backend/),
 [resource tags](https://developers.cloudflare.com/resource-tagging/how-to/manage-tags/),

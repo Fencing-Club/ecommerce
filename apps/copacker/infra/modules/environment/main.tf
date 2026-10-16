@@ -49,6 +49,33 @@ output "documents_bucket" {
   value = cloudflare_r2_bucket.documents.name
 }
 
+locals {
+  tags = {
+    app         = "copacker"
+    environment = var.environment
+    lifecycle   = "persistent"
+  }
+  tag_targets = concat([
+    { type = "r2_bucket", id = cloudflare_r2_bucket.documents.name, tags = merge(local.tags, { component = "documents" }) }
+    ], [for key, queue in cloudflare_queue.jobs : {
+      type = "queue", id = queue.id, tags = merge(local.tags, { component = key == "jobs" ? "jobs" : "dead-letter" })
+  }])
+}
+
+# The Cloudflare provider does not yet expose the Resource Tagging API.
+# Reconcile on every apply so out-of-band tag drift is repaired too.
+resource "terraform_data" "tags" {
+  triggers_replace = [timestamp(), local.tag_targets]
+  provisioner "local-exec" {
+    working_dir = "${path.module}/../../.."
+    command     = "node --import tsx scripts/terraform-tags.ts"
+    environment = {
+      CLOUDFLARE_ACCOUNT_ID = var.account_id
+      COPACKER_TAG_TARGETS  = jsonencode(local.tag_targets)
+    }
+  }
+}
+
 output "jobs_queue_id" {
   value = cloudflare_queue.jobs["jobs"].id
 }

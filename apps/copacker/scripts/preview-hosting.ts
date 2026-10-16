@@ -10,9 +10,17 @@ import { z } from "zod"
 import { databaseConfig } from "../src/db/connection"
 import { storageReferenceQuery } from "../src/db/storage-references"
 import { requiredSecrets } from "./cloudflare-environment"
-import { cloudflare, previewObjects, provisionHostedPreview, type HostingSettings } from "./preview-cloudflare"
+import {
+  cloudflare,
+  cloudflareJson,
+  previewInventory,
+  previewObjects,
+  provisionHostedPreview,
+  type HostingSettings
+} from "./preview-cloudflare"
 import { previewAssetsHostname, previewResources } from "./preview-config"
 import { publishPreviewStories } from "./preview-stories"
+import { reconcileResourceTags } from "./resource-tags"
 
 function fingerprint(bytes: Buffer) {
   return createHash("sha256").update(bytes).digest("hex")
@@ -141,6 +149,14 @@ export async function deployHostedPreview(config: HostingSettings, number: strin
     ]
     run([...deploy, "--dry-run", "--secrets-file", secretFile])
     run([...deploy, "--secrets-file", secretFile])
+    const inventory = previewInventory(config)
+    const worker = inventory.workers.find((item) => item.name === names.app)
+    const queue = inventory.queues.find((item) => item.queue_name === names.queue)
+    invariant(worker && queue, "Preview resources missing before tagging")
+    const tags = { app: "copacker", environment: "preview", lifecycle: "ephemeral", pr: number }
+    const tag = (args: string[], body?: unknown) => cloudflareJson(config, args, body)
+    reconcileResourceTags({ type: "worker", id: worker.id, tags: { ...tags, component: "web" } }, tag)
+    reconcileResourceTags({ type: "queue", id: queue.queue_id, tags: { ...tags, component: "jobs" } }, tag)
     await publishPreviewStories(config, number, sha, path.join(root, "storybook-static"))
     for (const url of [`${app}/api/health`, `${stories}health.json`]) {
       const response = await fetch(url, { signal: AbortSignal.timeout(30000) })
