@@ -1,8 +1,8 @@
 import type { OrderInput, PackingDraft } from "@repo/aisle"
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { supplierId } from "@/stories/fixtures/orders"
 import {
   actionHandler,
@@ -139,7 +139,7 @@ export const Submit = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Check packing" }))
     await expect(await canvas.findByText("Ready to submit; changes go to the buyer for approval")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Submit packing list" }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     // It submits the revision the save just made.
     await expect(actions).toHaveBeenLastCalledWith({
       action: "shipment.submit",

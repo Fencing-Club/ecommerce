@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router"
 import { Boxes, FileText, LayoutDashboard, MoreHorizontal, Plus, Settings, Truck } from "lucide-react"
-import Link from "next/link"
 import { useState } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
@@ -97,7 +97,7 @@ function AppFrame({ variant, collapsible = "icon", side, loading, onNewOrder, on
                         <SidebarMenuButton
                           isActive={page.href === "/orders"}
                           tooltip={page.label}
-                          render={<Link href={page.href} />}
+                          render={<Link to="." href={page.href} />}
                         >
                           <page.icon />
                           <span>{page.label}</span>
@@ -111,7 +111,7 @@ function AppFrame({ variant, collapsible = "icon", side, loading, onNewOrder, on
                         {page.href === "/inventory" && (
                           <SidebarMenuSub>
                             <SidebarMenuSubItem>
-                              <SidebarMenuSubButton isActive render={<Link href="/inventory/restock" />}>
+                              <SidebarMenuSubButton isActive render={<Link to="/restock" />}>
                                 <span>Restock</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

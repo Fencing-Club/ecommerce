@@ -12,7 +12,7 @@ const meta = preview.meta({
     value: null,
     onChange: fn()
   },
-  parameters: { nextjs: { navigation: { pathname: "/overview", query: { period: "last90" } } } }
+  parameters: { router: { navigation: { pathname: "/overview", query: { period: "last90" } } } }
 })
 
 // Choosing a channel keeps the period in the URL.
@@ -31,7 +31,7 @@ export const ChooseChannel = meta.story({
 // All channels takes the channel out of the URL and keeps the period.
 export const BackToAllChannels = meta.story({
   args: { value: "amazon" },
-  parameters: { nextjs: { navigation: { pathname: "/overview", query: { period: "last90", channel: "amazon" } } } },
+  parameters: { router: { navigation: { pathname: "/overview", query: { period: "last90", channel: "amazon" } } } },
   play: async ({ canvas, args }) => {
     const trigger = canvas.getByRole("combobox", { name: "Channel" })
     await expect(trigger).toHaveTextContent("Amazon")

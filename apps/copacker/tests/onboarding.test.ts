@@ -1,3 +1,12 @@
+vi.mock("@tanstack/react-start/server", () => ({
+  getCookie: (name: string) => jar.get(name),
+  setCookie: (name: string, value: string) => {
+    jar.set(name, value)
+  },
+  deleteCookie: (name: string) => {
+    jar.delete(name)
+  }
+}))
 import { randomUUID } from "node:crypto"
 import { PGlite } from "@electric-sql/pglite"
 import { eq } from "drizzle-orm"
@@ -8,14 +17,7 @@ import * as tables from "../src/db/schema"
 const context = vi.hoisted(() => ({ current: null as unknown }))
 const jar = vi.hoisted(() => new Map<string, string>())
 vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: (name: string) => (jar.has(name) ? { name, value: jar.get(name) } : undefined),
-    set: (name: string, value: string) => void jar.set(name, value),
-    delete: (name: string) => void jar.delete(name)
-  })
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
+
 const remote = vi.hoisted(() => ({
   createOrganization: vi.fn<(...args: unknown[]) => Promise<{ id: string }>>(),
   createOrganizationMembership: vi.fn<(...args: unknown[]) => Promise<unknown>>(),

@@ -1,16 +1,7 @@
-import { redirect } from "next/navigation"
 import { ProductEditor } from "@/components/supplier/product-editor"
-import { requirePage, session, titleFor } from "@/server/auth"
-import { withRequest } from "@/server/next-request"
+import type { readNewProduct } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("products.page.addProduct", "products", "edit")
-
-export default withRequest(async function NewProductPage() {
-  const s = await session()
-  if (s.org.kind !== "supplier") {
-    redirect("/products")
-  }
-  requirePage(s, "products", "edit")
-  requirePage(s, "prices")
-  return <ProductEditor />
-})
+type Data = Extract<Awaited<ReturnType<typeof readNewProduct>>, { forbidden: false }>["page"]
+export default function NewProductPage({ page }: { page: Data["data"] }) {
+  return <ProductEditor {...page} />
+}

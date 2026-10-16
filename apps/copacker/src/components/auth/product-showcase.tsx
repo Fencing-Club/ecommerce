@@ -1,5 +1,3 @@
-"use client"
-
 import { Check, Ship, TrendingDown } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type ActionRequest, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { MonthlyCosts } from "./monthly-costs"
 
@@ -73,7 +73,7 @@ export const Add = meta.story({
       ])
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 
@@ -173,7 +173,7 @@ export const Remove = meta.story({
     await waitFor(() =>
       expect(sent).toEqual([{ action: "monthlyCost.delete", data: { id: "c05t0000-0000-4000-8000-000000000002" } }])
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

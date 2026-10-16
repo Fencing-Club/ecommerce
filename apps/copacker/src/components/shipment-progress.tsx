@@ -1,6 +1,4 @@
-"use client"
-
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import { useEffect } from "react"
 
 // Refreshes the page while Amazon creates the shipment, and says what happens next when the page doesn't show it.
@@ -12,7 +10,7 @@ export function ShipmentProgress({ processing, message }: { processing: boolean;
     }
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") {
-        router.refresh()
+        router.invalidate()
       }
     }, 5000)
     return () => clearInterval(timer)

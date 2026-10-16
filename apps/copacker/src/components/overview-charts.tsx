@@ -1,14 +1,14 @@
-"use client"
-
 import { Toggle } from "@base-ui/react/toggle"
 import { ToggleGroup } from "@base-ui/react/toggle-group"
 import { useState } from "react"
-import { Area, AreaChart, CartesianGrid, type TooltipContentProps, Tooltip, XAxis, YAxis } from "recharts"
+import type { TooltipContentProps } from "recharts"
+import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts"
 import { isPresent } from "ts-extras"
 import { useFormatter, useLocale, useTranslations } from "use-intl"
 import type { Comparison } from "@/lib/date-range"
 import { cn } from "@/lib/utils"
-import type { DailySales, SourceDay } from "@/server/overview-sales"
+import type { DailySales } from "@/server/overview-sales"
+import type { SourceDay } from "@/server/overview-sales"
 import type { SalesSource } from "@/server/sales-orders"
 import { vars } from "@/styles/theme.css"
 

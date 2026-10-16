@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { inventoryRows } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
 import { InventoryTable } from "./inventory"
@@ -86,7 +86,7 @@ export const EditCounts = meta.story({
         ]
       })
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await waitFor(() => expect(screen.queryByRole("region", { name: "Unsaved changes" })).toBeNull())
   }
 })
@@ -133,7 +133,7 @@ export const SaveFails = meta.story({
     await expect(await saveBar().findByText("LM-TOTE-NAT changed since you opened this page.")).toBeVisible()
     // The count stays as typed, to save again.
     await expect(count).toHaveValue(90)
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 
@@ -141,7 +141,7 @@ export const TurnOnTracking = meta.story({
   play: async () => {
     await userEvent.click(rowOf("LM-BASKET").getByRole("switch", { name: "Track inventory for LM-BASKET" }))
     await waitFor(() => expect(tracked).toHaveBeenCalledWith({ id: basket!.id, trackInventory: true }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await userEvent.click(rowOf("LM-APRON").getByRole("switch", { name: "Continue selling for LM-APRON" }))
     await waitFor(() => expect(tracked).toHaveBeenCalledWith({ id: apron!.id, continueSelling: false }))
   }
@@ -155,7 +155,7 @@ export const TrackingFails = meta.story({
     const toggle = rowOf("LM-TOTE-BLK").getByRole("switch", { name: "Track inventory for LM-TOTE-BLK" })
     await userEvent.click(toggle)
     await waitFor(() => expect(toggle).toHaveAttribute("aria-invalid", "true"))
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 

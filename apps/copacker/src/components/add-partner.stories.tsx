@@ -32,7 +32,7 @@ export const AddMenu = meta.story({
 
 // The top bar's Create > Supplier lands here with ?add=supplier, which opens its sheet.
 export const OpenedFromCreate = meta.story({
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/partners", query: { add: "supplier" } } } },
+  parameters: { router: { navigation: { pathname: "/partners", query: { add: "supplier" } } } },
   play: async () => {
     const dialog = await screen.findByRole("dialog", { name: "Add a supplier" })
     await waitFor(() => expect(dialog).toBeVisible())

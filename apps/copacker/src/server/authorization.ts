@@ -1,5 +1,8 @@
 import { AccessError, LocalizedError } from "@/i18n/errors"
-import { type AccessLevel, can, type Grant, isAdmin, type Permissions } from "@/lib/access"
+import type { AccessLevel } from "@/lib/access"
+import type { Grant } from "@/lib/access"
+import type { Permissions } from "@/lib/access"
+import { can, isAdmin } from "@/lib/access"
 import { areaLabelKey } from "@/lib/navigation"
 
 type Workspace = { org: { kind: string } }

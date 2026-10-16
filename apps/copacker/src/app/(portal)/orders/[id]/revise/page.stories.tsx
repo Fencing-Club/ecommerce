@@ -1,9 +1,9 @@
 import type { OrderInput } from "@repo/aisle"
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { OrderReviser, type ReviserProduct } from "@/components/supplier/order-reviser"
 import type { Proposal } from "@/db/schema"
 import { orderData, orderItem } from "@/stories/fixtures/orders"
@@ -24,7 +24,7 @@ type Args = {
 
 // The supplier's Edit order page (page.tsx) for a sent purchase order, from what the database would return.
 async function ReviseOrderPage({ order, latest, customer, products }: Args) {
-  const t = await getTranslations("orders.revise")
+  const t = await translateStory("orders.revise")
   const id = orderId
   const { data } = order
   // A pending proposal is edited from where the supplier left it: its lines, terms, ready date and note.
@@ -135,7 +135,7 @@ export const Default = meta.story({
         readyDate: null
       }
     })
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
   }
 })
 

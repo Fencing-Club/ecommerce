@@ -1,17 +1,7 @@
-import { redirect } from "next/navigation"
 import { CustomersPageView } from "@/components/customers-page"
-import { requirePage, session, titleFor } from "@/server/auth"
-import { withRequest } from "@/server/next-request"
-import { customersPageData } from "@/server/workspace-pages"
+import type { readCustomers } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("supplier.pages.customers", "customers")
-
-export default withRequest(async function CustomersPage() {
-  const s = await session()
-  if (s.org.kind !== "supplier") {
-    redirect("/")
-  }
-  requirePage(s, "customers")
-
-  return <CustomersPageView {...await customersPageData(s)} />
-})
+type Data = Extract<Awaited<ReturnType<typeof readCustomers>>, { forbidden: false }>["page"]
+export default function CustomersPage({ page }: { page: Data["data"] }) {
+  return <CustomersPageView {...page} />
+}

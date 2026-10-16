@@ -1,9 +1,10 @@
+import { deleteCookie } from "@tanstack/react-start/server"
 import { and, eq, inArray, ne } from "drizzle-orm"
-import { cookies } from "next/headers"
 import { z } from "zod"
 import { db } from "@/db"
 import { connections, memberships, oauthStates, organizations, profiles } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
+import { clearAuthentication } from "./auth-session"
 import { disconnect } from "./connections"
 import { deleteFile } from "./storage"
 import { workos } from "./workos"
@@ -115,7 +116,6 @@ async function disconnectStores(orgId: string) {
 
 // Ends the session in this browser after its account is deleted: AuthKit's cookie and the open workspace.
 async function signedOut() {
-  const jar = await cookies()
-  jar.delete(process.env.WORKOS_COOKIE_NAME || "wos-session")
-  jar.delete(workspaceCookie)
+  await clearAuthentication()
+  deleteCookie(workspaceCookie, { path: "/" })
 }

@@ -1,8 +1,8 @@
 import { amazonNetworkNames, type OrderInput } from "@repo/aisle"
+import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ExternalLink } from "lucide-react"
-import { getFormatter, getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect, within } from "storybook/test"
+import { formatStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { EmptyState, PageHeader, Status } from "@/components/common"
 import { StatCard, StatGrid } from "@/components/stat-card"
@@ -72,7 +72,7 @@ function stage(status: string) {
 async function ShipmentsPage({ kind, permissions, view, rows, list, customers, amazonShipments, amazonFails }: Args) {
   const current = views.find((tab) => tab.view === view) ?? views[0]
   const inView = (status: string) => current.view === "all" || stage(status) === current.view
-  const [t, format] = await Promise.all([getTranslations("shipments.list"), getFormatter()])
+  const [t, format] = await Promise.all([translateStory("shipments.list"), formatStory()])
   const isBuyer = kind === "buyer"
   const supplierView = kind === "supplier"
   const destination = await shipmentDestinations(rows.map((row) => row.order.data))
@@ -163,7 +163,7 @@ async function ShipmentsPage({ kind, permissions, view, rows, list, customers, a
                   return (
                     <TableRow key={shipment.id} className={columns.row}>
                       <TableCell className={columns.shipment}>
-                        <Link href={`/shipments/${shipment.id}`} className={rowLink}>
+                        <Link to="/shipments/$id" params={{ id: shipment.id }} className={rowLink}>
                           {order.data.reference}
                         </Link>
                         <p className={columns.detail}>
@@ -229,7 +229,7 @@ async function ShipmentsPage({ kind, permissions, view, rows, list, customers, a
           description={supplierView ? t("none.supplierDescription") : t("none.buyerDescription")}
         >
           {can(permissions, "orders") && (
-            <Button variant="outline" nativeButton={false} render={<Link href="/orders" />}>
+            <Button variant="outline" nativeButton={false} render={<Link to="/orders" />}>
               {supplierView ? t("none.viewOrders") : t("none.viewPurchaseOrders")}
             </Button>
           )}

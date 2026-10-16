@@ -1,6 +1,6 @@
 import { createTranslator } from "use-intl"
 import type { ServerText } from "@/i18n/server-text"
-import { type PricingText } from "@/lib/catalog-pricing"
+import type { PricingText } from "@/lib/catalog-pricing"
 import { localization } from "@/server/localization"
 
 // The "server" messages in the request's language. The worker and tests run without a request, so they get English.

@@ -13,9 +13,8 @@ vi.mock("../src/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => context.actor
 }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 
-import { PATCH } from "../src/app/api/inventory/variant-fields/route"
+import { PATCH } from "../src/server/http/api/inventory/variant-fields"
 import { assignProductSupplier } from "../src/server/product-defaults"
 import { copyShopifyFields, fillStockRows, withVariantFields } from "../src/server/product-fields"
 import { appUrl } from "../src/server/security"

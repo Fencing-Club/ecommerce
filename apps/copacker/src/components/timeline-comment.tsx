@@ -1,5 +1,3 @@
-"use client"
-
 import { useController } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"

@@ -1,6 +1,8 @@
+import { isNotFound, isRedirect } from "@tanstack/react-router"
 import { createTranslator, type MessageKeys, type NestedKeyOf } from "use-intl"
 import { z } from "zod"
-import { AccessError, type ErrorKey, LocalizedError } from "@/i18n/errors"
+import type { ErrorKey } from "@/i18n/errors"
+import { AccessError, LocalizedError } from "@/i18n/errors"
 import { english, type Messages } from "@/i18n/messages"
 import { localization } from "@/server/localization"
 
@@ -49,6 +51,9 @@ function isMessageKey(message: string): message is MessageKey {
 // The text of a failure in the request's language: a LocalizedError's message, each zod issue (translated when its
 // message is a key), another error's own message, or the fallback. A failed database query shows a generic message.
 export async function failureMessage(error: unknown, fallback: ErrorKey = "requestFailed") {
+  if (isRedirect(error) || isNotFound(error)) {
+    throw error
+  }
   const t = await errorText()
   if (error instanceof LocalizedError) {
     return t(error.key, error.values)

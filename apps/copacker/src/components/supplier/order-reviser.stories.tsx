@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { reviserItems, reviserProducts } from "@/stories/fixtures/supplier"
 import { OrderReviser } from "./order-reviser"
 
@@ -86,7 +86,7 @@ export const ChangeQuantityAndPrice = meta.story({
         note: "Cotton costs went down."
       }
     })
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
   }
 })
 
@@ -206,7 +206,7 @@ export const SendFails = meta.story({
       "The customer changed this purchase order. Reload to see it."
     )
     await expect(canvas.getByRole("button", { name: "Send for approval" })).toBeEnabled()
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 

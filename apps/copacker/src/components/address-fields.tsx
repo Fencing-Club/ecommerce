@@ -1,7 +1,4 @@
-"use client"
-
 import { useDebouncedValue } from "@mantine/hooks"
-import Script from "next/script"
 import { useEffect, useId, useRef, useState } from "react"
 import { useController, useFormContext, useWatch } from "react-hook-form"
 import { objectEntries } from "ts-extras"
@@ -9,8 +6,9 @@ import { useLocale, useTranslations } from "use-intl"
 import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { addressRegions } from "@/lib/address-regions"
 import { countriesIn } from "@/lib/countries"
+import { loadGooglePlaces } from "@/lib/google-places"
 import { formatPhone } from "@/lib/phone"
-import { placeAddress } from "@/lib/place-address"
+import type { placeAddress } from "@/lib/place-address"
 import { createPlaceSearch, type AddressSuggestion } from "@/lib/place-search"
 import { FormInput, FormLabel } from "./form-controls"
 import { SelectControl } from "./form-select"
@@ -31,7 +29,7 @@ export const emptyAddress = {
 // Google supplies suggestions; the app's combobox handles keyboard navigation and accessible names.
 // The ordinary address fields stay available when Google is unavailable, and remain editable after selection.
 function AddressLookup({ path }: { path: string }) {
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
   const t = useTranslations("common.address")
   const locale = useLocale()
   const { setValue } = useFormContext()
@@ -42,6 +40,29 @@ function AddressLookup({ path }: { path: string }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
   const [isReady, setReady] = useState(false)
   const [hasError, setError] = useState(false)
+  useEffect(() => {
+    if (!key) {
+      return
+    }
+    let active = true
+    void loadGooglePlaces(key)
+      .then(createPlaceSearch)
+      .then((lookup) => {
+        if (active) {
+          search.current = lookup
+          setReady(true)
+          setError(false)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError(true)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [key])
   const label = t("findAddress")
   const apply = (address: ReturnType<typeof placeAddress>) => {
     for (const [name, value] of objectEntries(address)) {
@@ -98,20 +119,6 @@ function AddressLookup({ path }: { path: string }) {
   }
   return (
     <div className="sm:col-span-2">
-      <Script
-        id="google-places"
-        src={`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&loading=async&v=weekly`}
-        onReady={() => {
-          void createPlaceSearch()
-            .then((lookup) => {
-              search.current = lookup
-              setReady(true)
-              setError(false)
-            })
-            .catch(() => setError(true))
-        }}
-        onError={() => setError(true)}
-      />
       <Combobox
         items={suggestions}
         inputValue={query}

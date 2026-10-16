@@ -19,7 +19,7 @@ function ResetPassword({ token }: { token?: string }) {
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Reset password",
   component: ResetPassword,
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/reset-password" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/reset-password" } } },
   args: { token },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/")))

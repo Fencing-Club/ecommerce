@@ -1,10 +1,10 @@
-"use client"
-
-import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen, type LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { ClipboardList, FileUp, Plus, Tag, Upload, BookOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { usePermissions } from "@/components/access"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { type Area, can } from "@/lib/access"
+import type { Area } from "@/lib/access"
+import { can } from "@/lib/access"
 
 // What each kind can create, each needing Edit on its page. Labels are keys under the "navigation" messages' `create`.
 const actions = {

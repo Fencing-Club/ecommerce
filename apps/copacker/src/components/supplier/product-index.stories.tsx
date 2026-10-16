@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { manyProductRows, productRows } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
 import { ProductIndex } from "./product-index"
@@ -82,7 +82,7 @@ export const Archive = meta.story({
     )
     await userEvent.click(canvas.getByRole("button", { name: "Archive" }))
     await waitFor(() => expect(statusChanged).toHaveBeenCalledWith({ ids: [apron!.id, basket!.id], active: false }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await waitFor(() => expect(canvas.queryByText("2 selected")).toBeNull())
   }
 })
@@ -124,7 +124,7 @@ export const ArchiveFails = meta.story({
     await expect(await canvas.findByText("Couldn’t save. Try again.")).toBeVisible()
     // The choice stays, to try again.
     await expect(canvas.getByText("1 selected")).toBeVisible()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })
 

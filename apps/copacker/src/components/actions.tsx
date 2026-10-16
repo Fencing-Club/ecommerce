@@ -1,6 +1,4 @@
-"use client"
-
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import { useState } from "react"
 import { FormError, SubmitButton } from "@/components/form-feedback"
 import { useErrorMessage } from "@/hooks/use-error-text"
@@ -35,10 +33,10 @@ export function ActionButton({
     try {
       const result = await run({ action, data }).unwrap()
       if (result.redirect) {
-        router.push(result.redirect)
+        router.navigate({ href: result.redirect })
       }
       setSucceeded(true)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e))
     }

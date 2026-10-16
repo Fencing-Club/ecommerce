@@ -1,5 +1,3 @@
-"use client"
-
 import { useLocale, useTranslations } from "use-intl"
 import { Spinner } from "@/components/ui/spinner"
 

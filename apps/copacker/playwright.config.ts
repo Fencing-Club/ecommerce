@@ -13,7 +13,7 @@ const deployed = process.env.E2E_BASE_URL
 const port = Number(process.env.E2E_PORT ?? 3005)
 const ci = Boolean(process.env.CI)
 const baseURL = deployed ?? (ci ? `http://127.0.0.1:${port}` : developmentEnvironment().e2e)
-if (!deployed && !ci) {
+if (!deployed) {
   Object.assign(process.env, localAppEnvironment(baseURL))
 }
 
@@ -46,7 +46,7 @@ export default defineConfig({
     ? undefined
     : {
         command: ci
-          ? `pnpm exec next ${process.env.E2E_DEV ? "dev" : "start"} --hostname 127.0.0.1 --port ${port}`
+          ? `pnpm exec vite ${process.env.E2E_DEV ? "dev" : "preview"} --host 127.0.0.1 --port ${port} --strictPort --mode e2e`
           : "node --import tsx scripts/dev.ts e2e",
         url: `${baseURL}/api/health`,
         reuseExistingServer: false,

@@ -1,6 +1,5 @@
-"use client"
-
-import { type FieldValues, FormProvider, type UseFormReturn } from "react-hook-form"
+import type { UseFormReturn } from "react-hook-form"
+import { type FieldValues, FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "./form-feedback"
 import { Button } from "./ui/button"

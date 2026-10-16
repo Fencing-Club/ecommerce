@@ -1,16 +1,9 @@
-"use client"
-
-import { type Address, addressSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import { addressSchema } from "@repo/aisle"
 import { Check } from "lucide-react"
 import { useId, useSyncExternalStore } from "react"
-import {
-  type FieldValues,
-  FormProvider,
-  type UseFormReturn,
-  useController,
-  useFormState,
-  useWatch
-} from "react-hook-form"
+import type { UseFormReturn } from "react-hook-form"
+import { type FieldValues, FormProvider, useController, useFormState, useWatch } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -27,9 +20,11 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { useActionForm } from "@/hooks/useActionForm"
-import { type Locale, localeNames, locales } from "@/i18n/locales"
+import type { Locale } from "@/i18n/locales"
+import { localeNames, locales } from "@/i18n/locales"
 import { contactDetailsSchema } from "@/lib/contact-details"
-import { type ContactKind, contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
+import type { ContactKind } from "@/lib/contacts"
+import { contactKindLabelKeys, contactKinds, contactKindsFor } from "@/lib/contacts"
 import { timeZoneLabel } from "@/lib/time-zone"
 import { dayRange } from "@/server/restock-report"
 import { ActionForm } from "./action-form"

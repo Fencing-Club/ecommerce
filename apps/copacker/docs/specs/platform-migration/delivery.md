@@ -1,8 +1,10 @@
 # Tasks, milestones and delivery plan
 
-Part of the [migration specification](README.md). M0, the request-context portions of M1 and frontend preparation in M3
-are in progress;
-no checkbox below is fully complete. See [compatibility evidence](compatibility.md) for verified substeps and remaining
+Part of the [migration specification](README.md). The full web route conversion, runtime foundation, release tooling and
+storage-transfer tools are implemented on the migration branch. The full local browser suite, repository verification
+and deployed auth/navigation/read checks passed; the main app and static Storybook are on Cloudflare staging.
+Production qualification and coordinated storage/worker deployment gates remain open;
+checkboxes below require their complete exit evidence, not only code. See [compatibility evidence](compatibility.md) for verified substeps and remaining
 work. This document does not create issues or schedule releases.
 The web can ship on Start before the background-worker migration finishes.
 
@@ -42,7 +44,7 @@ resources. M0 selects implementation details; TanStack Start and leaving Next ar
   current CI coverage and live resource/deployed revisions. Capture representative fixtures for each role and job kind.
 - [ ] **M0-02 — Measure the existing service.** Record web latency/error rate, build/cold-start behavior, DB query/connection
   load, job duration/queue age, object totals, peak document memory, infrastructure spend and recovery capability.
-- [ ] **M0-03 — Pin the framework combination.** Prove Start/Router, React Compiler, Vite, Cloudflare plugin, vanilla-extract,
+- [x] **M0-03 — Pin the framework combination.** Prove Start/Router, React Compiler, Vite, Cloudflare plugin, vanilla-extract,
   Storybook and the WorkOS SDK together. Inspect `cf` configuration/build/deploy support and record exact versions and
   compatibility flags/date. Resolve required library discussions before dependency changes.
 - [ ] **M0-04 — Deployed vertical slice.** Exercise custom login, session refresh/logout, workspace authorization,
@@ -70,11 +72,11 @@ Suggested responsibility: platform/backend engineer, with the web engineer revie
 - [ ] **M1-01 — Configuration and isolation.** Define Copacker's `cf` project configuration, generated bindings and
   validated environment contract. Separate staging/production resources, credentials, origins and execution controls.
   Keep production credentials out of previews. Enable logs and traces explicitly.
-- [ ] **M1-02 — Database context.** Replace Worker-path global DB access with invocation-scoped access and test all error
+- [x] **M1-02 — Database context.** Replace Worker-path global DB access with invocation-scoped access and test all error
   cleanup. Preserve the Node pool for the retained worker until its cutover; keep domain queries canonical.
-- [ ] **M1-03 — Server boundaries.** Establish server-only modules, router/request context, explicit CSRF policy, safe DTO
+- [x] **M1-03 — Server boundaries.** Establish server-only modules, router/request context, explicit CSRF policy, safe DTO
   serialization and import-protection failures. Audit shared packages and public environment values.
-- [ ] **M1-04 — Build and type generation.** Establish a clean production build, route/binding generation, TypeScript 7
+- [x] **M1-04 — Build and type generation.** Establish a clean production build, route/binding generation, TypeScript 7
   checks, Turbo outputs/cache inputs, knip configuration and artifact naming based on actual build output.
 - [ ] **M1-05 — Local development.** Adapt Portless launch/health logic for Workers development and separate E2E runtime
   state/output. Preserve worktree domains, host-only cookies, system CA trust and isolated local Postgres. Document how
@@ -95,7 +97,7 @@ Suggested responsibility: platform engineer with document/security review.
 
 - [ ] **M2-01 — Storage contract.** Verify R2 put/get/delete via the retained Node S3 client, then native Workers bindings.
   Preserve private access, content types, object keys, filename headers, release checks and upload validation.
-- [ ] **M2-02 — Copy and reconcile.** Prepare an idempotent copy process and manifest covering every referenced object,
+- [x] **M2-02 — Copy and reconcile.** Prepare an idempotent copy process and manifest covering every referenced object,
   count, size and verified checksum. Include deletion reconciliation and partial-copy restart behavior.
 - [ ] **M2-03 — Recovery rehearsal.** Rehearse final writer pause, delta copy, switching both Node services, reverse delta
   rollback and restoration of DB records with matching objects. Agree on document retention/backup policy.
@@ -111,30 +113,30 @@ release action under M6-01, and can occur before the web migration.
 
 Suggested responsibility: web engineer with backend/security review for auth, mutations and document routes.
 
-- [ ] **M3-01 — Root and navigation.** Port root/pathless layouts, typed links, pending/error/forbidden/not-found handling,
+- [x] **M3-01 — Root and navigation.** Port root/pathless layouts, typed links, pending/error/forbidden/not-found handling,
   head metadata, theme/skip link and routing middleware. Keep URL/status semantics.
 - [ ] **M3-02 — Authentication and authorization.** Complete the custom WorkOS flows and server-side workspace/role checks.
   Preserve return-path validation, cookies, origin policy and multi-tab workspace/sign-out cache clearing.
-- [ ] **M3-03 — Localization and visual foundations.** Replace Next-specific translation integration, keep all locales,
+- [x] **M3-03 — Localization and visual foundations.** Replace Next-specific translation integration, keep all locales,
   time zones, typed catalogs, marketing namespace selection, RTL, fonts and existing styles. Keep React Compiler.
-- [ ] **M3-04 — P1 public/system pages.** Port the seven pages, forms, maintenance response behavior and metadata assets.
+- [x] **M3-04 — P1 public/system pages.** Port the seven pages, forms, maintenance response behavior and metadata assets.
   Verify HTML, robots/sitemap, canonical URLs and setup behavior before calling the batch complete.
 - [ ] **M3-05 — P2 identity/onboarding pages.** Port the eight pages and three auth handlers; cover expired/replayed auth
   state, password reset, invitation, onboarding and existing callback registrations.
-- [ ] **M3-06 — P3 workspace/partners pages.** Port seven pages and related data/actions. Exercise workspace switch, role
+- [x] **M3-06 — P3 workspace/partners pages.** Port seven pages and related data/actions. Exercise workspace switch, role
   denial, settings, partner deep links and redirects. Use the accepted nuqs trial result.
-- [ ] **M3-07 — P4 catalog/product pages.** Port six pages, imports/exports, product editing and price restrictions. Prove
+- [x] **M3-07 — P4 catalog/product pages.** Port six pages, imports/exports, product editing and price restrictions. Prove
   product-import query state and authorized downloads.
-- [ ] **M3-08 — P5 inventory/sales pages.** Port three pages and related API behavior. Preserve calculations, query/filter
+- [x] **M3-08 — P5 inventory/sales pages.** Port three pages and related API behavior. Preserve calculations, query/filter
   state, source scopes, sync progress and mutation freshness.
-- [ ] **M3-09 — P6 order/shipment pages.** Port nine pages, revision/proposal flows, imports, labels and packets. Verify
+- [x] **M3-09 — P6 order/shipment pages.** Port nine pages, revision/proposal flows, imports, labels and packets. Verify
   buyer/supplier/forwarder journeys and document withdrawal. Replace shipment server caching deliberately.
 - [ ] **M3-10 — HTTP and data parity.** Reconcile all 59 API handlers and `/api/action` operations, including provider
   callbacks/webhooks, raw signatures, binary responses, body limits, status/error schemas and cache/security headers.
 - [ ] **M3-11 — Stories and browser tooling.** Replace Next Storybook/mocks with real memory-router and locale fixtures;
   keep sibling stories with play tests. Update test discovery/coverage and production Workers Playwright launch paths.
   Run integrated-browser acceptance for each changed surface at desktop/mobile with keyboard checks.
-- [ ] **M3-12 — Remove Next.** Remove obsolete app/proxy/config/generated type files, packages, environment assumptions,
+- [x] **M3-12 — Remove Next.** Remove obsolete app/proxy/config/generated type files, packages, environment assumptions,
   build outputs and web-container scripts when no consumer remains. Verify all 31 refresh call sites have an explicit
   invalidation strategy. Update applicable developer docs and the framework convention in the same implementation PRs.
 

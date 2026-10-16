@@ -1,16 +1,19 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import type { ComponentProps } from "react"
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
+import { orderListRows } from "@/server/order-list"
 import { daysAgo, orderRow, orderRows } from "@/stories/fixtures/orders"
 import { amazonOrder, warehouse } from "@/stories/fixtures/purchase-orders"
 import { serverStory } from "@/stories/server"
 import { OrderList } from "./order-list"
 
-type Props = ComponentProps<typeof OrderList>
+type Props = Omit<ComponentProps<typeof OrderList>, "rows"> & { rows: typeof orderRows }
 
 const meta = preview.meta({
-  ...serverStory((props: Props) => <OrderList {...props} />),
+  ...serverStory(async (props: Props) => (
+    <OrderList {...props} rows={await orderListRows(props.rows, props.showValue)} />
+  )),
   args: { rows: orderRows, status: undefined, showValue: true, drafts: true, timeZone: undefined },
   // The delivery address the rows' purchase orders go to.
   parameters: { db: { contacts: [warehouse] } }
@@ -39,7 +42,7 @@ export const AllOrders = meta.story({
     await expect(canvas.getAllByText("With supplier").length).toBeGreaterThan(1)
     // The whole row opens the purchase order.
     await userEvent.click(canvas.getAllByText("Northwind Textiles")[0]!)
-    await expect(getRouter().push).toHaveBeenCalledWith("/orders/order-PO-1044")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-PO-1044" })
   }
 })
 

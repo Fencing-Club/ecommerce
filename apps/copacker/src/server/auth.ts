@@ -1,92 +1,42 @@
-import { saveSession, withAuth } from "@workos-inc/authkit-nextjs"
-import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
-import { cookies, headers } from "next/headers"
-import { forbidden, redirect } from "next/navigation"
-import type { MessageKeys, NestedKeyOf } from "use-intl"
-import type { Messages } from "@/i18n/messages"
-import {
-  type AccessLevel,
-  type Area,
-  can,
-  editSetsPrices,
-  type Grant,
-  moneyAreas,
-  type Permissions
-} from "@/lib/access"
-import { appUrl, returnPath } from "@/server/security"
-import type { SignInRequest } from "./sign-in"
+import { redirect } from "@tanstack/react-router"
+import { getCookie, getRequestUrl, setCookie } from "@tanstack/react-start/server"
+import { AccessError } from "@/i18n/errors"
+import type { AccessLevel } from "@/lib/access"
+import type { Grant } from "@/lib/access"
+import type { Permissions } from "@/lib/access"
+import { can } from "@/lib/access"
+import { authentication } from "./auth-session"
+import { appUrl, returnPath } from "./security"
 import { workspaceCookie, workspaceSession } from "./workspace-session"
 
-export async function signInRequest(): Promise<SignInRequest> {
-  const [jar, list] = await Promise.all([cookies(), headers()])
-  return {
-    headers: list,
-    ipAddress: list.get("x-forwarded-for")?.split(",")[0]?.trim() || list.get("x-real-ip") || undefined,
-    cookies: jar,
-    saveSession: (response) => saveSession(response, appUrl())
-  }
+export function setWorkspace(id: string) {
+  setCookie(workspaceCookie, id, { httpOnly: true, secure: appUrl().startsWith("https:"), sameSite: "lax", path: "/" })
 }
-
-export async function setWorkspace(id: string) {
-  ;(await cookies()).set(workspaceCookie, id, {
-    httpOnly: true,
-    secure: appUrl().startsWith("https:"),
-    sameSite: "lax",
-    path: "/"
-  })
-}
-
 export async function signedInUser() {
-  if (!process.env.WORKOS_CLIENT_ID) {
-    return null
-  }
-  return (await withAuth()).user
+  return process.env.WORKOS_CLIENT_ID ? (await authentication()).user : null
 }
-
-// Next's remaining request boundary. Workspace lookup and authorization are independent of this framework.
 export async function identity(returnTo?: string) {
   if (!process.env.WORKOS_CLIENT_ID) {
-    redirect("/setup")
+    throw redirect({ href: "/setup" })
   }
-  const { user } = await withAuth()
+  const user = await signedInUser()
   if (!user) {
-    const url = (await headers()).get("x-url")
-    const requested = returnTo ?? (url && URL.canParse(url) ? `${new URL(url).pathname}${new URL(url).search}` : null)
-    redirect(`/login?next=${encodeURIComponent(returnPath(requested, "/"))}`)
+    const url = getRequestUrl()
+    const requested = returnPath(returnTo ?? `${url.pathname}${url.search}`, "/")
+    throw redirect({ href: `/login?next=${encodeURIComponent(requested)}` })
   }
   return user
 }
-
+// Resolve current membership at each operation. Client route context is never authorization evidence.
 export async function session() {
-  const user = await identity()
-  const active = (await cookies()).get(workspaceCookie)?.value
-  const current = await workspaceSession(user, active)
+  const current = await workspaceSession(await identity(), getCookie(workspaceCookie))
   if (!current) {
-    redirect("/onboarding")
+    throw redirect({ href: "/onboarding" })
   }
   return current
 }
-
-// Next titles a page whose metadata throws forbidden() as not found, so inaccessible metadata returns this title.
-export async function noAccessTitle(): Promise<Metadata> {
-  const t = await getTranslations("common.pages.forbidden")
-  return { title: t("title") }
-}
-export type TitleKey = MessageKeys<Messages, NestedKeyOf<Messages>>
-export function titleFor(title: TitleKey, area: Area, level: AccessLevel = "view") {
-  return async (): Promise<Metadata> => {
-    const s = await session()
-    const needsPrices = moneyAreas.has(area) || (level === "edit" && editSetsPrices(s.org.kind, area))
-    if (!can(s, area, level) || (needsPrices && !can(s, "prices"))) {
-      return noAccessTitle()
-    }
-    const t = await getTranslations()
-    return { title: t(title) }
-  }
-}
 export function requirePage(s: Permissions, grant: Grant, level: AccessLevel = "view") {
   if (!can(s, grant, level)) {
-    forbidden()
+    throw new AccessError("forbidden")
   }
 }

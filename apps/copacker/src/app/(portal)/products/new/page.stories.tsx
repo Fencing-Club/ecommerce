@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { ProductEditor } from "@/components/supplier/product-editor"
 import { pageStory } from "@/stories/server"
 
@@ -45,7 +45,10 @@ export const AddProduct = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "SKU for new variant" }), "LM-BASKET-L")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await waitFor(() =>
-      expect(getRouter().replace).toHaveBeenCalledWith("/products/7a3e1c52-1d0b-4b8f-9d3e-0000000000a9")
+      expect(getStoryRouter().navigate).toHaveBeenCalledWith({
+        href: "/products/7a3e1c52-1d0b-4b8f-9d3e-0000000000a9",
+        replace: true
+      })
     )
     await expect(saved).toEqual([
       expect.objectContaining({
@@ -62,7 +65,7 @@ export const Discard = meta.story({
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByRole("textbox", { name: "Title" }), "Market basket")
     await userEvent.click(canvas.getByRole("button", { name: "Discard" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/products")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/products" })
   }
 })
 
@@ -79,6 +82,6 @@ export const SaveFailed = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "SKU for new variant" }), "LM-BASKET-L")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
     await expect(await canvas.findByText("Another product uses the SKU LM-BASKET-L")).toBeVisible()
-    await expect(getRouter().replace).not.toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })

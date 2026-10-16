@@ -1,0 +1,22 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": [
+        "$TURBO_EXTENDS$",
+        "APP_ALIAS_URLS",
+        "WORKOS_*",
+        "TOKEN_ENCRYPTION_KEY",
+        "SHOPIFY_*",
+        "AMAZON_*",
+        "EBAY_*",
+        "WEBHOOK_BASE_URL",
+        "EMAIL_*",
+        "CONTACT_EMAIL",
+        "LANGFUSE_*",
+        "OPENROUTER_API_KEY",
+        "AWS_*"
+      ]
+    }
+  }
+}

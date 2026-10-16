@@ -1,13 +1,14 @@
-import { type Amazon, ProviderError } from "@repo/aisle/amazon"
+import type { Amazon } from "@repo/aisle/amazon"
+import { ProviderError } from "@repo/aisle/amazon"
+import type { AmazonSale } from "@repo/aisle/sales"
+import type { EbaySale } from "@repo/aisle/sales"
+import type { ShopifySale } from "@repo/aisle/sales"
 import {
-  type AmazonSale,
   collectAmazonSales,
   collectAmazonSalesReport,
   collectEbaySales,
   collectShopifySales,
-  type EbaySale,
   collectShopifySalesBulk,
-  type ShopifySale,
   shopifyPaymentFees
 } from "@repo/aisle/sales"
 import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm"
@@ -15,7 +16,9 @@ import { z } from "zod"
 import { db } from "@/db"
 import { amazonTransactions, connections, jobs, salesOrders, salesSyncs, stockSnapshots } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
-import { type ServerKey, type ServerText, serverTextInEnglish } from "@/i18n/server-text"
+import type { ServerKey } from "@/i18n/server-text"
+import type { ServerText } from "@/i18n/server-text"
+import { serverTextInEnglish } from "@/i18n/server-text"
 import { presetRange } from "@/lib/date-range"
 import { addDays, zonedDay, zonedStart } from "@/lib/time-zone"
 import { syncAmazonFees } from "./amazon-fees"
@@ -27,8 +30,10 @@ import { syncExchangeRates } from "./exchange-rates"
 import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { PollAgain } from "./job-handlers"
 import { logLine } from "./log"
+import type { DemandGap } from "./sales-attribution"
+import type { DemandRow } from "./sales-attribution"
 import { attributeAmazonSales, attributeEbaySales, attributeShopifySales } from "./sales-attribution"
-import { summarizeDemandGaps, type DemandGap, type DemandRow } from "./sales-attribution"
+import { summarizeDemandGaps } from "./sales-attribution"
 import { syncShopifyBalance } from "./shopify-balance"
 import { excludedShopifyTags, hasExcludedTag, taggedWith } from "./shopify-tags"
 import { describeError, stockErrorCode } from "./stock"

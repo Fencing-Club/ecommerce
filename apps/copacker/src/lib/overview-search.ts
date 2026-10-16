@@ -1,5 +1,6 @@
 import { z } from "zod"
-import { periodQuery, type Period } from "./date-range"
+import type { Period } from "./date-range"
+import { periodQuery } from "./date-range"
 import { stringifyUrlSearch } from "./url-search"
 
 // Preserve the established URL contract, including unrelated keys owned by other controls.

@@ -20,7 +20,7 @@ import {
 import { variantLabel } from "@/lib/supplier-product"
 import { requireSupplier } from "./authorization"
 import { pricingText } from "./text"
-import { type Session } from "./workspace-session"
+import type { Session } from "./workspace-session"
 
 type Executor = Transaction | ReturnType<typeof db>
 

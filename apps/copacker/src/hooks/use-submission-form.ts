@@ -1,7 +1,6 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type DefaultValues, type FieldValues, useForm } from "react-hook-form"
+import type { DefaultValues } from "react-hook-form"
+import { type FieldValues, useForm } from "react-hook-form"
 import type { z } from "zod"
 import { useErrorMessage, useFormErrorMap } from "@/hooks/use-error-text"
 import type { ActionResult } from "@/lib/api"

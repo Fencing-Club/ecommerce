@@ -1,5 +1,3 @@
-"use client"
-
 import { Search } from "lucide-react"
 import { useEffect, useId, useMemo, useState } from "react"
 import { useTranslations } from "use-intl"

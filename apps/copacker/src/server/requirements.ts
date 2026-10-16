@@ -1,4 +1,5 @@
-import { type AmazonNetwork, amazonNetworkNames, type PrepCategory } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/aisle"
+import { amazonNetworkNames, type PrepCategory } from "@repo/aisle"
 import type { Requirement } from "@repo/aisle/requirements"
 import { match, P } from "ts-pattern"
 import { createFormatter, createTranslator } from "use-intl"

@@ -108,7 +108,7 @@ export const SetupUnfinished = meta.story({
 // The period and channel pickers beside the title, once the overview's data has loaded.
 export const Filters = meta.story({
   render: ({ data }) => <OverviewFilters data={data} onPeriodChange={fn()} onChannelChange={fn()} />,
-  parameters: { layout: "padded", nextjs: { navigation: { pathname: "/overview" } } },
+  parameters: { layout: "padded", router: { navigation: { pathname: "/overview" } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: /Last 30 days/ })).toBeVisible()
     await expect(canvas.getByRole("combobox", { name: "Channel" })).toHaveTextContent("All channels")

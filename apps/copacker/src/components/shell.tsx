@@ -1,5 +1,7 @@
+import { useMounted } from "@mantine/hooks"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar, type AppSidebarProps, SidebarToggle } from "./app-sidebar"
+import type { AppSidebarProps } from "./app-sidebar"
+import { AppSidebar, SidebarToggle } from "./app-sidebar"
 import { TopBar } from "./top-bar"
 
 // The sidebar is 240px wide, and 56px as a rail of icons.
@@ -11,10 +13,12 @@ export function Shell({
   navigate,
   ...shell
 }: AppSidebarProps & { children: React.ReactNode; defaultOpen: boolean; navigate: (href: string) => void }) {
+  const hydrated = useMounted()
   return (
     // The top bar spans the window, with the sidebar and the page under it.
     <SidebarProvider
       defaultOpen={defaultOpen}
+      data-portal-hydrated={hydrated || undefined}
       style={sidebarWidths}
       className="flex-col [--header-height:calc(--spacing(14))]"
     >

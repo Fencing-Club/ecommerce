@@ -8,7 +8,7 @@ import { LocalizedError } from "@/i18n/errors"
 import { requireBuyer } from "./authorization"
 import { importProposalSchema, priceInMinorUnits } from "./import-proposal"
 import { prepareOrder, persistOrder } from "./orders"
-import { type Session } from "./workspace-session"
+import type { Session } from "./workspace-session"
 
 const saveSchema = z
   .object({

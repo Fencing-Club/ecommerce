@@ -1,5 +1,3 @@
-"use client"
-
 import { ArrowRight, CircleCheck, CircleDashed, Unplug, Wallet } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
@@ -8,7 +6,8 @@ import { cn } from "@/lib/utils"
 import { StatusBadge } from "./common"
 import { IntegrationCard } from "./integration-card"
 import { IntegrationPanel, IntegrationPanelFooter, IntegrationSection } from "./integration-panel"
-import { IntegrationSyncCard, type IntegrationSyncState } from "./integration-sync-card"
+import type { IntegrationSyncState } from "./integration-sync-card"
+import { IntegrationSyncCard } from "./integration-sync-card"
 import { SyncProgress } from "./sync-status"
 import {
   AlertDialog,

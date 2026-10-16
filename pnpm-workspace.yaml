@@ -12,6 +12,8 @@ overrides:
   react: 19.2.7
   react-dom: 19.2.7
   react-is: 19.2.7
+  # Copacker uses nuqs' TanStack adapter. Do not attach the optional Next peer from the email preview tools.
+  "nuqs>next": "-"
 allowBuilds:
   workerd: true
   esbuild: true

@@ -1,6 +1,6 @@
+import { Link } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Site } from "./site"
@@ -47,7 +47,7 @@ export function Unsubscribe({
           </form>
         ) : (
           <Link
-            href="/"
+            to="/"
             className="group mt-8 inline-flex w-fit items-center gap-2 rounded-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {t("home")}

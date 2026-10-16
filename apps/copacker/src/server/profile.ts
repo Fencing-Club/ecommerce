@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { profiles, supplierProfiles } from "@/db/schema"
 import { AccessError } from "@/i18n/errors"
 import { isAdmin } from "@/lib/access"

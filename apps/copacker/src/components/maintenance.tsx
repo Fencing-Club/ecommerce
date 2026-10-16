@@ -1,5 +1,3 @@
-"use client"
-
 import { Wrench } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"

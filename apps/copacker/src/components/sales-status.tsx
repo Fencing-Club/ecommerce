@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "use-intl"
 import { StatusBadge, type StatusTone } from "@/components/common"
 

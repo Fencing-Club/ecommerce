@@ -1,5 +1,3 @@
-"use client"
-
 import { Field, FieldDescription, FieldError } from "@/components/ui/field"
 import { FormLabel } from "./form-controls"
 import { SelectControl } from "./form-select"

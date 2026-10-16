@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { supplierId } from "@/stories/fixtures/orders"
 import {
   builderSuppliers,
@@ -142,7 +142,7 @@ export const SaveDraft = meta.story({
     await expect(supplier).toHaveAttribute("aria-invalid", "false")
     await expect(canvas.queryByText("Fill in this field")).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(corrected).toHaveBeenCalledWith({ revision: 3, proposal: importProposal })
     await expect(saved).toHaveBeenCalledWith({
       revision: 4,
@@ -163,7 +163,7 @@ export const AlreadySaved = meta.story({
   play: async ({ canvas }) => {
     await fillDetails(canvas)
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(corrected).not.toHaveBeenCalled()
   }
 })

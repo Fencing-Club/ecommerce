@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { forwarders, orders, suppliers } from "@/db/schema"
 import { NotFoundError } from "@/i18n/errors"
 import { forwarderLeg } from "./shipment-legs"

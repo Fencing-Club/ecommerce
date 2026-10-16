@@ -1,5 +1,3 @@
-"use client"
-
 import { CircleCheck, UploadCloud } from "lucide-react"
 import { useState } from "react"
 import { useDropzone } from "react-dropzone"

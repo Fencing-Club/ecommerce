@@ -1,11 +1,10 @@
-"use client"
-
 import { useTranslations } from "use-intl"
 import type { OverviewPageData } from "@/server/overview-page"
 import { EmptyState, PageHeader } from "./common"
 import { OverviewDashboard, OverviewFilters, OverviewFiltersSkeleton, OverviewSkeleton } from "./overview"
 import { SetupChecklist } from "./overview-sections"
-import { PeriodPicker, type PeriodSelection } from "./period-picker"
+import type { PeriodSelection } from "./period-picker"
+import { PeriodPicker } from "./period-picker"
 import { SupplierOverview } from "./supplier/overview"
 import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"

@@ -1,5 +1,3 @@
-"use client"
-
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -23,7 +21,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { rangeLabel } from "@/lib/date-range"
 import { change } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import type { AttentionItem, Money, Overview, SetupStep } from "@/server/overview"
+import type { AttentionItem } from "@/server/overview"
+import type { Money } from "@/server/overview"
+import type { Overview } from "@/server/overview"
+import type { SetupStep } from "@/server/overview"
 import { ForAdmins, IfCanOpen, PageLink } from "./access"
 import { InfoTip } from "./info-tip"
 import { CoverChart } from "./overview-charts"

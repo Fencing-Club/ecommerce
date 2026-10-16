@@ -1,6 +1,6 @@
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { expect, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { Legal } from "@/components/marketing/legal"
 import { serverStory } from "@/stories/server"
@@ -10,8 +10,8 @@ import { serverStory } from "@/stories/server"
 // The terms for using Copacker. The company's legal name, address and governing law aren't settled yet, so the clauses
 // that need them are left out until they are. Fees follow the marketing page: free for now, with no promise it stays so.
 async function TermsPage() {
-  const t = await getTranslations("legal")
-  const contact = <Link href="/contact">contact page</Link>
+  const t = await translateStory("legal")
+  const contact = <Link to="/contact">contact page</Link>
   return (
     <Legal
       title={t("terms.title")}
@@ -119,7 +119,7 @@ async function TermsPage() {
               <p>
                 You own the data you put into Copacker or connect to it. We claim no rights to it beyond the permission
                 you give us here: to host, copy, process, send, and display it only to provide, secure, and support
-                Copacker for you, as the <Link href="/privacy">privacy policy</Link> describes.
+                Copacker for you, as the <Link to="/privacy">privacy policy</Link> describes.
               </p>
               <p>
                 You’re responsible for having the right to the data you add, including other people’s details, such as

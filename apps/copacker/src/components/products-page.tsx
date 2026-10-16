@@ -1,7 +1,5 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
-import Link from "next/link"
 import { useTranslations } from "use-intl"
 import type { productsPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
@@ -24,7 +22,7 @@ export function ProductsPageView({
         <PageHeader title={t("title")}>
           <ProductActions onImported={refresh} />
           {page.products.length > 0 && page.editable && (
-            <Button nativeButton={false} render={<Link href="/products/new" />}>
+            <Button nativeButton={false} render={<Link to="/products/new" />}>
               <Plus data-icon="inline-start" />
               {t("addProduct")}
             </Button>

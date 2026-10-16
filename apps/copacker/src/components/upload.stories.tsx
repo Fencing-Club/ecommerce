@@ -1,8 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import type { SetupWorker } from "msw/browser"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { held } from "@/stories/fixtures/shared"
 import { Upload } from "./upload"
 
@@ -54,7 +54,7 @@ export const Invoice = meta.story({
     await expect(uploads[0]?.get("kind")).toBe("invoice")
     await expect(uploads[0]?.has("shipmentId")).toBe(false)
     await expect(fileName(uploads[0])).toBe("lotus-invoice-8812.pdf")
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
 

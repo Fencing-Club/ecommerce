@@ -1,6 +1,5 @@
 import { ArrowRight, BookOpen, Film as FilmIcon, Sparkles } from "lucide-react"
-import { useTranslations } from "next-intl"
-import { ClientMessages } from "@/components/client-messages"
+import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"
 import { ContactForm } from "./contact-form"
 import { DotField } from "./dot-field"
@@ -43,7 +42,7 @@ function Way({
 export function Contact() {
   const t = useTranslations("marketing.contact")
   return (
-    <ClientMessages namespaces={["common.ui", "marketing.film", "marketing.contact.form", "validation"]}>
+    <>
       <Site>
         <main id="main-content">
           <section aria-labelledby="contact-title" className="relative -mt-16">
@@ -108,6 +107,6 @@ export function Contact() {
           </section>
         </main>
       </Site>
-    </ClientMessages>
+    </>
   )
 }

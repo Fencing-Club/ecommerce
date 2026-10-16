@@ -1,4 +1,5 @@
-import { type AmazonNetwork, amazonNetworkNames, type OrderInput } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/aisle"
+import { amazonNetworkNames, type OrderInput } from "@repo/aisle"
 import { inArray } from "drizzle-orm"
 import { createTranslator } from "use-intl"
 import { formatDestination } from "@/components/common"

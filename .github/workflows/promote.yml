@@ -1,55 +1,49 @@
 name: Promote to production
-# Run by hand once staging looks right. It releases the commit staging is serving, so production only ever gets
-# a commit that passed CI and deployed to staging.
+# The manually approved release uses the exact commit staging reports after CI and browser qualification.
 on:
   workflow_dispatch:
 concurrency:
-  group: deploy-production
+  group: promote-production
   cancel-in-progress: false
 jobs:
-  promote:
+  staging:
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: ${{ vars.PRODUCTION_URL }}
-    env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      sha: ${{ steps.staging.outputs.sha }}
     steps:
       - name: Find the commit staging serves
         id: staging
         run: |
-          sha=$(curl -fsS "${{ vars.STAGING_URL }}/api/health" | jq -r '.commit // empty')
-          if [ -z "$sha" ]; then
-            echo "::error::Staging doesn't report a commit"
+          sha=$(curl -fsS --max-time 20 "$STAGING_URL/api/health" | jq -r '.commit // empty')
+          if ! [[ "$sha" =~ ^[a-f0-9]{40}$ ]]; then
+            echo "::error::Staging does not report a release commit"
+            exit 1
+          fi
+          runs=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$sha" -f branch=main -f status=success --jq '.workflow_runs[].id')
+          qualified=false
+          for run in $runs; do
+            if gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs" \
+              --jq '.jobs[] | select((.name | startswith("deploy-staging /")) and .conclusion == "success") | .id' | grep -q .; then
+              qualified=true
+              break
+            fi
+          done
+          if [ "$qualified" != true ]; then
+            echo "::error::The staging commit has no successful CI run with a completed staging deployment."
             exit 1
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "Promoting $sha" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ steps.staging.outputs.sha }}
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - run: npm install --global @railway/cli
-      - run:
-          bash .github/scripts/deploy.sh "${{ steps.staging.outputs.sha }}" "${{ vars.PRODUCTION_URL }}"
-          "https://stories.copacker.ai"
-      # Production holds real data, so only the read-only, signed-out specs run against it.
-      - run: npm install --global pnpm@12.10.1
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter copacker exec playwright install --with-deps chromium
-      - run: pnpm --filter copacker test:e2e --grep @smoke
         env:
-          E2E_BASE_URL: ${{ vars.PRODUCTION_URL }}
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report-production
-          path: |
-            apps/copacker/e2e/.report
-            apps/copacker/e2e/.results
-          retention-days: 14
-          # The report folders start with a dot, which upload-artifact skips unless told otherwise.
-          include-hidden-files: true
+          GH_TOKEN: ${{ github.token }}
+          STAGING_URL: ${{ vars.STAGING_URL }}
+  promote:
+    needs: staging
+    uses: ./.github/workflows/release.yml
+    with:
+      mode: production
+      commit: ${{ needs.staging.outputs.sha }}
+    secrets: inherit

@@ -1,10 +1,13 @@
-import type { Args, Decorator, Loader } from "@storybook/nextjs-vite"
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
+import type { Decorator } from "@storybook/react-vite"
+import type { Loader } from "@storybook/react-vite"
+import type { Args } from "@storybook/react-vite"
 import { Children, cloneElement, createContext, Fragment, isValidElement, use, type ReactNode } from "react"
 import { prepareIntl } from "#.storybook/intl"
 import { mockRows } from "#.storybook/mocks/db"
+import { getStoryRouter } from "#.storybook/router"
 import { Shell } from "@/components/shell"
-import { person, type WorkspaceKind, workspaces } from "./workspace"
+import type { WorkspaceKind } from "./workspace"
+import { person, workspaces } from "./workspace"
 
 // React renders async server components only on the server. A story renders them first, in a loader, into the client
 // components they return; the story then shows that tree.
@@ -63,18 +66,21 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
   const workspace = workspaces[kind]
   const loader: Loader = async ({ globals }) => {
     await prepareIntl(globals.locale)
-    const shell = await Shell({
-      pathname,
-      defaultOpen: true,
-      navigate: getRouter().push,
-      name: workspace.name,
-      userName: person.name,
-      email: person.email,
-      kind: workspace.kind,
-      active: workspace.id,
-      workspaces: Object.values(workspaces),
-      children: <StorySlot />
-    })
+    const shell = (
+      <Shell
+        pathname={pathname}
+        defaultOpen
+        navigate={(href) => getStoryRouter().navigate({ href })}
+        name={workspace.name}
+        userName={person.name}
+        email={person.email}
+        kind={workspace.kind}
+        active={workspace.id}
+        workspaces={Object.values(workspaces)}
+      >
+        <StorySlot />
+      </Shell>
+    )
     return { shell }
   }
   const decorator: Decorator = (Story, { loaded }) => (
@@ -83,7 +89,7 @@ export function portalPage(pathname: string, kind: WorkspaceKind = "buyer") {
   return {
     loaders: [loader],
     decorators: [decorator],
-    parameters: { layout: "fullscreen" as const, nextjs: { appDirectory: true, navigation: { pathname } } }
+    parameters: { layout: "fullscreen" as const, router: { navigation: { pathname } } }
   }
 }
 

@@ -1,9 +1,8 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type Address, addressSchema, originSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import { addressSchema, originSchema } from "@repo/aisle"
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, MapPin, MapPinPlus } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslations } from "use-intl"
@@ -148,7 +147,7 @@ function AddressForm({
         }
       }).unwrap()
       onSaved({ id: result.id ?? contact?.id, name: values.name, address: values.address })
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error) })
     }
@@ -264,7 +263,7 @@ function AddressItem({
         action: "supplier.address",
         data: { supplierId: partner.id, id: contact.id, remove: true }
       }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("removeFailed", { name: contact.name })))
       setRemoving(false)

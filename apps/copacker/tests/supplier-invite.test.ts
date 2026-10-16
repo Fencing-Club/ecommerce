@@ -17,16 +17,8 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("next/navigation", () => ({
-  notFound: () => {
-    throw new Error("not found")
-  },
-  redirect: () => {
-    throw new Error("redirect")
-  }
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { POST as action } from "../src/app/api/action/route"
+
+import { POST as action } from "../src/server/http/api/action"
 import { appUrl, hash } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 

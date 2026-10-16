@@ -1,6 +1,4 @@
-"use client"
-
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import type { FieldValues } from "react-hook-form"
 import type { z } from "zod"
 import { useSubmissionForm, type SubmissionOptions } from "@/hooks/use-submission-form"
@@ -22,10 +20,10 @@ export function useActionForm<Schema extends z.ZodType<FieldValues, FieldValues>
     run: (data) => run({ action, data }).unwrap(),
     onSuccess: async (result) => {
       if (result.redirect) {
-        router.push(result.redirect)
+        router.navigate({ href: result.redirect })
       }
       await onSuccess?.(result)
-      router.refresh()
+      router.invalidate()
     }
   })
 }

@@ -1,5 +1,3 @@
-"use client"
-
 import { ChevronDown, Download, Search, Tags } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
@@ -14,7 +12,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
-import { type ProductLabel, productLabels } from "@/lib/product-label"
+import type { ProductLabel } from "@/lib/product-label"
+import { productLabels } from "@/lib/product-label"
 
 type Choice = { productId: string; title: string; variations: number; productLabel: ProductLabel }
 

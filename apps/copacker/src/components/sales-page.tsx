@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "use-intl"
 import type { salesPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"

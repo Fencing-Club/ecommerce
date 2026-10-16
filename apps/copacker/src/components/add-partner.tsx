@@ -1,5 +1,3 @@
-"use client"
-
 import { ChevronDown, Plus } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 import { useTranslations } from "use-intl"

@@ -9,7 +9,8 @@ import { ReconnectRequiredError } from "./errors"
 import { PollAgain } from "./job-handlers"
 import { requestSalesSync, SalesSyncError } from "./sales-orders"
 import { receiveShopifyCompliance, shopifyComplianceTopics } from "./shopify-compliance"
-import { type NotificationQueue, pollQueue } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { pollQueue } from "./sqs"
 import { refreshStock } from "./stock"
 
 // What Shopify tells Copacker about: every change to data Copacker copies. The events only say that something changed;

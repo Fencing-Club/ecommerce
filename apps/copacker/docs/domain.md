@@ -29,9 +29,10 @@ it ([Amazon inbound shipments](amazon-inbound.md)).
 
 ## Architecture
 
-- Next.js App Router with shadcn/ui; every read and write is authorized on the server.
+- TanStack Start and Router with shadcn/ui; every read and write is authorized on the server.
 - Postgres on Railway with Drizzle migrations, transactional quantity reservations and immutable PO revisions.
-- One private Railway bucket for every uploaded and generated document, downloaded only through authorized routes.
+- One private bucket per environment for uploaded and generated documents, downloaded only through authorized routes.
+  The Cloudflare release uses R2; moving the existing Railway files requires the verified storage cutover.
 - Store credentials are encrypted per workspace; OAuth state is single-use and expires; supplier invitations match the
   exact email.
 - Durable Postgres jobs run Amazon, eBay, email and Shopify work

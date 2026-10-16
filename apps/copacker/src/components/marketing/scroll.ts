@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useEffectEvent, useRef } from "react"
 
 // Tracks how far an element has scrolled, 0 to 1, as `measure` works it out from the element's box and the window's

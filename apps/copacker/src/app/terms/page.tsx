@@ -1,38 +1,14 @@
-import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
+import { useTranslations } from "use-intl"
 import { Legal } from "@/components/marketing/legal"
-import { withRequest } from "@/server/next-request"
-import { appUrl } from "@/server/security"
-
-export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
-  const [t, marketing] = await Promise.all([getTranslations("legal"), getTranslations("marketing")])
-  const title = t("terms.metadata.title")
-  const description = t("terms.metadata.description")
-  return {
-    metadataBase: new URL(appUrl()),
-    title: { absolute: title },
-    description,
-    alternates: { canonical: "/terms" },
-    openGraph: {
-      type: "website",
-      siteName: "Copacker",
-      title,
-      description,
-      images: [{ url: "/marketing/og.jpg", width: 1200, height: 630, alt: marketing("metadata.title") }]
-    },
-    twitter: { card: "summary_large_image", title, description, images: ["/marketing/og.jpg"] }
-  }
-})
 
 // Rendered per request, like the home page, so its links carry the deployed address rather than the build's.
-export const dynamic = "force-dynamic"
 
 // The terms for using Copacker. The company's legal name, address and governing law aren't settled yet, so the clauses
 // that need them are left out until they are. Fees follow the marketing page: free for now, with no promise it stays so.
-export default withRequest(async function TermsPage() {
-  const t = await getTranslations("legal")
-  const contact = <Link href="/contact">contact page</Link>
+export default function TermsPage() {
+  const t = useTranslations("legal")
+  const contact = <Link to="/contact">contact page</Link>
   return (
     <Legal
       title={t("terms.title")}
@@ -140,7 +116,7 @@ export default withRequest(async function TermsPage() {
               <p>
                 You own the data you put into Copacker or connect to it. We claim no rights to it beyond the permission
                 you give us here: to host, copy, process, send, and display it only to provide, secure, and support
-                Copacker for you, as the <Link href="/privacy">privacy policy</Link> describes.
+                Copacker for you, as the <Link to="/privacy">privacy policy</Link> describes.
               </p>
               <p>
                 You’re responsible for having the right to the data you add, including other people’s details, such as
@@ -283,4 +259,4 @@ export default withRequest(async function TermsPage() {
       ]}
     />
   )
-})
+}

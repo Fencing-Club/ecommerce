@@ -2,7 +2,7 @@
 
 Everyone in a workspace has one of three roles, kept on their membership (`memberships.role` and `memberships.access`).
 The model is in `src/lib/access.ts`; operation guards are in `src/server/authorization.ts` and current membership lookup
-is in `src/server/workspace-session.ts`. Next's remaining page/redirect boundary is in `src/server/auth.ts`.
+is in `src/server/workspace-session.ts`. Start's page and redirect boundary is in `src/server/auth.ts`.
 
 | Role   | Who                                                  | Can do                                                                                   |
 | ------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -90,7 +90,7 @@ Settings ends with **Delete** (`src/server/deletion.ts`). Each is for good, and 
 ## How it's enforced
 
 - Every page calls `requirePage(s, area, level)`, which renders the portal's `forbidden.tsx` ("No access") through
-  Next's `forbidden()` (`experimental.authInterrupts`). The Overview and `/` send someone to their first page instead.
+  the portal's forbidden response. The Overview and `/` send someone to their first page instead.
   A page's title goes through the same check (`titleFor`), so No access keeps its own tab title.
 - Every request checks too: `requireAccess`, `requireAdmin` and `requireOwner` throw an `AccessError`, which routes
   answer with 403 and its message, and read-only routes call `requirePage`.

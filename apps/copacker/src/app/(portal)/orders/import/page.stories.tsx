@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { PageHeader } from "@/components/common"
 import { ImportIntake } from "@/components/import-intake"
@@ -9,7 +9,7 @@ import { pageStory } from "@/stories/server"
 
 // The import page (page.tsx), which only buyers who edit purchase orders open.
 async function ImportOrder() {
-  const t = await getTranslations("orders")
+  const t = await translateStory("orders")
   return (
     <>
       <PageHeader parents={[{ label: t("index.title"), href: "/orders" }]} title={t("import.title")} />

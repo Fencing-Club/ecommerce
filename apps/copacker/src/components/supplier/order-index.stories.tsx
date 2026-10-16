@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { customerIds, manySupplierOrders, supplierOrders, unpricedOrders } from "@/stories/fixtures/supplier"
 import { member } from "@/stories/workspace"
 import { SupplierOrderIndex } from "./order-index"
@@ -78,7 +78,7 @@ export const Search = meta.story({
 export const OpenFromRow = meta.story({
   play: async ({ canvas }) => {
     await userEvent.click(rowOf(canvas, "PO-2049").getByText("Linen apron and 2 more"))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/orders/${supplierOrders[2]!.id}`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${supplierOrders[2]!.id}` })
   }
 })
 

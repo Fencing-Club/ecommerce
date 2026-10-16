@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { buyerOverview } from "@/stories/fixtures/overview"
 import { OverviewContent } from "./content"
 
@@ -18,6 +18,8 @@ export const ChangePeriod = meta.story({
     const dialog = await screen.findByRole("dialog", { name: "Choose a period" })
     await userEvent.click(within(dialog).getByRole("button", { name: "Today" }))
     await userEvent.click(within(dialog).getByRole("button", { name: "Apply" }))
-    await expect(getRouter().push).toHaveBeenCalledWith("/overview?channel=amazon&keep=inventory&period=today")
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({
+      href: "/overview?channel=amazon&keep=inventory&period=today"
+    })
   }
 })

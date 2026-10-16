@@ -1,5 +1,3 @@
-"use client"
-
 import { Download, Ellipsis, FileSpreadsheet, Upload } from "lucide-react"
 import { parseAsBoolean, useQueryState } from "nuqs"
 import { useState } from "react"

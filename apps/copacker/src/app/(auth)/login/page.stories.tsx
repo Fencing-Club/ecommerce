@@ -18,7 +18,7 @@ function Login({ next, email, error }: { next: string; email?: string; error?: s
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Sign in",
   component: Login,
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/login" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/login" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/")))

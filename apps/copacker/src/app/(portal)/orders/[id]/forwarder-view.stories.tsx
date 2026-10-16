@@ -1,6 +1,6 @@
-import type { ComponentProps } from "react"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { forwarderPage } from "@/server/forwarder-page"
 import {
   actionHandler,
   amazonOrder,
@@ -20,7 +20,7 @@ import { serverStory } from "@/stories/server"
 import { workspaces } from "@/stories/workspace"
 import { ForwarderView } from "./forwarder-view"
 
-type Props = ComponentProps<typeof ForwarderView>
+type Props = { row: Parameters<typeof forwarderPage>[0]; editable: boolean }
 
 const actions = fn()
 const via = { forwarderId, addressId: stopId }
@@ -37,7 +37,7 @@ const forwarded = shipmentRecord({
 })
 
 const meta = preview.meta({
-  ...serverStory((props: Props) => <ForwarderView {...props} />),
+  ...serverStory(async (props: Props) => <ForwarderView page={await forwarderPage(props.row, props.editable)} />),
   args: {
     row: { order: orderRecord({ data: { ...order, via } }), supplier: supplierRecord(), forwarder },
     editable: true

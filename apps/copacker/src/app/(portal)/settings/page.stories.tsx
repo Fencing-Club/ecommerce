@@ -1,6 +1,6 @@
 import { money } from "@repo/aisle"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { PageHeader } from "@/components/common"
 import { DangerZone } from "@/components/danger-zone"
@@ -106,7 +106,7 @@ async function SettingsPage(args: Args) {
         .filter((location) => location.classification === "merchant")
         .map((location) => ({ id: location.locationId, name: location.name }))
     : []
-  const [t, format, locale] = await Promise.all([getTranslations("settings"), getFormatter(), getLocale()])
+  const [t, format, locale] = await Promise.all([translateStory("settings"), formatStory(), localeStory()])
   const date = (day: string) =>
     format.dateTime(new Date(`${day}T00:00:00Z`), { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })
   return (
@@ -360,7 +360,7 @@ function Values({ values }: { values: Array<{ label: string; value: string }> })
 
 function costDetails(
   cost: MonthlyCost,
-  t: Awaited<ReturnType<typeof getTranslations<"settings">>>,
+  t: Awaited<ReturnType<typeof translateStory<"settings">>>,
   date: (day: string) => string
 ) {
   const channel = cost.channel ? monthlyCostChannels[cost.channel] : t("monthlyCosts.allChannels")

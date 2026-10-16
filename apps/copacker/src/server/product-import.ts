@@ -5,7 +5,8 @@ import { db, type Transaction } from "@/db"
 import { supplierProductGroups, supplierProducts } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { variantTitle } from "@/lib/supplier-product"
-import type { SheetProduct, SheetVariant } from "./product-sheet"
+import type { SheetProduct } from "./product-sheet"
+import type { SheetVariant } from "./product-sheet"
 import { joinCatalogs } from "./supplier-products"
 
 type Executor = Transaction | ReturnType<typeof db>

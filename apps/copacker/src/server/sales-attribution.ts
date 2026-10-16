@@ -1,4 +1,6 @@
-import type { AmazonSale, EbaySale, ShopifySale } from "@repo/aisle/sales"
+import type { AmazonSale } from "@repo/aisle/sales"
+import type { EbaySale } from "@repo/aisle/sales"
+import type { ShopifySale } from "@repo/aisle/sales"
 
 export type DemandRow = {
   variantId: string | null

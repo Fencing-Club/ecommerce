@@ -1,32 +1,35 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { drizzle } from "drizzle-orm/node-postgres"
-import { Pool, type PoolConfig } from "pg"
+import type { PoolConfig } from "pg"
+import { Pool } from "pg"
+import { directDatabase } from "./connection"
 import * as schema from "./schema"
 const invocation = new AsyncLocalStorage<Database | Transaction>()
-let instance: ReturnType<typeof createDatabase> | undefined
+let instance: ReturnType<typeof nodeDatabase> | undefined
 function createDatabase(pool: Pool) {
   return drizzle(pool, { schema })
 }
 function nodeDatabase() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not configured")
-  }
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    ...directDatabase(),
     max: 10,
     // Keepalive stops the database proxy from silently dropping idle connections.
-    keepAlive: true,
-    ssl: process.env.DATABASE_CA_CERT ? { ca: process.env.DATABASE_CA_CERT, rejectUnauthorized: true } : undefined
+    keepAlive: true
   })
   // An idle connection can still be terminated by the server or proxy. pg emits that on the pool, and an unhandled
   // 'error' event would exit the process. The pool already discards the broken client and reconnects on next use.
   pool.on("error", (error) => {
     console.error("Postgres idle connection error; the pool will reconnect.", error.message)
   })
-  return createDatabase(pool)
+  return { database: createDatabase(pool), pool }
 }
 export function db() {
-  return invocation.getStore() ?? (instance ??= nodeDatabase())
+  return invocation.getStore() ?? (instance ??= nodeDatabase()).database
+}
+export async function closeDatabase() {
+  const open = instance
+  instance = undefined
+  await open?.pool.end()
 }
 // A Worker invocation owns its sockets. Domain queries stay shared with the retained Node worker, whose pool is
 // process-scoped. Await every query in `run`; never return a deferred query or use this context from background work.

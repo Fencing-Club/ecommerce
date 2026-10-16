@@ -1,9 +1,10 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type Address, type OrderInput, type PackingDraft, packingSchema } from "@repo/aisle"
+import type { Address } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import type { PackingDraft } from "@repo/aisle"
+import { packingSchema } from "@repo/aisle"
+import { useRouter } from "@tanstack/react-router"
 import { Copy, MapPinPlus, Plus, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
   FormProvider,
@@ -279,7 +280,7 @@ export function PackingForm({
         return
       }
       await run({ action: "shipment.submit", data: { id: shipmentId, revision: nextRevision } }).unwrap()
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       setServerError(errorMessage(error, t("saveFailed")))
     } finally {

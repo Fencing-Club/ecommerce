@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl"
+import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
 
 // Getting started's corner: who's signed in, and signing out to use another account.

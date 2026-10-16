@@ -15,16 +15,15 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 vi.mock("../src/server/storage", () => ({ putFile: storage.putFile }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
 
-import { POST as saveCatalogRoute } from "../src/app/api/catalogs/route"
-import { POST as assignCatalogRoute } from "../src/app/api/customers/[id]/catalog/route"
-import { GET as exportCatalog } from "../src/app/api/supplier-catalog/export/route"
-import { POST as importCatalog } from "../src/app/api/supplier-catalog/import/route"
-import { POST as matchCatalog } from "../src/app/api/supplier-catalog/match/route"
-import { POST as saveProduct } from "../src/app/api/supplier-catalog/products/route"
-import { POST as saveStock } from "../src/app/api/supplier-catalog/stock/route"
-import { GET as downloadTemplate } from "../src/app/api/supplier-catalog/template/route"
+import { POST as saveCatalogRoute } from "../src/server/http/api/catalogs"
+import { POST as assignCatalogRoute } from "../src/server/http/api/customers/$id/catalog"
+import { GET as exportCatalog } from "../src/server/http/api/supplier-catalog/export"
+import { POST as importCatalog } from "../src/server/http/api/supplier-catalog/import"
+import { POST as matchCatalog } from "../src/server/http/api/supplier-catalog/match"
+import { POST as saveProduct } from "../src/server/http/api/supplier-catalog/products"
+import { POST as saveStock } from "../src/server/http/api/supplier-catalog/stock"
+import { GET as downloadTemplate } from "../src/server/http/api/supplier-catalog/template"
 import { appUrl } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -404,7 +403,7 @@ describe("catalogs", () => {
     expect(await database.select().from(tables.catalogProducts)).toHaveLength(1)
     const assign = (customerId: string) =>
       assignCatalogRoute(post(`/api/customers/${customerId}/catalog`, { catalogId: saved.id }), {
-        params: Promise.resolve({ id: customerId })
+        params: { id: customerId }
       })
     expect((await assign(linkB)).status).toBe(400)
     expect((await assign(linkA)).status).toBe(200)

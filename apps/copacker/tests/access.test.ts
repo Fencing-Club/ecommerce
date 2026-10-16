@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
+import { httpResponse } from "../src/server/http-response"
 import type { Session } from "../src/server/workspace-session"
 
 const context = vi.hoisted(() => ({ actor: null as Session | null }))
@@ -7,23 +8,12 @@ vi.mock("../src/server/auth", async (original) => ({
   session: async () => context.actor
 }))
 vi.mock("@/db", () => ({ db: () => null }))
-vi.mock("next/navigation", () => ({
-  forbidden: () => {
-    throw new Error("forbidden")
-  },
-  notFound: () => {
-    throw new Error("not found")
-  },
-  redirect: () => {
-    throw new Error("redirect")
-  }
-}))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-import { POST as action } from "../src/app/api/action/route"
-import { GET as purchaseOrderPdf } from "../src/app/api/orders/[id]/po/route"
-import { GET as salesOrders } from "../src/app/api/sales/orders/route"
+
 import { type Access, can, canOpen, pageOf, type Role } from "../src/lib/access"
 import { areasFor, homeFor, navigationFor } from "../src/lib/navigation"
+import { POST as action } from "../src/server/http/api/action"
+import { GET as purchaseOrderPdf } from "../src/server/http/api/orders/$id/po"
+import { GET as salesOrders } from "../src/server/http/api/sales/orders"
 
 function actor(kind: "buyer" | "supplier" | "forwarder", role: Role, access: Access = {}): Session {
   return {
@@ -130,10 +120,12 @@ describe("the server's checks", () => {
     expect(approval.status).toBe(403)
     expect(await approval.json()).toEqual({ error: "Ask an admin for access to prices and costs" })
     await expect(
-      purchaseOrderPdf(new Request("http://localhost:3000/api/orders/x/po"), {
-        params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000003" })
-      })
-    ).rejects.toThrow("forbidden")
+      httpResponse(() =>
+        purchaseOrderPdf(new Request("http://localhost:3000/api/orders/x/po"), {
+          params: { id: "00000000-0000-4000-8000-000000000003" }
+        })
+      ).then((response) => response.status)
+    ).resolves.toBe(403)
   })
 
   it("keeps handing over and deleting the workspace to its owner", async () => {
@@ -150,6 +142,8 @@ describe("the server's checks", () => {
 
   it("answers a read of a page the member doesn't have with 403", async () => {
     context.actor = actor("buyer", "member", { orders: "edit" })
-    await expect(salesOrders(new Request("http://localhost:3000/api/sales/orders"))).rejects.toThrow("forbidden")
+    expect((await httpResponse(() => salesOrders(new Request("http://localhost:3000/api/sales/orders")))).status).toBe(
+      403
+    )
   })
 })

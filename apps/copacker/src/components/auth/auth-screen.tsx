@@ -1,5 +1,3 @@
-"use client"
-
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Alert, AlertDescription } from "@/components/ui/alert"

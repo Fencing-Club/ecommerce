@@ -1,5 +1,3 @@
-"use client"
-
 import { CalendarDays } from "lucide-react"
 import { useId, useState } from "react"
 import { useController } from "react-hook-form"

@@ -1,5 +1,3 @@
-"use client"
-
 import { Download, Eye, EyeOff, Trash2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
@@ -11,7 +9,8 @@ import { useErrorMessage } from "@/hooks/use-error-text"
 import { api } from "@/lib/api"
 import type { ProductLabel } from "@/lib/product-label"
 import { cn } from "@/lib/utils"
-import type { BarcodeTarget, ProductBarcode } from "@/server/product-barcodes"
+import type { BarcodeTarget } from "@/server/product-barcodes"
+import type { ProductBarcode } from "@/server/product-barcodes"
 import { fileName, WarningNote } from "./common"
 
 const barcodesApi = api.injectEndpoints({

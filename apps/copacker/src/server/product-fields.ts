@@ -1,4 +1,6 @@
-import type { CatalogVariant, Shopify, ShopifyVariant } from "@repo/aisle/shopify"
+import type { CatalogVariant } from "@repo/aisle/shopify"
+import type { Shopify } from "@repo/aisle/shopify"
+import type { ShopifyVariant } from "@repo/aisle/shopify"
 import { and, eq, inArray, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
@@ -10,7 +12,7 @@ import {
   suppliers,
   variantFields
 } from "@/db/schema"
-import { type ErrorKey } from "@/i18n/errors"
+import type { ErrorKey } from "@/i18n/errors"
 import { StatusError } from "./errors"
 import { syncShopifySuppliers } from "./suppliers"
 import type { Session } from "./workspace-session"

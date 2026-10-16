@@ -18,10 +18,6 @@ vi.mock("@tanstack/react-start/server", () => ({
   setCookie: writeCookie,
   deleteCookie: removeCookie
 }))
-vi.mock("next/headers", () => ({
-  cookies: async () => ({ set: (name: string, value: string) => cookies.set(name, value) }),
-  headers: async () => new Headers()
-}))
 
 const signedIn: AuthenticationResponse = {
   accessToken: "test-access",
@@ -59,7 +55,6 @@ beforeEach(() => {
   vi.stubEnv("WORKOS_COOKIE_PASSWORD", cookiePassword)
   vi.stubEnv("WORKOS_COOKIE_NAME", "migration-session")
   vi.stubEnv("WORKOS_REDIRECT_URI", `${origin}/callback`)
-  vi.stubEnv("NEXT_PUBLIC_WORKOS_REDIRECT_URI", `${origin}/callback`)
 })
 afterEach(() => {
   vi.restoreAllMocks()
@@ -107,12 +102,6 @@ describe("AuthKit session migration", () => {
     requestHeaders.mockReturnValue(new Headers({ "x-forwarded-for": "198.51.100.1", "x-real-ip": "198.51.100.2" }))
     const { signInRequest } = await import("../src/server/auth-session")
     expect(signInRequest().ipAddress).toBeUndefined()
-  })
-
-  it("reads an actual Next AuthKit cookie with the public WorkOS session library", async () => {
-    const { saveSession } = await import("@workos-inc/authkit-nextjs")
-    await saveSession(signedIn, origin)
-    expect(await unseal(`migration-session=${cookies.get("migration-session")}`)).toEqual(signedIn)
   })
 
   it("stores only session fields and preserves other response cookies and redirects", async () => {

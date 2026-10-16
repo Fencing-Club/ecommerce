@@ -1,5 +1,3 @@
-"use client"
-
 import { MailCheck } from "lucide-react"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"

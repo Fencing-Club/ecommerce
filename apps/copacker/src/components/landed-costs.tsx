@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Ellipsis, Plus, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { z } from "zod"
@@ -158,7 +156,7 @@ function CostRow({
     setError("")
     try {
       await run({ action: "landedCost.delete", data: { id: cost.id } }).unwrap()
-      startRefresh(() => router.refresh())
+      startRefresh(() => router.invalidate())
     } catch (failure) {
       setError(errorMessage(failure))
     }

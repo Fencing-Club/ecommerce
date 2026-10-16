@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
-import { db, type Transaction } from "@/db"
+import type { Transaction } from "@/db"
+import { db } from "@/db"
 import { catalogProducts, catalogs, supplierProductGroups, supplierProducts } from "@/db/schema"
 import { LocalizedError } from "@/i18n/errors"
 import { defaultQuantityRules, priceBreakSchema, quantityRulesSchema } from "@/lib/catalog-pricing"
@@ -8,7 +9,7 @@ import { imageTypes, variantsProblem, variantTitle } from "@/lib/supplier-produc
 import { requireSupplier } from "./authorization"
 import { addToCatalogs } from "./catalogs"
 import { pricingText } from "./text"
-import { type Session } from "./workspace-session"
+import type { Session } from "./workspace-session"
 
 const count = z.number().int().positive().max(2_147_483_647)
 const variantSchema = z.object({

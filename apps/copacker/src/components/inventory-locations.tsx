@@ -1,8 +1,6 @@
-"use client"
-
 import type { ShopifyLocationKind } from "@repo/aisle/shopify"
+import { Link } from "@tanstack/react-router"
 import { MapPin } from "lucide-react"
-import Link from "next/link"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
@@ -117,7 +115,7 @@ function LocationRow({
 
 function productsLink(chunks: React.ReactNode) {
   return (
-    <Link href="/products" className="underline underline-offset-4 hover:text-foreground">
+    <Link to="/products" className="underline underline-offset-4 hover:text-foreground">
       {chunks}
     </Link>
   )

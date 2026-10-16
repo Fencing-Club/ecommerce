@@ -1,5 +1,3 @@
-"use client"
-
 import { ChevronDown, Circle, CircleAlert, CircleCheck, CircleDot } from "lucide-react"
 import { useState } from "react"
 import { useTranslations } from "use-intl"

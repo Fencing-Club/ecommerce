@@ -2,7 +2,7 @@
 
 See [domains and provider configuration](domains.md) for the cross-environment endpoint and credential checklist.
 Portless app addresses are local even though they use HTTPS. For live local eBay testing, explicitly reserve a public
-`<slot>.hooks.dev.copacker.ai` receiver and set `WEBHOOK_BASE_URL` on both the web process and worker to that origin.
+public tunnel URL or an optional `hooks.local.copacker.ai` / `<worktree>.hooks.local.copacker.ai` receiver and set `WEBHOOK_BASE_URL` on both the web process and worker to that origin.
 Without it, local subscription jobs skip eBay. The challenge response hashes this public endpoint, not the app origin.
 Use separate provider apps/destinations and queues for a slot; never repoint staging or production subscriptions.
 
@@ -114,7 +114,9 @@ notification of a new order starts another, and the daily reconciliation reads t
     `https://staging.copacker.ai/api/connections/ebay`, declined to `https://staging.copacker.ai/settings#integrations`.
   - Main local checkout: `Andrew_Craswell-AndrewCr-Copack-kmslwycva` (display title Copacker Local), returning to
     `https://main.local.copacker.ai/api/connections/ebay`, declined to
-    `https://main.local.copacker.ai/settings#integrations`. Registered October 15, 2026. Local `.env` uses this RuName.
+    `https://main.local.copacker.ai/settings#integrations`. Registered October 15, 2026. Local `.env` uses this RuName. Before switching the primary origin, update this
+    registration to `https://local.copacker.ai/api/connections/ebay` and
+    `https://local.copacker.ai/settings#integrations`; this external change is pending.
     A worktree needs its own RuName with the exact origin printed by `dev:urls`; these registrations do not use wildcards.
   The portal's "OAuth Enabled" choice (one RuName at a time) only picks the RuName its own token tool uses; eBay's
   sign-in accepts any of the keyset's RuNames. Production's stays selected.

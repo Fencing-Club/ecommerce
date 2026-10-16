@@ -8,12 +8,14 @@ const dirname = fileURLToPath(new URL(".", import.meta.url))
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
+    // Each database suite starts an embedded PostgreSQL instance. Bound concurrency independently of host core count.
+    maxWorkers: 4,
     testTimeout: 30000,
     hookTimeout: 30000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
-      include: ["src/server/**/*.ts", "src/app/api/**/*.ts", "src/components/**/*.tsx"],
+      include: ["src/server/**/*.ts", "src/components/**/*.tsx"],
       exclude: ["src/server/worker.ts", "src/**/*.stories.tsx"]
     },
     projects: [
@@ -22,7 +24,6 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          server: { deps: { inline: ["@workos-inc/authkit-nextjs"] } },
           // Request fixtures use this origin, independently of the developer's local app port.
           env: { APP_URL: "http://localhost:3000", APP_ALIAS_URLS: "" },
           include: ["tests/**/*.test.ts"],

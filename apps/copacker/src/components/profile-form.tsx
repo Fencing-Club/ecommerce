@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useActionForm } from "@/hooks/useActionForm"

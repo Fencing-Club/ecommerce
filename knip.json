@@ -34,7 +34,11 @@
         "tests/start-runtime/src/router.tsx",
         "tests/start-runtime/src/start.ts",
         "tests/start-runtime/src/server.ts",
-        "tests/start-runtime/src/routes/**/*.{ts,tsx}"
+        "tests/start-runtime/src/routes/**/*.{ts,tsx}",
+        "cloudflare.config.ts",
+        "e2e/runtime/cloudflare.config.ts",
+        "src/{router,start,server}.{ts,tsx}",
+        "src/routes/**/*.{ts,tsx}"
       ],
       "ignoreBinaries": ["openssl"],
       "ignore": [".storybook/public/**"],

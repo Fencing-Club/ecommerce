@@ -1,5 +1,3 @@
-"use client"
-
 import { CircleCheck } from "lucide-react"
 import { useId, useRef } from "react"
 import { useTranslations } from "use-intl"

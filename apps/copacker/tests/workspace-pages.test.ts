@@ -1,11 +1,11 @@
 import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import { DELETE as deleteCatalog } from "../src/app/api/catalogs/[id]/route"
-import { POST as saveCatalog } from "../src/app/api/catalogs/route"
 import * as tables from "../src/db/schema"
 import { AccessError, LocalizedError } from "../src/i18n/errors"
 import type { Access } from "../src/lib/access"
+import { POST as saveCatalog } from "../src/server/http/api/catalogs"
+import { DELETE as deleteCatalog } from "../src/server/http/api/catalogs/$id"
 import {
   catalogPageData,
   catalogsPageData,
@@ -128,7 +128,7 @@ describe("page data authorization and serialization", () => {
         method: "DELETE",
         headers
       }),
-      { params: Promise.resolve({ id: catalog }) }
+      { params: { id: catalog } }
     )
     expect(save.status).toBe(403)
     expect(remove.status).toBe(403)

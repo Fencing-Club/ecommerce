@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse, http } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { supplierId } from "@/stories/fixtures/orders"
 import {
   actionHandler,
@@ -98,7 +98,7 @@ export const CreateOrder = meta.story({
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1050")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
 
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.create",
       data: expect.objectContaining({
@@ -250,7 +250,7 @@ export const EditDraft = meta.story({
     await expect(canvas.getByText("2 variants (360 units)")).toBeVisible()
     await expect(save).toBeEnabled()
     await userEvent.click(save)
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.update",
       data: {

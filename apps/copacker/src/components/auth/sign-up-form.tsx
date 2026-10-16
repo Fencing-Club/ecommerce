@@ -1,5 +1,3 @@
-"use client"
-
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { FormInput } from "@/components/form-controls"

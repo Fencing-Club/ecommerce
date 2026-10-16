@@ -1,5 +1,3 @@
-"use client"
-
 import { useWindowEvent } from "@mantine/hooks"
 import { useEffect } from "react"
 

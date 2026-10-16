@@ -1,17 +1,18 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/db"
-import { documents, shipments, type ShipmentState } from "@/db/schema"
-import { type ServerKey } from "@/i18n/server-text"
+import type { ShipmentState } from "@/db/schema"
+import { documents, shipments } from "@/db/schema"
+import type { ServerKey } from "@/i18n/server-text"
 import { accessibleOrder } from "./access"
 import { linesMissingLabels } from "./product-barcodes"
+import type { ReadinessIssue } from "./readiness"
 import {
   finishedStates,
   orderCoverage,
   packingReadiness,
   releasedStates,
   releaseIssues,
-  reservedPieces,
-  type ReadinessIssue
+  reservedPieces
 } from "./readiness"
 import { forwarderLeg } from "./shipment-legs"
 import { serverText } from "./text"

@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks"
-import { isLocale, negotiateLocale, type Locale } from "@/i18n/locales"
-import { english, loadMessages, type Messages } from "@/i18n/messages"
+import type { Locale } from "@/i18n/locales"
+import { isLocale, negotiateLocale } from "@/i18n/locales"
+import type { Messages } from "@/i18n/messages"
+import { english, loadMessages } from "@/i18n/messages"
 import { isTimeZone } from "@/lib/time-zone"
 
 type Localization = { locale: Locale; messages: Messages; timeZone: string }

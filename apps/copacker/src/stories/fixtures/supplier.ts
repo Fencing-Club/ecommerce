@@ -1,6 +1,8 @@
 import type { ComponentProps } from "react"
-import type { OrderReviser, ReviserProduct } from "@/components/supplier/order-reviser"
-import type { EditorProduct, EditorVariant } from "@/components/supplier/product-editor"
+import type { ReviserProduct } from "@/components/supplier/order-reviser"
+import type { OrderReviser } from "@/components/supplier/order-reviser"
+import type { EditorProduct } from "@/components/supplier/product-editor"
+import type { EditorVariant } from "@/components/supplier/product-editor"
 import type { ProductRow } from "@/components/supplier/product-index"
 import type { Permissions } from "@/lib/access"
 import { defaultQuantityRules } from "@/lib/catalog-pricing"
@@ -10,14 +12,11 @@ import { addDays } from "@/lib/time-zone"
 import type { catalogList, CatalogEditorData } from "@/server/catalogs"
 import type { proposalChanges } from "@/server/order-proposals"
 import type { SupplierOverviewData } from "@/server/supplier-overview"
-import type {
-  customerDetail,
-  customerList,
-  InventoryRow,
-  ListedOrder,
-  OrderStage,
-  SupplierOrder
-} from "@/server/supplier-workspace"
+import type { InventoryRow } from "@/server/supplier-workspace"
+import type { ListedOrder } from "@/server/supplier-workspace"
+import type { OrderStage } from "@/server/supplier-workspace"
+import type { SupplierOrder } from "@/server/supplier-workspace"
+import type { customerDetail, customerList } from "@/server/supplier-workspace"
 import { workspaces } from "@/stories/workspace"
 import { daysAgo } from "./orders"
 

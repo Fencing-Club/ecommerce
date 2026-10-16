@@ -4,7 +4,8 @@ A pnpm and Turborepo workspace for commerce software, using the shared tooling c
 
 ## Applications and packages
 
-- `apps/copacker`: Next.js supplier/buyer portal, WorkOS authentication, Drizzle/Postgres, private Railway documents.
+- `apps/copacker`: TanStack Start supplier/buyer portal on Cloudflare, WorkOS authentication, Drizzle/Postgres and
+  private documents.
 - `apps/video`: the Copacker ad, made with Remotion ([video](apps/video/docs/README.md)).
 - `apps/turbo-cache`: the Turborepo remote cache the monorepos share ([turbo cache](apps/turbo-cache/docs/README.md)).
 - `packages/aisle`: reusable shipment, catalog, packing validation, and label/document logic adapted from Aisle.

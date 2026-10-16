@@ -1,6 +1,4 @@
-"use client"
-
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { useEffect, useRef } from "react"
 import { useLocale } from "use-intl"
 import { cn } from "@/lib/utils"
@@ -37,6 +35,7 @@ export function TabLinks({ label, tabs, className }: { label: string; tabs: Read
       {tabs.map((tab) => (
         <Link
           key={tab.href}
+          to="."
           href={tab.href}
           aria-current={tab.current ? "page" : undefined}
           className={cn(

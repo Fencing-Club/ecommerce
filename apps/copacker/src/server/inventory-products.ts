@@ -1,4 +1,5 @@
-import type { AmazonNetwork, OrderInput } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import type { Shopify } from "@repo/aisle/shopify"
 import { serverTextInEnglish } from "@/i18n/server-text"

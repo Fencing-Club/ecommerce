@@ -1,11 +1,87 @@
 # Compatibility evidence
 
-Part of the [migration specification](README.md). Updated October 15, 2026. Implementation is on `codex/tanstack-start`
-under `D:\system\worktrees\ecommerce\tanstack-start`, based on `786b613` with the existing local development/domain
-changes preserved. The deployed fixture and shared frontend preparation are progressing; the application's route tree
-still runs on Next.
+Part of the [migration specification](README.md). Updated October 15, 2026 (qualification continued October 16 UTC).
+Implementation is on `codex/tanstack-start` under `D:\system\worktrees\ecommerce\tanstack-start`, with pre-existing
+local development/domain changes preserved. The main application now runs on TanStack Start and Cloudflare Workers.
+The sections after the current qualification record retain earlier incremental proof and its then-current limits.
+References there to a still-running Next application describe those earlier increments, not this working tree.
 
-## Decisions
+## Main application qualification
+
+All 40 page paths and 62 HTTP handler files have Start entry points. Browser pages receive explicit rendering data;
+server functions and HTTP handlers enforce current memberships and permissions. Next, its WorkOS/Storybook adapters,
+image/font/navigation integrations and web containers are removed. React Compiler, RTK Query, nuqs, styles,
+localization, custom WorkOS screens and public HTTP contracts are retained. The Node worker remains the sole
+background executor. Queues/Workflows are a separate release and have not been activated.
+
+nuqs' unused optional Next peer is removed with a scoped
+[pnpm override](https://pnpm.io/settings/dependency-resolution#overrides). React Email's separate development preview
+tools still depend on Next; they are not part of Copacker's web runtime or deployment. No other package's required
+dependency is removed to make the migration appear complete.
+
+The working-tree web artifact is deployed at
+[Cloudflare staging](https://copacker-staging.hoa-preview.workers.dev), version
+`9b34f1b2-ca15-4984-9592-407537a2094a`. Startup was 123 ms and compressed upload size 3,289.10 KiB. The artifact SHA-256
+is `f2ee86c4b46e99cc8d8ce5f86864b2cb989a7c046c9a4dbc97ea1fb193e3669a`. Its release commit is deliberately empty:
+qualification of uncommitted source is not an exact-commit production release. Promotion rejects this deployment.
+It uses the existing five-connection, uncached staging Hyperdrive and private R2 resources recorded below. All five
+existing encrypted provider connections decrypted with the preserved staging key.
+
+| Evidence | Result | Local evidence, ignored |
+| --- | --- | --- |
+| Repository verification | Format, lint, types, unused-code checks and coverage passed; 2,373 Copacker tests in 304 files | `.cloudflare/verify-migration-8.log`; final dependency-cleanup rerun in `.cloudflare/verify-migration-9.log` |
+| Complete local browser suite | 147 passed, four existing skips, no retries; three workspace kinds, mutations, documents and mobile | `.cloudflare/app-e2e-11.log` |
+| Deployed browser suite | 41 passed, one desktop skip of a phone-only case; auth, public routes, role navigation, search and workspace switching | `.cloudflare/staging-app-e2e-final.log` |
+| Deployed private downloads | Six existing test documents matched R2 bytes/SHA-256; private/no-store headers and signed-out denial passed, including the final deployment | `.cloudflare/staging-download-evidence.json`, `.cloudflare/staging-download-evidence-final.json` |
+| Browser secret scan | 168 client assets checked against all 12 configured secrets, with no matches | `.cloudflare/staging-artifact.json` |
+| Deployment validation | Web and static `cf deploy --prebuilt --dry-run` checks passed | `.cloudflare/staging-release-check.log` |
+| Integrated browser | Desktop/phone portal, keyboard search/dialog dismissal and sidebar navigation; staging overview/order detail; no staging-app console errors | `.cloudflare/migration-staging-desktop.png`, `.cloudflare/migration-mobile.png` |
+| Install and release identity | Frozen offline install passed; a dirty checkout is rejected before build, migrations or deployment | `.cloudflare/frozen-install-final.log`, `.cloudflare/dirty-release-guard.log` |
+
+The static Storybook build is deployed at
+[Cloudflare staging stories](https://copacker-stories-staging.hoa-preview.workers.dev), version
+`0599908e-e8b3-4283-9d76-ed6914e8d619`, with no application database, storage or credential bindings. Static preview
+acceptance exposed a story-router initialization race: interaction assertions started before the memory router
+rendered. Its initial load now finishes in a [Storybook loader](https://storybook.js.org/docs/writing-stories/loaders).
+Development, tests and static previews use the same memory-router implementation. Deployed shell interactions and
+the mocked mutation/refresh story passed in the integrated browser; evidence is
+`.cloudflare/migration-staging-stories.png` and `.cloudflare/staging-stories-deploy-2.log`.
+
+The local browser suite initially exhausted Windows loopback sockets with hundreds of small JavaScript requests per
+document. Shared vendor/chart/Three chunks and a minimum chunk size reduced requests while retaining lazy page
+boundaries. The complete rerun passed without operating-system changes or disabling TLS. E2E output and R2 state
+are isolated from interactive development. A real wire test verifies that the retained Node worker's S3 client and
+the web emulator's native R2 binding access the same local bucket.
+
+### Storage rehearsal
+
+The staging source contained 31 objects totaling 109,779 bytes. All referenced files existed; there were no target-only
+objects. Copying into private R2 preserved content types and passed full SHA-256 comparison. Copy restart/idempotency
+passed. Reverse copying from remote R2 into an isolated local S3 emulator also passed verification and a repeated copy.
+Manifests/journals remain in ignored `.cloudflare/storage-transfer/staging-rehearsal` and
+`.cloudflare/storage-transfer/recovery-verified`. Database references include documents, both import types, barcodes
+and supplier product-group images; a real migrated-database test checks image references and deduplication.
+Original objects and application rows were not deleted or changed. The temporary bucket-scoped rehearsal credential
+expires October 16, 2026 at 15:40:50 UTC. Explicit early revocation through the authenticated CLI returned HTTP 403; it is not claimed
+revoked and is not used by either deployed application. The denial is recorded in
+`.cloudflare/rehearsal-token-revocation.log`. Temporary raw Railway exports and the rehearsal credential files were
+removed locally; ignored environment-scoped release inputs and user-supplied database credentials remain available.
+
+This is a copy/recovery rehearsal, not a coordinated storage cutover. The existing Railway staging worker still uses
+the original bucket, so the new web deployment is for qualification, not shared background-processing traffic. Before
+enabling releases, pause writers, copy the final delta, switch the retained worker to the same R2 bucket, then qualify
+queued uploads and resume writers. Never start a second executor against the shared database.
+
+### Remaining production release gates
+
+No production domain, database, provider registration, scheduler or existing Railway deployment was switched.
+Complete a clean committed release and successful CI, verify final callback origins, coordinate the storage/Node-worker
+switch, and run deployed mutation/job journeys against that configuration. Record maximum-size/concurrent document
+limits, baseline latency/cost budgets, recovery targets, writer-pause/reverse-delta and isolated database-restore
+evidence, and observation/rollback owners before promotion. The full M4 job migration and its failure drills remain
+separate, explicitly unimplemented work. Passing the web port does not complete those milestones or production cutover.
+
+## Earlier compatibility decisions and increments
 
 The authorized implementation uses TanStack Start 1.169.2, Router 1.170.44, Cloudflare Vite plugin 1.64.0, `cf`
 1.0.0-beta.17 and WorkOS session package 0.7.1. Keep Vite's React plugin at 5.2.0 to preserve the
@@ -349,9 +425,9 @@ When Railway rotates its root CA, fetch the new public CA through the authentica
 fingerprint, upload it to Cloudflare and update Hyperdrive's CA reference. Re-run the connection tests before removing
 the old CA. Repeat separately for production; do not assume both environments share a CA.
 
-## Remaining proof before M0 exit
+## Outstanding compatibility and operational proof
 
-Remaining custom WorkOS signup/verification/OAuth flows; complete workspace/logout browser-cache isolation; app-level private download acceptance;
-database row locks/token-refresh serialization and reconnect drills;
-maximum-size and representative PDF/ZIP/XLSX/AI workloads under concurrency; existing-service baseline and agreed
-release/recovery budgets. The application route conversion, background executors and production cutover are pending.
+The main-app qualification above supersedes earlier route-conversion and private-download TODOs. Final-origin social
+OAuth callbacks, database reconnect/lock drills, maximum-size concurrent PDF/ZIP/XLSX/AI workloads, the existing-service
+performance baseline and agreed release/recovery budgets still need operational evidence before production. Background
+executors and production cutover remain separate release work.

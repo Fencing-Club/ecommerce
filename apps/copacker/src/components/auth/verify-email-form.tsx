@@ -1,5 +1,3 @@
-"use client"
-
 import { useInterval } from "@mantine/hooks"
 import { useState } from "react"
 import { FormProvider } from "react-hook-form"

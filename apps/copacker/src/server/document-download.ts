@@ -8,7 +8,8 @@ import { requireAccess } from "./authorization"
 import { errorTextResponse } from "./errors"
 import { releasedStates } from "./readiness"
 import { readFile } from "./storage"
-import { type Session, requireMembership } from "./workspace-session"
+import type { Session } from "./workspace-session"
+import { requireMembership } from "./workspace-session"
 
 type Executor = Database | Transaction
 

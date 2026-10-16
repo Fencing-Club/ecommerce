@@ -1,5 +1,3 @@
-"use client"
-
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { useDebouncedValue, useHotkeys, useOs } from "@mantine/hooks"
 import { defaultFilter } from "cmdk"

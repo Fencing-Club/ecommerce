@@ -1,7 +1,6 @@
-"use client"
-
 import { useDebouncedValue, useLocalStorage, useWindowEvent } from "@mantine/hooks"
 import { skipToken } from "@reduxjs/toolkit/query/react"
+import { Link, useLocation } from "@tanstack/react-router"
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -19,9 +18,6 @@ import {
   Warehouse,
   X
 } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
@@ -39,10 +35,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useErrorMessage } from "@/hooks/use-error-text"
-import { api, type SupplierOption, useSuppliersQuery } from "@/lib/api"
-import { type CoverBucket, coverBucket, isCoverBucket } from "@/lib/cover"
+import type { SupplierOption } from "@/lib/api"
+import { api, useSuppliersQuery } from "@/lib/api"
+import type { CoverBucket } from "@/lib/cover"
+import { coverBucket, isCoverBucket } from "@/lib/cover"
 import { cn } from "@/lib/utils"
-import type { BlockReason, RestockChannel, RestockLine, RestockStatus } from "@/server/restock-plan"
+import type { RestockChannel } from "@/server/restock-plan"
+import type { RestockLine } from "@/server/restock-plan"
+import type { RestockStatus } from "@/server/restock-plan"
+import type { BlockReason } from "@/server/restock-plan"
 import { dayRange } from "@/server/restock-report"
 import { InfoTip } from "./info-tip"
 
@@ -153,14 +154,7 @@ function Blank({ reason }: { reason?: string }) {
 
 function Thumbnail({ url }: { url: string | null }) {
   return url ? (
-    <Image
-      src={url}
-      alt=""
-      width={36}
-      height={36}
-      unoptimized
-      className="size-9 shrink-0 rounded-md border bg-muted object-cover"
-    />
+    <img src={url} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md border bg-muted object-cover" />
   ) : (
     <span
       className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground"
@@ -666,7 +660,7 @@ function Reorder({ supplierId, po }: { supplierId: string | null; po: ReturnType
     return null
   }
   return po.count > 0 ? (
-    <Button variant="outline" size="sm" nativeButton={false} render={<Link href={po.href} />}>
+    <Button variant="outline" size="sm" nativeButton={false} render={<Link to="." href={po.href} />}>
       {t("reorder")}
     </Button>
   ) : (
@@ -895,7 +889,7 @@ function EmptyResults({ report, searching }: { report: Report; searching: boolea
         </EmptyHeader>
         {(searching || supplier) && setsSuppliers && (
           <EmptyContent>
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/products" />}>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/products" />}>
               {t("setSuppliers")}
             </Button>
           </EmptyContent>
@@ -1136,7 +1130,7 @@ function Results({ report, filters }: { report: Report; filters: LinkFilters }) 
 }
 
 const productsLink = (chunks: React.ReactNode) => (
-  <Link href="/products" className="underline underline-offset-4 hover:text-muted-foreground">
+  <Link to="/products" className="underline underline-offset-4 hover:text-muted-foreground">
     {chunks}
   </Link>
 )
@@ -1260,7 +1254,7 @@ export function RestockReport({ settings }: { settings: { days: number; leadTime
   const leadTimeDays = wholeDays(leadTimeText)
   const { data: channels = [], isLoading: channelsLoading } = restockApi.useRestockChannelsQuery()
   const { data: suppliers = [] } = useSuppliersQuery()
-  const params = useSearchParams()
+  const params = new URLSearchParams(useLocation({ select: (location) => location.searchStr }))
   const [filters] = useState(() => linkFilters(params))
   // The linked channel wins until another is chosen.
   const [linkedChannel, setLinkedChannel] = useState(filters.channel)

@@ -15,7 +15,7 @@ const meta = preview.meta({
     defaultOpen: true,
     children: <h1>Overview</h1>
   },
-  parameters: { nextjs: { navigation: { pathname: "/overview" } } }
+  parameters: { router: { navigation: { pathname: "/overview" } } }
 })
 
 export const Overview = meta.story({

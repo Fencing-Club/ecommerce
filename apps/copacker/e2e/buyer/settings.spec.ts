@@ -233,10 +233,11 @@ test("adds a delivery address, edits it and removes it", async ({ page }) => {
   await dialog.getByRole("textbox", { name: "Street address" }).fill("200 Dock Road")
   await dialog.getByRole("textbox", { name: "Address line 2" }).fill("Door 4")
   await dialog.getByRole("textbox", { name: "City" }).fill("Portland")
-  await dialog.getByRole("textbox", { name: "State or province" }).fill("OR")
   await dialog.getByRole("textbox", { name: "Postal code" }).fill("97201")
   await dialog.getByRole("combobox", { name: "Country" }).click()
   await page.getByRole("option", { name: "United States", exact: true }).click()
+  await dialog.getByRole("combobox", { name: "State or province" }).click()
+  await page.getByRole("option", { name: "Oregon", exact: true }).click()
   await dialog.getByRole("button", { name: "Save address" }).click()
   await expect(dialog).toBeHidden()
 
@@ -310,10 +311,8 @@ test("shows Shopify connected and edits its excluded order tags", async ({ page 
   await locations.getByRole("button", { name: "Cancel" }).click()
   await expect(locations).toBeHidden()
 
-  // Sync now is in the orders row's menu. Locally it only queues a job that never runs, so it isn't clicked.
-  await sheet.getByRole("button", { name: "Shopify orders actions" }).click()
-  await expect(page.getByRole("menuitem", { name: /^(Sync now|Syncing…)$/ })).toBeVisible()
-  await page.keyboard.press("Escape")
+  // Locally this only queues a job; checking the control must not trigger an external store sync.
+  await expect(sheet.getByRole("button", { name: "Sync Shopify orders" })).toBeVisible()
 })
 
 test("keeps Delete workspace disabled until the name is typed", async ({ page }) => {

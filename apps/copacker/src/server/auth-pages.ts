@@ -1,6 +1,9 @@
-import type { AuthPageData, AuthPageKind, AuthSearch } from "@/lib/auth-pages"
+import type { AuthPageData } from "@/lib/auth-pages"
+import type { AuthPageKind } from "@/lib/auth-pages"
+import type { AuthSearch } from "@/lib/auth-pages"
 import { returnPath } from "./security"
-import { invitedEmail, pendingVerification, type SignInRequest } from "./sign-in"
+import type { SignInRequest } from "./sign-in"
+import { invitedEmail, pendingVerification } from "./sign-in"
 
 type PageResult = { page: AuthPageData } | { redirect: string }
 type AuthPageRequest = {

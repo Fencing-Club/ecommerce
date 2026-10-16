@@ -1,12 +1,14 @@
 import { setTimeout as wait } from "node:timers/promises"
 import { SQSClient } from "@aws-sdk/client-sqs"
+import { closeDatabase } from "@/db"
 import { pollAmazonNotifications } from "./amazon-notifications"
 import { pollEbayEvents } from "./ebay-events"
 import { logLine } from "./log"
 import { runNextJob } from "./queue"
 import { queueReconciliation } from "./reconcile"
 import { pollShopifyEvents } from "./shopify-webhooks"
-import { type NotificationQueue, sqsQueue } from "./sqs"
+import type { NotificationQueue } from "./sqs"
+import { sqsQueue } from "./sqs"
 let stopped = false
 process.on("SIGTERM", () => {
   stopped = true
@@ -79,4 +81,5 @@ void scheduleReconciliation()
 await Promise.all(Array.from({ length: jobLoops }, () => runJobs()))
 // A message being handled when the worker stops is received again later, since it is only removed once handled.
 await Promise.race([queueReaders, wait(25000)])
-process.exit(0)
+sqs.destroy()
+await closeDatabase()

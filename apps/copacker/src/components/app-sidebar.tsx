@@ -1,5 +1,3 @@
-"use client"
-
 import { PanelLeft } from "lucide-react"
 import { useTranslations } from "use-intl"
 import {
@@ -19,7 +17,8 @@ import {
 import { navigationFor, navigationGroups } from "@/lib/navigation"
 import { usePermissions } from "./access"
 import { AccountMenu } from "./account-menu"
-import { type Workspace, WorkspaceMenu } from "./workspace-menu"
+import type { Workspace } from "./workspace-menu"
+import { WorkspaceMenu } from "./workspace-menu"
 
 // A page's entry: 34px, its icon muted. The open page, or the list a record belongs to, has a muted fill, a primary
 // marker on its leading edge, and its label and icon in full.

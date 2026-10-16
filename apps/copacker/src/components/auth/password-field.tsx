@@ -1,5 +1,3 @@
-"use client"
-
 import { Check, Eye, EyeOff } from "lucide-react"
 import { useId, useState } from "react"
 import { useController, useWatch } from "react-hook-form"

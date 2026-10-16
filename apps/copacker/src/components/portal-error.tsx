@@ -1,5 +1,3 @@
-"use client"
-
 import { CircleAlert } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { PageHeader } from "@/components/common"

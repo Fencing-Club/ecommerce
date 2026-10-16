@@ -1,7 +1,7 @@
+import { Link } from "@tanstack/react-router"
 import { FileUp, Plus } from "lucide-react"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { EmptyState, PageHeader } from "@/components/common"
 import { OrderList } from "@/components/order-list"
@@ -9,6 +9,7 @@ import { StatCard, StatGrid } from "@/components/stat-card"
 import { SupplierOrderIndex } from "@/components/supplier/order-index"
 import { Button } from "@/components/ui/button"
 import { can, isAdmin, type Permissions } from "@/lib/access"
+import { orderListRows } from "@/server/order-list"
 import type { ListedOrder } from "@/server/supplier-workspace"
 import { orderRows } from "@/stories/fixtures/orders"
 import { supplierOrders, warehouse } from "@/stories/fixtures/purchase-orders"
@@ -33,7 +34,7 @@ type Args = {
 
 // The Purchase orders page (page.tsx) with the rows the database would return, for each kind of workspace.
 async function OrdersPage({ kind, permissions: s, rows: queried, orders, status, tab, shopify, supplierLinked }: Args) {
-  const t = await getTranslations("orders.index")
+  const t = await translateStory("orders.index")
   if (kind === "supplier") {
     return (
       <>
@@ -78,11 +79,11 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
       <PageHeader title={t("title")}>
         {creates && (
           <>
-            <Button variant="outline" nativeButton={false} render={<Link href="/orders/import" />}>
+            <Button variant="outline" nativeButton={false} render={<Link to="/orders/import" />}>
               <FileUp data-icon="inline-start" />
               {t("import")}
             </Button>
-            <Button nativeButton={false} render={<Link href="/orders/new" />}>
+            <Button nativeButton={false} render={<Link to="/orders/new" />}>
               <Plus data-icon="inline-start" />
               {t("create")}
             </Button>
@@ -105,14 +106,20 @@ async function OrdersPage({ kind, permissions: s, rows: queried, orders, status,
       )}
 
       {rows.length ? (
-        <OrderList rows={rows} status={status} showValue={showValue} drafts={isBuyer} timeZone={undefined} />
+        <OrderList
+          rows={await orderListRows(rows, showValue)}
+          status={status}
+          showValue={showValue}
+          drafts={isBuyer}
+          timeZone={undefined}
+        />
       ) : (
         <EmptyState
           title={guided ? t("empty.guidedTitle") : t("empty.title")}
           description={guided ? nextStep.description : t(kind === "forwarder" ? "empty.forwarder" : "empty.other")}
         >
           {guided && (
-            <Button nativeButton={false} render={<Link href={nextStep.href} />}>
+            <Button nativeButton={false} render={<Link to="." href={nextStep.href} />}>
               {nextStep.action}
             </Button>
           )}

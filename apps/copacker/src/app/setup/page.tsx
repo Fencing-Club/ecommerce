@@ -1,13 +1,5 @@
-import type { Metadata } from "next"
-import { useTranslations } from "next-intl"
-import { getTranslations } from "next-intl/server"
+import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
-import { withRequest } from "@/server/next-request"
-
-export const generateMetadata = withRequest(async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("auth.setup")
-  return { title: t("title") }
-})
 
 // Where sign-in sends everyone until WorkOS is configured. It looks like the sign-in pages' form column on its own:
 // Copacker's name at the top, and the title and its one line in the middle, rising in as the page opens.

@@ -1,5 +1,3 @@
-"use client"
-
 import { Check } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "use-intl"

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { useState } from "react"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import { type ActionRequest, forwarderRecordId, recordActions, serverError } from "@/stories/fixtures/logistics"
 import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
@@ -112,7 +112,7 @@ export const Remove = meta.story({
     await userEvent.click(screen.getByRole("button", { name: "Remove" }))
     await waitFor(() => expect(sent).toEqual([{ action: "forwarder.remove", data: { id: forwarderRecordId } }]))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

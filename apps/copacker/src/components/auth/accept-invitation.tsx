@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -46,7 +44,7 @@ export function AcceptInvitation({
   async function accept() {
     if (setUp && choice === "new") {
       setPending(true)
-      router.push(setUp)
+      router.navigate({ href: setUp })
       return
     }
     setPending(true)
@@ -56,8 +54,8 @@ export function AcceptInvitation({
         action: "onboarding.join",
         data: { kind, token, ...(kind !== "team" && { orgId: choice }) }
       }).unwrap()
-      router.push(result.redirect ?? "/")
-      router.refresh()
+      router.navigate({ href: result.redirect ?? "/" })
+      router.invalidate()
     } catch (failure) {
       setError(errorMessage(failure))
       setPending(false)

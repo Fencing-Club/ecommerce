@@ -1,5 +1,3 @@
-"use client"
-
 import { Menu } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { CopackerMark } from "@/components/auth/stage"

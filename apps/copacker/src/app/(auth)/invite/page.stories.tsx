@@ -1,8 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { expect, fn, userEvent, waitFor } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { AcceptInvitation } from "@/components/auth/accept-invitation"
 import { AuthPage, AuthShell, AuthSwitch } from "@/components/auth/auth-shell"
 import { SignInForm } from "@/components/auth/sign-in-form"
@@ -58,12 +58,12 @@ type Args = {
 async function InvitationPage({ kind, invitation, user, existing = false, mode, owned = [] }: Args) {
   const token = invitationToken
   const home = user ? "/" : "/login"
-  const t = await getTranslations("auth.invite")
+  const t = await translateStory("auth.invite")
   const page = async () => {
     if (!invitation) {
       return (
         <AuthPage title={t("invalidTitle")} description={t("invalidDescription")}>
-          <Button className="h-10 w-full" nativeButton={false} render={<Link href={home} />}>
+          <Button className="h-10 w-full" nativeButton={false} render={<Link to="." href={home} />}>
             {user ? t("openCopacker") : t("signIn")}
           </Button>
         </AuthPage>
@@ -72,7 +72,7 @@ async function InvitationPage({ kind, invitation, user, existing = false, mode, 
     if (invitation.expired) {
       return (
         <AuthPage title={t("expiredTitle")} description={t("expiredDescription", { name: invitation.from })}>
-          <Button className="h-10 w-full" nativeButton={false} render={<Link href={home} />}>
+          <Button className="h-10 w-full" nativeButton={false} render={<Link to="." href={home} />}>
             {user ? t("openCopacker") : t("signIn")}
           </Button>
         </AuthPage>
@@ -94,7 +94,7 @@ async function InvitationPage({ kind, invitation, user, existing = false, mode, 
     )
     if (!user) {
       const signIn = mode ? mode === "signin" : existing
-      const other = await getTranslations("auth.switch")
+      const other = await translateStory("auth.switch")
       return (
         <AuthPage title={title} description={joining}>
           <div className="flex flex-col gap-6">
@@ -172,7 +172,7 @@ const signedOut: Args = { kind: "team", invitation: invitation("team"), user: nu
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Invitation",
   ...serverStory(InvitationPage),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/invite" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/invite" } } },
   args: signedOut,
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/overview")))
@@ -307,7 +307,7 @@ export const JoinTeam = meta.story({
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Harbor Goods invited you" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Join Harbor Goods" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     await expect(actions.sent).toEqual([{ action: "onboarding.join", data: { kind: "team", token: invitationToken } }])
   }
 })
@@ -344,6 +344,8 @@ export const ChooseNewWorkspace = meta.story({
     await expect(canvas.getByText("Choose the workspace that ships for them.")).toBeVisible()
     await userEvent.click(canvas.getByText("New workspace"))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(getRouter().push).toHaveBeenCalledWith(`/onboarding?invite=${invitationToken}&kind=forwarder`)
+    await expect(getStoryRouter().navigate).toHaveBeenCalledWith({
+      href: `/onboarding?invite=${invitationToken}&kind=forwarder`
+    })
   }
 })

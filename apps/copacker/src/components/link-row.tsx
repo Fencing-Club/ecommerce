@@ -1,5 +1,3 @@
-"use client"
-
 import { useCanOpen } from "@/components/access"
 import { TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"

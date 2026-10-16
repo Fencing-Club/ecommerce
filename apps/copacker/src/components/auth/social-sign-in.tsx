@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { objectKeys } from "ts-extras"
 import { useTranslations } from "use-intl"

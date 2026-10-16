@@ -1,13 +1,6 @@
 import type { ActionResult } from "@/lib/api"
-import {
-  requestPasswordReset,
-  resendCode,
-  resetPassword,
-  signIn,
-  signUp,
-  verifyEmail,
-  type SignInRequest
-} from "./sign-in"
+import type { SignInRequest } from "./sign-in"
+import { requestPasswordReset, resendCode, resetPassword, signIn, signUp, verifyEmail } from "./sign-in"
 
 export const signInActions = new Map<string, (request: SignInRequest, data: unknown) => Promise<ActionResult>>([
   ["auth.signIn", signIn],

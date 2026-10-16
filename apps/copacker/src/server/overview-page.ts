@@ -1,9 +1,10 @@
-import { canOpen, isAdmin, type Permissions } from "@/lib/access"
+import type { Permissions } from "@/lib/access"
+import { canOpen, isAdmin } from "@/lib/access"
 import { requireAccess, requireBuyer } from "./authorization"
 import { overview } from "./overview"
 import { storeTimeZone } from "./store-time-zone"
 import { supplierOverview } from "./supplier-overview"
-import { type Session } from "./workspace-session"
+import type { Session } from "./workspace-session"
 
 type Query = Record<string, string | string[] | undefined>
 

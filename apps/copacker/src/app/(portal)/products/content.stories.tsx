@@ -1,10 +1,10 @@
 import { expect } from "storybook/test"
 import preview from "#.storybook/preview"
 import { supplierProducts } from "@/stories/fixtures/catalog"
-import { ProductsContent } from "./content"
+import ProductsPage from "./page"
 const meta = preview.meta({})
 export const Products = meta.story({
-  render: () => <ProductsContent page={{ kind: "supplier", products: supplierProducts, editable: true }} />,
+  render: () => <ProductsPage page={{ kind: "supplier", products: supplierProducts, editable: true }} />,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { name: "Products", level: 1 })).toBeVisible()
   }

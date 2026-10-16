@@ -6,8 +6,7 @@ import * as tables from "../src/db/schema"
 
 const context = vi.hoisted(() => ({ current: null as unknown, role: "owner", kind: "buyer", orgId: "" }))
 vi.mock("@/db", () => ({ db: () => context.current }))
-vi.mock("@workos-inc/authkit-nextjs", () => ({ withAuth: vi.fn<() => void>() }))
-vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }), headers: async () => new Headers() }))
+
 vi.mock("@/server/auth", async (original) => ({
   ...(await original<typeof import("../src/server/auth")>()),
   session: async () => ({
@@ -17,10 +16,10 @@ vi.mock("@/server/auth", async (original) => ({
     access: {}
   })
 }))
-import { GET } from "../src/app/api/connections/[provider]/route"
 import { LocalizedError } from "../src/i18n/errors"
 import { AccessError } from "../src/i18n/errors"
 import { connection, disconnect } from "../src/server/connections"
+import { GET } from "../src/server/http/api/connections/$provider"
 import { decrypt, hash } from "../src/server/security"
 import { applyMigrations } from "./migrations"
 
@@ -28,7 +27,7 @@ const pg = new PGlite(),
   database = drizzle(pg, { schema: tables })
 const orgId = randomUUID()
 const fetchMock = vi.fn<typeof fetch>()
-const params = { params: Promise.resolve({ provider: "ebay" }) }
+const params = { params: { provider: "ebay" } }
 
 beforeAll(async () => {
   context.current = database

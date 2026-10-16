@@ -1,6 +1,6 @@
+import { Link } from "@tanstack/react-router"
 import { ArrowRight, Box } from "lucide-react"
-import { useTranslations } from "next-intl"
-import Link from "next/link"
+import { useTranslations } from "use-intl"
 import { BrandMark } from "@/components/auth/stage"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -18,7 +18,7 @@ export function JoinWaitlist({ className }: { className?: string }) {
       size="lg"
       className={cn("h-11 gap-2 rounded-xl px-5 text-[0.9375rem]", className)}
       nativeButton={false}
-      render={<Link href="/#waitlist" />}
+      render={<Link to="/" hash="waitlist" />}
     >
       {t("joinWaitlist")}
       <ArrowRight className="rtl:rotate-180" />
@@ -36,7 +36,7 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
   return (
     <Bar tone={tone}>
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-10 px-6">
-        <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Link to="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandMark />
         </Link>
         <nav aria-label={t("mainNav")} className="hidden items-center gap-7 text-sm text-foreground/60 md:flex">
@@ -45,12 +45,12 @@ function Nav({ tone }: { tone: "dark" | "light" }) {
               {t(`sections.${section}`)}
             </a>
           ))}
-          <Link href="/contact" className={link}>
+          <Link to="/contact" className={link}>
             {t("contact")}
           </Link>
         </nav>
         <div className="ms-auto flex items-center">
-          <Button nativeButton={false} render={<Link href="/#waitlist" />}>
+          <Button nativeButton={false} render={<Link to="/" hash="waitlist" />}>
             {t("joinWaitlist")}
           </Button>
         </div>
@@ -91,7 +91,7 @@ function Footer() {
                   {label}
                 </a>
               ) : (
-                <Link key={href} href={href} className="w-fit text-foreground/80 hover:text-foreground">
+                <Link key={href} to="." href={href} className="w-fit text-foreground/80 hover:text-foreground">
                   {label}
                 </Link>
               )

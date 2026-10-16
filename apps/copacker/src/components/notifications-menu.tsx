@@ -1,5 +1,3 @@
-"use client"
-
 import { Bell, Inbox } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"

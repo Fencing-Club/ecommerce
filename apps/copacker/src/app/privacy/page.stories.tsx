@@ -1,6 +1,6 @@
-import { getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { expect, userEvent, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { Legal, Rows } from "@/components/marketing/legal"
 import { serverStory } from "@/stories/server"
@@ -12,8 +12,8 @@ import { serverStory } from "@/stories/server"
 // and eBay's developer programs read the marketplace data section. Change the text with the code it describes, and
 // the date with the text.
 async function PrivacyPage() {
-  const t = await getTranslations("legal")
-  const contact = <Link href="/contact">contact page</Link>
+  const t = await translateStory("legal")
+  const contact = <Link to="/contact">contact page</Link>
   return (
     <Legal
       title={t("privacy.title")}

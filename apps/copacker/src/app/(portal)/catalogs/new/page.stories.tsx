@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import type { CatalogEditorData } from "@/server/catalogs"
 import { newCatalog } from "@/stories/fixtures/supplier"
@@ -41,7 +41,10 @@ export const Default = meta.story({
     await userEvent.click(bar.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(saved).toHaveBeenCalledWith(expect.objectContaining({ title: "Trade show" })))
     await waitFor(() =>
-      expect(getRouter().replace).toHaveBeenCalledWith("/catalogs/6a2d4f80-4b3e-4f5a-8c6d-000000000010")
+      expect(getStoryRouter().navigate).toHaveBeenCalledWith({
+        href: "/catalogs/6a2d4f80-4b3e-4f5a-8c6d-000000000010",
+        replace: true
+      })
     )
   }
 })

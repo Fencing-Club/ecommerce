@@ -1,7 +1,5 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import { FormProvider, useForm } from "react-hook-form"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
@@ -105,7 +103,7 @@ export function EditSupplier({
         }
       }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error, t("failed")) })
     }
@@ -199,7 +197,7 @@ export function InviteSupplierByEmail({
     try {
       await run({ action: "supplier.invite", data: { id, email: values.email } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       form.setError("root.server", { message: errorMessage(error, t("failed", { name })) })
     }

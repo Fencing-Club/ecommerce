@@ -1,5 +1,3 @@
-"use client"
-
 import { useClipboard, useInViewport, useReducedMotion } from "@mantine/hooks"
 import { useEffect, useState } from "react"
 import { useTranslations } from "use-intl"

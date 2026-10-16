@@ -1,5 +1,3 @@
-"use client"
-
 import { useScrollProgress } from "./scroll"
 
 // The hero's product shot leans back at first and straightens up as it scrolls into view, as if set down on the page.

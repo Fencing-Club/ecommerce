@@ -1,9 +1,6 @@
-"use client"
-
 import { commonPaymentTerms } from "@repo/aisle"
+import { Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Plus, Search, Undo2, X } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { PageHeader, StatusBadge } from "@/components/common"
@@ -18,9 +15,11 @@ import { Input } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Textarea } from "@/components/ui/textarea"
 import { useMoney } from "@/hooks/use-money"
+import { responseError } from "@/lib/response-data"
 import { cn } from "@/lib/utils"
 import { MoneyInput } from "./pricing-controls"
-import { ChangeBadge, type LineChange } from "./proposal-panel"
+import type { LineChange } from "./proposal-panel"
+import { ChangeBadge } from "./proposal-panel"
 import { matches } from "./shared"
 
 type Line = {
@@ -154,10 +153,10 @@ export function OrderReviser({
         })
       })
       if (!response.ok) {
-        throw new Error((await response.json()).error ?? t("sendFailed"))
+        throw new Error(responseError(await response.json(), t("sendFailed")))
       }
-      router.push(`/orders/${orderId}`)
-      router.refresh()
+      await router.invalidate()
+      await router.navigate({ href: `/orders/${orderId}` })
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("sendFailed"))
       setPending(false)
@@ -174,7 +173,7 @@ export function OrderReviser({
         title={t("editOrder")}
         badge={proposalPending ? <StatusBadge tone="info">{t("awaitingApproval")}</StatusBadge> : undefined}
       >
-        <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${orderId}`} />}>
+        <Button variant="outline" nativeButton={false} render={<Link to="/orders/$id" params={{ id: orderId }} />}>
           {shared("cancel")}
         </Button>
         <Button disabled={pending} onClick={() => void send()}>

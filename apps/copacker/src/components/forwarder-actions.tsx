@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { Pencil } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { z } from "zod"
@@ -125,7 +123,7 @@ export function RemoveForwarder({ id, name }: { id: string; name: string }) {
     try {
       await run({ action: "forwarder.remove", data: { id } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("failed", { name })))
     } finally {

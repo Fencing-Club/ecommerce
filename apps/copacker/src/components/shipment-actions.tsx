@@ -1,5 +1,3 @@
-"use client"
-
 import { ChevronDown } from "lucide-react"
 import { FormProvider } from "react-hook-form"
 import { useTranslations } from "use-intl"

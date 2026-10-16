@@ -12,7 +12,8 @@ import {
   stockDays,
   stockSnapshots
 } from "@/db/schema"
-import { defaultLocale, isLocale, type Locale } from "@/i18n/locales"
+import type { Locale } from "@/i18n/locales"
+import { defaultLocale, isLocale } from "@/i18n/locales"
 import { translatorFor } from "@/i18n/translator"
 import { summarizeSalesOrder } from "./sales-orders"
 

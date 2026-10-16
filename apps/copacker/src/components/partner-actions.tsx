@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { CheckCircle2, CircleDashed, Clock, Ellipsis, MapPin, Pencil, Send } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
@@ -20,7 +18,8 @@ import { useActionMutation } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { InviteForwarder, RemoveForwarder, RenameForwarder } from "./forwarder-actions"
 import { isRowClick } from "./link-row"
-import { type PartnerAddress, PartnerAddressSheet } from "./partner-address"
+import type { PartnerAddress } from "./partner-address"
+import { PartnerAddressSheet } from "./partner-address"
 import { EditSupplier, InviteSupplierByEmail } from "./supplier-actions"
 
 // Where a partner stands with Copacker: on it, invited (the invitation may have run out), or not yet.
@@ -50,7 +49,7 @@ function useResend(action: "supplier.resend" | "forwarder.invite", id: string, e
     try {
       await run({ action, data: { id } }).unwrap()
       setNotice({ failed: false, text: email ? t("invitationSentTo", { email }) : t("invitationSent") })
-      router.refresh()
+      router.invalidate()
     } catch (error) {
       setNotice({ failed: true, text: errorMessage(error) })
     }

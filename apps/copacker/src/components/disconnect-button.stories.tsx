@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { recordActions } from "@/stories/fixtures/shared"
 import { DisconnectButton } from "./disconnect-button"
 
@@ -25,7 +25,7 @@ export const Shopify = meta.story({
     await userEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }))
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull())
     await expect(posted).toEqual([{ action: "connection.delete", data: { provider: "shopify" } }])
-    await expect(getRouter().refresh).toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
   }
 })
 
@@ -72,6 +72,6 @@ export const Fails = meta.story({
     await expect(await within(dialog).findByRole("alert")).toHaveTextContent("Couldn’t disconnect Amazon")
     // The dialog stays open to try again.
     await expect(within(dialog).getByRole("button", { name: "Disconnect" })).toBeEnabled()
-    await expect(getRouter().refresh).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).not.toHaveBeenCalled()
   }
 })

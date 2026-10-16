@@ -33,7 +33,6 @@ vi.mock("../src/server/connections", async (original) => ({
   ...(await original<typeof import("../src/server/connections")>()),
   ebayFor: async () => ebay.seller
 }))
-import { POST } from "../src/app/api/webhooks/ebay/route"
 import {
   ebayEventJob,
   type EbayNotification,
@@ -43,6 +42,7 @@ import {
   receiveEbayEvent,
   receiveEbayNotification
 } from "../src/server/ebay-events"
+import { POST } from "../src/server/http/api/webhooks/ebay"
 import { PollAgain } from "../src/server/job-handlers"
 import { reconcileJob } from "../src/server/reconcile"
 import { applyMigrations } from "./migrations"

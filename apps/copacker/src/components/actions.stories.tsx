@@ -1,8 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import { z } from "zod"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useActionForm } from "@/hooks/useActionForm"
@@ -27,8 +27,8 @@ export const Succeeds = meta.story({
     await userEvent.click(canvas.getByRole("button", { name: "Send reminder" }))
     await expect(await canvas.findByText("Reminder sent")).toBeVisible()
     await expect(posted).toEqual([{ action: "order.remind", data: { orderId: "order-1045" } }])
-    await expect(getRouter().refresh).toHaveBeenCalled()
-    await expect(getRouter().push).not.toHaveBeenCalled()
+    await expect(getStoryRouter().invalidate).toHaveBeenCalled()
+    await expect(getStoryRouter().navigate).not.toHaveBeenCalled()
   }
 })
 
@@ -37,7 +37,7 @@ export const Redirects = meta.story({
   play: async ({ canvas, msw }) => {
     recordActions(msw, () => HttpResponse.json({ ok: true, redirect: "/orders/order-1047" }))
     await userEvent.click(canvas.getByRole("button", { name: "Duplicate" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders/order-1047"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders/order-1047" }))
   }
 })
 
@@ -101,7 +101,7 @@ export const Form = meta.story({
         { action: "supplier.rename", data: { id: "supplier-lotus", name: "Lotus Manufacturing Co." } }
       ])
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

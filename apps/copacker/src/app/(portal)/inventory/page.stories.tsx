@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { InventoryPageView } from "@/components/inventory-page"
 import type { InventoryRow } from "@/server/supplier-workspace"
 import { supplierInventory } from "@/stories/fixtures/catalog"
@@ -38,7 +38,7 @@ export const Default = meta.story({
     await userEvent.type(onHand, "1500")
     await expect(canvas.getByText("1 unsaved change")).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await expect(counts).toEqual([{ counts: [{ id: supplierInventory[0]!.id, onHand: 1500 }] }])
   }
 })

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { CatalogEditor } from "@/components/supplier/catalog-editor"
 import { can, type Permissions } from "@/lib/access"
 import type { CatalogEditorData } from "@/server/catalogs"
@@ -44,7 +44,7 @@ export const Default = meta.story({
         expect.objectContaining({ id: catalogIds.wholesale, revision: 3, includeNewProducts: false })
       )
     )
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

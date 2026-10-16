@@ -1,5 +1,3 @@
-"use client"
-
 import { useLocalStorage } from "@mantine/hooks"
 import { CircleAlert, Info, TriangleAlert, X } from "lucide-react"
 import { useTranslations } from "use-intl"

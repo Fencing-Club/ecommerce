@@ -1,7 +1,6 @@
-"use client"
-
 import { Plus, X } from "lucide-react"
-import { type RefObject, useRef, useState } from "react"
+import type { RefObject } from "react"
+import { useRef, useState } from "react"
 import { useTranslations } from "use-intl"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

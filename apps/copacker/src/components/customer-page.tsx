@@ -1,7 +1,5 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { Globe, Mail, Phone, User } from "lucide-react"
-import Link from "next/link"
 import { useTranslations } from "use-intl"
 import { useLocale, useTimeZone } from "use-intl"
 import { formatDate } from "@/lib/format"
@@ -66,7 +64,8 @@ export function CustomerPageView({
               />
               {customer.catalog && openCatalog && (
                 <Link
-                  href={`/catalogs/${customer.catalog.id}`}
+                  to="/catalogs/$id"
+                  params={{ id: customer.catalog.id }}
                   className="text-xs text-muted-foreground hover:underline"
                 >
                   {t("openCatalog", { title: customer.catalog.title })}

@@ -1,12 +1,12 @@
 import { amazonNetworkNames, money, type OrderItem, orderTotal } from "@repo/aisle"
 import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
+import { Link } from "@tanstack/react-router"
 import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
 import { http, HttpResponse } from "msw"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test"
+import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
@@ -25,6 +25,7 @@ import type { events, orderProposals, orderRevisions, orders, shipments, supplie
 import { can, type Permissions } from "@/lib/access"
 import { adjustmentKeys, knownName, paymentTermKeys } from "@/lib/order-lines"
 import { storedEvent } from "@/lib/timeline-events"
+import { forwarderPage } from "@/server/forwarder-page"
 import { landedCostKinds, landedMarkup, type orderLandedCosts } from "@/server/landed-costs"
 import type { proposalChanges } from "@/server/order-proposals"
 import type { LineLabel } from "@/server/product-barcodes"
@@ -87,18 +88,17 @@ type Args = {
 async function OrderPage(args: Args) {
   const { kind, permissions: s } = args
   const [t, common, format, locale] = await Promise.all([
-    getTranslations("orders"),
-    getTranslations("common"),
-    getFormatter(),
-    getLocale()
+    translateStory("orders"),
+    translateStory("common"),
+    formatStory(),
+    localeStory()
   ])
   const id = args.order.id
   if (kind === "forwarder") {
     const forwarder = { id: forwarderId, name: args.leg?.name ?? "", buyerOrgId: args.order.buyerOrgId }
     return (
       <ForwarderView
-        row={{ order: args.order, supplier: args.supplier, forwarder }}
-        editable={can(s, "orders", "edit")}
+        page={await forwarderPage({ order: args.order, supplier: args.supplier, forwarder }, can(s, "orders", "edit"))}
       />
     )
   }
@@ -204,7 +204,11 @@ async function OrderPage(args: Args) {
           order.status === "submitted" &&
           proposals.changeable &&
           proposal?.status !== "pending" && (
-            <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link to="/orders/$id/revise" params={{ id: id }} />}
+            >
               {t("revise.title")}
             </Button>
           )}
@@ -267,7 +271,7 @@ async function OrderPage(args: Args) {
                   variant="outline"
                   size="sm"
                   className="ms-auto"
-                  render={<Link href={`/orders/${id}/edit`} />}
+                  render={<Link to="/orders/$id/edit" params={{ id: id }} />}
                   nativeButton={false}
                 >
                   {t("builder.edit")}
@@ -404,7 +408,8 @@ async function OrderPage(args: Args) {
                     <li key={shipment.id} className="flex items-center gap-3 border-t pe-3">
                       {seesShipments ? (
                         <Link
-                          href={`/shipments/${shipment.id}`}
+                          to="/shipments/$id"
+                          params={{ id: shipment.id }}
                           className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
                         >
                           {summary}
@@ -726,7 +731,7 @@ export const Sent = meta.story({
 
     await userEvent.click(canvas.getByRole("button", { name: "Continue packing" }))
     await waitFor(() => expect(actions).toHaveBeenCalledWith({ action: "shipment.create", data: { id: orderId } }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
   }
 })
 

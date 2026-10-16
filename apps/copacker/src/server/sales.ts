@@ -10,7 +10,7 @@ import { effectiveLocationClassifications } from "./inventory-location-settings"
 import { attributeAmazonSales, attributeShopifySales } from "./sales-attribution"
 import { amazonSalesMarketplaces } from "./sales-orders"
 import { excludedShopifyTags, hasExcludedTag } from "./shopify-tags"
-import { type Session } from "./workspace-session"
+import type { Session } from "./workspace-session"
 
 export const demandInputSchema = z.strictObject({ source: z.enum(["shopify", "amazon"]), window: salesWindowSchema })
 export class DemandAccessError extends LocalizedError {}

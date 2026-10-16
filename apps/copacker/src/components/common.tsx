@@ -1,5 +1,3 @@
-"use client"
-
 import { AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileText, PackageOpen } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"

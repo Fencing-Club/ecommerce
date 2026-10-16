@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { http, HttpResponse } from "msw"
 import { expect, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { type EditorProduct, ProductEditor } from "@/components/supplier/product-editor"
 import { can, type Permissions } from "@/lib/access"
 import { editorProduct } from "@/stories/fixtures/catalog"
@@ -79,7 +79,7 @@ export const Edit = meta.story({
     await userEvent.clear(title)
     await userEvent.type(title, "Canvas market tote")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
-    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled())
+    await waitFor(() => expect(getStoryRouter().invalidate).toHaveBeenCalled())
     await expect(saved).toEqual([
       expect.objectContaining({ id: editorProduct.id, revision: 4, title: "Canvas market tote" })
     ])

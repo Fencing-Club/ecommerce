@@ -1,6 +1,6 @@
 import { Plus, Repeat } from "lucide-react"
-import { useTranslations } from "next-intl"
 import { expect, waitFor, within } from "storybook/test"
+import { useTranslations } from "use-intl"
 import preview from "#.storybook/preview"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"

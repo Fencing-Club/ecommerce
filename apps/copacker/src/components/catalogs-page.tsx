@@ -1,7 +1,5 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
-import Link from "next/link"
 import { useTranslations } from "use-intl"
 import type { catalogsPageData } from "@/server/workspace-pages"
 import { PageHeader } from "./common"
@@ -14,7 +12,7 @@ export function CatalogsPageView({ catalogs, editable }: Awaited<ReturnType<type
     <>
       <PageHeader title={t("catalogs")}>
         {catalogs.length > 0 && editable && (
-          <Button nativeButton={false} render={<Link href="/catalogs/new" />}>
+          <Button nativeButton={false} render={<Link to="/catalogs/new" />}>
             <Plus data-icon="inline-start" />
             {t("createCatalog")}
           </Button>

@@ -1,8 +1,10 @@
-import { type AmazonNetwork, amazonNetworks } from "@repo/aisle"
+import type { AmazonNetwork } from "@repo/aisle"
+import { amazonNetworks } from "@repo/aisle"
 import type { Amazon } from "@repo/aisle/amazon"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { amazonInboundShipments, type shipments } from "@/db/schema"
+import type { shipments } from "@/db/schema"
+import { amazonInboundShipments } from "@/db/schema"
 
 // Each network's page for one of its inbound shipments in Seller Central, which opens on the shipment's events.
 const sellerCentralShipment: Record<AmazonNetwork, (shipmentId: string) => string> = {

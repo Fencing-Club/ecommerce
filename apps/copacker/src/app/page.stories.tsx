@@ -1,6 +1,4 @@
-import { getURLFromRedirectError } from "next/dist/client/components/redirect"
-import { isRedirectError } from "next/dist/client/components/redirect-error"
-import { redirect } from "next/navigation"
+import { isRedirect, redirect } from "@tanstack/react-router"
 import { expect, within } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Landing } from "@/components/marketing/landing"
@@ -17,7 +15,7 @@ async function Home({ visitor }: { visitor: Visitor }) {
   if (!visitor) {
     return <Landing />
   }
-  redirect(homeFor(workspaces[visitor.kind].kind, visitor.permissions))
+  throw redirect({ href: homeFor(workspaces[visitor.kind].kind, visitor.permissions) })
 }
 
 // A redirect renders nothing, so the story says where it went.
@@ -25,8 +23,8 @@ async function HomePage(args: { visitor: Visitor }) {
   try {
     return await Home(args)
   } catch (error) {
-    if (isRedirectError(error)) {
-      return <p>Redirects to {getURLFromRedirectError(error)}</p>
+    if (isRedirect(error)) {
+      return <p>Redirects to {error.options.href}</p>
     }
     throw error
   }

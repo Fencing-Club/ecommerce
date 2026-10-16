@@ -32,12 +32,15 @@ const args =
         "--ci"
       ]
     : [
-        fileURLToPath(import.meta.resolve("next/dist/bin/next")),
-        service === "e2e" && !process.env.E2E_DEV ? "start" : "dev",
-        "--hostname",
+        fileURLToPath(new URL("./bin/vite.js", import.meta.resolve("vite/package.json"))),
+        service === "e2e" && !process.env.E2E_DEV ? "preview" : "dev",
+        "--host",
         "127.0.0.1",
         "--port",
-        String(port)
+        String(port),
+        "--strictPort",
+        "--mode",
+        service === "e2e" ? "e2e" : "development"
       ]
 const child = spawn(process.execPath, args, { stdio: "inherit", env: process.env })
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

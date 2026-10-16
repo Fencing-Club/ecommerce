@@ -1,5 +1,3 @@
-"use client"
-
 import { normalizeShopDomain, shopDomainSchema } from "@repo/aisle/shopify"
 import { ArrowRight, CircleCheck, CircleDashed, Clock3, Globe } from "lucide-react"
 import { useId, useState } from "react"

@@ -1,7 +1,7 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { OrderBuilder } from "@/components/order-builder"
 import type { orders, suppliers } from "@/db/schema"
 import type { ForwarderAddress } from "@/server/forwarders"
@@ -30,7 +30,7 @@ type Args = {
 // The draft's edit page (page.tsx) with what its queries would return. A purchase order that isn't a draft redirects
 // to its page instead.
 async function EditOrder({ order, suppliers: rows, deliveries: addresses, needsBarcode, forwarding: stops }: Args) {
-  const t = await getTranslations("orders")
+  const t = await translateStory("orders")
   const id = order.id
   return (
     <OrderBuilder
@@ -88,7 +88,7 @@ export const Default = meta.story({
     await userEvent.type(quantity, "0", { initialSelectionStart: 3, initialSelectionEnd: 3 })
     await expect(quantity).toHaveValue(1200)
     await userEvent.click(save)
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.update",
       data: {

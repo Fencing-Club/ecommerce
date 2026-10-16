@@ -1,5 +1,3 @@
-"use client"
-
 import { isPresent } from "ts-extras"
 import { useLocale, useTranslations } from "use-intl"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +27,8 @@ import {
   UpcomingSpend,
   useFigures
 } from "./overview-sections"
-import { PeriodPicker, type PeriodSelection } from "./period-picker"
+import type { PeriodSelection } from "./period-picker"
+import { PeriodPicker } from "./period-picker"
 
 // Grids: six KPI tiles, the sales chart beside gross profit, a wide card beside a narrow one, and two even halves.
 // The KPI row goes by its own width, sidebar or not: two tiles a row, three once each has room for its whole label,

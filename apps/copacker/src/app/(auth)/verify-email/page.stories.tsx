@@ -18,7 +18,7 @@ function VerifyEmail({ email }: { email: string }) {
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Verify email",
   component: VerifyEmail,
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/verify-email" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/verify-email" } } },
   args: { email: "alex@example.com" },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/onboarding")))

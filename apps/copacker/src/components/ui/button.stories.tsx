@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router"
 import { Plus, Trash2 } from "lucide-react"
-import Link from "next/link"
 import { expect, fn, userEvent } from "storybook/test"
 import preview from "#.storybook/preview"
 import { Button } from "./button"
@@ -118,7 +118,7 @@ export const Invalid = meta.story({
 // A link styled as a button, as the page headers use it.
 export const AsLink = meta.story({
   render: () => (
-    <Button nativeButton={false} render={<Link href="/orders/new" />}>
+    <Button nativeButton={false} render={<Link to="/orders/new" />}>
       <Plus data-icon="inline-start" />
       Create purchase order
     </Button>

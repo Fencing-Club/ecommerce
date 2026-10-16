@@ -1,6 +1,4 @@
-"use client"
-
-import { useRouter } from "next/navigation"
+import { useRouter } from "@tanstack/react-router"
 import { useId, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { FormError } from "@/components/form-feedback"
@@ -143,7 +141,7 @@ function Confirm({
     } catch (failure) {
       setError(errorMessage(failure))
       setPending(false)
-      router.refresh()
+      router.invalidate()
     }
   }
 

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMounted } from "@mantine/hooks"
 import { useTranslations } from "use-intl"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"

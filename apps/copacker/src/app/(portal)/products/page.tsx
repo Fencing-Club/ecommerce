@@ -1,19 +1,9 @@
-import { redirect } from "next/navigation"
-import { requirePage, session, titleFor } from "@/server/auth"
-import { withRequest } from "@/server/next-request"
-import { productsPageData } from "@/server/workspace-pages"
-import { ProductsContent } from "./content"
+import { useRouter } from "@tanstack/react-router"
+import { ProductsPageView } from "@/components/products-page"
+import type { readProducts } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("products.page.title", "products")
-export default withRequest(async function ProductsPage({
-  searchParams
-}: {
-  searchParams: Promise<{ q?: string | string[] }>
-}) {
-  const s = await session()
-  requirePage(s, "products")
-  if (s.org.kind !== "supplier" && s.org.kind !== "buyer") {
-    redirect("/orders")
-  }
-  return <ProductsContent page={await productsPageData(s, (await searchParams).q)} />
-})
+type Data = Extract<Awaited<ReturnType<typeof readProducts>>, { forbidden: false }>["page"]
+export default function ProductsPage({ page }: { page: Data["data"] }) {
+  const router = useRouter()
+  return <ProductsPageView page={page} refresh={() => router.invalidate()} />
+}

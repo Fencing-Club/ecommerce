@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { AlertTriangle, Archive, Download, Ellipsis, Pencil, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "use-intl"
 import { useCan } from "@/components/access"
@@ -46,7 +44,7 @@ export function ClosePurchaseOrder({ id, reference, open, onOpenChange: setOpen 
     try {
       await run({ action: "order.close", data: { id } }).unwrap()
       setOpen(false)
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setError(errorMessage(e, t("closeFailed", { reference })))
     } finally {
@@ -89,7 +87,7 @@ export function DeleteDraftOrder({ id, reference, open, onOpenChange: setOpen }:
     try {
       const result = await run({ action: "order.delete", data: { id } }).unwrap()
       setOpen(false)
-      router.push(result.redirect ?? "/orders")
+      router.navigate({ href: result.redirect ?? "/orders" })
     } catch (e) {
       setError(errorMessage(e, t("deleteFailed", { reference })))
       setPending(false)
@@ -148,7 +146,7 @@ export function OrderMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           {draft && (
-            <DropdownMenuItem onClick={() => router.push(`/orders/${id}/edit`)}>
+            <DropdownMenuItem onClick={() => router.navigate({ href: `/orders/${id}/edit` })}>
               <Pencil />
               {t("edit")}
             </DropdownMenuItem>
@@ -256,7 +254,7 @@ export function LineMenu({
               </DropdownMenuItem>
             )}
             {editable && (
-              <DropdownMenuItem onClick={() => router.push(`/orders/${orderId}/edit`)}>
+              <DropdownMenuItem onClick={() => router.navigate({ href: `/orders/${orderId}/edit` })}>
                 <Pencil />
                 {t("edit")}
               </DropdownMenuItem>

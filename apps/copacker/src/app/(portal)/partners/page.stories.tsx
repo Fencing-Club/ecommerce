@@ -1,6 +1,6 @@
 import { Search } from "lucide-react"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, screen, userEvent, within } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { AddPartner } from "@/components/add-partner"
 import { EmptyState, PageHeader } from "@/components/common"
@@ -81,7 +81,7 @@ function tabHref(tab: string, q: string) {
 
 // The Partners page (page.tsx) with the partners the database would return.
 async function PartnersPage({ permissions, type, q: query, partners, restockLeadTimeDays }: Args) {
-  const t = await getTranslations("partners.page")
+  const t = await translateStory("partners.page")
   const editable = can(permissions, "partners", "edit")
   const tab = tabs.find((candidate) => candidate.key === type)?.key ?? "all"
   const q = (query ?? "").trim().slice(0, 200)

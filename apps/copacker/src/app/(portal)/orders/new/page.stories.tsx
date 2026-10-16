@@ -1,8 +1,8 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { HttpResponse } from "msw"
-import { getTranslations } from "next-intl/server"
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test"
+import { translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { OrderBuilder } from "@/components/order-builder"
 import type { suppliers } from "@/db/schema"
 import type { orderLine } from "@/lib/order-lines"
@@ -41,7 +41,7 @@ async function NewOrder({
   forwarding: stops,
   deliveries: addresses
 }: Args) {
-  const t = await getTranslations("orders")
+  const t = await translateStory("orders")
   const initialDestination = params.destination === "warehouse" ? "warehouse" : "amazon"
   const linked = addresses.filter((delivery) => delivery.shopifyLocationId === params.locationId)
   return (
@@ -117,7 +117,7 @@ export const FromRestock = meta.story({
 
     await userEvent.type(canvas.getByRole("textbox", { name: "Reference number" }), "PO-1047")
     await userEvent.click(canvas.getByRole("button", { name: "Save" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith(`/orders/${orderId}`))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: `/orders/${orderId}` }))
     await expect(actions).toHaveBeenCalledWith({
       action: "order.create",
       data: expect.objectContaining({ reference: "PO-1047", supplierId, destination: "warehouse", deliveryId })

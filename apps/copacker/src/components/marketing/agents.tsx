@@ -1,5 +1,3 @@
-"use client"
-
 import { useMediaQuery } from "@mantine/hooks"
 import { Bot, Box, Check } from "lucide-react"
 import { useFormatter, useTranslations } from "use-intl"

@@ -13,7 +13,7 @@ type Identity = Person & { email: string; emailVerified: boolean }
 type Executor = Database | Transaction
 
 // Resolve from current database memberships on every operation. Framework request helpers and redirect decisions
-// belong to the caller, so Next, Start and isolated database tests use exactly the same authorization query.
+// belong to the caller, so Start and isolated database tests use exactly the same authorization query.
 export async function workspaceSession(user: Identity, active: string | undefined, executor: Executor = db()) {
   const available = await executor
     .select({ org: organizations, member: memberships })

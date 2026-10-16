@@ -1,5 +1,3 @@
-"use client"
-
 import { Check, Copy } from "lucide-react"
 import { useTranslations } from "use-intl"
 import { cn } from "@/lib/utils"

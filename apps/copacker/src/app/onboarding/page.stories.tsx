@@ -1,6 +1,6 @@
-import { getRouter } from "@storybook/nextjs-vite/navigation.mock"
 import { expect, screen, userEvent, waitFor } from "storybook/test"
 import preview from "#.storybook/preview"
+import { getStoryRouter } from "#.storybook/router"
 import { OnboardingWizard, type WizardValues } from "@/components/onboarding/onboarding-wizard"
 import { SignedInAs } from "@/components/onboarding/signed-in-as"
 import type { profiles } from "@/db/schema"
@@ -109,7 +109,7 @@ async function Onboarding({ user, profile, complete, workspaces, open, next = "/
 const meta = preview.meta({
   title: "Pages/Shared/Onboarding",
   ...serverStory(Onboarding),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/onboarding" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/onboarding" } } },
   args: {
     user: { email: "alex@example.com", firstName: "Alex", lastName: "" },
     profile: null,
@@ -171,7 +171,7 @@ export const InvitedSupplierWithProfile = meta.story({
     await expect(await canvas.findByRole("heading", { level: 1, name: "Pickup address" })).toBeVisible()
     await expect(canvas.getByLabelText(/Street address/)).toHaveValue("88 Industrial Road")
     await userEvent.click(canvas.getByRole("button", { name: "Create workspace" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/overview"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/overview" }))
     await expect(actions.sent[0]).toMatchObject({
       action: "onboarding.workspace",
       data: { kind: "supplier", invitation: { kind: "supplier", token: invitationToken } }
@@ -228,7 +228,7 @@ export const ProfileOnly = meta.story({
     await userEvent.click(await screen.findByRole("option", { name: "Owner" }))
     await waitFor(() => expect(canvas.getByRole("combobox", { name: /Position/ })).toHaveTextContent("Owner"))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await waitFor(() => expect(getRouter().push).toHaveBeenCalledWith("/orders"))
+    await waitFor(() => expect(getStoryRouter().navigate).toHaveBeenCalledWith({ href: "/orders" }))
     await expect(actions.sent[0]).toEqual({
       action: "profile.update",
       data: { firstName: "Alex", lastName: "Rivera", position: "Owner", company: "Lotus Packaging Co" }

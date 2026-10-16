@@ -9,8 +9,8 @@ const client = vi.hoisted(() => ({
 }))
 vi.mock("../src/server/workos", () => ({ workos: () => ({ userManagement: client }), workosClientId: () => "client" }))
 
-import { POST } from "../src/app/api/mailing-list/route"
-import { POST as unsubscribe } from "../src/app/api/mailing-list/unsubscribe/route"
+import { POST } from "../src/server/http/api/mailing-list"
+import { POST as unsubscribe } from "../src/server/http/api/mailing-list/unsubscribe"
 import { canUnsubscribe, joinWaitlist, unsubscribeLinks } from "../src/server/mailing-list"
 
 // A waitlist entry as WorkOS returns it, created now unless it says otherwise.

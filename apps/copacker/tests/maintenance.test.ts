@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { maintenanceHeader, maintenanceRewrite } from "../src/lib/maintenance"
+import { maintenanceRewrite } from "../src/lib/maintenance"
 import {
   closedForMaintenance,
   maintenanceActive,
@@ -7,7 +7,6 @@ import {
   underMaintenance,
   withMaintenance
 } from "../src/server/maintenance"
-import { maintenanceResponse } from "../src/server/next-maintenance"
 import { maintenanceResponse as startMaintenanceResponse } from "../src/server/start-maintenance"
 
 const fetcher = vi.fn<typeof fetch>()
@@ -162,7 +161,7 @@ describe("what maintenance closes", () => {
       "/api/health",
       "/fonts/geist-latin.woff2",
       "/assets/entry.js",
-      "/_next/webpack-hmr"
+      "/@vite/client"
     ]
     expect(open.filter((path) => closedForMaintenance(request(path)))).toEqual([])
   })
@@ -270,39 +269,5 @@ describe("Start maintenance before authentication and database work", () => {
     )
     expect(values).toEqual([true, false])
     expect(maintenanceActive()).toBe(false)
-  })
-})
-
-describe("what someone gets during maintenance", () => {
-  // A marked page request goes on, and next.config.ts shows it the maintenance page at its own address.
-  const marked = (response: Response) =>
-    response.headers.get("x-middleware-next") === "1" &&
-    response.headers.get(`x-middleware-request-${maintenanceHeader}`) === "1"
-
-  it("shows a page the maintenance page at its own address, as a 503 to come back to", async () => {
-    const response = await maintenanceResponse(request("/orders/123"))
-    expect(response.status).toBe(503)
-    expect(response.headers.get("retry-after")).toBe("120")
-    expect(marked(response)).toBe(true)
-  })
-
-  it("shows the page for an API address the browser opens itself, such as a store connection's return", async () => {
-    const response = await maintenanceResponse(
-      request("/api/connections/shopify?code=abc", { headers: { "sec-fetch-dest": "document" } })
-    )
-    expect(marked(response)).toBe(true)
-  })
-
-  it("answers the app's requests and server actions with the reason, in the browser's language", async () => {
-    const api = await maintenanceResponse(request("/api/search", { headers: { "accept-language": "de-DE,de;q=0.9" } }))
-    expect(api.status).toBe(503)
-    expect(marked(api)).toBe(false)
-    expect(await api.json()).toEqual({ error: "Copacker wird gerade gewartet. Versuchen Sie es bald erneut." })
-
-    const action = await maintenanceResponse(
-      request("/orders/123", { method: "POST", headers: { "next-action": "abc" } })
-    )
-    expect(action.status).toBe(503)
-    expect(await action.json()).toEqual({ error: "Copacker is down for maintenance. Try again soon." })
   })
 })

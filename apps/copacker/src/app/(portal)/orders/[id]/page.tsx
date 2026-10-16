@@ -1,10 +1,8 @@
-import { amazonNetworkNames, money, type OrderItem, orderTotal } from "@repo/aisle"
-import { destinationRequirements, itemRequirements, sharedPrep } from "@repo/aisle/requirements"
-import { desc, eq, inArray } from "drizzle-orm"
+import type { OrderItem } from "@repo/aisle"
+import { amazonNetworkNames, money, orderTotal } from "@repo/aisle"
+import { Link } from "@tanstack/react-router"
 import { ArrowRight, Building2, ChevronRight, Info as InfoIcon, MapPin, Warehouse } from "lucide-react"
-import type { Metadata } from "next"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
-import Link from "next/link"
+import { useTranslations, useFormatter, useLocale } from "use-intl"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status, WarningNote, formatDestination } from "@/components/common"
 import { ForwardShipment } from "@/components/forward-shipment"
@@ -19,192 +17,62 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { db } from "@/db"
-import { contacts, events, forwarders, orderRevisions, organizations, shipments } from "@/db/schema"
-import { can } from "@/lib/access"
 import { adjustmentKeys, knownName, paymentTermKeys } from "@/lib/order-lines"
-import { storedEvent } from "@/lib/timeline-events"
-import { accessibleOrder, forwarderOrder } from "@/server/access"
-import { amazonFreightByOrder } from "@/server/amazon-shipments"
-import { noAccessTitle, requirePage, session } from "@/server/auth"
-import { landedCostKinds, landedMarkup, orderLandedCosts } from "@/server/landed-costs"
-import { withRequest } from "@/server/next-request"
-import { proposalChanges, proposalState, unpricedChanges } from "@/server/order-proposals"
-import { lineLabels } from "@/server/product-barcodes"
-import { requirementTranslator } from "@/server/requirements"
-import { forwarderLeg } from "@/server/shipment-legs"
-import { storeTimeZone } from "@/server/store-time-zone"
-import { orderWorkflow } from "@/server/workflow"
+import type { orderPage } from "@/server/order-page"
 import { ForwarderView } from "./forwarder-view"
-
-type Props = { params: Promise<{ id: string }> }
-
-// The PO's reference names the tab. Looking the PO up here too gives a malformed or unknown id the not-found page's
-// title.
-export const generateMetadata = withRequest(async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [s, { id }] = await Promise.all([session(), params])
-  if (!can(s, "orders")) {
-    return noAccessTitle()
+export default function OrderPage({ page }: { page: Awaited<ReturnType<typeof orderPage>> }) {
+  const t = useTranslations("orders"),
+    common = useTranslations("common"),
+    format = useFormatter(),
+    locale = useLocale()
+  if (page.view === "forwarder") {
+    return <ForwarderView page={page.data} />
   }
-  const { order } = s.org.kind === "forwarder" ? await forwarderOrder(s, id) : await accessibleOrder(s, id)
-  return { title: order.data.reference }
-})
-
-export default withRequest(async function OrderPage({ params }: Props) {
-  const [s, t, common, format, locale] = await Promise.all([
-    session(),
-    getTranslations("orders"),
-    getTranslations("common"),
-    getFormatter(),
-    getLocale()
-  ])
-  requirePage(s, "orders")
-  // A malformed or unknown id is a not-found, from forwarderOrder or accessibleOrder.
-  const { id } = await params
-  if (s.org.kind === "forwarder") {
-    return <ForwarderView row={await forwarderOrder(s, id)} editable={can(s, "orders", "edit")} />
-  }
-  // Someone who can only view purchase orders sees the PO without its buttons; shipments are their own page.
-  const editsOrder = can(s, "orders", "edit")
-  const seesShipments = can(s, "shipments")
-  const editsShipments = can(s, "shipments", "edit")
-  // Someone who doesn't see prices gets the PO without its costs, totals, landed costs and priced documents.
-  const prices = can(s, "prices")
-  const { order, supplier } = await accessibleOrder(s, id)
-  const [shipmentRows, history, revisions, buyerName] = await Promise.all([
-    // Oldest first, so "Shipment 2" here is Shipment 2 on the shipments list and the shipment's page.
-    db().select().from(shipments).where(eq(shipments.orderId, id)).orderBy(shipments.createdAt),
-    db().select().from(events).where(eq(events.orderId, id)).orderBy(desc(events.createdAt)),
-    db().select().from(orderRevisions).where(eq(orderRevisions.orderId, id)).orderBy(desc(orderRevisions.revision)),
-    // The supplier reads the buyer's note as from the buyer, by its workspace's name.
-    s.org.kind === "supplier"
-      ? db()
-          .select({ name: organizations.name })
-          .from(organizations)
-          .where(eq(organizations.id, order.buyerOrgId))
-          .then((rows) => rows[0]?.name)
-      : undefined
-  ])
-  // Suppliers see where the PO stands on their side, in their order list's words: its latest shipment's status until
-  // it's closed. Buyers see the PO's own.
-  const status =
-    s.org.kind === "supplier" && order.status !== "closed"
-      ? (shipmentRows.at(-1)?.status ?? order.status)
-      : order.status
-  const [workflow, proposals] = await Promise.all([orderWorkflow(s, id), proposalState(id)])
-  // The supplier's latest changes: pending for both sides, or declined for the supplier to see why.
-  const proposal =
-    proposals.latest &&
-    (proposals.latest.status === "pending" || (proposals.latest.status === "declined" && s.org.kind === "supplier"))
-      ? proposals.latest
-      : null
-  const remainingFor = (itemId: string) => workflow.items.find((row) => row.itemId === itemId)?.remainingPieces
-  const editable = workflow.shipments.some((row) => row.editable)
-  const remaining = workflow.items.some((item) => item.remainingPieces > 0)
-  const { currency } = order.data
-  const [landed, freight] =
-    s.org.kind === "buyer"
-      ? await Promise.all([
-          orderLandedCosts(id),
-          amazonFreightByOrder(s.org.id).then((rows) =>
-            rows.filter((row) => row.orderId === id && row.currency === currency)
-          )
-        ])
-      : [[], []]
-  // Amazon's freight for this PO's shipments counts with the costs recorded here.
-  const landedTotal =
-    landed.reduce((sum, cost) => sum + cost.amountMinor, 0) + freight.reduce((sum, row) => sum + row.freightMinor, 0)
-  const markup = landedMarkup(order.data, landedTotal)
-  const buyer = s.org.kind === "buyer"
-  // Each line's label, from its product's current barcode and label setting.
-  const labels = await lineLabels(order)
-  const labelFor = (itemId: string) => labels.find((label) => label.itemId === itemId)
-  // What happened to the PO, newest first: its events, and each revision, which opens to show its lines.
-  const timeline = [
-    ...history.map((event) => ({
-      key: event.id,
-      at: event.createdAt,
-      content: (event.kind === "event" && storedEvent(event)) || (event.message ?? ""),
-      comment: event.kind === "comment",
-      author: event.author,
-      authorOrg: event.authorOrg,
-      revision: null,
-      revisionNumber: null
-    })),
-    ...revisions.map((r) => ({
-      key: r.id,
-      at: r.createdAt,
-      content: storedEvent({ messageKey: r.reason, messageValues: null }) ?? r.reason,
-      comment: false,
-      author: null,
-      authorOrg: null,
-      revision: r.data,
-      revisionNumber: r.revision
-    }))
-  ].toSorted((a, b) => b.at.getTime() - a.at.getTime())
-  // The documents kept with the PO that this workspace can download: the PO's own, then each shipment's, in the order
-  // they're made. Product labels are made from each product instead, in the Products table.
-  const documentOrder = ["purchase_order", "invoice", "packing_list", "checklist", "carton_label", "shipping_label"]
-  const documentGroups = [
-    { key: "order", title: null, shipmentId: null },
-    // Shipments' documents are for those who can open shipments.
-    ...(seesShipments ? shipmentRows : []).map((shipment, index) => ({
-      key: shipment.id,
-      title: t("detail.shipment", { number: index + 1 }),
-      shipmentId: shipment.id
-    }))
-  ].flatMap((group) => {
-    const documents = workflow.documents
-      .filter((doc) => doc.downloadUrl && doc.shipmentId === group.shipmentId && documentOrder.includes(doc.kind))
-      .toSorted(
-        (a, b) =>
-          documentOrder.indexOf(a.kind) - documentOrder.indexOf(b.kind) ||
-          (a.cartonId ?? a.name).localeCompare(b.cartonId ?? b.name, undefined, { numeric: true })
-      )
-      // The purchase order and the commercial invoice are priced.
-      .filter((doc) => prices || !["purchase_order", "invoice"].includes(doc.kind))
-    return documents.length ? [{ ...group, documents }] : []
-  })
-  const prep = sharedPrep(order.data)
-  // The forwarder the goods pass through, if any. The buyer ships its leg on for one that isn't on Copacker.
-  const legId = forwarderLeg(order.data)
-  const leg = legId
-    ? await db()
-        .select({ name: forwarders.name, forwarderOrgId: forwarders.forwarderOrgId })
-        .from(forwarders)
-        .where(eq(forwarders.id, legId))
-        .then((rows) => rows[0])
-    : undefined
-  const text = await requirementTranslator()
-  const instructions = [...(prep ? [{ code: "prep" as const, prep }] : []), ...destinationRequirements(order.data)].map(
-    text.requirement
-  )
-
-  const units = order.data.items.reduce((n, item) => n + item.pieces, 0)
-  const subtotal = order.data.items.reduce((sum, item) => sum + item.pieces * item.unitPrice, 0)
-  // The route's names: the forwarder stop and the delivery address.
-  const addressIds = [order.data.deliveryId, order.data.via?.addressId].filter((value) => value !== undefined)
-  const places = addressIds.length
-    ? await db().select({ id: contacts.id, name: contacts.name }).from(contacts).where(inArray(contacts.id, addressIds))
-    : []
-  const place = (addressId: string | undefined) => places.find((candidate) => candidate.id === addressId)?.name
-  // The stop goes by the PO's forwarder and its address there, such as "Yiwu Logistics, Yiwu warehouse": an address the
-  // buyer saved for the forwarder, or the forwarder's own once it has joined.
-  const stop = order.data.via && [leg?.name, place(order.data.via.addressId)].filter(Boolean).join(", ")
-  // A calendar day, such as the date the PO is required by, the same wherever it's read.
+  const {
+    s,
+    id,
+    editsOrder,
+    seesShipments,
+    editsShipments,
+    prices,
+    order,
+    supplier,
+    status,
+    changeable,
+    proposal,
+    remainingItems,
+    editable,
+    remaining,
+    currency,
+    landedTotal,
+    markup,
+    buyer,
+    labels,
+    timeline,
+    documentGroups,
+    leg,
+    instructions,
+    units,
+    subtotal,
+    places,
+    stop,
+    noteLabel,
+    timeZone,
+    instructionsByItem,
+    shipmentRows,
+    freight,
+    landed
+  } = page.data
+  const remainingFor = (id: string) => remainingItems.find((row) => row.itemId === id)?.remainingPieces
+  const labelFor = (id: string) => labels.find((row) => row.itemId === id)
+  const place = (id: string | undefined) => places.find((row) => row.id === id)?.name
   const day = (value: string) =>
-    format.dateTime(new Date(`${value}T00:00:00Z`), {
+    format.dateTime(new Date(value + "T00:00:00Z"), {
       month: "short",
       day: "numeric",
       year: "numeric",
       timeZone: "UTC"
     })
-  // The buyer's note, labeled from the viewer's side: to the supplier for the buyer, from the buyer for the supplier.
-  let noteLabel = t("detail.noteToSupplier")
-  if (s.org.kind === "supplier") {
-    noteLabel = buyerName ? t("detail.noteFrom", { buyer: buyerName }) : t("detail.buyersNote")
-  }
-
   return (
     <>
       <PageHeader
@@ -220,9 +88,13 @@ export default withRequest(async function OrderPage({ params }: Props) {
         {s.org.kind === "supplier" &&
           editsOrder &&
           order.status === "submitted" &&
-          proposals.changeable &&
+          changeable &&
           proposal?.status !== "pending" && (
-            <Button variant="outline" nativeButton={false} render={<Link href={`/orders/${id}/revise`} />}>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link to="/orders/$id/revise" params={{ id: id }} />}
+            >
               {t("revise.title")}
             </Button>
           )}
@@ -256,12 +128,8 @@ export default withRequest(async function OrderPage({ params }: Props) {
 
       {proposal && (proposal.status === "pending" || proposal.status === "declined") && (
         <ProposalPanel
-          proposal={{ id: proposal.id, status: proposal.status, note: proposal.data.note, reason: proposal.reason }}
-          changes={
-            prices
-              ? proposalChanges(order.data, proposal.data)
-              : unpricedChanges(proposalChanges(order.data, proposal.data))
-          }
+          proposal={{ id: proposal.id, status: proposal.status, note: proposal.note, reason: proposal.reason }}
+          changes={proposal.changes}
           currency={order.data.currency}
           viewer={s.org.kind === "buyer" ? "buyer" : "supplier"}
           supplierName={supplier.name}
@@ -289,7 +157,7 @@ export default withRequest(async function OrderPage({ params }: Props) {
                   variant="outline"
                   size="sm"
                   className="ms-auto"
-                  render={<Link href={`/orders/${id}/edit`} />}
+                  render={<Link to="/orders/$id/edit" params={{ id: id }} />}
                   nativeButton={false}
                 >
                   {t("builder.edit")}
@@ -326,13 +194,11 @@ export default withRequest(async function OrderPage({ params }: Props) {
                           </Badge>
                         )}
                         <p className="mt-1 text-xs text-muted-foreground">{item.buyerSku}</p>
-                        {itemRequirements(item, order.data.destination, prep)
-                          .map(text.requirement)
-                          .map((line) => (
-                            <p key={line} className="text-xs text-muted-foreground">
-                              {line}
-                            </p>
-                          ))}
+                        {(instructionsByItem[item.id] ?? []).map((line) => (
+                          <p key={line} className="text-xs text-muted-foreground">
+                            {line}
+                          </p>
+                        ))}
                       </TableCell>
                       <TableCell className="py-2.5 align-top whitespace-normal @max-2xl:me-auto @max-2xl:pt-2 @max-2xl:pb-0 @max-2xl:ps-0 @max-2xl:pe-4">
                         <SupplierSku item={item} notSet={t("detail.notSet")} />
@@ -415,7 +281,7 @@ export default withRequest(async function OrderPage({ params }: Props) {
                         <span className="text-xs text-muted-foreground">
                           {t("detail.shipmentCartons", {
                             reference: shipment.amazonShipmentId ?? t("detail.cartonsInPreparation"),
-                            count: shipment.packingDraft?.cartons?.length ?? shipment.packing?.cartons.length ?? 0
+                            count: shipment.cartonCount
                           })}
                         </span>
                       </span>
@@ -426,7 +292,8 @@ export default withRequest(async function OrderPage({ params }: Props) {
                     <li key={shipment.id} className="flex items-center gap-3 border-t pe-3">
                       {seesShipments ? (
                         <Link
-                          href={`/shipments/${shipment.id}`}
+                          to="/shipments/$id"
+                          params={{ id: shipment.id }}
                           className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
                         >
                           {summary}
@@ -472,7 +339,7 @@ export default withRequest(async function OrderPage({ params }: Props) {
             orderId={id}
             viewer={s.user.name ?? s.user.email}
             viewerOrg={s.org.name}
-            timeZone={await storeTimeZone(s.org)}
+            timeZone={timeZone}
             entries={timeline}
             prices={prices}
           />
@@ -532,20 +399,15 @@ export default withRequest(async function OrderPage({ params }: Props) {
               supplierTotal={orderTotal(order.data)}
               landedTotal={landedTotal}
               markup={markup}
-              freight={freight.map((row) => ({ reference: row.reference, amount: row.freightMinor }))}
-              costs={landed.map((cost) => ({
-                id: cost.id,
-                kind: landedCostKinds[cost.kind],
-                description: cost.description,
-                amount: cost.amountMinor
-              }))}
+              freight={freight}
+              costs={landed}
             />
           )}
         </aside>
       </div>
     </>
   )
-})
+}
 
 // A line's supplier SKU, or each component's for a bundle, so the supplier knows what to make.
 function SupplierSku({ item, notSet }: { item: OrderItem; notSet: string }) {

@@ -13,7 +13,9 @@ import {
   Warehouse
 } from "lucide-react"
 import type messages from "../../messages/en/navigation.json"
-import { type Area, can, type Permissions } from "./access"
+import type { Area } from "./access"
+import type { Permissions } from "./access"
+import { can } from "./access"
 
 // A page's name and a group's heading are keys under the "navigation" messages' `pages` and `groups`, which the sidebar
 // and search translate.

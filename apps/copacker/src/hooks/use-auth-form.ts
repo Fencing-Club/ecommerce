@@ -1,5 +1,3 @@
-"use client"
-
 import type { FieldValues } from "react-hook-form"
 import type { z } from "zod"
 import { useSubmissionForm, type SubmissionOptions } from "@/hooks/use-submission-form"

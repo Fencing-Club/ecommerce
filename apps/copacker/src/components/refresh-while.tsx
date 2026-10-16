@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect } from "react"
 
 // Reloads the page's server data every few seconds while something it shows is still running, such as a first sync.

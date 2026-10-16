@@ -1,5 +1,3 @@
-"use client"
-
 import { Children } from "react"
 import { useTranslations } from "use-intl"
 import { InfoTip } from "@/components/info-tip"

@@ -19,7 +19,7 @@ const last30: PickerPeriod = {
 const meta = preview.meta({
   component: PeriodPicker,
   args: { period: last30, onChange: fn() },
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/overview" } } }
+  parameters: { router: { navigation: { pathname: "/overview" } } }
 })
 
 async function open(canvas: { getByRole: typeof screen.getByRole }) {
@@ -50,7 +50,7 @@ export const Preset = meta.story({
 // The groups of presets, with the channel and comparison kept.
 export const PresetGroups = meta.story({
   args: { period: { ...last30, comparison: "previousYear" } },
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/overview", query: { channel: "shopify" } } } },
+  parameters: { router: { navigation: { pathname: "/overview", query: { channel: "shopify" } } } },
   play: async ({ canvas, args }) => {
     const picker = await open(canvas)
     await userEvent.click(within(picker).getByRole("button", { name: "Last" }))

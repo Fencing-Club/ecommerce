@@ -30,7 +30,7 @@ function SignUp({
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Sign up",
   component: SignUp,
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/signup" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/signup" } } },
   args: { next: "/" },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler(redirectTo("/verify-email")))

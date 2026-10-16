@@ -1,11 +1,10 @@
-"use client"
-
 import { Check, FileText, GlassWater, Ship } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useFormatter, useTranslations } from "use-intl"
 import { StatusBadge } from "@/components/common"
 import { cn } from "@/lib/utils"
-import type { Place, World } from "./journey-world"
+import type { Place } from "./journey-world"
+import type { World } from "./journey-world"
 import { through } from "./scroll"
 import { quiet } from "./site-styles"
 

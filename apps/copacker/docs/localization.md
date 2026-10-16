@@ -1,34 +1,31 @@
 # Localization
 
 Copacker uses the standalone [use-intl core](https://next-intl.dev/docs/environments/core-library) for client hooks,
-shared translators and Storybook. The current Next request/Server Component integration still uses next-intl until
-the Start route conversion. URLs have no locale prefixes. English is the source language. Translations live in JSON
+shared translators, TanStack Start and Storybook. URLs have no locale prefixes. English is the source language. Translations live in JSON
 files; no translation service is called.
 
 ## Which language a page renders in
 
-`src/i18n/request.ts` picks the language for every page, route handler and server action:
+`src/server.ts` resolves the language for every page, route handler and server function:
 
 1. The language the signed-in person chose in **Settings > Language** (`profiles.locale`).
 2. Otherwise, the computer's language, from the browser's `Accept-Language` header (`negotiateLocale`).
 3. Otherwise, English.
 
-`LocalizationProvider` (in `AppProviders`, which every layout of the app renders) passes that language, its messages
-and the time zone to client components. The marketing pages pass only the parts their client components use
-(`ClientMessages`), so their HTML doesn't carry every area's messages; a marketing client component that starts using
-another namespace needs it added to its page's list.
+The root document's `IntlProvider` passes that language, its messages and the time zone to components.
+`src/document.functions.ts` limits public pages to their required message namespaces; add a newly required namespace
+there when a public component starts using it.
 Dates format in the time zone the browser last reported (the `tz` cookie), so the server and browser render the same
 text. Worker jobs and emails have no request: use `translatorFor(profile.locale)` from `src/i18n/translator.ts`.
 
 Shared server operations use `src/server/localization.ts`, which holds a lazy configuration lookup in
 `AsyncLocalStorage`. Each request owns its lookup, including overlapping Workers invocations. Nested operations reuse
-it; requests that never need translated text do not read profiles or sessions for localization. The Next entry points
-establish it with `withRequest` from `src/server/next-request.ts`; a server component that React invokes separately must
-also establish that boundary. `resolveLocalization` validates profile/browser preferences and the reported time zone.
+it; requests that never need translated text do not read profiles or sessions for localization. `src/server.ts`
+establishes the boundary before Start dispatches the request. `resolveLocalization` validates profile/browser preferences
+and the reported time zone.
 Server errors, pricing, preparation instructions and store dates use standalone `use-intl` through this context.
 Outside a request they use English/UTC, and `requestLocale()` returns `undefined` for email-job payloads. Storybook
-mocks the context with its selected toolbar language. The Start compatibility probe exercises the same domain helpers
-with browser preferences; production profile resolution and route integration remain part of the route conversion.
+mocks the context with its selected toolbar language. The compatibility probe exercises the same domain helpers.
 
 Supported languages are listed in `src/i18n/locales.ts`: English, Spanish (Mexico), French, German, Italian, Ukrainian,
 Simplified Chinese, Hindi and Urdu. Urdu reads right to left: `direction()` in the same file sets the page's `dir`.
@@ -47,7 +44,7 @@ needs room past the line too.
 - One file per area and language (namespaces such as `common`, `orders`, `errors` for failures the server returns,
   `server` for other text the server builds, `notifications` and `emails` for what the worker sends): `apps/copacker/messages/<locale>/<namespace>.json`. The namespaces are fixed in
   `src/i18n/messages.ts`; adding one means adding its import there and a file in every locale.
-- English (`messages/en`) is the source and the type: `useTranslations`/`getTranslations` keys are type-checked against
+- English (`messages/en`) is the source and the type: `useTranslations`/`serverTranslator` keys are type-checked against
   it. Every other language is merged over English, so an untranslated key shows the English text.
 - Keys are camelCase and nested by component or page, such as `orders.builder.submit`. Name keys for their meaning, not
   their text.
@@ -57,11 +54,11 @@ needs room past the line too.
 
 ## In code
 
-- Server components, `generateMetadata`, route handlers: `const t = await getTranslations("orders")`.
+- Loaders, server functions and HTTP handlers: `const t = await serverTranslator("orders")` from `@/server/translation`.
 - Framework-independent server operations: `createTranslator({ ...(await localization()), namespace: "orders" })`.
 - Client components: `const t = useTranslations("orders")`, imported from `use-intl`.
-- Page titles: replace `export const metadata` with `generateMetadata` that calls `getTranslations`.
-- Numbers, dates and currency: use `useFormatter()`/`getFormatter()`, or pass `useLocale()`/`getLocale()` to `Intl` and
+- Page titles: return translated metadata through the route's `head` function and render `HeadContent` in the root.
+- Numbers, dates and currency: use `useFormatter()`, `createFormatter(await localization())`, or pass the resolved locale to `Intl` and
   to `toLocaleString`, keeping any explicit `timeZone` option. Never hard-code `"en-US"` for display.
 - Form validation: a message written on a zod schema is a full message key in the owning area's namespace, such as
   `z.string().min(1, "settings.profile.enterCompany")`. Form fields and the action route translate a message that is a
@@ -88,9 +85,8 @@ needs room past the line too.
 Add it to `locales` and `localeNames` in `src/i18n/locales.ts`, copy `messages/en` to `messages/<locale>`, and translate
 every file.
 
-## Fonts during the Start migration
+## Self-hosted fonts
 
 `src/styles/document-fonts.ts` supplies the same self-hosted Geist/Geist Mono subsets, fallback metrics, language-specific
-faces and preload URLs to the Next document and Start fixture. The font files are checked in, so these document fonts
-no longer require a Google Fonts request at build time. The Geist license is alongside the files. The marketing
-planner's separate Caveat font still uses Next and will move with that screen.
+faces and preload URLs to the Start document and compatibility fixture. All font files, including the marketing
+planner's Caveat, are checked in with their licenses. Builds do not request fonts from Google.

@@ -20,7 +20,7 @@ async function ForgotPasswordPage({ email }: { email?: string }) {
 const meta = preview.meta({
   title: "Pages/Shared/Auth/Forgot password",
   ...serverStory(ForgotPasswordPage),
-  parameters: { layout: "fullscreen", nextjs: { navigation: { pathname: "/forgot-password" } } },
+  parameters: { layout: "fullscreen", router: { navigation: { pathname: "/forgot-password" } } },
   beforeEach: ({ msw }) => {
     msw.use(actions.handler())
     return skipAnimations()

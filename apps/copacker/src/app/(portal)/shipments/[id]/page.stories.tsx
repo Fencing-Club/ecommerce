@@ -1,9 +1,9 @@
 import { money, type OrderInput } from "@repo/aisle"
+import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ArrowRight, Clock, Download, ExternalLink, Loader2, PackageCheck } from "lucide-react"
-import { getFormatter, getLocale, getTranslations } from "next-intl/server"
-import Link from "next/link"
 import { Fragment } from "react"
 import { expect, screen, userEvent, waitFor, within } from "storybook/test"
+import { formatStory, localeStory, translateStory } from "#.storybook/intl"
 import preview from "#.storybook/preview"
 import { ActionButton } from "@/components/actions"
 import { DocumentList, PageHeader, Status } from "@/components/common"
@@ -82,7 +82,7 @@ async function ShipmentPage({
   addresses,
   awaitingChanges
 }: Args) {
-  const [t, format, locale] = await Promise.all([getTranslations("shipments.detail"), getFormatter(), getLocale()])
+  const [t, format, locale] = await Promise.all([translateStory("shipments.detail"), formatStory(), localeStory()])
   const editsShipments = can(s, "shipments", "edit")
   const seesOrder = can(s, "orders")
   const prices = can(s, "prices")
@@ -198,7 +198,12 @@ async function ShipmentPage({
           <AlertDescription>{isBuyer ? t("changesWaiting.buyer") : t("changesWaiting.supplier")}</AlertDescription>
           {seesOrder && (
             <AlertAction>
-              <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/orders/${order.id}`} />}>
+              <Button
+                size="sm"
+                variant="outline"
+                nativeButton={false}
+                render={<Link to="/orders/$id" params={{ id: order.id }} />}
+              >
                 {isBuyer ? t("changesWaiting.viewPurchaseOrder") : t("changesWaiting.viewOrder")}
               </Button>
             </AlertAction>

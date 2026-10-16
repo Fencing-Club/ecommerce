@@ -1,7 +1,5 @@
-"use client"
-
+import { Link } from "@tanstack/react-router"
 import { Ellipsis } from "lucide-react"
-import Link from "next/link"
 import { useState } from "react"
 import { useLocale, useTimeZone, useTranslations } from "use-intl"
 import { FormError, SubmitButton } from "@/components/form-feedback"
@@ -143,7 +141,7 @@ export function ImportIntake() {
                 <>
                   <TableCell className="w-full max-w-0">
                     {href ? (
-                      <Link href={href} className="block truncate font-medium hover:underline">
+                      <Link to="." href={href} className="block truncate font-medium hover:underline">
                         {fileName(item.filename, { title: item.filename })}
                       </Link>
                     ) : (
@@ -168,7 +166,7 @@ export function ImportIntake() {
                           variant="outline"
                           size="sm"
                           nativeButton={false}
-                          render={<Link href={href} />}
+                          render={<Link to="." href={href} />}
                           className="hidden @md:inline-flex"
                         >
                           {item.status === "saved" ? t("openDraft") : t("review")}

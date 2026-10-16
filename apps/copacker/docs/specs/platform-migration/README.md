@@ -1,8 +1,9 @@
 # TanStack Start and Cloudflare migration specification
 
-Status: implementation started, October 15, 2026, on `codex/tanstack-start` in the isolated migration worktree.
-[Compatibility evidence](compatibility.md) records the completed checks and remaining work. The main app still uses
-Next.js; no milestone or production cutover is complete. This specification does not authorize a production cutover.
+Status: the web conversion is implemented and deployed for staging qualification on `codex/tanstack-start`, October 15,
+2026. [Compatibility evidence](compatibility.md) records local/deployed checks, storage rehearsal and release gates.
+The full local browser suite passes. Production cutover and the separate background-executor migration remain open.
+This specification does not authorize a production cutover.
 
 Move web hosting, private object storage and background execution to **Cloudflare Workers, R2, Queues and Workflows**.
 **Postgres stays on Railway for this entire effort**, including the existing staging and production databases and

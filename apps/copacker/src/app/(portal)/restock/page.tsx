@@ -1,17 +1,7 @@
-import { redirect } from "next/navigation"
 import { RestockPageView } from "@/components/restock-page"
-import { requirePage, session, titleFor } from "@/server/auth"
-import { withRequest } from "@/server/next-request"
-import { restockPageData } from "@/server/workspace-pages"
+import type { readRestock } from "@/workspace.functions"
 
-export const generateMetadata = titleFor("restock.title", "restock")
-
-export default withRequest(async function RestockPage() {
-  const s = await session()
-  if (s.org.kind !== "buyer") {
-    redirect("/orders")
-  }
-  requirePage(s, "restock")
-
-  return <RestockPageView {...restockPageData(s)} />
-})
+type Data = Extract<Awaited<ReturnType<typeof readRestock>>, { forbidden: false }>["page"]
+export default function RestockPage({ page }: { page: Data["data"] }) {
+  return <RestockPageView {...page} />
+}

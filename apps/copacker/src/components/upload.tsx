@@ -1,7 +1,5 @@
-"use client"
-
+import { useRouter } from "@tanstack/react-router"
 import { CheckCircle2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useId, useRef, useState } from "react"
 import { useTranslations } from "use-intl"
 import { Button } from "@/components/ui/button"
@@ -107,7 +105,7 @@ export function Upload({
       target.reset()
       setItemId("")
       setStatus("uploaded")
-      router.refresh()
+      router.invalidate()
     } catch (e) {
       setStatus("ready")
       setError(errorMessage(e, t("failed")))

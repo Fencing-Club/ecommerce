@@ -1,4 +1,5 @@
-import type { OrderInput, PackingDraft } from "@repo/aisle"
+import type { OrderInput } from "@repo/aisle"
+import type { PackingDraft } from "@repo/aisle"
 
 // Purchase order data for someone who doesn't see prices, for the client components that need the rest of it: every
 // line without its price or its supplier's catalog price, and no cost adjustments.

@@ -1,5 +1,3 @@
-"use client"
-
 import { useTranslations } from "use-intl"
 import { z } from "zod"
 import { useSubmissionForm } from "@/hooks/use-submission-form"

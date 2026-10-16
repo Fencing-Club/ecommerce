@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { POST } from "../src/app/api/contact/route"
+import { POST } from "../src/server/http/api/contact"
 
 const fetchMock = vi.fn<typeof fetch>()
 

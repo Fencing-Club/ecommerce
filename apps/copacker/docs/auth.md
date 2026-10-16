@@ -1,20 +1,20 @@
 # Sign-in and getting started
 
 Copacker draws its own sign-in pages and talks to WorkOS directly (the User Management API), rather than sending people
-to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, which `withAuth`, the proxy's refreshes and
-sign-out all use. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
+to AuthKit's hosted page. Every way in ends in AuthKit's session cookie, which the public WorkOS session toolkit
+refreshes and clears through `src/server/auth-session.ts`. The code is in `src/server/sign-in.ts`, `src/server/onboarding.ts` and
 `src/server/invitations.ts`; the pages are the `(auth)` route group, `app/onboarding` and `app/workspaces/new`.
 
 The sign-in operations receive an explicit request with headers, cookie access and a session writer; they no longer
-import Next APIs. The current app supplies that request from `server/auth.ts`; the protected Start fixture supplies it
-from `server/auth-session.ts`. Both call the same password, verification, organization-selection, reset and OAuth logic.
+use TanStack Start's request boundary. `server/auth-session.ts` supplies the same password, verification,
+organization-selection, reset and OAuth logic to the app and the protected compatibility fixture.
 Only the pending email address is returned to the verification page; its authentication token and redirect stay in the
 encrypted cookie. Start takes the client address from Cloudflare's `CF-Connecting-IP`, not a supplied forwarding chain.
-The five password/verification/recovery screens now share `AuthScreen` and `loadAuthPage` between Next and the protected
-Start fixture. Their forms have no Next imports; successful authentication opens a fresh document to discard the old
+The five password/verification/recovery screens share `AuthScreen` and `loadAuthPage` with the protected
+Start fixture. Successful authentication opens a fresh document to discard the old
 session's route and API caches, including when WorkOS returns an external SSO URL. Recovery confirmation stays on the
 page. The Start routes preserve `/api/action` for the six auth operations, validate server input and enforce CSRF before
-executing an operation. Next still serves the main application. See the
+executing an operation. Start serves the main application in this branch. See the
 [compatibility evidence](specs/platform-migration/compatibility.md) for deployed checks and remaining provider flows.
 
 ## Ways in
@@ -41,8 +41,8 @@ person's current database memberships, and `src/server/authorization.ts` checks 
 workspace cookie can choose only an existing membership. Missing, stale or foreign selections fall back to the oldest
 authorized workspace (ID breaks creation-time ties); no memberships sends the person to onboarding. The workspace
 switcher receives only ID, name and kind. Full workspace settings stay on the server and page loaders return explicit
-rendering data. The current Next request helpers call these same functions used by the protected Start compatibility
-Worker; see [migration evidence](specs/platform-migration/compatibility.md).
+rendering data. Start loaders and server functions call these authorization helpers for every request; browser caches
+never authorize an operation. See [migration evidence](specs/platform-migration/compatibility.md).
 
 ## WorkOS settings
 
@@ -77,7 +77,7 @@ go through Resend, from `src/server/email.ts`.
 
 ## Getting started
 
-Address search uses Google's Places Autocomplete Data API (New). Set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` before building
+Address search uses Google's Places Autocomplete Data API (New). Set `VITE_GOOGLE_MAPS_API_KEY` before building
 the app, with website restrictions for each deployment origin and API restrictions for Maps JavaScript API and
 Places API (New), and enable both APIs in the Google Cloud project. The combobox displays Google Maps attribution;
 each search session keeps its token until a result is selected. Selecting a result fills the street, city,

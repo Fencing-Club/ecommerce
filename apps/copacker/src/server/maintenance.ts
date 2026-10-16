@@ -69,7 +69,7 @@ export async function underMaintenance() {
 }
 
 // The marketing site, health check and their static files remain available. Framework assets are served directly;
-// the Next namespace remains here only while that deployed entry point exists.
+// Vite serves its development assets before the app.
 const open = [
   "/privacy",
   "/terms",
@@ -88,7 +88,7 @@ const open = [
   "/api/mailing-list",
   "/api/maintenance",
   "/api/health",
-  "/_next"
+  "/@vite"
 ]
 
 export function closedForMaintenance(request: Request) {
@@ -104,7 +104,6 @@ export function maintenanceDocument(request: Request) {
   const { pathname } = new URL(request.url)
   return (
     (request.method === "GET" || request.method === "HEAD") &&
-    !request.headers.has("next-action") &&
     !pathname.startsWith("/_serverFn/") &&
     (!pathname.startsWith("/api/") || request.headers.get("sec-fetch-dest") === "document")
   )
