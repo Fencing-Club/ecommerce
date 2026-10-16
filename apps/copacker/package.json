@@ -81,7 +81,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@buildkitgg/dev-domains": "0.0.1",
+    "@buildkitgg/dev-domains": "0.1.0",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@repo/oxlint-config": "workspace:*",
