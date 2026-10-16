@@ -23,5 +23,5 @@ allowBuilds:
   "@parcel/watcher": false
   msw: false
 minimumReleaseAgeExclude:
-  - "@buildkitgg/dev-domains@0.0.1"
+  - "@buildkitgg/dev-domains@0.1.0"
   - "@cloudflare/vite-plugin@2.0.0-beta.v.0"

@@ -329,8 +329,8 @@ importers:
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
       '@buildkitgg/dev-domains':
-        specifier: 0.0.1
-        version: 0.0.1(magicast@0.5.5)
+        specifier: 0.1.0
+        version: 0.1.0(magicast@0.5.5)
       '@electric-sql/pglite':
         specifier: ^0.5.8
         version: 0.5.8
@@ -1092,8 +1092,8 @@ packages:
   '@blazediff/core@1.9.1':
     resolution: {integrity: sha1-rWHE7EjcEaKRO5dTyMdJAuBejxQ=}
 
-  '@buildkitgg/dev-domains@0.0.1':
-    resolution: {integrity: sha512-3cPT+r39Nd1TBrL7qhtpEXJjQbX0KqnNQ0dZ3dZt8p28j05o3alQd3wE1AlbSTi7KhFArWQJ04e+ZIkBopA03Q==}
+  '@buildkitgg/dev-domains@0.1.0':
+    resolution: {integrity: sha512-y0/bLiFscJZg0WwT8VUK+D+TVTc136iGARHUgmdznb6k8dKcLV5v+Gtkvknj/JoV00O87/xNKQanPBIFLoKyVA==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -9325,7 +9325,7 @@ snapshots:
 
   '@blazediff/core@1.9.1': {}
 
-  '@buildkitgg/dev-domains@0.0.1(magicast@0.5.5)':
+  '@buildkitgg/dev-domains@0.1.0(magicast@0.5.5)':
     dependencies:
       '@clack/prompts': 1.8.1
       c12: 3.3.4(magicast@0.5.5)
