@@ -52,8 +52,8 @@ A dedicated E2E process isolates its lifecycle and build output, not its databas
 
 | Service | Change | Current status |
 | --- | --- | --- |
-| Launcher and Buildkit | Primary app has no `main` prefix; linked worktrees use readable folder names; collisions fail visibly | Implemented with published `@buildkitgg/dev-domains@0.0.1` |
-| Shared Portless proxy | Suffix `copacker.ai`; explicit names `local`, `stories.local`, `e2e.local` and worktree equivalents | Pending coordinated restart; the active proxy still uses `local.copacker.ai` and is not interrupted |
+| Launcher and Buildkit | Primary app has no `main` prefix; linked worktrees use readable folder names; collisions fail visibly | Implemented with published `@buildkitgg/dev-domains@0.1.0` |
+| Shared Portless proxy | Register complete Copacker hostnames on the existing HTTPS proxy at port 443 | Buildkit 0.1.0 supports exact routes independently of startup suffixes; no restart required. Trusted HTTPS and independent cleanup verified alongside Spawn |
 | Cloudflare DNS | Add DNS-only A `local.copacker.ai` → `127.0.0.1`, TTL 300; retain `*.local.copacker.ai` | Base record absent when inspected; pending |
 | WorkOS redirects/logout | Add exact primary `https://local.copacker.ai/callback` and logout origin; optional exact E2E equivalents; retain existing entries and production defaults | Read-only inventory verified; no changes saved. Redirect dry-run rejected an existing URI ID and needs dashboard follow-up |
 | Google Maps local key | Include exact `https://local.copacker.ai/*` alongside worktree wildcard; verify API restrictions and optional E2E scope | Pending inspection/update |
@@ -176,7 +176,7 @@ requires exact matching. `H` means the public webhook origin. Local `H` must nev
 
 | Service / owner | Setting and exact change | Development | Staging / production | Verification |
 | --- | --- | --- | --- | --- |
-| Portless / workstation | Pin `@buildkitgg/dev-domains@0.0.1` in Copacker; configure `dev-domains.config.ts`; proxy suffix `copacker.ai`, HTTPS port 443, loopback only, strict routes | Run `dev:setup`; trust CA; launcher disables hosts synchronization because wildcard DNS resolves loopback | Not installed in serving containers | `dev:status`, trusted HTTPS, Next and Storybook HMR |
+| Portless / workstation | Pin `@buildkitgg/dev-domains@0.1.0` in Copacker; configure `dev-domains.config.ts`; complete Copacker hostnames, HTTPS port 443, loopback only, strict routes | Run `dev:setup`; trust CA; launcher disables hosts synchronization because wildcard DNS resolves loopback | Not installed in serving containers | `dev:status`, trusted HTTPS, Next and Storybook HMR |
 | DNS / Cloudflare | DNS-only base `local.copacker.ai` and wildcard `*.local.copacker.ai` → `127.0.0.1`, TTL 300; never proxy loopback | Wildcard created 2026-10-14; local hosts entries are an alternative for networks blocking loopback DNS | Keep existing app records; add Storybook CNAME and Railway verification TXT per environment | DNS and Railway domain certificate status |
 | TLS / workstation and Railway | Local Portless CA vs publicly trusted Railway certificates | Trust CA in OS and browser; Node child processes receive Portless CA | Public certificates on app and Storybook domains; nested staging Storybook requires certificate coverage | Browser without certificate bypass; HTTPS health request |
 | Web runtime / Railway or launcher | `APP_URL=A`, `APP_ALIAS_URLS` contains only intentional aliases | Launcher overrides stale `.env` origins; no sibling worktree aliases | Web and worker use same environment's canonical origin | Generated email URLs, metadata and origin checks |

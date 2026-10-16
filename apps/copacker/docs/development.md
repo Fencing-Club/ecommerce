@@ -1,6 +1,6 @@
 # Local development domains
 
-Use Node 24+ and the pinned `@buildkitgg/dev-domains@0.0.1` package, which includes Portless. Copy `.env.example` to `.env` and fill in development
+Use Node 24+ and the pinned `@buildkitgg/dev-domains@0.1.0` package, which includes Portless. Copy `.env.example` to `.env` and fill in development
 credentials. See [domains and provider configuration](domains.md) for every environment address and external setting.
 
 ```sh
@@ -12,24 +12,25 @@ pnpm --filter copacker worker:dev
 pnpm --filter copacker dev:status
 ```
 
-Run setup once interactively on each workstation: it starts the shared HTTPS proxy on 443 with suffix
-`copacker.ai`. The explicit app name is `local` in the primary checkout. Portless may request administrator access to trust its CA. Public DNS-only `local.copacker.ai` and `*.local.copacker.ai` must resolve to `127.0.0.1`; launchers disable per-route hosts-file edits. Networks that block loopback DNS answers need administrator-managed hosts entries instead. Do not
+Run setup once interactively on each workstation: it starts or reuses the shared HTTPS proxy on 443. Complete
+hostnames let Copacker and Spawn share the proxy despite different domains. The explicit app name is `local` in the primary checkout. Portless may request administrator access to trust its CA. Public DNS-only `local.copacker.ai` and `*.local.copacker.ai` must resolve to `127.0.0.1`; launchers disable per-route hosts-file edits. Networks that block loopback DNS answers need administrator-managed hosts entries instead. Do not
 disable certificate validation. If setup reports an incompatible existing proxy, coordinate with its owner before
 changing it; never stop another agent's proxy to reclaim a port. `pnpm --filter copacker dev:doctor` checks
-the proxy and certificate setup. On Windows, add OpenSSL to PATH before setup; Git for Windows includes it in `C:\Program Files\Git\usr\bin`. The launcher refuses an unexpected proxy origin instead of silently using it.
+the proxy and certificate setup. On Windows, add OpenSSL to PATH before setup; Git for Windows includes it in `C:\Program Files\Git\usr\bin`. The launcher verifies the proxy identity, port, and TLS mode without restarting it.
 
 The primary checkout uses `local.copacker.ai`, `stories.local.copacker.ai`, and (when running a dedicated test server)
 `e2e.local.copacker.ai`. Linked checkouts use the normalized worktree folder name: `<worktree>.local.copacker.ai`,
 `<worktree>.stories.local.copacker.ai`, and `<worktree>.e2e.local.copacker.ai`. There is no path hash and no special `main`
 branch convention. Switching branches or moving a folder without renaming it leaves its URL unchanged.
 
-Worktree folder names normalize to lowercase DNS labels. Use at most 63 characters. Avoid `stories` and `e2e`, which collide with primary service hosts. If another server already owns an address, startup reports the domain and port without replacing
+Worktree folder names normalize to lowercase DNS labels. Use at most 63 characters. Avoid `stories` and `e2e`, which collide with primary service hosts. If another server already owns an address, startup reports the occupied domain without replacing
 it. Rename the worktree to resolve a collision. Portless also rejects simultaneous claims made after the initial check.
-Ports are allocated by Portless; Storybook receives its assigned port explicitly and refuses port fallback.
+Buildkit reserves a loopback port through route registration and hands it to the server; Storybook receives its assigned port explicitly and refuses port fallback.
 
 The full [primary/worktree mapping and activation checklist](domains.md#local-addresses) includes auth paths and optional
-webhook tunnels. Changing the shared proxy suffix requires coordinating a restart with every active owner; run
-`dev:setup` only once that transition is agreed. Do not stop another checkout's server or silently change its routes.
+webhook tunnels. Existing proxy suffixes do not require a restart: Buildkit registers complete hostnames through
+Portless. Coordinate any change to the proxy port or TLS mode with every active owner. Do not stop another checkout's
+server or silently change its routes.
 
 Each app process overrides `.env`'s `APP_URL`, aliases and WorkOS callback with its exact origin. Workers started with
 `worker:dev` use the same origin for emailed links. The deployment `worker` command remains independent of Git and
@@ -38,7 +39,7 @@ Portless. Host-only cookies keep worktree sessions separate. Keep the existing e
 ## Ownership
 
 - One app and one Storybook server per checkout. A duplicate route must fail; never use Portless `--force`.
-- Stop a server with Ctrl+C in the terminal that started it. Portless owns its child process tree and route cleanup.
+- Stop a server with Ctrl+C in the terminal that started it. Buildkit owns its child process tree and removes its own Portless routes.
 - `dev:urls` prints this checkout's URLs; `dev:status` prints active Portless routes. Reuse only the exact checkout/service URL.
 - Never use global process-name kills, `portless clean`, `proxy stop` or `prune` to resolve a single task's conflict.
 - Put worktrees under `D:\system\worktrees\ecommerce\<worktree-name>` and remove owned worktrees after completion.
@@ -74,7 +75,7 @@ starts fail and stopping one server leaves the others running. Test E2E without 
 
 `apps/copacker/dev-domains.config.ts` is the source of truth for app, Storybook and E2E names, commands, callback
 paths and local environment overrides. The published package handles worktree identity, configuration loading,
-port allocation through Portless, collision checks, command execution and route cleanup. Copacker keeps only its
+port reservation and Portless route registration, collision checks, command execution and route cleanup. Copacker keeps only its
 application-specific environment mapping and worker/build launcher. Do not add another local Portless wrapper.
 
 Run `pnpm --filter copacker exec dev-domains urls` to inspect the config, or use the consumer command
