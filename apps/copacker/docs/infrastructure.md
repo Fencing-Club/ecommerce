@@ -48,8 +48,38 @@ backup/recovery separately; R2 state storage is not a state history policy. Neve
 artifacts: future resources may contain sensitive values. Ignore rules are configured at repository root.
 
 PR CI runs formatting, initialization without a backend and schema validation without credentials. It never applies
-infrastructure. An operator reviews and applies the saved plan after backend/locking qualification. Automatic applies
-and drift repair are not enabled until that adoption succeeds. App deploys currently do not run Terraform.
+infrastructure. App deploys do not run Terraform.
+
+## Reviewed operations and automatic backups
+
+The **Terraform operations** workflow runs only from `main`. Its `infrastructure` GitHub environment holds
+`TF_STATE_CREDENTIALS` (the existing bucket-scoped S3 JSON) and a scoped `CLOUDFLARE_API_TOKEN`. It uses the private
+`copacker-terraform-state` bucket and the existing state keys. GitHub concurrency serializes each environment, and
+Terraform's backend lock also protects against another operator. Neither lock is disabled.
+
+1. Manually run `plan` for staging or production. Review the resource-action summary and download the full
+   `plans/<environment>/<run>/<attempt>/review.txt` from private R2. The saved binary plan stays beside it.
+2. Manually run `apply`, supplying that planning run ID, attempt and exact SHA-256 from the reviewed plan. The runner
+   rejects a different environment, source commit, changed state, modified plan, future timestamp or plan older than
+   two hours. A new `main` commit therefore requires a new plan. It applies that saved artifact without re-planning.
+3. Each operation first backs up state; every apply, including a failed partial apply, also backs up the resulting
+   state. A six-hour schedule backs up both environments independently of infrastructure changes.
+
+Each backup gets a unique timestamp/UUID key under `backups/<state-key>/`, is downloaded and byte-verified, and is
+read by `terraform show` from an isolated local file. This tests recovery readability without restoring over live state.
+Backup history has no automatic deletion policy yet; it is not immutable storage or a backup of document contents.
+For disaster recovery, first stop applies, review the selected snapshot and compare its lineage/serial with the live
+state. Restoring an older state can forget real resources; restoration remains a separately reviewed operator action.
+
+The private repository's current GitHub billing plan does not support required environment reviewers. The accepted
+approval mechanism is an explicit manual workflow dispatch with the exact saved plan hash. This is an operator
+confirmation, not an independent reviewer or separation-of-duties control. Scheduled runs only back up; they never
+apply changes or repair drift. Keep workflow/secret administration limited to trusted maintainers.
+
+Provider diagnostics, full plans and state values never enter Actions artifacts or job output. The private operation
+log is `operations/<environment>/<run>/<attempt>/terraform.log`. A failed verification fails the workflow; inspect
+that private log and re-plan when needed. No automatic restore, force unlock, retry of an apply, or destructive cleanup
+is performed.
 
 ## Resource tags
 

@@ -31,7 +31,8 @@ jobs:
       DIRECT_DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
       DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
       DATABASE_TLS_SERVER_NAME: ${{ vars.DATABASE_TLS_SERVER_NAME }}
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_WORKER_TOKEN }}
+      RAILWAY_TOKEN:
+        ${{ inputs.mode == 'staging' && secrets.RAILWAY_STAGING_TOKEN || secrets.RAILWAY_PRODUCTION_TOKEN }}
       VITE_GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
     steps:
       - uses: actions/checkout@v7
