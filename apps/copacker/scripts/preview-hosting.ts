@@ -36,7 +36,7 @@ async function copyDocuments(config: HostingSettings, number: string, databaseUr
   } finally {
     await client.end()
   }
-  const source = new Map(previewObjects(config, config.sourceBucket, "").map((item) => [item.key, item]))
+  const source = new Map(previewObjects(config, config.bucket, "").map((item) => [item.key, item]))
   invariant(
     keys.every((key) => source.has(key)),
     "Referenced staging files are missing from R2; synchronize staging storage before deploying previews"
@@ -44,7 +44,7 @@ async function copyDocuments(config: HostingSettings, number: string, databaseUr
   const file = path.join(folder, "document")
   for (const key of new Set(keys)) {
     const bytes = Buffer.from(
-      cloudflare(config, ["r2", "objects", "get", key, "--bucket-name", config.sourceBucket], { binary: true })
+      cloudflare(config, ["r2", "objects", "get", key, "--bucket-name", config.bucket], { binary: true })
     )
     writeFileSync(file, bytes, { mode: 0o600 })
     cloudflare(config, [

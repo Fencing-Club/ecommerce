@@ -9,8 +9,7 @@ import { previewNumber, previewResources } from "./preview-config"
 
 export const hostingSettings = z.object({
   accountId: z.string().regex(/^[a-f0-9]{32}$/),
-  bucket: z.literal("copacker-preview-private"),
-  sourceBucket: z.literal("copacker-staging-private"),
+  bucket: z.literal("copacker-staging-private"),
   subdomain: z.string().regex(/^[a-z0-9-]+$/),
   caCertificateId: z.string().uuid()
 })

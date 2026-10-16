@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => {
   if (!bucket || !hyperdrive) {
     throw new Error("Deployment requires CLOUDFLARE_HYPERDRIVE_ID and CLOUDFLARE_DOCUMENTS_BUCKET")
   }
-  if (preview && bucket !== "copacker-preview-private") {
-    throw new Error("PR previews require the private preview bucket")
+  if (preview && bucket !== "copacker-staging-private") {
+    throw new Error("PR previews require the private staging bucket")
   }
   return {
     worker: {

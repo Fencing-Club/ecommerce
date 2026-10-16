@@ -37,10 +37,14 @@ After the regular CI checks pass, trusted same-repository PRs receive a private 
 CI applies that PR's migrations through the direct connection. Subsequent pushes reuse the branch and preserve its
 test edits. Forks and Dependabot do not receive credentials. With `CLOUDFLARE_PREVIEW_CONFIG` configured, CI builds
 the Cloudflare app and fixture-only Storybook Workers, verifies their commit health endpoints, and links both in
-the Actions summary. Each app gets its own Hyperdrive connection and queue. The shared private
-`copacker-preview-private` R2 bucket uses `pr-<number>/` prefixes. Referenced staging files are copied from
-`copacker-staging-private` and verified by SHA-256; missing source files fail deployment. Further pushes preserve
-the preview's edits. No new Railway resources are created.
+the Actions summary. Each app gets its own Hyperdrive connection and queue. Previews reuse the existing private
+`copacker-staging-private` R2 bucket, with `pr-<number>/` reserved for each PR. Referenced staging files are copied
+into that PR's folder in the same bucket and verified by SHA-256; missing source files fail deployment. Further
+pushes preserve the preview's edits. No new bucket or Railway resource is created.
+
+The storage adapter prefixes every preview read, write and delete. These folders separate normal app operations,
+not bucket permissions: trusted preview code has the same bucket access as staging. The shared bucket holds only
+test data; production files stay in a separate bucket.
 
 Preview secrets contain only the staging WorkOS credentials, a session password, and the staging encryption key.
 Do not provide production or commerce API credentials. Background jobs remain pending in the isolated preview
@@ -67,9 +71,9 @@ Required repository configuration:
 | Secrets | `NEON_API_KEY` (project-scoped), `CLOUDFLARE_PREVIEW_TOKEN`, `CLOUDFLARE_PREVIEW_SECRETS` |
 | Variables | `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `NEON_DATABASE_NAME`, `NEON_ROLE_NAME`, `CLOUDFLARE_PREVIEW_CONFIG` |
 
-`CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-preview-private`),
-`sourceBucket` (`copacker-staging-private`), `subdomain` (the account's workers.dev subdomain), and `caCertificateId`
-(the uploaded Neon public root CA). Provision the private bucket once; CI never deletes it. The scoped account token
+`CLOUDFLARE_PREVIEW_CONFIG` is a JSON object with `accountId`, `bucket` (`copacker-staging-private`),
+`subdomain` (the account's workers.dev subdomain), and `caCertificateId` (the uploaded Neon public root CA).
+CI reuses the existing staging bucket and never deletes it. The scoped account token
 needs Workers Scripts Write, Hyperdrive Write, Queues Write, and Workers R2 Storage Write. The secrets JSON contains
 exactly `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`, and `TOKEN_ENCRYPTION_KEY`.
 Register the test WorkOS callback/sign-out patterns listed in [domains](domains.md#pull-request-previews).

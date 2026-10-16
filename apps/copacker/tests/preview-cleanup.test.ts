@@ -7,8 +7,7 @@ const child = vi.hoisted(() => ({ execFileSync: vi.fn<typeof execFileSync>() }))
 vi.mock("node:child_process", () => child)
 const config = {
   accountId: "a".repeat(32),
-  bucket: "copacker-preview-private" as const,
-  sourceBucket: "copacker-staging-private" as const,
+  bucket: "copacker-staging-private" as const,
   subdomain: "test",
   caCertificateId: "302d6a50-3f62-4d27-bbb6-4430e39c6163"
 }
@@ -34,7 +33,7 @@ beforeEach(() => {
     { queue_id: "queue", queue_name: "copacker-jobs-pr-42" },
     { queue_id: "stage", queue_name: "copacker-jobs-staging" }
   ]
-  keys = ["pr-42/a", "pr-42/b", "pr-420/keep", "staging/keep"]
+  keys = ["documents/staging.pdf", "invoice.pdf", "pr-42/a", "pr-42/b", "pr-420/keep"]
   fail = undefined
   aborted = false
   child.execFileSync.mockReset()
@@ -94,12 +93,12 @@ describe("Cloudflare preview teardown", () => {
     expect(deletes).toHaveLength(2)
     expect(deletes.every(([, args]) => args !== undefined && args.join(" ").length < 1000)).toBe(true)
   })
-  it("removes web, stories, database connection, queue and every page of files without touching another PR or shared resources", () => {
+  it("removes all preview resources without touching staging files in the same bucket or another PR", () => {
     removeHostedPreview(config, "42")
     expect(workers.map((item) => item.name)).toEqual(["copacker-staging", "copacker-pr-420"])
     expect(hyperdrives.map((item) => item.name)).toEqual(["copacker"])
     expect(queues.map((item) => item.queue_name)).toEqual(["copacker-jobs-staging"])
-    expect(keys).toEqual(["pr-420/keep", "staging/keep"])
+    expect(keys).toEqual(["documents/staging.pdf", "invoice.pdf", "pr-420/keep"])
     expect(() => removeHostedPreview(config, "42")).not.toThrow()
   })
 
@@ -125,7 +124,7 @@ describe("Cloudflare preview teardown", () => {
     expect(() => removeHostedPreview(config, "42")).toThrow("cleanup incomplete (Hyperdrive)")
     expect(workers.some((item) => item.id === "web")).toBe(false)
     expect(queues.some((item) => item.queue_id === "queue")).toBe(false)
-    expect(keys).toEqual(["pr-420/keep", "staging/keep"])
+    expect(keys).toEqual(["documents/staging.pdf", "invoice.pdf", "pr-420/keep"])
     fail = undefined
     removeHostedPreview(config, "42")
     expect(hyperdrives).toEqual([{ id: "production", name: "copacker" }])

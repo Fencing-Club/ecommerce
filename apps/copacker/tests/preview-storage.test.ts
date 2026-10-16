@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
 import { deleteFile, getFile, putFile, withFileStorage, type FileStorage } from "../src/server/storage"
 
-it("keeps identical filenames in different PRs isolated across uploads, reads and deletes", async () => {
+it("keeps staging and PR files separate in one bucket across uploads, reads and deletes", async () => {
   const stored = new Map<string, Uint8Array>([["invoice.pdf", new Uint8Array([0])]])
   const bucket: FileStorage = {
     put: async (key, bytes) => {
@@ -33,4 +33,5 @@ it("keeps identical filenames in different PRs isolated across uploads, reads an
     "Document is unavailable"
   )
   expect(stored.get("invoice.pdf")).toEqual(new Uint8Array([0]))
+  expect(await withFileStorage(bucket, () => getFile("invoice.pdf"))).toEqual(new Uint8Array([0]))
 })

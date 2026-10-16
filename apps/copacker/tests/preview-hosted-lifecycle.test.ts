@@ -44,8 +44,7 @@ beforeEach(() => {
     APP_COMMIT_SHA: sha,
     CLOUDFLARE_PREVIEW_CONFIG: JSON.stringify({
       accountId: "a".repeat(32),
-      bucket: "copacker-preview-private",
-      sourceBucket: "copacker-staging-private",
+      bucket: "copacker-staging-private",
       subdomain: "test",
       caCertificateId: "302d6a50-3f62-4d27-bbb6-4430e39c6163"
     })
